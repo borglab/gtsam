@@ -333,7 +333,7 @@ class TimeOfArrival {
 };
 
 #include <gtsam_unstable/slam/TOAFactor.h>
-virtual class TOAFactor : gtsam::NonlinearFactor {
+virtual class TOAFactor : gtsam::NoiseModelFactor {
   // For now, because of overload issues, we only expose constructor with known sensor coordinates:
   TOAFactor(gtsam::Key key1, gtsam::Point3 sensor, double measured,
             const gtsam::noiseModel::Base* noiseModel);
@@ -341,7 +341,7 @@ virtual class TOAFactor : gtsam::NonlinearFactor {
 };
 
 #include <gtsam_unstable/dynamics/VelocityConstraint3.h>
-virtual class VelocityConstraint3 : gtsam::NonlinearFactor {
+virtual class VelocityConstraint3 : gtsam::NoiseModelFactor {
   /** Standard constructor */
   VelocityConstraint3(gtsam::Key key1, gtsam::Key key2, gtsam::Key velKey, double dt);
 
@@ -349,7 +349,7 @@ virtual class VelocityConstraint3 : gtsam::NonlinearFactor {
 };
 
 #include <gtsam_unstable/dynamics/Pendulum.h>
-virtual class PendulumFactor1 : gtsam::NonlinearFactor {
+virtual class PendulumFactor1 : gtsam::NoiseModelFactor {
   /** Standard constructor */
   PendulumFactor1(gtsam::Key k1, gtsam::Key k, gtsam::Key velKey, double dt);
 
@@ -357,21 +357,21 @@ virtual class PendulumFactor1 : gtsam::NonlinearFactor {
 };
 
 #include <gtsam_unstable/dynamics/Pendulum.h>
-virtual class PendulumFactor2 : gtsam::NonlinearFactor {
+virtual class PendulumFactor2 : gtsam::NoiseModelFactor {
   /** Standard constructor */
   PendulumFactor2(gtsam::Key vk1, gtsam::Key vk, gtsam::Key qKey, double dt, double L, double g);
 
   gtsam::Vector evaluateError(const double& vk1, const double& vk, const double& q) const;
 };
 
-virtual class PendulumFactorPk : gtsam::NonlinearFactor {
+virtual class PendulumFactorPk : gtsam::NoiseModelFactor {
   /** Standard constructor */
   PendulumFactorPk(gtsam::Key pk, gtsam::Key qk, gtsam::Key qk1, double h, double m, double r, double g, double alpha);
 
   gtsam::Vector evaluateError(const double& pk, const double& qk, const double& qk1) const;
 };
 
-virtual class PendulumFactorPk1 : gtsam::NonlinearFactor {
+virtual class PendulumFactorPk1 : gtsam::NoiseModelFactor {
   /** Standard constructor */
   PendulumFactorPk1(gtsam::Key pk1, gtsam::Key qk, gtsam::Key qk1, double h, double m, double r, double g, double alpha);
 
