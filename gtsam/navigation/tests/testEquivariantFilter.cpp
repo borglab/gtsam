@@ -26,7 +26,6 @@
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/navigation/EquivariantFilter.h>
-#include <gtsam/navigation/ManifoldEKF.h>
 
 #include <random>
 
@@ -441,19 +440,13 @@ TEST(EquivariantFilter_Attitude, Update) {
   const G Q_before = filter.groupEstimate();
   const Matrix2 P_before = filter.errorCovariance();
 
-  // 3. Setup Measurement. The filter consumes the output matrix in error
-  // coordinates, so convert the Jacobian taken at the current state.
+  // 3. Setup Measurement
   const Vector3 z = c_m * eta_ref.point3();
   const Matrix3 R_meas = 0.01 * I_3x3;
   MeasurementFunctor h(c_m);
 
-  const M eta_hat = phi_ref(Q_before);
-  Matrix32 H;
-  const Vector3 z_hat = h(eta_hat, H);
-  const Matrix32 Cstar = filter.outputMatrix(H);
-
   // 4. Run Filter Update
-  filter.update<Vector3>(z_hat, Cstar, z, R_meas);
+  filter.update(h, z, R_meas);
 
   const G Q_after = filter.groupEstimate();
   const Matrix2 P_after = filter.errorCovariance();
@@ -466,9 +459,14 @@ TEST(EquivariantFilter_Attitude, Update) {
   Matrix32 InnovationLift =
       Dphi0.completeOrthogonalDecomposition().pseudoInverse();
 
+  // Re-calculate Measurement Matrix H
+  const M eta_hat = phi_ref(Q_before);
+  Matrix H;
+  const Vector3 z_hat = h(eta_hat, H);
+
   // Calculate Gain K
-  Matrix S = Cstar * P_before * Cstar.transpose() + R_meas;
-  Matrix K = P_before * Cstar.transpose() * S.inverse();
+  Matrix S = H * P_before * H.transpose() + R_meas;
+  Matrix K = P_before * H.transpose() * S.inverse();
 
   // Calculate Innovation
   const Vector3 innovation = z_hat - z;
@@ -481,7 +479,7 @@ TEST(EquivariantFilter_Attitude, Update) {
   const G X_expected = Rot3::Expmap(delta_x) * Q_before;
 
   // Update Covariance: Joseph Form
-  Matrix2 I_KC = Matrix2::Identity() - K * Cstar;
+  Matrix2 I_KC = Matrix2::Identity() - K * H;
   Matrix2 P_expected =
       I_KC * P_before * I_KC.transpose() + K * R_meas * K.transpose();
 
@@ -492,69 +490,6 @@ TEST(EquivariantFilter_Attitude, Update) {
   const Unit3 state_expected(Q_after.unrotate(eta_ref.point3()));
   EXPECT(assert_equal(state_expected, filter.state(), 1e-9));
 }
-
-/* ************************************************************************* */
-namespace output_matrix {
-using namespace attitude_example;
-
-const Matrix2 kSigma0{{4e-4, 1.5e-4},  //
-                      {1.5e-4, 1e-4}};
-const Matrix3 kR = 0.01 * I_3x3;
-const MeasurementFunctor kMeasurement(c_m);
-
-/// Measurement as a function of the error coordinates at the reference state,
-/// h(φ_g(Retract(η_ref, ε))). Its derivative at ε = 0 is the output matrix C*.
-Vector3 measurementAtError(const G& g, const Vector2& epsilon) {
-  const typename Symmetry::Diffeomorphism phi_g(g);
-  return kMeasurement(phi_g(traits<M>::Retract(eta_ref, epsilon)));
-}
-
-// outputMatrix() turns a Jacobian taken at the current state into the
-// derivative of the measurement with respect to the error coordinates.
-TEST(EquivariantFilter_Attitude, OutputMatrixIsErrorJacobian) {
-  EquivariantFilter<M, Symmetry> filter(eta_ref, kSigma0, Q1);
-
-  const Matrix32 expected = numericalDerivative11<Vector3, Vector2>(
-      [](const Vector2& epsilon) { return measurementAtError(Q1, epsilon); },
-      Vector2::Zero());
-
-  Matrix32 H;
-  kMeasurement(filter.state(), H);
-
-  // The conversion is not a no-op away from the identity group element.
-  EXPECT((expected - H).norm() > 1e-5);
-
-  EXPECT(assert_equal(expected, filter.outputMatrix(H), 1e-7));
-}
-
-// Fed a correct C*, the update must agree with an ordinary EKF that works
-// entirely in the tangent space at the current state: the two differ only by
-// the congruence J, so a wrong output-matrix frame breaks the agreement.
-TEST(EquivariantFilter_Attitude, UpdateMatchesStateFrameEKF) {
-  EquivariantFilter<M, Symmetry> filter(eta_ref, kSigma0, Q1);
-
-  // Differential of the group action before the update moves the estimate.
-  const Matrix2 J = filter.actionDifferential();
-  const M eta_hat = filter.state();
-
-  Matrix32 H;
-  const Vector3 prediction = kMeasurement(eta_hat, H);
-  const Vector3 z = prediction + Vector3(0.03, -0.02, 0.01);
-
-  // Reference solution: prior pushed forward, plain EKF update at the state.
-  ManifoldEKF<M> ekf(eta_hat, J * kSigma0 * J.transpose());
-  ekf.update<Vector3>(prediction, H, z, kR, /*performReset=*/false);
-
-  filter.update<Vector3>(prediction, filter.outputMatrix(H), z, kR);
-
-  EXPECT(assert_equal(ekf.state(), filter.state(), 1e-9));
-  EXPECT(assert_equal(ekf.covariance(),
-                      Matrix2(J * filter.errorCovariance() * J.transpose()),
-                      1e-9));
-}
-
-}  // namespace output_matrix
-/* ************************************************************************* */
 
 //==============================================================================
 TEST(EquivariantFilter_Attitude, CheckMatrices) {

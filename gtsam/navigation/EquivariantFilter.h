@@ -30,12 +30,11 @@ namespace gtsam {
  * 2. **Explicit**: You provide the Jacobian A and the manifold covariance Qc
  *    directly.
  *
- * All matrices the filter stores or receives live in **error coordinates**, the
- * tangent space at the reference state xi_ref: the covariance P, the error
- * dynamics matrix A, the process noise Qc and the output matrix C* passed to
- * update(). Quantities expressed at the current state estimate, such as the
- * Jacobian of an ordinary measurement function, must be converted first; see
- * actionDifferential(), outputMatrix() and covariance().
+ * The filter propagates its error in **error coordinates**, the tangent space at
+ * the reference state xi_ref: the covariance P, the error dynamics matrix A and
+ * the process noise Qc all live there. Use covariance() to obtain the covariance
+ * in the tangent space at the current state estimate, and actionDifferential()
+ * for the map between the two frames.
  *
  * @tparam M Manifold type for the physical state.
  * @tparam Symmetry Functor encoding the group action on the state.
@@ -132,9 +131,8 @@ class EquivariantFilter : public ManifoldEKF<M> {
    *
    * J = D phi_g|_{xi_ref} maps error coordinates, which live in the tangent
    * space at the reference state, to tangent vectors at the current state
-   * estimate. Every quantity the filter stores or consumes (P_, A, Qc and the
-   * output matrix C*) is expressed in error coordinates, so J is the bridge to
-   * anything expressed at the current state.
+   * estimate. The filter propagates its error in the former frame, so J is the
+   * bridge to anything expressed at the current state.
    */
   MatrixM actionDifferential() const {
     MatrixM J;
@@ -158,22 +156,6 @@ class EquivariantFilter : public ManifoldEKF<M> {
   CovarianceM covariance() const {
     const MatrixM J = actionDifferential();
     return J * this->P_ * J.transpose();
-  }
-
-  /**
-   * @brief Convert a measurement Jacobian at the current state into the EqF
-   * output matrix C* that update() expects.
-   *
-   * A measurement function h differentiated at the current state estimate lives
-   * in the wrong frame for this filter. Composing it with the differential of
-   * the group action gives the output matrix in error coordinates,
-   * C* = D h|_{xi_hat} * J. Filters that build C* directly, for example from an
-   * equivariant output map, already work in error coordinates and must pass
-   * their matrix to update() unchanged.
-   */
-  template <typename HMatrix>
-  auto outputMatrix(const HMatrix& H) const {
-    return (H * actionDifferential()).eval();
   }
 
   /// @return Current group estimate.
@@ -294,29 +276,20 @@ class EquivariantFilter : public ManifoldEKF<M> {
 
   /**
    * Measurement update: Corrects the state and covariance using a
-   * pre-calculated predicted measurement and the EqF output matrix.
+   * pre-calculated predicted measurement and its Jacobian.
    *
    * Overwrites ManifoldEKF::update to modify g_ as well.
    *
-   * `Cstar` must be expressed in **error coordinates at the reference state**,
-   * not at the current state estimate: it is the derivative of the innovation
-   * with respect to the error epsilon, evaluated at epsilon = 0. This matches
-   * P_, which the filter also keeps in error coordinates, and the innovation
-   * lift, which maps error coordinates to the Lie algebra. An equivariant
-   * output map yields such a C* directly, and it is then typically constant.
-   * A measurement function differentiated at the current state must be passed
-   * through outputMatrix() first.
-   *
    * @tparam Measurement type of the measurement space.
    * @param prediction Predicted measurement.
-   * @param Cstar EqF output matrix in error coordinates at the reference state.
+   * @param H Jacobian of the measurement function h.
    * @param z Observed measurement.
-   * @param R Measurement noise covariance, in the same output frame as Cstar.
+   * @param R Measurement noise covariance.
    */
   template <typename Measurement>
   void update(
       const Measurement& prediction,
-      const Eigen::Matrix<double, traits<Measurement>::dimension, DimM>& Cstar,
+      const Eigen::Matrix<double, traits<Measurement>::dimension, DimM>& H,
       const Measurement& z,
       const Eigen::Matrix<double, traits<Measurement>::dimension,
                           traits<Measurement>::dimension>& R) {
@@ -327,9 +300,9 @@ class EquivariantFilter : public ManifoldEKF<M> {
     typename traits<Measurement>::TangentVector innovation =
         traits<Measurement>::Local(z, prediction);
 
-    // Kalman Gain: K = P C*^T S^-1
+    // Kalman Gain: K = P H^T S^-1
     // K will be Eigen::Matrix<double, Dim, MeasDim>
-    Eigen::Matrix<double, DimM, MeasDim> K = this->KalmanGain(Cstar, R);
+    Eigen::Matrix<double, DimM, MeasDim> K = this->KalmanGain(H, R);
 
     // Correction in Manifold tangent space
     // K matches dimensions with innovation, so result is TangentM
@@ -341,18 +314,10 @@ class EquivariantFilter : public ManifoldEKF<M> {
     this->X_ = act_on_ref_(g_);
 
     // Update covariance on Manifold using Joseph form
-    this->JosephUpdate(K, Cstar, R);
+    this->JosephUpdate(K, H, R);
   }
 
-  /**
-   * Same API as ManifoldEKF for measurement update with model function.
-   *
-   * The Jacobian that `h` writes is consumed as the output matrix C*, so `h`
-   * must differentiate its innovation with respect to the error coordinates at
-   * the reference state. Wrap an ordinary measurement function with
-   * outputMatrix() instead of calling this overload with a Jacobian taken at
-   * the current state estimate.
-   */
+  /// Same API as ManifoldEKF for measurement update with model function.
   template <typename Z, typename Func>
   void update(Func&& h, const Z& z,
               const Eigen::Matrix<double, traits<Z>::dimension,
@@ -360,35 +325,33 @@ class EquivariantFilter : public ManifoldEKF<M> {
     static_assert(IsManifold<Z>::value,
                   "Template parameter Z must be a GTSAM Manifold.");
 
-    Matrix Cstar(traits<Z>::GetDimension(z), this->n_);
-    Z prediction = h(this->X_, Cstar);
-    update<Z>(prediction, Cstar, z, R);
+    Matrix H(traits<Z>::GetDimension(z), this->n_);
+    Z prediction = h(this->X_, H);
+    update<Z>(prediction, H, z, R);
   }
 
-  /// Same API as ManifoldEKF for measurement update with vector inputs, with
-  /// Cstar in error coordinates at the reference state.
-  void updateWithVector(const gtsam::Vector& prediction, const Matrix& Cstar,
+  /// Same API as ManifoldEKF for measurement update with vector inputs.
+  void updateWithVector(const gtsam::Vector& prediction, const Matrix& H,
                         const gtsam::Vector& z, const Matrix& R) {
-    this->validateInputs(prediction, Cstar, z, R);
-    update<Vector>(prediction, Cstar, z, R);
+    this->validateInputs(prediction, H, z, R);
+    update<Vector>(prediction, H, z, R);
   }
 
-  /// Vector measurement update using a custom innovation lift delta_x=f(delta_xi),
-  /// with Cstar in error coordinates at the reference state.
+  /// Vector measurement update using a custom innovation lift delta_x=f(delta_xi).
   template <typename InnovationLiftFn>
-  void updateWithVector(const gtsam::Vector& prediction, const Matrix& Cstar,
+  void updateWithVector(const gtsam::Vector& prediction, const Matrix& H,
                         const gtsam::Vector& z, const Matrix& R,
                         InnovationLiftFn&& innovationLift) {
-    this->validateInputs(prediction, Cstar, z, R);
+    this->validateInputs(prediction, H, z, R);
 
     const gtsam::Vector innovation = traits<Vector>::Local(z, prediction);
-    const Matrix K = this->KalmanGain(Cstar, R);
+    const Matrix K = this->KalmanGain(H, R);
     const TangentM delta_xi = -K * innovation;
     const TangentG delta_x = innovationLift(delta_xi);
 
     g_ = traits<G>::Compose(traits<G>::Expmap(delta_x), g_);
     this->X_ = act_on_ref_(g_);
-    this->JosephUpdate(K, Cstar, R);
+    this->JosephUpdate(K, H, R);
   }
 };
 
