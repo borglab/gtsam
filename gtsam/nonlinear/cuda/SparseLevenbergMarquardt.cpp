@@ -154,17 +154,6 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
     totalWallTimingActive = false;
   }
 
-  void refreshCompatibilityTimingAggregates() {
-    SparseLevenbergMarquardtStageTimings& timings = optimizationResult.timings;
-    timings.upload = timings.numericH2d;
-    timings.normalEquations = timings.normalJtJ + timings.normalJtb +
-                              timings.diagonalExtraction +
-                              timings.oldModelError;
-    timings.damping = timings.dampingPreparation + timings.dampingApplication;
-    timings.modelError = timings.oldModelError + timings.newModelError;
-    timings.deltaDownload = timings.attemptD2h + timings.pcgD2h;
-  }
-
   void snapshotDeviceProfile() {
     SparseLevenbergMarquardtSystemSize& size = optimizationResult.systemSize;
     size.factors = graph->size();
@@ -174,7 +163,6 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
       size.jacobianNonzeros = static_cast<size_t>(plan->nonzeros());
     }
     if (!device) {
-      refreshCompatibilityTimingAggregates();
       return;
     }
 
@@ -183,8 +171,7 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
             ? static_cast<size_t>(device->system().nonzeros())
             : 0;
     const DeviceSparseJacobianProfile& deviceProfile = device->profile();
-    optimizationResult.linearSolveStats =
-        linearSession ? linearSession->stats() : device->linearSolveStats();
+    optimizationResult.linearSolveStats = linearSession->stats();
     SparseLevenbergMarquardtTransferCounts& transfers = optimizationResult.transfers;
     transfers.patternH2dBytes = deviceProfile.patternH2dBytes;
     transfers.numericH2dBytes = deviceProfile.numericH2dBytes;
@@ -205,12 +192,19 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
     timings.oldModelError = deviceProfile.oldModelError;
     timings.dampingPreparation = deviceProfile.dampingPreparation;
     timings.dampingApplication = deviceProfile.dampingApplication;
-    timings.cudssAnalysis = deviceProfile.cudssAnalysis;
-    timings.cudssFactorAndSolve = deviceProfile.cudssFactorAndSolve;
-    timings.cudssDataInfoBoundaryWall = deviceProfile.cudssDataInfoBoundaryWall;
     timings.pcgPreconditionerBuild = deviceProfile.pcgPreconditionerBuild;
-    if (optimizationResult.linearSolveStats.backend ==
-        LinearSolverType::Pcg) {
+    if (parameters.collectTiming &&
+        optimizationResult.linearSolveStats.backend ==
+            LinearSolverType::Cudss) {
+      timings.cudssAnalysis =
+          optimizationResult.linearSolveStats.analysisSeconds;
+      timings.cudssFactorAndSolve =
+          optimizationResult.linearSolveStats.factorizationSeconds +
+          optimizationResult.linearSolveStats.solveSeconds;
+      timings.cudssDataInfoBoundaryWall =
+          optimizationResult.linearSolveStats.dataInfoBoundarySeconds;
+    } else if (optimizationResult.linearSolveStats.backend ==
+               LinearSolverType::Pcg) {
       timings.pcgSolve = optimizationResult.linearSolveStats.solveSeconds;
       timings.pcgD2h = optimizationResult.linearSolveStats.pcgD2hSeconds;
       optimizationResult.pcgIterationsTotal =
@@ -219,18 +213,10 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
           optimizationResult.linearSolveStats.solveCount;
       optimizationResult.pcgMaxIterationHits =
           optimizationResult.linearSolveStats.pcgMaxIterationHits;
-    } else {
-      timings.pcgSolve = deviceProfile.pcgSolve;
-      optimizationResult.pcgIterationsTotal =
-          deviceProfile.pcgIterationsTotal;
-      optimizationResult.pcgSolves = deviceProfile.pcgSolveCount;
-      optimizationResult.pcgMaxIterationHits =
-          deviceProfile.pcgMaxIterationHits;
     }
     timings.newModelError = deviceProfile.newModelError;
     timings.attemptD2h = deviceProfile.attemptD2h;
     timings.attemptHostBuild = deviceProfile.attemptHostBuild;
-    refreshCompatibilityTimingAggregates();
   }
 
   void clearDeviceState() {
@@ -251,8 +237,7 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
     optimizationResult.finalError = currentError;
     optimizationResult.finalLambda = state.lambda;
     optimizationResult.cudssAnalyses =
-        linearSession ? linearSession->stats().analysisCount
-                      : (device ? device->analysisCount() : 0);
+        linearSession ? linearSession->stats().analysisCount : 0;
   }
 
   const Values& finish(SparseLevenbergMarquardtTerminationReason reason,
@@ -348,7 +333,7 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
                             "cuDSS support is not compiled", state);
     }
 #endif
-    const DeviceSparseNormalEquationCapability capability =
+    const DeviceSparseJacobianCapability capability =
         DeviceSparseJacobianNormalEquations::preflightCapability(deviceBackend);
     if (!capability.supported) {
       return runCpuFallback(SparseLevenbergMarquardtFallbackReason::ToolkitUnsupported,

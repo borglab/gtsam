@@ -3,9 +3,8 @@
 #include <cuda_runtime_api.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/dllexport.h>
-#include <gtsam/linear/cuda/LinearSolver.h>
+#include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
 #include <gtsam/nonlinear/cuda/DevicePcgSolver.h>
-#include <gtsam/nonlinear/cuda/DeviceSparseNormalEquations.h>
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
 
@@ -16,11 +15,13 @@
 
 namespace gtsam::cuda {
 
-struct DeviceSparseNormalEquationCapability {
+/** Runtime availability of the requested persistent sparse-Jacobian path. */
+struct DeviceSparseJacobianCapability {
   bool supported = false;
   std::string detail;
 };
 
+/** Numerical representation produced for the shared solver session. */
 enum class DeviceNormalSolverBackend { Cudss, Pcg };
 
 /**
@@ -37,6 +38,7 @@ struct DeviceNormalSolverOptions {
   std::vector<int> scalarPermutation;
 };
 
+/** Old and trial linearized-model errors for one LM attempt. */
 struct LinearizedModelErrors {
   double oldError = 0.0;
   double newError = 0.0;
@@ -44,6 +46,7 @@ struct LinearizedModelErrors {
   double change() const { return oldError - newError; }
 };
 
+/** Host-owned result downloaded after evaluating a solved device delta. */
 struct DeviceSparseJacobianAttemptResult {
   Vector delta;
   LinearizedModelErrors model;
@@ -54,13 +57,11 @@ struct DeviceSparseJacobianAttemptResult {
 /**
  * Cumulative device-stage profile for one persistent sparse-Jacobian system.
  *
- * CUDA durations are measured with events on the fixed stream. The cuDSS
- * DATA_INFO field is host wall time for the mandatory status boundary and
- * overlaps the factor-and-solve stage, so timing fields are not intended to
- * be summed into an exclusive total. Pending iteration/attempt event spans
- * are harvested by downloadAttemptResult() after its existing stream
- * synchronization. Transfer counters report logical bytes even when timing
- * collection is disabled.
+ * CUDA durations are measured with events on the fixed stream. Pending
+ * iteration/attempt event spans are harvested by downloadAttemptResult()
+ * after its existing stream synchronization. Solver lifecycle timing belongs
+ * to LinearSolverSession. Transfer counters report logical bytes even when
+ * timing collection is disabled.
  */
 struct DeviceSparseJacobianProfile {
   // One-time setup.
@@ -68,10 +69,6 @@ struct DeviceSparseJacobianProfile {
   double patternH2d = 0.0;
   double structureSetup = 0.0;
   double setupD2h = 0.0;
-  // Structural analysis is cached, so this records only the effective first
-  // cuDSS analysis rather than every analyze() call.
-  double cudssAnalysis = 0.0;
-
   // Per outer linearization.
   double numericH2d = 0.0;
   double transposeUpdate = 0.0;
@@ -83,19 +80,12 @@ struct DeviceSparseJacobianProfile {
 
   // Per lambda attempt.
   double dampingApplication = 0.0;
-  double cudssFactorAndSolve = 0.0;
-  double cudssDataInfoBoundaryWall = 0.0;
   double newModelError = 0.0;
   double attemptD2h = 0.0;
   double attemptHostBuild = 0.0;
 
-  // PCG backend only; zero in cuDSS mode. Wall times measured on the host
-  // around the internally synchronizing solve.
+  // PCG producer setup only; solve timing belongs to LinearSolverSession.
   double pcgPreconditionerBuild = 0.0;
-  double pcgSolve = 0.0;
-  size_t pcgIterationsTotal = 0;
-  size_t pcgSolveCount = 0;
-  size_t pcgMaxIterationHits = 0;
 
   size_t patternH2dBytes = 0;
   size_t numericH2dBytes = 0;
@@ -106,6 +96,13 @@ struct DeviceSparseJacobianProfile {
   size_t totalD2hBytes() const { return setupD2hBytes + attemptD2hBytes; }
 };
 
+/**
+ * Persistent producer for sparse-Jacobian normal-equation solves.
+ *
+ * This object owns matrix storage and CUDA descriptors but not the numerical
+ * solver lifecycle. A `LinearSolverSession` must analyze and solve the
+ * representation exposed by this producer.
+ */
 class GTSAM_EXPORT DeviceSparseJacobianNormalEquations {
  public:
   DeviceSparseJacobianNormalEquations();
@@ -120,53 +117,68 @@ class GTSAM_EXPORT DeviceSparseJacobianNormalEquations {
   DeviceSparseJacobianNormalEquations& operator=(
       DeviceSparseJacobianNormalEquations&&) noexcept;
 
-  static DeviceSparseNormalEquationCapability preflightCapability();
-  static DeviceSparseNormalEquationCapability preflightCapability(
+  /** Check availability of the default cuDSS representation. */
+  static DeviceSparseJacobianCapability preflightCapability();
+  /** Check runtime/toolkit availability of a requested representation. */
+  static DeviceSparseJacobianCapability preflightCapability(
       DeviceNormalSolverBackend backend);
 
-  // The borrowed fixed stream must outlive this object; destruction waits for
-  // it before releasing descriptors, workspaces, and device allocations.
+  /**
+   * Allocate persistent storage for a fixed sparse plan.
+   *
+   * The borrowed stream must outlive this object; destruction waits for it
+   * before releasing descriptors, workspaces, and device allocations.
+   */
   void initialize(const SparseJacobianPlan& plan, cudaStream_t stream = nullptr,
                   bool collectProfile = false,
                   const DeviceNormalSolverOptions& solverOptions = {});
-  // This upload is asynchronous. The pinned host storage must remain alive
-  // and unmodified until the fixed stream reaches the queued copies.
+  /**
+   * Asynchronously upload refreshed numerical values.
+   *
+   * The pinned host storage must remain alive and unmodified until the fixed
+   * stream reaches the queued copies.
+   */
   void uploadNumerics(const HostSparseJacobian& host,
                       cudaStream_t stream = nullptr);
+  /** Form the undamped direct-solver system or PCG preconditioner. */
   void formUndampedSystem(cudaStream_t stream = nullptr);
 
   // Every stream-taking operation after initialize() must receive the fixed
   // stream. Consumers of system() must use that stream, or establish ordering
   // with an event, before reading or modifying its storage.
-  // formUndampedSystem(), prepareDamping(), analyze(), and solveAndEvaluate()
-  // are asynchronous except for cuDSS's required numerical-factorization
-  // status boundary.
+  // Producer operations are asynchronous.
   // downloadAttemptResult() performs the one synchronization needed to return
   // host-owned values.
   void prepareDamping(bool diagonalDamping, double minDiagonal,
                       double maxDiagonal, cudaStream_t stream = nullptr);
-  void analyze(cudaStream_t stream = nullptr);
-  void solveAndEvaluate(double lambda, cudaStream_t stream = nullptr);
+  /** Apply one lambda to a materialized direct-solver system. */
   void applyExplicitDamping(double lambda, cudaStream_t stream = nullptr);
+  /** Prepare the matrix-free operator and preconditioner for one lambda. */
   void prepareOperatorSystem(double lambda,
                              cudaStream_t stream = nullptr);
+  /** Return the prepared matrix-free operator. */
   const LinearOperator& linearOperator() const;
+  /** Return the prepared matrix-free preconditioner. */
   const Preconditioner& preconditioner() const;
+  /** Return the device right-hand side for the current linearization. */
   const double* deviceRhs() const;
+  /** Evaluate the linearized trial error for the current device delta. */
   void evaluateSolvedDelta(cudaStream_t stream = nullptr);
-  size_t analysisCount() const;
+  /** Synchronize and download the delta and linearized-model errors. */
   DeviceSparseJacobianAttemptResult downloadAttemptResult(
       cudaStream_t stream = nullptr) const;
 
+  /** Return cumulative producer timings and logical transfer counts. */
   const DeviceSparseJacobianProfile& profile() const;
-  const LinearSolveStats& linearSolveStats() const;
-  const std::vector<int>& appliedScalarPermutation() const;
 
   // True only in cuDSS mode, where the normal matrix H is materialized;
   // system() throws std::logic_error otherwise.
   bool hasNormalMatrix() const;
-  DeviceSparseNormalEquations& mutableSystem();
-  const DeviceSparseNormalEquations& system() const;
+  /** Return the mutable materialized SPD system; throws in PCG mode. */
+  DeviceSparseSpdSystem& mutableSystem();
+  /** Return the materialized SPD system; throws in PCG mode. */
+  const DeviceSparseSpdSystem& system() const;
+  /** Return storage for the current solution vector. */
   DeviceArray<double>& deviceDelta();
 
  private:

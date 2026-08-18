@@ -18,7 +18,9 @@ enum class LinearSolverType { DenseCholesky, Cudss, Pcg };
 
 /** Backend selection and optional externally supplied ordering policy. */
 struct LinearSolverOptions {
+  /** Numerical backend used by the session. */
   LinearSolverType backend = LinearSolverType::Cudss;
+  /** Require a caller-supplied scalar permutation for supported backends. */
   bool useUserOrdering = false;
 };
 
@@ -44,6 +46,7 @@ struct LinearSolveStats {
   double solveSeconds = 0.0;
   double preconditionerSeconds = 0.0;
   double pcgD2hSeconds = 0.0;
+  double dataInfoBoundarySeconds = 0.0;
 };
 
 /**
@@ -55,6 +58,7 @@ struct LinearSolveStats {
  */
 class GTSAM_EXPORT LinearSolverSession {
  public:
+  /** Construct an uninitialized session for the selected backend. */
   explicit LinearSolverSession(const LinearSolverOptions& options);
   ~LinearSolverSession();
 
@@ -70,24 +74,31 @@ class GTSAM_EXPORT LinearSolverSession {
   static void validate(const LinearSolverOptions& options,
                        LinearSystemKind systemKind);
 
+  /** Analyze a dense SPD system of fixed dimension. */
   void analyze(int denseDimension, cudaStream_t stream = nullptr);
+  /** Analyze a sparse SPD pattern using backend-managed ordering. */
   void analyze(const DeviceSparseSpdSystem& system,
                DeviceArray<double>* solution,
                cudaStream_t stream = nullptr);
+  /** Analyze a sparse SPD pattern using a scalar permutation. */
   void analyze(const DeviceSparseSpdSystem& system,
                DeviceArray<double>* solution,
                const std::vector<int>& scalarPermutation,
                cudaStream_t stream = nullptr);
+  /** Initialize an iterative solve for a fixed operator dimension. */
   void analyze(int operatorDimension, const PcgOptions& pcgOptions,
                cudaStream_t stream = nullptr,
                bool collectProfile = false);
 
+  /** Factor and solve one analyzed dense SPD system. */
   void solve(DenseSpdSystemView system,
              DeviceArray<double>* solution,
              cudaStream_t stream = nullptr);
+  /** Factor and solve one analyzed sparse SPD system. */
   void solve(const DeviceSparseSpdSystem& system,
              DeviceArray<double>* solution,
              cudaStream_t stream = nullptr);
+  /** Solve one analyzed matrix-free system with PCG. */
   void solve(const LinearOperator& linearOperator,
              const Preconditioner& preconditioner, const double* rhs,
              DeviceArray<double>* solution,

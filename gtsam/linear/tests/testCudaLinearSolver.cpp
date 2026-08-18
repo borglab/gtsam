@@ -16,7 +16,8 @@ using gtsam::Ordering;
 using gtsam::symbol_shorthand::L;
 using gtsam::symbol_shorthand::X;
 
-namespace {
+/* ************************************************************************* */
+namespace linear_solver_fixture {
 
 class TwoByTwoOperator final : public LinearOperator {
  public:
@@ -45,8 +46,7 @@ class IdentityPreconditioner final : public Preconditioner {
   }
 };
 
-}  // namespace
-
+// Verifies PcgSolver::SolvesThroughGenericOperatorInterface.
 TEST(PcgSolver, SolvesThroughGenericOperatorInterface) {
   PcgOptions options;
   options.maxIterations = 2;
@@ -77,6 +77,7 @@ TEST(PcgSolver, SolvesThroughGenericOperatorInterface) {
   LONGS_EQUAL(0, solver.stats().pcgBreakdownCount);
 }
 
+// Verifies LinearSolverSession::InvalidatesPcgWarmStartWhenOperatorChanges.
 TEST(LinearSolverSession, InvalidatesPcgWarmStartWhenOperatorChanges) {
   LinearSolverOptions solverOptions;
   solverOptions.backend = LinearSolverType::Pcg;
@@ -100,6 +101,7 @@ TEST(LinearSolverSession, InvalidatesPcgWarmStartWhenOperatorChanges) {
   EXPECT(session.stats().lastPcgConverged);
 }
 
+// Verifies DeviceSparseSpdSystem::RestoresUndampedDiagonalBetweenAttempts.
 TEST(DeviceSparseSpdSystem, RestoresUndampedDiagonalBetweenAttempts) {
   DeviceSparseSpdSystem system;
   system.uploadPattern(3, {0, 2, 4, 5}, {0, 1, 1, 2, 2});
@@ -121,6 +123,7 @@ TEST(DeviceSparseSpdSystem, RestoresUndampedDiagonalBetweenAttempts) {
   EXPECT(view.triangle == SparseTriangle::Upper);
 }
 
+// Verifies DeviceSparseSpdSystem::RejectsMissingDiagonalOnCapture.
 TEST(DeviceSparseSpdSystem, RejectsMissingDiagonalOnCapture) {
   DeviceSparseSpdSystem system;
   system.uploadPattern(2, {0, 1, 2}, {1, 1});
@@ -128,6 +131,7 @@ TEST(DeviceSparseSpdSystem, RejectsMissingDiagonalOnCapture) {
   CHECK_EXCEPTION(system.captureUndampedDiagonal(), std::runtime_error);
 }
 
+// Verifies DenseCholeskySolver::SolvesTwoByTwoSpdSystem.
 TEST(DenseCholeskySolver, SolvesTwoByTwoSpdSystem) {
   DeviceArray<double> matrix;
   DeviceArray<double> rhs;
@@ -147,6 +151,7 @@ TEST(DenseCholeskySolver, SolvesTwoByTwoSpdSystem) {
 }
 
 #if GTSAM_ENABLE_CUDSS
+// Verifies CudssSpdSolver::AppliesRequestedPermutationWithoutChangingSolution.
 TEST(CudssSpdSolver, AppliesRequestedPermutationWithoutChangingSolution) {
   DeviceSparseSpdSystem automaticSystem;
   automaticSystem.uploadPattern(4, {0, 2, 4, 6, 7},
@@ -187,6 +192,7 @@ TEST(CudssSpdSolver, AppliesRequestedPermutationWithoutChangingSolution) {
   LONGS_EQUAL(1, orderedSolver.stats().solveCount);
 }
 
+// Verifies CudssSpdSolver::RejectsInvalidPermutation.
 TEST(CudssSpdSolver, RejectsInvalidPermutation) {
   DeviceSparseSpdSystem system;
   system.uploadPattern(2, {0, 2, 3}, {0, 1, 1});
@@ -205,6 +211,7 @@ TEST(CudssSpdSolver, RejectsInvalidPermutation) {
 }
 #endif
 
+// Verifies BlockOrdering::ExpandsKeysToScalars.
 TEST(BlockOrdering, ExpandsKeysToScalars) {
   const BlockLayout layout{{X(1), 0, 2},
                                {L(4), 2, 3},
@@ -214,6 +221,7 @@ TEST(BlockOrdering, ExpandsKeysToScalars) {
          compileScalarPermutation(layout, Ordering{L(4), X(1), X(7)}));
 }
 
+// Verifies BlockOrdering::RejectsInvalidOrderings.
 TEST(BlockOrdering, RejectsInvalidOrderings) {
   const BlockLayout layout{{X(1), 0, 2}, {X(2), 2, 2}};
   CHECK_EXCEPTION(compileScalarPermutation(layout, Ordering{X(1)}),
@@ -226,6 +234,7 @@ TEST(BlockOrdering, RejectsInvalidOrderings) {
       std::invalid_argument);
 }
 
+// Verifies BlockOrdering::RejectsInvalidLayouts.
 TEST(BlockOrdering, RejectsInvalidLayouts) {
   CHECK_EXCEPTION(compileScalarPermutation(
                       {{X(1), 0, 2}, {X(2), 3, 1}},
@@ -240,6 +249,7 @@ TEST(BlockOrdering, RejectsInvalidLayouts) {
                   std::invalid_argument);
 }
 
+// Verifies LinearSolver::CapabilityMatrix.
 TEST(LinearSolver, CapabilityMatrix) {
   EXPECT(LinearSolverSession::supports(
       LinearSolverType::DenseCholesky, LinearSystemKind::Dense));
@@ -256,6 +266,7 @@ TEST(LinearSolver, CapabilityMatrix) {
                                            LinearSystemKind::Sparse));
 }
 
+// Verifies LinearSolver::RejectsOrderingForNonCudssBackend.
 TEST(LinearSolver, RejectsOrderingForNonCudssBackend) {
   LinearSolverOptions options;
   options.backend = LinearSolverType::Pcg;
@@ -265,6 +276,7 @@ TEST(LinearSolver, RejectsOrderingForNonCudssBackend) {
                   std::invalid_argument);
 }
 
+// Verifies LinearSolver::RejectsRepresentationMismatch.
 TEST(LinearSolver, RejectsRepresentationMismatch) {
   LinearSolverOptions options;
   options.backend = LinearSolverType::DenseCholesky;
@@ -273,6 +285,7 @@ TEST(LinearSolver, RejectsRepresentationMismatch) {
                   std::invalid_argument);
 }
 
+// Verifies LinearSolverSession::DispatchesDensePreparedSystem.
 TEST(LinearSolverSession, DispatchesDensePreparedSystem) {
   LinearSolverOptions options;
   options.backend = LinearSolverType::DenseCholesky;
@@ -296,6 +309,7 @@ TEST(LinearSolverSession, DispatchesDensePreparedSystem) {
 }
 
 #if GTSAM_ENABLE_CUDSS
+// Verifies LinearSolverSession::DispatchesOrderedSparsePreparedSystem.
 TEST(LinearSolverSession, DispatchesOrderedSparsePreparedSystem) {
   DeviceSparseSpdSystem system;
   system.uploadPattern(2, {0, 2, 3}, {0, 1, 1});
@@ -317,6 +331,9 @@ TEST(LinearSolverSession, DispatchesOrderedSparsePreparedSystem) {
   LONGS_EQUAL(2, session.stats().solveCount);
 }
 #endif
+
+}  // namespace linear_solver_fixture
+/* ************************************************************************* */
 
 int main() {
   TestResult tr;

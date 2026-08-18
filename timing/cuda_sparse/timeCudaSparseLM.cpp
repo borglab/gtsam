@@ -107,9 +107,14 @@ struct RunOptions {
   std::string jsonPath = "cuda-sparse-lm-benchmark.json";
   std::string csvPath = "cuda-sparse-lm-benchmark.csv";
   std::string dataDirectory;
+#if GTSAM_ENABLE_CUDSS
   std::string gpuSolver = "cudss";
-  std::string ordering = "auto";
   std::string configuration = "cudss-auto";
+#else
+  std::string gpuSolver = "pcg";
+  std::string configuration = "pcg";
+#endif
+  std::string ordering = "auto";
   std::string outputFormat = "text";
   bool listConfigurations = false;
   bool dryRun = false;
@@ -1876,8 +1881,12 @@ int RunBenchmark(const RunOptions& options) {
   return 0;
 }
 
+#if GTSAM_ENABLE_CUDSS
 constexpr std::array<const char*, 3> kCudaConfigurations{
     "cudss-auto", "cudss-gtsam", "pcg"};
+#else
+constexpr std::array<const char*, 1> kCudaConfigurations{"pcg"};
+#endif
 
 void PrintConfigurations() {
   for (const char* configuration : kCudaConfigurations) {

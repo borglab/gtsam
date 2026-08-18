@@ -18,6 +18,7 @@ namespace gtsam::cuda {
 
 class SparseLevenbergMarquardtOptimizer;
 
+/** CUDA-specific controls layered on the standard LM parameter set. */
 class GTSAM_EXPORT SparseLevenbergMarquardtParams
     : public LevenbergMarquardtParams {
  public:
@@ -44,8 +45,10 @@ class GTSAM_EXPORT SparseLevenbergMarquardtParams
       DevicePcgPreconditioner::BlockJacobi;
 };
 
+/** Backend that produced the final optimization result. */
 enum class SparseLevenbergMarquardtBackend { Device, CpuFallback };
 
+/** Reason optimization stopped. */
 enum class SparseLevenbergMarquardtTerminationReason {
   None,
   ErrorThreshold,
@@ -55,6 +58,7 @@ enum class SparseLevenbergMarquardtTerminationReason {
   LambdaUpperBound,
 };
 
+/** Reason the CUDA path transferred control to the CPU optimizer. */
 enum class SparseLevenbergMarquardtFallbackReason {
   None,
   RuntimeUnavailable,
@@ -64,6 +68,7 @@ enum class SparseLevenbergMarquardtFallbackReason {
   DirectJacobianUnsupported,
 };
 
+/** Sparse system dimensions recorded after plan construction. */
 struct SparseLevenbergMarquardtSystemSize {
   size_t factors = 0;
   size_t jacobianRows = 0;
@@ -72,6 +77,7 @@ struct SparseLevenbergMarquardtSystemSize {
   size_t normalNonzeros = 0;
 };
 
+/** Logical host/device traffic accumulated by an optimization. */
 struct SparseLevenbergMarquardtTransferCounts {
   size_t patternH2dBytes = 0;
   size_t numericH2dBytes = 0;
@@ -93,9 +99,8 @@ struct SparseLevenbergMarquardtTransferCounts {
  * setup-D2H device stages overlap deviceInitializeWall; worker CPU sums
  * overlap factorLinearizationAndPackingWall; and the mandatory cuDSS
  * DATA_INFO host boundary overlaps cudssFactorAndSolve. PCG convergence D2H
- * timing overlaps pcgSolve. The compatibility
- * aggregate fields at the end are aliases assembled from detailed stages and
- * must not be added to those stages again.
+ * timing overlaps pcgSolve. Timing fields are therefore not an exclusive
+ * partition and must not be blindly summed.
  */
 struct SparseLevenbergMarquardtStageTimings {
   double totalWall = 0.0;
@@ -130,14 +135,9 @@ struct SparseLevenbergMarquardtStageTimings {
   double retract = 0.0;
   double nonlinearTrialError = 0.0;
 
-  // Compatibility aggregates retained for existing callers.
-  double upload = 0.0;
-  double normalEquations = 0.0;
-  double damping = 0.0;
-  double modelError = 0.0;
-  double deltaDownload = 0.0;
 };
 
+/** Diagnostics for one LM lambda attempt. */
 struct SparseLevenbergMarquardtAttemptRecord {
   size_t acceptedIterationsBeforeAttempt = 0;
   size_t attempt = 0;
@@ -148,6 +148,7 @@ struct SparseLevenbergMarquardtAttemptRecord {
   bool accepted = false;
 };
 
+/** Final values, diagnostics, and optional profile for one optimization. */
 struct SparseLevenbergMarquardtResult {
   // On CpuFallback, CUDA counters, system/transfer data, timings,
   // attemptTrace, and finalLambda describe the attempted CUDA prefix.
@@ -179,8 +180,15 @@ struct SparseLevenbergMarquardtResult {
   std::vector<SparseLevenbergMarquardtAttemptRecord> attemptTrace;
 };
 
+/**
+ * Batch Levenberg-Marquardt optimizer with a persistent CUDA sparse system.
+ *
+ * The graph topology is fixed at construction. `optimize()` may be called once
+ * and retains the final values and diagnostics for subsequent inspection.
+ */
 class GTSAM_EXPORT SparseLevenbergMarquardtOptimizer {
  public:
+  /** Construct the symbolic plan and validate the requested CUDA backend. */
   SparseLevenbergMarquardtOptimizer(
       const NonlinearFactorGraph& graph, const Values& initialValues,
       const SparseLevenbergMarquardtParams& params = {});
@@ -191,10 +199,15 @@ class GTSAM_EXPORT SparseLevenbergMarquardtOptimizer {
   SparseLevenbergMarquardtOptimizer& operator=(
       const SparseLevenbergMarquardtOptimizer&) = delete;
 
+  /** Run batch optimization and return the retained final values. */
   const Values& optimize();
+  /** Return the current values. */
   const Values& values() const;
+  /** Return the nonlinear error at the current values. */
   double error() const;
+  /** Return the immutable parameter set supplied at construction. */
   const SparseLevenbergMarquardtParams& params() const;
+  /** Return backend, termination, transfer, and timing diagnostics. */
   const SparseLevenbergMarquardtResult& result() const;
 
  private:

@@ -5,7 +5,6 @@
 #include <gtsam/linear/cuda/BlockOrdering.h>
 #include <gtsam/linear/cuda/LinearSolver.h>
 #include <gtsam/nonlinear/BatchFactor.h>
-#include <gtsam/nonlinear/internal/NonlinearOptimizerState.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/cuda/BalCsrStructure.h>
@@ -552,17 +551,17 @@ void SfmLevenbergMarquardtParams::setLinearSolver(
     linear.backend = gtsam::cuda::LinearSolverType::Cudss;
     return;
   }
-  if (normalized == "pcg-full-normal" || normalized == "full-normal-pcg") {
+  if (normalized == "pcg-full-normal") {
     formulation = SfmSystemFormulation::FullNormal;
     linear.backend = gtsam::cuda::LinearSolverType::Pcg;
     return;
   }
-  if (normalized == "cudss-schur" || normalized == "schur-cudss") {
+  if (normalized == "cudss-schur") {
     formulation = SfmSystemFormulation::Schur;
     linear.backend = gtsam::cuda::LinearSolverType::Cudss;
     return;
   }
-  if (normalized == "pcg-schur" || normalized == "schur-pcg") {
+  if (normalized == "pcg-schur") {
     formulation = SfmSystemFormulation::Schur;
     linear.backend = gtsam::cuda::LinearSolverType::Pcg;
     return;
@@ -582,7 +581,7 @@ void SfmLevenbergMarquardtParams::setFormulation(
   const std::string normalized = normalizeLinearSolverName(formulationName);
   if (normalized == "schur") {
     formulation = SfmSystemFormulation::Schur;
-  } else if (normalized == "full-normal" || normalized == "fullnormal") {
+  } else if (normalized == "full-normal") {
     formulation = SfmSystemFormulation::FullNormal;
   } else {
     throw std::invalid_argument("Unknown CUDA SFM formulation: " +
@@ -605,7 +604,7 @@ std::string SfmLevenbergMarquardtParams::getLinearSolverBackend() const {
 void SfmLevenbergMarquardtParams::setLinearSolverBackend(
     const std::string& solverName) {
   const std::string normalized = normalizeLinearSolverName(solverName);
-  if (normalized == "dense" || normalized == "dense-cholesky") {
+  if (normalized == "dense-cholesky") {
     linear.backend = gtsam::cuda::LinearSolverType::DenseCholesky;
   } else if (normalized == "cudss") {
     linear.backend = gtsam::cuda::LinearSolverType::Cudss;
@@ -735,11 +734,8 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
 SfmLevenbergMarquardtOptimizer::SfmLevenbergMarquardtOptimizer(
     const NonlinearFactorGraph& graph, const Values& initialValues,
     const SfmLevenbergMarquardtParams& params)
-    : NonlinearOptimizer(
-          graph, std::unique_ptr<gtsam::internal::NonlinearOptimizerState>(
-                     new gtsam::internal::NonlinearOptimizerState(
-                         initialValues,
-                         std::numeric_limits<double>::quiet_NaN()))),
+    : graph_(graph),
+      values_(initialValues),
       params_(params) {}
 
 const Values& SfmLevenbergMarquardtOptimizer::optimize() {
@@ -747,7 +743,7 @@ const Values& SfmLevenbergMarquardtOptimizer::optimize() {
   auto convertedDestructionStart = Clock::now();
   {
     const SfmFactorGraphData converted =
-        convertGeneralSfmGraph(graph(), values());
+        convertGeneralSfmGraph(graph_, values_);
     const double graphConversionElapsed = elapsedSince(stageStart);
 
     stageStart = Clock::now();
@@ -762,26 +758,18 @@ const Values& SfmLevenbergMarquardtOptimizer::optimize() {
     result_.graphConversionElapsed = graphConversionElapsed;
 
     stageStart = Clock::now();
-    Values merged(values());
+    Values merged(values_);
     for (Key key : result_.optimizedValues.keys()) {
       merged.update(key, result_.optimizedValues.at(key));
     }
-    state_ = std::unique_ptr<gtsam::internal::NonlinearOptimizerState>(
-        new gtsam::internal::NonlinearOptimizerState(
-            std::move(merged), result_.finalError, result_.iterations));
+    values_ = std::move(merged);
     result_.graphValueMergeElapsed = elapsedSince(stageStart);
 
     convertedDestructionStart = Clock::now();
   }
   result_.graphConvertedDataDestructionElapsed =
       elapsedSince(convertedDestructionStart);
-  return values();
-}
-
-GaussianFactorGraph::shared_ptr SfmLevenbergMarquardtOptimizer::iterate() {
-  throw std::runtime_error(
-      "SfmLevenbergMarquardtOptimizer::iterate is not implemented; use "
-      "optimize()");
+  return values_;
 }
 
 SfmLevenbergMarquardtResult optimizeSfm(

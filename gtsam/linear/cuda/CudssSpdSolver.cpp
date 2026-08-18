@@ -179,25 +179,25 @@ struct CudssMatrix {
 void validateSystemForSolve(const DeviceSparseSpdSystem& system,
                             const DeviceArray<double>* solution) {
   if (!solution) {
-    throw std::invalid_argument("CudssLinearSolver requires solution storage");
+    throw std::invalid_argument("CudssSpdSolver requires solution storage");
   }
   if (system.rows() <= 0) {
-    throw std::invalid_argument("CudssLinearSolver requires non-empty system");
+    throw std::invalid_argument("CudssSpdSolver requires non-empty system");
   }
   if (system.nonzeros() <= 0) {
-    throw std::invalid_argument("CudssLinearSolver requires non-empty matrix");
+    throw std::invalid_argument("CudssSpdSolver requires non-empty matrix");
   }
   if (system.rowPointers().size() != static_cast<size_t>(system.rows()) + 1) {
-    throw std::invalid_argument("CudssLinearSolver row pointer size mismatch");
+    throw std::invalid_argument("CudssSpdSolver row pointer size mismatch");
   }
   if (system.colIndices().size() != static_cast<size_t>(system.nonzeros())) {
-    throw std::invalid_argument("CudssLinearSolver column index size mismatch");
+    throw std::invalid_argument("CudssSpdSolver column index size mismatch");
   }
   if (system.values().size() != static_cast<size_t>(system.nonzeros())) {
-    throw std::invalid_argument("CudssLinearSolver value size mismatch");
+    throw std::invalid_argument("CudssSpdSolver value size mismatch");
   }
   if (system.rhs().size() != static_cast<size_t>(system.rows())) {
-    throw std::invalid_argument("CudssLinearSolver rhs size mismatch");
+    throw std::invalid_argument("CudssSpdSolver rhs size mismatch");
   }
 }
 
@@ -345,8 +345,7 @@ struct CudssSpdSolver::Impl {
   }
 
   void solve(const DeviceSparseSpdSystem& system,
-             DeviceArray<double>* solutionArray, cudaStream_t stream,
-             CudssSpdSolveProfile* profile) {
+             DeviceArray<double>* solutionArray, cudaStream_t stream) {
     validateSystemForSolve(system, solutionArray);
     if (!analyzed) {
       throw std::logic_error("CudssSpdSolver::solve called before analyze");
@@ -377,19 +376,14 @@ struct CudssSpdSolver::Impl {
 
     int info = 0;
     size_t bytesWritten = 0;
-    cudssStatus_t dataInfoStatus;
-    if (profile) {
-      const auto start = std::chrono::steady_clock::now();
-      dataInfoStatus = cudssDataGet(handle.value, data.value, CUDSS_DATA_INFO,
-                                    &info, sizeof(info), &bytesWritten);
-      profile->dataInfoBoundaryWall +=
-          std::chrono::duration<double>(std::chrono::steady_clock::now() -
-                                        start)
-              .count();
-    } else {
-      dataInfoStatus = cudssDataGet(handle.value, data.value, CUDSS_DATA_INFO,
-                                    &info, sizeof(info), &bytesWritten);
-    }
+    const auto dataInfoStart = std::chrono::steady_clock::now();
+    const cudssStatus_t dataInfoStatus =
+        cudssDataGet(handle.value, data.value, CUDSS_DATA_INFO, &info,
+                     sizeof(info), &bytesWritten);
+    stats.dataInfoBoundarySeconds +=
+        std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                      dataInfoStart)
+            .count();
     checkCudss(dataInfoStatus, "cudssDataGet(CUDSS_DATA_INFO)");
     if (bytesWritten != sizeof(info)) {
       throw std::runtime_error(
@@ -460,20 +454,13 @@ void CudssSpdSolver::analyze(
 void CudssSpdSolver::solve(const DeviceSparseSpdSystem& system,
                            DeviceArray<double>* solution,
                            cudaStream_t stream) {
-  solve(system, solution, stream, nullptr);
-}
-
-void CudssSpdSolver::solve(const DeviceSparseSpdSystem& system,
-                           DeviceArray<double>* solution,
-                           cudaStream_t stream, CudssSpdSolveProfile* profile) {
 #if !GTSAM_ENABLE_CUDSS
   (void)system;
   (void)solution;
   (void)stream;
-  (void)profile;
   throw std::runtime_error("CudssSpdSolver::solve requires cuDSS");
 #else
-  impl_->solve(system, solution, stream, profile);
+  impl_->solve(system, solution, stream);
 #endif
 }
 
@@ -486,21 +473,6 @@ const LinearSolveStats& CudssSpdSolver::stats() const {
 
 const std::vector<int>& CudssSpdSolver::appliedPermutation() const {
   return impl_->appliedPermutation;
-}
-
-void CudssLinearSolver::solveSpd(const DeviceSparseSpdSystem& system,
-                                 DeviceArray<double>* solution,
-                                 cudaStream_t stream) const {
-#if !GTSAM_ENABLE_CUDSS
-  (void)system;
-  (void)solution;
-  (void)stream;
-  throw std::runtime_error("CudssLinearSolver::solveSpd requires cuDSS");
-#else
-  CudssSpdSolver solver;
-  solver.analyze(system, solution, stream);
-  solver.solve(system, solution, stream);
-#endif
 }
 
 }  // namespace gtsam::cuda

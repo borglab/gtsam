@@ -848,7 +848,7 @@ double computeSfmLinearizedErrorChange(
 
 void accumulateSfmNormalEquations(
     const DeviceValues& values, const SfmProjectionBatch& batch,
-    int numCameras, DeviceSparseNormalEquations* system, cudaStream_t stream) {
+    int numCameras, DeviceSparseSpdSystem* system, cudaStream_t stream) {
   if (!system) {
     throw std::invalid_argument(
         "accumulateSfmNormalEquations requires output system");
@@ -950,7 +950,7 @@ void accumulateSfmNormalEquations(
 void accumulateSfmNormalEquations(
     const SfmProjectionLinearization& linearization,
     const SfmProjectionBatch& batch, int numCameras,
-    DeviceSparseNormalEquations* system, cudaStream_t stream) {
+    DeviceSparseSpdSystem* system, cudaStream_t stream) {
   if (!system || numCameras < 0) {
     throw std::invalid_argument(
         "linearized SFM normal equations require valid output/dimension");

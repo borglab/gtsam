@@ -6,16 +6,11 @@
 #include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
 
 #include <memory>
-#include <optional>
 #include <vector>
 
 namespace gtsam::cuda {
 
-/** Host wall time spent only in cuDSS's mandatory DATA_INFO boundary. */
-struct CudssSpdSolveProfile {
-  double dataInfoBoundaryWall = 0.0;
-};
-
+/** Reusable cuDSS analysis, factorization, and solve state for one CSR pattern. */
 class GTSAM_EXPORT CudssSpdSolver {
  public:
   CudssSpdSolver();
@@ -26,9 +21,11 @@ class GTSAM_EXPORT CudssSpdSolver {
   CudssSpdSolver(CudssSpdSolver&&) noexcept;
   CudssSpdSolver& operator=(CudssSpdSolver&&) noexcept;
 
+  /** Analyze an SPD CSR pattern using cuDSS automatic ordering. */
   void analyze(const DeviceSparseSpdSystem& system,
                DeviceArray<double>* solution,
                cudaStream_t stream = nullptr);
+  /** Analyze an SPD CSR pattern using a caller-supplied scalar permutation. */
   void analyze(const DeviceSparseSpdSystem& system,
                DeviceArray<double>* solution,
                const std::vector<int>& scalarPermutation,
@@ -41,23 +38,15 @@ class GTSAM_EXPORT CudssSpdSolver {
    */
   void solve(const DeviceSparseSpdSystem& system,
              DeviceArray<double>* solution, cudaStream_t stream = nullptr);
-  void solve(const DeviceSparseSpdSystem& system,
-             DeviceArray<double>* solution, cudaStream_t stream,
-             CudssSpdSolveProfile* profile);
 
+  /// Returns cumulative analysis, factorization, solve, and boundary timings.
   const LinearSolveStats& stats() const;
+  /// Returns the scalar permutation retained by cuDSS analysis.
   const std::vector<int>& appliedPermutation() const;
 
  private:
   struct Impl;
   std::unique_ptr<Impl> impl_;
-};
-
-class GTSAM_EXPORT CudssLinearSolver {
- public:
-  void solveSpd(const DeviceSparseSpdSystem& system,
-                DeviceArray<double>* solution,
-                cudaStream_t stream = nullptr) const;
 };
 
 }  // namespace gtsam::cuda

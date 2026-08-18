@@ -2,11 +2,12 @@
 #include <gtsam/base/cuda/Context.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/cuda/CudssSpdSolver.h>
+#include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
+#include <gtsam/linear/cuda/LinearSolver.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
-#include <gtsam/nonlinear/cuda/CudssLinearSolver.h>
 #include <gtsam/nonlinear/cuda/DeviceSparseJacobianNormalEquations.h>
-#include <gtsam/nonlinear/cuda/DeviceSparseNormalEquations.h>
 #include <gtsam/nonlinear/cuda/DeviceValues.h>
 #include <gtsam/nonlinear/cuda/DeviceVariableIndex.h>
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
@@ -22,7 +23,8 @@
 using namespace gtsam;
 using namespace gtsam::cuda;
 
-namespace {
+/* ************************************************************************* */
+namespace device_values_fixture {
 constexpr uint32_t kCameraType = 1;
 constexpr uint32_t kPointType = 2;
 constexpr uint32_t kTinyType = 77;
@@ -52,9 +54,6 @@ bool AllDeviceProfileTimingsAreFiniteNonnegative(
          IsFiniteNonnegative(profile.oldModelError) &&
          IsFiniteNonnegative(profile.dampingPreparation) &&
          IsFiniteNonnegative(profile.dampingApplication) &&
-         IsFiniteNonnegative(profile.cudssAnalysis) &&
-         IsFiniteNonnegative(profile.cudssFactorAndSolve) &&
-         IsFiniteNonnegative(profile.cudssDataInfoBoundaryWall) &&
          IsFiniteNonnegative(profile.newModelError) &&
          IsFiniteNonnegative(profile.attemptD2h) &&
          IsFiniteNonnegative(profile.attemptHostBuild);
@@ -68,9 +67,7 @@ bool AllDeviceProfileTimingsAreZero(
          profile.normalJtJ == 0.0 && profile.normalJtb == 0.0 &&
          profile.diagonalExtraction == 0.0 && profile.oldModelError == 0.0 &&
          profile.dampingPreparation == 0.0 &&
-         profile.dampingApplication == 0.0 && profile.cudssAnalysis == 0.0 &&
-         profile.cudssFactorAndSolve == 0.0 &&
-         profile.cudssDataInfoBoundaryWall == 0.0 &&
+         profile.dampingApplication == 0.0 &&
          profile.newModelError == 0.0 && profile.attemptD2h == 0.0 &&
          profile.attemptHostBuild == 0.0;
 }
@@ -112,12 +109,18 @@ ProfiledDeviceRun RunProfiledDevicePipeline(bool collectProfile) {
   device.uploadNumerics(host, context.stream());
   device.formUndampedSystem(context.stream());
   device.prepareDamping(false, 0.0, 0.0, context.stream());
-  device.analyze(context.stream());
-  device.analyze(context.stream());
+  LinearSolverSession session(
+      LinearSolverOptions{LinearSolverType::Cudss, false});
+  session.analyze(device.mutableSystem(), &device.deviceDelta(),
+                  context.stream());
 
-  device.solveAndEvaluate(0.1, context.stream());
+  device.applyExplicitDamping(0.1, context.stream());
+  session.solve(device.mutableSystem(), &device.deviceDelta(), context.stream());
+  device.evaluateSolvedDelta(context.stream());
   (void)device.downloadAttemptResult(context.stream());
-  device.solveAndEvaluate(1.0, context.stream());
+  device.applyExplicitDamping(1.0, context.stream());
+  session.solve(device.mutableSystem(), &device.deviceDelta(), context.stream());
+  device.evaluateSolvedDelta(context.stream());
   (void)device.downloadAttemptResult(context.stream());
 
   ProfiledDeviceRun run;
@@ -131,7 +134,7 @@ ProfiledDeviceRun RunProfiledDevicePipeline(bool collectProfile) {
       2 * sizeof(int) * static_cast<size_t>(hRows + 1 + hNonzeros);
   run.expectedAttemptD2hBytes =
       2 * sizeof(double) * static_cast<size_t>(plan.columns() + 2);
-  run.analysisCount = device.analysisCount();
+  run.analysisCount = session.stats().analysisCount;
   return run;
 }
 
@@ -146,8 +149,7 @@ bool ProfileBytesAreExact(const ProfiledDeviceRun& run) {
              run.expectedSetupD2hBytes + run.expectedAttemptD2hBytes;
 }
 #endif
-}  // namespace
-
+// Verifies DeviceVariableIndex::AddsAndFindsSlots.
 TEST(DeviceVariableIndex, AddsAndFindsSlots) {
   DeviceVariableIndex index;
   const Key cameraKey = Symbol('c', 3);
@@ -168,6 +170,7 @@ TEST(DeviceVariableIndex, AddsAndFindsSlots) {
   EXPECT_LONGS_EQUAL(3, point.tangentDim);
 }
 
+// Verifies DeviceVariableIndex::RejectsWrongType.
 TEST(DeviceVariableIndex, RejectsWrongType) {
   DeviceVariableIndex index;
   const Key cameraKey = Symbol('c', 1);
@@ -175,6 +178,7 @@ TEST(DeviceVariableIndex, RejectsWrongType) {
   CHECK_EXCEPTION(index.slot(cameraKey, kPointType), std::invalid_argument);
 }
 
+// Verifies DeviceVariableIndex::RejectsInvalidSlotMetadata.
 TEST(DeviceVariableIndex, RejectsInvalidSlotMetadata) {
   DeviceVariableIndex index;
   const Key cameraKey = Symbol('c', 1);
@@ -185,6 +189,7 @@ TEST(DeviceVariableIndex, RejectsInvalidSlotMetadata) {
   EXPECT_LONGS_EQUAL(0, index.size());
 }
 
+// Verifies DeviceValues::AddsAndDownloadsTypedBlock.
 TEST(DeviceValues, AddsAndDownloadsTypedBlock) {
   Context context;
   DeviceValues values;
@@ -210,6 +215,7 @@ TEST(DeviceValues, AddsAndDownloadsTypedBlock) {
   DOUBLES_EQUAL(4.0, actual[1].y, 1e-12);
 }
 
+// Verifies DeviceValues::AddsUninitializedTypedBlock.
 TEST(DeviceValues, AddsUninitializedTypedBlock) {
   DeviceValues values;
 
@@ -224,6 +230,7 @@ TEST(DeviceValues, AddsUninitializedTypedBlock) {
   EXPECT_LONGS_EQUAL(2, values.index().slot(Symbol('t', 2), kTinyType));
 }
 
+// Verifies DeviceValues::RejectsInvalidBlockMetadataBeforeUpload.
 TEST(DeviceValues, RejectsInvalidBlockMetadataBeforeUpload) {
   DeviceValues values;
 
@@ -240,9 +247,10 @@ TEST(DeviceValues, RejectsInvalidBlockMetadataBeforeUpload) {
   EXPECT_LONGS_EQUAL(0, values.index().size());
 }
 
-TEST(DeviceSparseNormalEquations, UploadsCsrPatternAndRhs) {
+// Verifies DeviceSparseSpdSystem::UploadsCsrPatternAndRhs.
+TEST(DeviceSparseSpdSystem, UploadsCsrPatternAndRhs) {
   Context context;
-  DeviceSparseNormalEquations system;
+  DeviceSparseSpdSystem system;
 
   std::vector<int> rowPointers = {0, 2, 3};
   std::vector<int> colIndices = {0, 1, 1};
@@ -255,9 +263,10 @@ TEST(DeviceSparseNormalEquations, UploadsCsrPatternAndRhs) {
   EXPECT_LONGS_EQUAL(2, system.rhs().size());
 }
 
-TEST(DeviceSparseNormalEquations, ClearsValuesAndRhs) {
+// Verifies DeviceSparseSpdSystem::ClearsValuesAndRhs.
+TEST(DeviceSparseSpdSystem, ClearsValuesAndRhs) {
   Context context;
-  DeviceSparseNormalEquations system;
+  DeviceSparseSpdSystem system;
   system.uploadPattern(2, std::vector<int>{0, 2, 3}, std::vector<int>{0, 1, 1},
                        context.stream());
   system.values().upload(std::vector<double>{1.0, 2.0, 3.0}, context.stream());
@@ -280,9 +289,10 @@ TEST(DeviceSparseNormalEquations, ClearsValuesAndRhs) {
   DOUBLES_EQUAL(0.0, rhs[1], 1e-12);
 }
 
-TEST(DeviceSparseNormalEquations, AddsDiagonalDamping) {
+// Verifies DeviceSparseSpdSystem::AddsDiagonalDamping.
+TEST(DeviceSparseSpdSystem, AddsDiagonalDamping) {
   Context context;
-  DeviceSparseNormalEquations system;
+  DeviceSparseSpdSystem system;
   system.uploadPattern(2, std::vector<int>{0, 2, 3}, std::vector<int>{0, 1, 1},
                        context.stream());
   system.values().upload(std::vector<double>{2.0, 0.5, 3.0}, context.stream());
@@ -298,9 +308,10 @@ TEST(DeviceSparseNormalEquations, AddsDiagonalDamping) {
   DOUBLES_EQUAL(3.25, values[2], 1e-12);
 }
 
-TEST(DeviceSparseNormalEquations, RejectsDampingWithoutDiagonal) {
+// Verifies DeviceSparseSpdSystem::RejectsDampingWithoutDiagonal.
+TEST(DeviceSparseSpdSystem, RejectsDampingWithoutDiagonal) {
   Context context;
-  DeviceSparseNormalEquations system;
+  DeviceSparseSpdSystem system;
   system.uploadPattern(2, std::vector<int>{0, 1, 2}, std::vector<int>{1, 1},
                        context.stream());
   system.values().upload(std::vector<double>{0.5, 3.0}, context.stream());
@@ -316,8 +327,9 @@ TEST(DeviceSparseNormalEquations, RejectsDampingWithoutDiagonal) {
   DOUBLES_EQUAL(3.0, values[1], 1e-12);
 }
 
-TEST(DeviceSparseNormalEquations, RejectsMalformedCsrBeforeUpload) {
-  DeviceSparseNormalEquations system;
+// Verifies DeviceSparseSpdSystem::RejectsMalformedCsrBeforeUpload.
+TEST(DeviceSparseSpdSystem, RejectsMalformedCsrBeforeUpload) {
+  DeviceSparseSpdSystem system;
 
   std::vector<int> badStart = {1, 2, 3};
   std::vector<int> badStartCols = {0, 1, 1};
@@ -336,32 +348,18 @@ TEST(DeviceSparseNormalEquations, RejectsMalformedCsrBeforeUpload) {
 }
 
 #if !GTSAM_ENABLE_CUDSS
-TEST(CudssLinearSolver, ThrowsWhenCudssDisabled) {
-  DeviceSparseNormalEquations system;
-  DeviceArray<double> solution;
-  CudssLinearSolver solver;
-
-  try {
-    solver.solveSpd(system, &solution);
-    CHECK(false);
-  } catch (const std::runtime_error& e) {
-    CHECK(std::string(e.what()).find("requires cuDSS") != std::string::npos);
-  }
-}
-
-TEST(CudssSpdSolver, ProfileArgumentIsSourceCompatibleWhenDisabled) {
-  DeviceSparseNormalEquations system;
+// Verifies CudssSpdSolver::ThrowsWhenCudssDisabled.
+TEST(CudssSpdSolver, ThrowsWhenCudssDisabled) {
+  DeviceSparseSpdSystem system;
   DeviceArray<double> solution;
   CudssSpdSolver solver;
-  CudssSpdSolveProfile profile;
 
-  CHECK_EXCEPTION(solver.solve(system, &solution, nullptr, &profile),
-                  std::runtime_error);
-  DOUBLES_EQUAL(0.0, profile.dataInfoBoundaryWall, 0.0);
+  CHECK_EXCEPTION(solver.solve(system, &solution), std::runtime_error);
 }
 #endif
 
 #if GTSAM_ENABLE_CUDSS
+// Verifies DeviceSparseJacobianProfile::AccountsExactBytesAndFiniteTimings.
 TEST(DeviceSparseJacobianProfile, AccountsExactBytesAndFiniteTimings) {
   const ProfiledDeviceRun run = RunProfiledDevicePipeline(true);
 
@@ -374,14 +372,13 @@ TEST(DeviceSparseJacobianProfile, AccountsExactBytesAndFiniteTimings) {
       run.profile.transposeUpdate + run.profile.normalJtJ +
       run.profile.normalJtb + run.profile.diagonalExtraction +
       run.profile.oldModelError + run.profile.dampingPreparation +
-      run.profile.dampingApplication + run.profile.cudssAnalysis +
-      run.profile.cudssFactorAndSolve + run.profile.newModelError +
+      run.profile.dampingApplication + run.profile.newModelError +
       run.profile.attemptD2h;
   CHECK(cudaEventTotal > 0.0);
-  CHECK(run.profile.cudssDataInfoBoundaryWall > 0.0);
   EXPECT_LONGS_EQUAL(1, run.analysisCount);
 }
 
+// Verifies DeviceSparseJacobianProfile::DisabledTimingStillAccountsExactBytes.
 TEST(DeviceSparseJacobianProfile, DisabledTimingStillAccountsExactBytes) {
   const ProfiledDeviceRun run = RunProfiledDevicePipeline(false);
 
@@ -390,29 +387,10 @@ TEST(DeviceSparseJacobianProfile, DisabledTimingStillAccountsExactBytes) {
   EXPECT_LONGS_EQUAL(1, run.analysisCount);
 }
 
-TEST(CudssLinearSolver, SolvesSmallSpdSystem) {
-  Context context;
-  DeviceSparseNormalEquations system;
-  system.uploadPattern(2, std::vector<int>{0, 2, 3}, std::vector<int>{0, 1, 1},
-                       context.stream());
-  system.values().upload(std::vector<double>{4.0, 1.0, 3.0}, context.stream());
-  system.rhs().upload(std::vector<double>{1.0, 2.0}, context.stream());
-
-  DeviceArray<double> solution;
-  CudssLinearSolver solver;
-  solver.solveSpd(system, &solution, context.stream());
-
-  std::vector<double> actual;
-  solution.download(&actual, context.stream());
-  context.synchronize();
-
-  DOUBLES_EQUAL(1.0 / 11.0, actual[0], 1e-10);
-  DOUBLES_EQUAL(7.0 / 11.0, actual[1], 1e-10);
-}
-
+// Verifies CudssSpdSolver::ReusesAnalysisForChangedValues.
 TEST(CudssSpdSolver, ReusesAnalysisForChangedValues) {
   Context context;
-  DeviceSparseNormalEquations system;
+  DeviceSparseSpdSystem system;
   system.uploadPattern(2, std::vector<int>{0, 2, 3}, std::vector<int>{0, 1, 1},
                        context.stream());
   system.values().upload(std::vector<double>{4.0, 1.0, 3.0}, context.stream());
@@ -439,9 +417,10 @@ TEST(CudssSpdSolver, ReusesAnalysisForChangedValues) {
   DOUBLES_EQUAL(-2.0 / 11.0, actual[1], 1e-10);
 }
 
+// Verifies CudssSpdSolver::SurfacesIndefiniteFactorizationInfo.
 TEST(CudssSpdSolver, SurfacesIndefiniteFactorizationInfo) {
   Context context;
-  DeviceSparseNormalEquations system;
+  DeviceSparseSpdSystem system;
   system.uploadPattern(2, std::vector<int>{0, 2, 3}, std::vector<int>{0, 1, 1},
                        context.stream());
   system.values().upload(std::vector<double>{1.0, 2.0, 1.0}, context.stream());
@@ -460,6 +439,9 @@ TEST(CudssSpdSolver, SurfacesIndefiniteFactorizationInfo) {
   }
 }
 #endif
+
+}  // namespace device_values_fixture
+/* ************************************************************************* */
 
 int main() {
   TestResult tr;

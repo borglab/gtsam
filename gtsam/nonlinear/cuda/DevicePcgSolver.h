@@ -20,36 +20,16 @@ struct DevicePcgOptions {
   DevicePcgPreconditioner preconditioner = DevicePcgPreconditioner::BlockJacobi;
 };
 
-struct DevicePcgSolveStats {
-  int iterations = 0;
-  double residualNormSquared = 0.0;
-  double gradientNormSquared = 0.0;
-  bool converged = false;
-  bool breakdown = false;
-};
-
-struct DevicePcgProfile {
-  double preconditionerBuild = 0.0;
-  double solve = 0.0;
-  size_t iterationsTotal = 0;
-  size_t solveCount = 0;
-  size_t maxIterationHits = 0;
-};
-
 /**
- * Matrix-free preconditioned conjugate gradient for the damped normal
- * equations (JᵀJ + lambda·D) x = g on a fixed borrowed stream.
+ * Produces the matrix-free normal operator and block preconditioner consumed
+ * by LinearSolverSession.
  *
  * The operator is applied as two cuSPARSE SpMVs (J·p, then Jᵀ·(J·p)) plus an
  * elementwise damping term; the normal matrix H is never formed. The
  * preconditioner is block-Jacobi over the variable blocks of the column
  * layout: the undamped Gram blocks diag_k(JᵀJ) are rebuilt once per
- * linearization from the Jᵀ CSR arrays, and each solve() damps, factors, and
- * explicitly inverts them per lambda.
- *
- * solve() drives CG from the host with device-resident scalar recurrences and
- * synchronizes the stream on the periodic convergence checks and once on
- * exit, so lastSolveStats() is valid immediately after solve() returns.
+ * linearization from the Jᵀ CSR arrays. prepare() applies attempt-specific
+ * damping before the common session runs the PCG recurrence.
  */
 class GTSAM_EXPORT DevicePcgSolver {
  public:
@@ -85,29 +65,16 @@ class GTSAM_EXPORT DevicePcgSolver {
   void buildPreconditioner(const DeviceArray<double>& jtValues,
                            cudaStream_t stream);
 
-  /**
-   * Per lambda attempt: factor the damped preconditioner and run PCG,
-   * writing the solution into *delta (warm-started from the previous
-   * attempt's delta when enabled). gradient is g = Jᵀb and dampingDiagonal
-   * is the prepared damping vector D. The returned delta is always finite:
-   * numerical breakdown freezes the last finite iterate instead of
-   * propagating non-finite values. Synchronizes the stream before returning.
-   */
-  void solve(double lambda, const DeviceArray<double>& gradient,
-             const DeviceArray<double>& dampingDiagonal,
-             DeviceArray<double>* delta, cudaStream_t stream);
-
-  const DevicePcgSolveStats& lastSolveStats() const;
-  const DevicePcgProfile& profile() const;
-
-  /** Prepare the borrowed operator and preconditioner for a shared-session
-   * solve. These accessors are the primary path; solve() remains as a source
-   * compatibility facade over the same common PcgSolver recurrence. */
+  /** Applies attempt-specific damping to the borrowed operator/preconditioner. */
   void prepare(double lambda,
                const DeviceArray<double>& dampingDiagonal,
                cudaStream_t stream);
+  /// Returns the prepared matrix-free operator.
   const LinearOperator& linearOperator() const;
+  /// Returns the prepared preconditioner.
   const Preconditioner& preconditioner() const;
+  /// Returns cumulative device time spent rebuilding the preconditioner.
+  double preconditionerBuildSeconds() const;
 
  private:
   struct Impl;

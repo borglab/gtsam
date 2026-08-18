@@ -39,7 +39,6 @@ timing/cuda_sparse/results/
 
 # Local development docs/artifacts
 docs/*
-!docs/superpowers/
 timing/pypose_ba/*.json
 timing/pypose_ba/run_frank_benchmark.py
 timing/pypose_ba/test_benchmark_cli.py

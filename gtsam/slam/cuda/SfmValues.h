@@ -46,12 +46,14 @@ inline DevicePoint3 packDevicePoint3(const Point3& point) {
   return {point.x(), point.y(), point.z()};
 }
 
+/** Host construction, device allocation, and upload costs for SFM values. */
 struct SfmValuesPackProfile {
   double hostBuildElapsed = 0.0;
   double deviceAllocElapsed = 0.0;
   DeviceTransferSummary h2d;
 };
 
+/** Host allocation, download, and Values reconstruction costs. */
 struct SfmValuesDownloadProfile {
   double hostAllocElapsed = 0.0;
   double hostBuildElapsed = 0.0;

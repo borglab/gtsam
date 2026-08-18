@@ -40,7 +40,9 @@
 using namespace gtsam;
 using namespace gtsam::cuda;
 
-namespace {
+/* ************************************************************************* */
+namespace sparse_lm_fixture {
+
 
 const Key kPose0 = Symbol('x', 0);
 const Key kPose1 = Symbol('x', 1);
@@ -90,12 +92,7 @@ bool AllSparseLmTimingsAreFiniteNonnegative(
          IsFiniteNonnegativeTiming(timings.attemptD2h) &&
          IsFiniteNonnegativeTiming(timings.attemptHostBuild) &&
          IsFiniteNonnegativeTiming(timings.retract) &&
-         IsFiniteNonnegativeTiming(timings.nonlinearTrialError) &&
-         IsFiniteNonnegativeTiming(timings.upload) &&
-         IsFiniteNonnegativeTiming(timings.normalEquations) &&
-         IsFiniteNonnegativeTiming(timings.damping) &&
-         IsFiniteNonnegativeTiming(timings.modelError) &&
-         IsFiniteNonnegativeTiming(timings.deltaDownload);
+         IsFiniteNonnegativeTiming(timings.nonlinearTrialError);
 }
 
 bool AllSparseLmTimingsAreZero(const SparseLevenbergMarquardtStageTimings& timings) {
@@ -115,9 +112,7 @@ bool AllSparseLmTimingsAreZero(const SparseLevenbergMarquardtStageTimings& timin
          timings.cudssDataInfoBoundaryWall == 0.0 &&
          timings.newModelError == 0.0 && timings.attemptD2h == 0.0 &&
          timings.attemptHostBuild == 0.0 && timings.retract == 0.0 &&
-         timings.nonlinearTrialError == 0.0 && timings.upload == 0.0 &&
-         timings.normalEquations == 0.0 && timings.damping == 0.0 &&
-         timings.modelError == 0.0 && timings.deltaDownload == 0.0;
+         timings.nonlinearTrialError == 0.0;
 }
 
 Pose2LmProblem MakePose2LmProblem() {
@@ -190,17 +185,6 @@ bool SparseLmSizesAndTransfersAreExact(
          transfers.totalH2dBytes() == expectedPatternH2d + expectedNumericH2d &&
          transfers.totalD2hBytes() ==
              expectedSetupD2h + expectedAttemptD2h + transfers.pcgD2hBytes;
-}
-
-bool SparseLmAggregateTimingsAreExact(const SparseLevenbergMarquardtStageTimings& timings) {
-  return timings.upload == timings.numericH2d &&
-         timings.normalEquations == timings.normalJtJ + timings.normalJtb +
-                                        timings.diagonalExtraction +
-                                        timings.oldModelError &&
-         timings.damping ==
-             timings.dampingPreparation + timings.dampingApplication &&
-         timings.modelError == timings.oldModelError + timings.newModelError &&
-         timings.deltaDownload == timings.attemptD2h + timings.pcgD2h;
 }
 
 bool HasCudaDevice() {
@@ -693,11 +677,11 @@ void CheckCpuFallback(
   }
 }
 
-}  // namespace
 
 static_assert(std::is_base_of_v<LevenbergMarquardtParams,
                                 SparseLevenbergMarquardtParams>);
 
+// Verifies SparseLevenbergMarquardt::ExposesPrototypeParamsDefaults.
 TEST(SparseLevenbergMarquardt, ExposesPrototypeParamsDefaults) {
   const SparseLevenbergMarquardtParams params;
   CHECK(params.fallbackOnUnsupported);
@@ -706,6 +690,7 @@ TEST(SparseLevenbergMarquardt, ExposesPrototypeParamsDefaults) {
   CHECK(!params.validateStructureEveryIteration);
 }
 
+// Verifies SparseLevenbergMarquardt::ProfilesTwoAcceptedOuterIterationsWithExactTransfers.
 TEST(SparseLevenbergMarquardt,
      ProfilesTwoAcceptedOuterIterationsWithExactTransfers) {
   if (!CanRunSparseLevenbergMarquardt()) return;
@@ -722,9 +707,11 @@ TEST(SparseLevenbergMarquardt,
   CHECK(result.lambdaAttempts >= result.acceptedSteps);
   CHECK(SparseLmSizesAndTransfersAreExact(result, problem.graph, plan));
   CHECK(AllSparseLmTimingsAreFiniteNonnegative(result.timings));
-  CHECK(SparseLmAggregateTimingsAreExact(result.timings));
   CHECK(result.timings.totalWall > 0.0);
   CHECK(result.timings.factorLinearizationCpuSum > 0.0);
+  CHECK(result.timings.cudssAnalysis > 0.0);
+  CHECK(result.timings.cudssFactorAndSolve > 0.0);
+  CHECK(result.timings.cudssDataInfoBoundaryWall > 0.0);
   const double mappedDeviceStageTotal =
       result.timings.patternH2d + result.timings.structureSetup +
       result.timings.setupD2h + result.timings.numericH2d +
@@ -737,6 +724,7 @@ TEST(SparseLevenbergMarquardt,
   CHECK(mappedDeviceStageTotal > 0.0);
 }
 
+// Verifies SparseLevenbergMarquardt::TimingDisabledKeepsTimingsZeroAndExactTransfers.
 TEST(SparseLevenbergMarquardt,
      TimingDisabledKeepsTimingsZeroAndExactTransfers) {
   if (!CanRunSparseLevenbergMarquardt()) return;
@@ -752,10 +740,8 @@ TEST(SparseLevenbergMarquardt,
   EXPECT_LONGS_EQUAL(1, result.cudssAnalyses);
   CHECK(SparseLmSizesAndTransfersAreExact(result, problem.graph, plan));
   CHECK(AllSparseLmTimingsAreZero(result.timings));
-  CHECK(SparseLmAggregateTimingsAreExact(result.timings));
 }
 
-namespace {
 
 void CheckPose2Parity(TestResult& result_, const std::string& name_,
                       bool diagonalDamping) {
@@ -789,16 +775,18 @@ void CheckPose2Parity(TestResult& result_, const std::string& name_,
   EXPECT_LONGS_EQUAL(1, result.cudssAnalyses);
 }
 
-}  // namespace
 
+// Verifies SparseLevenbergMarquardt::MatchesCpuPose2Result.
 TEST(SparseLevenbergMarquardt, MatchesCpuPose2Result) {
   CheckPose2Parity(result_, name_, true);
 }
 
+// Verifies SparseLevenbergMarquardt::MatchesCpuPose2ResultWithIdentityDamping.
 TEST(SparseLevenbergMarquardt, MatchesCpuPose2ResultWithIdentityDamping) {
   CheckPose2Parity(result_, name_, false);
 }
 
+// Verifies SparseLevenbergMarquardt::FallsBackForPlanIncompatible.
 TEST(SparseLevenbergMarquardt, FallsBackForPlanIncompatible) {
   if (!CanRunSparseLevenbergMarquardt()) return;
   Pose2LmProblem problem = MakePose2LmProblem();
@@ -807,6 +795,7 @@ TEST(SparseLevenbergMarquardt, FallsBackForPlanIncompatible) {
                    SparseLevenbergMarquardtFallbackReason::PlanIncompatible);
 }
 
+// Verifies SparseLevenbergMarquardt::FallsBackForDirectJacobianSemanticFailure.
 TEST(SparseLevenbergMarquardt, FallsBackForDirectJacobianSemanticFailure) {
   if (!CanRunSparseLevenbergMarquardt()) return;
   NonlinearFactorGraph graph;
@@ -820,6 +809,7 @@ TEST(SparseLevenbergMarquardt, FallsBackForDirectJacobianSemanticFailure) {
                    DirectJacobianFailure::ConstrainedFactor, 0);
 }
 
+// Verifies SparseLevenbergMarquardt::FallsBackForReturnedHessianWithExactFactorStatus.
 TEST(SparseLevenbergMarquardt,
      FallsBackForReturnedHessianWithExactFactorStatus) {
   if (!CanRunSparseLevenbergMarquardt()) return;
@@ -837,6 +827,7 @@ TEST(SparseLevenbergMarquardt,
                    "linearization result is not a JacobianFactor");
 }
 
+// Verifies SparseLevenbergMarquardt::ChangingRowsRestartCpuFromOriginalAfterAcceptedCudaPrefix.
 TEST(SparseLevenbergMarquardt,
      ChangingRowsRestartCpuFromOriginalAfterAcceptedCudaPrefix) {
   if (!CanRunSparseLevenbergMarquardt()) return;
@@ -948,6 +939,7 @@ TEST(SparseLevenbergMarquardt,
         std::string::npos);
 }
 
+// Verifies SparseLevenbergMarquardt::ZeroRowOnlyKeyIsPlanIncompatibleButCpuOrderingCanSolve.
 TEST(SparseLevenbergMarquardt,
      ZeroRowOnlyKeyIsPlanIncompatibleButCpuOrderingCanSolve) {
   if (!CanRunSparseLevenbergMarquardt()) return;
@@ -996,6 +988,7 @@ TEST(SparseLevenbergMarquardt,
   CHECK(disabledDetail == result.fallbackDetail);
 }
 
+// Verifies SparseLevenbergMarquardt::AppliesCustomGtsamOrderingToCudssWithoutChangingObjective.
 TEST(SparseLevenbergMarquardt,
      AppliesCustomGtsamOrderingToCudssWithoutChangingObjective) {
   if (!CanRunSparseLevenbergMarquardt()) return;
@@ -1023,6 +1016,7 @@ TEST(SparseLevenbergMarquardt,
          orderedOptimizer.result().appliedScalarPermutation);
 }
 
+// Verifies SparseLevenbergMarquardt::GeneralPcgUsesSharedSessionAndMatchesDirectObjective.
 TEST(SparseLevenbergMarquardt,
      GeneralPcgUsesSharedSessionAndMatchesDirectObjective) {
   if (!CanRunSparseLevenbergMarquardt()) return;
@@ -1068,6 +1062,7 @@ TEST(SparseLevenbergMarquardt,
   EXPECT_LONGS_EQUAL(0, result.systemSize.normalNonzeros);
 }
 
+// Verifies SparseLevenbergMarquardt::NonFiniteJacobianIsFatalWithStageIndexAndType.
 TEST(SparseLevenbergMarquardt,
      NonFiniteJacobianIsFatalWithStageIndexAndType) {
   if (!CanRunSparseLevenbergMarquardt()) return;
@@ -1097,6 +1092,7 @@ TEST(SparseLevenbergMarquardt,
         std::string::npos);
 }
 
+// Verifies SparseLevenbergMarquardt::NonSendableCustomFactorRunsEachCallbackExactlyOnCaller.
 TEST(SparseLevenbergMarquardt,
      NonSendableCustomFactorRunsEachCallbackExactlyOnCaller) {
   if (!CanRunSparseLevenbergMarquardt()) return;
@@ -1158,7 +1154,6 @@ TEST(SparseLevenbergMarquardt,
   }
 }
 
-namespace {
 
 void CheckStreamedJacobiansAtSnapshots(TestResult& result_,
                                        const std::string& name_,
@@ -1230,18 +1225,20 @@ void CheckHeterogeneousParity(TestResult& result_, const std::string& name_,
                                     snapshots);
 }
 
-}  // namespace
 
+// Verifies SparseLevenbergMarquardt::MatchesHeterogeneousGraphWithDiagonalDamping.
 TEST(SparseLevenbergMarquardt,
      MatchesHeterogeneousGraphWithDiagonalDamping) {
   CheckHeterogeneousParity(result_, name_, false);
 }
 
+// Verifies SparseLevenbergMarquardt::MatchesHeterogeneousHuberGraphWithDiagonalDamping.
 TEST(SparseLevenbergMarquardt,
      MatchesHeterogeneousHuberGraphWithDiagonalDamping) {
   CheckHeterogeneousParity(result_, name_, true);
 }
 
+// Verifies SparseLevenbergMarquardt::FallsBackWhenCudaUnavailable.
 TEST(SparseLevenbergMarquardt, FallsBackWhenCudaUnavailable) {
   if (HasCudaDevice()) return;
   const Pose2LmProblem problem = MakePose2LmProblem();
@@ -1249,6 +1246,7 @@ TEST(SparseLevenbergMarquardt, FallsBackWhenCudaUnavailable) {
                    SparseLevenbergMarquardtFallbackReason::RuntimeUnavailable);
 }
 
+// Verifies SparseLevenbergMarquardt::FallsBackWhenToolkitUnsupported.
 TEST(SparseLevenbergMarquardt, FallsBackWhenToolkitUnsupported) {
 #if GTSAM_ENABLE_CUDSS
   if (!HasCudaDevice()) return;
@@ -1261,6 +1259,7 @@ TEST(SparseLevenbergMarquardt, FallsBackWhenToolkitUnsupported) {
 }
 
 #if !GTSAM_ENABLE_CUDSS
+// Verifies SparseLevenbergMarquardt::FallsBackWhenCudssUnavailable.
 TEST(SparseLevenbergMarquardt, FallsBackWhenCudssUnavailable) {
   if (!HasCudaDevice()) return;
   const Pose2LmProblem problem = MakePose2LmProblem();
@@ -1270,6 +1269,7 @@ TEST(SparseLevenbergMarquardt, FallsBackWhenCudssUnavailable) {
       std::numeric_limits<size_t>::max(), {}, "cuDSS support is not compiled");
 }
 
+// Verifies SparseLevenbergMarquardt::PcgRunsWithoutCudss.
 TEST(SparseLevenbergMarquardt, PcgRunsWithoutCudss) {
   if (!CanRunCudaSparsePcg()) return;
   const Pose2LmProblem problem = MakePose2LmProblem();
@@ -1290,7 +1290,6 @@ TEST(SparseLevenbergMarquardt, PcgRunsWithoutCudss) {
 }
 #endif
 
-namespace {
 
 void CheckCudaAgainstReference(TestResult& result_, const std::string& name_,
                                const NonlinearFactorGraph& graph,
@@ -1347,9 +1346,7 @@ void CheckCudaAgainstReference(TestResult& result_, const std::string& name_,
   }
 }
 
-}  // namespace
 
-namespace {
 
 void CheckAcceptedTraceMode(TestResult& result_, const std::string& name_,
                             bool useFixedLambdaFactor) {
@@ -1376,18 +1373,20 @@ void CheckAcceptedTraceMode(TestResult& result_, const std::string& name_,
                             params, expected);
 }
 
-}  // namespace
 
+// Verifies SparseLevenbergMarquardt::MatchesCpuFixedLambdaTraceAndReusesAnalysis.
 TEST(SparseLevenbergMarquardt,
      MatchesCpuFixedLambdaTraceAndReusesAnalysis) {
   CheckAcceptedTraceMode(result_, name_, true);
 }
 
+// Verifies SparseLevenbergMarquardt::MatchesCpuAdaptiveLambdaTraceAndReusesAnalysis.
 TEST(SparseLevenbergMarquardt,
      MatchesCpuAdaptiveLambdaTraceAndReusesAnalysis) {
   CheckAcceptedTraceMode(result_, name_, false);
 }
 
+// Verifies SparseLevenbergMarquardt::InitialErrorThresholdExitsBeforeCudaSetup.
 TEST(SparseLevenbergMarquardt, InitialErrorThresholdExitsBeforeCudaSetup) {
   const Pose2LmProblem problem = MakePose2LmProblem();
   const double initialError = problem.graph.error(problem.initial);
@@ -1424,6 +1423,7 @@ TEST(SparseLevenbergMarquardt, InitialErrorThresholdExitsBeforeCudaSetup) {
   DOUBLES_EQUAL(params.lambdaInitial, result.finalLambda, 1e-15);
 }
 
+// Verifies SparseLevenbergMarquardt::ZeroMaxIterationsExitsBeforeCudaSetup.
 TEST(SparseLevenbergMarquardt, ZeroMaxIterationsExitsBeforeCudaSetup) {
   const Pose2LmProblem problem = MakePose2LmProblem();
   SparseLevenbergMarquardtParams params;
@@ -1448,6 +1448,7 @@ TEST(SparseLevenbergMarquardt, ZeroMaxIterationsExitsBeforeCudaSetup) {
   DOUBLES_EQUAL(params.lambdaInitial, result.finalLambda, 1e-15);
 }
 
+// Verifies SparseLevenbergMarquardt::RejectedSmallCostAttemptTerminatesWithoutIncreasingLambda.
 TEST(SparseLevenbergMarquardt,
      RejectedSmallCostAttemptTerminatesWithoutIncreasingLambda) {
   if (!CanRunSparseLevenbergMarquardt()) return;
@@ -1480,6 +1481,7 @@ TEST(SparseLevenbergMarquardt,
                             params, expected);
 }
 
+// Verifies SparseLevenbergMarquardt::AdaptiveRejectionsStopAtLambdaUpperBoundAfterHook.
 TEST(SparseLevenbergMarquardt,
      AdaptiveRejectionsStopAtLambdaUpperBoundAfterHook) {
   if (!CanRunSparseLevenbergMarquardt()) return;
@@ -1520,6 +1522,9 @@ TEST(SparseLevenbergMarquardt,
   CheckCudaAgainstReference(result_, name_, problem.graph, problem.initial,
                             params, expected);
 }
+
+}  // namespace sparse_lm_fixture
+/* ************************************************************************* */
 
 int main() {
   TestResult result;

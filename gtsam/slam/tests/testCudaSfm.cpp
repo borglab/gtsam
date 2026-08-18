@@ -33,13 +33,15 @@
 
 using namespace gtsam;
 using namespace gtsam::cuda;
+
+/* ************************************************************************* */
+namespace sfm_fixture {
 using gtsam::symbol_shorthand::C;
 using gtsam::symbol_shorthand::P;
 
 static_assert(std::is_base_of_v<LevenbergMarquardtParams,
                                 SfmLevenbergMarquardtParams>);
 
-namespace {
 using BundlerCamera = PinholeCamera<Cal3Bundler>;
 using BundlerProjectionFactor = GeneralSFMFactor<BundlerCamera, Point3>;
 
@@ -504,8 +506,8 @@ std::vector<std::vector<SfmRobustModel>> MakeMixedRobustModelsByTrack(
   }
   return robustModelsByTrack;
 }
-}  // namespace
 
+// Verifies SfmReducedCsrPlan::BuildsStableCameraOnlyCovisibilityPattern.
 TEST(SfmReducedCsrPlan, BuildsStableCameraOnlyCovisibilityPattern) {
   SfmData data;
   for (int camera = 0; camera < 4; ++camera) {
@@ -555,7 +557,8 @@ TEST(SfmReducedCsrPlan, BuildsStableCameraOnlyCovisibilityPattern) {
   LONGS_EQUAL(4, automatic.size());
 }
 
-TEST(SfmLevenbergMarquardtParams, MapsLinearSolverStringAliases) {
+// Accepts canonical solver names with case and separator normalization only.
+TEST(SfmLevenbergMarquardtParams, NormalizesCanonicalLinearSolverNames) {
   SfmLevenbergMarquardtParams params;
 
   CHECK(params.getLinearSolver() == "dense-schur");
@@ -569,11 +572,18 @@ TEST(SfmLevenbergMarquardtParams, MapsLinearSolverStringAliases) {
   params.setLinearSolver("CUDSS_FULL_NORMAL");
   CHECK(params.getLinearSolver() == "cudss-full-normal");
 
+  CHECK_EXCEPTION(params.setLinearSolver("full-normal-pcg"),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(params.setLinearSolver("schur-cudss"),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(params.setLinearSolver("schur-pcg"),
+                  std::invalid_argument);
   CHECK_EXCEPTION(params.setLinearSolver("not-a-solver"),
                   std::invalid_argument);
   CHECK(params.getLinearSolver() == "cudss-full-normal");
 }
 
+// Verifies SfmLevenbergMarquardtParams::SeparatesFormulationFromLinearBackend.
 TEST(SfmLevenbergMarquardtParams,
      SeparatesFormulationFromLinearBackend) {
   SfmLevenbergMarquardtParams params;
@@ -597,12 +607,17 @@ TEST(SfmLevenbergMarquardtParams,
   params.setFormulation("schur");
   params.setLinearSolverBackend("dense-cholesky");
   CHECK(params.getLinearSolver() == "dense-schur");
+  CHECK_EXCEPTION(params.setFormulation("fullnormal"),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(params.setLinearSolverBackend("dense"),
+                  std::invalid_argument);
   params.setLinearSolverBackend("pcg");
   params.ordering = Ordering{C(0), C(1)};
   CHECK_EXCEPTION(optimizeSfmWithoutValueDownload(data, params),
                   std::invalid_argument);
 }
 
+// Verifies SfmLevenbergMarquardtParams::ProvidesLmDefaults.
 TEST(SfmLevenbergMarquardtParams, ProvidesLmDefaults) {
   const SfmLevenbergMarquardtParams legacy =
       SfmLevenbergMarquardtParams::legacyDefaults();
@@ -622,6 +637,7 @@ TEST(SfmLevenbergMarquardtParams, ProvidesLmDefaults) {
   CHECK(!ceres.enableDetailedProfiling);
 }
 
+// Verifies SfmLevenbergMarquardtOptimizer::ExposesCudaParams.
 TEST(SfmLevenbergMarquardtOptimizer, ExposesCudaParams) {
   NonlinearFactorGraph graph;
   Values initial;
@@ -636,6 +652,13 @@ TEST(SfmLevenbergMarquardtOptimizer, ExposesCudaParams) {
   CHECK(optimizer.params().maxIterations == 7);
 }
 
+// The batch optimizer does not advertise an unsupported incremental API.
+TEST(SfmLevenbergMarquardtOptimizer, UsesBatchOnlyInterface) {
+  CHECK((!std::is_base_of_v<NonlinearOptimizer,
+                             SfmLevenbergMarquardtOptimizer>));
+}
+
+// Verifies SfmProjectionLinearization::MatchesHostResidualsAndNumericJacobians.
 TEST(SfmProjectionLinearization,
      MatchesHostResidualsAndNumericJacobians) {
   constexpr double kResidualTolerance = 1e-7;
@@ -706,6 +729,7 @@ TEST(SfmProjectionLinearization,
   DOUBLES_EQUAL(expectedError, actualError, kResidualTolerance);
 }
 
+// Verifies SfmProjectionLinearization::AppliesPerObservationGaussianWhitening.
 TEST(SfmProjectionLinearization,
      AppliesPerObservationGaussianWhitening) {
   constexpr double kResidualTolerance = 1e-7;
@@ -728,7 +752,7 @@ TEST(SfmProjectionLinearization,
 
   const BalCsrStructure structure =
       BalCsrStructure::fromSfmData(measuredData);
-  DeviceSparseNormalEquations system;
+  DeviceSparseSpdSystem system;
   system.uploadPattern(structure.dimension(), structure.rowPointers(),
                        structure.colIndices(), context.stream());
   accumulateSfmNormalEquations(
@@ -881,6 +905,7 @@ TEST(SfmProjectionLinearization,
   }
 }
 
+// Verifies SfmProjectionLinearization::AppliesPerObservationRobustWhiteningAndLoss.
 TEST(SfmProjectionLinearization,
      AppliesPerObservationRobustWhiteningAndLoss) {
   constexpr double kResidualTolerance = 1e-7;
@@ -984,6 +1009,7 @@ TEST(SfmProjectionLinearization,
   DOUBLES_EQUAL(expectedError, actualError, kResidualTolerance);
 }
 
+// Verifies SfmProjectionLinearization::AccumulatesProjectionNormalEquationsIntoCsr.
 TEST(SfmProjectionLinearization,
      AccumulatesProjectionNormalEquationsIntoCsr) {
   constexpr double kTolerance = 1e-6;
@@ -1001,7 +1027,7 @@ TEST(SfmProjectionLinearization,
 
   const BalCsrStructure structure =
       BalCsrStructure::fromSfmData(measuredData);
-  DeviceSparseNormalEquations system;
+  DeviceSparseSpdSystem system;
   system.uploadPattern(structure.dimension(), structure.rowPointers(),
                        structure.colIndices(), context.stream());
   system.values().upload(
@@ -1081,6 +1107,7 @@ TEST(SfmProjectionLinearization,
   }
 }
 
+// Verifies SfmProjectionLinearization::ComputesClampedHessianDiagonal.
 TEST(SfmProjectionLinearization, ComputesClampedHessianDiagonal) {
   constexpr double kTolerance = 1e-6;
 
@@ -1139,6 +1166,7 @@ TEST(SfmProjectionLinearization, ComputesClampedHessianDiagonal) {
   }
 }
 
+// Verifies SfmFullNormalProblem::ReusesOneLinearizationAcrossDampingAttempts.
 TEST(SfmFullNormalProblem, ReusesOneLinearizationAcrossDampingAttempts) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
@@ -1169,6 +1197,7 @@ TEST(SfmFullNormalProblem, ReusesOneLinearizationAcrossDampingAttempts) {
   EXPECT_LONGS_EQUAL(2, problem.preparationCount());
 }
 
+// Verifies SfmFullNormalProblem::RestoresExplicitSystemBetweenDampingAttempts.
 TEST(SfmFullNormalProblem, RestoresExplicitSystemBetweenDampingAttempts) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
@@ -1224,6 +1253,7 @@ TEST(SfmFullNormalProblem, RestoresExplicitSystemBetweenDampingAttempts) {
   EXPECT_LONGS_EQUAL(3, problem.preparationCount());
 }
 
+// Verifies SfmProjectionLinearization::ComputesLinearizedErrorChange.
 TEST(SfmProjectionLinearization, ComputesLinearizedErrorChange) {
   constexpr double kTolerance = 1e-6;
 
@@ -1291,6 +1321,7 @@ TEST(SfmProjectionLinearization, ComputesLinearizedErrorChange) {
   DOUBLES_EQUAL(expectedOld - expectedNew, actualChange, kTolerance);
 }
 
+// Verifies SfmProjectionLinearization::RejectsIncompleteCsrPattern.
 TEST(SfmProjectionLinearization, RejectsIncompleteCsrPattern) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
@@ -1322,7 +1353,7 @@ TEST(SfmProjectionLinearization, RejectsIncompleteCsrPattern) {
     --rowPointers[row];
   }
 
-  DeviceSparseNormalEquations system;
+  DeviceSparseSpdSystem system;
   system.uploadPattern(structure.dimension(), rowPointers, colIndices,
                        context.stream());
 
@@ -1332,6 +1363,7 @@ TEST(SfmProjectionLinearization, RejectsIncompleteCsrPattern) {
                   std::runtime_error);
 }
 
+// Verifies SfmProjectionLinearization::RejectsInvalidSystemWithoutClearingExistingValues.
 TEST(SfmProjectionLinearization,
      RejectsInvalidSystemWithoutClearingExistingValues) {
   const SfmData measuredData = makeTrueBalLikeData();
@@ -1349,7 +1381,7 @@ TEST(SfmProjectionLinearization,
   rowPointers.push_back(rowPointers.back() + 1);
   colIndices.push_back(structure.dimension());
 
-  DeviceSparseNormalEquations system;
+  DeviceSparseSpdSystem system;
   system.uploadPattern(structure.dimension() + 1, rowPointers, colIndices,
                        context.stream());
   system.values().upload(std::vector<double>(colIndices.size(), 7.0),
@@ -1377,6 +1409,7 @@ TEST(SfmProjectionLinearization,
 }
 
 #ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
+// Verifies SfmProjectionLinearization::ReturnsZerosForCheiralityFailures.
 TEST(SfmProjectionLinearization, ReturnsZerosForCheiralityFailures) {
   const SfmData data = makeBehindCameraData();
   Context context;
@@ -1418,6 +1451,7 @@ TEST(SfmProjectionLinearization, ReturnsZerosForCheiralityFailures) {
 }
 #endif
 
+// Verifies SfmProjectionLinearization::RejectsMismatchedValueShapes.
 TEST(SfmProjectionLinearization, RejectsMismatchedValueShapes) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData smallerValuesData = makeTinyBalData();
@@ -1445,6 +1479,7 @@ TEST(SfmProjectionLinearization, RejectsMismatchedValueShapes) {
 }
 
 #if !GTSAM_ENABLE_CUDSS
+// Verifies SfmLevenbergMarquardt::DenseSchurRunsWithoutCudss.
 TEST(SfmLevenbergMarquardt, DenseSchurRunsWithoutCudss) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -1469,6 +1504,7 @@ TEST(SfmLevenbergMarquardt, DenseSchurRunsWithoutCudss) {
 
 #endif
 
+// Verifies SfmLevenbergMarquardt::ImplicitSchurPcgMatchesDense.
 TEST(SfmLevenbergMarquardt, ImplicitSchurPcgMatchesDense) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -1494,6 +1530,7 @@ TEST(SfmLevenbergMarquardt, ImplicitSchurPcgMatchesDense) {
   CHECK(pcg.linearSolveStats.pcgIterationsTotal > 0);
 }
 
+// Verifies SfmLevenbergMarquardt::FullNormalPcgUsesSharedIterativeSession.
 TEST(SfmLevenbergMarquardt, FullNormalPcgUsesSharedIterativeSession) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -1527,6 +1564,7 @@ TEST(SfmLevenbergMarquardt, FullNormalPcgUsesSharedIterativeSession) {
 
 #if GTSAM_ENABLE_CUDSS
 
+// Verifies SfmLevenbergMarquardt::SparseSchurCudssMatchesDenseAndAppliesCameraOrdering.
 TEST(SfmLevenbergMarquardt,
      SparseSchurCudssMatchesDenseAndAppliesCameraOrdering) {
   const SfmData measuredData = makeTrueBalLikeData();
@@ -1558,6 +1596,7 @@ TEST(SfmLevenbergMarquardt,
              *sparseParams.ordering));
 }
 
+// Verifies SfmLevenbergMarquardt::FullNormalCudssAppliesCameraAndPointOrdering.
 TEST(SfmLevenbergMarquardt,
      FullNormalCudssAppliesCameraAndPointOrdering) {
   const SfmData measuredData = makeTrueBalLikeData();
@@ -1581,6 +1620,7 @@ TEST(SfmLevenbergMarquardt,
   EXPECT(expected == result.appliedScalarPermutation);
 }
 
+// Verifies SfmFactorGraphConversion::ConvertsGeneralSfmFactorsWithArbitraryKeys.
 TEST(SfmFactorGraphConversion,
      ConvertsGeneralSfmFactorsWithArbitraryKeys) {
   const SfmData measuredData = makeTrueBalLikeData();
@@ -1630,6 +1670,7 @@ TEST(SfmFactorGraphConversion,
                      converted.data.track(3).point3()));
 }
 
+// Verifies SfmFactorGraphConversion::ConvertsPointBatchedGeneralSfmFactors.
 TEST(SfmFactorGraphConversion,
      ConvertsPointBatchedGeneralSfmFactors) {
   const SfmData measuredData = makeTrueBalLikeData();
@@ -1671,6 +1712,7 @@ TEST(SfmFactorGraphConversion,
   CHECK(ConvertedSfmDataEquals(raw, batched));
 }
 
+// Verifies SfmFactorGraphConversion::ConvertsCameraBatchedGeneralSfmFactors.
 TEST(SfmFactorGraphConversion,
      ConvertsCameraBatchedGeneralSfmFactors) {
   const SfmData measuredData = makeTrueBalLikeData();
@@ -1716,6 +1758,7 @@ TEST(SfmFactorGraphConversion,
   CHECK(ConvertedSfmDataEquals(raw, batched));
 }
 
+// Verifies SfmFactorGraphConversion::AcceptsFixedGaussianNoiseAndPreservesFlattenedWhiteningOrder.
 TEST(SfmFactorGraphConversion,
      AcceptsFixedGaussianNoiseAndPreservesFlattenedWhiteningOrder) {
   const SfmData measuredData = makeTrueBalLikeData();
@@ -1801,6 +1844,7 @@ TEST(SfmFactorGraphConversion,
   DOUBLES_EQUAL(2.0, sqrtInfos[3].r00, 1e-12);
 }
 
+// Verifies SfmFactorGraphConversion::AcceptsHuberAndTukeyRobustNoiseAndPreservesFlattenedOrder.
 TEST(SfmFactorGraphConversion,
      AcceptsHuberAndTukeyRobustNoiseAndPreservesFlattenedOrder) {
   const SfmData measuredData = makeTrueBalLikeData();
@@ -1892,6 +1936,7 @@ TEST(SfmFactorGraphConversion,
   DOUBLES_EQUAL(0.75, robustModels[2].parameter, 1e-12);
 }
 
+// Verifies SfmFactorGraphConversion::RejectsUnsupportedNoiseModels.
 TEST(SfmFactorGraphConversion, RejectsUnsupportedNoiseModels) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData initialData = makePerturbedBalLikeData(measuredData);
@@ -1950,6 +1995,7 @@ TEST(SfmFactorGraphConversion, RejectsUnsupportedNoiseModels) {
   checkRejectedSqrtInformation(negativeDiagonalR);
 }
 
+// Verifies SfmLevenbergMarquardtOptimizer::OptimizesGeneralSfmGraphWithArbitraryKeys.
 TEST(SfmLevenbergMarquardtOptimizer,
      OptimizesGeneralSfmGraphWithArbitraryKeys) {
   const SfmData measuredData = makeTrueBalLikeData();
@@ -2003,6 +2049,7 @@ TEST(SfmLevenbergMarquardtOptimizer,
   DOUBLES_EQUAL(8.0, extra.y(), 1e-12);
 }
 
+// Verifies SfmLevenbergMarquardtOptimizer::UsesGraphGaussianNoiseForInitialError.
 TEST(SfmLevenbergMarquardtOptimizer,
      UsesGraphGaussianNoiseForInitialError) {
   const SfmData measuredData = makeTrueBalLikeData();
@@ -2049,6 +2096,7 @@ TEST(SfmLevenbergMarquardtOptimizer,
   DOUBLES_EQUAL(expectedInitialError, optimizer.result().finalError, 1e-6);
 }
 
+// Verifies SfmLevenbergMarquardtOptimizer::DoesNotEvaluateCpuGraphErrorDuringCudaOptimize.
 TEST(SfmLevenbergMarquardtOptimizer,
      DoesNotEvaluateCpuGraphErrorDuringCudaOptimize) {
   const SfmData measuredData = makeTrueBalLikeData();
@@ -2089,6 +2137,7 @@ TEST(SfmLevenbergMarquardtOptimizer,
   DOUBLES_EQUAL(optimizer.result().finalError, optimizer.error(), 1e-6);
 }
 
+// Verifies SfmLevenbergMarquardtOptimizer::UsesGraphRobustNoiseForInitialError.
 TEST(SfmLevenbergMarquardtOptimizer,
      UsesGraphRobustNoiseForInitialError) {
   const SfmData measuredData = makeTrueBalLikeData();
@@ -2138,6 +2187,7 @@ TEST(SfmLevenbergMarquardtOptimizer,
   DOUBLES_EQUAL(expectedInitialError, optimizer.result().finalError, 1e-6);
 }
 
+// Verifies SfmLevenbergMarquardt::ReducesTinyBalErrorAndDownloadsValues.
 TEST(SfmLevenbergMarquardt, ReducesTinyBalErrorAndDownloadsValues) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -2164,6 +2214,7 @@ TEST(SfmLevenbergMarquardt, ReducesTinyBalErrorAndDownloadsValues) {
   CHECK(std::isfinite(point0.x()));
 }
 
+// Verifies SfmLevenbergMarquardt::CanSkipOptimizedValueDownload.
 TEST(SfmLevenbergMarquardt, CanSkipOptimizedValueDownload) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -2179,6 +2230,7 @@ TEST(SfmLevenbergMarquardt, CanSkipOptimizedValueDownload) {
   CHECK(result.optimizedValues.empty());
 }
 
+// Verifies SfmLevenbergMarquardt::DetailedProfilingIsDisabledByDefault.
 TEST(SfmLevenbergMarquardt, DetailedProfilingIsDisabledByDefault) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -2205,6 +2257,7 @@ TEST(SfmLevenbergMarquardt, DetailedProfilingIsDisabledByDefault) {
   CHECK(result.iterationProfiles.empty());
 }
 
+// Verifies SfmLevenbergMarquardt::DetailedProfilingIsDisabledByDefaultForCudss.
 TEST(SfmLevenbergMarquardt,
      DetailedProfilingIsDisabledByDefaultForCudss) {
   const SfmData measuredData = makeTrueBalLikeData();
@@ -2235,6 +2288,7 @@ TEST(SfmLevenbergMarquardt,
   CHECK(result.iterationProfiles.empty());
 }
 
+// Verifies SfmLevenbergMarquardt::RecordsDetailedTimingBreakdownForCudss.
 TEST(SfmLevenbergMarquardt, RecordsDetailedTimingBreakdownForCudss) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -2268,6 +2322,7 @@ TEST(SfmLevenbergMarquardt, RecordsDetailedTimingBreakdownForCudss) {
                 attributedNormalEquationsElapsed, 1e-12);
 }
 
+// Verifies SfmLevenbergMarquardt::RecordsDetailedTimingBreakdown.
 TEST(SfmLevenbergMarquardt, RecordsDetailedTimingBreakdown) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -2310,6 +2365,7 @@ TEST(SfmLevenbergMarquardt, RecordsDetailedTimingBreakdown) {
   EXPECT_LONGS_EQUAL(result.innerIterations, attempts);
 }
 
+// Verifies SfmLevenbergMarquardt::RecordsPureTransferTimingBreakdown.
 TEST(SfmLevenbergMarquardt, RecordsPureTransferTimingBreakdown) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -2353,6 +2409,7 @@ TEST(SfmLevenbergMarquardt, RecordsPureTransferTimingBreakdown) {
   CHECK(result.downloadValuesBuildElapsed >= 0.0);
 }
 
+// Verifies SfmDenseSchurSolver::MatchesFullNormalEquationDeltaOnTinyBal.
 TEST(SfmDenseSchurSolver, MatchesFullNormalEquationDeltaOnTinyBal) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -2362,7 +2419,7 @@ TEST(SfmDenseSchurSolver, MatchesFullNormalEquationDeltaOnTinyBal) {
   const SfmProjectionBatch batch =
       SfmProjectionBatch::fromSfmData(data, context.stream());
   const BalCsrStructure structure = BalCsrStructure::fromSfmData(data);
-  DeviceSparseNormalEquations system;
+  DeviceSparseSpdSystem system;
   system.uploadPattern(structure.dimension(), structure.rowPointers(),
                        structure.colIndices(), context.stream());
 
@@ -2393,6 +2450,7 @@ TEST(SfmDenseSchurSolver, MatchesFullNormalEquationDeltaOnTinyBal) {
   }
 }
 
+// Verifies SfmSchurProblem::ReusesLinearizationAndRebuildsDamping.
 TEST(SfmSchurProblem, ReusesLinearizationAndRebuildsDamping) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -2438,6 +2496,7 @@ TEST(SfmSchurProblem, ReusesLinearizationAndRebuildsDamping) {
   }
 }
 
+// Verifies SfmSchurProblem::BuildsPersistentNormalBlocksOncePerLinearization.
 TEST(SfmSchurProblem, BuildsPersistentNormalBlocksOncePerLinearization) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -2526,6 +2585,7 @@ TEST(SfmSchurProblem, BuildsPersistentNormalBlocksOncePerLinearization) {
   EXPECT_LONGS_EQUAL(1, problem.blockBuildCount());
 }
 
+// Verifies SfmSchurProblem::DensePreparationConsumesPersistentNormalBlocks.
 TEST(SfmSchurProblem, DensePreparationConsumesPersistentNormalBlocks) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -2577,6 +2637,7 @@ TEST(SfmSchurProblem, DensePreparationConsumesPersistentNormalBlocks) {
   }
 }
 
+// Verifies SfmSchurProblem::PointRecoveryConsumesPersistentNormalBlocks.
 TEST(SfmSchurProblem, PointRecoveryConsumesPersistentNormalBlocks) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -2617,6 +2678,7 @@ TEST(SfmSchurProblem, PointRecoveryConsumesPersistentNormalBlocks) {
   }
 }
 
+// Verifies SfmSchurProblem::SparseAssemblyMatchesDenseAssembly.
 TEST(SfmSchurProblem, SparseAssemblyMatchesDenseAssembly) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -2672,6 +2734,7 @@ TEST(SfmSchurProblem, SparseAssemblyMatchesDenseAssembly) {
   }
 }
 
+// Verifies SfmSchurProblem::ImplicitOperatorMatchesDenseSchurProduct.
 TEST(SfmSchurProblem, ImplicitOperatorMatchesDenseSchurProduct) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -2730,6 +2793,7 @@ TEST(SfmSchurProblem, ImplicitOperatorMatchesDenseSchurProduct) {
   }
 }
 
+// Verifies SfmDenseSchurSolver::MatchesFullNormalEquationDeltaWithDiagonalDamping.
 TEST(SfmDenseSchurSolver, MatchesFullNormalEquationDeltaWithDiagonalDamping) {
   const SfmData measuredData = makeTrueBalLikeData();
   const SfmData data = makePerturbedBalLikeData(measuredData);
@@ -2739,7 +2803,7 @@ TEST(SfmDenseSchurSolver, MatchesFullNormalEquationDeltaWithDiagonalDamping) {
   const SfmProjectionBatch batch =
       SfmProjectionBatch::fromSfmData(data, context.stream());
   const BalCsrStructure structure = BalCsrStructure::fromSfmData(data);
-  DeviceSparseNormalEquations system;
+  DeviceSparseSpdSystem system;
   system.uploadPattern(structure.dimension(), structure.rowPointers(),
                        structure.colIndices(), context.stream());
 
@@ -2807,6 +2871,7 @@ TEST(SfmDenseSchurSolver, MatchesFullNormalEquationDeltaWithDiagonalDamping) {
   }
 }
 
+// Verifies SfmDenseSchurSolver::MatchesFullNormalEquationDeltaOnHighDegreeTrack.
 TEST(SfmDenseSchurSolver,
      MatchesFullNormalEquationDeltaOnHighDegreeTrack) {
   const SfmData data = makeHighDegreeBalLikeData();
@@ -2816,7 +2881,7 @@ TEST(SfmDenseSchurSolver,
   const SfmProjectionBatch batch =
       SfmProjectionBatch::fromSfmData(data, context.stream());
   const BalCsrStructure structure = BalCsrStructure::fromSfmData(data);
-  DeviceSparseNormalEquations system;
+  DeviceSparseSpdSystem system;
   system.uploadPattern(structure.dimension(), structure.rowPointers(),
                        structure.colIndices(), context.stream());
 
@@ -2848,6 +2913,7 @@ TEST(SfmDenseSchurSolver,
 }
 #endif
 
+// Verifies DeviceGeometryKernels::RetractCameraMatchesHostCameraRetract.
 TEST(DeviceGeometryKernels, RetractCameraMatchesHostCameraRetract) {
   const SfmData data = makeTrueBalLikeData();
   const DevicePinholeCameraCal3Bundler camera =
@@ -2868,6 +2934,7 @@ TEST(DeviceGeometryKernels, RetractCameraMatchesHostCameraRetract) {
   CHECK(deviceCameraEquals(expected, actual, 1e-10));
 }
 
+// Verifies SfmProjectionBatch::PacksOnlyTracksWithAtLeastTwoMeasurements.
 TEST(SfmProjectionBatch, PacksOnlyTracksWithAtLeastTwoMeasurements) {
   const SfmData data = makeTinySfmData();
   Context context;
@@ -2894,6 +2961,7 @@ TEST(SfmProjectionBatch, PacksOnlyTracksWithAtLeastTwoMeasurements) {
   DOUBLES_EQUAL(21.0, observations[1].measuredV, 1e-12);
 }
 
+// Verifies SfmProjectionBatch::PacksLongTrackPointSlots.
 TEST(SfmProjectionBatch, PacksLongTrackPointSlots) {
   const SfmData data = makeHighDegreeBalLikeData();
   Context context;
@@ -2910,6 +2978,7 @@ TEST(SfmProjectionBatch, PacksLongTrackPointSlots) {
   LONGS_EQUAL(0, longTrackPointSlots[0]);
 }
 
+// Verifies SfmValues::PacksCamerasInGtsamConvention.
 TEST(SfmValues, PacksCamerasInGtsamConvention) {
   const SfmData data = makeTinySfmData();
   Context context;
@@ -2961,6 +3030,7 @@ TEST(SfmValues, PacksCamerasInGtsamConvention) {
   DOUBLES_EQUAL(6.0, points[1].z, 1e-12);
 }
 
+// Verifies SfmValues::DownloadsValuesWithOriginalKeys.
 TEST(SfmValues, DownloadsValuesWithOriginalKeys) {
   const SfmData data = makeTinySfmData();
   Context context;
@@ -2980,6 +3050,7 @@ TEST(SfmValues, DownloadsValuesWithOriginalKeys) {
   CHECK(Point3Equals(data.track(1).point3(), downloaded.at<Point3>(P(1))));
 }
 
+// Verifies BalCsrStructure::BuildsUpperTrianglePatternForMeasuredTrack.
 TEST(BalCsrStructure, BuildsUpperTrianglePatternForMeasuredTrack) {
   const SfmData data = makeTinyBalData();
   const BalCsrStructure structure = BalCsrStructure::fromSfmData(data);
@@ -3014,7 +3085,6 @@ TEST(BalCsrStructure, BuildsUpperTrianglePatternForMeasuredTrack) {
   }
 }
 
-namespace {
 
 // Synthetic BAL-like problem for GNC: every point is observed by every
 // camera, so a track stays well constrained even after GNC down-weights its
@@ -3101,8 +3171,8 @@ GncTestProblem makeGncBalLikeProblem() {
   return problem;
 }
 
-}  // namespace
 
+// Verifies SfmLevenbergMarquardtParams::EqualsComparesFields.
 TEST(SfmLevenbergMarquardtParams, EqualsComparesFields) {
   const SfmLevenbergMarquardtParams a =
       SfmLevenbergMarquardtParams::legacyDefaults();
@@ -3121,6 +3191,7 @@ TEST(SfmLevenbergMarquardtParams, EqualsComparesFields) {
   CHECK(!a.equals(b));
 }
 
+// Verifies GncSfmOptimizer::TlsClassificationMatchesCpuGnc.
 TEST(GncSfmOptimizer, TlsClassificationMatchesCpuGnc) {
   const GncTestProblem problem = makeGncBalLikeProblem();
 
@@ -3158,6 +3229,7 @@ TEST(GncSfmOptimizer, TlsClassificationMatchesCpuGnc) {
   CHECK(cudaInlierError < initialInlierError);
 }
 
+// Verifies GncSfmOptimizer::GmClassificationMatchesCpuGnc.
 TEST(GncSfmOptimizer, GmClassificationMatchesCpuGnc) {
   const GncTestProblem problem = makeGncBalLikeProblem();
 
@@ -3191,6 +3263,7 @@ TEST(GncSfmOptimizer, GmClassificationMatchesCpuGnc) {
   CHECK(problem.inlierGraph.error(cudaResult) < 1e-2);
 }
 
+// Verifies GncSfmOptimizer::KnownOutliersProduceZeroInformationGraph.
 TEST(GncSfmOptimizer, KnownOutliersProduceZeroInformationGraph) {
   // GNC weights a known outlier by zero, which reaches the CUDA backend as a
   // zero-information Gaussian noise model. The corrupted measurement must be
@@ -3222,6 +3295,9 @@ TEST(GncSfmOptimizer, KnownOutliersProduceZeroInformationGraph) {
   DOUBLES_EQUAL(problem.inlierGraph.error(result),
                 weightedGraph.error(result), 1e-9);
 }
+
+}  // namespace sfm_fixture
+/* ************************************************************************* */
 
 int main() {
   TestResult tr;

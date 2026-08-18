@@ -2,6 +2,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/cuda/Context.h>
 #include <gtsam/base/cuda/PinnedHostArray.h>
+#include <gtsam/linear/cuda/LinearSolver.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
@@ -40,7 +41,8 @@
 using namespace gtsam;
 using namespace gtsam::cuda;
 
-namespace {
+/* ************************************************************************* */
+namespace sparse_jacobian_fixture {
 
 constexpr Key kPoseKey = 10;
 constexpr Key kPointKey = 20;
@@ -280,7 +282,7 @@ struct DownloadedSparseNormalEquations {
 };
 
 std::pair<std::vector<int>, std::vector<int>> DownloadNormalEquationPattern(
-    const DeviceSparseNormalEquations& system, cudaStream_t stream) {
+    const DeviceSparseSpdSystem& system, cudaStream_t stream) {
   std::vector<int> rowPointers;
   std::vector<int> columnIndices;
   system.rowPointers().download(&rowPointers, stream);
@@ -290,7 +292,7 @@ std::pair<std::vector<int>, std::vector<int>> DownloadNormalEquationPattern(
 }
 
 DownloadedSparseNormalEquations DownloadNormalEquations(
-    const DeviceSparseNormalEquations& system, cudaStream_t stream) {
+    const DeviceSparseSpdSystem& system, cudaStream_t stream) {
   DownloadedSparseNormalEquations downloaded;
   std::vector<double> values;
   std::vector<double> rhs;
@@ -501,13 +503,13 @@ struct DeviceSystemAddresses {
 };
 
 [[maybe_unused]] DeviceSystemAddresses GetSystemAddresses(
-    const DeviceSparseNormalEquations& system) {
+    const DeviceSparseSpdSystem& system) {
   return {system.rowPointers().data(), system.colIndices().data(),
           system.values().data(), system.rhs().data()};
 }
 
 [[maybe_unused]] bool SystemAddressesEqual(
-    const DeviceSparseNormalEquations& system,
+    const DeviceSparseSpdSystem& system,
     const DeviceSystemAddresses& expected) {
   return system.rowPointers().data() == expected.rowPointers &&
          system.colIndices().data() == expected.columnIndices &&
@@ -541,8 +543,7 @@ struct DenseAttemptReference {
   return expected;
 }
 
-}  // namespace
-
+// Verifies SparseJacobianColumnLayout::UsesNaturalKeyOrderAndConvertsDeltas.
 TEST(SparseJacobianColumnLayout, UsesNaturalKeyOrderAndConvertsDeltas) {
   const Values values = makeValues();
   const SparseJacobianColumnLayout layout(values);
@@ -567,6 +568,7 @@ TEST(SparseJacobianColumnLayout, UsesNaturalKeyOrderAndConvertsDeltas) {
   EXPECT(assert_equal(Vector2(4.0, 5.0), delta.at(kPointKey)));
 }
 
+// Verifies SparseJacobianColumnLayout::RejectsUnknownKeyAndWrongDeltaSize.
 TEST(SparseJacobianColumnLayout, RejectsUnknownKeyAndWrongDeltaSize) {
   const SparseJacobianColumnLayout layout(makeValues());
 
@@ -575,6 +577,7 @@ TEST(SparseJacobianColumnLayout, RejectsUnknownKeyAndWrongDeltaSize) {
                   std::invalid_argument);
 }
 
+// Verifies SparseJacobianColumnLayout::MatchesTheCompleteKeyDimensionSequence.
 TEST(SparseJacobianColumnLayout, MatchesTheCompleteKeyDimensionSequence) {
   const SparseJacobianColumnLayout layout(makeValues());
   CHECK(layout.matches(makeValues()));
@@ -585,6 +588,7 @@ TEST(SparseJacobianColumnLayout, MatchesTheCompleteKeyDimensionSequence) {
   CHECK(!layout.matches(changedValues));
 }
 
+// Verifies SparseJacobianPlan::BuildsScalarCsrInGlobalColumnOrder.
 TEST(SparseJacobianPlan, BuildsScalarCsrInGlobalColumnOrder) {
   const Values values = makeValues();
   const SparseJacobianColumnLayout layout(values);
@@ -621,6 +625,7 @@ TEST(SparseJacobianPlan, BuildsScalarCsrInGlobalColumnOrder) {
   CHECK_EXCEPTION(plan.factor(2), std::out_of_range);
 }
 
+// Verifies SparseJacobianPlan::RejectsMissingAndRepeatedFactorKeys.
 TEST(SparseJacobianPlan, RejectsMissingAndRepeatedFactorKeys) {
   const SparseJacobianColumnLayout layout(makeValues());
 
@@ -636,6 +641,7 @@ TEST(SparseJacobianPlan, RejectsMissingAndRepeatedFactorKeys) {
   CHECK_EXCEPTION(SparseJacobianPlan(repeated, layout), std::invalid_argument);
 }
 
+// Verifies SparseJacobianPlan::RejectsAnUncoveredValuesKey.
 TEST(SparseJacobianPlan, RejectsAnUncoveredValuesKey) {
   const SparseJacobianColumnLayout layout(makeValues());
 
@@ -654,6 +660,7 @@ TEST(SparseJacobianPlan, RejectsAnUncoveredValuesKey) {
   CHECK(exceptionNamesKey);
 }
 
+// Verifies SparseJacobianPlan::ZeroRowFactorDoesNotProvideStructuralCoverage.
 TEST(SparseJacobianPlan, ZeroRowFactorDoesNotProvideStructuralCoverage) {
   const SparseJacobianColumnLayout layout(makeValues());
 
@@ -663,6 +670,7 @@ TEST(SparseJacobianPlan, ZeroRowFactorDoesNotProvideStructuralCoverage) {
   CHECK_EXCEPTION(SparseJacobianPlan(graph, layout), std::invalid_argument);
 }
 
+// Verifies SparseJacobianPlan::RejectsFactorCountsOutsideSignedIntCapacity.
 TEST(SparseJacobianPlan, RejectsFactorCountsOutsideSignedIntCapacity) {
   Values values;
   values.insert(kPointKey, Point2(4.0, 5.0));
@@ -683,6 +691,7 @@ TEST(SparseJacobianPlan, RejectsFactorCountsOutsideSignedIntCapacity) {
                   std::invalid_argument);
 }
 
+// Verifies SparseJacobianPlan::PreservesNullSlotsAndLaterRowOffsets.
 TEST(SparseJacobianPlan, PreservesNullSlotsAndLaterRowOffsets) {
   const Values values = makeValues();
   const SparseJacobianColumnLayout layout(values);
@@ -704,6 +713,7 @@ TEST(SparseJacobianPlan, PreservesNullSlotsAndLaterRowOffsets) {
   EXPECT_LONGS_EQUAL(19, plan.nonzeros());
 }
 
+// Verifies SparseJacobianPlan::MatchesOnlyIdenticalStructure.
 TEST(SparseJacobianPlan, MatchesOnlyIdenticalStructure) {
   const Values values = makeValues();
   const SparseJacobianColumnLayout layout(values);
@@ -749,6 +759,7 @@ TEST(SparseJacobianPlan, MatchesOnlyIdenticalStructure) {
         changedRowsPlan.structuralFingerprint());
 }
 
+// Verifies SparseJacobianPlan::FingerprintAndMatchesIncludeNullMarkers.
 TEST(SparseJacobianPlan, FingerprintAndMatchesIncludeNullMarkers) {
   const SparseJacobianColumnLayout layout(makeValues());
 
@@ -769,6 +780,7 @@ TEST(SparseJacobianPlan, FingerprintAndMatchesIncludeNullMarkers) {
         zeroRowPlan.structuralFingerprint());
 }
 
+// Verifies PinnedHostArray::MoveConstructionTransfersOwnership.
 TEST(PinnedHostArray, MoveConstructionTransfersOwnership) {
   PinnedHostArray<int> source(3);
   source.data()[0] = 4;
@@ -788,6 +800,7 @@ TEST(PinnedHostArray, MoveConstructionTransfersOwnership) {
   EXPECT_LONGS_EQUAL(6, destination.data()[2]);
 }
 
+// Verifies PinnedHostArray::ClearValueInitializesElements.
 TEST(PinnedHostArray, ClearValueInitializesElements) {
   PinnedHostArray<NonzeroValueInitialized> array(3);
   for (size_t i = 0; i < array.size(); ++i) {
@@ -803,6 +816,7 @@ TEST(PinnedHostArray, ClearValueInitializesElements) {
   }
 }
 
+// Verifies PinnedHostArray::MoveAssignmentTransfersOwnership.
 TEST(PinnedHostArray, MoveAssignmentTransfersOwnership) {
   PinnedHostArray<int> source(3);
   source.data()[0] = 7;
@@ -825,6 +839,7 @@ TEST(PinnedHostArray, MoveAssignmentTransfersOwnership) {
   CHECK(isPinnedHostAllocation(destination.data()));
 }
 
+// Verifies PinnedHostArray::HandlesZeroSizeAndResize.
 TEST(PinnedHostArray, HandlesZeroSizeAndResize) {
   PinnedHostArray<double> array;
   CHECK(array.data() == nullptr);
@@ -865,6 +880,7 @@ TEST(PinnedHostArray, HandlesZeroSizeAndResize) {
   EXPECT_LONGS_EQUAL(0, zeroSize.size());
 }
 
+// Verifies PinnedHostArray::OverflowLeavesExistingAllocationValid.
 TEST(PinnedHostArray, OverflowLeavesExistingAllocationValid) {
   PinnedHostArray<double> array(3);
   array.data()[0] = 2.5;
@@ -880,6 +896,7 @@ TEST(PinnedHostArray, OverflowLeavesExistingAllocationValid) {
   CHECK(isPinnedHostAllocation(array.data()));
 }
 
+// Verifies HostSparseJacobian::ClearsInPlaceWithoutChangingBufferAddresses.
 TEST(HostSparseJacobian, ClearsInPlaceWithoutChangingBufferAddresses) {
   const Values values = makeValues();
   const SparseJacobianColumnLayout layout(values);
@@ -916,6 +933,7 @@ TEST(HostSparseJacobian, ClearsInPlaceWithoutChangingBufferAddresses) {
   }
 }
 
+// Verifies StreamingSparseJacobianLinearizer::StreamsUnitDiagonalAndRobustFactorsIntoPlannedCsr.
 TEST(StreamingSparseJacobianLinearizer,
      StreamsUnitDiagonalAndRobustFactorsIntoPlannedCsr) {
   const Values values = makeStreamingValues();
@@ -936,6 +954,7 @@ TEST(StreamingSparseJacobianLinearizer,
   EXPECT(assert_equal(expected.rhs, VectorFromHostRhs(host), 1e-12));
 }
 
+// Verifies StreamingSparseJacobianLinearizer::WhitensReturnedDiagonalJacobianExactlyOnce.
 TEST(StreamingSparseJacobianLinearizer,
      WhitensReturnedDiagonalJacobianExactlyOnce) {
   Values values;
@@ -969,6 +988,7 @@ TEST(StreamingSparseJacobianLinearizer,
   EXPECT(assert_equal(rawB, Vector(returned->getb()), 1e-12));
 }
 
+// Verifies StreamingSparseJacobianLinearizer::InactiveFactorLeavesItsReservedRowsCleared.
 TEST(StreamingSparseJacobianLinearizer,
      InactiveFactorLeavesItsReservedRowsCleared) {
   Values values;
@@ -989,6 +1009,7 @@ TEST(StreamingSparseJacobianLinearizer,
   CHECK(FactorRangeEquals(plan, 0, 0.0, host));
 }
 
+// Verifies StreamingSparseJacobianLinearizer::RejectsMalformedReturnedJacobiansWithoutPartialWrites.
 TEST(StreamingSparseJacobianLinearizer,
      RejectsMalformedReturnedJacobiansWithoutPartialWrites) {
   constexpr double kSentinel = 73.0;
@@ -1044,6 +1065,7 @@ TEST(StreamingSparseJacobianLinearizer,
                                                    wrongWidthA, squareB));
 }
 
+// Verifies StreamingSparseJacobianLinearizer::SchedulesSendableFactorsAndReportsStats.
 TEST(StreamingSparseJacobianLinearizer,
      SchedulesSendableFactorsAndReportsStats) {
   constexpr size_t kSendableFactorCount = 512;
@@ -1092,6 +1114,7 @@ TEST(StreamingSparseJacobianLinearizer,
   CHECK(nonSendableFactor->threadId() == callerThread);
 }
 
+// Verifies StreamingSparseJacobianLinearizer::ProfilesSendableAndNonSendableFactorsWithoutChangingResults.
 TEST(StreamingSparseJacobianLinearizer,
      ProfilesSendableAndNonSendableFactorsWithoutChangingResults) {
   constexpr size_t kProfileRows = 2048;
@@ -1142,6 +1165,7 @@ TEST(StreamingSparseJacobianLinearizer,
   }
 }
 
+// Verifies StreamingSparseJacobianLinearizer::ResetsProfileBeforeReturningStructuralFailure.
 TEST(StreamingSparseJacobianLinearizer,
      ResetsProfileBeforeReturningStructuralFailure) {
   const Values values = makeStreamingValues();
@@ -1160,6 +1184,7 @@ TEST(StreamingSparseJacobianLinearizer,
   DOUBLES_EQUAL(0.0, profile.csrPackingCpuSum, 0.0);
 }
 
+// Verifies StreamingSparseJacobianLinearizer::ReturnsLowestFactorFailureAfterEvaluatingEveryScheduleClass.
 TEST(StreamingSparseJacobianLinearizer,
      ReturnsLowestFactorFailureAfterEvaluatingEveryScheduleClass) {
   Values values;
@@ -1201,6 +1226,7 @@ TEST(StreamingSparseJacobianLinearizer,
   EXPECT_LONGS_EQUAL(2, stats.nonSendableFactors);
 }
 
+// Verifies StreamingSparseJacobianLinearizer::RejectsStaleSendabilityBeforeEvaluatingInShallowMode.
 TEST(StreamingSparseJacobianLinearizer,
      RejectsStaleSendabilityBeforeEvaluatingInShallowMode) {
   Values values;
@@ -1229,6 +1255,7 @@ TEST(StreamingSparseJacobianLinearizer,
   EXPECT_LONGS_EQUAL(1, stats.nonSendableFactors);
 }
 
+// Verifies StreamingSparseJacobianLinearizer::RejectsReturnedHessianFactorsWithoutPartialWrites.
 TEST(StreamingSparseJacobianLinearizer,
      RejectsReturnedHessianFactorsWithoutPartialWrites) {
   const StreamingAndPackingFailureResult result =
@@ -1247,6 +1274,7 @@ TEST(StreamingSparseJacobianLinearizer,
   EXPECT(result.packingRangeUnchanged);
 }
 
+// Verifies StreamingSparseJacobianLinearizer::RejectsReturnedConstrainedJacobiansWithoutPartialWrites.
 TEST(StreamingSparseJacobianLinearizer,
      RejectsReturnedConstrainedJacobiansWithoutPartialWrites) {
   const StreamingAndPackingFailureResult result =
@@ -1266,6 +1294,7 @@ TEST(StreamingSparseJacobianLinearizer,
   EXPECT(result.packingRangeUnchanged);
 }
 
+// Verifies StreamingSparseJacobianLinearizer::RejectsNonFiniteReturnedJacobiansWithoutPartialWritesInShallowMode.
 TEST(StreamingSparseJacobianLinearizer,
      RejectsNonFiniteReturnedJacobiansWithoutPartialWritesInShallowMode) {
   std::vector<StreamingAndPackingFailureResult> results;
@@ -1309,6 +1338,7 @@ TEST(StreamingSparseJacobianLinearizer,
   }
 }
 
+// Verifies StreamingSparseJacobianLinearizer::RejectsInvalidGlobalInputsBeforeLinearizing.
 TEST(StreamingSparseJacobianLinearizer,
      RejectsInvalidGlobalInputsBeforeLinearizing) {
   const Values values = makeStreamingValues();
@@ -1358,6 +1388,7 @@ TEST(StreamingSparseJacobianLinearizer,
   CHECK(status.failure == DirectJacobianFailure::StructuralMismatch);
 }
 
+// Verifies StreamingSparseJacobianLinearizer::PacksOnlySlotAlignedGaussianFactorGraphs.
 TEST(StreamingSparseJacobianLinearizer,
      PacksOnlySlotAlignedGaussianFactorGraphs) {
   const Values values = makeStreamingValues();
@@ -1406,6 +1437,7 @@ TEST(StreamingSparseJacobianLinearizer,
   CHECK(status.factorIndex == 0);
 }
 
+// Verifies DeviceSparseJacobianNormalEquations::RepeatedFormsMatchEigenAndPreserveFinalStorage.
 TEST(DeviceSparseJacobianNormalEquations,
      RepeatedFormsMatchEigenAndPreserveFinalStorage) {
 #if GTSAM_TEST_EXPECT_SPGEMM_REUSE
@@ -1426,7 +1458,7 @@ TEST(DeviceSparseJacobianNormalEquations,
   DeviceSparseJacobianNormalEquations normalEquations;
   normalEquations.initialize(plan, context.stream());
 
-  const DeviceSparseNormalEquations& initialSystem = normalEquations.system();
+  const DeviceSparseSpdSystem& initialSystem = normalEquations.system();
   const int* const initialRowPointersAddress =
       initialSystem.rowPointers().data();
   const int* const initialColumnIndicesAddress =
@@ -1447,7 +1479,7 @@ TEST(DeviceSparseJacobianNormalEquations,
 
     normalEquations.uploadNumerics(host, context.stream());
     normalEquations.formUndampedSystem(context.stream());
-    const DeviceSparseNormalEquations& system = normalEquations.system();
+    const DeviceSparseSpdSystem& system = normalEquations.system();
     const DownloadedSparseNormalEquations downloaded =
         DownloadNormalEquations(system, context.stream());
 
@@ -1465,6 +1497,7 @@ TEST(DeviceSparseJacobianNormalEquations,
 #endif
 }
 
+// Verifies DeviceSparseJacobianNormalEquations::SolvesIdentityDampedAttemptsWithoutAccumulationAndEvaluatesModel.
 TEST(DeviceSparseJacobianNormalEquations,
      SolvesIdentityDampedAttemptsWithoutAccumulationAndEvaluatesModel) {
 #if GTSAM_TEST_EXPECT_SPGEMM_REUSE && GTSAM_ENABLE_CUDSS
@@ -1489,7 +1522,7 @@ TEST(DeviceSparseJacobianNormalEquations,
   normalEquations.uploadNumerics(host, context.stream());
   normalEquations.formUndampedSystem(context.stream());
 
-  const DeviceSparseNormalEquations& initialSystem = normalEquations.system();
+  const DeviceSparseSpdSystem& initialSystem = normalEquations.system();
   const DeviceSystemAddresses addresses = GetSystemAddresses(initialSystem);
   const auto pattern =
       DownloadNormalEquationPattern(initialSystem, context.stream());
@@ -1524,7 +1557,7 @@ TEST(DeviceSparseJacobianNormalEquations,
     DOUBLES_EQUAL(expectedOldError - expectedNewError, attempt.model.change(),
                   1e-9);
 
-    const DeviceSparseNormalEquations& system = normalEquations.system();
+    const DeviceSparseSpdSystem& system = normalEquations.system();
     const DownloadedSparseNormalEquations downloaded =
         DownloadNormalEquations(system, context.stream());
     EXPECT(assert_equal(expectedHessian, downloaded.hessian, 1e-10));
@@ -1537,6 +1570,7 @@ TEST(DeviceSparseJacobianNormalEquations,
 #endif
 }
 
+// Verifies DeviceSparseJacobianNormalEquations::SolvesDiagonalDampedAttemptsWithoutAccumulationAndPreservesStorage.
 TEST(DeviceSparseJacobianNormalEquations,
      SolvesDiagonalDampedAttemptsWithoutAccumulationAndPreservesStorage) {
 #if GTSAM_TEST_EXPECT_SPGEMM_REUSE && GTSAM_ENABLE_CUDSS
@@ -1568,7 +1602,7 @@ TEST(DeviceSparseJacobianNormalEquations,
   normalEquations.uploadNumerics(host, context.stream());
   normalEquations.formUndampedSystem(context.stream());
 
-  const DeviceSparseNormalEquations& initialSystem = normalEquations.system();
+  const DeviceSparseSpdSystem& initialSystem = normalEquations.system();
   const DeviceSystemAddresses addresses = GetSystemAddresses(initialSystem);
   const auto pattern =
       DownloadNormalEquationPattern(initialSystem, context.stream());
@@ -1603,7 +1637,7 @@ TEST(DeviceSparseJacobianNormalEquations,
     DOUBLES_EQUAL(expectedOldError - expectedNewError, attempt.model.change(),
                   1e-9);
 
-    const DeviceSparseNormalEquations& system = normalEquations.system();
+    const DeviceSparseSpdSystem& system = normalEquations.system();
     const DownloadedSparseNormalEquations downloaded =
         DownloadNormalEquations(system, context.stream());
     EXPECT(assert_equal(expectedHessian, downloaded.hessian, 1e-10));
@@ -1616,6 +1650,7 @@ TEST(DeviceSparseJacobianNormalEquations,
 #endif
 }
 
+// Verifies DeviceSparseJacobianNormalEquations::CachesAnalysisAcrossNumericalUpdatesAndResetsOnInitialize.
 TEST(DeviceSparseJacobianNormalEquations,
      CachesAnalysisAcrossNumericalUpdatesAndResetsOnInitialize) {
 #if GTSAM_TEST_EXPECT_SPGEMM_REUSE && GTSAM_ENABLE_CUDSS
@@ -1634,7 +1669,6 @@ TEST(DeviceSparseJacobianNormalEquations,
   Context context;
   DeviceSparseJacobianNormalEquations normalEquations;
   normalEquations.initialize(plan, context.stream());
-  EXPECT_LONGS_EQUAL(0, normalEquations.analysisCount());
 
   LinearizeSparseJacobian(graph, firstValues, columns, plan, &firstHost);
   normalEquations.uploadNumerics(firstHost, context.stream());
@@ -1689,7 +1723,6 @@ TEST(DeviceSparseJacobianNormalEquations,
                 secondAttempt.model.change(), 1e-9);
 
   normalEquations.initialize(plan, context.stream());
-  EXPECT_LONGS_EQUAL(0, normalEquations.analysisCount());
   normalEquations.uploadNumerics(secondHost, context.stream());
   normalEquations.formUndampedSystem(context.stream());
   normalEquations.prepareDamping(true, 2.0, 2.0, context.stream());
@@ -1722,14 +1755,14 @@ TEST(DeviceSparseJacobianNormalEquations,
 #endif
 }
 
+// Verifies DeviceSparseJacobianNormalEquations::RejectsUninitializedOutOfOrderAndInvalidAttemptCalls.
 TEST(DeviceSparseJacobianNormalEquations,
      RejectsUninitializedOutOfOrderAndInvalidAttemptCalls) {
   DeviceSparseJacobianNormalEquations uninitialized;
-  EXPECT_LONGS_EQUAL(0, uninitialized.analysisCount());
   CHECK_EXCEPTION(uninitialized.prepareDamping(false, 0.0, 1.0),
                   std::logic_error);
-  CHECK_EXCEPTION(uninitialized.analyze(), std::logic_error);
-  CHECK_EXCEPTION(uninitialized.solveAndEvaluate(0.1), std::logic_error);
+  CHECK_EXCEPTION(uninitialized.applyExplicitDamping(0.1), std::logic_error);
+  CHECK_EXCEPTION(uninitialized.evaluateSolvedDelta(), std::logic_error);
   CHECK_EXCEPTION(uninitialized.downloadAttemptResult(), std::logic_error);
 
 #if GTSAM_TEST_EXPECT_SPGEMM_REUSE
@@ -1748,7 +1781,6 @@ TEST(DeviceSparseJacobianNormalEquations,
   CHECK_EXCEPTION(
       normalEquations.prepareDamping(false, 0.0, 1.0, context.stream()),
       std::logic_error);
-  CHECK_EXCEPTION(normalEquations.analyze(context.stream()), std::logic_error);
   CHECK_EXCEPTION(normalEquations.downloadAttemptResult(context.stream()),
                   std::logic_error);
 
@@ -1791,37 +1823,27 @@ TEST(DeviceSparseJacobianNormalEquations,
   CHECK_EXCEPTION(
       normalEquations.prepareDamping(true, -2.0, -1.0, context.stream()),
       std::invalid_argument);
-  CHECK_EXCEPTION(normalEquations.solveAndEvaluate(0.1, context.stream()),
-                  std::logic_error);
+  CHECK_EXCEPTION(
+      normalEquations.applyExplicitDamping(0.1, context.stream()),
+      std::logic_error);
 
   normalEquations.prepareDamping(false, 0.0, 1.0, context.stream());
-  CHECK_EXCEPTION(normalEquations.solveAndEvaluate(-0.1, context.stream()),
+  CHECK_EXCEPTION(normalEquations.applyExplicitDamping(-0.1, context.stream()),
                   std::invalid_argument);
   CHECK_EXCEPTION(
-      normalEquations.solveAndEvaluate(std::numeric_limits<double>::quiet_NaN(),
-                                       context.stream()),
+      normalEquations.applyExplicitDamping(
+          std::numeric_limits<double>::quiet_NaN(), context.stream()),
       std::invalid_argument);
   CHECK_EXCEPTION(
-      normalEquations.solveAndEvaluate(std::numeric_limits<double>::infinity(),
-                                       context.stream()),
+      normalEquations.applyExplicitDamping(
+          std::numeric_limits<double>::infinity(), context.stream()),
       std::invalid_argument);
-  CHECK_EXCEPTION(normalEquations.solveAndEvaluate(0.1, context.stream()),
-                  std::logic_error);
   CHECK_EXCEPTION(normalEquations.downloadAttemptResult(context.stream()),
                   std::logic_error);
-
-#if GTSAM_ENABLE_CUDSS
-  normalEquations.analyze(context.stream());
-  CHECK_EXCEPTION(normalEquations.downloadAttemptResult(context.stream()),
-                  std::logic_error);
-#else
-  CHECK_EXCEPTION(normalEquations.analyze(context.stream()),
-                  std::runtime_error);
-  EXPECT_LONGS_EQUAL(0, normalEquations.analysisCount());
-#endif
 #endif
 }
 
+// Verifies DeviceSparseJacobianNormalEquations::RejectsWrongStreamForAttemptLifecycle.
 TEST(DeviceSparseJacobianNormalEquations,
      RejectsWrongStreamForAttemptLifecycle) {
 #if GTSAM_TEST_EXPECT_SPGEMM_REUSE
@@ -1844,9 +1866,10 @@ TEST(DeviceSparseJacobianNormalEquations,
     CHECK_EXCEPTION(
         normalEquations.prepareDamping(false, 0.0, 1.0, otherStream),
         std::invalid_argument);
-    CHECK_EXCEPTION(normalEquations.analyze(otherStream),
+    normalEquations.prepareDamping(false, 0.0, 1.0, context.stream());
+    CHECK_EXCEPTION(normalEquations.applyExplicitDamping(0.1, otherStream),
                     std::invalid_argument);
-    CHECK_EXCEPTION(normalEquations.solveAndEvaluate(0.1, otherStream),
+    CHECK_EXCEPTION(normalEquations.evaluateSolvedDelta(otherStream),
                     std::invalid_argument);
     CHECK_EXCEPTION(normalEquations.downloadAttemptResult(otherStream),
                     std::invalid_argument);
@@ -1855,6 +1878,7 @@ TEST(DeviceSparseJacobianNormalEquations,
 #endif
 }
 
+// Verifies StreamingSparseJacobianLinearizer::RejectsMismatchedHostFingerprintBeforeFactorEvaluation.
 TEST(StreamingSparseJacobianLinearizer,
      RejectsMismatchedHostFingerprintBeforeFactorEvaluation) {
   const Values values = makeStreamingValues();
@@ -1886,6 +1910,7 @@ TEST(StreamingSparseJacobianLinearizer,
   CHECK(FactorRangeEquals(firstPlan, 1, kSentinel, secondHost));
 }
 
+// Verifies StreamingSparseJacobianLinearizer::PackingRejectsMismatchedHostFingerprintBeforeWrites.
 TEST(StreamingSparseJacobianLinearizer,
      PackingRejectsMismatchedHostFingerprintBeforeWrites) {
   const Values values = makeStreamingValues();
@@ -1914,6 +1939,7 @@ TEST(StreamingSparseJacobianLinearizer,
   CHECK(FactorRangeEquals(firstPlan, 1, kSentinel, secondHost));
 }
 
+// Verifies DeviceSparseJacobianNormalEquations::RejectsEqualSizedHostWithDifferentStructuralFingerprint.
 TEST(DeviceSparseJacobianNormalEquations,
      RejectsEqualSizedHostWithDifferentStructuralFingerprint) {
   const Values values = makeStreamingValues();
@@ -1950,6 +1976,7 @@ TEST(DeviceSparseJacobianNormalEquations,
 #endif
 }
 
+// Verifies DeviceSparseJacobianNormalEquations::RejectsEmptyRowsColumnsAndNonzeros.
 TEST(DeviceSparseJacobianNormalEquations, RejectsEmptyRowsColumnsAndNonzeros) {
   const Values values;
   const NonlinearFactorGraph graph;
@@ -1969,8 +1996,9 @@ TEST(DeviceSparseJacobianNormalEquations, RejectsEmptyRowsColumnsAndNonzeros) {
   CHECK(detailedInvalidArgument);
 }
 
+// Verifies DeviceSparseJacobianNormalEquations::ReportsConfiguredSpGemmCapability.
 TEST(DeviceSparseJacobianNormalEquations, ReportsConfiguredSpGemmCapability) {
-  const DeviceSparseNormalEquationCapability capability =
+  const DeviceSparseJacobianCapability capability =
       DeviceSparseJacobianNormalEquations::preflightCapability();
 #if GTSAM_TEST_EXPECT_SPGEMM_REUSE
   CHECK(capability.supported);
@@ -1979,6 +2007,9 @@ TEST(DeviceSparseJacobianNormalEquations, ReportsConfiguredSpGemmCapability) {
   CHECK(!capability.detail.empty());
 #endif
 }
+
+}  // namespace sparse_jacobian_fixture
+/* ************************************************************************* */
 
 int main() {
   TestResult result;

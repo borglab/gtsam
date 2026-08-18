@@ -17,10 +17,21 @@ namespace gtsam::cuda {
 
 class SfmReducedCsrPlan;
 
+/**
+ * Borrowed matrix-free reduced-camera Schur system.
+ *
+ * Pointers are owned by the producing SfmSchurProblem and remain valid only
+ * until the next initialize, linearize, or prepare operation, move, or
+ * destruction. Use the producing stream or establish an explicit dependency.
+ */
 struct SfmImplicitSchurView {
+  /** Matrix-free damped reduced-camera operator. */
   const LinearOperator* linearOperator = nullptr;
+  /** Camera block-Jacobi preconditioner. */
   const Preconditioner* preconditioner = nullptr;
+  /** Device pointer to the condensed camera right-hand side. */
   const double* rhs = nullptr;
+  /** Scalar dimension of the reduced camera system. */
   int dimension = 0;
 };
 
@@ -47,6 +58,7 @@ struct SfmSchurBlocks {
  */
 class GTSAM_EXPORT SfmSchurProblem {
  public:
+  /** Constructs an empty producer; call initialize before linearize. */
   SfmSchurProblem();
   ~SfmSchurProblem();
 
@@ -55,44 +67,76 @@ class GTSAM_EXPORT SfmSchurProblem {
   SfmSchurProblem(SfmSchurProblem&&) noexcept;
   SfmSchurProblem& operator=(SfmSchurProblem&&) noexcept;
 
+  /**
+   * Initializes dimensions and borrows batch for subsequent operations.
+   * batch must outlive this object or the next initialization.
+   */
   void initialize(const SfmProjectionBatch& batch, int numCameras);
+  /**
+   * Linearizes values and builds undamped Schur blocks asynchronously.
+   * values need only remain valid until the queued work on stream completes.
+   */
   void linearize(const DeviceValues& values, cudaStream_t stream = nullptr);
 
+  /** Returns a borrowed dense reduced system with scalar damping. */
   DenseSpdSystemView prepareDense(double lambda,
-                                      cudaStream_t stream = nullptr);
+                                  cudaStream_t stream = nullptr);
+  /**
+   * Returns a borrowed dense reduced system with full-system diagonal damping.
+   */
   DenseSpdSystemView prepareDense(
       double lambda, const DeviceArray<double>& dampingDiagonal,
       cudaStream_t stream = nullptr);
 
+  /**
+   * Assembles scalar-damped upper CSR according to plan and returns
+   * producer-owned storage.
+   */
   DeviceSparseSpdSystem& prepareSparse(
       double lambda, const SfmReducedCsrPlan& plan,
       cudaStream_t stream = nullptr);
+  /** Assembles diagonally damped upper CSR in producer-owned storage. */
   DeviceSparseSpdSystem& prepareSparse(
       double lambda, const DeviceArray<double>& dampingDiagonal,
       const SfmReducedCsrPlan& plan, cudaStream_t stream = nullptr);
 
+  /** Returns a borrowed matrix-free reduced system with scalar damping. */
   SfmImplicitSchurView prepareImplicit(
       double lambda, cudaStream_t stream = nullptr);
+  /** Returns a borrowed matrix-free system with full-system diagonal damping. */
   SfmImplicitSchurView prepareImplicit(
       double lambda, const DeviceArray<double>& dampingDiagonal,
       cudaStream_t stream = nullptr);
 
+  /**
+   * Recovers point increments from a scalar-damped camera solution.
+   * fullDelta is resized to totalDimension(); all device work is queued on
+   * stream.
+   */
   void recoverPoints(double lambda,
                      const DeviceArray<double>& cameraDelta,
                      DeviceArray<double>* fullDelta,
                      cudaStream_t stream = nullptr);
+  /** Recovers point increments using the supplied damping diagonal. */
   void recoverPoints(double lambda,
                      const DeviceArray<double>& dampingDiagonal,
                      const DeviceArray<double>& cameraDelta,
                      DeviceArray<double>* fullDelta,
                      cudaStream_t stream = nullptr);
 
+  /** Returns the scalar dimension of the reduced camera system. */
   int cameraDimension() const;
+  /** Returns the scalar dimension of cameras and points together. */
   int totalDimension() const;
+  /** Returns the number of successful linearizations. */
   size_t linearizationCount() const;
+  /** Returns the number of undamped Schur block builds. */
   size_t blockBuildCount() const;
+  /** Returns the number of dense reduced-system assemblies. */
   size_t denseAssemblyCount() const;
+  /** Borrows the current owned projection linearization. */
   const SfmProjectionLinearization& linearization() const;
+  /** Borrows the current owned undamped Schur blocks. */
   const SfmSchurBlocks& blocks() const;
 
   /** Borrow the current condensed RHS (overwritten in-place by dense solve). */

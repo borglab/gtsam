@@ -4,7 +4,6 @@
 
 namespace gtsam {
 
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/SfmData.h>
@@ -95,8 +94,7 @@ optimizeSfmWithoutValueDownload(
     const gtsam::SfmData& data,
     const gtsam::cuda::SfmLevenbergMarquardtParams& params);
 
-virtual class SfmLevenbergMarquardtOptimizer
-    : gtsam::NonlinearOptimizer {
+class SfmLevenbergMarquardtOptimizer {
   SfmLevenbergMarquardtOptimizer(
       const gtsam::NonlinearFactorGraph& graph,
       const gtsam::Values& initialValues,
@@ -105,6 +103,10 @@ virtual class SfmLevenbergMarquardtOptimizer
 
   const gtsam::cuda::SfmLevenbergMarquardtParams& params() const;
   const gtsam::cuda::SfmLevenbergMarquardtResult& result() const;
+  const gtsam::Values& optimize();
+  const gtsam::Values& values() const;
+  double error() const;
+  size_t iterations() const;
 };
 
 }  // namespace cuda

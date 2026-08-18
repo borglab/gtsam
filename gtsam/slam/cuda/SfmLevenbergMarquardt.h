@@ -5,7 +5,6 @@
 #include <gtsam/linear/cuda/LinearSolver.h>
 #include <gtsam/linear/cuda/PcgSolver.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/SfmData.h>
 #include <gtsam/slam/cuda/SfmTypes.h>
@@ -218,9 +217,8 @@ GTSAM_EXPORT SfmLevenbergMarquardtResult optimizeSfmWithoutValueDownload(
     const std::vector<Key>& pointKeys,
     const SfmLevenbergMarquardtParams& params);
 
-/** NonlinearOptimizer adapter for the CUDA-resident SFM implementation. */
-class GTSAM_EXPORT SfmLevenbergMarquardtOptimizer
-    : public NonlinearOptimizer {
+/** Batch optimizer adapter for the CUDA-resident SFM implementation. */
+class GTSAM_EXPORT SfmLevenbergMarquardtOptimizer {
  public:
   /// Creates an optimizer for a supported factor graph and initial values.
   SfmLevenbergMarquardtOptimizer(
@@ -229,20 +227,23 @@ class GTSAM_EXPORT SfmLevenbergMarquardtOptimizer
           SfmLevenbergMarquardtParams());
 
   /// Runs optimization and returns the final values.
-  const Values& optimize() override;
+  const Values& optimize();
 
-  /// Executes one nonlinear iteration.
-  GaussianFactorGraph::shared_ptr iterate() override;
+  /// Returns the latest optimized values, or the initial values before optimize().
+  const Values& values() const { return values_; }
+  /// Returns the nonlinear objective at the current values.
+  double error() const { return graph_.error(values_); }
+  /// Returns the number of accepted nonlinear iterations in the latest run.
+  size_t iterations() const { return static_cast<size_t>(result_.iterations); }
 
   /// Returns the optimizer parameters.
   const SfmLevenbergMarquardtParams& params() const { return params_; }
   /// Returns profiling and convergence results from the latest run.
   const SfmLevenbergMarquardtResult& result() const { return result_; }
 
- protected:
-  const NonlinearOptimizerParams& _params() const override { return params_; }
-
  private:
+  NonlinearFactorGraph graph_;
+  Values values_;
   SfmLevenbergMarquardtParams params_;
   SfmLevenbergMarquardtResult result_;
 };

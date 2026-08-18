@@ -8,6 +8,7 @@
 
 using namespace gtsam::cuda;
 
+// Verifies DeviceArray::UploadDownloadRoundTrip.
 TEST(DeviceArray, UploadDownloadRoundTrip) {
   Context context;
   std::vector<double> host = {1.0, 2.0, 3.5, -4.0};
@@ -25,6 +26,7 @@ TEST(DeviceArray, UploadDownloadRoundTrip) {
   }
 }
 
+// Verifies DeviceArray::ZeroesAndCopiesDeviceData.
 TEST(DeviceArray, ZeroesAndCopiesDeviceData) {
   Context context;
   DeviceArray<double> source;
@@ -52,6 +54,7 @@ TEST(DeviceArray, ZeroesAndCopiesDeviceData) {
   DOUBLES_EQUAL(0.0, actual[2], 1e-12);
 }
 
+// Verifies DeviceArray::MoveTransfersOwnership.
 TEST(DeviceArray, MoveTransfersOwnership) {
   Context context;
   DeviceArray<int> original(3);

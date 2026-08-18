@@ -12,12 +12,14 @@
 
 namespace gtsam::cuda {
 
+/** Timing and byte count for one profiled host/device transfer. */
 struct DeviceTransferTiming {
   size_t bytes = 0;
   double resizeElapsed = 0.0;
   double copyElapsed = 0.0;
 };
 
+/** Accumulator for multiple profiled host/device transfers. */
 struct DeviceTransferSummary {
   size_t bytes = 0;
   double resizeElapsed = 0.0;
@@ -41,14 +43,24 @@ inline double transferElapsedSince(
 
 }  // namespace internal
 
+/**
+ * Move-only RAII owner for a contiguous CUDA device allocation.
+ *
+ * Transfers are enqueued on the caller-provided stream. The ordinary upload
+ * and download methods do not synchronize; the caller must keep host storage
+ * alive until the stream reaches the copy. Profiled transfers synchronize so
+ * they can return a complete wall-clock duration.
+ */
 template <typename T>
 class DeviceArray {
   static_assert(std::is_trivially_copyable_v<T>,
                 "DeviceArray requires trivially copyable values");
 
  public:
+  /** Construct an empty allocation. */
   DeviceArray() = default;
 
+  /** Allocate storage for `size` elements. */
   explicit DeviceArray(size_t size) { resize(size); }
 
   DeviceArray(const DeviceArray&) = delete;
@@ -72,6 +84,7 @@ class DeviceArray {
 
   ~DeviceArray() { resetUnchecked(); }
 
+  /** Replace the allocation with storage for `size` elements. */
   void resize(size_t size) {
     if (size == size_) return;
     reset();
@@ -84,6 +97,7 @@ class DeviceArray {
     size_ = size;
   }
 
+  /** Resize and asynchronously copy a host vector to device storage. */
   void upload(const std::vector<T>& host, cudaStream_t stream = nullptr) {
     resize(host.size());
     if (host.empty()) return;
@@ -91,6 +105,7 @@ class DeviceArray {
                                      cudaMemcpyHostToDevice, stream));
   }
 
+  /** Upload and synchronize, returning allocation and copy timings. */
   DeviceTransferTiming uploadProfiled(
       const std::vector<T>& host, cudaStream_t stream = nullptr) {
     DeviceTransferTiming timing;
@@ -109,12 +124,13 @@ class DeviceArray {
     return timing;
   }
 
-  // Fills the allocation with bitwise zero.
+  /** Asynchronously fill the allocation with bitwise zero. */
   void zero(cudaStream_t stream = nullptr) {
     if (size_ == 0) return;
     GTSAM_CUDA_CHECK(cudaMemsetAsync(data_, 0, sizeof(T) * size_, stream));
   }
 
+  /** Resize and asynchronously copy another device allocation. */
   void copyFrom(const DeviceArray<T>& other,
                 cudaStream_t stream = nullptr) {
     if (this == &other) return;
@@ -124,6 +140,7 @@ class DeviceArray {
                                      cudaMemcpyDeviceToDevice, stream));
   }
 
+  /** Resize and asynchronously copy device storage to a host vector. */
   void download(std::vector<T>* host, cudaStream_t stream = nullptr) const {
     host->resize(size_);
     if (size_ == 0) return;
@@ -131,6 +148,7 @@ class DeviceArray {
                                      cudaMemcpyDeviceToHost, stream));
   }
 
+  /** Download and synchronize, returning host resize and copy timings. */
   DeviceTransferTiming downloadProfiled(
       std::vector<T>* host, cudaStream_t stream = nullptr) const {
     DeviceTransferTiming timing;
@@ -149,6 +167,7 @@ class DeviceArray {
     return timing;
   }
 
+  /** Release the device allocation and return to the empty state. */
   void reset() {
     if (data_) {
       GTSAM_CUDA_CHECK(cudaFree(data_));
@@ -157,9 +176,13 @@ class DeviceArray {
     size_ = 0;
   }
 
+  /** Return the mutable device pointer, or nullptr when empty. */
   T* data() { return data_; }
+  /** Return the device pointer, or nullptr when empty. */
   const T* data() const { return data_; }
+  /** Return the number of allocated elements. */
   size_t size() const { return size_; }
+  /** Return whether the allocation contains no elements. */
   bool empty() const { return size_ == 0; }
 
  private:
