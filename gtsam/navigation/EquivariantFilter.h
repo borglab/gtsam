@@ -30,6 +30,12 @@ namespace gtsam {
  * 2. **Explicit**: You provide the Jacobian A and the manifold covariance Qc
  *    directly.
  *
+ * The filter propagates its error in **error coordinates**, the tangent space at
+ * the reference state xi_ref: the covariance P, the error dynamics matrix A and
+ * the process noise Qc all live there. Use covariance() to obtain the covariance
+ * in the tangent space at the current state estimate, and actionDifferential()
+ * for the map between the two frames.
+ *
  * @tparam M Manifold type for the physical state.
  * @tparam Symmetry Functor encoding the group action on the state.
  */
@@ -120,15 +126,36 @@ class EquivariantFilter : public ManifoldEKF<M> {
   /// errorCovariance that returns P_, on the equivariant filter error
   const typename Base::Covariance& errorCovariance() const { return this->P_; }
 
-  /// Covariance in the tangent space at the current state.
-  CovarianceM covariance() const {
+  /**
+   * @brief Differential of the group action at the reference state.
+   *
+   * J = D phi_g|_{xi_ref} maps error coordinates, which live in the tangent
+   * space at the reference state, to tangent vectors at the current state
+   * estimate. The filter propagates its error in the former frame, so J is the
+   * bridge to anything expressed at the current state.
+   */
+  MatrixM actionDifferential() const {
     MatrixM J;
     if constexpr (MatrixM::RowsAtCompileTime == Eigen::Dynamic) {
       J.resize(this->n_, this->n_);
     }
     const typename Symmetry::Diffeomorphism action_at_g(g_);
     action_at_g(xi_ref_, &J);
-    return J.transpose() * this->P_ * J;
+    return J;
+  }
+
+  /**
+   * @brief Covariance in the tangent space at the current state.
+   *
+   * P_ is the covariance of the error coordinates in the tangent space at the
+   * reference state xi_ref. The true state is recovered as xi = phi_g(e) with
+   * e = Retract(xi_ref, epsilon), so a perturbation epsilon at the reference
+   * appears at the current state as J * epsilon. The covariance therefore
+   * pushes forward as J * P_ * J^T.
+   */
+  CovarianceM covariance() const {
+    const MatrixM J = actionDifferential();
+    return J * this->P_ * J.transpose();
   }
 
   /// @return Current group estimate.
