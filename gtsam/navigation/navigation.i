@@ -270,7 +270,7 @@ class PreintegratedImuMeasurements {
   void serialize() const;
 };
 
-virtual class ImuFactor: gtsam::NonlinearFactor {
+virtual class ImuFactor: gtsam::NoiseModelFactor {
   ImuFactor(gtsam::Key pose_i, gtsam::Key vel_i, gtsam::Key pose_j, gtsam::Key vel_j,
       gtsam::Key bias,
       const gtsam::PreintegratedImuMeasurements& preintegratedMeasurements);
@@ -286,7 +286,7 @@ virtual class ImuFactor: gtsam::NonlinearFactor {
   void serialize() const;
 };
 
-virtual class ImuFactor2: gtsam::NonlinearFactor {
+virtual class ImuFactor2: gtsam::NoiseModelFactor {
   ImuFactor2();
   ImuFactor2(gtsam::Key state_i, gtsam::Key state_j,
       gtsam::Key bias,
@@ -307,7 +307,7 @@ virtual class ImuFactor2: gtsam::NonlinearFactor {
 
 #include <gtsam/navigation/ImuFactorWithGravity.h>
 template <PIM, GRAVITY>
-virtual class ImuFactorWithGravityT : gtsam::NonlinearFactor {
+virtual class ImuFactorWithGravityT : gtsam::NoiseModelFactor {
   ImuFactorWithGravityT(gtsam::Key pose_i, gtsam::Key vel_i,
       gtsam::Key pose_j, gtsam::Key vel_j, gtsam::Key bias, gtsam::Key gravity,
       const PIM& preintegratedMeasurements);
@@ -485,7 +485,7 @@ class PreintegratedAhrsMeasurements {
   void serialize() const;
 };
 
-virtual class AHRSFactor : gtsam::NonlinearFactor {
+virtual class AHRSFactor : gtsam::NoiseModelFactor {
   AHRSFactor(gtsam::Key rot_i, gtsam::Key rot_j, gtsam::Key bias,
     const gtsam::PreintegratedAhrsMeasurements& preintegratedMeasurements);
 
@@ -517,7 +517,7 @@ virtual class AttitudeFactor : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/navigation/GPSFactor.h>
-virtual class GPSFactor : gtsam::NonlinearFactor{
+virtual class GPSFactor : gtsam::NoiseModelFactor{
   GPSFactor(gtsam::Key key, const gtsam::Point3& gpsIn,
             const gtsam::noiseModel::Base* model);
 
@@ -531,7 +531,7 @@ virtual class GPSFactor : gtsam::NonlinearFactor{
   void serialize() const;
 };
 
-virtual class GPSFactorArm : gtsam::NonlinearFactor{
+virtual class GPSFactorArm : gtsam::NoiseModelFactor{
   GPSFactorArm(gtsam::Key key, const gtsam::Point3& gpsIn,
             const gtsam::Point3& leverArm, 
             const gtsam::noiseModel::Base* model);
@@ -546,7 +546,7 @@ virtual class GPSFactorArm : gtsam::NonlinearFactor{
   void serialize() const;
 };
 
-virtual class GPSFactorArmCalib : gtsam::NonlinearFactor{
+virtual class GPSFactorArmCalib : gtsam::NoiseModelFactor{
   GPSFactorArmCalib(gtsam::Key key1, gtsam::Key key2, const gtsam::Point3& gpsIn,
             const gtsam::noiseModel::Base* model);
 
@@ -561,7 +561,7 @@ virtual class GPSFactorArmCalib : gtsam::NonlinearFactor{
   void serialize() const;
 };
 
-virtual class GPSFactor2 : gtsam::NonlinearFactor {
+virtual class GPSFactor2 : gtsam::NoiseModelFactor {
   GPSFactor2(gtsam::Key key, const gtsam::Point3& gpsIn,
             const gtsam::noiseModel::Base* model);
 
@@ -575,7 +575,7 @@ virtual class GPSFactor2 : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
-virtual class GPSFactor2Arm : gtsam::NonlinearFactor{
+virtual class GPSFactor2Arm : gtsam::NoiseModelFactor{
   GPSFactor2Arm(gtsam::Key key, const gtsam::Point3& gpsIn,
             const gtsam::Point3& leverArm, 
             const gtsam::noiseModel::Base* model);
@@ -590,7 +590,7 @@ virtual class GPSFactor2Arm : gtsam::NonlinearFactor{
   void serialize() const;
 };
 
-virtual class GPSFactor2ArmCalib : gtsam::NonlinearFactor{
+virtual class GPSFactor2ArmCalib : gtsam::NoiseModelFactor{
   GPSFactor2ArmCalib(gtsam::Key key1, gtsam::Key key2, const gtsam::Point3& gpsIn,
             const gtsam::noiseModel::Base* model);
 
@@ -606,7 +606,7 @@ virtual class GPSFactor2ArmCalib : gtsam::NonlinearFactor{
 };
 
 #include <gtsam/navigation/PseudorangeFactor.h>
-virtual class PseudorangeFactor : gtsam::NonlinearFactor {
+virtual class PseudorangeFactor : gtsam::NoiseModelFactor {
   PseudorangeFactor(gtsam::Key receiverPositionKey,
                     gtsam::Key receiverClockBiasKey, double measuredPseudorange,
                     const gtsam::Point3& satellitePosition,
@@ -623,7 +623,7 @@ virtual class PseudorangeFactor : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
-virtual class UndifferencedPseudorangeFactor : gtsam::NonlinearFactor {
+virtual class UndifferencedPseudorangeFactor : gtsam::NoiseModelFactor {
   UndifferencedPseudorangeFactor(gtsam::Key receiverPositionKey,
                               gtsam::Key receiverClockBiasKey,
                               gtsam::Key tropoZenithWetKey,
@@ -645,7 +645,7 @@ virtual class UndifferencedPseudorangeFactor : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
-virtual class UndifferencedPseudorangeFactorArm : gtsam::NonlinearFactor {
+virtual class UndifferencedPseudorangeFactorArm : gtsam::NoiseModelFactor {
   UndifferencedPseudorangeFactorArm(gtsam::Key poseKey,
                                  gtsam::Key receiverClockBiasKey,
                                  gtsam::Key tropoZenithWetKey,
@@ -680,7 +680,7 @@ virtual class UndifferencedPseudorangeFactorArm : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
-virtual class DifferentialPseudorangeFactor : gtsam::NonlinearFactor {
+virtual class DifferentialPseudorangeFactor : gtsam::NoiseModelFactor {
   DifferentialPseudorangeFactor(gtsam::Key receiverPositionKey,
                                 gtsam::Key receiverClockBiasKey,
                                 gtsam::Key differentialCorrectionKey,
@@ -697,7 +697,7 @@ virtual class DifferentialPseudorangeFactor : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
-virtual class PseudorangeFactorArm : gtsam::NonlinearFactor {
+virtual class PseudorangeFactorArm : gtsam::NoiseModelFactor {
   PseudorangeFactorArm(gtsam::Key poseKey,
                         gtsam::Key receiverClockBiasKey,
                         double measuredPseudorange,
@@ -725,7 +725,7 @@ virtual class PseudorangeFactorArm : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
-virtual class DifferentialPseudorangeFactorArm : gtsam::NonlinearFactor {
+virtual class DifferentialPseudorangeFactorArm : gtsam::NoiseModelFactor {
   DifferentialPseudorangeFactorArm(gtsam::Key poseKey,
                         gtsam::Key receiverClockBiasKey,
                         gtsam::Key differentialCorrectionKey,
@@ -753,7 +753,7 @@ virtual class DifferentialPseudorangeFactorArm : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
-virtual class DoubleDifferencePseudorangeFactor : gtsam::NonlinearFactor {
+virtual class DoubleDifferencePseudorangeFactor : gtsam::NoiseModelFactor {
   DoubleDifferencePseudorangeFactor(gtsam::Key positionKey,
                       double prRovRef, double prBaseRef,
                       double prRovTarget, double prBaseTarget,
@@ -765,7 +765,7 @@ virtual class DoubleDifferencePseudorangeFactor : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
-virtual class DoubleDifferencePseudorangeFactorArm : gtsam::NonlinearFactor {
+virtual class DoubleDifferencePseudorangeFactorArm : gtsam::NoiseModelFactor {
   DoubleDifferencePseudorangeFactorArm(gtsam::Key poseKey,
                          double prRovRef, double prBaseRef,
                          double prRovTarget, double prBaseTarget,
@@ -787,7 +787,7 @@ virtual class DoubleDifferencePseudorangeFactorArm : gtsam::NonlinearFactor {
 };
 
 #include <gtsam/navigation/CarrierPhaseFactor.h>
-virtual class CarrierPhaseFactor : gtsam::NonlinearFactor {
+virtual class CarrierPhaseFactor : gtsam::NoiseModelFactor {
   CarrierPhaseFactor(gtsam::Key receiverPositionKey,
                       gtsam::Key receiverClockBiasKey,
                       gtsam::Key ambiguityKey,
@@ -807,7 +807,7 @@ virtual class CarrierPhaseFactor : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
-virtual class UndifferencedCarrierPhaseFactor : gtsam::NonlinearFactor {
+virtual class UndifferencedCarrierPhaseFactor : gtsam::NoiseModelFactor {
   UndifferencedCarrierPhaseFactor(gtsam::Key receiverPositionKey,
                                gtsam::Key receiverClockBiasKey,
                                gtsam::Key tropoZenithWetKey,
@@ -831,7 +831,7 @@ virtual class UndifferencedCarrierPhaseFactor : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
-virtual class UndifferencedCarrierPhaseFactorArm : gtsam::NonlinearFactor {
+virtual class UndifferencedCarrierPhaseFactorArm : gtsam::NoiseModelFactor {
   UndifferencedCarrierPhaseFactorArm(gtsam::Key poseKey,
                                   gtsam::Key receiverClockBiasKey,
                                   gtsam::Key tropoZenithWetKey,
@@ -870,7 +870,7 @@ virtual class UndifferencedCarrierPhaseFactorArm : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
-virtual class CarrierPhaseFactorArm : gtsam::NonlinearFactor {
+virtual class CarrierPhaseFactorArm : gtsam::NoiseModelFactor {
   CarrierPhaseFactorArm(gtsam::Key poseKey,
                          gtsam::Key receiverClockBiasKey,
                          gtsam::Key ambiguityKey,
@@ -902,7 +902,7 @@ virtual class CarrierPhaseFactorArm : gtsam::NonlinearFactor {
 };
 
 
-virtual class DoubleDifferenceCarrierPhaseFactor : gtsam::NonlinearFactor {
+virtual class DoubleDifferenceCarrierPhaseFactor : gtsam::NoiseModelFactor {
   DoubleDifferenceCarrierPhaseFactor(gtsam::Key positionKey, gtsam::Key ambRefKey,
                        gtsam::Key ambTargetKey,
                        double cpRovRefMeters, double cpBaseRefMeters,
@@ -915,7 +915,7 @@ virtual class DoubleDifferenceCarrierPhaseFactor : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
-virtual class DoubleDifferenceCarrierPhaseFactorArm : gtsam::NonlinearFactor {
+virtual class DoubleDifferenceCarrierPhaseFactorArm : gtsam::NoiseModelFactor {
   DoubleDifferenceCarrierPhaseFactorArm(gtsam::Key poseKey, gtsam::Key ambRefKey, gtsam::Key ambTargetKey,
                           double cpRovRefMeters, double cpBaseRefMeters,
                           double cpRovTargetMeters, double cpBaseTargetMeters,
@@ -938,7 +938,7 @@ virtual class DoubleDifferenceCarrierPhaseFactorArm : gtsam::NonlinearFactor {
 };
 
 #include <gtsam/navigation/DopplerFactor.h>
-virtual class DopplerFactor : gtsam::NonlinearFactor {
+virtual class DopplerFactor : gtsam::NoiseModelFactor {
   DopplerFactor(gtsam::Key velocityKey, gtsam::Key clockBiasPrevKey,
                 gtsam::Key clockBiasCurrKey, double measuredDoppler,
                 double wavelength, const gtsam::Point3& satellitePosition,
@@ -956,7 +956,7 @@ virtual class DopplerFactor : gtsam::NonlinearFactor {
   void serialize() const;
 };
 
-virtual class DopplerFactorArm : gtsam::NonlinearFactor {
+virtual class DopplerFactorArm : gtsam::NoiseModelFactor {
   DopplerFactorArm(gtsam::Key poseKey, gtsam::Key velocityKey,
                    gtsam::Key clockBiasPrevKey, gtsam::Key clockBiasCurrKey,
                    double measuredDoppler, double wavelength,
@@ -990,7 +990,7 @@ virtual class DopplerFactorArm : gtsam::NonlinearFactor {
 };
 
 #include <gtsam/navigation/BarometricFactor.h>
-virtual class BarometricFactor : gtsam::NonlinearFactor {
+virtual class BarometricFactor : gtsam::NoiseModelFactor {
   BarometricFactor();
   BarometricFactor(gtsam::Key key, gtsam::Key baroKey, const double& baroIn,
                    const gtsam::noiseModel::Base* model);
@@ -1008,14 +1008,14 @@ virtual class BarometricFactor : gtsam::NonlinearFactor {
 };
 
 #include <gtsam/navigation/ConstantVelocityFactor.h>
-class ConstantVelocityFactor : gtsam::NonlinearFactor {
+class ConstantVelocityFactor : gtsam::NoiseModelFactor {
   ConstantVelocityFactor(gtsam::Key i, gtsam::Key j, double dt, const gtsam::noiseModel::Base* model);
   gtsam::Vector evaluateError(const gtsam::NavState &x1, const gtsam::NavState &x2) const;
 };
 
 #include <gtsam/navigation/MagFactor.h>
 
-class MagFactor: gtsam::NonlinearFactor {
+class MagFactor: gtsam::NoiseModelFactor {
   MagFactor(gtsam::Key key, const gtsam::Point3& measured, double scale,
       const gtsam::Unit3& direction, const gtsam::Point3& bias,
       const gtsam::noiseModel::Base* model);
@@ -1023,7 +1023,7 @@ class MagFactor: gtsam::NonlinearFactor {
                               gtsam::OptionalMatrixType H = nullptr) const;
 };
 
-class MagFactor1: gtsam::NonlinearFactor {
+class MagFactor1: gtsam::NoiseModelFactor {
   MagFactor1(gtsam::Key key, const gtsam::Point3& measured, double scale,
       const gtsam::Unit3& direction, const gtsam::Point3& bias,
       const gtsam::noiseModel::Base* model);
