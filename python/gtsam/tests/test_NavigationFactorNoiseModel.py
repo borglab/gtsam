@@ -6,7 +6,7 @@ All Rights Reserved
 See LICENSE for the license information.
 
 Unit tests confirming navigation factors expose the NoiseModelFactor
-interface (noiseModel, unwhitenedError, whitenedError) in Python.
+interface (noiseModel, whitenedError) in Python.
 """
 
 # pylint: disable=invalid-name, no-name-in-module, no-member
@@ -31,7 +31,8 @@ class TestNavigationFactorNoiseModel(GtsamTestCase):
         self.assertIsInstance(factor, gtsam.NoiseModelFactor)
         np.testing.assert_allclose(factor.noiseModel().sigmas(), sigmas)
 
-    def test_gps_factor_unwhitened_error(self):
+    def test_gps_factor_whitened_error(self):
+        """Unit noise, so the whitened residual is the raw residual."""
         model = gtsam.noiseModel.Isotropic.Sigma(3, 1.0)
         measured = gtsam.Point3(1.0, 2.0, 3.0)
         factor = gtsam.GPSFactor(X(1), measured, model)
@@ -40,9 +41,8 @@ class TestNavigationFactorNoiseModel(GtsamTestCase):
         values.insert(X(1), gtsam.Pose3(gtsam.Rot3(),
                                         gtsam.Point3(1.0, 2.0, 4.0)))
 
-        error = factor.unwhitenedError(values)
-        np.testing.assert_allclose(error, np.array([0.0, 0.0, 1.0]),
-                                   atol=1e-9)
+        np.testing.assert_allclose(factor.whitenedError(values),
+                                   np.array([0.0, 0.0, 1.0]), atol=1e-9)
 
     def test_barometric_factor_exposes_noise_model(self):
         model = gtsam.noiseModel.Isotropic.Sigma(1, 0.5)
@@ -52,9 +52,8 @@ class TestNavigationFactorNoiseModel(GtsamTestCase):
         self.assertAlmostEqual(factor.noiseModel().sigma(), 0.5)
 
     def test_whitened_error_scales_by_sigma(self):
-        """whitenedError is unwhitenedError divided through by sigma."""
-        sigma = 2.0
-        model = gtsam.noiseModel.Isotropic.Sigma(3, sigma)
+        """A 4 m residual under a 2 m sigma whitens to 2."""
+        model = gtsam.noiseModel.Isotropic.Sigma(3, 2.0)
         factor = gtsam.GPSFactor(X(1), gtsam.Point3(0.0, 0.0, 0.0), model)
 
         values = gtsam.Values()
@@ -62,15 +61,13 @@ class TestNavigationFactorNoiseModel(GtsamTestCase):
                                         gtsam.Point3(0.0, 0.0, 4.0)))
 
         np.testing.assert_allclose(factor.whitenedError(values),
-                                   factor.unwhitenedError(values) / sigma,
-                                   atol=1e-9)
+                                   np.array([0.0, 0.0, 2.0]), atol=1e-9)
 
-    def test_robust_wrapped_factor_still_exposes_raw_error(self):
-        """A robust-wrapped factor exposes its un-whitened residual.
+    def test_robust_wrapped_factor_reaches_its_noise_model(self):
+        """A robust-wrapped factor still exposes the NoiseModelFactor API.
 
-        unwhitenedError is computed before the noise model is applied, so it
-        is unaffected by the m-estimator. This is the residual any outlier
-        gate needs as its input.
+        The residual is down-weighted by the m-estimator, which is what
+        makes reaching the noise model necessary in the first place.
         """
         base = gtsam.noiseModel.Isotropic.Sigma(3, 1.0)
         robust = gtsam.noiseModel.Robust.Create(
@@ -82,8 +79,12 @@ class TestNavigationFactorNoiseModel(GtsamTestCase):
                                         gtsam.Point3(0.0, 0.0, 50.0)))
 
         self.assertIsInstance(factor, gtsam.NoiseModelFactor)
-        np.testing.assert_allclose(factor.unwhitenedError(values),
-                                   np.array([0.0, 0.0, 50.0]), atol=1e-9)
+        self.assertIsInstance(factor.noiseModel(), gtsam.noiseModel.Robust)
+
+        # 50 sigma, but Huber pulls the whitened residual well below that.
+        whitened = np.linalg.norm(factor.whitenedError(values))
+        self.assertGreater(whitened, 0.0)
+        self.assertLess(whitened, 50.0)
 
 
 if __name__ == "__main__":
