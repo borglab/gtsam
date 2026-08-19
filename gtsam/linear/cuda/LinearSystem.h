@@ -10,7 +10,7 @@ enum class SparseTriangle { Upper, Lower };
 /** Prepared-system representation accepted by the shared solver layer. */
 enum class LinearSystemKind { Dense, Sparse, Operator };
 
-/** Borrowed column-major dense SPD matrix and right-hand side. */
+/** Non-owning view of a column-major dense SPD matrix and right-hand side. */
 struct DenseSpdSystemView {
   int dimension = 0;
   int leadingDimension = 0;
@@ -18,7 +18,7 @@ struct DenseSpdSystemView {
   double* rhs = nullptr;
 };
 
-/** Borrowed symmetric CSR SPD matrix and right-hand side. */
+/** Non-owning view of a symmetric CSR SPD matrix and right-hand side. */
 struct SparseSpdSystemView {
   int dimension = 0;
   int nonzeros = 0;

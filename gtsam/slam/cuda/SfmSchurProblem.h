@@ -18,7 +18,7 @@ namespace gtsam::cuda {
 class SfmReducedCsrPlan;
 
 /**
- * Borrowed matrix-free reduced-camera Schur system.
+ * Non-owning matrix-free reduced-camera Schur system.
  *
  * Pointers are owned by the producing SfmSchurProblem and remain valid only
  * until the next initialize, linearize, or prepare operation, move, or

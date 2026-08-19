@@ -17,7 +17,7 @@ enum class DevicePcgPreconditioner {
   None,
 };
 
-/** Borrowed general-Jacobian operator J'J + lambda D. */
+/** Non-owning general-Jacobian operator J'J + lambda D. */
 class GTSAM_EXPORT JacobianNormalOperator final
     : public LinearOperator {
  public:
