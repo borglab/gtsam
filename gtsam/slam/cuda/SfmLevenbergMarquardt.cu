@@ -663,15 +663,8 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
   Context context(nullptr);
   result.contextElapsed = elapsedSince(stageStart);
 
-  // The uploads below are disjoint: packSfmValues() sends camera and point
-  // values, SfmProjectionBatch::fromSfmData() sends observations and track
-  // offsets. On dubrovnik-135-90642 that is 2.2 MB against 13.8 MB, so there is
-  // no redundant traffic to remove.
-  //
-  // TODO(perf): The remaining setup cost is host-side, not bandwidth. The
-  // largest item is the projection-batch host build, a single-threaded pass
-  // over every observation. Next is DeviceValues key indexing, paid once here
-  // and again for the trial buffer, even though only tests read the index.
+  // The two uploads below carry disjoint data: values here, observations and
+  // track offsets in the projection batch.
   stageStart = detailedProfileStart(detailedProfiling);
   SfmValuesPackProfile packValuesProfile;
   DeviceValues current =
