@@ -132,6 +132,19 @@ class SfmProjectionBatch {
     std::vector<SfmRobustModel> robustModels;
     std::vector<int> pointObservationOffsets;
     std::vector<int> longTrackPointSlots;
+
+    // Size the observation arrays from the track measurement counts. Reading
+    // only the counts stays inside the contiguous track array, so this pass
+    // does not touch the scattered measurement storage, and it turns the fill
+    // below into a straight append instead of ~20 reallocate-and-copy rounds
+    // over what reaches tens of megabytes on a large BAL problem.
+    size_t totalMeasurements = 0;
+    for (size_t pointSlot = 0; pointSlot < data.numberTracks(); ++pointSlot) {
+      totalMeasurements += data.track(pointSlot).numberMeasurements();
+    }
+    observations.reserve(totalMeasurements);
+    if (sqrtInfoByTrack) sqrtInfos.reserve(totalMeasurements);
+    if (robustModelsByTrack) robustModels.reserve(totalMeasurements);
     pointObservationOffsets.reserve(data.numberTracks() + 1);
     pointObservationOffsets.push_back(0);
     for (size_t pointSlot = 0; pointSlot < data.numberTracks(); ++pointSlot) {
