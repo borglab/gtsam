@@ -785,10 +785,12 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
       reducedPlan =
           std::make_unique<SfmReducedCsrPlan>(data, cameraKeys);
       result.linearSystemNonzeros = reducedPlan->columnIndices().size();
-    }
-    if (params.ordering) {
-      result.appliedScalarPermutation = compileScalarPermutation(
-          reducedPlan->cameraBlocks(), *params.ordering);
+      // validateAndSelectSolverMode has already rejected a user ordering for
+      // every other backend, so the reduced plan is available here.
+      if (params.ordering) {
+        result.appliedScalarPermutation = compileScalarPermutation(
+            reducedPlan->cameraBlocks(), *params.ordering);
+      }
     }
     sparseSchurProblem.initialize(batch, numCameras);
     if (options.backend == gtsam::cuda::LinearSolverType::Pcg && numCameras > 0) {

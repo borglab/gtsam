@@ -1196,6 +1196,27 @@ TEST(SfmLevenbergMarquardt, EvaluatesFiniteIterationLimitedPcgStep) {
 }
 
 
+// Verifies SfmLevenbergMarquardt::RejectsUserOrderingForNonCudssBackends.
+TEST(SfmLevenbergMarquardt, RejectsUserOrderingForNonCudssBackends) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+
+  // A user ordering is compiled against the reduced cuDSS CSR plan, which only
+  // the cuDSS backend builds. Every other backend must reject it up front
+  // rather than reach the ordering block without a plan.
+  for (const LinearSolverType backend :
+       {LinearSolverType::Pcg, LinearSolverType::DenseCholesky}) {
+    SfmLevenbergMarquardtParams params =
+        SfmLevenbergMarquardtParams::ceresDefaults();
+    params.maxIterations = 1;
+    params.setLinearSolver(backend);
+    params.ordering = Ordering{C(1), C(0)};
+    CHECK_EXCEPTION(optimizeSfmWithoutValueDownload(data, params),
+                    std::invalid_argument);
+  }
+}
+
+
 #if GTSAM_ENABLE_CUDSS
 
 // Verifies SfmLevenbergMarquardt::SparseSchurCudssMatchesDenseAndAppliesCameraOrdering.
