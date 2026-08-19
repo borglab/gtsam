@@ -66,6 +66,33 @@ class Chebyshev2 {
                                                  double b);
 };
 
+#include <gtsam/basis/CumulativeSplineTrajectory.h>
+#include <gtsam/basis/CardinalSplineBasis.h>
+
+class CardinalSplineBasis {
+  static gtsam::Vector CalculateWeights(size_t N, double x);
+  static gtsam::Vector CalculateWeights(size_t N, double x, double a, double b);
+  static gtsam::Vector DerivativeWeights(size_t N, double x);
+  static gtsam::Vector DerivativeWeights(size_t N, double x, double a,
+                                         double b);
+};
+
+template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
+class CumulativeSplineTrajectory {
+  CumulativeSplineTrajectory(double density = 1.0);
+  CumulativeSplineTrajectory(double density, bool padFront);
+
+  double density() const;
+  bool padFront() const;
+  void addControlPoint(const T& point);
+
+  T sampleTrajectory(double timestamp, double windowStart = 0.0,
+                     double windowEnd = -1.0) const;
+  gtsam::Vector sampleTrajectoryDerivative(
+      double timestamp, double windowStart = 0.0, double windowEnd = -1.0,
+      size_t derivative = 1) const;
+};
+
 #include <gtsam/basis/BasisFactors.h>
 
 template <BASIS = {gtsam::Chebyshev2, gtsam::Chebyshev1Basis,

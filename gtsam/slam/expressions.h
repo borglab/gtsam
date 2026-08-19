@@ -7,13 +7,13 @@
 
 #pragma once
 
-#include <gtsam/nonlinear/expressions.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Line3.h>
 #include <gtsam/geometry/OrientedPlane3.h>
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/nonlinear/expressions.h>
 
 namespace gtsam {
 
@@ -48,9 +48,9 @@ inline Point3_ transformFrom(const Pose3_& x, const Point3_& p) {
   return Point3_(x, &Pose3::transformFrom, p);
 }
 
-inline Line3_ transformTo(const Pose3_ &wTc, const Line3_ &wL) {
-  Line3 (*f)(const Pose3 &, const Line3 &,
-             OptionalJacobian<4, 6>, OptionalJacobian<4, 4>) = &transformTo;
+inline Line3_ transformTo(const Pose3_& wTc, const Line3_& wL) {
+  Line3 (*f)(const Pose3&, const Line3&, OptionalJacobian<4, 6>,
+             OptionalJacobian<4, 4>) = &transformTo;
   return Line3_(f, wTc, wL);
 }
 
@@ -58,24 +58,25 @@ inline Pose3_ transformPoseTo(const Pose3_& p, const Pose3_& q) {
   return Pose3_(p, &Pose3::transformPoseTo, q);
 }
 
-inline Pose3_ interpolateRt(const Pose3_& p, const Pose3_& q, const Double_& t) {
+inline Pose3_ interpolateRt(const Pose3_& p, const Pose3_& q,
+                            const Double_& t) {
   return Pose3_(&Pose3::interpolateRt, p, q, t);
 }
 
-inline Point3_ normalize(const Point3_& a){
-  Point3 (*f)(const Point3 &, OptionalJacobian<3, 3>) = &normalize;
+inline Point3_ normalize(const Point3_& a) {
+  Point3 (*f)(const Point3&, OptionalJacobian<3, 3>) = &normalize;
   return Point3_(f, a);
 }
 
 inline Point3_ cross(const Point3_& a, const Point3_& b) {
-  Point3 (*f)(const Point3 &, const Point3 &,
-             OptionalJacobian<3, 3>, OptionalJacobian<3, 3>) = &cross;
+  Point3 (*f)(const Point3&, const Point3&, OptionalJacobian<3, 3>,
+              OptionalJacobian<3, 3>) = &cross;
   return Point3_(f, a, b);
 }
 
 inline Double_ dot(const Point3_& a, const Point3_& b) {
-  double (*f)(const Point3 &, const Point3 &,
-             OptionalJacobian<1, 3>, OptionalJacobian<1, 3>) = &dot;
+  double (*f)(const Point3&, const Point3&, OptionalJacobian<1, 3>,
+              OptionalJacobian<1, 3>) = &dot;
   return Double_(f, a, b);
 }
 
@@ -102,9 +103,7 @@ inline Point3_ rotate(const Rot3_& x, const Point3_& p) {
   return Point3_(x, &Rot3::rotate, p);
 }
 
-inline Point3_ point3(const Unit3_& v) {
-  return Point3_(&Unit3::point3, v);
-}
+inline Point3_ point3(const Unit3_& v) { return Point3_(&Unit3::point3, v); }
 
 inline Unit3_ rotate(const Rot3_& x, const Unit3_& p) {
   return Unit3_(x, &Rot3::rotate, p);
@@ -145,14 +144,16 @@ inline Point2_ project(const Unit3_& p_cam) {
 namespace internal {
 // Helper template for project2 expression below
 template <class CAMERA, class POINT>
-Point2 project4(const CAMERA& camera, const POINT& p, OptionalJacobian<2, CAMERA::dimension> Dcam,
+Point2 project4(const CAMERA& camera, const POINT& p,
+                OptionalJacobian<2, CAMERA::dimension> Dcam,
                 OptionalJacobian<2, FixedDimension<POINT>::value> Dpoint) {
   return camera.project2(p, Dcam, Dpoint);
 }
-}
+}  // namespace internal
 
 template <class CAMERA, class POINT>
-Point2_ project2(const Expression<CAMERA>& camera_, const Expression<POINT>& p_) {
+Point2_ project2(const Expression<CAMERA>& camera_,
+                 const Expression<POINT>& p_) {
   return Point2_(internal::project4<CAMERA, POINT>, camera_, p_);
 }
 
@@ -160,11 +161,12 @@ namespace internal {
 // Helper template for project3 expression below
 template <class CALIBRATION, class POINT>
 inline Point2 project6(const Pose3& x, const POINT& p, const CALIBRATION& K,
-                       OptionalJacobian<2, 6> Dpose, OptionalJacobian<2, 3> Dpoint,
+                       OptionalJacobian<2, 6> Dpose,
+                       OptionalJacobian<2, 3> Dpoint,
                        OptionalJacobian<2, CALIBRATION::dimension> Dcal) {
   return PinholeCamera<CALIBRATION>(x, K).project(p, Dpose, Dpoint, Dcal);
 }
-}
+}  // namespace internal
 
 template <class CALIBRATION, class POINT>
 inline Point2_ project3(const Pose3_& x, const Expression<POINT>& p,
@@ -178,10 +180,9 @@ Point2_ uncalibrate(const Expression<CALIBRATION>& K, const Point2_& xy_hat) {
 }
 
 template <class CALIBRATION>
-inline Pose3_ getPose(const Expression<PinholeCamera<CALIBRATION> > & cam) {
+inline Pose3_ getPose(const Expression<PinholeCamera<CALIBRATION> >& cam) {
   return Pose3_(&PinholeCamera<CALIBRATION>::getPose, cam);
 }
-
 
 /// logmap
 // TODO(dellaert): Should work but fails because of a type deduction conflict.
@@ -194,7 +195,7 @@ inline Pose3_ getPose(const Expression<PinholeCamera<CALIBRATION> > & cam) {
 
 template <typename T>
 gtsam::Expression<typename gtsam::traits<T>::TangentVector> logmap(
-    const gtsam::Expression<T> &x1, const gtsam::Expression<T> &x2) {
+    const gtsam::Expression<T>& x1, const gtsam::Expression<T>& x2) {
   using Traits = gtsam::traits<T>;
   using TangentVector = typename Traits::TangentVector;
   auto logmap = [](const T& value, typename Traits::ChartJacobian H) {
@@ -202,15 +203,13 @@ gtsam::Expression<typename gtsam::traits<T>::TangentVector> logmap(
   };
   return Expression<TangentVector>(logmap, between(x1, x2));
 }
-
 template <typename T>
 inline Expression<T> interpolate(const Expression<T>& p, const Expression<T>& q,
-                                 const Expression<double>& t){
-  T (*f)(const T&, const T&, double,
-         typename MakeOptionalJacobian<T, T>::type,
+                                 const Expression<double>& t) {
+  T (*f)(const T&, const T&, double, typename MakeOptionalJacobian<T, T>::type,
          typename MakeOptionalJacobian<T, T>::type,
          typename MakeOptionalJacobian<T, double>::type) = &interpolate;
   return Expression<T>(f, p, q, t);
 }
 
-}  // \namespace gtsam
+}  // namespace gtsam

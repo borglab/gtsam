@@ -9,7 +9,8 @@ points.
 At a high level, you choose a basis (Fourier or Chebyshev), decide whether you
 want a coefficient-based representation or a pseudo-spectral one (values at
 Chebyshev points), and then use the provided factors or fitting utilities to
-solve for parameters in GTSAM.
+solve for parameters in GTSAM. For cardinal splines, choose between dense
+linear basis weights and a cumulative Lie-group trajectory.
 
 ## Getting Oriented
 
@@ -20,6 +21,9 @@ solve for parameters in GTSAM.
 - **Factors**: A family of unary factors enforce function values or derivatives
   at specific points, including vector- and manifold-valued variants.
 - **Fitting**: `FitBasis` performs least-squares regression from samples.
+- **Cardinal splines**: `CardinalSplineBasis` evaluates scalar or vector
+  coefficients, while `CumulativeSplineTrajectory<T>` handles pose and
+  rotation control points.
 
 ## Core Concepts
 
@@ -34,6 +38,22 @@ solve for parameters in GTSAM.
   $U_n(x)$ on $[-1,1]$ (coefficient-based).
 - [FourierBasis](doc/FourierBasis.ipynb): Real Fourier series basis for
   periodic functions.
+
+## Cardinal and Cumulative Splines
+
+- [CumulativeSplineTrajectory](doc/CumulativeSplineTrajectory.ipynb): Smooth
+  trajectories whose controls are poses, rotations, or other Lie-group
+  values. See the [Pose2 example](../../python/gtsam/examples/CumulativeSplineTrajectoryExample.ipynb).
+- [CardinalSplineBasis](doc/CardinalSplineBasis.ipynb): Dense cubic
+  weights for scalar or vector coefficients at a known coordinate. See the
+  [scalar example](../../python/gtsam/examples/CardinalSplineBasisExample.ipynb).
+- [`KernelBase`](https://github.com/borglab/gtsam/blob/develop/gtsam/basis/KernelBase.h):
+  Interface for the compactly supported smooth switch used by cumulative
+  trajectories.
+- [`PiecewisePolynomial`](https://github.com/borglab/gtsam/blob/develop/gtsam/basis/PiecewisePolynomial.h):
+  Exact piecewise-polynomial values and derivatives used to implement kernels.
+- [Irwin–Hall kernels](https://github.com/borglab/gtsam/blob/develop/gtsam/basis/IrwinHall.h):
+  Ready-made kernels, including the cubic `IrwinHallCDF2` default.
 
 ## Pseudo-Spectral Basis
 
