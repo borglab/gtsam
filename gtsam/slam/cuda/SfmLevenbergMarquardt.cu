@@ -149,22 +149,26 @@ void applyDelta(const DeviceValues& current, const DeviceArray<double>& delta,
   GTSAM_CUDA_CHECK(cudaGetLastError());
 }
 
-void acceptTrial(const DeviceValues& trial, DeviceValues* current,
-                 cudaStream_t stream) {
-  const auto& trialCameras =
-      trial.block<DevicePinholeCameraCal3Bundler>(
-               kDevicePinholeCameraCal3BundlerType)
-          .values;
-  const auto& trialPoints =
-      trial.block<DevicePoint3>(kDevicePoint3Type).values;
-  auto& currentCameras =
-      current->block<DevicePinholeCameraCal3Bundler>(
-                 kDevicePinholeCameraCal3BundlerType)
-          .values;
-  auto& currentPoints = current->block<DevicePoint3>(kDevicePoint3Type).values;
-
-  currentCameras.copyFrom(trialCameras, stream);
-  currentPoints.copyFrom(trialPoints, stream);
+/**
+ * Promotes the trial state by exchanging device buffers with the current one.
+ *
+ * The two DeviceValues share keys, tangent dimensions, and sizes, so trading
+ * their value allocations replaces an O(number of variables) device-to-device
+ * copy with two host-side pointer swaps. The demoted buffer becomes the next
+ * trial destination, and applyDelta rewrites every camera and point in it
+ * before anything reads it again. Swapping only rebinds ownership on the host:
+ * device pointers already captured by queued kernels stay valid, and the next
+ * write is ordered behind them on the same in-order stream.
+ */
+void acceptTrial(DeviceValues* trial, DeviceValues* current) {
+  std::swap(trial->block<DevicePinholeCameraCal3Bundler>(
+                    kDevicePinholeCameraCal3BundlerType)
+                .values,
+            current->block<DevicePinholeCameraCal3Bundler>(
+                       kDevicePinholeCameraCal3BundlerType)
+                .values);
+  std::swap(trial->block<DevicePoint3>(kDevicePoint3Type).values,
+            current->block<DevicePoint3>(kDevicePoint3Type).values);
 }
 
 std::vector<Key> defaultCameraKeys(const SfmData& data) {
@@ -659,10 +663,15 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
   Context context(nullptr);
   result.contextElapsed = elapsedSince(stageStart);
 
-  // TODO(perf): Avoid duplicate host-to-device transfers here. packSfmValues()
-  // uploads values, and SfmProjectionBatch::fromSfmData() uploads overlapping
-  // SFM data again. Consider constructing the projection batch from existing
-  // device buffers or sharing the packed representation.
+  // The uploads below are disjoint: packSfmValues() sends camera and point
+  // values, SfmProjectionBatch::fromSfmData() sends observations and track
+  // offsets. On dubrovnik-135-90642 that is 2.2 MB against 13.8 MB, so there is
+  // no redundant traffic to remove.
+  //
+  // TODO(perf): The remaining setup cost is host-side, not bandwidth. The
+  // largest item is the projection-batch host build, a single-threaded pass
+  // over every observation. Next is DeviceValues key indexing, paid once here
+  // and again for the trial buffer, even though only tests read the index.
   stageStart = detailedProfileStart(detailedProfiling);
   SfmValuesPackProfile packValuesProfile;
   DeviceValues current =
@@ -735,11 +744,16 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
     result.linearSystemKind = LinearSystemKind::Operator;
   }
 
+  // Every error reduction below runs on context.stream() and reduces the same
+  // observation count, so one scratch serves all of them and its buffers are
+  // allocated once by this first call.
+  SfmReductionScratch reductionScratch;
+
   stageStart = Clock::now();
   SfmReductionTransferProfile initialErrorTransfer;
   double currentError = computeSfmProjectionError(
       current, batch, context.stream(),
-      detailedProfiling ? &initialErrorTransfer : nullptr);
+      detailedProfiling ? &initialErrorTransfer : nullptr, &reductionScratch);
   if (detailedProfiling) {
     addReductionD2hTransfer(initialErrorTransfer, &result);
   }
@@ -981,7 +995,8 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
           computeSfmLinearizedErrorChange(
               *activeLinearization, batch, numCameras, delta,
               &oldLinearizedError, &newLinearizedError, context.stream(),
-              detailedProfiling ? &linearizedErrorTransfer : nullptr);
+              detailedProfiling ? &linearizedErrorTransfer : nullptr,
+              &reductionScratch);
       if (detailedProfiling) {
         addReductionD2hTransfer(linearizedErrorTransfer, &result);
       }
@@ -1014,7 +1029,8 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
         SfmReductionTransferProfile trialErrorTransfer;
         trialError = computeSfmProjectionError(
             trial, batch, context.stream(),
-            detailedProfiling ? &trialErrorTransfer : nullptr);
+            detailedProfiling ? &trialErrorTransfer : nullptr,
+            &reductionScratch);
         if (detailedProfiling) {
           addReductionD2hTransfer(trialErrorTransfer, &result);
         }
@@ -1045,7 +1061,7 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
       if (stepSuccessful) {
         const double previousError = currentError;
         stageStart = detailedProfileStart(detailedProfiling);
-        acceptTrial(trial, &current, context.stream());
+        acceptTrial(&trial, &current);
         iterationProfile.acceptTrialElapsed =
             detailedElapsedSinceAfterSync(detailedProfiling, stageStart,
                                           context.stream());

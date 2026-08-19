@@ -419,10 +419,43 @@ void linearizeSfmProjectionBatch(
   GTSAM_CUDA_CHECK(cudaGetLastError());
 }
 
+DeviceArray<double>& SfmReductionScratch::device(Slot slot, size_t blocks) {
+  DeviceArray<double>& buffer = device_[slot];
+  buffer.resize(blocks);
+  return buffer;
+}
+
+double* SfmReductionScratch::host(Slot slot, size_t blocks) {
+  PinnedHostArray<double>& buffer = host_[slot];
+  buffer.resize(blocks);
+  return buffer.data();
+}
+
+namespace {
+
+/** Queues a download of `blocks` device sums into pinned host storage. */
+void enqueueBlockDownload(const DeviceArray<double>& deviceSums,
+                          double* hostSums, size_t blocks,
+                          cudaStream_t stream) {
+  GTSAM_CUDA_CHECK(cudaMemcpyAsync(hostSums, deviceSums.data(),
+                                   sizeof(double) * blocks,
+                                   cudaMemcpyDeviceToHost, stream));
+}
+
+/// Adds downloaded block sums in index order, as a whole-array sum would.
+double sumBlocks(const double* hostSums, size_t blocks) {
+  double sum = 0.0;
+  for (size_t i = 0; i < blocks; ++i) sum += hostSums[i];
+  return sum;
+}
+
+}  // namespace
+
 double computeSfmProjectionError(const DeviceValues& values,
                                      const SfmProjectionBatch& batch,
                                      cudaStream_t stream,
-                                     SfmReductionTransferProfile* profile) {
+                                     SfmReductionTransferProfile* profile,
+                                     SfmReductionScratch* scratch) {
   const auto& cameraBlock = values.block<DevicePinholeCameraCal3Bundler>(
       kDevicePinholeCameraCal3BundlerType);
   const auto& pointBlock = values.block<DevicePoint3>(kDevicePoint3Type);
@@ -445,7 +478,13 @@ double computeSfmProjectionError(const DeviceValues& values,
       (numObservations + kProjectionErrorBlockSize - 1) /
           kProjectionErrorBlockSize,
       4096));
-  DeviceArray<double> blockSums(static_cast<size_t>(gridSize));
+  const size_t numBlocks = static_cast<size_t>(gridSize);
+  SfmReductionScratch localScratch;
+  SfmReductionScratch& staging = scratch ? *scratch : localScratch;
+  DeviceArray<double>& blockSums =
+      staging.device(SfmReductionScratch::kProjectionError, numBlocks);
+  double* hostBlockSums =
+      staging.host(SfmReductionScratch::kProjectionError, numBlocks);
   const SfmSqrtInfo2* sqrtInfos = sqrtInfoDataOrNull(
       batch, numObservations, "computeSfmProjectionError");
   const SfmRobustModel* robustModels = robustModelDataOrNull(
@@ -471,21 +510,16 @@ double computeSfmProjectionError(const DeviceValues& values,
   }
   GTSAM_CUDA_CHECK(cudaGetLastError());
 
-  std::vector<double> hostBlockSums;
   const auto downloadStart = std::chrono::steady_clock::now();
-  blockSums.download(&hostBlockSums, stream);
+  enqueueBlockDownload(blockSums, hostBlockSums, numBlocks, stream);
   GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
+  const double error = sumBlocks(hostBlockSums, numBlocks);
   if (profile) {
-    profile->d2hBytes += sizeof(double) * hostBlockSums.size();
+    profile->d2hBytes += sizeof(double) * numBlocks;
     profile->d2hElapsed +=
         std::chrono::duration<double>(std::chrono::steady_clock::now() -
                                       downloadStart)
             .count();
-  }
-
-  double error = 0.0;
-  for (double blockSum : hostBlockSums) {
-    error += blockSum;
   }
   return error;
 }
@@ -624,7 +658,7 @@ double computeSfmLinearizedErrorChange(
     const SfmProjectionBatch& batch, int numCameras,
     const DeviceArray<double>& delta, double* oldLinearizedError,
     double* newLinearizedError, cudaStream_t stream,
-    SfmReductionTransferProfile* profile) {
+    SfmReductionTransferProfile* profile, SfmReductionScratch* scratch) {
   if (numCameras < 0 ||
       static_cast<size_t>(numCameras) < batch.numCameras()) {
     throw std::invalid_argument(
@@ -653,8 +687,17 @@ double computeSfmLinearizedErrorChange(
       (observations + kProjectionErrorBlockSize - 1) /
           kProjectionErrorBlockSize,
       4096));
-  DeviceArray<double> oldBlockSums(static_cast<size_t>(gridSize));
-  DeviceArray<double> newBlockSums(static_cast<size_t>(gridSize));
+  const size_t numBlocks = static_cast<size_t>(gridSize);
+  SfmReductionScratch localScratch;
+  SfmReductionScratch& staging = scratch ? *scratch : localScratch;
+  DeviceArray<double>& oldBlockSums =
+      staging.device(SfmReductionScratch::kOldLinearizedError, numBlocks);
+  DeviceArray<double>& newBlockSums =
+      staging.device(SfmReductionScratch::kNewLinearizedError, numBlocks);
+  double* hostOldBlockSums =
+      staging.host(SfmReductionScratch::kOldLinearizedError, numBlocks);
+  double* hostNewBlockSums =
+      staging.host(SfmReductionScratch::kNewLinearizedError, numBlocks);
   computeLinearizedErrorChangeKernel<<<gridSize, kProjectionErrorBlockSize, 0,
                                         stream>>>(
       linearization.residuals.data(), linearization.cameraJacobians.data(),
@@ -663,25 +706,20 @@ double computeSfmLinearizedErrorChange(
       newBlockSums.data());
   GTSAM_CUDA_CHECK(cudaGetLastError());
 
-  std::vector<double> hostOldBlockSums;
-  std::vector<double> hostNewBlockSums;
   const auto downloadStart = std::chrono::steady_clock::now();
-  oldBlockSums.download(&hostOldBlockSums, stream);
-  newBlockSums.download(&hostNewBlockSums, stream);
+  enqueueBlockDownload(oldBlockSums, hostOldBlockSums, numBlocks, stream);
+  enqueueBlockDownload(newBlockSums, hostNewBlockSums, numBlocks, stream);
   GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
   if (profile) {
-    profile->d2hBytes +=
-        sizeof(double) * (hostOldBlockSums.size() + hostNewBlockSums.size());
+    profile->d2hBytes += sizeof(double) * 2 * numBlocks;
     profile->d2hElapsed +=
         std::chrono::duration<double>(std::chrono::steady_clock::now() -
                                       downloadStart)
             .count();
   }
 
-  double oldError = 0.0;
-  double newError = 0.0;
-  for (double blockSum : hostOldBlockSums) oldError += blockSum;
-  for (double blockSum : hostNewBlockSums) newError += blockSum;
+  const double oldError = sumBlocks(hostOldBlockSums, numBlocks);
+  const double newError = sumBlocks(hostNewBlockSums, numBlocks);
   if (oldLinearizedError) *oldLinearizedError = oldError;
   if (newLinearizedError) *newLinearizedError = newError;
   return oldError - newError;
