@@ -25,6 +25,18 @@ struct StreamingLinearizationProfile {
   double csrPackingCpuSum = 0.0;
 };
 
+/**
+ * Linearizes directly into a reusable, preplanned CSR host buffer.
+ *
+ * This is a CUDA transfer-boundary primitive, not a replacement for
+ * NonlinearFactorGraph::linearize or GaussianFactorGraph::sparseJacobian.
+ * Those general APIs materialize a GaussianFactorGraph and then allocate
+ * sparse triplets. The resident CUDA optimizer instead reuses one exact CSR
+ * structure across nonlinear iterations, so its plan maps every factor block
+ * to disjoint stable output slots and only numeric values are rewritten and
+ * uploaded. Factor linearization and whitening retain the standard GTSAM
+ * semantics.
+ */
 class GTSAM_EXPORT StreamingSparseJacobianLinearizer {
  public:
   /**

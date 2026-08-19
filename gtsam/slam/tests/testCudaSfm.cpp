@@ -1824,6 +1824,106 @@ TEST(SfmLevenbergMarquardt, ReducesTinyBalErrorAndDownloadsValues) {
   CHECK(std::isfinite(point0.x()));
 }
 
+// Verifies SfmLevenbergMarquardt::InvokesIterationHookAfterEachOuterIteration.
+TEST(SfmLevenbergMarquardt, InvokesIterationHookAfterEachOuterIteration) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+
+  struct HookCall {
+    size_t iteration;
+    double oldError;
+    double newError;
+  };
+  std::vector<HookCall> calls;
+  SfmLevenbergMarquardtParams params =
+      SfmLevenbergMarquardtParams::ceresDefaults();
+  params.maxIterations = 3;
+  params.relativeErrorTol = 0.0;
+  params.absoluteErrorTol = 0.0;
+  params.errorTol = 0.0;
+  params.iterationHook = [&](size_t iteration, double oldError,
+                             double newError) {
+    calls.push_back({iteration, oldError, newError});
+  };
+
+  const SfmLevenbergMarquardtResult result =
+      optimizeSfmWithoutValueDownload(data, params);
+
+  CHECK(result.iterations > 0);
+  EXPECT_LONGS_EQUAL(result.iterations, calls.size());
+  if (calls.empty()) return;
+  DOUBLES_EQUAL(result.initialError, calls.front().oldError, 1e-12);
+  for (size_t i = 0; i < calls.size(); ++i) {
+    EXPECT_LONGS_EQUAL(i + 1, calls[i].iteration);
+    CHECK(calls[i].newError < calls[i].oldError);
+    if (i > 0) {
+      DOUBLES_EQUAL(calls[i - 1].newError, calls[i].oldError, 1e-12);
+    }
+  }
+  DOUBLES_EQUAL(result.finalError, calls.back().newError, 1e-12);
+}
+
+// Verifies SfmLevenbergMarquardt::InvokesIterationHookWhenNoStepIsAccepted.
+TEST(SfmLevenbergMarquardt, InvokesIterationHookWhenNoStepIsAccepted) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+
+  size_t hookCalls = 0;
+  size_t hookIteration = std::numeric_limits<size_t>::max();
+  double hookOldError = 0.0;
+  double hookNewError = 0.0;
+  SfmLevenbergMarquardtParams params =
+      SfmLevenbergMarquardtParams::ceresDefaults();
+  params.maxIterations = 3;
+  params.relativeErrorTol = 0.0;
+  params.absoluteErrorTol = 0.0;
+  params.errorTol = 0.0;
+  params.minModelFidelity = std::numeric_limits<double>::infinity();
+  params.lambdaInitial = 1e-3;
+  params.lambdaFactor = 10.0;
+  params.lambdaUpperBound = 1e-2;
+  params.iterationHook = [&](size_t iteration, double oldError,
+                             double newError) {
+    ++hookCalls;
+    hookIteration = iteration;
+    hookOldError = oldError;
+    hookNewError = newError;
+  };
+
+  const SfmLevenbergMarquardtResult result =
+      optimizeSfmWithoutValueDownload(data, params);
+
+  EXPECT_LONGS_EQUAL(0, result.iterations);
+  EXPECT_LONGS_EQUAL(1, hookCalls);
+  EXPECT_LONGS_EQUAL(0, hookIteration);
+  DOUBLES_EQUAL(result.initialError, hookOldError, 1e-12);
+  DOUBLES_EQUAL(result.finalError, hookNewError, 1e-12);
+  DOUBLES_EQUAL(hookOldError, hookNewError, 1e-12);
+}
+
+// Verifies SfmLevenbergMarquardt::KeepsLambdaWhenFixedFactorIsZero.
+TEST(SfmLevenbergMarquardt, KeepsLambdaWhenFixedFactorIsZero) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+
+  SfmLevenbergMarquardtParams params =
+      SfmLevenbergMarquardtParams::ceresDefaults();
+  params.maxIterations = 1;
+  params.relativeErrorTol = 0.0;
+  params.absoluteErrorTol = 0.0;
+  params.errorTol = 0.0;
+  params.lambdaInitial = 1e-3;
+  params.lambdaFactor = 0.0;
+  params.useFixedLambdaFactor = true;
+
+  const SfmLevenbergMarquardtResult result =
+      optimizeSfmWithoutValueDownload(data, params);
+
+  EXPECT_LONGS_EQUAL(1, result.acceptedSteps);
+  CHECK(std::isfinite(result.finalLambda));
+  DOUBLES_EQUAL(params.lambdaInitial, result.finalLambda, 1e-15);
+}
+
 // Verifies SfmLevenbergMarquardt::CanSkipOptimizedValueDownload.
 TEST(SfmLevenbergMarquardt, CanSkipOptimizedValueDownload) {
   const SfmData measuredData = makeTrueBalLikeData();

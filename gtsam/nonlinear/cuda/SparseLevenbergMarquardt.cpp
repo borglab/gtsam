@@ -10,6 +10,7 @@
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
 #include <gtsam/nonlinear/cuda/StreamingSparseJacobianLinearizer.h>
 #include <gtsam/nonlinear/cuda/internal/PcgLmPolicy.h>
+#include <gtsam/nonlinear/internal/LevenbergMarquardtPolicy.h>
 #include <gtsam/linear/cuda/BlockOrdering.h>
 #include <gtsam/linear/cuda/LinearSolver.h>
 #include <gtsam/linear/cuda/PcgSolver.h>
@@ -527,10 +528,8 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
         if (rejectPcgStep) {
           snapshotDeviceProfile();
           linearSession->invalidateWarmStart();
-          state.lambda *= state.currentFactor;
-          if (!parameters.useFixedLambdaFactor) {
-            state.currentFactor *= 2.0;
-          }
+          gtsam::internal::increaseLevenbergMarquardtLambda(
+              parameters, &state.lambda, &state.currentFactor);
           if (state.lambda >= parameters.lambdaUpperBound) {
             innerTermination =
                 SparseLevenbergMarquardtTerminationReason::LambdaUpperBound;
@@ -614,22 +613,15 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
           currentValues = std::move(trialValues);
           currentError = trialError;
           ++state.acceptedIterations;
-          if (parameters.useFixedLambdaFactor) {
-            state.lambda /= state.currentFactor;
-          } else {
-            state.lambda *= std::max(
-                1.0 / 3.0, 1.0 - std::pow(2.0 * modelFidelity - 1.0, 3));
-            state.currentFactor *= 2.0;
-          }
-          state.lambda = std::max(parameters.lambdaLowerBound, state.lambda);
+          gtsam::internal::decreaseLevenbergMarquardtLambda(
+              parameters, modelFidelity, &state.lambda,
+              &state.currentFactor);
           accepted = true;
         } else if (stopSearchingLambda) {
           innerTermination = SparseLevenbergMarquardtTerminationReason::SmallCostChange;
         } else {
-          state.lambda *= state.currentFactor;
-          if (!parameters.useFixedLambdaFactor) {
-            state.currentFactor *= 2.0;
-          }
+          gtsam::internal::increaseLevenbergMarquardtLambda(
+              parameters, &state.lambda, &state.currentFactor);
           if (state.lambda >= parameters.lambdaUpperBound) {
             innerTermination = SparseLevenbergMarquardtTerminationReason::LambdaUpperBound;
           }

@@ -30,6 +30,7 @@
 #include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/internal/LevenbergMarquardtPolicy.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <tests/smallExample.h>
 
@@ -44,6 +45,48 @@ const double tol = 1e-5;
 
 using symbol_shorthand::X;
 using symbol_shorthand::L;
+
+/* ************************************************************************* */
+// Verifies LevenbergMarquardtPolicy::AppliesAdaptiveLambdaUpdates.
+TEST(LevenbergMarquardtPolicy, AppliesAdaptiveLambdaUpdates) {
+  LevenbergMarquardtParams params;
+  params.useFixedLambdaFactor = false;
+  params.lambdaLowerBound = 1e-6;
+
+  double lambda = 9e-3;
+  double factor = 10.0;
+  internal::increaseLevenbergMarquardtLambda(params, &lambda, &factor);
+  DOUBLES_EQUAL(9e-2, lambda, 1e-15);
+  DOUBLES_EQUAL(20.0, factor, 1e-15);
+
+  internal::decreaseLevenbergMarquardtLambda(params, 1.0, &lambda, &factor);
+  DOUBLES_EQUAL(3e-2, lambda, 1e-15);
+  DOUBLES_EQUAL(40.0, factor, 1e-15);
+
+  lambda = 1e-7;
+  factor = 10.0;
+  internal::decreaseLevenbergMarquardtLambda(params, 1.0, &lambda, &factor);
+  DOUBLES_EQUAL(params.lambdaLowerBound, lambda, 1e-15);
+  DOUBLES_EQUAL(20.0, factor, 1e-15);
+}
+
+/* ************************************************************************* */
+// Verifies LevenbergMarquardtPolicy::AppliesFixedLambdaUpdates.
+TEST(LevenbergMarquardtPolicy, AppliesFixedLambdaUpdates) {
+  LevenbergMarquardtParams params;
+  params.useFixedLambdaFactor = true;
+
+  double lambda = 1e-3;
+  double factor = 10.0;
+  internal::increaseLevenbergMarquardtLambda(params, &lambda, &factor);
+  DOUBLES_EQUAL(1e-2, lambda, 1e-15);
+  DOUBLES_EQUAL(10.0, factor, 1e-15);
+
+  internal::decreaseLevenbergMarquardtLambda(params, 0.5, &lambda, &factor);
+  DOUBLES_EQUAL(1e-3, lambda, 1e-15);
+  DOUBLES_EQUAL(10.0, factor, 1e-15);
+
+}
 
 class CountingNonlinearFactorGraph : public NonlinearFactorGraph {
  public:

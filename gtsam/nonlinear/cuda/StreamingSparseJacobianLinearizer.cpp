@@ -262,6 +262,10 @@ DirectJacobianStatus StreamingSparseJacobianLinearizer::linearize(
   };
 
 #ifdef GTSAM_USE_TBB
+  // Preserve NonlinearFactorGraph's sendability rule while writing factors
+  // directly into disjoint preplanned CSR ranges. Calling graph.linearize()
+  // here would materialize the intermediate GaussianFactorGraph that this
+  // transfer-boundary path is specifically designed to avoid.
   TbbOpenMPMixedScope threadLimiter;
   tbb::parallel_for(tbb::blocked_range<size_t>(0, graph.size()),
                     [&](const tbb::blocked_range<size_t>& range) {

@@ -5,8 +5,10 @@
 #include <gtsam/linear/cuda/BlockOrdering.h>
 #include <gtsam/linear/cuda/LinearSolver.h>
 #include <gtsam/nonlinear/BatchFactor.h>
+#include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
 #include <gtsam/nonlinear/cuda/internal/PcgLmPolicy.h>
+#include <gtsam/nonlinear/internal/LevenbergMarquardtPolicy.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/cuda/SfmDenseSchurSolver.h>
 #include <gtsam/slam/cuda/SfmLevenbergMarquardt.h>
@@ -413,41 +415,6 @@ void appendProjectionBatchFactor(
     appendProjectionFactor(sfmFactor, cameraSlots, pointSlots,
                                         converted);
   }
-}
-
-void increaseLambda(const SfmLevenbergMarquardtParams& params,
-                    double* lambda, double* currentFactor) {
-  *lambda *= *currentFactor;
-  if (!params.useFixedLambdaFactor) {
-    *currentFactor *= 2.0;
-  }
-}
-
-void decreaseLambda(const SfmLevenbergMarquardtParams& params,
-                    double modelFidelity, double* lambda,
-                    double* currentFactor) {
-  if (params.useFixedLambdaFactor) {
-    *lambda *= params.lambdaFactor == 0.0 ? 1.0 : 1.0 / params.lambdaFactor;
-  } else {
-    *lambda *=
-        std::max(1.0 / 3.0, 1.0 - std::pow(2.0 * modelFidelity - 1.0, 3));
-    *currentFactor *= 2.0;
-  }
-  *lambda = std::max(params.lambdaLowerBound, *lambda);
-}
-
-bool checkLevenbergMarquardtConvergence(
-    const SfmLevenbergMarquardtParams& params,
-    double currentError, double newError) {
-  if (newError <= params.errorTol) {
-    return true;
-  }
-  const double absoluteDecrease = currentError - newError;
-  const double relativeDecrease =
-      currentError != 0.0 ? absoluteDecrease / currentError : 0.0;
-  return (params.relativeErrorTol != 0.0 &&
-          relativeDecrease <= params.relativeErrorTol) ||
-         (absoluteDecrease <= params.absoluteErrorTol);
 }
 
 }  // namespace
@@ -979,7 +946,8 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
       if (rejectPcgStep) {
         reducedSession->invalidateWarmStart();
         stageStart = detailedProfileStart(detailedProfiling);
-        increaseLambda(params, &lambda, &currentFactor);
+        gtsam::internal::increaseLevenbergMarquardtLambda(
+            params, &lambda, &currentFactor);
         if (lambda >= params.lambdaUpperBound) {
           acceptedOrDone = true;
           terminate = true;
@@ -1084,19 +1052,23 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
         ++result.iterations;
         ++result.acceptedSteps;
         stageStart = detailedProfileStart(detailedProfiling);
-        decreaseLambda(params, modelFidelity, &lambda, &currentFactor);
-        acceptedOrDone = true;
-        terminate =
-            checkLevenbergMarquardtConvergence(params, previousError, currentError);
+        // SFM historically defines a zero fixed factor as no lambda decrease.
+        if (!params.useFixedLambdaFactor || currentFactor != 0.0) {
+          gtsam::internal::decreaseLevenbergMarquardtLambda(
+              params, modelFidelity, &lambda, &currentFactor);
+        }
         attemptProfile.lambdaUpdateElapsed =
             detailedElapsedSince(detailedProfiling, stageStart);
         result.lambdaUpdateElapsed += attemptProfile.lambdaUpdateElapsed;
+        acceptedOrDone = true;
+        terminate = checkConvergence(params, previousError, currentError);
         iterationProfile.acceptedStep = true;
         attemptProfile.accepted = true;
         attemptProfile.terminated = terminate;
       } else if (!stopSearchingLambda) {
         stageStart = detailedProfileStart(detailedProfiling);
-        increaseLambda(params, &lambda, &currentFactor);
+        gtsam::internal::increaseLevenbergMarquardtLambda(
+            params, &lambda, &currentFactor);
         if (lambda >= params.lambdaUpperBound) {
           acceptedOrDone = true;
           terminate = true;
@@ -1124,6 +1096,10 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
         detailedElapsedSince(detailedProfiling, iterationStart);
     if (detailedProfiling) {
       result.iterationProfiles.push_back(iterationProfile);
+    }
+    if (params.iterationHook) {
+      params.iterationHook(result.iterations, iterationProfile.startError,
+                           currentError);
     }
   }
   GTSAM_CUDA_CHECK(cudaStreamSynchronize(context.stream()));

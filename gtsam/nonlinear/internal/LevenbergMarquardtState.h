@@ -19,6 +19,7 @@
 #pragma once
 
 #include "NonlinearOptimizerState.h"
+#include "LevenbergMarquardtPolicy.h"
 
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
@@ -68,11 +69,8 @@ struct LevenbergMarquardtState : public NonlinearOptimizerState {
   // Applies policy to *increase* lambda: should be used if the current update was NOT successful
   // TODO(frank): non-const method until Values properly support std::move
   void increaseLambda(const LevenbergMarquardtParams& params) {
-    lambda *= currentFactor;
+    increaseLevenbergMarquardtLambda(params, &lambda, &currentFactor);
     totalNumberInnerIterations += 1;
-    if (!params.useFixedLambdaFactor) {
-      currentFactor *= 2.0;
-    }
   }
 
   // Apply policy to decrease lambda if the current update was successful
@@ -81,14 +79,8 @@ struct LevenbergMarquardtState : public NonlinearOptimizerState {
   std::unique_ptr<This> decreaseLambda(const LevenbergMarquardtParams& params, double stepQuality,
                                        Values&& newValues, double newError) const {
     double newLambda = lambda, newFactor = currentFactor;
-    if (params.useFixedLambdaFactor) {
-      newLambda /= currentFactor;
-    } else {
-      // TODO(frank): odd that currentFactor is not used to change lambda here...
-      newLambda *= std::max(1.0 / 3.0, 1.0 - pow(2.0 * stepQuality - 1.0, 3));
-      newFactor = 2.0 * currentFactor;
-    }
-    newLambda = std::max(params.lambdaLowerBound, newLambda);
+    decreaseLevenbergMarquardtLambda(params, stepQuality, &newLambda,
+                                     &newFactor);
     return std::unique_ptr<This>(new This(std::move(newValues), newError, newLambda, newFactor,
                                           iterations + 1, totalNumberInnerIterations + 1));
   }
