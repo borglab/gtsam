@@ -23,7 +23,7 @@
 
 /* GTSAM includes */
 #include <gtsam/base/debug.h>
-#include <gtsam/linear/TernaryJacobianFactor.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/navigation/LieGroupPreintegration.h>
 #include <gtsam/navigation/ManifoldPreintegration.h>
 #include <gtsam/navigation/TangentPreintegration.h>

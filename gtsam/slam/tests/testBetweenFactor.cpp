@@ -24,7 +24,7 @@
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/BinaryJacobianFactor.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/slam/BetweenFactor.h>
 
@@ -167,7 +167,7 @@ bool checkBetweenType(const Value& first, const Value& second) {
   const auto expected = factor.NoiseModelFactor::linearize(values);
   const auto actual = factor.linearize(values);
   const bool isBinary = static_cast<bool>(std::dynamic_pointer_cast<
-      BinaryJacobianFactor<Dimension, Dimension, Dimension>>(actual));
+      FixedJacobianFactor<Dimension, Dimension, Dimension>>(actual));
   return isBinary && assert_equal(*expected, *actual, 1e-9);
 }
 
@@ -191,7 +191,7 @@ TEST(BetweenFactor, BinaryLinearizationNoiseModels) {
     const auto expected = factor.NoiseModelFactor::linearize(values);
     const auto actual = factor.linearize(values);
     const bool isBinary = static_cast<bool>(
-        std::dynamic_pointer_cast<BinaryJacobianFactor<2, 3, 2>>(actual));
+        std::dynamic_pointer_cast<FixedJacobianFactor<2, 3, 2>>(actual));
     CHECK(isBinary);
     EXPECT(assert_equal(*expected, *actual, 1e-9));
   }

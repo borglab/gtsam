@@ -141,6 +141,22 @@ conda run -n py312 python timing/benchmark_range_factor_plaza2.py \
 The helper script runs the benchmark executable, preserves the CSV, and prints a
 short summary that can be copied into a PR description.
 
+## Arbitrary-Arity Fixed Jacobian Benchmark
+
+`timeFixedJacobianFactor` compares a four-key `JacobianFactor` with
+`FixedJacobianFactor<2,1,2,1,2>`. It measures nonlinear linearization, delta
+error, Hessian-diagonal accumulation, and whole and ranged Hessian assembly.
+The executable alternates mode order and verifies equal linear factors and
+Hessians before timing.
+
+From the build directory:
+
+```bash
+make -j6 timeFixedJacobianFactor
+./timing/timeFixedJacobianFactor --trials 9 \
+  --linearize-iterations 100000 --kernel-iterations 200000
+```
+
 ## Binary Factor Pose-Graph Benchmark
 
 This benchmark compares the automatic fixed-size binary linearization of
@@ -171,15 +187,15 @@ trial for more detailed analysis.
 
 `timeTernarySfmBAL` compares variable-calibration BAL in three forms: a split
 Pose3/Point3/Cal3Bundler graph forced through generic linearization, the same
-graph using `TernaryJacobianFactor<2,6,3,3>`, and the existing packed-camera
-graph using `BinaryJacobianFactor<2,9,3>`. The generic and ternary runs have
+graph using `FixedJacobianFactor<2,6,3,3>`, and the existing packed-camera
+graph using `FixedJacobianFactor<2,9,3>`. The generic and ternary runs have
 identical nonlinear factors, values, ordering, and iteration counts.
 
 `timeTernaryImuFactor` builds a deterministic NavState/bias chain with one
 second of preintegrated stationary IMU data per interval and weak anchors every
 100 intervals to keep the long Cholesky solve well-conditioned. It compares
 `ImuFactor2` forced through generic linearization against automatic
-`TernaryJacobianFactor<9,9,9,6>` linearization. Before timing, it requires the
+`FixedJacobianFactor<9,9,9,6>` linearization. Before timing, it requires the
 keys, all three whitened Jacobian blocks, RHS, and noise model of every factor
 to be bitwise identical. Both executables alternate trial order, verify
 concrete linear-factor types, and reject numerically different optimization

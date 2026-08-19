@@ -78,7 +78,7 @@ TEST( EssentialMatrixConstraint, test ) {
   const auto generic = factor.NoiseModelFactor::linearize(values);
   const auto specialized = factor.linearize(values);
   const bool isBinary = static_cast<bool>(
-      std::dynamic_pointer_cast<BinaryJacobianFactor<5, 6, 6>>(specialized));
+      std::dynamic_pointer_cast<FixedJacobianFactor<5, 6, 6>>(specialized));
   CHECK(isBinary);
   EXPECT(assert_equal(*generic, *specialized, 1e-9));
 }

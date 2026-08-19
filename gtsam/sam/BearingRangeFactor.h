@@ -20,7 +20,7 @@
 #pragma once
 
 #include <gtsam/geometry/BearingRange.h>
-#include <gtsam/linear/BinaryJacobianFactor.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 namespace gtsam {

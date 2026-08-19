@@ -18,7 +18,7 @@
 
 #pragma once
 
-#include <gtsam/linear/BinaryJacobianFactor.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 #include <type_traits>

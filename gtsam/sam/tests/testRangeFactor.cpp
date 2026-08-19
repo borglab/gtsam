@@ -23,7 +23,7 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/nonlinear/factorTesting.h>
-#include <gtsam/linear/BinaryJacobianFactor.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -355,11 +355,11 @@ TEST(RangeFactor, NonGTSAM) {
 namespace binary_linearization {
 
 // Calls the base implementation explicitly to obtain a generic JacobianFactor,
-// then checks that the normal call returns an equal BinaryJacobianFactor<M,N1,N2>,
+// then checks that the normal call returns an equal FixedJacobianFactor<M,N1,N2>,
 // where M is the residual dimension and N1/N2 are variable tangent dimensions.
 TEST(RangeFactor, BinaryLinearization) {
   // A range contributes one residual row. Two Point2 variables therefore
-  // produce a BinaryJacobianFactor with shape <1,2,2>.
+  // produce a FixedJacobianFactor with shape <1,2,2>.
   const Point2 point2A(1.0, 2.0), point2B(-4.0, 11.0);
   const Values values2D{{11, genericValue(point2A)},
                         {22, genericValue(point2B)}};
@@ -367,7 +367,7 @@ TEST(RangeFactor, BinaryLinearization) {
   const auto generic2D = factor2D.NoiseModelFactor::linearize(values2D);
   const auto optimized2D = factor2D.linearize(values2D);
   const bool isBinary2D = static_cast<bool>(
-      std::dynamic_pointer_cast<BinaryJacobianFactor<1, 2, 2>>(optimized2D));
+      std::dynamic_pointer_cast<FixedJacobianFactor<1, 2, 2>>(optimized2D));
   CHECK(isBinary2D);
   EXPECT(assert_equal(*generic2D, *optimized2D, 1e-9));
 
@@ -380,7 +380,7 @@ TEST(RangeFactor, BinaryLinearization) {
   const auto generic3D = factor3D.NoiseModelFactor::linearize(values3D);
   const auto optimized3D = factor3D.linearize(values3D);
   const bool isBinary3D = static_cast<bool>(
-      std::dynamic_pointer_cast<BinaryJacobianFactor<1, 3, 3>>(optimized3D));
+      std::dynamic_pointer_cast<FixedJacobianFactor<1, 3, 3>>(optimized3D));
   CHECK(isBinary3D);
   EXPECT(assert_equal(*generic3D, *optimized3D, 1e-9));
 }
@@ -398,7 +398,7 @@ TEST(RangeFactor, TernaryLinearizationWithTransformBias) {
   const auto generic = factor.NoiseModelFactor::linearize(values);
   const auto optimized = factor.linearize(values);
   const bool isTernary = static_cast<bool>(
-      std::dynamic_pointer_cast<TernaryJacobianFactor<1, 3, 2, 1>>(
+      std::dynamic_pointer_cast<FixedJacobianFactor<1, 3, 2, 1>>(
           optimized));
   CHECK(isTernary);
   EXPECT(assert_equal(*generic, *optimized, 1e-12));

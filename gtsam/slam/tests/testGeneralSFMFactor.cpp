@@ -25,7 +25,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/linear/TernaryJacobianFactor.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/Testable.h>
 
@@ -431,7 +431,7 @@ TEST(GeneralSFMFactor, CalibratedCameraPoseRange) {
 
 /* ************************************************************************* */
 // Frank created these tests after switching to a custom LinearizedFactor
-TEST(GeneralSFMFactor, BinaryJacobianFactor) {
+TEST(GeneralSFMFactor, FixedJacobianFactor) {
   Point2 measurement(3., -1.);
 
   // Create Values
@@ -521,7 +521,7 @@ TEST(GeneralSFMFactor2, TernaryLinearization) {
     const auto expected = factor.NoiseModelFactor::linearize(values);
     const auto actual = factor.linearize(values);
     const bool isTernary = static_cast<bool>(
-        std::dynamic_pointer_cast<TernaryJacobianFactor<2, 6, 3, 5>>(actual));
+        std::dynamic_pointer_cast<FixedJacobianFactor<2, 6, 3, 5>>(actual));
     CHECK(isTernary);
     EXPECT(assert_equal(*expected, *actual, 1e-9));
   }
@@ -531,8 +531,8 @@ TEST(GeneralSFMFactor2, TernaryLinearization) {
 /* ************************************************************************* */
 
 /* ************************************************************************* */
-// Do a thorough test of BinaryJacobianFactor
-TEST( GeneralSFMFactor, BinaryJacobianFactor2 ) {
+// Do a thorough test of FixedJacobianFactor.
+TEST(GeneralSFMFactor, FixedJacobianFactor2) {
 
   vector<Point3> landmarks = genPoint3();
   vector<GeneralCamera> cameras = genCameraVariableCalibration();

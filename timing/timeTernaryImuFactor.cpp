@@ -15,7 +15,7 @@
  */
 
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/TernaryJacobianFactor.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/PriorFactor.h>
@@ -135,9 +135,9 @@ NonlinearFactorGraph makeGraph(size_t steps,
 }
 
 size_t countTernaryFactors(const gtsam::GaussianFactorGraph& graph) {
-  using Ternary = gtsam::TernaryJacobianFactor<9, 9, 9, 6>;
+  using Fixed = gtsam::FixedJacobianFactor<9, 9, 9, 6>;
   return std::count_if(graph.begin(), graph.end(), [](const auto& factor) {
-    return static_cast<bool>(std::dynamic_pointer_cast<Ternary>(factor));
+    return static_cast<bool>(std::dynamic_pointer_cast<Fixed>(factor));
   });
 }
 
