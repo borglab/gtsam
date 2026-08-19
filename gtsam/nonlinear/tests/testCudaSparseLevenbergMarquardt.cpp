@@ -19,6 +19,7 @@
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
 #include <gtsam/nonlinear/cuda/StreamingSparseJacobianLinearizer.h>
+#include <gtsam/nonlinear/cuda/internal/PcgLmPolicy.h>
 #include <gtsam/sam/RangeFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/ReferenceFrameFactor.h>
@@ -42,6 +43,30 @@ using namespace gtsam::cuda;
 
 /* ************************************************************************* */
 namespace sparse_lm_fixture {
+
+// Verifies PcgLmPolicy::EvaluatesFiniteIterationLimitedStep.
+TEST(PcgLmPolicy, EvaluatesFiniteIterationLimitedStep) {
+  LinearSolveStats stats;
+  stats.backend = LinearSolverType::Pcg;
+  stats.lastPcgConverged = false;
+  stats.lastPcgBreakdown = false;
+  stats.pcgMaxIterationHits = 1;
+
+  CHECK(classifyPcgLmStep(stats) ==
+        PcgLmStepDisposition::EvaluateInexactStep);
+}
+
+// Verifies PcgLmPolicy::RejectsNumericalBreakdown.
+TEST(PcgLmPolicy, RejectsNumericalBreakdown) {
+  LinearSolveStats stats;
+  stats.backend = LinearSolverType::Pcg;
+  stats.lastPcgConverged = false;
+  stats.lastPcgBreakdown = true;
+  stats.pcgBreakdownCount = 1;
+
+  CHECK(classifyPcgLmStep(stats) ==
+        PcgLmStepDisposition::RejectAndRetry);
+}
 
 
 const Key kPose0 = Symbol('x', 0);
@@ -1060,6 +1085,43 @@ TEST(SparseLevenbergMarquardt,
   CHECK(result.linearSolveStats.pcgD2hSeconds <
         result.linearSolveStats.solveSeconds);
   EXPECT_LONGS_EQUAL(0, result.systemSize.normalNonzeros);
+}
+
+// Verifies SparseLevenbergMarquardt::EvaluatesFiniteIterationLimitedPcgStep.
+TEST(SparseLevenbergMarquardt,
+     EvaluatesFiniteIterationLimitedPcgStep) {
+  if (!CanRunCudaSparsePcg()) return;
+  const Pose2LmProblem problem = MakePose2LmProblem();
+
+  SparseLevenbergMarquardtParams params;
+  LevenbergMarquardtParams::SetCeresDefaults(&params);
+  params.linear.backend = LinearSolverType::Pcg;
+  params.fallbackOnUnsupported = false;
+  params.maxIterations = 1;
+  params.relativeErrorTol = 0.0;
+  params.absoluteErrorTol = 0.0;
+  params.errorTol = 0.0;
+  params.pcg.maxIterations = 1;
+  params.pcg.relativeTolerance = 1e-30;
+  params.pcg.convergenceCheckInterval = 1;
+  params.pcg.warmStart = false;
+  params.collectAttemptTrace = true;
+
+  SparseLevenbergMarquardtOptimizer optimizer(
+      problem.graph, problem.initial, params);
+  (void)optimizer.optimize();
+  const SparseLevenbergMarquardtResult& result = optimizer.result();
+
+  CHECK(result.linearSolveStats.pcgMaxIterationHits > 0);
+  bool evaluatedIterationLimitedStep = false;
+  for (const SparseLevenbergMarquardtAttemptRecord& attempt :
+       result.attemptTrace) {
+    if (attempt.pcgSolve && !attempt.pcgConverged &&
+        !attempt.pcgBreakdown && attempt.linearizedChange != 0.0) {
+      evaluatedIterationLimitedStep = true;
+    }
+  }
+  CHECK(evaluatedIterationLimitedStep);
 }
 
 // Verifies SparseLevenbergMarquardt::NonFiniteJacobianIsFatalWithStageIndexAndType.

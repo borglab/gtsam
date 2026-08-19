@@ -9,6 +9,7 @@
 #include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
 #include <gtsam/nonlinear/cuda/StreamingSparseJacobianLinearizer.h>
+#include <gtsam/nonlinear/cuda/internal/PcgLmPolicy.h>
 #include <gtsam/linear/cuda/BlockOrdering.h>
 #include <gtsam/linear/cuda/LinearSolver.h>
 #include <gtsam/linear/cuda/PcgSolver.h>
@@ -502,27 +503,59 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
             device->applyExplicitDamping(state.lambda, context->stream());
             linearSession->solve(device->mutableSystem(),
                                  &device->deviceDelta(), context->stream());
-            device->evaluateSolvedDelta(context->stream());
           } else {
             device->prepareOperatorSystem(state.lambda, context->stream());
             linearSession->solve(
                 device->linearOperator(), device->preconditioner(),
                 device->deviceRhs(), &device->deviceDelta(),
                 context->stream());
-            device->evaluateSolvedDelta(context->stream());
           }
         });
 
+        bool rejectPcgStep = false;
+        if (deviceBackend == DeviceNormalSolverBackend::Pcg) {
+          const LinearSolveStats& stats = linearSession->stats();
+          attemptRecord.pcgSolve = true;
+          attemptRecord.pcgIterations = stats.lastPcgIterations;
+          attemptRecord.pcgConverged = stats.lastPcgConverged;
+          attemptRecord.pcgBreakdown = stats.lastPcgBreakdown;
+          rejectPcgStep = classifyPcgLmStep(stats) ==
+                          PcgLmStepDisposition::RejectAndRetry;
+        }
+        ++state.totalInnerAttempts;
+
+        if (rejectPcgStep) {
+          snapshotDeviceProfile();
+          linearSession->invalidateWarmStart();
+          state.lambda *= state.currentFactor;
+          if (!parameters.useFixedLambdaFactor) {
+            state.currentFactor *= 2.0;
+          }
+          if (state.lambda >= parameters.lambdaUpperBound) {
+            innerTermination =
+                SparseLevenbergMarquardtTerminationReason::LambdaUpperBound;
+          }
+          if (parameters.collectAttemptTrace) {
+            optimizationResult.attemptTrace.push_back(attemptRecord);
+          }
+          if (innerTermination !=
+              SparseLevenbergMarquardtTerminationReason::None) {
+            break;
+          }
+          continue;
+        }
+
+        runDeviceStage("linear model evaluation", [&] {
+          device->evaluateSolvedDelta(context->stream());
+        });
         DeviceSparseJacobianAttemptResult deviceAttempt = runDeviceStage(
             "attempt result download",
             [&] { return device->downloadAttemptResult(context->stream()); });
         if (deviceBackend == DeviceNormalSolverBackend::Pcg) {
-          const LinearSolveStats& stats = linearSession->stats();
           deviceAttempt.pcgIterations =
-              static_cast<int>(stats.lastPcgIterations);
-          deviceAttempt.pcgConverged = stats.lastPcgConverged;
+              static_cast<int>(attemptRecord.pcgIterations);
+          deviceAttempt.pcgConverged = attemptRecord.pcgConverged;
         }
-        ++state.totalInnerAttempts;
         snapshotDeviceProfile();
 
         requireFiniteAttempt(deviceAttempt);

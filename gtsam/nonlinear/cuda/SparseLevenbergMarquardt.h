@@ -156,6 +156,10 @@ struct SparseLevenbergMarquardtAttemptRecord {
   double linearizedChange = 0.0;
   double nonlinearChange = 0.0;
   double modelFidelity = 0.0;
+  size_t pcgIterations = 0;
+  bool pcgSolve = false;
+  bool pcgConverged = false;
+  bool pcgBreakdown = false;
   bool accepted = false;
 };
 

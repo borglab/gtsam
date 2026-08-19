@@ -33,6 +33,25 @@ class TwoByTwoOperator final : public LinearOperator {
   }
 };
 
+class ZeroOperator final : public LinearOperator {
+ public:
+  int dimension() const override { return 2; }
+  void apply(const double*, double* output,
+             cudaStream_t stream) const override {
+    GTSAM_CUDA_CHECK(cudaMemsetAsync(output, 0, 2 * sizeof(double), stream));
+  }
+};
+
+class IdentityOperator final : public LinearOperator {
+ public:
+  int dimension() const override { return 2; }
+  void apply(const double* input, double* output,
+             cudaStream_t stream) const override {
+    GTSAM_CUDA_CHECK(cudaMemcpyAsync(output, input, 2 * sizeof(double),
+                                     cudaMemcpyDeviceToDevice, stream));
+  }
+};
+
 class IdentityPreconditioner final : public Preconditioner {
  public:
   int dimension() const override { return 2; }
@@ -70,6 +89,58 @@ TEST(LinearSolverSession, InvalidatesPcgWarmStartWhenOperatorChanges) {
   DOUBLES_EQUAL(7.0 / 11.0, actual[1], 1e-12);
   LONGS_EQUAL(2, session.stats().solveCount);
   EXPECT(session.stats().lastPcgConverged);
+}
+
+// Verifies LinearSolverSession::ReportsPcgNumericalBreakdown.
+TEST(LinearSolverSession, ReportsPcgNumericalBreakdown) {
+  LinearSolverOptions solverOptions;
+  solverOptions.backend = LinearSolverType::Pcg;
+  LinearSolverSession session(solverOptions);
+  PcgOptions pcgOptions;
+  pcgOptions.maxIterations = 2;
+  pcgOptions.relativeTolerance = 1e-12;
+  pcgOptions.convergenceCheckInterval = 1;
+  session.analyze(2, pcgOptions);
+
+  DeviceArray<double> rhs;
+  DeviceArray<double> solution(2);
+  rhs.upload({1.0, 2.0});
+  solution.zero();
+  session.solve(ZeroOperator{}, IdentityPreconditioner{}, rhs.data(),
+                &solution);
+
+  CHECK(!session.stats().lastPcgConverged);
+  CHECK(session.stats().lastPcgBreakdown);
+  EXPECT_LONGS_EQUAL(1, session.stats().pcgBreakdownCount);
+  EXPECT_LONGS_EQUAL(0, session.stats().pcgMaxIterationHits);
+}
+
+// Verifies LinearSolverSession::RecognizesConvergenceBeforeDelayedCheck.
+TEST(LinearSolverSession, RecognizesConvergenceBeforeDelayedCheck) {
+  LinearSolverOptions solverOptions;
+  solverOptions.backend = LinearSolverType::Pcg;
+  LinearSolverSession session(solverOptions);
+  PcgOptions pcgOptions;
+  pcgOptions.maxIterations = 10;
+  pcgOptions.relativeTolerance = 1e-12;
+  pcgOptions.convergenceCheckInterval = 10;
+  session.analyze(2, pcgOptions);
+
+  DeviceArray<double> rhs;
+  DeviceArray<double> solution(2);
+  rhs.upload({1.0, 2.0});
+  solution.zero();
+  session.solve(IdentityOperator{}, IdentityPreconditioner{}, rhs.data(),
+                &solution);
+
+  std::vector<double> actual;
+  solution.download(&actual);
+  GTSAM_CUDA_CHECK(cudaDeviceSynchronize());
+  EXPECT(session.stats().lastPcgConverged);
+  CHECK(!session.stats().lastPcgBreakdown);
+  EXPECT_LONGS_EQUAL(0, session.stats().pcgBreakdownCount);
+  DOUBLES_EQUAL(1.0, actual[0], 1e-12);
+  DOUBLES_EQUAL(2.0, actual[1], 1e-12);
 }
 
 // Verifies DeviceSparseSpdSystem::RestoresUndampedDiagonalBetweenAttempts.

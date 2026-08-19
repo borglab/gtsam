@@ -415,21 +415,27 @@ void PcgSolver::solve(const LinearOperator& linearOperator,
       if (atCheck) {
         const Impl::CheckResult check = state.downloadCheck(stream);
         residualNormSquared = check.residualNormSquared;
-        breakdown = check.breakdown || !std::isfinite(residualNormSquared);
-        if (breakdown) break;
+        if (!std::isfinite(residualNormSquared)) {
+          breakdown = true;
+          break;
+        }
         if (residualNormSquared <= toleranceSquared * rhsNormSquared) {
           state.refreshTrueResidual(linearOperator, rhs, solution->data(),
                                     stream);
           const Impl::CheckResult verified = state.downloadCheck(stream);
           residualNormSquared = verified.residualNormSquared;
-          breakdown =
-              verified.breakdown || !std::isfinite(residualNormSquared);
-          converged = !breakdown &&
+          const bool finiteResidual = std::isfinite(residualNormSquared);
+          converged = finiteResidual &&
                       residualNormSquared <= toleranceSquared * rhsNormSquared;
+          breakdown = !converged &&
+                      (check.breakdown || verified.breakdown ||
+                       !finiteResidual);
           if (converged || breakdown) break;
           state.restart(preconditioner, stream);
           continue;
         }
+        breakdown = check.breakdown;
+        if (breakdown) break;
       }
       if (iteration % kResidualRefreshInterval == 0 && !atCheck) {
         state.refreshTrueResidual(linearOperator, rhs, solution->data(),

@@ -6,6 +6,7 @@
 #include <gtsam/linear/cuda/LinearSolver.h>
 #include <gtsam/nonlinear/BatchFactor.h>
 #include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
+#include <gtsam/nonlinear/cuda/internal/PcgLmPolicy.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/cuda/SfmDenseSchurSolver.h>
 #include <gtsam/slam/cuda/SfmLevenbergMarquardt.h>
@@ -880,6 +881,7 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
       attemptProfile.iteration = iterationProfile.iteration;
       attemptProfile.attempt = attemptIndex++;
       attemptProfile.lambda = lambda;
+      bool rejectPcgStep = false;
 
       if (solverMode == SfmLinearSolverType::DenseSchur) {
         stageStart = detailedProfileStart(detailedProfiling);
@@ -949,13 +951,22 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
         reducedSession->solve(*implicit.linearOperator,
                               *implicit.preconditioner, implicit.rhs,
                               &cameraDelta, context.stream());
-        if (params.dampingParams.diagonalDamping) {
-          sparseSchurProblem.recoverPoints(lambda, dampingDiagonal,
-                                           cameraDelta, &delta,
-                                           context.stream());
-        } else {
-          sparseSchurProblem.recoverPoints(lambda, cameraDelta, &delta,
-                                           context.stream());
+        const LinearSolveStats& stats = reducedSession->stats();
+        attemptProfile.pcgSolve = true;
+        attemptProfile.pcgIterations = stats.lastPcgIterations;
+        attemptProfile.pcgConverged = stats.lastPcgConverged;
+        attemptProfile.pcgBreakdown = stats.lastPcgBreakdown;
+        rejectPcgStep = classifyPcgLmStep(stats) ==
+                        PcgLmStepDisposition::RejectAndRetry;
+        if (!rejectPcgStep) {
+          if (params.dampingParams.diagonalDamping) {
+            sparseSchurProblem.recoverPoints(lambda, dampingDiagonal,
+                                             cameraDelta, &delta,
+                                             context.stream());
+          } else {
+            sparseSchurProblem.recoverPoints(lambda, cameraDelta, &delta,
+                                             context.stream());
+          }
         }
         attemptProfile.denseSchurSolveElapsed =
             detailedElapsedSinceAfterSync(detailedProfiling, stageStart,
@@ -964,6 +975,27 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
             attemptProfile.denseSchurSolveElapsed;
       }
       ++result.innerIterations;
+
+      if (rejectPcgStep) {
+        reducedSession->invalidateWarmStart();
+        stageStart = detailedProfileStart(detailedProfiling);
+        increaseLambda(params, &lambda, &currentFactor);
+        if (lambda >= params.lambdaUpperBound) {
+          acceptedOrDone = true;
+          terminate = true;
+          attemptProfile.lambdaUpperBoundReached = true;
+        }
+        attemptProfile.lambdaUpdateElapsed =
+            detailedElapsedSince(detailedProfiling, stageStart);
+        result.lambdaUpdateElapsed += attemptProfile.lambdaUpdateElapsed;
+        attemptProfile.terminated = terminate;
+        attemptProfile.totalElapsed =
+            detailedElapsedSince(detailedProfiling, attemptStart);
+        if (detailedProfiling) {
+          iterationProfile.attemptProfiles.push_back(attemptProfile);
+        }
+        continue;
+      }
 
       double oldLinearizedError = 0.0;
       double newLinearizedError = 0.0;

@@ -1160,6 +1160,41 @@ TEST(SfmLevenbergMarquardt, ImplicitSchurPcgMatchesDense) {
   CHECK(pcg.linearSolveStats.pcgIterationsTotal > 0);
 }
 
+// Verifies SfmLevenbergMarquardt::EvaluatesFiniteIterationLimitedPcgStep.
+TEST(SfmLevenbergMarquardt, EvaluatesFiniteIterationLimitedPcgStep) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData data = makePerturbedBalLikeData(measuredData);
+  SfmLevenbergMarquardtParams params =
+      SfmLevenbergMarquardtParams::ceresDefaults();
+  params.setLinearSolver(LinearSolverType::Pcg);
+  params.maxIterations = 1;
+  params.relativeErrorTol = 0.0;
+  params.absoluteErrorTol = 0.0;
+  params.errorTol = 0.0;
+  params.pcg.maxIterations = 1;
+  params.pcg.relativeTolerance = 1e-30;
+  params.pcg.convergenceCheckInterval = 1;
+  params.pcg.warmStart = false;
+  params.enableDetailedProfiling = true;
+
+  const SfmLevenbergMarquardtResult result =
+      optimizeSfmWithoutValueDownload(data, params);
+
+  CHECK(result.linearSolveStats.pcgMaxIterationHits > 0);
+  bool evaluatedIterationLimitedStep = false;
+  for (const SfmLevenbergMarquardtIterationProfile& iteration :
+       result.iterationProfiles) {
+    for (const SfmLevenbergMarquardtAttemptProfile& attempt :
+         iteration.attemptProfiles) {
+      if (attempt.pcgSolve && !attempt.pcgConverged &&
+          !attempt.pcgBreakdown && attempt.attemptedTrial) {
+        evaluatedIterationLimitedStep = true;
+      }
+    }
+  }
+  CHECK(evaluatedIterationLimitedStep);
+}
+
 
 #if GTSAM_ENABLE_CUDSS
 

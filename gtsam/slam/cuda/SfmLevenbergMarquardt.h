@@ -80,6 +80,10 @@ struct SfmLevenbergMarquardtAttemptProfile {
   double trialError = 0.0;
   double costChange = 0.0;
   double modelFidelity = 0.0;
+  size_t pcgIterations = 0;
+  bool pcgSolve = false;
+  bool pcgConverged = false;
+  bool pcgBreakdown = false;
   bool attemptedTrial = false;
   bool stepSuccessful = false;
   bool accepted = false;
