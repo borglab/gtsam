@@ -53,7 +53,6 @@ classdef CustomFactor < gtsam.MatlabCustomFactor
           gtsam.customFactorRegistry('remove', obj(i).callbackId);
           obj(i).callbackId = uint64(0);
         end
-        delete@gtsam.MatlabCustomFactor(obj(i));
       end
     end
   end
