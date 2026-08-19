@@ -662,6 +662,20 @@ virtual class FrobeniusBetweenFactor : gtsam::NoiseModelFactor {
   gtsam::Vector evaluateError(const T& T1, const T& T2);
 };
 
+#include <gtsam/slam/RelativeTranslationFactor.h>
+// Relative translation measurement for certifiable SE(d) synchronization,
+// with d = 2 or 3. `measured` is the d-vector translation offset expressed in
+// the body frame of pose i, and `weight` is the translational precision tau.
+template <d = {2, 3}>
+virtual class RelativeTranslationFactor : gtsam::NoiseModelFactor {
+  RelativeTranslationFactor(gtsam::Key rotationKey, gtsam::Key translationKey1,
+                            gtsam::Key translationKey2,
+                            const gtsam::Vector& measured, double weight);
+
+  gtsam::Vector measured() const;
+  double weight() const;
+};
+
 #include <gtsam/slam/TriangulationFactor.h>
 template <CAMERA>
 virtual class TriangulationFactor : gtsam::NoiseModelFactor {
