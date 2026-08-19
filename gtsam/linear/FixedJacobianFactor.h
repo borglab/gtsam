@@ -283,8 +283,10 @@ struct FixedJacobianFactor : JacobianFactor {
     const internal::FixedJacobianBlock<M, 1> b(Ab_.matrix(), 0, offsets[arity]);
     updateJacobianHessians(factorSlots, slotB, b, info,
                            std::make_index_sequence<arity>{});
-    updateCrossHessians(factorSlots, info,
-                        std::make_index_sequence<arity - 1>{});
+    if constexpr (arity > 1) {
+      updateCrossHessians(factorSlots, info,
+                          std::make_index_sequence<arity - 1>{});
+    }
     internal::updateSelfHessian<M, 1>(slotB, b, info);
   }
 
@@ -306,8 +308,10 @@ struct FixedJacobianFactor : JacobianFactor {
     const internal::FixedJacobianBlock<M, 1> b(Ab_.matrix(), 0, offsets[arity]);
     updateOwnedSelfAndRhsHessians(factorSlots, slotB, b, ownsColumn, info,
                                   std::make_index_sequence<arity>{});
-    updateOwnedCrossHessians(factorSlots, ownsColumn, info,
-                             std::make_index_sequence<arity - 1>{});
+    if constexpr (arity > 1) {
+      updateOwnedCrossHessians(factorSlots, ownsColumn, info,
+                               std::make_index_sequence<arity - 1>{});
+    }
     if (ownsColumn(slotB)) {
       internal::updateSelfHessian<M, 1>(slotB, b, info);
     }
