@@ -54,6 +54,9 @@ class DeviceVariableIndex {
 
   void erase(Key key) { entries_.erase(key); }
 
+  /// Pre-sizes the table for `count` total entries, avoiding growth rehashes.
+  void reserve(size_t count) { entries_.reserve(count); }
+
  private:
   std::unordered_map<Key, DeviceVariableSlot> entries_;
 };

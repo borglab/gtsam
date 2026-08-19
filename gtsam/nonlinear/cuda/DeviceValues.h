@@ -10,7 +10,6 @@
 #include <memory>
 #include <stdexcept>
 #include <unordered_map>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -49,17 +48,6 @@ class DeviceValues {
       throw std::invalid_argument("DeviceValues too many keys");
     }
 
-    std::unordered_set<Key> newKeys;
-    newKeys.reserve(keys.size());
-    for (Key key : keys) {
-      if (index_.contains(key)) {
-        throw std::invalid_argument("DeviceValues duplicate key");
-      }
-      if (!newKeys.insert(key).second) {
-        throw std::invalid_argument("DeviceValues duplicate key");
-      }
-    }
-
     auto storage = std::make_unique<TypedBlock<T>>();
     storage->block.tangentDim = tangentDim;
     storage->block.keys = keys;
@@ -82,23 +70,8 @@ class DeviceValues {
     }
 
     DeviceValueBlock<T>* result = &storage->block;
-    std::vector<Key> committedKeys;
-    committedKeys.reserve(keys.size());
     blocks_.emplace(typeId, std::move(storage));
-
-    try {
-      for (size_t i = 0; i < keys.size(); ++i) {
-        committedKeys.push_back(keys[i]);
-        index_.add(keys[i], typeId, static_cast<int>(i), tangentDim);
-      }
-    } catch (...) {
-      for (Key key : committedKeys) {
-        index_.erase(key);
-      }
-      blocks_.erase(typeId);
-      throw;
-    }
-
+    indexKeys(typeId, tangentDim, keys);
     return *result;
   }
 
@@ -115,17 +88,6 @@ class DeviceValues {
       throw std::invalid_argument("DeviceValues too many keys");
     }
 
-    std::unordered_set<Key> newKeys;
-    newKeys.reserve(keys.size());
-    for (Key key : keys) {
-      if (index_.contains(key)) {
-        throw std::invalid_argument("DeviceValues duplicate key");
-      }
-      if (!newKeys.insert(key).second) {
-        throw std::invalid_argument("DeviceValues duplicate key");
-      }
-    }
-
     auto storage = std::make_unique<TypedBlock<T>>();
     storage->block.tangentDim = tangentDim;
     storage->block.keys = keys;
@@ -133,23 +95,8 @@ class DeviceValues {
     storage->block.delta.resize(keys.size() * static_cast<size_t>(tangentDim));
 
     DeviceValueBlock<T>* result = &storage->block;
-    std::vector<Key> committedKeys;
-    committedKeys.reserve(keys.size());
     blocks_.emplace(typeId, std::move(storage));
-
-    try {
-      for (size_t i = 0; i < keys.size(); ++i) {
-        committedKeys.push_back(keys[i]);
-        index_.add(keys[i], typeId, static_cast<int>(i), tangentDim);
-      }
-    } catch (...) {
-      for (Key key : committedKeys) {
-        index_.erase(key);
-      }
-      blocks_.erase(typeId);
-      throw;
-    }
-
+    indexKeys(typeId, tangentDim, keys);
     return *result;
   }
 
@@ -195,6 +142,37 @@ class DeviceValues {
       throw std::out_of_range("DeviceValues missing type block");
     }
     return it->second.get();
+  }
+
+  /**
+   * Registers a freshly added block's keys, mapping each to its slot.
+   *
+   * Duplicates are detected against the index as it is filled, which covers
+   * both keys already held by another block and repeats within `keys`. That
+   * makes a separate pre-pass over a temporary key set unnecessary: for a
+   * bundle-adjustment problem with one key per landmark, the pre-pass built and
+   * threw away a hash table the same size as the index itself. On failure the
+   * keys added so far and the block are removed, leaving the object unchanged.
+   */
+  void indexKeys(uint32_t typeId, int tangentDim,
+                 const std::vector<Key>& keys) {
+    index_.reserve(index_.size() + keys.size());
+    size_t committed = 0;
+    try {
+      for (size_t i = 0; i < keys.size(); ++i) {
+        if (index_.contains(keys[i])) {
+          throw std::invalid_argument("DeviceValues duplicate key");
+        }
+        index_.add(keys[i], typeId, static_cast<int>(i), tangentDim);
+        ++committed;
+      }
+    } catch (...) {
+      for (size_t i = 0; i < committed; ++i) {
+        index_.erase(keys[i]);
+      }
+      blocks_.erase(typeId);
+      throw;
+    }
   }
 
   DeviceVariableIndex index_;
