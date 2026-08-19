@@ -71,7 +71,7 @@ std::optional<Vector> checkIfDiagonal(const Matrix& M) {
 
 /* ************************************************************************* */
 Vector Base::sigmas() const {
-  throw("Base::sigmas: sigmas() not implemented for this noise model");
+  throw runtime_error("Base::sigmas: sigmas() not implemented for this noise model");
 }
 
 /* ************************************************************************* */

@@ -33,12 +33,27 @@ namespace noiseModel {
 #include <gtsam/linear/NoiseModel.h>
 virtual class Base {
   void print(string s = "") const;
-  // Methods below are available for all noise models. However, can't add them
-  // because wrap (incorrectly) thinks robust classes derive from this Base as well.
-  // bool isConstrained() const;
-  // bool isUnit() const;
-  // size_t dim() const;
-  // gtsam::Vector sigmas() const;
+
+  // Introspection, available on every noise model.
+  bool isConstrained() const;
+  bool isUnit() const;
+  size_t dim() const;
+  gtsam::Vector sigmas() const;
+
+  // Whitening operations. Note that for gtsam::noiseModel::Robust these apply
+  // the m-estimator re-weighting; use unweightedWhiten or
+  // squaredMahalanobisDistance for the un-reweighted quantities.
+  gtsam::Vector whiten(const gtsam::Vector& v) const;
+  gtsam::Vector unwhiten(const gtsam::Vector& v) const;
+  gtsam::Matrix Whiten(const gtsam::Matrix& H) const;
+
+  // Error metrics. Robust overrides these to defer to the contained noise
+  // model, so a statistical gate computed here is not silently down-weighted.
+  double squaredMahalanobisDistance(const gtsam::Vector& v) const;
+  double mahalanobisDistance(const gtsam::Vector& v) const;
+  double loss(double squared_distance) const;
+  gtsam::Vector unweightedWhiten(const gtsam::Vector& v) const;
+  double weight(const gtsam::Vector& v) const;
 };
 
 virtual class Gaussian : gtsam::noiseModel::Base {
@@ -393,6 +408,10 @@ virtual class Robust : gtsam::noiseModel::Base {
   static gtsam::noiseModel::Robust* Create(
       const std::shared_ptr<gtsam::noiseModel::mEstimator::Base>& robust,
       const std::shared_ptr<gtsam::noiseModel::Base> noise);
+
+  // Access to the contained models.
+  const std::shared_ptr<gtsam::noiseModel::mEstimator::Base>& robust() const;
+  const std::shared_ptr<gtsam::noiseModel::Base>& noise() const;
 
   // enabling serialization functionality
   void serializable() const;
