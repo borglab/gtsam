@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    DeviceSparseJacobianNormalEquations.cu
+ * @brief   Device pipeline from a packed sparse Jacobian to normal equations
+ * @author  Ruogu Li
+ * @date    Jul 14, 2026
+ */
+
 #include <cusparse.h>
 #include <gtsam/base/cuda/DeviceArray.h>
 #include <gtsam/base/cuda/PinnedHostArray.h>

@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    DevicePcgSolver.cu
+ * @brief   Builds the matrix-free normal operator and preconditioner for PCG
+ * @author  Ruogu Li
+ * @date    Jul 25, 2026
+ */
+
 #include <gtsam/nonlinear/cuda/internal/DevicePcgSolver.h>
 
 #include <cmath>

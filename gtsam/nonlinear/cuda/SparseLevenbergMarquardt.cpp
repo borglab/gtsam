@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    SparseLevenbergMarquardt.cpp
+ * @brief   Levenberg-Marquardt with a persistent CUDA sparse linear system
+ * @author  Ruogu Li
+ * @date    Jul 14, 2026
+ */
+
 #include <cuda_runtime_api.h>
 #include <gtsam/base/cuda/Context.h>
 #include <gtsam/base/types.h>

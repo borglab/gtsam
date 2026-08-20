@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    testCudaLinearSolver.cpp
+ * @brief   Unit tests for the shared CUDA linear-solver session
+ * @author  Ruogu Li
+ * @date    Aug 15, 2026
+ */
+
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Symbol.h>

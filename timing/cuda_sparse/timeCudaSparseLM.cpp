@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    timeCudaSparseLM.cpp
+ * @brief   time the general CUDA sparse Levenberg-Marquardt optimizer
+ * @author  Ruogu Li
+ * @date    Jul 25, 2026
+ */
+
 #include "../timeSFMBAL.h"
 
 #include <cuda_runtime_api.h>

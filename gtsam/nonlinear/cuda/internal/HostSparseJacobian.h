@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    HostSparseJacobian.h
+ * @brief   Pinned host staging for a planned sparse Jacobian and right-hand side
+ * @author  Ruogu Li
+ * @date    Jul 14, 2026
+ */
+
 #pragma once
 
 #include <gtsam/base/cuda/PinnedHostArray.h>

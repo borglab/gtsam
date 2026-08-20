@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    JacobianNormalOperator.cu
+ * @brief   Matrix-free J'J + lambda D operator and its Jacobi preconditioner
+ * @author  Ruogu Li
+ * @date    Aug 16, 2026
+ */
+
 #include <gtsam/nonlinear/cuda/internal/JacobianNormalOperator.h>
 
 #include <algorithm>

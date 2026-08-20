@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    SfmSchurProblem.cu
+ * @brief   Device SFM normal equations and point elimination by Schur complement
+ * @author  Ruogu Li
+ * @date    Jun 18, 2026
+ */
+
 #include <gtsam/base/cuda/Errors.h>
 #include <gtsam/nonlinear/cuda/internal/DeviceGeometryTypes.h>
 #include <gtsam/slam/cuda/internal/SfmDenseSchurSolver.h>

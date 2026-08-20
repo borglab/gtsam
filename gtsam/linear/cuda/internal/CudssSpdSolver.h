@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    CudssSpdSolver.h
+ * @brief   Reusable cuDSS analysis, factorization, and solve for one pattern
+ * @author  Ruogu Li
+ * @date    Jun 17, 2026
+ */
+
 #pragma once
 
 #include <gtsam/base/cuda/DeviceArray.h>

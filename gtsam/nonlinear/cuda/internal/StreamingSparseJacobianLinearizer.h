@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    StreamingSparseJacobianLinearizer.h
+ * @brief   Linearizes a factor graph into a preplanned CSR host buffer
+ * @author  Ruogu Li
+ * @date    Jul 14, 2026
+ */
+
 #pragma once
 
 #include <gtsam/dllexport.h>

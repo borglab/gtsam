@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    LevenbergMarquardtPolicy.h
+ * @brief   Shared Levenberg-Marquardt damping increase and decrease rules
+ * @author  Ruogu Li
+ * @date    Aug 19, 2026
+ */
+
 #pragma once
 
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>

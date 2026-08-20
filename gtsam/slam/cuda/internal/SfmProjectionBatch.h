@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    SfmProjectionBatch.h
+ * @brief   Device-resident batch of SFM projection measurements
+ * @author  Ruogu Li
+ * @date    Jun 16, 2026
+ */
+
 #pragma once
 
 #include <gtsam/base/cuda/DeviceArray.h>

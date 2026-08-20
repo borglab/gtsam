@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    testCudaDeviceValues.cpp
+ * @brief   Unit tests for device-resident Values and retraction
+ * @author  Ruogu Li
+ * @date    Jun 16, 2026
+ */
+
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/cuda/Context.h>
 #include <gtsam/geometry/Point2.h>

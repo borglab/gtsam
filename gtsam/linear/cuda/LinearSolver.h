@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    LinearSolver.h
+ * @brief   Shared CUDA linear-solver session and backend selection
+ * @author  Ruogu Li
+ * @date    Aug 15, 2026
+ */
+
 #pragma once
 
 #include <gtsam/dllexport.h>

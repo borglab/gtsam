@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    SfmProjectionLinearization.cu
+ * @brief   Linearizes a projection batch and stages the scalar reductions
+ * @author  Ruogu Li
+ * @date    Jun 17, 2026
+ */
+
 #include <gtsam/base/cuda/Errors.h>
 #include <gtsam/nonlinear/cuda/internal/DeviceGeometryKernels.h>
 #include <gtsam/slam/cuda/internal/SfmProjectionLinearization.h>

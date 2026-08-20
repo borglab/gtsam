@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    GncOutlierSampling.h
+ * @brief   Deterministic outlier sampling for GNC bundle-adjustment timing
+ * @author  Ruogu Li
+ * @date    Jul 19, 2026
+ */
+
 #pragma once
 
 #include <algorithm>

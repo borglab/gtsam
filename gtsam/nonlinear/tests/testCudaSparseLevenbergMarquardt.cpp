@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    testCudaSparseLevenbergMarquardt.cpp
+ * @brief   Unit tests for the general CUDA sparse Levenberg-Marquardt optimizer
+ * @author  Ruogu Li
+ * @date    Jul 14, 2026
+ */
+
 #include <CppUnitLite/TestHarness.h>
 #include <cuda_runtime_api.h>
 #include <gtsam/base/Testable.h>
