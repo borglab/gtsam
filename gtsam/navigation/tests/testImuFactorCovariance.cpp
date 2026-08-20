@@ -12,10 +12,13 @@
 /**
  * @file    testImuFactorCovariance.cpp
  * @brief   Regression tests for the IMU factor residual covariance
+ * @author  Frank Dellaert (with codex)
+ * @date    August 2026
  */
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/types.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/Sampler.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
@@ -24,8 +27,10 @@
 #include <cmath>
 #include <cstdint>
 #include <random>
+#include <sstream>
 #include <stdexcept>
 #include <type_traits>
+#include <typeinfo>
 
 #include "imuFactorTesting.h"
 
@@ -58,8 +63,8 @@ PIM integrateIdealMeasurements(
     const std::shared_ptr<PreintegrationParams>& params) {
   PIM pim(params);
   for (size_t i = 0; i < kMeasurementCount; ++i) {
-    pim.integrateMeasurement(kMeasuredAcceleration,
-                             kMeasuredAngularVelocity, kDt);
+    pim.integrateMeasurement(kMeasuredAcceleration, kMeasuredAngularVelocity,
+                             kDt);
   }
   return pim;
 }
@@ -67,13 +72,11 @@ PIM integrateIdealMeasurements(
 template <class PreintegrationType>
 Matrix9 residualChartJacobian(
     const PreintegratedImuMeasurementsT<PreintegrationType>& pim) {
-  static_assert(
-      std::is_same_v<PreintegrationType, ManifoldPreintegration> ||
-          std::is_same_v<PreintegrationType, TangentPreintegration> ||
-          std::is_same_v<PreintegrationType, LieGroupPreintegration>,
-      "Unsupported IMU preintegration backend");
-  if constexpr (std::is_same_v<PreintegrationType,
-                               TangentPreintegration>) {
+  static_assert(std::is_same_v<PreintegrationType, ManifoldPreintegration> ||
+                    std::is_same_v<PreintegrationType, TangentPreintegration> ||
+                    std::is_same_v<PreintegrationType, LieGroupPreintegration>,
+                "Unsupported IMU preintegration backend");
+  if constexpr (std::is_same_v<PreintegrationType, TangentPreintegration>) {
     // Map additive [theta, position, velocity] perturbations into the
     // component-wise NavState chart used by the factor residual.
     Matrix9 jacobian = Z_9x9;
@@ -105,9 +108,22 @@ Matrix9 installedFactorCovariance(const PIM& pim) {
   return gaussian->covariance();
 }
 
-double relativeCovarianceError(const Matrix9& actual,
-                               const Matrix9& expected) {
+double relativeCovarianceError(const Matrix9& actual, const Matrix9& expected) {
   return (actual - expected).norm() / expected.norm();
+}
+
+template <class PIM>
+void expectRelativeCovarianceErrorBelow(
+    const Matrix9& actual, const Matrix9& expected, const PIM& pim,
+    double tolerance, const char* comparison, TestResult& result,
+    const std::string& testName, const char* filename, long lineNumber) {
+  const double error = relativeCovarianceError(actual, expected);
+  if (error < tolerance) return;
+
+  std::ostringstream message;
+  message << comparison << " for " << demangle(typeid(pim).name())
+          << ": relative error " << error << " >= " << tolerance;
+  result.addFailure(Failure(testName, filename, lineNumber, message.str()));
 }
 
 template <class PIM>
@@ -117,8 +133,7 @@ Matrix9 monteCarloResidualCovariance(
   std::mt19937_64 randomGenerator(kRandomSeed);
   Sampler accelerometerSampler(kAccelerometerSigmas / std::sqrt(kDt),
                                randomGenerator);
-  Sampler gyroscopeSampler(kGyroscopeSigmas / std::sqrt(kDt),
-                           randomGenerator);
+  Sampler gyroscopeSampler(kGyroscopeSigmas / std::sqrt(kDt), randomGenerator);
 
   const imuBias::ConstantBias bias;
   Vector9 mean = Z_9x1;
@@ -137,8 +152,8 @@ Matrix9 monteCarloResidualCovariance(
     }
 
     const ImuFactor2T<PIM> sampledFactor(X(1), X(2), B(1), sampledPim);
-    const Vector9 residual = sampledFactor.evaluateError(
-        state_i, state_j, bias, {}, {}, {});
+    const Vector9 residual =
+        sampledFactor.evaluateError(state_i, state_j, bias, {}, {}, {});
 
     const Vector9 differenceFromOldMean = residual - mean;
     mean += differenceFromOldMean / static_cast<double>(sampleIndex);
@@ -159,7 +174,10 @@ TEST_PIM(ImuFactorCovariance, TheoreticalResidualChart) {
   const Matrix9 expected = theoreticalResidualCovariance(pim);
   const Matrix9 actual = installedFactorCovariance(pim);
 
-  EXPECT(relativeCovarianceError(actual, expected) < 1e-10);
+  expectRelativeCovarianceErrorBelow(
+      actual, expected, pim, 1e-10,
+      "installed factor covariance vs theoretical residual covariance", result_,
+      name_, __FILE__, __LINE__);
 }
 
 // Checks the installed covariance against sampled nonlinear factor residuals.
@@ -175,9 +193,14 @@ TEST_PIM(ImuFactorCovariance, MonteCarloResidualChart) {
   const Matrix9 theoretical = theoreticalResidualCovariance(idealPim);
   const Matrix9 installed = installedFactorCovariance(idealPim);
 
-  EXPECT(relativeCovarianceError(empirical, theoretical) <
-         kMonteCarloTolerance);
-  EXPECT(relativeCovarianceError(empirical, installed) < kMonteCarloTolerance);
+  expectRelativeCovarianceErrorBelow(
+      empirical, theoretical, idealPim, kMonteCarloTolerance,
+      "Monte Carlo covariance vs theoretical residual covariance", result_,
+      name_, __FILE__, __LINE__);
+  expectRelativeCovarianceErrorBelow(
+      empirical, installed, idealPim, kMonteCarloTolerance,
+      "Monte Carlo covariance vs installed factor covariance", result_, name_,
+      __FILE__, __LINE__);
 }
 
 }  // namespace imu_covariance
