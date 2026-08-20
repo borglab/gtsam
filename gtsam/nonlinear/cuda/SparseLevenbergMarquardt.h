@@ -15,8 +15,9 @@
 namespace gtsam::cuda {
 
 class SparseLevenbergMarquardtOptimizer;
+struct SparseLevenbergMarquardtResult;
 
-/** CUDA-specific controls layered on the standard LM parameter set. */
+/// CUDA-specific controls layered on the standard LM parameter set.
 class GTSAM_EXPORT SparseLevenbergMarquardtParams
     : public LevenbergMarquardtParams {
  public:
@@ -38,10 +39,49 @@ class GTSAM_EXPORT SparseLevenbergMarquardtParams
   PcgOptions pcg;
 };
 
-/** Backend that produced the final optimization result. */
+/**
+ * Batch Levenberg-Marquardt optimizer with a persistent CUDA sparse system.
+ *
+ * The graph topology is fixed at construction. `optimize()` may be called once
+ * and retains the final values and diagnostics for subsequent inspection.
+ *
+ * The diagnostics types reachable through `result()` are defined below the
+ * class, since inspecting them is not part of ordinary use.
+ */
+class GTSAM_EXPORT SparseLevenbergMarquardtOptimizer {
+ public:
+  /// Construct the symbolic plan and validate the requested CUDA backend.
+  SparseLevenbergMarquardtOptimizer(
+      const NonlinearFactorGraph& graph, const Values& initialValues,
+      const SparseLevenbergMarquardtParams& params =
+          SparseLevenbergMarquardtParams());
+  ~SparseLevenbergMarquardtOptimizer();
+
+  SparseLevenbergMarquardtOptimizer(
+      const SparseLevenbergMarquardtOptimizer&) = delete;
+  SparseLevenbergMarquardtOptimizer& operator=(
+      const SparseLevenbergMarquardtOptimizer&) = delete;
+
+  /// Run batch optimization and return the retained final values.
+  const Values& optimize();
+  /// Return the current values.
+  const Values& values() const;
+  /// Return the nonlinear error at the current values.
+  double error() const;
+  /// Return the immutable parameter set supplied at construction.
+  const SparseLevenbergMarquardtParams& params() const;
+  /// Return backend, termination, transfer, and timing diagnostics.
+  const SparseLevenbergMarquardtResult& result() const;
+
+ private:
+  struct Impl;
+  std::unique_ptr<Impl> impl_;
+};
+
+/// Backend that produced the final optimization result.
 enum class SparseLevenbergMarquardtBackend { Device, CpuFallback };
 
-/** Reason optimization stopped. */
+/// Reason optimization stopped.
 enum class SparseLevenbergMarquardtTerminationReason {
   None,
   ErrorThreshold,
@@ -51,7 +91,7 @@ enum class SparseLevenbergMarquardtTerminationReason {
   LambdaUpperBound,
 };
 
-/** Reason the CUDA path transferred control to the CPU optimizer. */
+/// Reason the CUDA path transferred control to the CPU optimizer.
 enum class SparseLevenbergMarquardtFallbackReason {
   None,
   RuntimeUnavailable,
@@ -61,7 +101,7 @@ enum class SparseLevenbergMarquardtFallbackReason {
   DirectJacobianUnsupported,
 };
 
-/** Cause reported when direct CUDA Jacobian construction cannot continue. */
+/// Cause reported when direct CUDA Jacobian construction cannot continue.
 enum class DirectJacobianFailure {
   None,
   StructuralMismatch,
@@ -70,7 +110,7 @@ enum class DirectJacobianFailure {
   NonFiniteValues,
 };
 
-/** Location and description of a direct Jacobian construction failure. */
+/// Location and description of a direct Jacobian construction failure.
 struct DirectJacobianStatus {
   DirectJacobianFailure failure = DirectJacobianFailure::None;
   size_t factorIndex = std::numeric_limits<size_t>::max();
@@ -79,7 +119,7 @@ struct DirectJacobianStatus {
   bool ok() const { return failure == DirectJacobianFailure::None; }
 };
 
-/** Sparse system dimensions recorded after plan construction. */
+/// Sparse system dimensions recorded after plan construction.
 struct SparseLevenbergMarquardtSystemSize {
   size_t factors = 0;
   size_t jacobianRows = 0;
@@ -88,7 +128,7 @@ struct SparseLevenbergMarquardtSystemSize {
   size_t normalNonzeros = 0;
 };
 
-/** Logical host/device traffic accumulated by an optimization. */
+/// Logical host/device traffic accumulated by an optimization.
 struct SparseLevenbergMarquardtTransferCounts {
   size_t patternH2dBytes = 0;
   size_t numericH2dBytes = 0;
@@ -148,7 +188,7 @@ struct SparseLevenbergMarquardtStageTimings {
 
 };
 
-/** Diagnostics for one LM lambda attempt. */
+/// Diagnostics for one LM lambda attempt.
 struct SparseLevenbergMarquardtAttemptRecord {
   size_t acceptedIterationsBeforeAttempt = 0;
   size_t attempt = 0;
@@ -163,7 +203,7 @@ struct SparseLevenbergMarquardtAttemptRecord {
   bool accepted = false;
 };
 
-/** Final values, diagnostics, and optional profile for one optimization. */
+/// Final values, diagnostics, and optional profile for one optimization.
 struct SparseLevenbergMarquardtResult {
   // On CpuFallback, CUDA counters, system/transfer data, timings,
   // attemptTrace, and finalLambda describe the attempted CUDA prefix.
@@ -193,41 +233,6 @@ struct SparseLevenbergMarquardtResult {
   LinearSolveStats linearSolveStats;
   std::vector<int> appliedScalarPermutation;
   std::vector<SparseLevenbergMarquardtAttemptRecord> attemptTrace;
-};
-
-/**
- * Batch Levenberg-Marquardt optimizer with a persistent CUDA sparse system.
- *
- * The graph topology is fixed at construction. `optimize()` may be called once
- * and retains the final values and diagnostics for subsequent inspection.
- */
-class GTSAM_EXPORT SparseLevenbergMarquardtOptimizer {
- public:
-  /** Construct the symbolic plan and validate the requested CUDA backend. */
-  SparseLevenbergMarquardtOptimizer(
-      const NonlinearFactorGraph& graph, const Values& initialValues,
-      const SparseLevenbergMarquardtParams& params = {});
-  ~SparseLevenbergMarquardtOptimizer();
-
-  SparseLevenbergMarquardtOptimizer(
-      const SparseLevenbergMarquardtOptimizer&) = delete;
-  SparseLevenbergMarquardtOptimizer& operator=(
-      const SparseLevenbergMarquardtOptimizer&) = delete;
-
-  /** Run batch optimization and return the retained final values. */
-  const Values& optimize();
-  /** Return the current values. */
-  const Values& values() const;
-  /** Return the nonlinear error at the current values. */
-  double error() const;
-  /** Return the immutable parameter set supplied at construction. */
-  const SparseLevenbergMarquardtParams& params() const;
-  /** Return backend, termination, transfer, and timing diagnostics. */
-  const SparseLevenbergMarquardtResult& result() const;
-
- private:
-  struct Impl;
-  std::unique_ptr<Impl> impl_;
 };
 
 }  // namespace gtsam::cuda

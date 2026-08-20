@@ -9,14 +9,16 @@
 #include <gtsam/slam/cuda/SfmTypes.h>
 
 #include <cstddef>
+#include <memory>
 #include <string>
 #include <vector>
 
 namespace gtsam::cuda {
 
 class SfmLevenbergMarquardtOptimizer;
+struct SfmLevenbergMarquardtResult;
 
-/** Parameters for CUDA-resident SFM Levenberg-Marquardt optimization. */
+/// Parameters for CUDA-resident SFM Levenberg-Marquardt optimization.
 class GTSAM_EXPORT SfmLevenbergMarquardtParams
     : public LevenbergMarquardtParams {
  public:
@@ -60,6 +62,67 @@ class GTSAM_EXPORT SfmLevenbergMarquardtParams
               double tol = 1e-9) const;
 };
 
+/**
+ * Levenberg-Marquardt bundle adjustment that runs the whole iteration on the
+ * GPU.
+ *
+ * Where SparseLevenbergMarquardtOptimizer linearizes a general factor graph on
+ * the CPU and solves the normal equations on the device, this optimizer
+ * converts the graph once into device-resident SFM data and then keeps
+ * linearization, damping, Schur elimination, the linear solve, retraction, and
+ * error evaluation on the device for every LM attempt. Only scalar convergence
+ * quantities cross back to the host.
+ *
+ * The graph must contain only `GeneralSFMFactor<SfmCamera, Point3>` or
+ * `BatchFactor<GeneralSFMFactor<SfmCamera, Point3>, 2>` factors, over values
+ * holding `SfmCamera` (that is, `PinholeCamera<Cal3Bundler>`) cameras and
+ * `Point3` landmarks; any other factor type throws. Values of other types are
+ * carried through untouched. Landmarks are eliminated with a Schur complement,
+ * and `SfmLevenbergMarquardtParams::linear` selects how the reduced camera
+ * system is solved; see `docs/CUDA_LINEAR_SOLVERS.md`.
+ *
+ * As elsewhere in GTSAM the parameter type selects the optimizer, so passing
+ * `SfmLevenbergMarquardtParams` is what routes a problem here — including
+ * through `GncOptimizer<GncParams<SfmLevenbergMarquardtParams>>` for robust
+ * bundle adjustment. `optimize()` may be called again to continue from the
+ * values reached by the previous run.
+ *
+ * The profiling and result types reachable through `result()` are defined
+ * below the class, since inspecting them is not part of ordinary use.
+ */
+class GTSAM_EXPORT SfmLevenbergMarquardtOptimizer {
+ public:
+  /// Creates an optimizer for a supported factor graph and initial values.
+  SfmLevenbergMarquardtOptimizer(
+      const NonlinearFactorGraph& graph, const Values& initialValues,
+      const SfmLevenbergMarquardtParams& params =
+          SfmLevenbergMarquardtParams());
+  ~SfmLevenbergMarquardtOptimizer();
+
+  /// Runs optimization and returns the final values.
+  const Values& optimize();
+
+  /// Returns the latest optimized values, or the initial values before optimize().
+  const Values& values() const { return values_; }
+  /// Returns the nonlinear objective at the current values.
+  double error() const { return graph_.error(values_); }
+  /// Returns the number of accepted nonlinear iterations in the latest run.
+  size_t iterations() const;
+
+  /// Returns the optimizer parameters.
+  const SfmLevenbergMarquardtParams& params() const { return params_; }
+  /// Returns profiling and convergence results from the latest run.
+  const SfmLevenbergMarquardtResult& result() const;
+
+ private:
+  NonlinearFactorGraph graph_;
+  Values values_;
+  SfmLevenbergMarquardtParams params_;
+  // Held indirectly so the result and profiling types can be defined after
+  // this class instead of ahead of it.
+  std::unique_ptr<SfmLevenbergMarquardtResult> result_;
+};
+
 struct SfmLevenbergMarquardtAttemptProfile {
   int iteration = 0;
   int attempt = 0;
@@ -100,7 +163,7 @@ struct SfmLevenbergMarquardtIterationProfile {
   double endLambda = 0.0;
   double totalElapsed = 0.0;
   double dampingDiagonalElapsed = 0.0;
-  /** Once-per-attempt reduced-system construction. */
+  /// Once-per-attempt reduced-system construction.
   double normalEquationsElapsed = 0.0;
   double acceptTrialElapsed = 0.0;
   bool acceptedStep = false;
@@ -177,61 +240,30 @@ struct SfmFactorGraphData {
   bool hasRobustNoise = false;
 };
 
-/** Converts a supported general factor graph into packed SFM input data. */
+/// Converts a supported general factor graph into packed SFM input data.
 GTSAM_EXPORT SfmFactorGraphData convertGeneralSfmGraph(
     const NonlinearFactorGraph& graph, const Values& initialValues);
 
-/** Optimizes SFM data and downloads the optimized values. */
+/// Optimizes SFM data and downloads the optimized values.
 GTSAM_EXPORT SfmLevenbergMarquardtResult optimizeSfm(
     const SfmData& data,
     const SfmLevenbergMarquardtParams& params);
 
-/** Optimizes SFM data without downloading the final device values. */
+/// Optimizes SFM data without downloading the final device values.
 GTSAM_EXPORT SfmLevenbergMarquardtResult optimizeSfmWithoutValueDownload(
     const SfmData& data,
     const SfmLevenbergMarquardtParams& params);
 
-/** Optimizes SFM data using explicit camera and point keys. */
+/// Optimizes SFM data using explicit camera and point keys.
 GTSAM_EXPORT SfmLevenbergMarquardtResult optimizeSfm(
     const SfmData& data, const std::vector<Key>& cameraKeys,
     const std::vector<Key>& pointKeys,
     const SfmLevenbergMarquardtParams& params);
 
-/** Optimizes keyed SFM data without downloading final device values. */
+/// Optimizes keyed SFM data without downloading final device values.
 GTSAM_EXPORT SfmLevenbergMarquardtResult optimizeSfmWithoutValueDownload(
     const SfmData& data, const std::vector<Key>& cameraKeys,
     const std::vector<Key>& pointKeys,
     const SfmLevenbergMarquardtParams& params);
-
-/** Batch optimizer adapter for the CUDA-resident SFM implementation. */
-class GTSAM_EXPORT SfmLevenbergMarquardtOptimizer {
- public:
-  /// Creates an optimizer for a supported factor graph and initial values.
-  SfmLevenbergMarquardtOptimizer(
-      const NonlinearFactorGraph& graph, const Values& initialValues,
-      const SfmLevenbergMarquardtParams& params =
-          SfmLevenbergMarquardtParams());
-
-  /// Runs optimization and returns the final values.
-  const Values& optimize();
-
-  /// Returns the latest optimized values, or the initial values before optimize().
-  const Values& values() const { return values_; }
-  /// Returns the nonlinear objective at the current values.
-  double error() const { return graph_.error(values_); }
-  /// Returns the number of accepted nonlinear iterations in the latest run.
-  size_t iterations() const { return static_cast<size_t>(result_.iterations); }
-
-  /// Returns the optimizer parameters.
-  const SfmLevenbergMarquardtParams& params() const { return params_; }
-  /// Returns profiling and convergence results from the latest run.
-  const SfmLevenbergMarquardtResult& result() const { return result_; }
-
- private:
-  NonlinearFactorGraph graph_;
-  Values values_;
-  SfmLevenbergMarquardtParams params_;
-  SfmLevenbergMarquardtResult result_;
-};
 
 }  // namespace gtsam::cuda

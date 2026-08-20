@@ -2,20 +2,20 @@
 #include <gtsam/base/cuda/DeviceArray.h>
 #include <gtsam/base/cuda/Errors.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam/linear/cuda/BlockOrdering.h>
 #include <gtsam/linear/cuda/LinearSolver.h>
+#include <gtsam/linear/cuda/internal/BlockOrdering.h>
 #include <gtsam/nonlinear/BatchFactor.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
-#include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
+#include <gtsam/nonlinear/cuda/internal/DeviceGeometryKernels.h>
 #include <gtsam/nonlinear/cuda/internal/PcgLmPolicy.h>
 #include <gtsam/nonlinear/internal/LevenbergMarquardtPolicy.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
-#include <gtsam/slam/cuda/SfmDenseSchurSolver.h>
 #include <gtsam/slam/cuda/SfmLevenbergMarquardt.h>
-#include <gtsam/slam/cuda/SfmProjectionLinearization.h>
-#include <gtsam/slam/cuda/SfmReducedCsrPlan.h>
-#include <gtsam/slam/cuda/SfmSchurProblem.h>
-#include <gtsam/slam/cuda/SfmValues.h>
+#include <gtsam/slam/cuda/internal/SfmDenseSchurSolver.h>
+#include <gtsam/slam/cuda/internal/SfmProjectionLinearization.h>
+#include <gtsam/slam/cuda/internal/SfmReducedCsrPlan.h>
+#include <gtsam/slam/cuda/internal/SfmSchurProblem.h>
+#include <gtsam/slam/cuda/internal/SfmValues.h>
 
 #include <algorithm>
 #include <chrono>
@@ -561,7 +561,19 @@ SfmLevenbergMarquardtOptimizer::SfmLevenbergMarquardtOptimizer(
     const SfmLevenbergMarquardtParams& params)
     : graph_(graph),
       values_(initialValues),
-      params_(params) {}
+      params_(params),
+      result_(std::make_unique<SfmLevenbergMarquardtResult>()) {}
+
+SfmLevenbergMarquardtOptimizer::~SfmLevenbergMarquardtOptimizer() = default;
+
+size_t SfmLevenbergMarquardtOptimizer::iterations() const {
+  return static_cast<size_t>(result_->iterations);
+}
+
+const SfmLevenbergMarquardtResult& SfmLevenbergMarquardtOptimizer::result()
+    const {
+  return *result_;
+}
 
 const Values& SfmLevenbergMarquardtOptimizer::optimize() {
   auto stageStart = Clock::now();
@@ -572,27 +584,27 @@ const Values& SfmLevenbergMarquardtOptimizer::optimize() {
     const double graphConversionElapsed = elapsedSince(stageStart);
 
     stageStart = Clock::now();
-    result_ = optimizeSfmImpl(
+    *result_ = optimizeSfmImpl(
         converted.data, converted.cameraKeys, converted.pointKeys, params_,
         (converted.hasNonUnitNoise || converted.hasRobustNoise)
             ? &converted.sqrtInfoByTrack
             : nullptr,
         converted.hasRobustNoise ? &converted.robustModelsByTrack : nullptr,
         SfmLevenbergMarquardtExecutionOptions{true});
-    result_.graphBackendCallElapsed = elapsedSince(stageStart);
-    result_.graphConversionElapsed = graphConversionElapsed;
+    result_->graphBackendCallElapsed = elapsedSince(stageStart);
+    result_->graphConversionElapsed = graphConversionElapsed;
 
     stageStart = Clock::now();
     Values merged(values_);
-    for (Key key : result_.optimizedValues.keys()) {
-      merged.update(key, result_.optimizedValues.at(key));
+    for (Key key : result_->optimizedValues.keys()) {
+      merged.update(key, result_->optimizedValues.at(key));
     }
     values_ = std::move(merged);
-    result_.graphValueMergeElapsed = elapsedSince(stageStart);
+    result_->graphValueMergeElapsed = elapsedSince(stageStart);
 
     convertedDestructionStart = Clock::now();
   }
-  result_.graphConvertedDataDestructionElapsed =
+  result_->graphConvertedDataDestructionElapsed =
       elapsedSince(convertedDestructionStart);
   return values_;
 }
