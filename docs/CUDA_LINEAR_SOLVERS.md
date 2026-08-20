@@ -69,6 +69,14 @@ sfmParams.ordering = cameraOrdering;
 
 ## Build and test
 
+The kernels accumulate into double-precision buffers with `atomicAdd`, so they
+require compute capability 6.0 or newer. `GTSAM_ENABLE_CUDA=ON` therefore
+defaults `CMAKE_CUDA_ARCHITECTURES` to `native`, which builds only for the GPUs
+present in the configuring machine; name the architectures explicitly when
+producing binaries for other machines, for example
+`-DCMAKE_CUDA_ARCHITECTURES=80;120`. Configuring below 6.0 is a hard error
+rather than a compile failure inside the kernels.
+
 ```bash
 cmake -S . -B build-cuda -DGTSAM_ENABLE_CUDA=ON -DGTSAM_ENABLE_CUDSS=ON
 cmake --build build-cuda -j6 --target testCudaLinearSolver \

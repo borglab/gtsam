@@ -18,6 +18,15 @@
 
 #pragma once
 
+// The kernels accumulate into double-precision buffers with atomicAdd, which
+// exists only from compute capability 6.0 (Pascal) onward. Report that here
+// rather than letting each kernel fail with "no instance of overloaded
+// function atomicAdd matches the argument list". See cmake/HandleCuda.cmake,
+// which pins CMAKE_CUDA_ARCHITECTURES so this cannot trigger via our build.
+#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 600
+#error "GTSAM CUDA support requires compute capability 6.0 or newer; set CMAKE_CUDA_ARCHITECTURES accordingly (for example -DCMAKE_CUDA_ARCHITECTURES=native)"
+#endif
+
 #include <cuda_runtime_api.h>
 
 #include <sstream>
