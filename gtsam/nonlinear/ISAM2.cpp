@@ -101,22 +101,23 @@ GaussianFactorGraph ISAM2::relinearizeAffectedFactors(
         useCachedLinear = false;
     }
     if (inside) {
-      if (useCachedLinear) {
+      GaussianFactor::shared_ptr linearFactor;
+      if (useCachedLinear && linearFactors_[idx]) {
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
-        assert(linearFactors_[idx]);
         assert(linearFactors_[idx]->keys() == nonlinearFactors_[idx]->keys());
 #endif
-        linearized.push_back(linearFactors_[idx]);
+        linearFactor = linearFactors_[idx];
       } else {
-        auto linearFactor = nonlinearFactors_[idx]->linearize(theta_);
-        linearized.push_back(linearFactor);
+        linearFactor = nonlinearFactors_[idx]->linearize(theta_);
         if (params_.cacheLinearizedFactors) {
 #ifdef GTSAM_EXTRA_CONSISTENCY_CHECKS
-          assert(linearFactors_[idx]->keys() == linearFactor->keys());
+          assert(!linearFactor ||
+                 linearFactor->keys() == nonlinearFactors_[idx]->keys());
 #endif
           linearFactors_[idx] = linearFactor;
         }
       }
+      if (linearFactor) linearized.push_back(linearFactor);
     }
   }
   gttoc(check_candidates_and_linearize);

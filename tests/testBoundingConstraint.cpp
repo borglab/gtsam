@@ -18,6 +18,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -143,6 +144,53 @@ TEST( testBoundingConstraint, unary_linearization_active) {
   EXPECT(assert_equal((const GaussianFactor&)expected1, *actual1, tol));
   EXPECT(assert_equal((const GaussianFactor&)expected2, *actual2, tol));
 }
+
+/* ************************************************************************* */
+namespace isam2_bounding_constraint {
+
+Values updateWithIncrementalOdometry(const Point2& initialPoint) {
+  const Symbol x1('x', 1), x2('x', 2);
+  ISAM2 isam;
+
+  NonlinearFactorGraph initialFactors;
+  initialFactors.emplace_shared<simulated2D::Prior>(initialPoint, soft_model2,
+                                                    x1);
+  initialFactors.emplace_shared<iq2D::PoseXInequality>(x1, 0.0, true);
+  Values initialValues;
+  initialValues.insert(x1, initialPoint);
+  isam.update(initialFactors, initialValues);
+
+  const Point2 odometry(1.0, 0.0);
+  NonlinearFactorGraph incrementalFactors;
+  incrementalFactors.emplace_shared<simulated2D::Odometry>(odometry,
+                                                           soft_model2, x1, x2);
+  Values incrementalValues;
+  const Point2 secondPoint = initialPoint + odometry;
+  incrementalValues.insert(x2, secondPoint);
+  isam.update(incrementalFactors, incrementalValues);
+
+  return isam.calculateEstimate();
+}
+
+// Verifies an inactive cached constraint is safe during a later update.
+TEST(testBoundingConstraint, ISAM2InactiveConstraint) {
+  const Values estimate = updateWithIncrementalOdometry(Point2(1.0, 0.0));
+
+  EXPECT(estimate.at<Point2>(Symbol('x', 1)).allFinite());
+  EXPECT(estimate.at<Point2>(Symbol('x', 2)).allFinite());
+}
+
+// Verifies an active constraint remains in incremental elimination.
+TEST(testBoundingConstraint, ISAM2ActiveConstraint) {
+  const Values estimate = updateWithIncrementalOdometry(Point2(-1.0, 0.0));
+
+  EXPECT(estimate.at<Point2>(Symbol('x', 1)).allFinite());
+  EXPECT(estimate.at<Point2>(Symbol('x', 2)).allFinite());
+  EXPECT(estimate.at<Point2>(Symbol('x', 1)).x() >= -tol);
+}
+
+}  // namespace isam2_bounding_constraint
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 TEST( testBoundingConstraint, unary_simple_optimization1) {
