@@ -77,6 +77,23 @@ producing binaries for other machines, for example
 `-DCMAKE_CUDA_ARCHITECTURES=80;120`. Configuring below 6.0 is a hard error
 rather than a compile failure inside the kernels.
 
+A toolkit older than the GPU cannot build for it — CUDA 12.0 rejects
+`compute_120` even where the driver supports Blackwell — and CMake by itself
+takes whichever `nvcc` comes first on `PATH`. When `CMAKE_CUDA_COMPILER` and
+`CUDACXX` are both unset, the configuration therefore tries `CUDAToolkit_ROOT`,
+`CUDA_HOME`, `CUDA_PATH`, `/usr/local/cuda`, `PATH`, and the newest
+`/usr/local/cuda-*` in turn, and takes the first `nvcc` that compiles for the
+requested architectures. Configuring reports the choice:
+
+```
+-- GTSAM CUDA compiler: /usr/local/cuda-13.0/bin/nvcc
+-- GTSAM CUDA architectures: native
+```
+
+A compiler that cannot target the requested architectures fails during
+configuration, naming the alternatives that were tried, instead of failing part
+way through the build.
+
 ```bash
 cmake -S . -B build-cuda -DGTSAM_ENABLE_CUDA=ON -DGTSAM_ENABLE_CUDSS=ON
 cmake --build build-cuda -j6 --target testCudaLinearSolver \
