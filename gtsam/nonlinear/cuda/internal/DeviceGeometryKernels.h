@@ -14,6 +14,32 @@
  * @brief   Host/device geometry primitives for retraction and projection
  * @author  Ruogu Li
  * @date    Jun 17, 2026
+ *
+ * The manifold and projection math a linearization kernel needs, rewritten to
+ * run inside one. GTSAM's own Rot3, Pose3, and PinholeCamera<Cal3Bundler> cannot
+ * be called from device code: they are built on Eigen expression templates and
+ * heap-allocating types, and their Jacobians come back as OptionalJacobian
+ * blocks. So this file duplicates only what a per-observation kernel needs, as
+ * free functions on plain fixed-size double arrays that stay in registers, with
+ * no allocation, no virtual calls, and no Eigen.
+ *
+ * Everything here is __host__ __device__ so tests can call it directly, which is
+ * how the duplication is kept honest. In gtsam/slam/tests/testCudaSfm.cpp,
+ * DeviceGeometryKernels.RetractCameraMatchesHostCameraRetract compares
+ * retractCamera() against PinholeCamera<Cal3Bundler>::retract, and the
+ * SfmProjectionLinearization cases compare the projection's residuals and
+ * Jacobians against host residuals and numerically differentiated Jacobians —
+ * in both cases against GTSAM, not against remembered numbers.
+ *
+ * retractCamera() follows GTSAM's own configuration rather than picking a
+ * convention: it dispatches on GTSAM_POSE3_EXPMAP, GTSAM_ROT3_EXPMAP, and
+ * GTSAM_USE_QUATERNIONS exactly as Pose3::retract does, so a build's device
+ * retraction agrees with its host retraction. Cheirality is likewise governed by
+ * GTSAM_THROW_CHEIRALITY_EXCEPTION, except that a kernel cannot throw, so a
+ * point behind the camera yields a zeroed residual and Jacobian.
+ *
+ * Only the Cal3Bundler pinhole model used by the SFM path is covered; this is
+ * not a general device port of gtsam/geometry.
  */
 
 #pragma once
@@ -28,10 +54,14 @@
 
 namespace gtsam::cuda {
 
+/// One observation's reprojection error and its Jacobians, all row-major.
 struct DeviceProjectionResult {
+  /// Predicted pixel minus measured pixel.
   double residual[2];
-  double cameraJacobian[18];  // Row-major 2 x 9.
-  double pointJacobian[6];    // Row-major 2 x 3.
+  /// Derivative with respect to the 9 camera tangent coordinates, 2 x 9.
+  double cameraJacobian[18];
+  /// Derivative with respect to the 3 point coordinates, 2 x 3.
+  double pointJacobian[6];
 };
 
 namespace internal {
@@ -156,11 +186,20 @@ __host__ __device__ inline void se3Expmap(const double* xi, double* rotation,
 
 }  // namespace internal
 
+/// Retracts a point by a 3-vector, which for Point3 is plain addition.
 __host__ __device__ inline DevicePoint3 retractPoint(const DevicePoint3& point,
                                                      const double* delta3) {
   return {point.x + delta3[0], point.y + delta3[1], point.z + delta3[2]};
 }
 
+/**
+ * Retracts a Cal3Bundler camera by a 9-vector: 6 pose coordinates then f, k1,
+ * k2, matching the tangent ordering of PinholeCamera<Cal3Bundler>::retract.
+ *
+ * The pose part uses whichever convention this build of GTSAM was configured
+ * for, so the result agrees with the host retraction rather than fixing one
+ * convention of its own.
+ */
 __host__ __device__ inline DevicePinholeCameraCal3Bundler retractCamera(
     const DevicePinholeCameraCal3Bundler& camera, const double* delta9) {
   DevicePinholeCameraCal3Bundler result = camera;
@@ -195,6 +234,15 @@ __host__ __device__ inline DevicePinholeCameraCal3Bundler retractCamera(
   return result;
 }
 
+/**
+ * Projects a point into a Cal3Bundler camera and returns the residual against
+ * the observation together with both analytic Jacobians.
+ *
+ * The residual is predicted minus measured, unwhitened; callers apply noise
+ * models afterwards. A point at or behind the image plane returns an all-zero
+ * result when GTSAM_THROW_CHEIRALITY_EXCEPTION is set, since a kernel cannot
+ * raise the exception the host code would.
+ */
 __host__ __device__ inline DeviceProjectionResult
 evaluatePinholeBundlerProjection(
     const DevicePinholeCameraCal3Bundler& camera, const DevicePoint3& point,

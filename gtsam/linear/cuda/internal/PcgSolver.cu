@@ -11,9 +11,46 @@
 
 /**
  * @file    PcgSolver.cu
- * @brief   Device-resident PCG recurrence over frontend-supplied operators
+ * @brief   Device-resident preconditioned conjugate gradient recurrence
  * @author  Ruogu Li
  * @date    Aug 15, 2026
+ *
+ * Implements textbook left-preconditioned conjugate gradient — Saad, "Iterative
+ * Methods for Sparse Linear Systems" (2nd ed.), Algorithm 9.1 — for Hx = b with
+ * H symmetric positive definite and preconditioner M:
+ *
+ *     r = b - Hx,  z = M⁻¹r,  p = z
+ *     repeat: α = rᵀz / pᵀHp;  x += αp;  r -= αHp;
+ *             z = M⁻¹r;  β = rᵀz / (rᵀz)_prev;  p = z + βp
+ *
+ * H and M never appear here. They arrive as the LinearOperator and
+ * Preconditioner interfaces, so this file only owns the recurrence and the
+ * vectors it runs on. That is what lets the same kernels drive both the
+ * matrix-free JᵀJ + λD operator for general factor graphs and the SFM
+ * Schur-complement operator.
+ *
+ * Three departures from the textbook form, all to keep the recurrence from
+ * stalling on the host:
+ *
+ *  - Every scalar (α, β, rᵀz, pᵀHp, ‖r‖², ‖b‖²) lives in one device array,
+ *    indexed by PcgSlot. Dot products reduce into it with atomicAdd, and α and
+ *    β are computed by single-thread kernels reading it, so an iteration issues
+ *    no device-to-host copy and never synchronizes. Only convergence tests copy
+ *    anything back, every PcgOptions::convergenceCheckInterval iterations, into
+ *    pinned host memory.
+ *  - The recurrence's own ‖r‖² drifts from the true residual in double
+ *    precision over hundreds of iterations, so b - Hx is recomputed and the
+ *    recurrence restarted every kResidualRefreshInterval iterations, and again
+ *    before accepting convergence. A tolerance is only met if the recomputed
+ *    residual also meets it, which costs one extra operator apply per solve
+ *    rather than reporting a converged solve that has not converged.
+ *  - Warm starting reuses the previous solve's x, which for Levenberg-Marquardt
+ *    is a good direction but the wrong length because H and b have both changed.
+ *    It is rescaled by the θ minimizing the quadratic along it,
+ *    θ = bᵀx / xᵀHx, and rejected when xᵀHx is not positive.
+ *
+ * A near-zero or non-finite pAp or rᵀz sets a device breakdown flag rather than
+ * dividing; the flag is read at the next convergence check and ends the solve.
  */
 
 #include <gtsam/linear/cuda/internal/PcgSolver.h>

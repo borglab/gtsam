@@ -136,6 +136,15 @@ A compiler that cannot target the requested architectures fails during
 configuration, naming the alternatives that were tried, instead of failing part
 way through the build.
 
+A source file is named `.cu` if and only if it contains device code: a
+`__global__` or `__device__` function, or a `<<<>>>` launch. Everything else is
+`.cpp` and is built by the host compiler, including files that are wall-to-wall
+CUDA library calls — `cudss*`, `cusolver*`, `cusparse*`, `cudaMalloc*`, and
+`cudaEvent*` are ordinary host functions and need no `nvcc`. Following the rule
+keeps files out of the slower compile path; `CudssSpdSolver.cpp` is the clearest
+example. Sources are globbed, so renaming a file across the boundary needs no
+CMake change.
+
 ```bash
 cmake -S . -B build-cuda -DGTSAM_ENABLE_CUDA=ON -DGTSAM_ENABLE_CUDSS=ON
 cmake --build build-cuda -j6 --target testCudaLinearSolver \

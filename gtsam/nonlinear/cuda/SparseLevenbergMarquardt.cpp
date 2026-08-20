@@ -387,14 +387,8 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
         throw std::invalid_argument(
             "CUDA sparse LM GTSAM ordering is supported only by cuDSS");
       }
-      BlockLayout cudaBlocks;
-      cudaBlocks.reserve(layout->blocks().size());
-      for (const SparseJacobianColumnBlock& block : layout->blocks()) {
-        cudaBlocks.push_back(
-            {block.key, block.columnBegin, block.dimension});
-      }
       solverOptions.scalarPermutation =
-          compileScalarPermutation(cudaBlocks, *parameters.ordering);
+          compileScalarPermutation(layout->blocks(), *parameters.ordering);
       optimizationResult.appliedScalarPermutation =
           solverOptions.scalarPermutation;
     }
@@ -408,8 +402,8 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
           DevicePcgPreconditioner::BlockJacobi;
       solverOptions.columnBlockOffsets.reserve(layout->blocks().size() + 1);
       solverOptions.columnBlockOffsets.push_back(0);
-      for (const SparseJacobianColumnBlock& block : layout->blocks()) {
-        solverOptions.columnBlockOffsets.push_back(block.columnBegin +
+      for (const VariableBlock& block : layout->blocks()) {
+        solverOptions.columnBlockOffsets.push_back(block.scalarOffset +
                                                    block.dimension);
       }
     }

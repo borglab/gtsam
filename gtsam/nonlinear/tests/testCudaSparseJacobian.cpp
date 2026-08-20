@@ -377,8 +377,8 @@ DenseJacobianReference AssembleDenseReferenceBySlot(
     const SparseJacobianFactorWritePlan& factorPlan = plan.factor(factorIndex);
     Eigen::Index localColumn = 0;
     for (Key key : jacobian->keys()) {
-      const SparseJacobianColumnBlock& column = columns.at(key);
-      reference.jacobian.block(factorPlan.rowBegin, column.columnBegin,
+      const VariableBlock& column = columns.at(key);
+      reference.jacobian.block(factorPlan.rowBegin, column.scalarOffset,
                                factorPlan.rowCount, column.dimension) =
           localA.middleCols(localColumn, column.dimension);
       localColumn += column.dimension;
@@ -571,14 +571,14 @@ TEST(SparseJacobianColumnLayout, UsesNaturalKeyOrderAndConvertsDeltas) {
 
   EXPECT_LONGS_EQUAL(kPoseKey, layout.blocks()[0].key);
   EXPECT_LONGS_EQUAL(3, layout.blocks()[0].dimension);
-  EXPECT_LONGS_EQUAL(0, layout.blocks()[0].columnBegin);
+  EXPECT_LONGS_EQUAL(0, layout.blocks()[0].scalarOffset);
 
   EXPECT_LONGS_EQUAL(kPointKey, layout.blocks()[1].key);
   EXPECT_LONGS_EQUAL(2, layout.blocks()[1].dimension);
-  EXPECT_LONGS_EQUAL(3, layout.blocks()[1].columnBegin);
+  EXPECT_LONGS_EQUAL(3, layout.blocks()[1].scalarOffset);
 
-  EXPECT_LONGS_EQUAL(0, layout.at(kPoseKey).columnBegin);
-  EXPECT_LONGS_EQUAL(3, layout.at(kPointKey).columnBegin);
+  EXPECT_LONGS_EQUAL(0, layout.at(kPoseKey).scalarOffset);
+  EXPECT_LONGS_EQUAL(3, layout.at(kPointKey).scalarOffset);
 
   const Vector flatDelta = (Vector(5) << 1.0, 2.0, 3.0, 4.0, 5.0).finished();
   const VectorValues delta = layout.toVectorValues(flatDelta);

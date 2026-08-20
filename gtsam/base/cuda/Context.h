@@ -24,10 +24,21 @@
 
 namespace gtsam::cuda {
 
+/**
+ * Owns the CUDA stream that every device operation in a solver is ordered on.
+ *
+ * All GTSAM CUDA work is issued on one stream, so kernels, copies, and library
+ * calls run in program order and only explicit synchronization is needed. The
+ * stream is either created and destroyed here, or borrowed from a caller that
+ * already has one; a borrowed stream outlives this object and is never
+ * destroyed by it. Move-only, because two owners would double-destroy.
+ */
 class Context {
  public:
+  /// Creates and owns a new stream.
   Context() { GTSAM_CUDA_CHECK(cudaStreamCreate(&stream_)); }
 
+  /// Borrows a stream owned elsewhere, which must outlive this object.
   explicit Context(cudaStream_t externalStream)
       : stream_(externalStream), ownsStream_(false) {}
 
@@ -52,11 +63,14 @@ class Context {
 
   ~Context() { reset(); }
 
+  /// Returns the stream to issue work on, null after a move.
   cudaStream_t stream() const { return stream_; }
 
+  /// Blocks the calling thread until all work issued so far has completed.
   void synchronize() const { GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream_)); }
 
  private:
+  /// Destroys the stream if owned, and leaves the object empty either way.
   void reset() {
     if (ownsStream_ && stream_) {
       cudaStreamDestroy(stream_);

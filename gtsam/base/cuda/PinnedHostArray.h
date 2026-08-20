@@ -29,14 +29,37 @@
 
 namespace gtsam::cuda {
 
+/**
+ * Owning host buffer in page-locked memory, the staging area for transfers.
+ *
+ * Where DeviceArray owns memory on the GPU, this owns memory on the host, so
+ * the two are the endpoints of a copy rather than alternatives. What makes it
+ * worth a separate class from std::vector is that cudaMallocHost pins the pages
+ * so the operating system cannot move or swap them, which buys two things the
+ * driver cannot offer for ordinary host memory:
+ *
+ *  - the DMA engine can read and write the buffer directly, roughly doubling
+ *    achieved bandwidth instead of staging through an internal pinned buffer;
+ *    and
+ *  - cudaMemcpyAsync is genuinely asynchronous, so a copy can overlap with
+ *    compute rather than blocking until it completes.
+ *
+ * The cost is that pinning is a scarce, slow-to-acquire resource: allocate
+ * these once and reuse them across iterations rather than per solve. Because
+ * asynchronous copies read the buffer after the call returns, it must stay
+ * alive and unmodified until the stream reaches that copy. Move-only, since two
+ * owners would double-free.
+ */
 template <typename T>
 class PinnedHostArray {
   static_assert(std::is_trivially_copyable_v<T>,
                 "PinnedHostArray requires trivially copyable values");
 
  public:
+  /// Constructs an empty array that allocates nothing.
   PinnedHostArray() = default;
 
+  /// Allocates room for size elements, leaving their values uninitialized.
   explicit PinnedHostArray(size_t size) { resize(size); }
 
   PinnedHostArray(const PinnedHostArray&) = delete;
@@ -60,6 +83,16 @@ class PinnedHostArray {
 
   ~PinnedHostArray() { resetUnchecked(); }
 
+  /**
+   * Reallocates to hold exactly size elements, discarding any current contents.
+   *
+   * A request for the size already held is ignored, so this is cheap to call
+   * every iteration to keep a reused buffer at the right size. Any other size
+   * allocates the replacement before freeing the old buffer, so a failed
+   * allocation throws and leaves the existing one intact. Values in the new
+   * buffer are uninitialized; call clear() if they need to be zero. Must not be
+   * called while an asynchronous copy on this buffer is still in flight.
+   */
   void resize(size_t size) {
     if (size == size_) return;
     if (size > std::numeric_limits<size_t>::max() / sizeof(T)) {
@@ -82,21 +115,26 @@ class PinnedHostArray {
     replacement.size_ = 0;
   }
 
-  // Value-initializes every element in the allocation.
+  /// Value-initializes every element in the allocation.
   void clear() {
     if (size_ == 0) return;
     std::fill(data_, data_ + size_, T{});
   }
 
+  /// Returns a pointer to the pinned storage, null when empty.
   T* data() { return data_; }
+  /// Returns a pointer to the pinned storage, null when empty.
   const T* data() const { return data_; }
+  /// Returns the number of elements, not bytes.
   size_t size() const { return size_; }
+  /// Returns whether nothing is allocated.
   bool empty() const { return size_ == 0; }
 
  private:
   T* data_ = nullptr;
   size_t size_ = 0;
 
+  /// Frees without checking, for use in the destructor and move assignment.
   void resetUnchecked() noexcept {
     if (data_) {
       cudaFreeHost(data_);

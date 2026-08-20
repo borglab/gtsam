@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    DenseCholeskySolver.cu
+ * @file    DenseCholeskySolver.cpp
  * @brief   Persistent cuSOLVER DN Cholesky backend for dense SPD systems
  * @author  Ruogu Li
  * @date    Aug 15, 2026

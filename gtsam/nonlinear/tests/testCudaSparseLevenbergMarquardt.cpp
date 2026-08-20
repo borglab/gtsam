@@ -474,8 +474,8 @@ DenseJacobianReference AssembleDenseReferenceBySlot(
     const SparseJacobianFactorWritePlan& factorPlan = plan.factor(factorIndex);
     Eigen::Index localColumn = 0;
     for (const Key key : jacobian->keys()) {
-      const SparseJacobianColumnBlock& column = columns.at(key);
-      reference.jacobian.block(factorPlan.rowBegin, column.columnBegin,
+      const VariableBlock& column = columns.at(key);
+      reference.jacobian.block(factorPlan.rowBegin, column.scalarOffset,
                                factorPlan.rowCount, column.dimension) =
           localA.middleCols(localColumn, column.dimension);
       localColumn += column.dimension;

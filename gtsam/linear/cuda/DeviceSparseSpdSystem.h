@@ -23,9 +23,6 @@
 #include <gtsam/linear/cuda/LinearSystem.h>
 
 #include <cstddef>
-#include <limits>
-#include <stdexcept>
-#include <utility>
 #include <vector>
 
 namespace gtsam::cuda {
@@ -33,17 +30,36 @@ namespace gtsam::cuda {
 /**
  * Persistent device storage for an int32 upper-CSR SPD system.
  *
- * Mutating operations enqueue work on the supplied CUDA stream. The caller
- * must keep host inputs alive until the queued upload completes and must order
- * later access on the same stream or with explicit CUDA events.
- * Views and array references borrow this object's storage and are invalidated
- * by pattern upload, move, or destruction.
+ * The sparsity pattern and the numbers stored in it have deliberately different
+ * lifetimes, which is what the accessors below encode. The pattern is immutable
+ * between uploadPattern() calls: it can only be established by uploadPattern(),
+ * which validates it and sizes the value and RHS storage from it, so
+ * rowPointers() and colIndices() are const-only. The numerics are rewritten
+ * every iteration, so values() and rhs() also have mutable overloads. Keeping
+ * the pattern behind that one entry point is why this is a class rather than a
+ * struct of public arrays: a caller that could resize colIndices() without
+ * touching rowPointers(), or store a descending row pointer, would first find
+ * out when a kernel read out of bounds on the device. Frontends that just want
+ * the flat arrays should use view().
+ *
+ * Mutating operations enqueue work on the supplied CUDA stream. The caller must
+ * keep host inputs alive until the queued upload completes and must order later
+ * access on the same stream or with explicit CUDA events. Views and array
+ * references borrow this object's storage and are invalidated by pattern
+ * upload, move, or destruction.
  */
 class GTSAM_EXPORT DeviceSparseSpdSystem {
  public:
   /**
    * Validates and uploads an upper-CSR sparsity pattern, then allocates values
    * and RHS storage. Existing storage and any borrowed views are invalidated.
+   *
+   * The pattern must satisfy rows >= 0, rowPointers.size() == rows + 1,
+   * rowPointers.front() == 0, non-decreasing row pointers within
+   * [0, colIndices.size()], rowPointers.back() == colIndices.size(), and every
+   * column index in [0, rows). The nonzero count must be representable as int,
+   * because cuDSS and the kernels index with int32. A violation throws
+   * std::invalid_argument and leaves existing storage untouched.
    *
    * transferProfile performs synchronous profiled uploads. Alternatively,
    * copyBeginEvent and copyEndEvent may both be supplied to bracket the queued
@@ -54,93 +70,7 @@ class GTSAM_EXPORT DeviceSparseSpdSystem {
                      cudaStream_t stream = nullptr,
                      DeviceTransferSummary* transferProfile = nullptr,
                      cudaEvent_t copyBeginEvent = nullptr,
-                     cudaEvent_t copyEndEvent = nullptr) {
-    if (rows < 0) {
-      throw std::invalid_argument("DeviceSparseSpdSystem rows < 0");
-    }
-    if (rowPointers.size() != static_cast<size_t>(rows) + 1) {
-      throw std::invalid_argument("DeviceSparseSpdSystem bad rowPointers");
-    }
-    if (colIndices.size() >
-        static_cast<size_t>(std::numeric_limits<int>::max())) {
-      throw std::invalid_argument("DeviceSparseSpdSystem too many nnz");
-    }
-    if (!rowPointers.empty() && rowPointers.front() != 0) {
-      throw std::invalid_argument("DeviceSparseSpdSystem bad rowPointers");
-    }
-    for (size_t i = 1; i < rowPointers.size(); ++i) {
-      if (rowPointers[i] < rowPointers[i - 1] || rowPointers[i] < 0 ||
-          rowPointers[i] > static_cast<int>(colIndices.size())) {
-        throw std::invalid_argument("DeviceSparseSpdSystem bad rowPointers");
-      }
-    }
-    if (!rowPointers.empty() &&
-        rowPointers.back() != static_cast<int>(colIndices.size())) {
-      throw std::invalid_argument("DeviceSparseSpdSystem bad nnz");
-    }
-    for (int col : colIndices) {
-      if (col < 0 || col >= rows) {
-        throw std::invalid_argument(
-            "DeviceSparseSpdSystem bad column index");
-      }
-    }
-    if ((copyBeginEvent == nullptr) != (copyEndEvent == nullptr)) {
-      throw std::invalid_argument(
-          "DeviceSparseSpdSystem requires both copy events");
-    }
-    if (transferProfile && copyBeginEvent) {
-      throw std::invalid_argument(
-          "DeviceSparseSpdSystem cannot combine transfer profiles");
-    }
-
-    DeviceArray<int> newRowPointers;
-    DeviceArray<int> newColIndices;
-    DeviceArray<double> newValues;
-    DeviceArray<double> newRhs;
-
-    try {
-      if (copyBeginEvent) {
-        newRowPointers.resize(rowPointers.size());
-        newColIndices.resize(colIndices.size());
-        newValues.resize(colIndices.size());
-        newRhs.resize(rows);
-        GTSAM_CUDA_CHECK(cudaEventRecord(copyBeginEvent, stream));
-        if (!rowPointers.empty()) {
-          GTSAM_CUDA_CHECK(cudaMemcpyAsync(
-              newRowPointers.data(), rowPointers.data(),
-              sizeof(int) * rowPointers.size(), cudaMemcpyHostToDevice,
-              stream));
-        }
-        if (!colIndices.empty()) {
-          GTSAM_CUDA_CHECK(cudaMemcpyAsync(
-              newColIndices.data(), colIndices.data(),
-              sizeof(int) * colIndices.size(), cudaMemcpyHostToDevice,
-              stream));
-        }
-        GTSAM_CUDA_CHECK(cudaEventRecord(copyEndEvent, stream));
-      } else if (transferProfile) {
-        transferProfile->add(newRowPointers.uploadProfiled(rowPointers, stream));
-        transferProfile->add(newColIndices.uploadProfiled(colIndices, stream));
-      } else {
-        newRowPointers.upload(rowPointers, stream);
-        newColIndices.upload(colIndices, stream);
-      }
-      if (!copyBeginEvent) {
-        newValues.resize(colIndices.size());
-        newRhs.resize(rows);
-      }
-    } catch (...) {
-      cudaStreamSynchronize(stream);
-      throw;
-    }
-
-    rowPointers_ = std::move(newRowPointers);
-    colIndices_ = std::move(newColIndices);
-    values_ = std::move(newValues);
-    rhs_ = std::move(newRhs);
-    undampedDiagonal_.reset();
-    rows_ = rows;
-  }
+                     cudaEvent_t copyEndEvent = nullptr);
 
   /// Returns the matrix dimension.
   int rows() const { return rows_; }

@@ -46,30 +46,8 @@ struct LinearSolverOptions {
   LinearSolverType backend = LinearSolverType::Cudss;
 };
 
-/// Cumulative, backend-independent lifecycle, convergence, and timing data.
-struct LinearSolveStats {
-  LinearSolverType backend = LinearSolverType::Cudss;
-  bool userOrderingApplied = false;
-  size_t analysisCount = 0;
-  size_t factorizationCount = 0;
-  size_t solveCount = 0;
-  size_t pcgIterationsTotal = 0;
-  size_t pcgMaxIterationHits = 0;
-  size_t pcgBreakdownCount = 0;
-  size_t lastPcgIterations = 0;
-  size_t pcgHostConvergenceChecks = 0;
-  size_t pcgD2hBytes = 0;
-  bool lastPcgConverged = false;
-  bool lastPcgBreakdown = false;
-  double lastPcgResidualNormSquared = 0.0;
-  double lastPcgRhsNormSquared = 0.0;
-  double analysisSeconds = 0.0;
-  double factorizationSeconds = 0.0;
-  double solveSeconds = 0.0;
-  double preconditionerSeconds = 0.0;
-  double pcgD2hSeconds = 0.0;
-  double dataInfoBoundarySeconds = 0.0;
-};
+/// Cumulative lifecycle, convergence, and timing data; defined below.
+struct LinearSolveStats;
 
 /**
  * Reusable numerical backend with one analyze/solve lifecycle.
@@ -136,6 +114,60 @@ class GTSAM_EXPORT LinearSolverSession {
  private:
   struct Impl;
   std::unique_ptr<Impl> impl_;
+};
+
+/**
+ * Cumulative, backend-independent lifecycle, convergence, and timing data.
+ *
+ * Counts and durations accumulate over a session's whole lifetime, while the
+ * lastPcg* fields describe only the most recent solve. Timings come from CUDA
+ * events, so they measure device time and are only meaningful once
+ * LinearSolverSession::stats() has harvested the completed work. Fields that
+ * name a backend are zero for the others.
+ */
+struct LinearSolveStats {
+  /// Backend the session was constructed with.
+  LinearSolverType backend = LinearSolverType::Cudss;
+  /// Whether a caller-supplied ordering reached the backend's analysis.
+  bool userOrderingApplied = false;
+  /// Number of analyze() calls, which is the count of symbolic analyses.
+  size_t analysisCount = 0;
+  /// Number of numerical factorizations, one per accepted damping attempt.
+  size_t factorizationCount = 0;
+  /// Number of solves, including those that reused a factorization.
+  size_t solveCount = 0;
+  /// Total conjugate gradient iterations over all PCG solves.
+  size_t pcgIterationsTotal = 0;
+  /// Number of PCG solves that stopped at maxIterations without converging.
+  size_t pcgMaxIterationHits = 0;
+  /// Number of PCG solves that ended on a near-zero curvature denominator.
+  size_t pcgBreakdownCount = 0;
+  /// Iterations used by the most recent PCG solve.
+  size_t lastPcgIterations = 0;
+  /// Number of times a residual norm was read back to test convergence.
+  size_t pcgHostConvergenceChecks = 0;
+  /// Bytes copied device to host for those convergence checks.
+  size_t pcgD2hBytes = 0;
+  /// Whether the most recent PCG solve met its relative tolerance.
+  bool lastPcgConverged = false;
+  /// Whether the most recent PCG solve ended in breakdown.
+  bool lastPcgBreakdown = false;
+  /// Squared residual norm the most recent PCG solve finished at.
+  double lastPcgResidualNormSquared = 0.0;
+  /// Squared right-hand-side norm the tolerance was measured against.
+  double lastPcgRhsNormSquared = 0.0;
+  /// Device seconds in symbolic analysis.
+  double analysisSeconds = 0.0;
+  /// Device seconds in numerical factorization.
+  double factorizationSeconds = 0.0;
+  /// Device seconds in triangular solves or CG iterations.
+  double solveSeconds = 0.0;
+  /// Device seconds building preconditioners.
+  double preconditionerSeconds = 0.0;
+  /// Device seconds in the convergence-check copies counted by pcgD2hBytes.
+  double pcgD2hSeconds = 0.0;
+  /// Host seconds blocked reading cuDSS status, which forces a sync.
+  double dataInfoBoundarySeconds = 0.0;
 };
 
 }  // namespace gtsam::cuda

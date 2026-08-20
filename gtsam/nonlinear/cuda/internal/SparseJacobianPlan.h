@@ -23,6 +23,7 @@
 #include <gtsam/dllexport.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/cuda/internal/BlockOrdering.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 
@@ -32,16 +33,6 @@
 
 namespace gtsam::cuda {
 
-/// Describes one Values entry's contiguous scalar-column range.
-struct SparseJacobianColumnBlock {
-  /// Values key represented by this block.
-  Key key = 0;
-  /// Tangent-space width of the value.
-  int dimension = 0;
-  /// First scalar column in the flattened Jacobian.
-  int columnBegin = 0;
-};
-
 /// Immutable host layout mapping Values keys to flattened Jacobian columns.
 class GTSAM_EXPORT SparseJacobianColumnLayout {
  public:
@@ -49,9 +40,9 @@ class GTSAM_EXPORT SparseJacobianColumnLayout {
   explicit SparseJacobianColumnLayout(const Values& values);
 
   /// Returns the block for key or throws std::out_of_range.
-  const SparseJacobianColumnBlock& at(Key key) const;
+  const VariableBlock& at(Key key) const;
   /// Borrows all column blocks in flattened order.
-  const std::vector<SparseJacobianColumnBlock>& blocks() const;
+  const BlockLayout& blocks() const;
   /// Returns the total scalar column count.
   int totalColumns() const;
   /// Checks whether values has exactly the stored keys, order, and dimensions.
@@ -60,7 +51,7 @@ class GTSAM_EXPORT SparseJacobianColumnLayout {
   VectorValues toVectorValues(const Vector& flatDelta) const;
 
  private:
-  std::vector<SparseJacobianColumnBlock> blocks_;
+  BlockLayout blocks_;
   FastMap<Key, size_t> keyToBlock_;
   int totalColumns_ = 0;
 };
@@ -132,7 +123,7 @@ class GTSAM_EXPORT SparseJacobianPlan {
   std::vector<SparseJacobianFactorWritePlan> factors_;
   uint64_t structuralFingerprint_ = 0;
 
-  std::vector<SparseJacobianColumnBlock> columnBlocks_;
+  BlockLayout columnBlocks_;
   std::vector<bool> factorIsNull_;
 };
 

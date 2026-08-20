@@ -19,7 +19,7 @@
 #include <cusparse.h>
 #include <gtsam/base/cuda/DeviceArray.h>
 #include <gtsam/base/cuda/PinnedHostArray.h>
-#include <gtsam/nonlinear/cuda/internal/DevicePcgSolver.h>
+#include <gtsam/nonlinear/cuda/internal/PcgOperatorBuilder.h>
 #include <gtsam/nonlinear/cuda/internal/DeviceSparseJacobianNormalEquations.h>
 
 #include <algorithm>
@@ -265,7 +265,7 @@ struct DeviceSparseJacobianNormalEquations::Impl {
   DeviceArray<double> squaredTerms;
   DeviceArray<double> oldError;
   DeviceArray<double> newError;
-  std::optional<DevicePcgSolver> pcgSolver;
+  std::optional<PcgOperatorBuilder> pcgSolver;
   // PCG mode stores g = Jᵀb here; cuDSS mode keeps it in
   // normalEquations.rhs().
   DeviceArray<double> gradient;

@@ -22,7 +22,7 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/dllexport.h>
 #include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
-#include <gtsam/nonlinear/cuda/internal/DevicePcgSolver.h>
+#include <gtsam/nonlinear/cuda/internal/PcgOperatorBuilder.h>
 #include <gtsam/nonlinear/cuda/internal/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/internal/SparseJacobianPlan.h>
 

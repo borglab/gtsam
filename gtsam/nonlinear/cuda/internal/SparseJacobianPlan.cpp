@@ -62,7 +62,7 @@ int checkedMultiply(int left, int right, const char* description) {
   return left * right;
 }
 
-const SparseJacobianColumnBlock& findColumnOrThrow(
+const VariableBlock& findColumnOrThrow(
     const SparseJacobianColumnLayout& columns, Key key) {
   try {
     return columns.at(key);
@@ -107,17 +107,17 @@ class Fnv1a64 {
 };
 
 void appendColumns(Fnv1a64* hash,
-                   const std::vector<SparseJacobianColumnBlock>& blocks) {
+                   const BlockLayout& blocks) {
   hash->appendSize(blocks.size());
-  for (const SparseJacobianColumnBlock& block : blocks) {
+  for (const VariableBlock& block : blocks) {
     hash->appendUint64(static_cast<uint64_t>(block.key));
     hash->appendInt(block.dimension);
-    hash->appendInt(block.columnBegin);
+    hash->appendInt(block.scalarOffset);
   }
 }
 
 uint64_t computeStoredFingerprint(
-    const std::vector<SparseJacobianColumnBlock>& columnBlocks,
+    const BlockLayout& columnBlocks,
     const std::vector<SparseJacobianFactorWritePlan>& factors,
     const std::vector<bool>& factorIsNull) {
   Fnv1a64 hash;
@@ -157,7 +157,7 @@ uint64_t computeGraphFingerprint(const NonlinearFactorGraph& graph,
     hash.appendInt(checkedSizeToInt(factor->dim(), "factor row count"));
     hash.appendSize(factor->keys().size());
     for (Key key : factor->keys()) {
-      const SparseJacobianColumnBlock& column = findColumnOrThrow(columns, key);
+      const VariableBlock& column = findColumnOrThrow(columns, key);
       hash.appendUint64(static_cast<uint64_t>(key));
       hash.appendInt(column.dimension);
     }
@@ -166,15 +166,15 @@ uint64_t computeGraphFingerprint(const NonlinearFactorGraph& graph,
   return hash.value();
 }
 
-bool sameColumnBlocks(const std::vector<SparseJacobianColumnBlock>& expected,
-                      const std::vector<SparseJacobianColumnBlock>& actual) {
+bool sameColumnBlocks(const BlockLayout& expected,
+                      const BlockLayout& actual) {
   if (expected.size() != actual.size()) {
     return false;
   }
   for (size_t index = 0; index < expected.size(); ++index) {
     if (expected[index].key != actual[index].key ||
         expected[index].dimension != actual[index].dimension ||
-        expected[index].columnBegin != actual[index].columnBegin) {
+        expected[index].scalarOffset != actual[index].scalarOffset) {
       return false;
     }
   }
@@ -202,12 +202,12 @@ SparseJacobianColumnLayout::SparseJacobianColumnLayout(const Values& values) {
                                   DefaultKeyFormatter(key));
     }
 
-    blocks_.push_back({key, dimension, totalColumns_});
+    blocks_.push_back({key, totalColumns_, dimension});
     totalColumns_ = nextTotal;
   }
 }
 
-const SparseJacobianColumnBlock& SparseJacobianColumnLayout::at(Key key) const {
+const VariableBlock& SparseJacobianColumnLayout::at(Key key) const {
   const auto found = keyToBlock_.find(key);
   if (found == keyToBlock_.end()) {
     throw std::out_of_range("SparseJacobianColumnLayout missing key " +
@@ -216,7 +216,7 @@ const SparseJacobianColumnBlock& SparseJacobianColumnLayout::at(Key key) const {
   return blocks_.at(found->second);
 }
 
-const std::vector<SparseJacobianColumnBlock>&
+const BlockLayout&
 SparseJacobianColumnLayout::blocks() const {
   return blocks_;
 }
@@ -230,7 +230,7 @@ bool SparseJacobianColumnLayout::matches(const Values& values) const {
   }
 
   try {
-    int columnBegin = 0;
+    int scalarOffset = 0;
     size_t index = 0;
     for (const auto& [key, dimensionSize] : dimensions) {
       if (dimensionSize == 0) {
@@ -238,14 +238,14 @@ bool SparseJacobianColumnLayout::matches(const Values& values) const {
       }
       const int dimension =
           checkedSizeToInt(dimensionSize, "column block dimension");
-      const SparseJacobianColumnBlock& block = blocks_[index++];
+      const VariableBlock& block = blocks_[index++];
       if (block.key != key || block.dimension != dimension ||
-          block.columnBegin != columnBegin) {
+          block.scalarOffset != scalarOffset) {
         return false;
       }
-      columnBegin = checkedAdd(columnBegin, dimension, "total column count");
+      scalarOffset = checkedAdd(scalarOffset, dimension, "total column count");
     }
-    return columnBegin == totalColumns_;
+    return scalarOffset == totalColumns_;
   } catch (const std::invalid_argument&) {
     return false;
   }
@@ -259,8 +259,8 @@ VectorValues SparseJacobianColumnLayout::toVectorValues(
   }
 
   VectorValues result;
-  for (const SparseJacobianColumnBlock& block : blocks_) {
-    result.insert(block.key, Vector(flatDelta.segment(block.columnBegin,
+  for (const VariableBlock& block : blocks_) {
+    result.insert(block.key, Vector(flatDelta.segment(block.scalarOffset,
                                                       block.dimension)));
   }
   return result;
@@ -302,12 +302,12 @@ SparseJacobianPlan::SparseJacobianPlan(
         }
       }
 
-      const SparseJacobianColumnBlock& column = findColumnOrThrow(columns, key);
+      const VariableBlock& column = findColumnOrThrow(columns, key);
       factorPlan.nonzerosPerRow =
           checkedAdd(factorPlan.nonzerosPerRow, column.dimension,
                      "factor nonzeros per row");
       factorPlan.blocks.push_back(
-          {key, localBlockIndex, column.dimension, column.columnBegin, 0});
+          {key, localBlockIndex, column.dimension, column.scalarOffset, 0});
     }
 
     std::vector<size_t> sortedBlockIndices(factorPlan.blocks.size());
@@ -428,10 +428,10 @@ SparseJacobianPlan::SparseJacobianPlan(
       }
     }
   }
-  for (const SparseJacobianColumnBlock& block : columnBlocks_) {
+  for (const VariableBlock& block : columnBlocks_) {
     for (int localColumn = 0; localColumn < block.dimension; ++localColumn) {
       const int globalColumn =
-          checkedAdd(block.columnBegin, localColumn, "covered scalar column");
+          checkedAdd(block.scalarOffset, localColumn, "covered scalar column");
       if (!coveredColumns.at(static_cast<size_t>(globalColumn))) {
         throw std::invalid_argument("SparseJacobianPlan uncovered key " +
                                     DefaultKeyFormatter(block.key));
@@ -515,11 +515,11 @@ bool SparseJacobianPlan::matches(
         const Key key = factor->keys()[localBlockIndex];
         const SparseJacobianBlockWritePlan& expectedBlock =
             expected.blocks[localBlockIndex];
-        const SparseJacobianColumnBlock& column = columns.at(key);
+        const VariableBlock& column = columns.at(key);
         if (expectedBlock.key != key ||
             expectedBlock.localBlockIndex != localBlockIndex ||
             expectedBlock.width != column.dimension ||
-            expectedBlock.globalColumnBegin != column.columnBegin) {
+            expectedBlock.globalColumnBegin != column.scalarOffset) {
           return false;
         }
       }

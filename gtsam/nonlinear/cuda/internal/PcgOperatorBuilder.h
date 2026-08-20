@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    DevicePcgSolver.h
+ * @file    PcgOperatorBuilder.h
  * @brief   Builds the matrix-free normal operator and preconditioner for PCG
  * @author  Ruogu Li
  * @date    Jul 25, 2026
@@ -30,34 +30,50 @@
 
 namespace gtsam::cuda {
 
+/// Settings for the PCG run that consumes these operators.
 struct DevicePcgOptions {
+  /// Maximum conjugate gradient iterations per linear solve.
   int maxIterations = 250;
+  /// Convergence threshold on the residual, relative to the initial residual.
   double relativeTolerance = 1e-6;
+  /// Whether to start from the previous attempt's solution.
   bool warmStart = true;
+  /// Iterations between residual norm reductions, which each cost a sync.
   int convergenceCheckInterval = 10;
+  /// Which preconditioner buildPreconditioner() should construct.
   DevicePcgPreconditioner preconditioner = DevicePcgPreconditioner::BlockJacobi;
 };
 
 /**
- * Produces the matrix-free normal operator and block preconditioner consumed
- * by LinearSolverSession.
+ * Produces the matrix-free normal operator and block preconditioner that
+ * LinearSolverSession hands to PcgSolver for general factor graphs.
  *
- * The operator is applied as two cuSPARSE SpMVs (J·p, then Jᵀ·(J·p)) plus an
- * elementwise damping term; the normal matrix H is never formed. The
- * preconditioner is block-Jacobi over the variable blocks of the column
- * layout: the undamped Gram blocks diag_k(JᵀJ) are rebuilt once per
- * linearization from the Jᵀ CSR arrays. prepare() applies attempt-specific
- * damping before the common session runs the PCG recurrence.
+ * This class runs no conjugate gradient iterations and has no solve(): the
+ * recurrence, convergence tests, and warm-start state all live in
+ * gtsam::cuda::PcgSolver, which owns the CG kernels. What this builds is
+ * PcgSolver's two inputs, from a Jacobian that is already resident on the
+ * device:
+ *
+ *  - the operator applying JᵀJ + λD as two cuSPARSE SpMVs (J·p, then
+ *    Jᵀ·(J·p)) plus an elementwise damping term, so the normal matrix H is
+ *    never formed; and
+ *  - a block-Jacobi preconditioner over the variable blocks of the column
+ *    layout, whose undamped Gram blocks diag_k(JᵀJ) are rebuilt once per
+ *    linearization from the Jᵀ CSR arrays.
+ *
+ * The SFM optimizer does not use this: it reaches PcgSolver through its own
+ * Schur-complement operator instead. The call order is initialize() once, then
+ * buildPreconditioner() per linearization, then prepare() per damping attempt.
  */
-class GTSAM_EXPORT DevicePcgSolver {
+class GTSAM_EXPORT PcgOperatorBuilder {
  public:
-  DevicePcgSolver();
-  ~DevicePcgSolver();
+  PcgOperatorBuilder();
+  ~PcgOperatorBuilder();
 
-  DevicePcgSolver(const DevicePcgSolver&) = delete;
-  DevicePcgSolver& operator=(const DevicePcgSolver&) = delete;
-  DevicePcgSolver(DevicePcgSolver&&) noexcept;
-  DevicePcgSolver& operator=(DevicePcgSolver&&) noexcept;
+  PcgOperatorBuilder(const PcgOperatorBuilder&) = delete;
+  PcgOperatorBuilder& operator=(const PcgOperatorBuilder&) = delete;
+  PcgOperatorBuilder(PcgOperatorBuilder&&) noexcept;
+  PcgOperatorBuilder& operator=(PcgOperatorBuilder&&) noexcept;
 
   /**
    * One-time setup: allocates CG vectors and preconditioner block storage,
