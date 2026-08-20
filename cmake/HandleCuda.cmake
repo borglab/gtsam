@@ -46,8 +46,9 @@ endfunction()
 # the answer depends on the pair and is cheapest to obtain by asking. Sets
 # out_var to OK, UNSUPPORTED_ARCH, or UNUSABLE; the last means the compiler
 # failed even without an architecture flag, so nothing can be concluded about
-# the architectures and the real error belongs to the build.
-function(gtsam_cuda_probe_compiler nvcc architectures out_var)
+# the architectures and the real error belongs to the build. On
+# UNSUPPORTED_ARCH, out_arch names the first architecture that was refused.
+function(gtsam_cuda_probe_compiler nvcc architectures out_var out_arch)
   set(gtsam_probe_source
       "${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/gtsamCudaArchProbe.cu")
   file(WRITE "${gtsam_probe_source}" "__global__ void gtsamCudaArchProbe() {}\n")
@@ -65,6 +66,7 @@ function(gtsam_cuda_probe_compiler nvcc architectures out_var)
     RESULT_VARIABLE gtsam_probe_result OUTPUT_QUIET ERROR_QUIET)
   if(NOT gtsam_probe_result EQUAL 0)
     set(${out_var} UNUSABLE PARENT_SCOPE)
+    set(${out_arch} "" PARENT_SCOPE)
     return()
   endif()
 
@@ -75,10 +77,12 @@ function(gtsam_cuda_probe_compiler nvcc architectures out_var)
       RESULT_VARIABLE gtsam_probe_result OUTPUT_QUIET ERROR_QUIET)
     if(NOT gtsam_probe_result EQUAL 0)
       set(${out_var} UNSUPPORTED_ARCH PARENT_SCOPE)
+      set(${out_arch} "${gtsam_arch}" PARENT_SCOPE)
       return()
     endif()
   endforeach()
   set(${out_var} OK PARENT_SCOPE)
+  set(${out_arch} "" PARENT_SCOPE)
 endfunction()
 
 # Reports a toolkit version like "12.0.140" for use in diagnostics.
@@ -98,33 +102,38 @@ if(GTSAM_ENABLE_CUDA)
   # a default before enable_language(CUDA) so it is not overwritten. "native"
   # builds only for the GPUs present, so name the architectures explicitly when
   # producing binaries for other machines.
+  gtsam_cuda_detect_native_architectures(gtsam_cuda_detected)
+
   if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
     if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.24")
       set(CMAKE_CUDA_ARCHITECTURES "native"
           CACHE STRING "CUDA architectures GTSAM generates code for")
     else()
-      set(CMAKE_CUDA_ARCHITECTURES "${GTSAM_CUDA_MIN_ARCHITECTURE}"
+      # No "native" before 3.24, so name what was detected. A fixed default
+      # cannot work: the oldest architecture the kernels support is also one
+      # that CUDA 13 has already dropped.
+      set(CMAKE_CUDA_ARCHITECTURES "${gtsam_cuda_detected}"
           CACHE STRING "CUDA architectures GTSAM generates code for")
     endif()
   endif()
 
   # The architectures as plain numbers, which is what nvcc has to be asked
-  # about. "native" is CMake's word, not nvcc's, so expand it from the installed
-  # GPUs; "all" and "all-major" are known only to CMake and stay unexpanded, in
+  # about. "native" is CMake's word, not nvcc's, so use what was detected;
+  # "all" and "all-major" are known only to CMake and stay unexpanded, in
   # which case the checks below are skipped rather than guessed at.
   set(gtsam_cuda_numeric_architectures "")
-  if(CMAKE_CUDA_ARCHITECTURES STREQUAL "native")
-    gtsam_cuda_detect_native_architectures(gtsam_cuda_numeric_architectures)
+  if(CMAKE_CUDA_ARCHITECTURES STREQUAL "native" OR
+     NOT CMAKE_CUDA_ARCHITECTURES)
+    set(gtsam_cuda_numeric_architectures "${gtsam_cuda_detected}")
     if(NOT gtsam_cuda_numeric_architectures)
-      # "native" without a GPU to read is not an error to nvcc: it warns and
-      # compiles for its own default architecture, which is 52 through CUDA 12
-      # and so fails inside the kernels much later. Ask for the architectures
-      # instead of building something that cannot run.
+      # Asking nvcc for "native" without a GPU to read is not an error to it:
+      # it warns and compiles for its own default architecture, which is 52
+      # through CUDA 12 and so fails inside the kernels much later. Ask for the
+      # architectures instead of building something that cannot run.
       message(FATAL_ERROR
-        "CMAKE_CUDA_ARCHITECTURES is 'native' but the compute capability of no "
-        "installed GPU could be read, so nvcc would silently fall back to its "
-        "own default architecture, which is too old for the kernels through "
-        "CUDA 12. Name the architectures to build for, for example "
+        "GTSAM_ENABLE_CUDA builds for the GPUs of the configuring machine by "
+        "default, but the compute capability of no installed GPU could be read. "
+        "Name the architectures to build for, for example "
         "-DCMAKE_CUDA_ARCHITECTURES=80;120, or configure with "
         "GTSAM_ENABLE_CUDA=OFF.")
     endif()
@@ -205,7 +214,7 @@ if(GTSAM_ENABLE_CUDA)
       foreach(gtsam_cuda_candidate IN LISTS gtsam_cuda_candidates)
         gtsam_cuda_probe_compiler("${gtsam_cuda_candidate}"
                                   "${gtsam_cuda_numeric_architectures}"
-                                  gtsam_cuda_verdict)
+                                  gtsam_cuda_verdict gtsam_cuda_bad_arch)
         if(gtsam_cuda_verdict STREQUAL "OK")
           set(gtsam_cuda_chosen "${gtsam_cuda_candidate}")
           break()
@@ -213,8 +222,12 @@ if(GTSAM_ENABLE_CUDA)
         gtsam_cuda_compiler_version("${gtsam_cuda_candidate}" gtsam_cuda_version)
         # Keyed by version so that the same toolkit reached through a symlink
         # and its versioned directory is only reported once.
+        set(gtsam_cuda_because "")
+        if(gtsam_cuda_bad_arch)
+          set(gtsam_cuda_because ", no ${gtsam_cuda_bad_arch}")
+        endif()
         list(APPEND gtsam_cuda_rejected
-             "${gtsam_cuda_version}|${gtsam_cuda_candidate} (${gtsam_cuda_version}) ${gtsam_cuda_verdict}")
+             "${gtsam_cuda_version}|${gtsam_cuda_candidate} (${gtsam_cuda_version}${gtsam_cuda_because})")
       endforeach()
     endif()
 
@@ -276,7 +289,7 @@ if(GTSAM_ENABLE_CUDA)
   if(gtsam_cuda_numeric_architectures AND EXISTS "${gtsam_cuda_compiler}")
     gtsam_cuda_probe_compiler("${gtsam_cuda_compiler}"
                               "${gtsam_cuda_numeric_architectures}"
-                              gtsam_cuda_verdict)
+                              gtsam_cuda_verdict gtsam_cuda_bad_arch)
     if(gtsam_cuda_verdict STREQUAL "UNSUPPORTED_ARCH")
       gtsam_cuda_compiler_version("${gtsam_cuda_compiler}" gtsam_cuda_version)
       string(REPLACE ";" " " gtsam_cuda_requested
@@ -302,10 +315,10 @@ if(GTSAM_ENABLE_CUDA)
       endif()
       message(FATAL_ERROR
         "CUDA compiler ${gtsam_cuda_compiler} (${gtsam_cuda_version}) cannot "
-        "target architecture ${gtsam_cuda_requested}. Select a compatible "
-        "compiler using CUDACXX or -DCMAKE_CUDA_COMPILER=/path/to/nvcc, or "
-        "request architectures it supports with "
-        "-DCMAKE_CUDA_ARCHITECTURES.${gtsam_cuda_report}")
+        "target architecture ${gtsam_cuda_bad_arch}, requested as "
+        "'${gtsam_cuda_requested}'. Select a compatible compiler using CUDACXX "
+        "or -DCMAKE_CUDA_COMPILER=/path/to/nvcc, or request architectures it "
+        "supports with -DCMAKE_CUDA_ARCHITECTURES.${gtsam_cuda_report}")
     endif()
   endif()
 
