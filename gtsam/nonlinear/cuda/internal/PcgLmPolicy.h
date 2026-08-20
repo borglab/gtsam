@@ -4,11 +4,11 @@
 
 namespace gtsam::cuda {
 
-/** LM action after a device PCG solve that did not necessarily converge. */
+/// LM action after a device PCG solve that did not necessarily converge.
 enum class PcgLmStepDisposition {
-  /** Evaluate a converged or finite iteration-limited delta as an LM step. */
+  /// Evaluate a converged or finite iteration-limited delta as an LM step.
   EvaluateInexactStep,
-  /** Discard a numerically broken recurrence and retry with more damping. */
+  /// Discard a numerically broken recurrence and retry with more damping.
   RejectAndRetry,
 };
 

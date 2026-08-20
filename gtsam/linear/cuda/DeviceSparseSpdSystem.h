@@ -124,28 +124,28 @@ class GTSAM_EXPORT DeviceSparseSpdSystem {
     rows_ = rows;
   }
 
-  /** Returns the matrix dimension. */
+  /// Returns the matrix dimension.
   int rows() const { return rows_; }
-  /** Returns the stored upper-triangle nonzero count. */
+  /// Returns the stored upper-triangle nonzero count.
   int nonzeros() const { return static_cast<int>(values_.size()); }
 
-  /** Asynchronously zeros matrix values and the right-hand side. */
+  /// Asynchronously zeros matrix values and the right-hand side.
   void zero(cudaStream_t stream = nullptr) {
     values_.zero(stream);
     rhs_.zero(stream);
   }
 
-  /** Adds lambda to every stored diagonal entry. */
+  /// Adds lambda to every stored diagonal entry.
   void addDiagonalDamping(double lambda, cudaStream_t stream = nullptr);
-  /** Adds lambda times diagonal to every stored diagonal entry. */
+  /// Adds lambda times diagonal to every stored diagonal entry.
   void addDiagonalDamping(double lambda,
                           const DeviceArray<double>& diagonal,
                           cudaStream_t stream = nullptr);
-  /** Saves the current matrix diagonal for repeated damping attempts. */
+  /// Saves the current matrix diagonal for repeated damping attempts.
   void captureUndampedDiagonal(cudaStream_t stream = nullptr);
-  /** Restores the saved diagonal and adds scalar damping. */
+  /// Restores the saved diagonal and adds scalar damping.
   void restoreAndAddDiagonal(double lambda, cudaStream_t stream = nullptr);
-  /** Restores the saved diagonal and adds element-wise damping. */
+  /// Restores the saved diagonal and adds element-wise damping.
   void restoreAndAddDiagonal(double lambda,
                              const DeviceArray<double>& diagonal,
                              cudaStream_t stream = nullptr);
@@ -159,19 +159,19 @@ class GTSAM_EXPORT DeviceSparseSpdSystem {
             values_.data(), rhs_.data(), SparseTriangle::Upper};
   }
 
-  /** Borrows device row pointers. */
+  /// Borrows device row pointers.
   const DeviceArray<int>& rowPointers() const { return rowPointers_; }
-  /** Borrows device column indices. */
+  /// Borrows device column indices.
   const DeviceArray<int>& colIndices() const { return colIndices_; }
-  /** Borrows mutable device matrix values. */
+  /// Borrows mutable device matrix values.
   DeviceArray<double>& values() { return values_; }
-  /** Borrows device matrix values. */
+  /// Borrows device matrix values.
   const DeviceArray<double>& values() const { return values_; }
-  /** Borrows the mutable device right-hand side. */
+  /// Borrows the mutable device right-hand side.
   DeviceArray<double>& rhs() { return rhs_; }
-  /** Borrows the device right-hand side. */
+  /// Borrows the device right-hand side.
   const DeviceArray<double>& rhs() const { return rhs_; }
-  /** Borrows the saved undamped diagonal, if one has been captured. */
+  /// Borrows the saved undamped diagonal, if one has been captured.
   const DeviceArray<double>& undampedDiagonal() const {
     return undampedDiagonal_;
   }

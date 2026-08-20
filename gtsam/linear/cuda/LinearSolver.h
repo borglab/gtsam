@@ -11,7 +11,7 @@
 
 namespace gtsam::cuda {
 
-/** Backend-independent convergence and warm-start policy for CUDA PCG. */
+/// Backend-independent convergence and warm-start policy for CUDA PCG.
 struct PcgOptions {
   int maxIterations = 250;
   double relativeTolerance = 1e-6;
@@ -19,16 +19,16 @@ struct PcgOptions {
   int convergenceCheckInterval = 10;
 };
 
-/** Numerical backends owned by a shared CUDA linear-solver session. */
+/// Numerical backends owned by a shared CUDA linear-solver session.
 enum class LinearSolverType { DenseCholesky, Cudss, Pcg };
 
-/** Numerical backend selection. */
+/// Numerical backend selection.
 struct LinearSolverOptions {
-  /** Numerical backend used by the session. */
+  /// Numerical backend used by the session.
   LinearSolverType backend = LinearSolverType::Cudss;
 };
 
-/** Cumulative, backend-independent lifecycle, convergence, and timing data. */
+/// Cumulative, backend-independent lifecycle, convergence, and timing data.
 struct LinearSolveStats {
   LinearSolverType backend = LinearSolverType::Cudss;
   bool userOrderingApplied = false;
@@ -62,7 +62,7 @@ struct LinearSolveStats {
  */
 class GTSAM_EXPORT LinearSolverSession {
  public:
-  /** Construct an uninitialized session for the selected backend. */
+  /// Construct an uninitialized session for the selected backend.
   explicit LinearSolverSession(const LinearSolverOptions& options);
   ~LinearSolverSession();
 
@@ -71,38 +71,38 @@ class GTSAM_EXPORT LinearSolverSession {
   LinearSolverSession(LinearSolverSession&&) noexcept;
   LinearSolverSession& operator=(LinearSolverSession&&) noexcept;
 
-  /** Return whether a backend consumes the requested representation. */
+  /// Return whether a backend consumes the requested representation.
   static bool supports(LinearSolverType backend,
                        LinearSystemKind systemKind);
-  /** Throw when backend, representation, or ordering policy is incompatible. */
+  /// Throw when backend, representation, or ordering policy is incompatible.
   static void validate(const LinearSolverOptions& options,
                        LinearSystemKind systemKind);
 
-  /** Analyze a dense SPD system of fixed dimension. */
+  /// Analyze a dense SPD system of fixed dimension.
   void analyze(int denseDimension, cudaStream_t stream = nullptr);
-  /** Analyze a sparse SPD pattern using backend-managed ordering. */
+  /// Analyze a sparse SPD pattern using backend-managed ordering.
   void analyze(const DeviceSparseSpdSystem& system,
                DeviceArray<double>* solution,
                cudaStream_t stream = nullptr);
-  /** Analyze a sparse SPD pattern using a scalar permutation. */
+  /// Analyze a sparse SPD pattern using a scalar permutation.
   void analyze(const DeviceSparseSpdSystem& system,
                DeviceArray<double>* solution,
                const std::vector<int>& scalarPermutation,
                cudaStream_t stream = nullptr);
-  /** Initialize an iterative solve for a fixed operator dimension. */
+  /// Initialize an iterative solve for a fixed operator dimension.
   void analyze(int operatorDimension, const PcgOptions& pcgOptions,
                cudaStream_t stream = nullptr,
                bool collectProfile = false);
 
-  /** Factor and solve one analyzed dense SPD system. */
+  /// Factor and solve one analyzed dense SPD system.
   void solve(DenseSpdSystemView system,
              DeviceArray<double>* solution,
              cudaStream_t stream = nullptr);
-  /** Factor and solve one analyzed sparse SPD system. */
+  /// Factor and solve one analyzed sparse SPD system.
   void solve(const DeviceSparseSpdSystem& system,
              DeviceArray<double>* solution,
              cudaStream_t stream = nullptr);
-  /** Solve one analyzed matrix-free system with PCG. */
+  /// Solve one analyzed matrix-free system with PCG.
   void solve(const LinearOperator& linearOperator,
              const Preconditioner& preconditioner, const double* rhs,
              DeviceArray<double>* solution,
@@ -112,7 +112,7 @@ class GTSAM_EXPORT LinearSolverSession {
    * Direct backends have no warm-start state and treat this as a no-op. */
   void invalidateWarmStart();
 
-  /** Harvest completed backend work and return cumulative statistics. */
+  /// Harvest completed backend work and return cumulative statistics.
   const LinearSolveStats& stats() const;
 
  private:
