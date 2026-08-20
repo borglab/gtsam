@@ -13,7 +13,14 @@ The installed CUDA solver API consists of:
 - `SfmLevenbergMarquardtOptimizer` for resident BAL-style bundle adjustment.
 
 Assembly plans, CUDA kernels, Schur operators, and concrete solver
-implementations are internal details and are not installed as public headers.
+implementations are internal details, live under `cuda/internal/`, and are not
+installed as public headers.
+
+Walkthrough notebooks for each optimizer:
+
+- [SparseLevenbergMarquardtOptimizer](../gtsam/nonlinear/doc/SparseLevenbergMarquardtOptimizer.ipynb)
+- [SfmLevenbergMarquardtOptimizer](../gtsam/slam/doc/SfmLevenbergMarquardtOptimizer.ipynb)
+- [CudaSfmGncOptimizer](../gtsam/slam/doc/CudaSfmGncOptimizer.ipynb)
 
 ## Backends
 
