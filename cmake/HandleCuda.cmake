@@ -115,6 +115,19 @@ if(GTSAM_ENABLE_CUDA)
   set(gtsam_cuda_numeric_architectures "")
   if(CMAKE_CUDA_ARCHITECTURES STREQUAL "native")
     gtsam_cuda_detect_native_architectures(gtsam_cuda_numeric_architectures)
+    if(NOT gtsam_cuda_numeric_architectures)
+      # "native" without a GPU to read is not an error to nvcc: it warns and
+      # compiles for its own default architecture, which is 52 through CUDA 12
+      # and so fails inside the kernels much later. Ask for the architectures
+      # instead of building something that cannot run.
+      message(FATAL_ERROR
+        "CMAKE_CUDA_ARCHITECTURES is 'native' but the compute capability of no "
+        "installed GPU could be read, so nvcc would silently fall back to its "
+        "own default architecture, which is too old for the kernels through "
+        "CUDA 12. Name the architectures to build for, for example "
+        "-DCMAKE_CUDA_ARCHITECTURES=80;120, or configure with "
+        "GTSAM_ENABLE_CUDA=OFF.")
+    endif()
   else()
     foreach(gtsam_cuda_arch IN LISTS CMAKE_CUDA_ARCHITECTURES)
       string(REGEX REPLACE "-(real|virtual)$" "" gtsam_cuda_arch
