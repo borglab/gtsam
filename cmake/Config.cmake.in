@@ -49,11 +49,17 @@ if(@GTSAM_ENABLE_CUDA@)
 endif()
 
 if(@GTSAM_ENABLE_CUDSS@)
+  # This GTSAM was built against cuDSS, which is a separate NVIDIA download
+  # rather than part of the CUDA toolkit, so it has to be located again here.
+  # Kept in step with cmake/HandleCuda.cmake.
   if(NOT TARGET cudss::cudss)
     find_path(CUDSS_INCLUDE_DIR cudss.h
       HINTS
+        ${CUDSS_ROOT}/include
+        $ENV{CUDSS_ROOT}/include
         ${CUDAToolkit_INCLUDE_DIRS}
         $ENV{CUDA_HOME}/include
+        $ENV{CUDA_PATH}/include
         $ENV{CONDA_PREFIX}/include
       PATH_SUFFIXES
         libcudss/13
@@ -62,21 +68,45 @@ if(@GTSAM_ENABLE_CUDSS@)
 
     find_library(CUDSS_LIBRARY cudss
       HINTS
+        ${CUDSS_ROOT}/lib64
+        ${CUDSS_ROOT}/lib
+        $ENV{CUDSS_ROOT}/lib64
+        $ENV{CUDSS_ROOT}/lib
         ${CUDAToolkit_LIBRARY_DIR}
         ${CUDAToolkit_LIBRARY_ROOT}
         $ENV{CUDA_HOME}/lib64
+        $ENV{CUDA_PATH}/lib64
         $ENV{CONDA_PREFIX}/lib
       PATH_SUFFIXES
         libcudss/13
         libcudss/12
     )
 
-    if(NOT CUDSS_INCLUDE_DIR)
-      message(FATAL_ERROR "GTSAM_ENABLE_CUDSS=ON but cudss.h was not found")
+    if(NOT EXISTS "${CUDSS_INCLUDE_DIR}/cudss.h" OR NOT CUDSS_LIBRARY)
+      message(FATAL_ERROR
+        "GTSAM was built with GTSAM_ENABLE_CUDSS=ON but cuDSS was not found "
+        "(cudss.h: ${CUDSS_INCLUDE_DIR}, libcudss: ${CUDSS_LIBRARY}). Set "
+        "CUDSS_ROOT to the install this GTSAM was built against.")
     endif()
 
-    if(NOT CUDSS_LIBRARY)
-      message(FATAL_ERROR "GTSAM_ENABLE_CUDSS=ON but libcudss was not found")
+    set(_cudss_version_parts "")
+    file(STRINGS "${CUDSS_INCLUDE_DIR}/cudss.h" _cudss_version_lines
+      REGEX "^#define CUDSS_VERSION_(MAJOR|MINOR|PATCH)[ \t]+[0-9]+")
+    foreach(_component MAJOR MINOR PATCH)
+      foreach(_line IN LISTS _cudss_version_lines)
+        if(_line MATCHES "CUDSS_VERSION_${_component}[ \t]+([0-9]+)")
+          list(APPEND _cudss_version_parts "${CMAKE_MATCH_1}")
+        endif()
+      endforeach()
+    endforeach()
+    string(REPLACE ";" "." CUDSS_VERSION "${_cudss_version_parts}")
+
+    if(CUDSS_VERSION AND CUDSS_VERSION VERSION_LESS @GTSAM_CUDSS_MINIMUM_VERSION@)
+      message(FATAL_ERROR
+        "cuDSS ${CUDSS_VERSION} found at ${CUDSS_INCLUDE_DIR}, but this GTSAM "
+        "was built against @GTSAM_CUDSS_MINIMUM_VERSION@ or newer. Set "
+        "CUDSS_ROOT to that install; an active conda or virtual environment can "
+        "supply an older cuDSS than the system one.")
     endif()
 
     add_library(cudss::cudss UNKNOWN IMPORTED)

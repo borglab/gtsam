@@ -13,6 +13,12 @@ endif()
 # which requires compute capability 6.0 (Pascal, 2016) or newer.
 set(GTSAM_CUDA_MIN_ARCHITECTURE 60)
 
+# CudssSpdSolver.cpp uses CUDSS_R_64F, CUDSS_R_32I, cudssReorderingAlg_t,
+# CUDSS_REORDERING_ALG_NONE, and CUDSS_STATUS_IR_FAILED, all of which arrived in
+# cuDSS 0.8.0. Older cuDSS is rejected at configure time rather than as errors
+# on the API it does not have.
+set(GTSAM_CUDSS_MINIMUM_VERSION 0.8.0)
+
 # Reports the compute capabilities of the installed GPUs, so that "native" can
 # be checked against a candidate compiler before enable_language(CUDA) resolves
 # it. Leaves the output empty when no driver is available to ask.
@@ -347,11 +353,18 @@ if(GTSAM_ENABLE_CUDA)
   list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC GTSAM_ENABLE_CUDA=1)
 
   if(GTSAM_ENABLE_CUDSS)
+    # cuDSS is not part of the CUDA toolkit; it is a separate NVIDIA download.
+    # docs/CUDA_LINEAR_SOLVERS.md records where to get it. Keep this search in
+    # step with the copy in cmake/Config.cmake.in, which is what downstream
+    # projects consuming an installed GTSAM run.
     if(NOT TARGET cudss::cudss)
       find_path(CUDSS_INCLUDE_DIR cudss.h
         HINTS
+          ${CUDSS_ROOT}/include
+          $ENV{CUDSS_ROOT}/include
           ${CUDAToolkit_INCLUDE_DIRS}
           $ENV{CUDA_HOME}/include
+          $ENV{CUDA_PATH}/include
           $ENV{CONDA_PREFIX}/include
         PATH_SUFFIXES
           libcudss/13
@@ -360,27 +373,70 @@ if(GTSAM_ENABLE_CUDA)
 
       find_library(CUDSS_LIBRARY cudss
         HINTS
+          ${CUDSS_ROOT}/lib64
+          ${CUDSS_ROOT}/lib
+          $ENV{CUDSS_ROOT}/lib64
+          $ENV{CUDSS_ROOT}/lib
           ${CUDAToolkit_LIBRARY_DIR}
           ${CUDAToolkit_LIBRARY_ROOT}
           $ENV{CUDA_HOME}/lib64
+          $ENV{CUDA_PATH}/lib64
           $ENV{CONDA_PREFIX}/lib
         PATH_SUFFIXES
           libcudss/13
           libcudss/12
       )
 
-      if(NOT CUDSS_INCLUDE_DIR)
-        message(FATAL_ERROR "GTSAM_ENABLE_CUDSS=ON but cudss.h was not found")
+      if(NOT EXISTS "${CUDSS_INCLUDE_DIR}/cudss.h" OR NOT CUDSS_LIBRARY)
+        message(FATAL_ERROR
+          "GTSAM_ENABLE_CUDSS=ON but cuDSS was not found (cudss.h: "
+          "${CUDSS_INCLUDE_DIR}, libcudss: ${CUDSS_LIBRARY}).\n"
+          "cuDSS is a separate NVIDIA download rather than part of the CUDA "
+          "toolkit; see docs/CUDA_LINEAR_SOLVERS.md. Set CUDSS_ROOT to an "
+          "existing install, or build with -DGTSAM_ENABLE_CUDSS=OFF to use the "
+          "PCG and dense Cholesky backends only.")
       endif()
 
-      if(NOT CUDSS_LIBRARY)
-        message(FATAL_ERROR "GTSAM_ENABLE_CUDSS=ON but libcudss was not found")
+      # Read the version from the header rather than from the CMake config
+      # package cuDSS ships: the Debian packages install headers outside the
+      # prefix that config computes from its own location, so
+      # find_package(cudss CONFIG) hard-errors on them. The header is the one
+      # file every packaging puts in the same place.
+      set(_cudss_version_parts "")
+      file(STRINGS "${CUDSS_INCLUDE_DIR}/cudss.h" _cudss_version_lines
+        REGEX "^#define CUDSS_VERSION_(MAJOR|MINOR|PATCH)[ \t]+[0-9]+")
+      foreach(_component MAJOR MINOR PATCH)
+        foreach(_line IN LISTS _cudss_version_lines)
+          if(_line MATCHES "CUDSS_VERSION_${_component}[ \t]+([0-9]+)")
+            list(APPEND _cudss_version_parts "${CMAKE_MATCH_1}")
+          endif()
+        endforeach()
+      endforeach()
+      string(REPLACE ";" "." CUDSS_VERSION "${_cudss_version_parts}")
+
+      if(NOT CUDSS_VERSION)
+        message(FATAL_ERROR
+          "Could not read CUDSS_VERSION_MAJOR, CUDSS_VERSION_MINOR, and "
+          "CUDSS_VERSION_PATCH from ${CUDSS_INCLUDE_DIR}/cudss.h, so cuDSS "
+          "cannot be checked against the required "
+          "${GTSAM_CUDSS_MINIMUM_VERSION}.")
+      endif()
+
+      if(CUDSS_VERSION VERSION_LESS GTSAM_CUDSS_MINIMUM_VERSION)
+        message(FATAL_ERROR
+          "cuDSS ${CUDSS_VERSION} found at ${CUDSS_INCLUDE_DIR}, but GTSAM "
+          "requires ${GTSAM_CUDSS_MINIMUM_VERSION} or newer.\n"
+          "Set CUDSS_ROOT to a newer install, or build with "
+          "-DGTSAM_ENABLE_CUDSS=OFF to use the PCG and dense Cholesky backends "
+          "only. An active conda or virtual environment can supply an older "
+          "cuDSS than the system one.")
       endif()
 
       add_library(cudss::cudss UNKNOWN IMPORTED)
       set_target_properties(cudss::cudss PROPERTIES
         IMPORTED_LOCATION "${CUDSS_LIBRARY}"
         INTERFACE_INCLUDE_DIRECTORIES "${CUDSS_INCLUDE_DIR};${CUDAToolkit_INCLUDE_DIRS}")
+      message(STATUS "GTSAM cuDSS: ${CUDSS_VERSION} (${CUDSS_LIBRARY})")
     endif()
     list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC GTSAM_ENABLE_CUDSS=1)
   endif()

@@ -205,6 +205,12 @@ if(GTSAM_ENABLE_CUDA)
   endif()
   if(GTSAM_ENABLE_CUDSS)
     target_link_libraries(gtsam PUBLIC cudss::cudss)
+    # The Debian and tarball layouts keep libcudss outside the loader's default
+    # directories, so record where it was found the way MOSEK does below.
+    # Without this an installed libgtsam links but cannot resolve libcudss.so.0.
+    get_filename_component(GTSAM_CUDSS_LIBRARY_DIR "${CUDSS_LIBRARY}" DIRECTORY)
+    set_property(TARGET gtsam APPEND PROPERTY INSTALL_RPATH
+      "${GTSAM_CUDSS_LIBRARY_DIR}")
   endif()
 endif()
 if(GTSAM_USE_MOSEK)

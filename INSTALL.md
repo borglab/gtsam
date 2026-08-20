@@ -43,6 +43,12 @@ $ cmake --build . --target install
        `GTSAM_WITH_EIGEN_MKL_OPENMP` to `ON`; however, best performance is usually
        achieved with MKL disabled. We therefore advise you to benchmark your problem
        before using MKL.
+     - The CUDA optimizers (`GTSAM_ENABLE_CUDA=OFF` by default) need the CUDA
+       toolkit and a GPU of compute capability 6.0 or newer. Their cuDSS backend
+       (`GTSAM_ENABLE_CUDSS=OFF` by default) additionally needs cuDSS 0.8.0 or
+       newer installed separately, since it is neither part of the CUDA toolkit
+       nor bundled with GTSAM. See
+       [docs/CUDA_LINEAR_SOLVERS.md](docs/CUDA_LINEAR_SOLVERS.md).
 
 2. GTSAM makes extensive use of debug assertions, and we highly recommend you work
 in Debug mode while developing (enabled by default). Likewise, it is imperative

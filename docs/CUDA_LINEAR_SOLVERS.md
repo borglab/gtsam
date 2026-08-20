@@ -34,7 +34,49 @@ optimizer eliminates points with a Schur complement and supports:
 | `Pcg` | implicit Schur operator with block-Jacobi preconditioning |
 
 The SFM default is `DenseCholesky`. The general optimizer defaults to cuDSS.
-cuDSS requires `GTSAM_ENABLE_CUDSS`; the other backends require only CUDA.
+cuDSS requires `GTSAM_ENABLE_CUDSS` and the separate install described below;
+the other backends require only CUDA.
+
+## Installing cuDSS
+
+cuDSS is NVIDIA's direct sparse solver. It is **not** part of the CUDA toolkit
+and GTSAM does not bundle it, so `GTSAM_ENABLE_CUDSS=ON` needs it installed
+first. It is optional: `GTSAM_ENABLE_CUDSS` defaults to `OFF`, and the dense
+Cholesky and PCG backends need nothing beyond CUDA itself.
+
+**GTSAM requires cuDSS 0.8.0 or newer**, which is where `CUDSS_R_64F`,
+`cudssReorderingAlg_t`, and `CUDSS_STATUS_IR_FAILED` arrived. An older cuDSS
+fails during configuration, naming the version it found. Configuring reports what
+was selected:
+
+```
+-- GTSAM cuDSS: 0.8.0 (/usr/lib/x86_64-linux-gnu/libcudss/13/libcudss.so)
+```
+
+Some distributions still serve 0.7.x, and an active conda or virtual environment
+is searched before the system install, so check that line rather than assuming.
+
+Install it from [developer.nvidia.com/cudss](https://developer.nvidia.com/cudss):
+
+```bash
+# Debian and Ubuntu, once NVIDIA's CUDA repository is configured
+sudo apt-get install libcudss0-cuda-13 libcudss0-dev-cuda-13
+
+# conda
+conda install -c conda-forge libcudss-dev
+
+# tarball unpacked anywhere
+cmake -S . -B build-cuda -DGTSAM_ENABLE_CUDA=ON -DGTSAM_ENABLE_CUDSS=ON \
+  -DCUDSS_ROOT=/opt/nvidia/libcudss
+```
+
+`CUDSS_ROOT` is also how to override an install that the search would otherwise
+find first. The pip wheels (`nvidia-cudss-cu12`, `nvidia-cudss-cu13`) carry only
+the versioned runtime libraries without a development symlink, so they can run
+against a prebuilt GTSAM but cannot build one.
+
+Projects consuming an installed GTSAM locate cuDSS the same way through
+`GTSAMConfig.cmake`, so `CUDSS_ROOT` applies to them too.
 
 ## Ordering
 
