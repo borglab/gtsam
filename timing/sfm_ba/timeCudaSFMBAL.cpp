@@ -30,8 +30,8 @@
 #if GTSAM_ENABLE_CUDA
 #include <gtsam/nonlinear/cuda/SparseLevenbergMarquardt.h>
 #include <gtsam/slam/cuda/SfmLevenbergMarquardt.h>
-#include <gtsam/slam/cuda/SfmProjectionBatch.h>
-#include <gtsam/slam/cuda/SfmReducedCsrPlan.h>
+#include <gtsam/slam/cuda/internal/SfmProjectionBatch.h>
+#include <gtsam/slam/cuda/internal/SfmReducedCsrPlan.h>
 #endif
 
 #include <algorithm>

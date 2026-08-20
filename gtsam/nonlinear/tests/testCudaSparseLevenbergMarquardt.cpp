@@ -15,11 +15,11 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/nonlinear/cuda/SparseLevenbergMarquardt.h>
-#include <gtsam/nonlinear/cuda/DeviceSparseJacobianNormalEquations.h>
-#include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
-#include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
-#include <gtsam/nonlinear/cuda/StreamingSparseJacobianLinearizer.h>
+#include <gtsam/nonlinear/cuda/internal/DeviceSparseJacobianNormalEquations.h>
+#include <gtsam/nonlinear/cuda/internal/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/internal/PcgLmPolicy.h>
+#include <gtsam/nonlinear/cuda/internal/SparseJacobianPlan.h>
+#include <gtsam/nonlinear/cuda/internal/StreamingSparseJacobianLinearizer.h>
 #include <gtsam/sam/RangeFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/ReferenceFrameFactor.h>

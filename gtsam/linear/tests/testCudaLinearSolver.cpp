@@ -1,9 +1,9 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/cuda/BlockOrdering.h>
-#include <gtsam/linear/cuda/LinearSolver.h>
 #include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
+#include <gtsam/linear/cuda/LinearSolver.h>
+#include <gtsam/linear/cuda/internal/BlockOrdering.h>
 
 #include <stdexcept>
 #include <optional>

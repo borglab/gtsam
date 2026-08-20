@@ -3,17 +3,17 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/BatchFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/cuda/DeviceGeometryKernels.h>
-#include <gtsam/nonlinear/cuda/DeviceGeometryTypes.h>
-#include <gtsam/slam/cuda/SfmDenseSchurSolver.h>
-#include <gtsam/slam/cuda/SfmLevenbergMarquardt.h>
-#include <gtsam/slam/cuda/SfmProjectionLinearization.h>
-#include <gtsam/slam/cuda/SfmProjectionBatch.h>
-#include <gtsam/slam/cuda/SfmReducedCsrPlan.h>
-#include <gtsam/slam/cuda/SfmSchurProblem.h>
-#include <gtsam/slam/cuda/SfmValues.h>
-#include <gtsam/slam/GeneralSFMFactor.h>
+#include <gtsam/nonlinear/cuda/internal/DeviceGeometryKernels.h>
+#include <gtsam/nonlinear/cuda/internal/DeviceGeometryTypes.h>
 #include <gtsam/sfm/SfmData.h>
+#include <gtsam/slam/GeneralSFMFactor.h>
+#include <gtsam/slam/cuda/SfmLevenbergMarquardt.h>
+#include <gtsam/slam/cuda/internal/SfmDenseSchurSolver.h>
+#include <gtsam/slam/cuda/internal/SfmProjectionBatch.h>
+#include <gtsam/slam/cuda/internal/SfmProjectionLinearization.h>
+#include <gtsam/slam/cuda/internal/SfmReducedCsrPlan.h>
+#include <gtsam/slam/cuda/internal/SfmSchurProblem.h>
+#include <gtsam/slam/cuda/internal/SfmValues.h>
 
 #include <CppUnitLite/TestHarness.h>
 

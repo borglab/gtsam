@@ -2,18 +2,18 @@
 #include <gtsam/base/cuda/Context.h>
 #include <gtsam/base/types.h>
 #include <gtsam/config.h>
+#include <gtsam/linear/cuda/LinearSolver.h>
+#include <gtsam/linear/cuda/internal/BlockOrdering.h>
+#include <gtsam/linear/cuda/internal/PcgSolver.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/cuda/SparseLevenbergMarquardt.h>
-#include <gtsam/nonlinear/cuda/DeviceSparseJacobianNormalEquations.h>
-#include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
-#include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
-#include <gtsam/nonlinear/cuda/StreamingSparseJacobianLinearizer.h>
+#include <gtsam/nonlinear/cuda/internal/DeviceSparseJacobianNormalEquations.h>
+#include <gtsam/nonlinear/cuda/internal/HostSparseJacobian.h>
 #include <gtsam/nonlinear/cuda/internal/PcgLmPolicy.h>
+#include <gtsam/nonlinear/cuda/internal/SparseJacobianPlan.h>
+#include <gtsam/nonlinear/cuda/internal/StreamingSparseJacobianLinearizer.h>
 #include <gtsam/nonlinear/internal/LevenbergMarquardtPolicy.h>
-#include <gtsam/linear/cuda/BlockOrdering.h>
-#include <gtsam/linear/cuda/LinearSolver.h>
-#include <gtsam/linear/cuda/PcgSolver.h>
 
 #include <algorithm>
 #include <chrono>

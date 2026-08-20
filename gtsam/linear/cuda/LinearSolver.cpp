@@ -1,8 +1,8 @@
 #include <gtsam/linear/cuda/LinearSolver.h>
 
-#include <gtsam/linear/cuda/DenseCholeskySolver.h>
-#include <gtsam/linear/cuda/PcgSolver.h>
-#include <gtsam/linear/cuda/CudssSpdSolver.h>
+#include <gtsam/linear/cuda/internal/CudssSpdSolver.h>
+#include <gtsam/linear/cuda/internal/DenseCholeskySolver.h>
+#include <gtsam/linear/cuda/internal/PcgSolver.h>
 
 #include <memory>
 #include <stdexcept>

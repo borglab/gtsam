@@ -6,11 +6,11 @@
 #include <gtsam/linear/cuda/LinearSolver.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
-#include <gtsam/nonlinear/cuda/DeviceSparseJacobianNormalEquations.h>
-#include <gtsam/nonlinear/cuda/DeviceValues.h>
-#include <gtsam/nonlinear/cuda/DeviceVariableIndex.h>
-#include <gtsam/nonlinear/cuda/HostSparseJacobian.h>
-#include <gtsam/nonlinear/cuda/SparseJacobianPlan.h>
+#include <gtsam/nonlinear/cuda/internal/DeviceSparseJacobianNormalEquations.h>
+#include <gtsam/nonlinear/cuda/internal/DeviceValues.h>
+#include <gtsam/nonlinear/cuda/internal/DeviceVariableIndex.h>
+#include <gtsam/nonlinear/cuda/internal/HostSparseJacobian.h>
+#include <gtsam/nonlinear/cuda/internal/SparseJacobianPlan.h>
 
 #include <cmath>
 #include <cstdint>
