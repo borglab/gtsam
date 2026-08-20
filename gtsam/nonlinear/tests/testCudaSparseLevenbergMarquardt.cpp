@@ -62,6 +62,14 @@ using namespace gtsam::cuda;
 /* ************************************************************************* */
 namespace sparse_lm_fixture {
 
+/// Returns the demangled dynamic type name of one factor in a graph. The factor
+/// is bound to a reference first because typeid over an operand with side
+/// effects warns under -Wpotentially-evaluated-expression.
+std::string FactorTypeName(const NonlinearFactorGraph& graph, size_t index) {
+  const NonlinearFactor& factor = *graph[index];
+  return demangle(typeid(factor).name());
+}
+
 // Verifies PcgLmPolicy::EvaluatesFiniteIterationLimitedStep.
 TEST(PcgLmPolicy, EvaluatesFiniteIterationLimitedStep) {
   LinearSolveStats stats;
@@ -691,7 +699,7 @@ void CheckCpuFallback(
     CHECK(result.fallbackDetail.find(std::to_string(expectedFactorIndex)) !=
           std::string::npos);
     const std::string dynamicFactorType =
-        demangle(typeid(*graph[expectedFactorIndex]).name());
+        FactorTypeName(graph, expectedFactorIndex);
     CHECK(result.fallbackDetail.find(dynamicFactorType) != std::string::npos);
     CHECK(result.fallbackDetail.find(result.fallbackStatus.detail) !=
           std::string::npos);
@@ -715,7 +723,7 @@ void CheckCpuFallback(
     CHECK(thrownDetail.find(std::to_string(expectedFactorIndex)) !=
           std::string::npos);
     CHECK(thrownDetail.find(
-              demangle(typeid(*graph[expectedFactorIndex]).name())) !=
+              FactorTypeName(graph, expectedFactorIndex)) !=
           std::string::npos);
   }
 }
@@ -915,7 +923,7 @@ TEST(SparseLevenbergMarquardt,
   CHECK(result.fallbackStatus.detail ==
         "Jacobian row count does not match the sparse plan");
   CHECK(result.fallbackDetail.find("1") != std::string::npos);
-  CHECK(result.fallbackDetail.find(demangle(typeid(*graph[1]).name())) !=
+  CHECK(result.fallbackDetail.find(FactorTypeName(graph, 1)) !=
         std::string::npos);
 
   // Result counters intentionally describe only the abandoned CUDA prefix;
@@ -975,7 +983,7 @@ TEST(SparseLevenbergMarquardt,
     disabledDetail = error.what();
   }
   CHECK(disabledDetail.find("factor 1") != std::string::npos);
-  CHECK(disabledDetail.find(demangle(typeid(*graph[1]).name())) !=
+  CHECK(disabledDetail.find(FactorTypeName(graph, 1)) !=
         std::string::npos);
   CHECK(disabledDetail.find(
             "Jacobian row count does not match the sparse plan") !=
@@ -1167,7 +1175,7 @@ TEST(SparseLevenbergMarquardt,
 
   CHECK(detail.find("factor linearization") != std::string::npos);
   CHECK(detail.find("factor 1") != std::string::npos);
-  CHECK(detail.find(demangle(typeid(*graph[1]).name())) != std::string::npos);
+  CHECK(detail.find(FactorTypeName(graph, 1)) != std::string::npos);
   CHECK(detail.find("Jacobian block contains a non-finite coefficient") !=
         std::string::npos);
 }
@@ -1180,7 +1188,7 @@ TEST(SparseLevenbergMarquardt,
   const auto callbackState = std::make_shared<CustomCallbackState>();
   const std::thread::id callerThread = std::this_thread::get_id();
   constexpr double target = 1.25;
-  const CustomErrorFunction callback = [callbackState, target](
+  const CustomErrorFunction callback = [callbackState](
                                            const CustomFactor&,
                                            const Values& values,
                                            const JacobianVector* jacobians) {

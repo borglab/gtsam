@@ -45,7 +45,6 @@ namespace device_values_fixture {
 constexpr uint32_t kCameraType = 1;
 constexpr uint32_t kPointType = 2;
 constexpr uint32_t kTinyType = 77;
-constexpr Key kProfileKey = 81;
 
 struct TinyValue {
   double x;
@@ -53,6 +52,8 @@ struct TinyValue {
 };
 
 #if GTSAM_ENABLE_CUDSS
+constexpr Key kProfileKey = 81;
+
 bool IsFiniteNonnegative(double seconds) {
   return std::isfinite(seconds) && seconds >= 0.0;
 }

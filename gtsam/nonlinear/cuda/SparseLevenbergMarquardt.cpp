@@ -89,8 +89,10 @@ std::string directFailureDetail(const NonlinearFactorGraph& graph,
   if (status.factorIndex != std::numeric_limits<size_t>::max()) {
     message << " at factor " << status.factorIndex;
     if (status.factorIndex < graph.size() && graph[status.factorIndex]) {
-      message << " (" << demangle(typeid(*graph[status.factorIndex]).name())
-              << ")";
+      // Bound to a reference first because typeid over an operand with side
+      // effects warns under -Wpotentially-evaluated-expression.
+      const NonlinearFactor& factor = *graph[status.factorIndex];
+      message << " (" << demangle(typeid(factor).name()) << ")";
     }
   }
   if (!status.detail.empty()) {
