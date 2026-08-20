@@ -32,14 +32,27 @@ class GaussianFactorGraph;
 
 namespace cuda {
 
+/**
+ * How a linearization pass split between parallel and serial work.
+ *
+ * Only non-null factors are counted. The split follows
+ * NonlinearFactor::sendable(): sendable factors may be linearized on worker
+ * threads, while the rest are linearized on the calling thread, so these two
+ * counts say how much of the graph could be parallelized at all.
+ */
 struct StreamingLinearizationStats {
+  /// Non-null factors that were safe to linearize on a worker thread.
   size_t sendableFactors = 0;
+  /// Non-null factors that had to be linearized on the calling thread.
   size_t nonSendableFactors = 0;
 };
 
-/// Aggregate worker time, in seconds, summed across all factors.
+/// Aggregate worker time, in seconds, summed across all factors. Can exceed
+/// wall time, since sendable factors are linearized in parallel.
 struct StreamingLinearizationProfile {
+  /// Time spent inside the factors' own linearize() calls.
   double factorLinearizationCpuSum = 0.0;
+  /// Time spent scattering their coefficients into the CSR buffer.
   double csrPackingCpuSum = 0.0;
 };
 

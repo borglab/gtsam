@@ -33,28 +33,66 @@
 
 namespace gtsam::cuda {
 
+/// How much noise machinery a batch carries, which decides which kernels run.
 enum class SfmProjectionNoiseMode {
+  /// No whitening or reweighting: every measurement has identity information.
   Unit,
+  /// Per-measurement whitening by an SfmSqrtInfo2.
   Whitened,
+  /// Whitening plus a per-measurement robust loss.
   Robust,
 };
 
+/// Cost of building and uploading a batch, filled only when requested.
 struct SfmProjectionBatchTransferProfile {
+  /// Time flattening SfmData into the host staging vectors.
   double hostBuildElapsed = 0.0;
+  /// Time allocating the device arrays, taken from the upload summary.
   double deviceAllocElapsed = 0.0;
+  /// Bytes and time of every host-to-device copy the build made.
   DeviceTransferSummary h2d;
 };
 
+/**
+ * Every image measurement of an SFM problem, flattened onto the device.
+ *
+ * SfmData stores measurements per track, in scattered per-track vectors that a
+ * kernel cannot walk. This flattens them into one array of SfmObservation
+ * ordered by track, with a CSR-style offset array giving each track's range, so a
+ * kernel can find a landmark's observations from its slot alone. Tracks with
+ * fewer than two measurements are dropped, since a landmark seen once is not
+ * determined and contributes nothing to the reduced camera system.
+ *
+ * The noise models come in as parallel per-track vectors and are flattened the
+ * same way, so sqrtInfos() and robustModels() are indexed by observation like
+ * observations() is. Which of them are present sets the noise mode, and the
+ * unit-noise case uploads neither.
+ *
+ * The batch is built once and reused for every linearization: it holds the
+ * measurements, which do not change, and none of the values, which do.
+ * Construction validates thoroughly — camera indices in range, counts agreeing,
+ * noise entries finite — because a bad index here becomes an out-of-bounds device
+ * read with no diagnostic.
+ */
 class SfmProjectionBatch {
  public:
+  /// Above this many measurements, a track's Schur contribution gets a whole
+  /// CUDA block instead of one thread. The contribution is quadratic in the
+  /// track's length, so the few long tracks would otherwise dominate a kernel
+  /// where every other thread has finished. Both kernels test against this, so
+  /// each track is handled by exactly one of them.
   static constexpr int kLongTrackMeasurementThreshold = 4;
 
+  /// Flattens and uploads `data` with unit noise on every measurement.
   static SfmProjectionBatch fromSfmData(
       const SfmData& data, cudaStream_t stream = nullptr,
       SfmProjectionBatchTransferProfile* profile = nullptr) {
     return fromSfmDataImpl(data, nullptr, nullptr, stream, profile);
   }
 
+  /// As above, whitening each measurement by its own square root information.
+  /// The outer vector is indexed by track and the inner by measurement, matching
+  /// SfmData's own layout.
   static SfmProjectionBatch fromSfmData(
       const SfmData& data,
       const std::vector<std::vector<SfmSqrtInfo2>>& sqrtInfoByTrack,
@@ -63,6 +101,9 @@ class SfmProjectionBatch {
     return fromSfmDataImpl(data, &sqrtInfoByTrack, nullptr, stream, profile);
   }
 
+  /// As above, additionally applying a per-measurement robust loss. Robust
+  /// models require square root information, since the loss is applied to the
+  /// whitened error.
   static SfmProjectionBatch fromSfmData(
       const SfmData& data,
       const std::vector<std::vector<SfmSqrtInfo2>>& sqrtInfoByTrack,
@@ -73,20 +114,27 @@ class SfmProjectionBatch {
                            stream, profile);
   }
 
+  /// Square root information that leaves a measurement unwhitened.
   static SfmSqrtInfo2 unitSqrtInfo() {
     return SfmSqrtInfo2{1.0, 0.0, 1.0};
   }
 
+  /// Robust model that applies no loss, in the one form isUsableRobustModel()
+  /// accepts for SfmRobustModelKind::None.
   static SfmRobustModel noRobustModel() {
     return SfmRobustModel{SfmRobustModelKind::None,
                           SfmRobustReweightScheme::Block, 0.0};
   }
 
+  /// Whether whitening by this would be a no-op, letting a caller skip it.
   static bool isUnitSqrtInfo(const SfmSqrtInfo2& sqrtInfo) {
     return sqrtInfo.r00 == 1.0 && sqrtInfo.r01 == 0.0 &&
            sqrtInfo.r11 == 1.0;
   }
 
+  /// Whether this square root information can be uploaded: finite, with
+  /// non-negative diagonal.
+  //
   // Zero diagonals are allowed: they encode a zero-information (fully
   // down-weighted) measurement, as produced by GNC weighted graphs.
   static bool isUsableSqrtInfo(const SfmSqrtInfo2& sqrtInfo) {
@@ -95,6 +143,9 @@ class SfmProjectionBatch {
            sqrtInfo.r11 >= 0.0;
   }
 
+  /// Whether this robust model can be uploaded: a loss the kernels implement, a
+  /// known reweighting scheme, and a finite positive threshold. None must come
+  /// in the canonical noRobustModel() form so a kernel need not special-case it.
   static bool isUsableRobustModel(const SfmRobustModel& robustModel) {
     if (robustModel.kind == SfmRobustModelKind::None) {
       return robustModel.reweightScheme == SfmRobustReweightScheme::Block;
@@ -110,6 +161,8 @@ class SfmProjectionBatch {
   }
 
  private:
+  /// Shared body of the fromSfmData() overloads; null pointers mean the
+  /// corresponding noise data is absent.
   static SfmProjectionBatch fromSfmDataImpl(
       const SfmData& data,
       const std::vector<std::vector<SfmSqrtInfo2>>* sqrtInfoByTrack,
@@ -275,41 +328,64 @@ class SfmProjectionBatch {
   }
 
  public:
+  /// Every kept measurement, grouped by the track it belongs to.
   const DeviceArray<SfmObservation>& observations() const {
     return observations_;
   }
+  /// Whitening per observation, empty when the noise mode is Unit.
   const DeviceArray<SfmSqrtInfo2>& sqrtInfos() const {
     return sqrtInfos_;
   }
+  /// Robust loss per observation, empty unless the noise mode is Robust.
   const DeviceArray<SfmRobustModel>& robustModels() const {
     return robustModels_;
   }
+  /// CSR-style offsets: landmark `p` owns observations
+  /// [pointObservationOffsets[p], pointObservationOffsets[p + 1]). Has one entry
+  /// per landmark plus one, and repeats an offset for a dropped track.
   const DeviceArray<int>& pointObservationOffsets() const {
     return pointObservationOffsets_;
   }
+  /// Slots of the landmarks with more than kLongTrackMeasurementThreshold
+  /// observations, for the block-per-track kernel.
   const DeviceArray<int>& longTrackPointSlots() const {
     return longTrackPointSlots_;
   }
 
+  /// Which noise arrays this batch carries.
   SfmProjectionNoiseMode noiseMode() const { return noiseMode_; }
+  /// Whether residuals and Jacobians must be whitened.
   bool isWhitened() const {
     return noiseMode_ != SfmProjectionNoiseMode::Unit;
   }
+  /// Whether a robust loss must be applied on top of whitening.
   bool isRobust() const {
     return noiseMode_ == SfmProjectionNoiseMode::Robust;
   }
+  /// Cameras in the problem, whether or not each is observed.
   size_t numCameras() const { return numCameras_; }
+  /// Landmarks in the problem, including tracks dropped as too short.
   size_t numPoints() const { return numPoints_; }
+  /// Measurements actually kept, which is fewer than SfmData holds when tracks
+  /// were dropped.
   size_t numObservations() const { return observations_.size(); }
 
  private:
+  /// Camera count, from SfmData rather than from the measurements.
   size_t numCameras_ = 0;
+  /// Landmark count, likewise, so slots stay aligned with SfmData's tracks.
   size_t numPoints_ = 0;
+  /// Set by which noise arrays construction was given.
   SfmProjectionNoiseMode noiseMode_ = SfmProjectionNoiseMode::Unit;
+  /// Flattened measurements, ordered by track.
   DeviceArray<SfmObservation> observations_;
+  /// Whitening, parallel to observations_ or empty.
   DeviceArray<SfmSqrtInfo2> sqrtInfos_;
+  /// Robust losses, parallel to observations_ or empty.
   DeviceArray<SfmRobustModel> robustModels_;
+  /// Per-landmark ranges into observations_.
   DeviceArray<int> pointObservationOffsets_;
+  /// Work list for the long-track kernel.
   DeviceArray<int> longTrackPointSlots_;
 };
 

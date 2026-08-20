@@ -35,11 +35,16 @@
 
 namespace gtsam::cuda {
 
+/// Thrown for a failed CUDA runtime call, so these can be caught apart from the
+/// std::invalid_argument and std::logic_error the solvers also throw.
 class Error : public std::runtime_error {
  public:
+  /// Constructs from a message that already identifies the failing call.
   explicit Error(const std::string& message) : std::runtime_error(message) {}
 };
 
+/// Throws Error unless status is cudaSuccess, quoting the call and its location.
+/// Call through GTSAM_CUDA_CHECK, which fills in the last three arguments.
 inline void checkRuntime(cudaError_t status, const char* expression,
                       const char* file, int line) {
   if (status == cudaSuccess) return;
