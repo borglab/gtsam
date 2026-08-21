@@ -34,6 +34,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <Eigen/Sparse>
+#include <map>
 #include <optional>
 #include <stdexcept>
 #include <string>
@@ -48,13 +49,20 @@ struct RiemannianStaircaseResult;
 
 /// Parameters for the Riemannian Staircase solver.
 struct GTSAM_EXPORT RiemannianStaircaseParams {
-  /// Spectra: sparse Lanczos eigensolver.
+  /// Spectra: sparse Lanczos following SE-Sync's SparseMinimumEigenValue.
   /// DenseEigen: full O(n^3) self-adjoint eigensolver, not recommended for large problems.
   enum class VerificationMethod { Spectra, DenseEigen };
 
   size_t pMin = 2;             /// Initial level (column dimension here) of Riemannian staircase, should be >= the ambient dim.
   size_t pMax = 10;            ///< staircase cap before giving up.
   double alpha = 1e-2;         ///< descent step size on saddle escape.
+  /// Fit the saddle-escape step to the merit instead of always using `alpha`.
+  /// Off by default: it never changed the certifying rank on any dataset
+  /// measured, and cost about 2x on M3500.
+  bool useSaddleLineSearch = false;
+  /// Sets where the step search starts:
+  /// `max(1024 * alpha, 10 * saddleStepTolerance / |lambda_min|)`.
+  double saddleStepTolerance = 1e-2;
 
   VerificationMethod verificationMethod = VerificationMethod::Spectra;
   double eta = 1e-3;           ///< min-eigenvalue tolerance for certification.
@@ -63,10 +71,10 @@ struct GTSAM_EXPORT RiemannianStaircaseParams {
   /// typical rotation-averaging problems; raise only if Pass 2 fails to
   /// converge on a very ill-conditioned spectrum.
   size_t maxSpectraIters = 1000;
-  /// Lanczos subspace size. ~100 gives the shift pass enough room to
-  /// discriminate a tiny negative eigenvalue from a near-zero one.
-  size_t numLanczosVectors = 100;
-  double spectraTol = 1e-6;
+  /// Lanczos subspace size. 20 is the value Shonan RA uses.
+  size_t numLanczosVectors = 20;
+  /// Absolute tolerance on lambda_min.
+  double spectraTol = 1e-4;
 
   /// Parameters for inner local solver ALM.
   AugmentedLagrangianParams::shared_ptr almParams =
@@ -122,7 +130,8 @@ struct GTSAM_EXPORT RiemannianStaircaseParams {
  *      saddle-escape eigenvector);
  *  (5) If Verified: `truncateToRankD` projects Y* to rank d =
  *      layout.maxRowDim() and the result is returned. Otherwise
- *      `escapeSaddleAndLift` lifts to rank p+1 and the loop continues.
+ *      `saddleEscapeWithLineSearch` lifts to rank p+1 and the loop
+ *      continues.
  *
  */
 class GTSAM_EXPORT RiemannianStaircaseOptimizer {
@@ -248,11 +257,52 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
       const QcqpProblem& qcqp, const Layout& layout,
       const std::vector<Vector>& lambdaEq);
 
+  /// Multipliers recovered from a point, with the residual they leave.
+  struct LeastSquaresMultipliers {
+    /// In `eConstraints()` order and in `buildCertificate`'s convention, so
+    /// this is interchangeable with the solver's own multipliers.
+    std::vector<Vector> lambdaEq;
+    /// Per-variable `||(QY)_n + sum_m lambda_m A_m Y_n||_F`. Unconstrained
+    /// variables contribute `||(QY)_n||_F`, which no multiplier can reduce.
+    std::map<Key, double> residual;
+    /// `||S Y||_F`. Zero exactly at a first-order stationary point.
+    double totalResidual = 0.0;
+  };
+
+  /// Least-squares Lagrange multipliers at `Y`:
+  ///
+  ///     lambda_LS = argmin_lambda || [Q + A*(lambda)] Y ||_F
+  ///
+  /// These are the multipliers that come closest to satisfying KKT
+  /// stationarity. They are unique when LICQ holds at `Y`.
+  ///
+  /// Constraints are block-separable, so `A*(lambda)` is block diagonal and
+  /// the problem splits into one small solve per constrained variable.
+  static LeastSquaresMultipliers leastSquaresMultipliers(
+      const QcqpProblem& qcqp, const Layout& layout, const Values& Y);
+
+  /// Outcome of a line-searched saddle escape.
+  struct SaddleEscape {
+    Values lifted;               ///< Y at rank p+1, stepped by `alpha`.
+    double alpha = 0.0;          ///< Step actually taken.
+    double meritDecrease = 0.0;  ///< M(0) - M(alpha).
+    bool descentFound = false;   ///< False when no step decreases the merit.
+  };
+
+  /// Pick the saddle-escape step by decreasing the augmented-Lagrangian merit
+  /// along the lift direction.
+  /// The criterion is merit decrease, ALM being the local solver in use.
+  static SaddleEscape saddleEscapeWithLineSearch(
+      const QcqpProblem& liftedQcqp, const Layout& layout, const Values& Ystar,
+      const Vector& vMin, const std::vector<Vector>& lambdaEq, double penalty,
+      double minEigenvalue, const RiemannianStaircaseParams& params);
+
   /// Lift Y* from rank p to rank p+1 by appending `alpha * vMin` as a new
   /// column (Thm 1(b), Algorithm 1 lines 10-12). With vMin the negative-
-  /// eigenvalue eigenvector of S, this is a feasible 2nd-order descent direction
-  static Values escapeSaddleAndLift(const Values& Ystar, const Vector& vMin,
-                                    const Layout& layout, double alpha);
+  /// eigenvalue eigenvector of S, this is also a feasible 2nd-order descent
+  /// direction.
+  static Values liftWithDescent(const Values& Ystar, const Vector& vMin,
+                                const Layout& layout, double alpha);
 
   /// SVD-based rank-d projection for d >= 1: round the stacked BM matrix from
   /// rank p down to rank d.
@@ -260,18 +310,19 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
                                          int d);
 
   /// Test PSD of the certificate matrix S. Returns `(passed, lambda_min,
-  /// v_min)` with `passed == (lambda_min >= -params.eta)`.
+  /// v_min)`.
   ///
-  /// The Spectra method mirrors SE-Sync's two-stage `fast_verification`:
+  /// The Spectra method is two stage, mirroring SE-Sync's `fast_verification`:
   ///   Stage 1 (fast check): sparse Cholesky on M = S + eta * I. Success
-  ///     is binary and ~O(nnz). Returns lambda_min = -eta as a conservative
-  ///     lower bound; v_min is unused on the cert-pass path.
-  ///   Stage 2 (only on Cholesky failure): two-pass Lanczos shift trick
-  ///     to get the precise lambda_min and v_min for the lift direction.
-  /// SE-Sync uses CHOLMOD + LOBPCG; we use Eigen's SimplicialLLT + Spectra.
+  ///     is binary and ~O(nnz), much cheaper than an eigenvalue computation.
+  ///     Returns lambda_min = -eta as a conservative lower bound; v_min is
+  ///     unused on the cert-pass path.
+  ///   Stage 2 (only on Cholesky failure): two-pass Lanczos shift trick to get
+  ///     lambda_min and the v_min the lift needs.
   static std::tuple<bool, double, Vector> verify(
       const Eigen::SparseMatrix<double>& S,
-      const RiemannianStaircaseParams& params);
+      const RiemannianStaircaseParams& params,
+      const Vector& warmStart = Vector());
 
   // ===========================================================================
 
@@ -283,9 +334,10 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
   static std::tuple<bool, double, Vector> verifyDenseEigen(
       const Eigen::SparseMatrix<double>& S,
       const RiemannianStaircaseParams& params);
+
   static std::tuple<bool, double, Vector> verifySpectra(
       const Eigen::SparseMatrix<double>& S,
-      const RiemannianStaircaseParams& params);
+      const RiemannianStaircaseParams& params, const Vector& warmStart);
 
   static void validateParams(const RiemannianStaircaseParams& params);
 
@@ -333,7 +385,7 @@ struct GTSAM_EXPORT RiemannianStaircaseResult {
   /// Return the objective value recorded at each staircase level.
   Vector getCostPerLevel() const;
 
-  /// Return the minimum certificate eigenvalue at each staircase level.
+  /// Return the per-level bound on lambda_min(S).
   Vector getMinEigenvaluePerLevel() const;
 
   /// Return the augmented-Lagrangian gradient stationarity at each level.
