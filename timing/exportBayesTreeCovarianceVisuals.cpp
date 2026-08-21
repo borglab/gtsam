@@ -243,7 +243,7 @@ void writeEdgeCsv(const filesystem::path& path,
 string datasetStem(const string& datasetName) {
   filesystem::path path(datasetName);
   string stem = path.filename().string();
-  for (const string& suffix : {".graph", ".txt"}) {
+  for (const string suffix : {".graph", ".txt"}) {
     if (stem.size() >= suffix.size() &&
         stem.compare(stem.size() - suffix.size(), suffix.size(), suffix) == 0) {
       stem.resize(stem.size() - suffix.size());
@@ -318,7 +318,7 @@ int main(int argc, char** argv) {
   writeMatrixCsv(outputDir / "w100_local_covariance.csv", localCovariance);
   writeMatrixCsv(outputDir / "w100_wide_covariance.csv", wideCovariance);
 
-  for (const string& cliqueDatasetName : {"w10000.graph", "w20000.txt"}) {
+  for (const string cliqueDatasetName : {"w10000.graph", "w20000.txt"}) {
     const OptimizedBayesTreeResult optimized =
         optimizeWithBayesTree(cliqueDatasetName);
     writeCliquePoseCsv(

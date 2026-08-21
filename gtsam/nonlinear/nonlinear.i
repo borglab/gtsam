@@ -523,6 +523,11 @@ class ISAM2Result {
   bool getBatchReorderTriggered() const;
   double getErrorBefore() const;
   double getErrorAfter() const;
+  size_t getFactorsRecalculated() const;
+  const gtsam::KeySet& getUnusedKeys() const;
+  const gtsam::KeyVector& getObservedKeys() const;
+  const gtsam::KeySet& getKeysWithRemovedFactors() const;
+  const gtsam::KeySet& getMarkedKeys() const;
 };
 
 class ISAM2 {
@@ -1007,6 +1012,7 @@ class FixedLagSmootherKeyTimestampMap {
 
 class FixedLagSmootherResult {
   size_t getIterations() const;
+  size_t getIntermediateSteps() const;
   size_t getNonlinearVariables() const;
   size_t getLinearVariables() const;
   double getError() const;
@@ -1047,6 +1053,9 @@ virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
   const gtsam::LevenbergMarquardtParams& params() const;
 
   const gtsam::NonlinearFactorGraph& getFactors() const;
+  const gtsam::Values& getLinearizationPoint() const;
+  const gtsam::Ordering& getOrdering() const;
+  const gtsam::VectorValues& getDelta() const;
 
   template <VALUE = {double, gtsam::Point2, gtsam::Rot2, gtsam::Pose2,
                      gtsam::Point3, gtsam::Rot3, gtsam::Pose3,
@@ -1068,6 +1077,8 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
   const gtsam::ISAM2Params& params() const;
 
   const gtsam::NonlinearFactorGraph& getFactors() const;
+  const gtsam::Values& getLinearizationPoint() const;
+  const gtsam::VectorValues& getDelta() const;
   const gtsam::ISAM2& getISAM2() const;
   const gtsam::ISAM2Result& getISAM2Result() const;
 
