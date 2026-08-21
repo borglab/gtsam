@@ -95,6 +95,7 @@ TEST_PIM(ImuFactor, PreintegratedMeasurementsReset) {
 }
 
 /* ************************************************************************* */
+// Checks propagated sensor-noise covariance against sampled NavState errors.
 TEST(ImuFactor, Accelerating) {
   const double a = 0.2, v = 50;
 
@@ -107,14 +108,21 @@ TEST(ImuFactor, Accelerating) {
   const AcceleratingScenario scenario(nRb, initial_position, initial_velocity,
       Vector3(a, 0, 0));
 
-  const double T = 3.0; // seconds
-  ScenarioRunner runner(scenario, testing::Params(), T / 10);
+  const double T = 3.0;  // seconds
+  auto params = testing::Params();
+  // ScenarioRunner samples accelerometer and gyroscope noise, but not the
+  // independent position-integration uncertainty.
+  params->integrationCovariance = Z_3x3;
+  ScenarioRunner runner(scenario, params, T / 10);
 
   PreintegratedImuMeasurements pim = runner.integrate(T);
   EXPECT(assert_equal(scenario.pose(T), runner.predict(pim).pose(), 1e-9));
 
-  Matrix9 estimatedCov = runner.estimateCovariance(T, 100);
-  EXPECT(assert_equal(estimatedCov, pim.preintMeasCov(), 0.1));
+  const Matrix9 estimatedCov = runner.estimateCovariance(T, 5000);
+  const Matrix9 expectedCov = pim.residualCovariance();
+  const double relativeError =
+      (estimatedCov - expectedCov).norm() / expectedCov.norm();
+  EXPECT(relativeError < 0.12);
 }
 
 /* ************************************************************************* */
