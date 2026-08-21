@@ -203,6 +203,13 @@ struct ISAM2Result {
   bool getBatchReorderTriggered() const { return batchReorderTriggered; }
   double getErrorBefore() const { return errorBefore ? *errorBefore : std::nan(""); }
   double getErrorAfter() const { return errorAfter ? *errorAfter : std::nan(""); }
+  size_t getFactorsRecalculated() const { return factorsRecalculated; }
+  const KeySet& getUnusedKeys() const { return unusedKeys; }
+  const KeyVector& getObservedKeys() const { return observedKeys; }
+  const KeySet& getKeysWithRemovedFactors() const {
+    return keysWithRemovedFactors;
+  }
+  const KeySet& getMarkedKeys() const { return markedKeys; }
 };
 
 }  // namespace gtsam
