@@ -12,7 +12,7 @@
 /**
  * @file CardinalSplineBasis.h
  * @brief Cubic cardinal splines integrated with the GTSAM Basis framework.
- * @author Brett Downing
+ * @author This file was written by AI
  */
 
 #pragma once
