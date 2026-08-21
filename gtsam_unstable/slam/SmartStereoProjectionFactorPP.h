@@ -18,10 +18,6 @@
 
 #pragma once
 
-#include <gtsam/config.h>
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
-
 #include <gtsam_unstable/slam/SmartStereoProjectionFactor.h>
 
 namespace gtsam {
@@ -43,7 +39,6 @@ namespace gtsam {
  * factor requires that values contain the involved poses and extrinsics (both
  * are Pose3 variables).
  * @ingroup slam
- * @deprecated This experimental factor has no maintained replacement.
  */
 class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionFactorPP
     : public SmartStereoProjectionFactor {
@@ -307,5 +302,3 @@ struct traits<SmartStereoProjectionFactorPP> : public Testable<
 };
 
 }  // namespace gtsam
-
-#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

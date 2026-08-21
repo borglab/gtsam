@@ -16,10 +16,6 @@
  * @author Frank Dellaert
  */
 
-#include <gtsam/config.h>
-
-#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
-
 #include <gtsam_unstable/slam/SmartStereoProjectionFactorPP.h>
 
 #include <cassert>
@@ -129,5 +125,3 @@ SmartStereoProjectionFactorPP::cameras(const Values& values) const {
 }
 
 }  // \ namespace gtsam
-
-#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
