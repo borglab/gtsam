@@ -207,6 +207,15 @@ virtual class LinearContainerFactor : gtsam::NonlinearFactor {
 #include <gtsam/nonlinear/NonlinearOptimizerParams.h>
 virtual class NonlinearOptimizerParams {
   enum Verbosity { SILENT, TERMINATION, ERROR, VALUES, DELTA, LINEAR };
+  enum LinearSolverType {
+    MULTIFRONTAL_SOLVER,
+    MULTIFRONTAL_CHOLESKY,
+    MULTIFRONTAL_QR,
+    SEQUENTIAL_CHOLESKY,
+    SEQUENTIAL_QR,
+    Iterative,
+    CHOLMOD
+  };
 
   NonlinearOptimizerParams();
   void print(string str = "") const;
@@ -225,6 +234,9 @@ virtual class NonlinearOptimizerParams {
 
   string getLinearSolverType() const;
   void setLinearSolverType(const string& solver);
+  gtsam::NonlinearOptimizerParams::LinearSolverType getLinearSolver() const;
+  void setLinearSolver(
+      gtsam::NonlinearOptimizerParams::LinearSolverType solver);
 
   void setIterativeParams(gtsam::IterativeOptimizationParameters* params);
   void setOrdering(const gtsam::Ordering& ordering);

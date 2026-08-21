@@ -37,5 +37,18 @@ else()
   message(STATUS "Using bundled CCOLAMD and SuiteSparse_config")
 endif()
 
+# CHOLMOD is an optional numerical backend. Enable it automatically when a
+# system package exports the canonical SuiteSparse target.
+if(NOT TARGET SuiteSparse::CHOLMOD)
+  find_package(CHOLMOD CONFIG QUIET)
+endif()
+if(TARGET SuiteSparse::CHOLMOD)
+  set(GTSAM_ENABLE_CHOLMOD ON)
+  message(STATUS "Using system CHOLMOD")
+else()
+  set(GTSAM_ENABLE_CHOLMOD OFF)
+  message(STATUS "CHOLMOD not found; CHOLMOD linear solver disabled")
+endif()
+
 unset(_gtsam_suitesparse_option_description)
 unset(_gtsam_suitesparse_selection_explicit)
