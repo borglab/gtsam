@@ -24,6 +24,10 @@
 #include <gtsam_unstable/slam/SmartStereoProjectionFactor.h>
 
 namespace gtsam {
+
+/// Collection of shared stereo camera calibrations.
+using Cal3_S2StereoVector = std::vector<std::shared_ptr<Cal3_S2Stereo>>;
+
 /**
  *
  * @ingroup slam
@@ -47,7 +51,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
     : public SmartStereoProjectionFactor {
  protected:
   /// shared pointer to calibration object (one for each camera)
-  std::vector<std::shared_ptr<Cal3_S2Stereo>> K_all_;
+  Cal3_S2StereoVector K_all_;
 
  public:
   /// shorthand for base class type
@@ -88,9 +92,8 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
    * the same landmark
    * @param Ks vector of calibration objects
    */
-  void add(const std::vector<StereoPoint2>& measurements,
-           const KeyVector& poseKeys,
-           const std::vector<std::shared_ptr<Cal3_S2Stereo>>& Ks);
+  void add(const StereoPoint2Vector& measurements, const KeyVector& poseKeys,
+           const Cal3_S2StereoVector& Ks);
 
   /**
    * Variant of the previous one in which we include a set of measurements with
@@ -101,8 +104,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
    * same landmark
    * @param K the (known) camera calibration (same for all measurements)
    */
-  void add(const std::vector<StereoPoint2>& measurements,
-           const KeyVector& poseKeys,
+  void add(const StereoPoint2Vector& measurements, const KeyVector& poseKeys,
            const std::shared_ptr<Cal3_S2Stereo>& K);
 
   /**
@@ -122,9 +124,7 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
   double error(const Values& values) const override;
 
   /** return the calibration object */
-  inline std::vector<std::shared_ptr<Cal3_S2Stereo>> calibration() const {
-    return K_all_;
-  }
+  inline Cal3_S2StereoVector calibration() const { return K_all_; }
 
   /**
    * Collect all cameras involved in this factor

@@ -64,8 +64,8 @@ PYBIND11_MODULE({module_name}, m_) {{
     // Note here we need to import the dependent library
     py::module::import("gtsam");
 
-{wrapped_namespace}
-
 #include "python/gtsam_unstable/specializations/gtsam_unstable.h"
+
+{wrapped_namespace}
 
 }}

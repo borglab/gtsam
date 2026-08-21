@@ -27,7 +27,7 @@ virtual class CustomFactor : gtsam::NoiseModelFactor {
    * cf = CustomFactor(noise_model, keys, error_func)
    * ```
    */
-  CustomFactor(const gtsam::SharedNoiseModel& noiseModel,
+  CustomFactor(const gtsam::noiseModel::Base* noiseModel,
                const gtsam::KeyVector& keys,
                const gtsam::CustomErrorFunction& errorFunction);
 

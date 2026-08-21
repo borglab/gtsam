@@ -254,6 +254,8 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
             gtsam::Point2Vector
             gtsam::Pose3Vector
             gtsam::KeyVector
+            gtsam::StereoPoint2Vector
+            gtsam::Cal3_S2StereoVector
             gtsam::BinaryMeasurementsPoint3
             gtsam::BinaryMeasurementsUnit3
             gtsam::BinaryMeasurementsRot3

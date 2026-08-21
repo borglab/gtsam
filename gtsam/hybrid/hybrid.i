@@ -134,7 +134,7 @@ virtual class HybridFactor : gtsam::Factor {
   double error(const gtsam::HybridValues& hybridValues) const;
   gtsam::AlgebraicDecisionTreeKey errorTree(
       const gtsam::VectorValues& continuousValues) const;
-  std::shared_ptr<gtsam::Factor> restrict(
+  gtsam::Factor* restrict(
       const gtsam::DiscreteValues& discreteValues) const;
 };
 
@@ -164,19 +164,19 @@ virtual class HybridConditional : gtsam::HybridFactor {
   gtsam::GaussianConditional* asGaussian() const;
   gtsam::DiscreteConditional* asDiscrete() const;
 
-  std::shared_ptr<gtsam::Factor> inner() const;
+  gtsam::Factor* inner() const;
 };
 
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 class HybridGaussianFactor : gtsam::HybridFactor {
   HybridGaussianFactor(
       const gtsam::DiscreteKey& discreteKey,
-      const std::vector<gtsam::GaussianFactor::shared_ptr>& factors);
+      const std::vector<gtsam::GaussianFactor*>& factors);
   HybridGaussianFactor(
       const gtsam::DiscreteKey& discreteKey,
-      const std::vector<std::pair<gtsam::GaussianFactor::shared_ptr, double>>&
+      const std::vector<std::pair<gtsam::GaussianFactor*, double>>&
           factorPairs);
-  std::pair<gtsam::GaussianFactor::shared_ptr, double> operator()(
+  std::pair<gtsam::GaussianFactor*, double> operator()(
       const gtsam::DiscreteValues& assignment) const;
 
 };
@@ -188,7 +188,7 @@ class HybridGaussianConditional : gtsam::HybridGaussianFactor {
       const gtsam::HybridGaussianConditional::Conditionals& conditionals);
   HybridGaussianConditional(
       const gtsam::DiscreteKey& discreteParent,
-      const std::vector<gtsam::GaussianConditional::shared_ptr>& conditionals);
+      const std::vector<gtsam::GaussianConditional*>& conditionals);
   HybridGaussianConditional(
       const gtsam::DiscreteKey& discreteParent, gtsam::Key key,
       const gtsam::Matrix& A, gtsam::Key parent,
@@ -214,7 +214,7 @@ class HybridGaussianConditional : gtsam::HybridGaussianFactor {
   double evaluate(const gtsam::HybridValues& values) const;
 //   double operator()(const gtsam::HybridValues &values) const;
 
-  gtsam::HybridGaussianConditional::shared_ptr prune(
+  gtsam::HybridGaussianConditional* prune(
       const gtsam::DiscreteConditional &discreteProbs) const;
   bool pruned() const;
 
@@ -224,7 +224,7 @@ class HybridGaussianConditional : gtsam::HybridGaussianFactor {
 class HybridBayesTreeClique {
   HybridBayesTreeClique();
   HybridBayesTreeClique(const gtsam::HybridConditional* conditional);
-  const gtsam::HybridConditional::shared_ptr& conditional() const;
+  const gtsam::HybridConditional* conditional() const;
   bool isRoot() const;
   // double evaluate(const gtsam::HybridValues& values) const;
 };
@@ -255,12 +255,12 @@ virtual class HybridBayesTree {
 class HybridBayesNet {
   HybridBayesNet();
   void push_back(
-      const std::shared_ptr<gtsam::HybridGaussianConditional>& conditional);
+      const gtsam::HybridGaussianConditional* conditional);
   void push_back(
-      const std::shared_ptr<gtsam::GaussianConditional>& conditional);
+      const gtsam::GaussianConditional* conditional);
   void push_back(
-      const std::shared_ptr<gtsam::DiscreteConditional>& conditional);
-  void push_back(gtsam::HybridConditional::shared_ptr conditional);
+      const gtsam::DiscreteConditional* conditional);
+  void push_back(gtsam::HybridConditional* conditional);
 
   bool empty() const;
   size_t size() const;
@@ -392,22 +392,22 @@ virtual class HybridGaussianFactorGraph : gtsam::HybridFactorGraph {
       const gtsam::VectorValues& continuousValues) const;
 
   // Sequential Elimination
-  std::shared_ptr<gtsam::HybridBayesNet> eliminateSequential(
+  gtsam::HybridBayesNet* eliminateSequential(
       gtsam::HybridGaussianFactorGraph::OptionalOrderingType orderingType = std::nullopt,
       const gtsam::HybridGaussianFactorGraph::Eliminate& function =
           gtsam::HybridGaussianFactorGraph::Eliminate(
               gtsam::HybridGaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::HybridGaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  std::shared_ptr<gtsam::HybridBayesNet> eliminateSequential(
+  gtsam::HybridBayesNet* eliminateSequential(
       const gtsam::Ordering& ordering,
       const gtsam::HybridGaussianFactorGraph::Eliminate& function =
           gtsam::HybridGaussianFactorGraph::Eliminate(
               gtsam::HybridGaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::HybridGaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  pair<std::shared_ptr<gtsam::HybridBayesNet>,
-       std::shared_ptr<gtsam::HybridGaussianFactorGraph>>
+  pair<gtsam::HybridBayesNet*,
+       gtsam::HybridGaussianFactorGraph*>
   eliminatePartialSequential(
       const gtsam::Ordering& ordering,
       const gtsam::HybridGaussianFactorGraph::Eliminate& function =
@@ -415,8 +415,8 @@ virtual class HybridGaussianFactorGraph : gtsam::HybridFactorGraph {
               gtsam::HybridGaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::HybridGaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  pair<std::shared_ptr<gtsam::HybridBayesNet>,
-       std::shared_ptr<gtsam::HybridGaussianFactorGraph>>
+  pair<gtsam::HybridBayesNet*,
+       gtsam::HybridGaussianFactorGraph*>
   eliminatePartialSequential(
       const gtsam::KeyVector& variables,
       const gtsam::HybridGaussianFactorGraph::Eliminate& function =
@@ -426,22 +426,22 @@ virtual class HybridGaussianFactorGraph : gtsam::HybridFactorGraph {
       const;
 
   // Multifrontal Elimination
-  std::shared_ptr<gtsam::HybridBayesTree> eliminateMultifrontal(
+  gtsam::HybridBayesTree* eliminateMultifrontal(
       gtsam::HybridGaussianFactorGraph::OptionalOrderingType orderingType = std::nullopt,
       const gtsam::HybridGaussianFactorGraph::Eliminate& function =
           gtsam::HybridGaussianFactorGraph::Eliminate(
               gtsam::HybridGaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::HybridGaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  std::shared_ptr<gtsam::HybridBayesTree> eliminateMultifrontal(
+  gtsam::HybridBayesTree* eliminateMultifrontal(
       const gtsam::Ordering& ordering,
       const gtsam::HybridGaussianFactorGraph::Eliminate& function =
           gtsam::HybridGaussianFactorGraph::Eliminate(
               gtsam::HybridGaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::HybridGaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  pair<std::shared_ptr<gtsam::HybridBayesTree>,
-       std::shared_ptr<gtsam::HybridGaussianFactorGraph>>
+  pair<gtsam::HybridBayesTree*,
+       gtsam::HybridGaussianFactorGraph*>
   eliminatePartialMultifrontal(
       const gtsam::Ordering& ordering,
       const gtsam::HybridGaussianFactorGraph::Eliminate& function =
@@ -449,8 +449,8 @@ virtual class HybridGaussianFactorGraph : gtsam::HybridFactorGraph {
               gtsam::HybridGaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::HybridGaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  pair<std::shared_ptr<gtsam::HybridBayesTree>,
-       std::shared_ptr<gtsam::HybridGaussianFactorGraph>>
+  pair<gtsam::HybridBayesTree*,
+       gtsam::HybridGaussianFactorGraph*>
   eliminatePartialMultifrontal(
       const gtsam::KeyVector& variables,
       const gtsam::HybridGaussianFactorGraph::Eliminate& function =
@@ -484,7 +484,7 @@ virtual class HybridNonlinearFactorGraph : gtsam::HybridFactorGraph {
 
   gtsam::AlgebraicDecisionTreeKey errorTree(const gtsam::Values& continuousValues) const;
 
-  std::shared_ptr<gtsam::HybridGaussianFactorGraph> linearize(
+  gtsam::HybridGaussianFactorGraph* linearize(
       const gtsam::Values& continuousValues) const;
 
   gtsam::AlgebraicDecisionTreeKey discretePosterior(
@@ -514,7 +514,7 @@ class HybridNonlinearFactor : gtsam::HybridFactor {
   gtsam::AlgebraicDecisionTreeKey errorTree(
       const gtsam::Values& continuousValues) const;
 
-  std::shared_ptr<gtsam::HybridGaussianFactor> linearize(
+  gtsam::HybridGaussianFactor* linearize(
       const gtsam::Values& continuousValues) const;
 
 };

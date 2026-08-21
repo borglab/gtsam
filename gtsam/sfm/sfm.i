@@ -58,10 +58,10 @@ class SfmData {
   const gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera(size_t idx) const;
 
   gtsam::NonlinearFactorGraph generalSfmFactors(
-      const gtsam::SharedNoiseModel& model =
+      const gtsam::noiseModel::Base* model =
           gtsam::noiseModel::Isotropic::Sigma(2, 1.0)) const;
   gtsam::NonlinearFactorGraph sfmFactorGraph(
-      const gtsam::SharedNoiseModel& model =
+      const gtsam::noiseModel::Base* model =
           gtsam::noiseModel::Isotropic::Sigma(2, 1.0),
       std::optional<size_t> fixedCamera = 0,
       std::optional<size_t> fixedPoint = 0) const;
@@ -133,7 +133,7 @@ class UnaryMeasurement {
                    const gtsam::noiseModel::Base* model);
   gtsam::Key key() const;
   const T& measured() const;
-  const std::shared_ptr<gtsam::noiseModel::Base>& noiseModel() const;
+  const gtsam::noiseModel::Base* noiseModel() const;
 };
 
 typedef gtsam::UnaryMeasurement<gtsam::Pose3> UnaryMeasurementPose3;
@@ -148,7 +148,7 @@ class BinaryMeasurement {
   gtsam::Key key1() const;
   gtsam::Key key2() const;
   const T& measured() const;
-  const std::shared_ptr<gtsam::noiseModel::Base>& noiseModel() const;
+  const gtsam::noiseModel::Base* noiseModel() const;
 };
 
 typedef gtsam::BinaryMeasurement<gtsam::Unit3> BinaryMeasurementUnit3;
@@ -376,7 +376,7 @@ class LocationRecovery {
       bool bilinear = true) const;
   void addAnchorPrior(gtsam::Key anchorKey,
                       gtsam::NonlinearFactorGraph @graph,
-                      const gtsam::SharedNoiseModel& priorNoiseModel =
+                      const gtsam::noiseModel::Base* priorNoiseModel =
                           gtsam::noiseModel::Isotropic::Sigma(3, 0.01)) const;
   gtsam::Values initializeRandomly(
       const std::set<gtsam::Key>& keys, size_t numEdges, bool bilinear,
@@ -397,7 +397,7 @@ class TranslationRecovery : gtsam::LocationRecovery {
                 const std::vector<gtsam::BinaryMeasurement<gtsam::Point3>>&
                     betweenTranslations,
                 gtsam::NonlinearFactorGraph @graph,
-                const gtsam::SharedNoiseModel& priorNoiseModel =
+                const gtsam::noiseModel::Base* priorNoiseModel =
                     gtsam::noiseModel::Isotropic::Sigma(3, 0.01)) const;
   gtsam::NonlinearFactorGraph buildGraph(
       const std::vector<gtsam::BinaryMeasurement<gtsam::Unit3>>&

@@ -88,7 +88,7 @@ virtual class GenericProjectionFactor : gtsam::NoiseModelFactor {
                           const POSE& body_P_sensor);
 
   const gtsam::Point2& measured() const;
-  const std::shared_ptr<CALIBRATION> calibration() const;
+  const CALIBRATION* calibration() const;
   bool verboseCheirality() const;
   bool throwCheirality() const;
 
@@ -231,18 +231,18 @@ virtual class SmartProjectionFactor : gtsam::SmartFactorBase<CAMERA> {
   gtsam::TriangulationResult triangulateSafe(const gtsam::CameraSet<CAMERA>& cameras) const;
   bool triangulateForLinearize(const gtsam::CameraSet<CAMERA>& cameras) const;
 
-  gtsam::This::SharedHessianFactor createHessianFactor(
+  gtsam::HessianFactor* createHessianFactor(
       const gtsam::CameraSet<CAMERA>& cameras, const double _lambda = 0.0,
       bool diagonalDamping = false) const;
-  gtsam::This::SharedJacobianFactor createJacobianQFactor(
+  gtsam::JacobianFactor* createJacobianQFactor(
       const gtsam::CameraSet<CAMERA>& cameras, double _lambda) const;
-  gtsam::This::SharedJacobianFactor createJacobianQFactor(
+  gtsam::JacobianFactor* createJacobianQFactor(
       const gtsam::Values& values, double _lambda) const;
   gtsam::JacobianFactor* createJacobianSVDFactor(
       const gtsam::CameraSet<CAMERA>& cameras, double _lambda) const;
-  gtsam::This::SharedHessianFactor linearizeToHessian(
+  gtsam::HessianFactor* linearizeToHessian(
       const gtsam::Values& values, double _lambda = 0.0) const;
-  gtsam::This::SharedJacobianFactor linearizeToJacobian(
+  gtsam::JacobianFactor* linearizeToJacobian(
       const gtsam::Values& values, double _lambda = 0.0) const;
 
   gtsam::GaussianFactor* linearizeDamped(const gtsam::CameraSet<CAMERA>& cameras,
@@ -321,7 +321,7 @@ virtual class SmartProjectionRigFactor : gtsam::SmartProjectionFactor<CAMERA> {
            const gtsam::FastVector<size_t>& cameraIds = gtsam::FastVector<size_t>());
 
   const gtsam::KeyVector& nonUniqueKeys() const;
-  const std::shared_ptr<gtsam::This::Cameras>& cameraRig() const;
+  const gtsam::This::Cameras* cameraRig() const;
   const gtsam::FastVector<size_t>& cameraIds() const;
 };
 
@@ -346,7 +346,7 @@ virtual class GenericStereoFactor : gtsam::NoiseModelFactor {
                       bool throwCheirality, bool verboseCheirality,
                       POSE body_P_sensor);
   const gtsam::StereoPoint2& measured() const;
-  const gtsam::Cal3_S2Stereo::shared_ptr calibration() const;
+  const gtsam::Cal3_S2Stereo* calibration() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -498,7 +498,7 @@ enum KernelFunctionType {
 
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(
     const string& filename,
-    std::shared_ptr<gtsam::noiseModel::Base> model = nullptr,
+    gtsam::noiseModel::Base* model = nullptr,
     size_t maxIndex = 0, bool addNoise = false, bool smart = true,
     gtsam::NoiseFormat noiseFormat = gtsam::NoiseFormat::NoiseFormatAUTO,
     gtsam::KernelFunctionType kernelFunctionType =
@@ -506,10 +506,10 @@ pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load2D(
 
 void save2D(const gtsam::NonlinearFactorGraph& graph,
             const gtsam::Values& config,
-            const std::shared_ptr<gtsam::noiseModel::Diagonal> model,
+            const gtsam::noiseModel::Diagonal* model,
             const string& filename);
 
-// std::vector<gtsam::BetweenFactor<Pose2>::shared_ptr>
+// Shared BetweenFactor<Pose2> container used by the MATLAB wrapper.
 // Used in Matlab wrapper
 class BetweenFactorPose2s {
   BetweenFactorPose2s();
@@ -519,10 +519,10 @@ class BetweenFactorPose2s {
 };
 gtsam::BetweenFactorPose2s parse2DFactors(
     const string& filename,
-    const std::shared_ptr<gtsam::noiseModel::Diagonal>& model = nullptr,
+    const gtsam::noiseModel::Diagonal* model = nullptr,
     size_t maxIndex = 0);
 
-// std::vector<gtsam::BetweenFactor<Pose3>::shared_ptr>
+// Shared BetweenFactor<Pose3> container used by the MATLAB wrapper.
 // Used in Matlab wrapper
 class BetweenFactorPose3s {
   BetweenFactorPose3s();
@@ -531,7 +531,7 @@ class BetweenFactorPose3s {
   void push_back(const gtsam::BetweenFactor<gtsam::Pose3>* factor);
 };
 
-// std::vector<gtsam::BetweenFactor<SL4>::shared_ptr>
+// Shared BetweenFactor<SL4> container used by the MATLAB wrapper.
 // Used in Matlab wrapper
 class BetweenFactorSL4s {
   BetweenFactorSL4s();
@@ -542,7 +542,7 @@ class BetweenFactorSL4s {
 
 gtsam::BetweenFactorPose3s parse3DFactors(
     const string& filename,
-    const std::shared_ptr<gtsam::noiseModel::Diagonal>& model = nullptr,
+    const gtsam::noiseModel::Diagonal* model = nullptr,
     size_t maxIndex = 0);
 
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load3D(
@@ -602,8 +602,8 @@ template <T = {gtsam::Rot2, gtsam::Pose2, gtsam::SO3, gtsam::SO4, gtsam::Rot3,
 T FindKarcherMean(const std::vector<T>& elements);
 
 #include <gtsam/slam/FrobeniusFactor.h>
-std::shared_ptr<gtsam::noiseModel::Base> ConvertNoiseModel(
-    const std::shared_ptr<gtsam::noiseModel::Base>& model, size_t n,
+gtsam::noiseModel::Base* ConvertNoiseModel(
+    const gtsam::noiseModel::Base* model, size_t n,
     bool defaultToUnit = true);
 
 template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::SO3, gtsam::SO4, gtsam::Pose2,

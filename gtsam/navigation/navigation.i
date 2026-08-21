@@ -1201,7 +1201,7 @@ class NavStateImuEKF : gtsam::LeftLinearEKF<gtsam::NavState> {
   // Accessors
   const gtsam::Matrix9& processNoise() const;
   const gtsam::Vector3& gravity() const;
-  const std::shared_ptr<gtsam::PreintegrationParams>& params() const;
+  const gtsam::PreintegrationParams* params() const;
 
   // Static methods
   static gtsam::NavState Gravity(const gtsam::Vector3& n_gravity, double dt);
@@ -1232,7 +1232,7 @@ class Gal3ImuEKF : gtsam::InvariantEKF<gtsam::Gal3> {
   // Accessors
   const gtsam::Gal3ImuEKF::Covariance& processNoise() const;
   const gtsam::Vector3& gravity() const;
-  const std::shared_ptr<gtsam::PreintegrationParams>& params() const;
+  const gtsam::PreintegrationParams* params() const;
 
   // Static methods
   static gtsam::Gal3 Gravity(const gtsam::Vector3& g_n, double dt);
@@ -1263,7 +1263,7 @@ class ContactMeasurement {
 
 class LeggedEstimatorParams {
   LeggedEstimatorParams();
-  std::shared_ptr<gtsam::PreintegrationParams> preintegrationParams;
+  gtsam::PreintegrationParams* preintegrationParams;
   gtsam::Pose3 body_P_imu;
   double footholdProcessSigma;
   double footholdInitSigma;

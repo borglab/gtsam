@@ -59,7 +59,7 @@ virtual class NonlinearFactorGraph {
   void replace(size_t i, gtsam::NonlinearFactor* factors);
   void resize(size_t size);
   size_t nrFactors() const;
-  const std::shared_ptr<gtsam::NonlinearFactor> at(size_t idx) const;
+  const gtsam::NonlinearFactor* at(size_t idx) const;
   void push_back(const gtsam::NonlinearFactorGraph& factors);
   void push_back(gtsam::NonlinearFactor* factor);
   void add(gtsam::NonlinearFactor* factor);
@@ -151,7 +151,7 @@ virtual class NonlinearFactor : gtsam::Factor {
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 virtual class NoiseModelFactor : gtsam::NonlinearFactor {
-  const std::shared_ptr<gtsam::noiseModel::Base>& noiseModel() const;
+  const gtsam::noiseModel::Base* noiseModel() const;
   gtsam::NoiseModelFactor* cloneWithNewNoiseModel(
       gtsam::noiseModel::Base* newNoise) const;
   gtsam::Vector unwhitenedError(
@@ -183,10 +183,10 @@ class Marginals {
 #include <gtsam/nonlinear/LinearContainerFactor.h>
 virtual class LinearContainerFactor : gtsam::NonlinearFactor {
   LinearContainerFactor(
-      const std::shared_ptr<gtsam::GaussianFactor>& factor,
+      const gtsam::GaussianFactor* factor,
       const gtsam::Values& linearizationPoint = gtsam::Values());
 
-  const std::shared_ptr<gtsam::GaussianFactor>& factor() const;
+  const gtsam::GaussianFactor* factor() const;
   //  const std::optional<Values>& linearizationPoint() const;
 
   bool isJacobian() const;
@@ -546,31 +546,31 @@ class ISAM2 {
       const string& filename,
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter)
       const;
-  std::shared_ptr<gtsam::GaussianConditional> marginalFactor(
+  gtsam::GaussianConditional* marginalFactor(
       gtsam::Key j,
       const gtsam::GaussianFactorGraph::Eliminate& function =
           gtsam::GaussianFactorGraph::Eliminate(
               gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate))
       const;
-  std::shared_ptr<gtsam::GaussianFactorGraph> joint(
+  gtsam::GaussianFactorGraph* joint(
       gtsam::Key j1, gtsam::Key j2,
       const gtsam::GaussianFactorGraph::Eliminate& function =
           gtsam::GaussianFactorGraph::Eliminate(
               gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate))
       const;
-  std::shared_ptr<gtsam::GaussianFactorGraph> joint(
+  gtsam::GaussianFactorGraph* joint(
       const gtsam::KeyVector& keys,
       const gtsam::GaussianFactorGraph::Eliminate& function =
           gtsam::GaussianFactorGraph::Eliminate(
               gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate))
       const;
-  std::shared_ptr<gtsam::GaussianBayesNet> jointBayesNet(
+  gtsam::GaussianBayesNet* jointBayesNet(
       gtsam::Key j1, gtsam::Key j2,
       const gtsam::GaussianFactorGraph::Eliminate& function =
           gtsam::GaussianFactorGraph::Eliminate(
               gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate))
       const;
-  std::shared_ptr<gtsam::GaussianBayesNet> jointBayesNet(
+  gtsam::GaussianBayesNet* jointBayesNet(
       const gtsam::KeyVector& keys,
       const gtsam::GaussianFactorGraph::Eliminate& function =
           gtsam::GaussianFactorGraph::Eliminate(
@@ -712,7 +712,7 @@ virtual class WnoaMotionFactor : gtsam::NoiseModelFactor {
 template <POSE = {gtsam::Point1, gtsam::Point2, gtsam::Point3, gtsam::Pose2,
                   gtsam::Pose3}>
 virtual class WnoaInterpFactor : gtsam::NoiseModelFactor {
-  WnoaInterpFactor(const gtsam::NoiseModelFactor::shared_ptr inner_factor,
+  WnoaInterpFactor(const gtsam::NoiseModelFactor* inner_factor,
                    const std::set<gtsam::StateData> estimated_states,
                    const std::set<gtsam::StateData> interp_states,
                    const gtsam::Vector q_psd_diag,
@@ -852,10 +852,10 @@ template <T = {double,
                gtsam::imuBias::ConstantBias}>
 virtual class ExtendedPriorFactor : gtsam::NoiseModelFactor {
   ExtendedPriorFactor(gtsam::Key key, const T& origin,
-                      const gtsam::SharedNoiseModel& noiseModel);
+                      const gtsam::noiseModel::Base* noiseModel);
   ExtendedPriorFactor(gtsam::Key key, const T& origin,
                       const gtsam::Vector& mean,
-                      const gtsam::SharedNoiseModel& noiseModel);
+                      const gtsam::noiseModel::Base* noiseModel);
   ExtendedPriorFactor(gtsam::Key key, const T& origin,
                       const gtsam::Matrix& covariance);
   ExtendedPriorFactor(gtsam::Key key, const T& origin,
@@ -887,10 +887,10 @@ virtual class ConcentratedGaussian : gtsam::ExtendedPriorFactor<T> {
   // Constructors mirroring header (origin terminology)
   ConcentratedGaussian(
       gtsam::Key key, const T& origin,
-      const gtsam::noiseModel::Gaussian::shared_ptr& noiseModel);
+      const gtsam::noiseModel::Gaussian* noiseModel);
   ConcentratedGaussian(
       gtsam::Key key, const T& origin, const gtsam::Vector& mean,
-      const gtsam::noiseModel::Gaussian::shared_ptr& noiseModel);
+      const gtsam::noiseModel::Gaussian* noiseModel);
   ConcentratedGaussian(gtsam::Key key, const T& origin,
                        const gtsam::Matrix& covariance);
   ConcentratedGaussian(gtsam::Key key, const T& origin,
@@ -1124,7 +1124,7 @@ virtual class ExtendedKalmanFilter {
   T predict(const gtsam::NoiseModelFactor& motionFactor);
   T update(const gtsam::NoiseModelFactor& measurementFactor);
 
-  const gtsam::JacobianFactor::shared_ptr Density() const;
+  const gtsam::JacobianFactor* Density() const;
 };
 
 }  // namespace gtsam

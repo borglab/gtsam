@@ -236,7 +236,7 @@ class DiscreteBayesNet {
 class DiscreteBayesTreeClique {
   DiscreteBayesTreeClique();
   DiscreteBayesTreeClique(const gtsam::DiscreteConditional* conditional);
-  const gtsam::DiscreteConditional::shared_ptr& conditional() const;
+  const gtsam::DiscreteConditional* conditional() const;
   bool isRoot() const;
   size_t nrChildren() const;
   const gtsam::DiscreteBayesTreeClique* operator[](size_t i) const;
@@ -253,11 +253,11 @@ class DiscreteBayesTreeClique {
 class DiscreteBayesTree {
   DiscreteBayesTree();
   void insertRoot(
-      const std::shared_ptr<gtsam::DiscreteBayesTreeClique>& subtree);
+      const gtsam::DiscreteBayesTreeClique* subtree);
   void addClique(
-      const std::shared_ptr<gtsam::DiscreteBayesTreeClique>& clique,
-      const std::shared_ptr<gtsam::DiscreteBayesTreeClique>& parent_clique =
-          std::shared_ptr<gtsam::DiscreteBayesTreeClique>());
+      const gtsam::DiscreteBayesTreeClique* clique,
+      const gtsam::DiscreteBayesTreeClique* parent_clique =
+          nullptr);
 
   void print(string s = "DiscreteBayesTree\n",
              const gtsam::KeyFormatter& keyFormatter =
@@ -267,23 +267,23 @@ class DiscreteBayesTree {
   size_t size() const;
   bool empty() const;
   const DiscreteBayesTreeClique* operator[](gtsam::Key j) const;
-  const std::shared_ptr<gtsam::DiscreteBayesTreeClique>& clique(
+  const gtsam::DiscreteBayesTreeClique* clique(
       gtsam::Key j) const;
   size_t numCachedSeparatorMarginals() const;
 
-  std::shared_ptr<gtsam::DiscreteConditional> marginalFactor(
+  gtsam::DiscreteConditional* marginalFactor(
       gtsam::Key j,
       const gtsam::DiscreteFactorGraph::Eliminate& function =
           gtsam::DiscreteFactorGraph::Eliminate(
               gtsam::DiscreteFactorGraph::EliminationTraitsType::DefaultEliminate))
       const;
-  std::shared_ptr<gtsam::DiscreteFactorGraph> joint(
+  gtsam::DiscreteFactorGraph* joint(
       gtsam::Key j1, gtsam::Key j2,
       const gtsam::DiscreteFactorGraph::Eliminate& function =
           gtsam::DiscreteFactorGraph::Eliminate(
               gtsam::DiscreteFactorGraph::EliminationTraitsType::DefaultEliminate))
       const;
-  std::shared_ptr<gtsam::DiscreteBayesNet> jointBayesNet(
+  gtsam::DiscreteBayesNet* jointBayesNet(
       gtsam::Key j1, gtsam::Key j2,
       const gtsam::DiscreteFactorGraph::Eliminate& function =
           gtsam::DiscreteFactorGraph::Eliminate(
@@ -342,22 +342,22 @@ EliminateForMPE(const gtsam::DiscreteFactorGraph& factors,
 
 #include <gtsam/inference/EliminateableFactorGraph.h>
 class DiscreteFactorGraph {
-  std::shared_ptr<gtsam::DiscreteBayesNet> eliminateSequential(
+  gtsam::DiscreteBayesNet* eliminateSequential(
       gtsam::DiscreteFactorGraph::OptionalOrderingType orderingType = std::nullopt,
       const gtsam::DiscreteFactorGraph::Eliminate& function =
           gtsam::DiscreteFactorGraph::Eliminate(
               gtsam::DiscreteFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::DiscreteFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  std::shared_ptr<gtsam::DiscreteBayesNet> eliminateSequential(
+  gtsam::DiscreteBayesNet* eliminateSequential(
       const gtsam::Ordering& ordering,
       const gtsam::DiscreteFactorGraph::Eliminate& function =
           gtsam::DiscreteFactorGraph::Eliminate(
               gtsam::DiscreteFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::DiscreteFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  pair<std::shared_ptr<gtsam::DiscreteBayesNet>,
-       std::shared_ptr<gtsam::DiscreteFactorGraph>>
+  pair<gtsam::DiscreteBayesNet*,
+       gtsam::DiscreteFactorGraph*>
   eliminatePartialSequential(
       const gtsam::Ordering& ordering,
       const gtsam::DiscreteFactorGraph::Eliminate& function =
@@ -365,8 +365,8 @@ class DiscreteFactorGraph {
               gtsam::DiscreteFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::DiscreteFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  pair<std::shared_ptr<gtsam::DiscreteBayesNet>,
-       std::shared_ptr<gtsam::DiscreteFactorGraph>>
+  pair<gtsam::DiscreteBayesNet*,
+       gtsam::DiscreteFactorGraph*>
   eliminatePartialSequential(
       const gtsam::KeyVector& variables,
       const gtsam::DiscreteFactorGraph::Eliminate& function =
@@ -374,22 +374,22 @@ class DiscreteFactorGraph {
               gtsam::DiscreteFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::DiscreteFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  std::shared_ptr<gtsam::DiscreteBayesTree> eliminateMultifrontal(
+  gtsam::DiscreteBayesTree* eliminateMultifrontal(
       gtsam::DiscreteFactorGraph::OptionalOrderingType orderingType = std::nullopt,
       const gtsam::DiscreteFactorGraph::Eliminate& function =
           gtsam::DiscreteFactorGraph::Eliminate(
               gtsam::DiscreteFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::DiscreteFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  std::shared_ptr<gtsam::DiscreteBayesTree> eliminateMultifrontal(
+  gtsam::DiscreteBayesTree* eliminateMultifrontal(
       const gtsam::Ordering& ordering,
       const gtsam::DiscreteFactorGraph::Eliminate& function =
           gtsam::DiscreteFactorGraph::Eliminate(
               gtsam::DiscreteFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::DiscreteFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  pair<std::shared_ptr<gtsam::DiscreteBayesTree>,
-       std::shared_ptr<gtsam::DiscreteFactorGraph>>
+  pair<gtsam::DiscreteBayesTree*,
+       gtsam::DiscreteFactorGraph*>
   eliminatePartialMultifrontal(
       const gtsam::Ordering& ordering,
       const gtsam::DiscreteFactorGraph::Eliminate& function =
@@ -397,8 +397,8 @@ class DiscreteFactorGraph {
               gtsam::DiscreteFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::DiscreteFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  pair<std::shared_ptr<gtsam::DiscreteBayesTree>,
-       std::shared_ptr<gtsam::DiscreteFactorGraph>>
+  pair<gtsam::DiscreteBayesTree*,
+       gtsam::DiscreteFactorGraph*>
   eliminatePartialMultifrontal(
       const gtsam::KeyVector& variables,
       const gtsam::DiscreteFactorGraph::Eliminate& function =

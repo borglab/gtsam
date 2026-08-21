@@ -6,7 +6,7 @@ namespace gtsam {
 //
 // The constructor intentionally accepts gtsam::noiseModel::Base* here because
 // that matches the generated MATLAB wrapper surface. The corresponding C++
-// constructor takes noiseModel::Base::shared_ptr after unwrap.
+// constructor receives the unwrapped shared-ownership handle.
 #include <MatlabCustomFactor.h>
 virtual class MatlabCustomFactor : gtsam::NoiseModelFactor {
   MatlabCustomFactor(gtsam::noiseModel::Base* noiseModel,

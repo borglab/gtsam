@@ -107,9 +107,9 @@ class LpProblem : gtsam::ConstrainedOptProblem {
   double objective(const gtsam::Values& values) const;
   gtsam::Values optimize(
       const gtsam::Values& initialValues,
-      std::shared_ptr<gtsam::ActiveSetSolverParams> params = nullptr) const;
+      gtsam::ActiveSetSolverParams* params = nullptr) const;
   gtsam::Values optimize(
-      std::shared_ptr<gtsam::ActiveSetSolverParams> params = nullptr) const;
+      gtsam::ActiveSetSolverParams* params = nullptr) const;
 };
 
 #include <gtsam/constrained/QpCost.h>
@@ -224,7 +224,7 @@ virtual class AugmentedLagrangianOptimizer {
   AugmentedLagrangianOptimizer(
       const gtsam::ConstrainedOptProblem& problem,
       const gtsam::Values& initialValues,
-      gtsam::AugmentedLagrangianParams::shared_ptr p);
+      gtsam::AugmentedLagrangianParams* p);
 
   gtsam::Values optimize() const;
 };

@@ -39,8 +39,8 @@ void SmartStereoProjectionPoseFactor::add(
 }
 
 void SmartStereoProjectionPoseFactor::add(
-    const std::vector<StereoPoint2>& measurements, const KeyVector& poseKeys,
-    const std::vector<std::shared_ptr<Cal3_S2Stereo>>& Ks) {
+    const StereoPoint2Vector& measurements, const KeyVector& poseKeys,
+    const Cal3_S2StereoVector& Ks) {
   assert(measurements.size() == poseKeys.size());
   assert(poseKeys.size() == Ks.size());
   Base::add(measurements, poseKeys);
@@ -48,7 +48,7 @@ void SmartStereoProjectionPoseFactor::add(
 }
 
 void SmartStereoProjectionPoseFactor::add(
-    const std::vector<StereoPoint2>& measurements, const KeyVector& poseKeys,
+    const StereoPoint2Vector& measurements, const KeyVector& poseKeys,
     const std::shared_ptr<Cal3_S2Stereo>& K) {
   assert(poseKeys.size() == measurements.size());
   for (size_t i = 0; i < measurements.size(); i++) {

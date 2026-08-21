@@ -193,10 +193,10 @@ class FitBasis {
 
   static gtsam::NonlinearFactorGraph NonlinearGraph(
       const std::map<double, double>& sequence,
-      const std::shared_ptr<gtsam::noiseModel::Base>& model, size_t N);
-  static gtsam::GaussianFactorGraph::shared_ptr LinearGraph(
+      const gtsam::noiseModel::Base* model, size_t N);
+  static gtsam::GaussianFactorGraph* LinearGraph(
       const std::map<double, double>& sequence,
-      const std::shared_ptr<gtsam::noiseModel::Base>& model, size_t N);
+      const gtsam::noiseModel::Base* model, size_t N);
   gtsam::This::Parameters parameters() const;
 };
 

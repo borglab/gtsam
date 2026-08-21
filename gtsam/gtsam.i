@@ -187,8 +187,8 @@ void insertBackprojections(gtsam::Values& values,
 void insertProjectionFactors(
     gtsam::NonlinearFactorGraph& graph, gtsam::Key i, const gtsam::Vector& J,
     gtsam::ConstMatrixView Z,
-    const std::shared_ptr<gtsam::noiseModel::Base>& model,
-    const gtsam::Cal3_S2::shared_ptr K,
+    const gtsam::noiseModel::Base* model,
+    const gtsam::Cal3_S2* K,
     const gtsam::Pose3& body_P_sensor = gtsam::Pose3());
 gtsam::Matrix reprojectionErrors(const gtsam::NonlinearFactorGraph& graph,
                           const gtsam::Values& values);

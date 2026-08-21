@@ -576,7 +576,7 @@ virtual class ProjectionFactorPPP : gtsam::NoiseModelFactor {
       gtsam::Key poseKey, gtsam::Key transformKey, gtsam::Key pointKey, const CALIBRATION* k, bool throwCheirality, bool verboseCheirality);
 
   const gtsam::Point2& measured() const;
-  const std::shared_ptr<CALIBRATION> calibration() const;
+  const CALIBRATION* calibration() const;
   bool verboseCheirality() const;
   bool throwCheirality() const;
 
@@ -635,6 +635,26 @@ virtual class SmartStereoProjectionFactor : gtsam::NonlinearFactor {
 };
 
 #include <gtsam_unstable/slam/SmartStereoProjectionPoseFactor.h>
+// Stereo measurement container used by the MATLAB wrapper.
+class StereoPoint2Vector {
+  StereoPoint2Vector();
+  size_t size() const;
+  bool empty() const;
+  void clear();
+  gtsam::StereoPoint2 at(size_t i) const;
+  void push_back(const gtsam::StereoPoint2& measurement);
+};
+
+// Shared Cal3_S2Stereo container used by the MATLAB wrapper.
+class Cal3_S2StereoVector {
+  Cal3_S2StereoVector();
+  size_t size() const;
+  bool empty() const;
+  void clear();
+  gtsam::Cal3_S2Stereo* at(size_t i) const;
+  void push_back(const gtsam::Cal3_S2Stereo* calibration);
+};
+
 virtual class SmartStereoProjectionPoseFactor : gtsam::SmartStereoProjectionFactor {
   SmartStereoProjectionPoseFactor(const gtsam::noiseModel::Base* sharedNoiseModel,
       const gtsam::SmartProjectionParams& params,
@@ -644,15 +664,15 @@ virtual class SmartStereoProjectionPoseFactor : gtsam::SmartStereoProjectionFact
   SmartStereoProjectionPoseFactor(const gtsam::noiseModel::Base* sharedNoiseModel);
 
   void add(const gtsam::StereoPoint2& measured, const gtsam::Key& poseKey,
-      const std::shared_ptr<gtsam::Cal3_S2Stereo>& K);
-  void add(const std::vector<gtsam::StereoPoint2>& measurements,
+      const gtsam::Cal3_S2Stereo* K);
+  void add(const gtsam::StereoPoint2Vector& measurements,
       const gtsam::KeyVector& poseKeys,
-      const std::vector<std::shared_ptr<gtsam::Cal3_S2Stereo>>& Ks);
-  void add(const std::vector<gtsam::StereoPoint2>& measurements,
+      const gtsam::Cal3_S2StereoVector& Ks);
+  void add(const gtsam::StereoPoint2Vector& measurements,
       const gtsam::KeyVector& poseKeys,
-      const std::shared_ptr<gtsam::Cal3_S2Stereo>& K);
+      const gtsam::Cal3_S2Stereo* K);
 
-  std::vector<std::shared_ptr<gtsam::Cal3_S2Stereo>> calibration() const;
+  gtsam::Cal3_S2StereoVector calibration() const;
 };
 
 #include <gtsam_unstable/slam/ProjectionFactorRollingShutter.h>
@@ -673,7 +693,7 @@ virtual class ProjectionFactorRollingShutter : gtsam::NoiseModelFactor {
 
   const gtsam::Point2& measured() const;
   double alpha() const;
-  const std::shared_ptr<gtsam::Cal3_S2> calibration() const;
+  const gtsam::Cal3_S2* calibration() const;
   bool verboseCheirality() const;
   bool throwCheirality() const;
 
@@ -733,7 +753,7 @@ class EqVIOFilter {
   void initializeFromIMU(const gtsam::eqvio::IMUInput& imu);
   void predict(const gtsam::eqvio::IMUInput& imu, double dt);
   void update(const std::map<gtsam::Key, gtsam::Point2>& measurement,
-              const std::shared_ptr<const gtsam::eqvio::CameraModel>& camera,
+              const gtsam::eqvio::CameraModel* camera,
               const gtsam::Matrix& R);
 
   bool isInitialized() const;

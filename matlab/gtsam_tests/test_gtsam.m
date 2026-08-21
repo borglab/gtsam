@@ -24,6 +24,14 @@ testValues
 display 'Starting: testCustomFactor'
 testCustomFactor
 
+display 'Starting: testSharedPointers'
+testSharedPointers
+
+if ~isempty(which('gtsam.SmartStereoProjectionPoseFactor'))
+    display 'Starting: testUnstableSharedPointers'
+    testUnstableSharedPointers
+end
+
 %% SLAM
 display 'Starting: testPriorFactor'
 testPriorFactor
