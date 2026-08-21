@@ -29,9 +29,9 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #if GTSAM_ENABLE_CUDA
 #include <gtsam/nonlinear/cuda/SparseLevenbergMarquardt.h>
-#include <gtsam/slam/cuda/SfmLevenbergMarquardt.h>
-#include <gtsam/slam/cuda/internal/SfmProjectionBatch.h>
-#include <gtsam/slam/cuda/internal/SfmReducedCsrPlan.h>
+#include <gtsam/sfm/cuda/SfmLevenbergMarquardt.h>
+#include <gtsam/sfm/cuda/internal/SfmProjectionBatch.h>
+#include <gtsam/sfm/cuda/internal/SfmReducedCsrPlan.h>
 #endif
 
 #include <algorithm>

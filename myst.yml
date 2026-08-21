@@ -41,6 +41,9 @@ project:
       - file: ./gtsam/navigation/navigation.md
         children:
         - pattern: ./gtsam/navigation/doc/*
+      - file: ./gtsam/sfm/sfm.md
+        children:
+        - pattern: ./gtsam/sfm/doc/*
       - file: ./gtsam/slam/slam.md
         children:
         - pattern: ./gtsam/slam/doc/*
@@ -63,6 +66,7 @@ site:
   options:
     logo_text: GTSAM
     style: ./doc/gtsam-site.css
+    favicon: ./doc/gt-favicon.svg
   template: book-theme
 
   # TODO: Graphics for favicon, site logo

@@ -22,7 +22,7 @@
 #include <gtsam/base/cuda/PinnedHostArray.h>
 #include <gtsam/dllexport.h>
 #include <gtsam/nonlinear/cuda/internal/DeviceValues.h>
-#include <gtsam/slam/cuda/internal/SfmProjectionBatch.h>
+#include <gtsam/sfm/cuda/internal/SfmProjectionBatch.h>
 
 #include <cuda_runtime_api.h>
 

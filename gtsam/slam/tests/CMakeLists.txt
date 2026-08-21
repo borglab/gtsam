@@ -7,8 +7,4 @@ else()
   set(EXCLUDE_TESTS "")
 endif()
 
-if(NOT GTSAM_ENABLE_CUDA AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/testCudaSfm.cpp")
-  list(APPEND EXCLUDE_TESTS "testCudaSfm.cpp")
-endif()
-
 gtsamAddTestsGlob(slam "test*.cpp" "${EXCLUDE_TESTS}" "gtsam")

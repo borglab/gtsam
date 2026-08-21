@@ -23,8 +23,8 @@
 #include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
 #include <gtsam/linear/cuda/LinearSystem.h>
 #include <gtsam/nonlinear/cuda/internal/DeviceValues.h>
-#include <gtsam/slam/cuda/internal/SfmProjectionBatch.h>
-#include <gtsam/slam/cuda/internal/SfmProjectionLinearization.h>
+#include <gtsam/sfm/cuda/internal/SfmProjectionBatch.h>
+#include <gtsam/sfm/cuda/internal/SfmProjectionLinearization.h>
 
 #include <cuda_runtime_api.h>
 

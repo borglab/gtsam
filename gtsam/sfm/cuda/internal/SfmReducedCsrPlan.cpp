@@ -16,7 +16,7 @@
  * @date    Aug 16, 2026
  */
 
-#include <gtsam/slam/cuda/internal/SfmReducedCsrPlan.h>
+#include <gtsam/sfm/cuda/internal/SfmReducedCsrPlan.h>
 
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 

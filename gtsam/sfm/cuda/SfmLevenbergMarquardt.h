@@ -24,7 +24,7 @@
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/SfmData.h>
-#include <gtsam/slam/cuda/SfmTypes.h>
+#include <gtsam/sfm/cuda/SfmTypes.h>
 
 #include <cstddef>
 #include <memory>

@@ -17,8 +17,8 @@
  */
 
 #include <gtsam/base/cuda/Errors.h>
-#include <gtsam/slam/cuda/internal/SfmSchurProblem.h>
-#include <gtsam/slam/cuda/internal/SfmSparseSchur.h>
+#include <gtsam/sfm/cuda/internal/SfmSchurProblem.h>
+#include <gtsam/sfm/cuda/internal/SfmSparseSchur.h>
 
 #include <cmath>
 #include <limits>
