@@ -359,10 +359,15 @@ TEST_PIM(ImuFactorCovariance, CombinedTheoreticalResidualChart) {
   EXPECT(nativeCrossCovarianceNorm > 1e-8);
 
   const Matrix15 expected = theoreticalCombinedResidualCovariance(pim);
+  const Matrix15 converted = pim.residualCovariance();
   const Matrix15 installed = installedCombinedFactorCovariance(pim);
   const Matrix15 installedWithGravity =
       installedCombinedGravityFactorCovariance(pim);
 
+  expectRelativeCovarianceErrorBelow(
+      converted, expected, pim, 1e-10,
+      "combined PIM residual covariance vs theoretical residual covariance",
+      result_, name_, __FILE__, __LINE__);
   expectRelativeCovarianceErrorBelow(
       installed, expected, pim, 1e-10,
       "installed combined factor covariance vs theoretical residual "

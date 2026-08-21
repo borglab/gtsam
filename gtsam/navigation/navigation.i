@@ -375,6 +375,7 @@ class PreintegratedCombinedMeasurements {
   void resetIntegrationAndSetBias(const gtsam::imuBias::ConstantBias& biasHat);
 
   gtsam::Matrix preintMeasCov() const;
+  gtsam::Matrix residualCovariance() const;
   double deltaTij() const;
   gtsam::Rot3 deltaRij() const;
   gtsam::Vector3 deltaPij() const;
