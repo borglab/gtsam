@@ -29,7 +29,6 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam/geometry/Unit2.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -228,7 +227,13 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
   using Point = Eigen::Matrix<double, d, 1>;
   // The auxiliary direction has no analogue in the pose-only examples, so its
   // type is derived here rather than passed in.
-  using DirT = typename std::conditional<d == 2, Unit2, Unit3>::type;
+  using DirT = typename std::conditional<d == 2, Rot2, Unit3>::type;
+  constexpr int kDirectionRows = QuadraticRangeFactor<d>::kDirectionRows;
+
+  const auto directionFrom = [](const Point& v) -> DirT {
+    if constexpr (d == 2) return Rot2::atan2(v.y(), v.x());
+    else return DirT(v);
+  };
 
   const Dataset<d> data = readPyfg<d>(path);
   if (data.ranges.empty()) {
@@ -267,12 +272,8 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
   // Initialization
   const auto initializationStart = std::chrono::steady_clock::now();
   Values initial;
-  const bool warmStart = initializationMethod == InitializationMethod::FastSync;
-  if (warmStart) {
-    // Rotations come from the spectral estimate over the odometry subgraph
-    // alone, the same warm start the PGO and landmark examples use.
-    // Translations and landmarks are unconstrained by it and still need a
-    // guess.
+  if (initializationMethod == InitializationMethod::FastSync) {
+    // fastSync only do rotation initialization here.
     NonlinearFactorGraph rotationGraph;
     for (const auto& edge : data.odometry) {
       rotationGraph.emplace_shared<FrobeniusBetweenFactor<RotT>>(
@@ -291,24 +292,9 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
     }
     for (const auto& [name, index] : data.landmarkIds)
       initial.insert(landmarkKey(index), randomBlock(1, p, rng, false));
-    // Each auxiliary's optimal value is determined by the two positions it
-    // links, so derive it rather than guessing.
-    for (size_t m = 0; m < data.ranges.size(); ++m) {
-      const auto& r = data.ranges[m];
-      const Key targetKey = r.targetIsLandmark ? landmarkKey(r.targetIndex)
-                                               : translationKey(r.targetIndex);
-      const Matrix from = initial.at<Matrix>(translationKey(r.poseIndex));
-      const Matrix to = initial.at<Matrix>(targetKey);
-      Matrix u = to - from;
-      const double norm = u.norm();
-      if (norm > 1e-12) {
-        u /= norm;
-      } else {
-        u = Matrix::Zero(1, p);
-        u(0, 0) = 1.0;
-      }
-      initial.insert(unitVectorKey(m), u);
-    }
+    for (size_t m = 0; m < data.ranges.size(); ++m)
+      initial.insert(unitVectorKey(m),
+                     randomBlock(kDirectionRows, p, rng, true));
   } else {
     for (const auto& [name, index] : data.poseIds) {
       initial.insert(rotationKey(index), randomBlock(d, p, rng, true));
@@ -316,15 +302,9 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
     }
     for (const auto& [name, index] : data.landmarkIds)
       initial.insert(landmarkKey(index), randomBlock(1, p, rng, false));
-    // The auxiliary is a unit vector, so sample a random direction in the
-    // leading d columns of its lifted row.
-    std::normal_distribution<double> normal(0.0, 1.0);
-    for (size_t m = 0; m < data.ranges.size(); ++m) {
-      Matrix X = Matrix::Zero(1, p);
-      for (int c = 0; c < d; ++c) X(0, c) = normal(rng);
-      X.leftCols(d).normalize();
-      initial.insert(unitVectorKey(m), X);
-    }
+    for (size_t m = 0; m < data.ranges.size(); ++m)
+      initial.insert(unitVectorKey(m),
+                     randomBlock(kDirectionRows, p, rng, true));
   }
   const double initializationSeconds =
       std::chrono::duration<double>(std::chrono::steady_clock::now() -
@@ -355,8 +335,11 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
     Values atRankD = atRankDInput;
     alignBlockDetSigns<d>(atRankD, data.poseIds.size());
     Values typed;
-    for (auto& [key, R] : ExtractQcqpValues<RotT, d>(atRankD))
-      typed.insert(key, R);
+    // ExtractQcqpValues selects by block shape, and a lifted Rot2 auxiliary
+    // has the same shape as a lifted rotation, so select by key instead.
+    for (size_t i = 0; i < data.poseIds.size(); ++i)
+      typed.insert(rotationKey(i), traits<RotT>::template FromQcqpValue<d>(
+                                       atRankD.at<Matrix>(rotationKey(i))));
     for (size_t i = 0; i < data.poseIds.size(); ++i)
       typed.insert(translationKey(i),
                    Point(atRankD.at<Matrix>(translationKey(i))
@@ -366,22 +349,10 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
                    Point(atRankD.at<Matrix>(landmarkKey(k))
                              .row(0).transpose()));
 
-    for (size_t m = 0; m < data.ranges.size(); ++m) {
-      const auto& r = data.ranges[m];
-      const Key targetKey = r.targetIsLandmark ? landmarkKey(r.targetIndex)
-                                               : translationKey(r.targetIndex);
-      const Point offset = typed.at<Point>(targetKey) -
-                           typed.at<Point>(translationKey(r.poseIndex));
-      const double norm = offset.norm();
-
-      if (norm > 1e-12) {
-        typed.insert(unitVectorKey(m), DirT(offset / norm));
-      } else {
-        typed.insert(unitVectorKey(m),
-                     traits<DirT>::template FromQcqpValue<d>(
-                         atRankD.at<Matrix>(unitVectorKey(m))));
-      }
-    }
+    for (size_t m = 0; m < data.ranges.size(); ++m)
+      typed.insert(unitVectorKey(m),
+                   directionFrom(Point(atRankD.at<Matrix>(unitVectorKey(m))
+                                           .row(0).head(d).transpose())));
     return typed;
   };
 

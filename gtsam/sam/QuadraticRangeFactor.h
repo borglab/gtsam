@@ -22,6 +22,9 @@
  *
  *          Its minimum over the unit sphere is the raw residual, so the
  *          reformulation is exact (see [1]).
+ *
+ *          The auxiliary uses Rot2 in 2D and Unit3 in 3D; in 2D the unit
+ *          vector is the rotation's first column, u = R * e_1.
  * @author  Zhexin Xu
  *
  * REFERENCES:
@@ -39,7 +42,7 @@
 #include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/constrained/QpCost.h>
 #include <gtsam/constrained/QuadraticConstraint.h>
-#include <gtsam/geometry/Unit2.h>
+#include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -55,26 +58,29 @@ template <int d>
 class QuadraticRangeFactor
     : public NoiseModelFactorN<
           Eigen::Matrix<double, d, 1>, Eigen::Matrix<double, d, 1>,
-          typename std::conditional<d == 2, Unit2, Unit3>::type> {
+          typename std::conditional<d == 2, Rot2, Unit3>::type> {
   static_assert(d == 2 || d == 3,
                 "QuadraticRangeFactor supports d = 2 or 3.");
 
   using Point = Eigen::Matrix<double, d, 1>;
-  /// The auxiliary is a direction, and its unit-norm constraint comes from
-  /// that type's QCQP traits.
-  using Direction = typename std::conditional<d == 2, Unit2, Unit3>::type;
+  /// Lifted constraints come from the type's own QCQP traits.
+  using Direction = typename std::conditional<d == 2, Rot2, Unit3>::type;
   using Base = NoiseModelFactorN<Point, Point, Direction>;
 
   double range_;   ///< measured distance
   double weight_;  ///< measurement precision, nu
 
  public:
+  /// Rows the lifted direction occupies: a Rot2 frame has two, only the first
+  /// of which carries the direction; a Unit3 has one.
+  static constexpr int kDirectionRows = (d == 2) ? 2 : 1;
+
   using Base::evaluateError;
 
   /**
    * @param translationKey Translation of the pose the range is measured from.
    * @param targetKey Landmark or position the range is measured to.
-   * @param unitVectorKey Auxiliary unit vector for this measurement.
+   * @param unitVectorKey Auxiliary direction for this measurement.
    * @param range Measured distance.
    * @param weight Measurement precision, nu.
    */
@@ -114,12 +120,16 @@ class QuadraticRangeFactor
   }
 
   /// Weighted residual `sqrt(weight) * (target - t_i - range * u)`.
+  /// In "d == 2", we use Rot2 to replace Unit2
   Vector evaluateError(const Point& translation, const Point& target,
                        const Direction& direction, OptionalMatrixType H1,
                        OptionalMatrixType H2,
                        OptionalMatrixType H3) const override {
     const double sw = std::sqrt(weight_);
-    const Point u = direction.unitVector();
+    const Point u = [&direction] {
+      if constexpr (d == 2) return Point(direction.c(), direction.s());
+      else return direction.unitVector();
+    }();
     if (H1) *H1 = -sw * Matrix::Identity(d, d);
     if (H2) *H2 = sw * Matrix::Identity(d, d);
     if (H3) {
@@ -137,7 +147,8 @@ class QuadraticRangeFactor
 
   gtsam::NonlinearFactor::shared_ptr clone() const override {
     return std::static_pointer_cast<gtsam::NonlinearFactor>(
-        gtsam::NonlinearFactor::shared_ptr(new QuadraticRangeFactor(*this)));
+        gtsam::NonlinearFactor::shared_ptr(
+            new QuadraticRangeFactor(*this)));
   }
 
   /// Add this range factor as a QCQP cost when traits exist.
@@ -146,25 +157,27 @@ class QuadraticRangeFactor
                    size_t columnDimension = 1) const override {
     if (columnDimension < static_cast<size_t>(d)) {
       throw std::invalid_argument(
-          "QuadraticRangeFactor::qcqpFactors requires columnDimension >= d.");
+          "QuadraticRangeFactor::qcqpFactors requires columnDimension "
+          ">= d.");
     }
     if (!costs) {
       throw std::invalid_argument(
           "QuadraticRangeFactor::qcqpFactors: costs is null.");
     }
 
-    // The auxiliary's unit-norm constraint comes from its own type's traits,
-    // exactly as a rotation's orthonormality comes from Rot2 or Rot3.
     InsertQcqpConstraints<Direction, d>(this->key3(), constraints);
 
+    /// The direction is a Rot2 in 2D, which takes 2 rows, and a Unit3 in 3D,
+    /// which takes 1. Only the first row is used; any others stay zero.
     const double sw = std::sqrt(weight_);
-    Matrix B = Matrix::Zero(1, 3);
+    Matrix B = Matrix::Zero(1, 2 + kDirectionRows);
     B(0, 0) = -sw;            // pose translation
     B(0, 1) = sw;             // target
-    B(0, 2) = -sw * range_;   // auxiliary unit vector
+    B(0, 2) = -sw * range_;   // leading row of the auxiliary direction
 
     const Matrix Q = B.transpose() * B;
-    const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{1, 1, 1}, Q);
+    const SymmetricBlockMatrix blockQ(
+        std::vector<DenseIndex>{1, 1, kDirectionRows}, Q);
     costs->push_back(std::make_shared<QpCost>(
         KeyVector{this->key1(), this->key2(), this->key3()}, blockQ,
         columnDimension));

@@ -245,14 +245,9 @@ GTSAM_EXPORT Point3 cross(const Point3& p, const Unit3& q,
 /**
  * QCQP traits for the unit sphere S^2.
  *
- * A direction lifts to a single row of length D, and the only constraint is
- * `trace(X' A X) = 1` with `A = I_1`, i.e. `||X||^2 = 1`. Both the row count and
- * the constraint are independent of the ambient dimension, so `Unit2` declares
- * exactly the same pair; only recovery differs.
- *
  * The lift is a relaxation of the sphere: at D = 3 the row is a unit vector in
- * R^3, and at D > 3 it is a point on S^{D-1}, which is the lifted sphere the
- * Burer-Monteiro relaxation searches over.
+ * R^3, and at D > 3 it is in S^{D-1}, which is the lifted sphere the
+ * Burer-Monteiro method searches over.
  */
 template <>
 struct traits<Unit3> : public internal::Manifold<Unit3> {

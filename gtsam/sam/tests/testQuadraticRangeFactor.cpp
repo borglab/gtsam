@@ -186,26 +186,26 @@ const Key kTi = Symbol('t', 0);
 const Key kTarget = Symbol('l', 0);
 const Key kU = Symbol('u', 0);
 
-// The planar factor behaves the same way over Unit2, including the H3 tangent,
+// The planar factor behaves the same way over Rot2, including the H3 tangent,
 // which is one-dimensional there rather than two.
 TEST(QuadraticRangeFactor, PlanarJacobiansMatchNumericalDerivative) {
   const Vector2 ti(0.3, -0.2), target(1.4, 0.9);
-  const Unit2 u = Unit2::FromAngle(0.7);
+  const Rot2 u = Rot2(0.7);
   const double range = 1.1, weight = 2.0;
   const QuadraticRangeFactor2 factor(kTi, kTarget, kU, range, weight);
 
   Matrix H1, H2, H3;
   factor.evaluateError(ti, target, u, H1, H2, H3);
 
-  auto f = [&](const Vector2& a, const Vector2& b, const Unit2& direction) {
+  auto f = [&](const Vector2& a, const Vector2& b, const Rot2& direction) {
     return factor.evaluateError(a, b, direction, {}, {}, {});
   };
   const Matrix numH1 =
-      numericalDerivative31<Vector, Vector2, Vector2, Unit2>(f, ti, target, u);
+      numericalDerivative31<Vector, Vector2, Vector2, Rot2>(f, ti, target, u);
   const Matrix numH2 =
-      numericalDerivative32<Vector, Vector2, Vector2, Unit2>(f, ti, target, u);
+      numericalDerivative32<Vector, Vector2, Vector2, Rot2>(f, ti, target, u);
   const Matrix numH3 =
-      numericalDerivative33<Vector, Vector2, Vector2, Unit2>(f, ti, target, u);
+      numericalDerivative33<Vector, Vector2, Vector2, Rot2>(f, ti, target, u);
 
   EXPECT(assert_equal(numH1, H1, 1e-7));
   EXPECT(assert_equal(numH2, H2, 1e-7));
@@ -221,10 +221,10 @@ const Key kTarget = Symbol('l', 0);
 const Key kU = Symbol('u', 0);
 
 // The lifted cost evaluated at the rank-d lift agrees with the typed residual,
-// which pins the whole 3-by-3 block rather than one entry of it.
+// which pins the whole cost block rather than one entry of it.
 TEST(QuadraticRangeFactor, QcqpCostMatchesTypedResidual) {
   const Vector2 ti(0.4, -0.2), target(1.9, 0.7);
-  const Unit2 u = Unit2::FromAngle(0.35);
+  const Rot2 u = Rot2(0.35);
   const double range = 1.4, weight = 2.25;
   const QuadraticRangeFactor2 factor(kTi, kTarget, kU, range, weight);
 
@@ -236,32 +236,102 @@ TEST(QuadraticRangeFactor, QcqpCostMatchesTypedResidual) {
   Values Y;
   Y.insert(kTi, Matrix(ti.transpose()));
   Y.insert(kTarget, Matrix(target.transpose()));
-  Y.insert(kU, Matrix(u.unitVector().transpose()));
+  Y.insert(kU, traits<Rot2>::QcqpValue<2>(u));
 
   const double directCost =
       0.5 * factor.evaluateError(ti, target, u, {}, {}, {}).squaredNorm();
   EXPECT_DOUBLES_EQUAL(directCost, costs.error(Y), 1e-10);
 }
 
-// The factor owns the auxiliary, so it emits exactly one unit-norm constraint,
-// and that constraint comes from the direction type's own QCQP traits rather
-// than being written out here.
-TEST(QuadraticRangeFactor, EmitsOneUnitNormConstraintForItsAuxiliary) {
+// The factor owns the auxiliary, so it emits that direction type's own QCQP
+// constraints rather than writing them out here: three row-orthonormality
+// constraints for the planar Rot2 frame.
+TEST(QuadraticRangeFactor, EmitsItsAuxiliarysOwnConstraints) {
   const QuadraticRangeFactor2 factor(kTi, kTarget, kU, 1.0, 1.0);
 
   NonlinearFactorGraph costs;
   NonlinearEqualityConstraints constraints;
   factor.qcqpFactors(&costs, &constraints, 2);
 
-  EXPECT_LONGS_EQUAL(1, static_cast<long>(constraints.size()));
-  const auto quadratic =
-      std::dynamic_pointer_cast<QuadraticEqualityConstraintFactor>(
-          constraints.at(0));
-  CHECK(quadratic);
-  const QuadraticConstraint& constraint = quadratic->quadraticConstraint();
-  EXPECT(constraint.key() == kU);
-  EXPECT_DOUBLES_EQUAL(1.0, constraint.b(), 1e-12);
-  EXPECT(assert_equal(Matrix(Matrix::Identity(1, 1)), constraint.A(), 1e-12));
+  const auto expected = traits<Rot2>::QcqpConstraints<2>();
+  EXPECT_LONGS_EQUAL(static_cast<long>(expected.size()),
+                     static_cast<long>(constraints.size()));
+  for (size_t i = 0; i < expected.size(); ++i) {
+    const auto quadratic =
+        std::dynamic_pointer_cast<QuadraticEqualityConstraintFactor>(
+            constraints.at(i));
+    CHECK(quadratic);
+    const QuadraticConstraint& constraint = quadratic->quadraticConstraint();
+    EXPECT(constraint.key() == kU);
+    EXPECT_DOUBLES_EQUAL(expected[i].second, constraint.b(), 1e-12);
+    EXPECT(assert_equal(expected[i].first, constraint.A(), 1e-12));
+  }
+}
+
+// The QCQP cost multiplies the auxiliary's leading lifted row while the typed
+// residual uses u = R * e_1, so the two must be the same vector.
+// traits<Rot2>::QcqpValue stores R transposed, which is what makes that hold.
+TEST(QuadraticRangeFactor, LiftedLeadingRowIsTheUnitVector) {
+  const Rot2 u = Rot2(0.7);
+  const Matrix X = traits<Rot2>::QcqpValue<4>(u);
+  EXPECT_LONGS_EQUAL(QuadraticRangeFactor2::kDirectionRows,
+                     static_cast<long>(X.rows()));
+  EXPECT(assert_equal(Vector2(u.c(), u.s()),
+                      Vector2(X.row(0).head<2>().transpose()), 1e-12));
+  // And recovery inverts it, reading only that row.
+  EXPECT_DOUBLES_EQUAL(u.theta(), Rot2::atan2(X(0, 1), X(0, 0)).theta(), 1e-12);
+}
+
+// The same cost agreement in 3D, where the Unit3 auxiliary occupies one lifted
+// row rather than two.
+TEST(QuadraticRangeFactor, QcqpCostMatchesTypedResidualIn3D) {
+  const Vector3 ti(0.4, -0.2, 0.1), target(1.9, 0.7, -0.3);
+  const Unit3 u(Point3(0.3, -0.5, 0.8));
+  const double range = 1.4, weight = 2.25;
+  const QuadraticRangeFactor3 factor(kTi, kTarget, kU, range, weight);
+
+  NonlinearFactorGraph costs;
+  NonlinearEqualityConstraints constraints;
+  factor.qcqpFactors(&costs, &constraints, /*columnDimension=*/3);
+  EXPECT_LONGS_EQUAL(1, static_cast<long>(costs.size()));
+
+  Values Y;
+  Y.insert(kTi, Matrix(ti.transpose()));
+  Y.insert(kTarget, Matrix(target.transpose()));
+  Y.insert(kU, traits<Unit3>::QcqpValue<3>(u));
+
+  const double directCost =
+      0.5 * factor.evaluateError(ti, target, u, {}, {}, {}).squaredNorm();
+  EXPECT_DOUBLES_EQUAL(directCost, costs.error(Y), 1e-10);
+}
+
+// Lifting pads the variables with zero columns, so the cost at rank p > d has
+// to stay equal to the cost at rank d as the staircase climbs.
+TEST(QuadraticRangeFactor, QcqpCostIsUnchangedByLifting) {
+  const Vector2 ti(0.4, -0.2), target(1.9, 0.7);
+  const Rot2 u = Rot2(0.35);
+  const QuadraticRangeFactor2 factor(kTi, kTarget, kU, 1.4, 2.25);
+  const double expected =
+      0.5 * factor.evaluateError(ti, target, u, {}, {}, {}).squaredNorm();
+
+  for (int p : {2, 3, 5}) {
+    NonlinearFactorGraph costs;
+    NonlinearEqualityConstraints constraints;
+    factor.qcqpFactors(&costs, &constraints, static_cast<size_t>(p));
+
+    Matrix translation = Matrix::Zero(1, p), landmark = Matrix::Zero(1, p);
+    translation.leftCols<2>() = ti.transpose();
+    landmark.leftCols<2>() = target.transpose();
+    Matrix direction =
+        Matrix::Zero(QuadraticRangeFactor2::kDirectionRows, p);
+    direction.leftCols<2>() = traits<Rot2>::QcqpValue<2>(u);
+
+    Values Y;
+    Y.insert(kTi, translation);
+    Y.insert(kTarget, landmark);
+    Y.insert(kU, direction);
+    EXPECT_DOUBLES_EQUAL(expected, costs.error(Y), 1e-10);
+  }
 }
 
 // A column dimension below the ambient dimension cannot represent the lift.
