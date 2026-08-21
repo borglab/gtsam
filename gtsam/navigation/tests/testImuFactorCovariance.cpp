@@ -172,10 +172,15 @@ TEST_PIM(ImuFactorCovariance, TheoreticalResidualChart) {
   const auto params = makeParams();
   const PIM pim = integrateIdealMeasurements<PIM>(params);
   const Matrix9 expected = theoreticalResidualCovariance(pim);
-  const Matrix9 actual = installedFactorCovariance(pim);
+  const Matrix9 converted = pim.residualCovariance();
+  const Matrix9 installed = installedFactorCovariance(pim);
 
   expectRelativeCovarianceErrorBelow(
-      actual, expected, pim, 1e-10,
+      converted, expected, pim, 1e-10,
+      "PIM residual covariance vs theoretical residual covariance", result_,
+      name_, __FILE__, __LINE__);
+  expectRelativeCovarianceErrorBelow(
+      installed, expected, pim, 1e-10,
       "installed factor covariance vs theoretical residual covariance", result_,
       name_, __FILE__, __LINE__);
 }

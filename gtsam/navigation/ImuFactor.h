@@ -146,6 +146,35 @@ public:
   /// Return pre-integrated measurement covariance
   Matrix preintMeasCov() const { return preintMeasCov_; }
 
+  /**
+   * Express the covariance propagated by the selected backend in the
+   * NavState local-coordinate chart used by the IMU factor residual.
+   *
+   * TangentPreintegration propagates covariance for additive perturbations of
+   * \f$\zeta=(\theta,p,v)\f$. The unchanged factor residual instead uses
+   * NavState::localCoordinates at the predicted state. At zero residual, the
+   * differential from the additive chart to that residual chart is
+   * \f[
+   * J = \operatorname{diag}\left(J_r(\theta),\Delta R^T,\Delta R^T\right),
+   * \qquad \Delta R=\operatorname{Exp}(\theta),
+   * \f]
+   * where \f$J_r\f$ is the SO(3) right Jacobian. Therefore its covariance is
+   * converted as \f$J P J^T\f$. ManifoldPreintegration and
+   * LieGroupPreintegration already propagate covariance in the residual chart
+   * and return it unchanged. This conversion does not redefine the nonlinear
+   * residual or alter the raw covariance returned by preintMeasCov().
+   */
+  Matrix9 residualCovariance() const {
+    if constexpr (std::is_same_v<PreintegrationType,
+                                 TangentPreintegration>) {
+      Matrix9 chartJacobian;
+      NavState().retract(this->preintegrated_, {}, &chartJacobian);
+      return chartJacobian * preintMeasCov_ * chartJacobian.transpose();
+    } else {
+      return preintMeasCov_;
+    }
+  }
+
   /// Merge in a different set of measurements and update bias derivatives accordingly
   /// This method is specific to TangentPreintegration backend.
   template <typename PB = PreintegrationType,
@@ -224,7 +253,8 @@ public:
    */
   ImuFactorT(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
       const PIM& preintegratedMeasurements)
-      : Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov()),
+      : Base(noiseModel::Gaussian::Covariance(
+                 preintegratedMeasurements.residualCovariance()),
              pose_i, vel_i, pose_j, vel_j, bias),
         pim_(preintegratedMeasurements) {}
 
@@ -386,7 +416,8 @@ public:
    */
   ImuFactor2T(Key state_i, Key state_j, Key bias,
              const PIM& preintegratedMeasurements)
-      : Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov()),
+      : Base(noiseModel::Gaussian::Covariance(
+                 preintegratedMeasurements.residualCovariance()),
              state_i, state_j, bias),
         pim_(preintegratedMeasurements) {}
 

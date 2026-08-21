@@ -81,7 +81,8 @@ public:
   ImuFactorWithGravityT(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
       Key gravity, const PIM& preintegratedMeasurements,
       std::optional<double> gravityMagnitude = {})
-      : Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov()),
+      : Base(noiseModel::Gaussian::Covariance(
+                 preintegratedMeasurements.residualCovariance()),
              pose_i, vel_i, pose_j, vel_j, bias, gravity),
         pim_(preintegratedMeasurements),
         gravityMagnitude_(gravityMagnitude
