@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file PointCorrespondenceFactor.h
- * @brief Factor for a known point correspondence under an unknown transform.
+ * @file KnownLandmarkFactor.h
+ * @brief Factor for observing a known landmark under an unknown transform.
  */
 
 #pragma once
@@ -87,7 +87,7 @@ struct TransformPoint<Pose3> {
 }  // namespace internal
 
 /**
- * A unary factor for a known point correspondence under an unknown transform.
+ * A unary factor for observing a known landmark under an unknown transform.
  * The unwhitened residual is
  *
  *   e(T) = T * sourcePoint - measuredPoint.
@@ -99,7 +99,7 @@ struct TransformPoint<Pose3> {
  * measurement weights are represented by the supplied noise model.
  */
 template <class T>
-class PointCorrespondenceFactor : public NoiseModelFactorN<T> {
+class KnownLandmarkFactor : public NoiseModelFactorN<T> {
  public:
   using Base = NoiseModelFactorN<T>;
   using Point = typename internal::TransformPoint<T>::Point;
@@ -113,9 +113,9 @@ class PointCorrespondenceFactor : public NoiseModelFactorN<T> {
   using Base::evaluateError;
 
   /// Construct from a key, source point, measured point, and noise model.
-  PointCorrespondenceFactor(Key key, const Point& sourcePoint,
-                            const Point& measuredPoint,
-                            const SharedNoiseModel& model)
+  KnownLandmarkFactor(Key key, const Point& sourcePoint,
+                      const Point& measuredPoint,
+                      const SharedNoiseModel& model)
       : Base(model, key),
         sourcePoint_(sourcePoint),
         measuredPoint_(measuredPoint) {}
@@ -128,24 +128,24 @@ class PointCorrespondenceFactor : public NoiseModelFactorN<T> {
     return predictedPoint - measuredPoint_;
   }
 
-  /** Add the exact D=1 homogeneous point-correspondence cost to a QCQP. */
+  /** Add the exact D=1 homogeneous known-landmark cost to a QCQP. */
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
                    size_t columnDimension = 1) const override {
     if (columnDimension != 1) {
       throw std::invalid_argument(
-          "PointCorrespondenceFactor::qcqpFactors only supports column "
+          "KnownLandmarkFactor::qcqpFactors only supports column "
           "dimension 1");
     }
     if (!costs) {
       throw std::invalid_argument(
-          "PointCorrespondenceFactor::qcqpFactors costs is null");
+          "KnownLandmarkFactor::qcqpFactors costs is null");
     }
     if (!this->noiseModel_ ||
         std::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_) ||
         this->noiseModel_->isConstrained()) {
       throw std::runtime_error(
-          "PointCorrespondenceFactor::qcqpFactors requires a non-null, "
+          "KnownLandmarkFactor::qcqpFactors requires a non-null, "
           "non-robust/non-hard quadratic noise model");
     }
 

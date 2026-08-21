@@ -23,7 +23,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/FrobeniusFactor.h>
-#include <gtsam/slam/PointCorrespondenceFactor.h>
+#include <gtsam/slam/KnownLandmarkFactor.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -80,13 +80,13 @@ int main() {
           standardNormal(pointNoiseGenerator),
           standardNormal(pointNoiseGenerator);
       // This square root samples the same ray-aligned covariance whose inverse
-      // is supplied to the point-correspondence factor.
+      // is supplied to the known-landmark factor.
       const Vector3 pointNoise =
           kLateralSigma * standardSample +
           (radialSigma - kLateralSigma) * ray * ray.dot(standardSample);
       const Point3 measurement = exactMeasurement + pointNoise;
 
-      graph.emplace_shared<PointCorrespondenceFactor<Pose3>>(
+      graph.emplace_shared<KnownLandmarkFactor<Pose3>>(
           k, landmark, measurement,
           noiseModel::Gaussian::Information(information));
     }

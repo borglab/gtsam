@@ -20,7 +20,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/FrobeniusFactor.h>
-#include <gtsam/slam/PointCorrespondenceFactor.h>
+#include <gtsam/slam/KnownLandmarkFactor.h>
 
 #include <iostream>
 #include <vector>
@@ -65,7 +65,7 @@ int main() {
       const Matrix3 information =
           lateralPrecision * Matrix3::Identity() +
           (radialPrecision - lateralPrecision) * ray * ray.transpose();
-      graph.emplace_shared<PointCorrespondenceFactor<Pose3>>(
+      graph.emplace_shared<KnownLandmarkFactor<Pose3>>(
           k, landmark, measurement,
           noiseModel::Gaussian::Information(information));
     }

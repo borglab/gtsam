@@ -23,7 +23,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/FrobeniusFactor.h>
-#include <gtsam/slam/PointCorrespondenceFactor.h>
+#include <gtsam/slam/KnownLandmarkFactor.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -37,6 +37,22 @@ using namespace gtsam;
 
 int main() {
   constexpr size_t kNumPoses = 20;
+
+  // Each point measurement has a ray-aligned covariance ellipsoid. Its two
+  // equal lateral standard deviations are sigma_l, and its radial standard
+  // deviation is sigma_r. We parameterize their ratio by
+  //
+  //   rho = anisotropicity = sigma_r / sigma_l,
+  //
+  // so sigma_r = rho*sigma_l. The covariance eigenvalues are therefore
+  // sigma_l^2, sigma_l^2, and sigma_r^2, and
+  //
+  //   cond(Sigma) = sigma_r^2 / sigma_l^2 = rho^2.
+  //
+  // Thus kAnisotropicity is the axis ratio of the one-standard-deviation
+  // ellipsoid, equivalently sqrt(cond(Sigma)). A value of 10 means that noise
+  // along the observation ray has ten times the standard deviation, and one
+  // hundred times the variance, of noise perpendicular to the ray.
   constexpr double kLateralSigma = 0.01;
   constexpr double kAnisotropicity = 10.0;
   constexpr double kOdometrySigma = 0.1;
@@ -60,6 +76,23 @@ int main() {
   NonlinearFactorGraph graph;
   Values groundTruthValues;
 
+  // Let u be a unit observation ray. The orthogonal projectors onto the radial
+  // and lateral subspaces are P_r = uu^T and P_l = I-uu^T. Hence
+  //
+  //   Sigma = sigma_l^2 P_l + sigma_r^2 P_r
+  //         = sigma_l^2 I + (sigma_r^2-sigma_l^2) uu^T.
+  //
+  // Since P_l and P_r are orthogonal projectors, Sigma is inverted by
+  // inverting its eigenvalues:
+  //
+  //   W = Sigma^{-1}
+  //     = (1/sigma_l^2) P_l + (1/sigma_r^2) P_r
+  //     = lateralPrecision I
+  //       + (radialPrecision-lateralPrecision) uu^T.
+  //
+  // This is the information matrix supplied to each point factor. Because
+  // sigma_r > sigma_l here, radialPrecision < lateralPrecision: radial errors
+  // are penalized less strongly than lateral errors.
   const double radialSigma = kAnisotropicity * kLateralSigma;
   const double lateralPrecision = 1.0 / (kLateralSigma * kLateralSigma);
   const double radialPrecision = 1.0 / (radialSigma * radialSigma);
@@ -79,14 +112,26 @@ int main() {
       standardSample << standardNormal(pointNoiseGenerator),
           standardNormal(pointNoiseGenerator),
           standardNormal(pointNoiseGenerator);
-      // This square root samples the same ray-aligned covariance whose inverse
-      // is supplied to the point-correspondence factor.
+      // To sample that same covariance, let z ~ N(0,I) and use
+      //
+      //   L = sigma_l P_l + sigma_r P_r
+      //     = sigma_l I + (sigma_r-sigma_l) uu^T,
+      //   epsilon = Lz.
+      //
+      // Orthogonality and idempotence of P_l and P_r give
+      //
+      //   Cov(epsilon) = LL^T
+      //                = sigma_l^2 P_l + sigma_r^2 P_r
+      //                = Sigma.
+      //
+      // Therefore the sampled measurement noise and the information matrix
+      // used by the factor are exactly consistent.
       const Vector3 pointNoise =
           kLateralSigma * standardSample +
           (radialSigma - kLateralSigma) * ray * ray.dot(standardSample);
       const Point3 measurement = exactMeasurement + pointNoise;
 
-      graph.emplace_shared<PointCorrespondenceFactor<Pose3>>(
+      graph.emplace_shared<KnownLandmarkFactor<Pose3>>(
           k, landmark, measurement,
           noiseModel::Gaussian::Information(information));
     }

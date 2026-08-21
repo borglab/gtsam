@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testPointCorrespondenceFactor.cpp
- * @brief Tests for PointCorrespondenceFactor.
+ * @file testKnownLandmarkFactor.cpp
+ * @brief Tests for KnownLandmarkFactor.
  */
 
 #include <CppUnitLite/TestHarness.h>
@@ -19,7 +19,7 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/slam/FrobeniusFactor.h>
-#include <gtsam/slam/PointCorrespondenceFactor.h>
+#include <gtsam/slam/KnownLandmarkFactor.h>
 
 #include <vector>
 
@@ -34,9 +34,9 @@ const Point2 kSourcePoint(1.2, -0.7);
 const Point2 kMeasuredPoint(0.3, 0.8);
 
 // Verifies the Rot2 residual, exact correspondence, and analytic Jacobian.
-TEST(PointCorrespondenceFactor, Rot2) {
+TEST(KnownLandmarkFactor, Rot2) {
   const auto model = noiseModel::Unit::Create(2);
-  const PointCorrespondenceFactor<Rot2> factor(
+  const KnownLandmarkFactor<Rot2> factor(
       kKey, kSourcePoint, kMeasuredPoint, model);
 
   Matrix H;
@@ -46,7 +46,7 @@ TEST(PointCorrespondenceFactor, Rot2) {
   EXPECT_LONGS_EQUAL(2, H.rows());
   EXPECT_LONGS_EQUAL(1, H.cols());
 
-  const PointCorrespondenceFactor<Rot2> exactFactor(
+  const KnownLandmarkFactor<Rot2> exactFactor(
       kKey, kSourcePoint, kTransform.rotate(kSourcePoint), model);
   EXPECT(assert_equal(Vector2::Zero(), exactFactor.evaluateError(kTransform)));
 
@@ -67,9 +67,9 @@ const Point3 kSourcePoint(1.2, -0.7, 0.5);
 const Point3 kMeasuredPoint(0.3, 0.8, -0.4);
 
 // Verifies the Rot3 residual, exact correspondence, and analytic Jacobian.
-TEST(PointCorrespondenceFactor, Rot3) {
+TEST(KnownLandmarkFactor, Rot3) {
   const auto model = noiseModel::Unit::Create(3);
-  const PointCorrespondenceFactor<Rot3> factor(
+  const KnownLandmarkFactor<Rot3> factor(
       kKey, kSourcePoint, kMeasuredPoint, model);
 
   Matrix H;
@@ -79,7 +79,7 @@ TEST(PointCorrespondenceFactor, Rot3) {
   EXPECT_LONGS_EQUAL(3, H.rows());
   EXPECT_LONGS_EQUAL(3, H.cols());
 
-  const PointCorrespondenceFactor<Rot3> exactFactor(
+  const KnownLandmarkFactor<Rot3> exactFactor(
       kKey, kSourcePoint, kTransform.rotate(kSourcePoint), model);
   EXPECT(assert_equal(Vector3::Zero(), exactFactor.evaluateError(kTransform)));
 
@@ -100,9 +100,9 @@ const Point2 kSourcePoint(1.2, -0.7);
 const Point2 kMeasuredPoint(0.3, 0.8);
 
 // Verifies the Pose2 residual, exact correspondence, and analytic Jacobian.
-TEST(PointCorrespondenceFactor, Pose2) {
+TEST(KnownLandmarkFactor, Pose2) {
   const auto model = noiseModel::Unit::Create(2);
-  const PointCorrespondenceFactor<Pose2> factor(
+  const KnownLandmarkFactor<Pose2> factor(
       kKey, kSourcePoint, kMeasuredPoint, model);
 
   Matrix H;
@@ -113,7 +113,7 @@ TEST(PointCorrespondenceFactor, Pose2) {
   EXPECT_LONGS_EQUAL(2, H.rows());
   EXPECT_LONGS_EQUAL(3, H.cols());
 
-  const PointCorrespondenceFactor<Pose2> exactFactor(
+  const KnownLandmarkFactor<Pose2> exactFactor(
       kKey, kSourcePoint, kTransform.transformFrom(kSourcePoint), model);
   EXPECT(assert_equal(Vector2::Zero(), exactFactor.evaluateError(kTransform)));
 
@@ -135,9 +135,9 @@ const Point3 kSourcePoint(1.2, -0.7, 0.5);
 const Point3 kMeasuredPoint(0.3, 0.8, -0.4);
 
 // Verifies the Pose3 residual, exact correspondence, and analytic Jacobian.
-TEST(PointCorrespondenceFactor, Pose3) {
+TEST(KnownLandmarkFactor, Pose3) {
   const auto model = noiseModel::Unit::Create(3);
-  const PointCorrespondenceFactor<Pose3> factor(
+  const KnownLandmarkFactor<Pose3> factor(
       kKey, kSourcePoint, kMeasuredPoint, model);
 
   Matrix H;
@@ -148,7 +148,7 @@ TEST(PointCorrespondenceFactor, Pose3) {
   EXPECT_LONGS_EQUAL(3, H.rows());
   EXPECT_LONGS_EQUAL(6, H.cols());
 
-  const PointCorrespondenceFactor<Pose3> exactFactor(
+  const KnownLandmarkFactor<Pose3> exactFactor(
       kKey, kSourcePoint, kTransform.transformFrom(kSourcePoint), model);
   EXPECT(assert_equal(Vector3::Zero(), exactFactor.evaluateError(kTransform)));
 
@@ -158,11 +158,11 @@ TEST(PointCorrespondenceFactor, Pose3) {
 }
 
 // Verifies that a full information matrix determines the factor cost.
-TEST(PointCorrespondenceFactor, FullInformationMatrix) {
+TEST(KnownLandmarkFactor, FullInformationMatrix) {
   Matrix3 information;
   information << 4.0, 1.0, 0.5, 1.0, 3.0, 0.25, 0.5, 0.25, 2.0;
   const auto model = noiseModel::Gaussian::Information(information);
-  const PointCorrespondenceFactor<Pose3> factor(
+  const KnownLandmarkFactor<Pose3> factor(
       kKey, kSourcePoint, kMeasuredPoint, model);
 
   Values values;
@@ -180,7 +180,7 @@ namespace matrix_weighted_localization_fixture {
 
 // Verifies that the complete localization graph and its D=1 QCQP have the
 // same nonzero objective at a common Pose3 assignment.
-TEST(PointCorrespondenceFactor, MatrixWeightedLocalizationQcqpError) {
+TEST(KnownLandmarkFactor, MatrixWeightedLocalizationQcqpError) {
   constexpr size_t kNumPoses = 3;
   constexpr double kRadialSigma = 0.1;
   constexpr double kLateralSigma = 0.01;
@@ -207,7 +207,7 @@ TEST(PointCorrespondenceFactor, MatrixWeightedLocalizationQcqpError) {
       const Matrix3 information =
           lateralPrecision * Matrix3::Identity() +
           (radialPrecision - lateralPrecision) * ray * ray.transpose();
-      graph.emplace_shared<PointCorrespondenceFactor<Pose3>>(
+      graph.emplace_shared<KnownLandmarkFactor<Pose3>>(
           k, landmark, measurement,
           noiseModel::Gaussian::Information(information));
     }
