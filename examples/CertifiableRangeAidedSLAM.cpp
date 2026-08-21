@@ -11,7 +11,7 @@
 
 /**
  * @file    CertifiableRangeAidedSLAM.cpp
- * @brief   Certifiable range-aided SLAM (d = 2 or 3) via the Riemannian
+ * @brief   Certifiable range-aided SLAM via the Riemannian
  *          Staircase. Minimizes
  *          Sum_ij kappa_ij ||R_j - R_i R_ij||^2_F + tau_ij ||t_j - t_i - R_i t_ij||^2
  *          + Sum_m nu_m ||p_j - p_i - d_m u_m||^2
@@ -221,10 +221,11 @@ Matrix randomBlock(int rows, int p, std::mt19937& rng, bool unitRows) {
   return svd.matrixU() * svd.matrixV().transpose();
 }
 
-template <typename PoseT, typename RotT, int d>
+template <int d>
 int runCertifiableRangeAidedSLAM(const std::string& path,
                                  InitializationMethod initializationMethod) {
   using Point = Eigen::Matrix<double, d, 1>;
+  using RotT = typename std::conditional<d == 2, Rot2, Rot3>::type;
   // The auxiliary direction has no analogue in the pose-only examples, so its
   // type is derived here rather than passed in.
   using DirT = typename std::conditional<d == 2, Rot2, Unit3>::type;
@@ -273,7 +274,7 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
   const auto initializationStart = std::chrono::steady_clock::now();
   Values initial;
   if (initializationMethod == InitializationMethod::FastSync) {
-    // fastSync only do rotation initialization here.
+    // fastSync only does the rotation initialization here.
     NonlinearFactorGraph rotationGraph;
     for (const auto& edge : data.odometry) {
       rotationGraph.emplace_shared<FrobeniusBetweenFactor<RotT>>(
@@ -314,14 +315,14 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
   RiemannianStaircaseParams params;
   params.pMin = d;
   params.pMax = 10;
-  params.eta = 1e-4;
+  params.eta = 1e-3;
   params.verbose = true;
   params.almParams->maxIterations = 100;
-  params.almParams->absoluteViolationTolerance = 1e-10;
+  params.almParams->absoluteViolationTolerance = 1e-8;
   params.almParams->absoluteStationarityTolerance = 1e-8;
-  params.almParams->lmParams.maxIterations = 1000;
-  params.almParams->lmParams.relativeErrorTol = 1e-12;
-  params.almParams->lmParams.absoluteErrorTol = 1e-12;
+  params.almParams->lmParams.maxIterations = 500;
+  params.almParams->lmParams.relativeErrorTol = 1e-8;
+  params.almParams->lmParams.absoluteErrorTol = 1e-8;
   params.almParams->verbose = false;
 
   const auto solveStart = std::chrono::steady_clock::now();
@@ -443,10 +444,10 @@ int main(int argc, char** argv) {
   }
 
   if (detectDimension(dataPath) == 3) {
-    return runCertifiableRangeAidedSLAM<Pose3, Rot3, 3>(
+    return runCertifiableRangeAidedSLAM<3>(
         dataPath, initializationMethod);
   } else {
-    return runCertifiableRangeAidedSLAM<Pose2, Rot2, 2>(
+    return runCertifiableRangeAidedSLAM<2>(
         dataPath, initializationMethod);
   }
 }

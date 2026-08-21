@@ -11,7 +11,7 @@
 
 /**
  * @file    CertifiableLandmarkSLAM.cpp
- * @brief   Certifiable landmark SLAM (d = 2 or 3) via the Riemannian
+ * @brief   Certifiable landmark SLAM via the Riemannian
  *          Staircase. Minimizes
  *          Sum_ij kappa_ij ||R_j - R_i R_ij||^2_F + tau_ij ||t_j - t_i - R_i t_ij||^2
  *          + Sum_ik nu_ik ||l_k - t_i - R_i v_ik||^2
@@ -187,10 +187,11 @@ Matrix randomBlock(int rows, int p, std::mt19937& rng, bool orthonormal) {
   return svd.matrixU() * svd.matrixV().transpose();
 }
 
-template <typename PoseT, typename RotT, int d>
+template <int d>
 int runCertifiableLandmarkSLAM(const std::string& path,
                                InitializationMethod initializationMethod) {
   using Point = Eigen::Matrix<double, d, 1>;
+  using RotT = typename std::conditional<d == 2, Rot2, Rot3>::type;
 
   const Dataset<d> data = readLandmarkG2o<d>(path);
 
@@ -366,10 +367,10 @@ int main(int argc, char** argv) {
   }
 
   if (dim == 3) {
-    return runCertifiableLandmarkSLAM<Pose3, Rot3, 3>(
+    return runCertifiableLandmarkSLAM<3>(
         dataPath, initializationMethod);
   } else {
-    return runCertifiableLandmarkSLAM<Pose2, Rot2, 2>(
+    return runCertifiableLandmarkSLAM<2>(
         dataPath, initializationMethod);
   }
 }

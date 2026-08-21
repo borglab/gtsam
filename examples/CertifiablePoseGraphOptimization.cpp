@@ -11,9 +11,9 @@
 
 /**
  * @file    CertifiablePoseGraphOptimization.cpp
- * @brief   Certifiable SE(d) synchronization (d = 2 or 3) via the Riemannian
- *          Staircase (Burer-Monteiro low-rank SDP + sparse-eigensolver
- *          certificate). Minimizes
+ * @brief   Certifiable SE(d) synchronization, that is pose-graph
+ *          optimization, via the Riemannian Staircase (Burer-Monteiro
+ *          low-rank SDP + sparse-eigensolver certificate). Minimizes
  *          Sum_ij kappa_ij ||R_j - R_i R_ij||^2_F + tau_ij ||t_j - t_i - R_i t_ij||^2
  *          over R_i in O(d), t_i in R^d.
  * @author  Zhexin Xu
@@ -95,8 +95,10 @@ void alignBlockDetSigns(Values& qcqpValues, const std::set<Key>& poseIndices) {
 }
 
 /// Initial values taken from the dataset's own vertex poses.
-template <typename PoseT, typename RotT, int d>
+template <int d>
 Values g2oInitial(const Values& poses, const std::set<Key>& poseIndices) {
+  using PoseT = typename std::conditional<d == 2, Pose2, Pose3>::type;
+  using RotT = typename std::conditional<d == 2, Rot2, Rot3>::type;
   using Point = Eigen::Matrix<double, d, 1>;
   Values initial;
   for (Key poseIndex : poseIndices) {
@@ -109,6 +111,23 @@ Values g2oInitial(const Values& poses, const std::set<Key>& poseIndices) {
     initial.insert(translationKey(poseIndex), Matrix(t.transpose()));
   }
   return initial;
+}
+
+/// Reassemble PoseT from the rounded rank-d blocks.
+template <int d>
+Values recoverPoses(const Values& atRankD, const std::set<Key>& poseIndices) {
+  using PoseT = typename std::conditional<d == 2, Pose2, Pose3>::type;
+  using RotT = typename std::conditional<d == 2, Rot2, Rot3>::type;
+  using Point = Eigen::Matrix<double, d, 1>;
+  Values poses;
+  for (Key poseIndex : poseIndices) {
+    const RotT rotation = traits<RotT>::template FromQcqpValue<d>(
+        atRankD.at<Matrix>(rotationKey(poseIndex)));
+    const Point t(
+        atRankD.at<Matrix>(translationKey(poseIndex)).row(0).transpose());
+    poses.insert(poseIndex, PoseT(rotation, t));
+  }
+  return poses;
 }
 
 /// Random translation init: row i is a Gaussian-sampled `1 x d` row.
@@ -125,8 +144,9 @@ Values randomTranslationInitial(const std::set<Key>& poseIndices) {
   return values;
 }
 
-template <typename RotT, int d>
+template <int d>
 Values randomInitial(const std::set<Key>& poseIndices) {
+  using RotT = typename std::conditional<d == 2, Rot2, Rot3>::type;
   Values values;
   std::mt19937 rng(kSeed);
   std::uniform_real_distribution<double> uniform(-kPi, kPi);
@@ -147,10 +167,12 @@ Values randomInitial(const std::set<Key>& poseIndices) {
   return values;
 }
 
-template <typename PoseT, typename RotT, int d>
+template <int d>
 int runCertifiablePGO(const std::string& dataPath,
                       InitializationMethod initializationMethod) {
-  constexpr bool kIs3D = std::is_same_v<PoseT, Pose3>;
+  using PoseT = typename std::conditional<d == 2, Pose2, Pose3>::type;
+  using RotT = typename std::conditional<d == 2, Rot2, Rot3>::type;
+  constexpr bool kIs3D = (d == 3);
   using Point = Eigen::Matrix<double, d, 1>;
 
   // Build graph
@@ -221,7 +243,7 @@ int runCertifiablePGO(const std::string& dataPath,
   Values initial;
   switch (initializationMethod) {
     case InitializationMethod::FastSync: {
-      // fastSync needs isotropic noise, which only graph's reconstructed
+      // fastSync needs isotropic noise, which only the graph's reconstructed
       // rotation-only edges have (a real Pose's noise is not isotropic);
       // translation still needs a separate initial guess.
       initial = Values();
@@ -237,10 +259,10 @@ int runCertifiablePGO(const std::string& dataPath,
       break;
     }
     case InitializationMethod::G2o:
-      initial = g2oInitial<PoseT, RotT, d>(*g2oValues, poseIndices);
+      initial = g2oInitial<d>(*g2oValues, poseIndices);
       break;
     case InitializationMethod::Random:
-      initial = randomInitial<RotT, d>(poseIndices);
+      initial = randomInitial<d>(poseIndices);
       break;
   }
   const double initializationSeconds =
@@ -256,10 +278,11 @@ int runCertifiablePGO(const std::string& dataPath,
 
   // Rounding and extracting solution
   const auto roundingStart = std::chrono::steady_clock::now();
-  Values rounded;
+  Values rounded, poses;
   if (result.rounded) {
     Values atRankD = result.layout.unstack(result.rounded->Yd);
     alignBlockDetSigns<d>(atRankD, poseIndices);
+    poses = recoverPoses<d>(atRankD, poseIndices);
     for (auto& [key, R] : ExtractQcqpValues<RotT, d>(atRankD)) {
       rounded.insert(key, R);
     }
@@ -339,8 +362,8 @@ int main(int argc, char** argv) {
   }
 
   if (dim == 3) {
-    return runCertifiablePGO<Pose3, Rot3, 3>(dataPath, initializationMethod);
+    return runCertifiablePGO<3>(dataPath, initializationMethod);
   } else {
-    return runCertifiablePGO<Pose2, Rot2, 2>(dataPath, initializationMethod);
+    return runCertifiablePGO<2>(dataPath, initializationMethod);
   }
 }
