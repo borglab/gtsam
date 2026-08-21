@@ -1,4 +1,6 @@
-# Structure from Motion
+# SfM
+
+> SfM = Structure from Motion
 
 The `sfm` module provides dataset containers and algorithms for global structure from motion: feature-track assembly, three-view transfer, focal-length self-calibration, rotation averaging, translation and location recovery, trajectory alignment, and bundle-adjustment setup.
 
