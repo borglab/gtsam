@@ -24,6 +24,7 @@
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/SfmData.h>
+#include <gtsam/sfm/SfmEliminationMode.h>
 #include <gtsam/sfm/cuda/SfmTypes.h>
 
 #include <cstddef>
@@ -49,6 +50,8 @@ class GTSAM_EXPORT SfmLevenbergMarquardtParams
   /// Numerical backend for the reduced Schur-complement system.
   LinearSolverOptions linear{
       gtsam::cuda::LinearSolverType::DenseCholesky};
+  /// Whether to solve the full system or eliminate landmarks first.
+  SfmEliminationMode eliminationMode = SfmEliminationMode::Schur;
   /// The inherited optional Ordering contains camera keys only.
   PcgOptions pcg;
 
@@ -68,6 +71,10 @@ class GTSAM_EXPORT SfmLevenbergMarquardtParams
   void setLinearSolver(gtsam::cuda::LinearSolverType solver) {
     linear.backend = solver;
   }
+  /// Returns whether landmarks are eliminated before the linear solve.
+  SfmEliminationMode getEliminationMode() const { return eliminationMode; }
+  /// Selects full-system or Schur-complement elimination.
+  void setEliminationMode(SfmEliminationMode mode) { eliminationMode = mode; }
   /// Returns the lower clamp applied to damping diagonals.
   double getMinDiagonal() const { return dampingParams.minDiagonal; }
   /// Returns the upper clamp applied to damping diagonals.
@@ -81,6 +88,10 @@ class GTSAM_EXPORT SfmLevenbergMarquardtParams
   /// Tests numerical equality with another parameter set.
   bool equals(const SfmLevenbergMarquardtParams& other,
               double tol = 1e-9) const;
+  /// Return a polymorphic copy preserving CUDA and elimination settings.
+  std::shared_ptr<NonlinearOptimizerParams> clone() const {
+    return std::make_shared<SfmLevenbergMarquardtParams>(*this);
+  }
 };
 
 /**
@@ -260,6 +271,8 @@ struct SfmLevenbergMarquardtIterationProfile {
  * linearSolveStats — stay zero when a different backend is in use.
  */
 struct SfmLevenbergMarquardtResult {
+  /// Elimination mode requested for this run.
+  SfmEliminationMode eliminationMode = SfmEliminationMode::Schur;
   /// Backend that solved the reduced camera system.
   LinearSolverType linearBackend = gtsam::cuda::LinearSolverType::DenseCholesky;
   /// Whether that backend saw the system as dense or sparse.

@@ -209,6 +209,11 @@ std::vector<Key> defaultPointKeys(const SfmData& data) {
 
 SfmLinearSolverType validateAndSelectSolverMode(
     const SfmLevenbergMarquardtParams& params) {
+  if (params.eliminationMode == SfmEliminationMode::Full) {
+    throw std::invalid_argument(
+        "CUDA SFM Full elimination mode is not implemented; select Schur. "
+        "Full-system CUDA solving is reserved for a follow-up implementation");
+  }
   if (params.ordering &&
       params.linear.backend != gtsam::cuda::LinearSolverType::Cudss) {
     throw std::invalid_argument(
@@ -482,6 +487,10 @@ void SfmLevenbergMarquardtParams::print(const std::string& str) const {
             << "\n";
   std::cout << "               linearBackend: "
             << linearSolverName(linear.backend) << "\n";
+  std::cout << "             eliminationMode: "
+            << (eliminationMode == SfmEliminationMode::Schur ? "Schur"
+                                                              : "Full")
+            << "\n";
 }
 
 bool SfmLevenbergMarquardtParams::equals(
@@ -504,6 +513,7 @@ bool SfmLevenbergMarquardtParams::equals(
          std::abs(dampingParams.maxDiagonal -
                   other.dampingParams.maxDiagonal) <= tol &&
          linear.backend == other.linear.backend &&
+         eliminationMode == other.eliminationMode &&
          ordering == other.ordering &&
          pcg.maxIterations == other.pcg.maxIterations &&
          std::abs(pcg.relativeTolerance - other.pcg.relativeTolerance) <= tol &&
@@ -684,6 +694,7 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
 #endif
 
   SfmLevenbergMarquardtResult result;
+  result.eliminationMode = params.eliminationMode;
   result.linearBackend = params.linear.backend;
   result.linearSolveStats.backend = params.linear.backend;
   const bool detailedProfiling = params.enableDetailedProfiling;

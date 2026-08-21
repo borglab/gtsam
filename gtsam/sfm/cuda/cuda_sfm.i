@@ -7,6 +7,7 @@ namespace gtsam {
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/SfmData.h>
+#include <gtsam/sfm/SfmEliminationMode.h>
 
 namespace cuda {
 
@@ -28,6 +29,8 @@ class SfmLevenbergMarquardtParams
   bool enableDetailedProfiling;
   gtsam::cuda::LinearSolverType getLinearSolver() const;
   void setLinearSolver(gtsam::cuda::LinearSolverType solver);
+  gtsam::SfmEliminationMode getEliminationMode() const;
+  void setEliminationMode(gtsam::SfmEliminationMode mode);
   double getMinDiagonal() const;
   double getMaxDiagonal() const;
   void setMinDiagonal(double value);
@@ -38,6 +41,7 @@ class SfmLevenbergMarquardtParams
 class SfmLevenbergMarquardtResult {
   SfmLevenbergMarquardtResult();
 
+  gtsam::SfmEliminationMode eliminationMode;
   double initialError;
   double finalError;
   double totalMeasuredElapsed;

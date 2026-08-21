@@ -581,8 +581,9 @@ TEST(SfmLevenbergMarquardtParams, ProvidesLmDefaults) {
   DOUBLES_EQUAL(10.0, legacy.lambdaFactor, 0.0);
   CHECK(!legacy.dampingParams.diagonalDamping);
   CHECK(!legacy.enableDetailedProfiling);
+  CHECK(legacy.getEliminationMode() == SfmEliminationMode::Schur);
 
-  const SfmLevenbergMarquardtParams ceres =
+  SfmLevenbergMarquardtParams ceres =
       SfmLevenbergMarquardtParams::ceresDefaults();
   CHECK(ceres.maxIterations == 50);
   DOUBLES_EQUAL(1e-4, ceres.lambdaInitial, 0.0);
@@ -590,6 +591,13 @@ TEST(SfmLevenbergMarquardtParams, ProvidesLmDefaults) {
   CHECK(ceres.dampingParams.diagonalDamping);
   CHECK(!ceres.useFixedLambdaFactor);
   CHECK(!ceres.enableDetailedProfiling);
+  CHECK(ceres.getEliminationMode() == SfmEliminationMode::Schur);
+
+  ceres.setEliminationMode(SfmEliminationMode::Full);
+  const auto clone = std::dynamic_pointer_cast<SfmLevenbergMarquardtParams>(
+      ceres.clone());
+  CHECK(clone != nullptr);
+  CHECK(clone->getEliminationMode() == SfmEliminationMode::Full);
 }
 
 // Verifies SfmLevenbergMarquardtOptimizer::ExposesCudaParams.
@@ -599,11 +607,14 @@ TEST(SfmLevenbergMarquardtOptimizer, ExposesCudaParams) {
   SfmLevenbergMarquardtParams params =
       SfmLevenbergMarquardtParams::ceresDefaults();
   params.setLinearSolver(LinearSolverType::Cudss);
+  params.setEliminationMode(SfmEliminationMode::Schur);
   params.maxIterations = 7;
 
   SfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
 
   CHECK(optimizer.params().getLinearSolver() == LinearSolverType::Cudss);
+  CHECK(optimizer.params().getEliminationMode() ==
+        SfmEliminationMode::Schur);
   CHECK(optimizer.params().maxIterations == 7);
 }
 
@@ -611,6 +622,21 @@ TEST(SfmLevenbergMarquardtOptimizer, ExposesCudaParams) {
 TEST(SfmLevenbergMarquardtOptimizer, UsesBatchOnlyInterface) {
   CHECK((!std::is_base_of_v<NonlinearOptimizer,
                              SfmLevenbergMarquardtOptimizer>));
+}
+
+// Verifies that the public Full hook fails before any CUDA backend work.
+TEST(SfmLevenbergMarquardt, FullModeIsReserved) {
+  SfmLevenbergMarquardtParams params;
+  params.setEliminationMode(SfmEliminationMode::Full);
+  bool threw = false;
+  try {
+    optimizeSfmWithoutValueDownload(sfm_fixture::makeTinySfmData(), params);
+  } catch (const std::invalid_argument& error) {
+    threw = true;
+    CHECK(std::string(error.what()).find("Full elimination mode is not "
+                                        "implemented") != std::string::npos);
+  }
+  CHECK(threw);
 }
 
 // Verifies SfmProjectionLinearization::MatchesHostResidualsAndNumericJacobians.
