@@ -200,7 +200,11 @@ SemidirectLieGroup<G, H, Action> SemidirectLieGroup<G, H, Action>::Expmap(
       const auto phi0Solver = kernels.phi0.lu();
       const H h = kernels.phi1 * v;
       *H1 = Matrix::Zero(d, d1);
-      H1->topRows(d1) = Dg;
+      if constexpr (firstDynamic) {
+        H1->topRows(d1) = Dg;
+      } else {
+        H1->template topLeftCorner<n, n>() = Dg;
+      }
       typename traits<G>::TangentVector ej;
       if constexpr (firstDynamic) ej.resize(d1);
       ej.setZero();
@@ -252,7 +256,11 @@ SemidirectLieGroup<G, H, Action>::Logmap(const SemidirectLieGroup& p,
       const auto solver = kernels.phi1.lu();
       const typename traits<H>::TangentVector v = solver.solve(p.second);
       *D = zeroJacobian(d);
-      D->topLeftCorner(d1, d1) = Dg;
+      if constexpr (firstDynamic) {
+        D->topLeftCorner(d1, d1) = Dg;
+      } else {
+        D->template topLeftCorner<n, n>() = Dg;
+      }
       D->bottomRightCorner(d2, d2) = solver.solve(kernels.phi0);
       for (Eigen::Index j = 0; j < static_cast<Eigen::Index>(d1); ++j) {
         const Jacobian2 B = Action::generator(Dg.col(j));
