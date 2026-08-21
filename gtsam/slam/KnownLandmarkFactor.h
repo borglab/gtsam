@@ -151,8 +151,7 @@ class KnownLandmarkFactor : public NoiseModelFactorN<T> {
 
     constexpr int PointDim = Point::RowsAtCompileTime;
     constexpr int N = T::LieAlgebra::RowsAtCompileTime;
-    constexpr int ActiveDim = PointDim * N;
-    constexpr int LiftedDim = ActiveDim + 1;
+    constexpr int LiftedDim = 1 + PointDim * N;
     static_assert(N == PointDim || N == PointDim + 1,
                   "Unsupported transform and point dimensions");
 
