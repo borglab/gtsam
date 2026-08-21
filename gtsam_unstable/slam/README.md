@@ -23,6 +23,8 @@ TODO: Again, as no template arguments, we could move a lot to .cpp file.
 
 ### SmartStereoProjectionFactorPP
 
+Deprecated since GTSAM 4.3. This experimental factor has no maintained replacement.
+
 Similar `SmartStereoProjectionPoseFactor` but *additionally* adds an array of body_P_cam poses. The dimensions seem to be hardcoded and the types defined in the SmartFactorBase have been re-defined.  
 The body_P_cam poses are optimized here!
 

@@ -16,6 +16,11 @@
  *  @date   March 2021
  */
 
+#include <gtsam/config.h>
+#include <CppUnitLite/TestHarness.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/slam/tests/smartFactorScenarios.h>
 #include <gtsam_unstable/slam/SmartStereoProjectionFactorPP.h>
 #include <gtsam_unstable/slam/ProjectionFactorPPP.h>
@@ -23,7 +28,6 @@
 #include <gtsam/slam/PoseTranslationPrior.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/StereoFactor.h>
-#include <CppUnitLite/TestHarness.h>
 #include <iostream>
 
 using namespace std;
@@ -1273,6 +1277,8 @@ TEST( SmartStereoProjectionFactorPP, dynamicOutlierRejection ) {
 }
 
 /* ************************************************************************* */
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

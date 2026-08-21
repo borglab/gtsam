@@ -5,6 +5,10 @@
  *      Author: cbeall3
  */
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include "AHRS.h"
 
 #include <gtsam/base/VectorConstants.h>
@@ -264,3 +268,5 @@ AHRS::~AHRS() {
 /* ************************************************************************* */
 
 } /* namespace gtsam */
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

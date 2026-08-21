@@ -17,6 +17,10 @@
  * @date June 14, 2012
  */
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam_unstable/base/Dummy.h>
 #include <iostream>
 
@@ -41,3 +45,5 @@ unsigned char Dummy::dummyTwoVar(unsigned char a) const {
 }
 
 }
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

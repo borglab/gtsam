@@ -5,11 +5,15 @@
  * @author Chris Beall
  */
 
+#include <gtsam/config.h>
+#include <CppUnitLite/TestHarness.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include "../AHRS.h"
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Testable.h>
-#include <CppUnitLite/TestHarness.h>
 #include <list>
 
 using namespace std;
@@ -90,9 +94,10 @@ TEST (AHRS, init) {
 }
 */
 /* ************************************************************************* */
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-
