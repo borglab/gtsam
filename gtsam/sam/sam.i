@@ -134,4 +134,17 @@ typedef gtsam::BearingRangeFactor<gtsam::Pose3, gtsam::Pose3, gtsam::Unit3,
                                   double>
     BearingRangeFactorPose3;
 
+#include <gtsam/sam/QuadraticRangeFactor.h>
+// Quadratic range measurement for certifiable range-aided SLAM, with d = 2 or
+// 3. The auxiliary direction is a Rot2 in 2D and a Unit3 in 3D, `range` is the
+// measured distance and `weight` is the measurement precision nu.
+template <d = {2, 3}>
+virtual class QuadraticRangeFactor : gtsam::NoiseModelFactor {
+  QuadraticRangeFactor(gtsam::Key translationKey, gtsam::Key targetKey,
+                       gtsam::Key unitVectorKey, double range, double weight);
+
+  double range() const;
+  double weight() const;
+};
+
 }  // namespace gtsam

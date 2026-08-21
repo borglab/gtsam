@@ -13,6 +13,8 @@ class RiemannianStaircaseParams {
   int pMin;
   int pMax;
   double alpha;
+  bool useSaddleLineSearch;
+  double saddleStepTolerance;
   gtsam::RiemannianStaircaseParams::VerificationMethod verificationMethod;
   double eta;
   int maxSpectraIters;
