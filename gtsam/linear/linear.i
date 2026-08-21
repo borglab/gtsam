@@ -240,7 +240,7 @@ virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
   GemanMcClure(double c,
       gtsam::noiseModel::mEstimator::GemanMcClure::GradScheme graduation,
       gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
-  
+
   static gtsam::noiseModel::mEstimator::GemanMcClure* Create(double c);
   static gtsam::noiseModel::mEstimator::GemanMcClure* Create(
       double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);

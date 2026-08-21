@@ -64,5 +64,5 @@ The relaxed problem uses fixed-size `N`-by-`N` matrices for measurements, reduce
 
 GPU-accelerated optimization for bundle adjustment (requires a CUDA build; see `gtsam/slam/cuda/`).
 
--   [CudaSfmLevenbergMarquardtOptimizer](doc/CudaSfmLevenbergMarquardtOptimizer.ipynb) : Fully GPU-resident Levenberg-Marquardt for BAL-style bundle adjustment (`GeneralSFMFactor<PinholeCamera<Cal3Bundler>, Point3>` graphs); dense-Schur or cuDSS linear solvers.
--   [GNC with the CUDA SFM optimizer](doc/CudaSfmGncOptimizer.ipynb) : Robust (outlier-rejecting) bundle adjustment using `GncOptimizer` with the CUDA optimizer as inner solver.
+-   [SfmLevenbergMarquardtOptimizer](doc/SfmLevenbergMarquardtOptimizer.ipynb) : Fully GPU-resident Levenberg-Marquardt for BAL-style bundle adjustment (`GeneralSFMFactor<PinholeCamera<Cal3Bundler>, Point3>` graphs); dense-Schur, cuDSS, or PCG linear solvers.
+-   [GNC with the CUDA SFM optimizer](doc/CudaSfmGncOptimizer.ipynb) : Robust bundle adjustment, using the optimizer above as the GNC inner solver.

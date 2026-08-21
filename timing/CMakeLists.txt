@@ -64,3 +64,4 @@ if(OpenMP_CXX_FOUND)
 endif()
 
 add_subdirectory(sfm_ba)
+add_subdirectory(cuda_sparse)

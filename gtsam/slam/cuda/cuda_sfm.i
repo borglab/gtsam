@@ -4,48 +4,39 @@
 
 namespace gtsam {
 
-#include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/sfm/SfmData.h>
 
 namespace cuda {
 
-#include <gtsam/slam/cuda/CudaSfmLevenbergMarquardt.h>
+#include <gtsam/slam/cuda/SfmLevenbergMarquardt.h>
 
-enum class CudaSfmLinearSolverType {
-  DenseSchur,
-  CudssFullNormal
+enum class LinearSolverType {
+  DenseCholesky,
+  Cudss,
+  Pcg
 };
 
-class CudaSfmLevenbergMarquardtParams {
-  CudaSfmLevenbergMarquardtParams();
+class SfmLevenbergMarquardtParams
+    : gtsam::LevenbergMarquardtParams {
+  SfmLevenbergMarquardtParams();
 
-  static gtsam::cuda::CudaSfmLevenbergMarquardtParams LegacyDefaults();
-  static gtsam::cuda::CudaSfmLevenbergMarquardtParams CeresDefaults();
+  static gtsam::cuda::SfmLevenbergMarquardtParams legacyDefaults();
+  static gtsam::cuda::SfmLevenbergMarquardtParams ceresDefaults();
 
-  int maxIterations;
-  double lambdaInitial;
-  double lambdaFactor;
-  double lambdaUpperBound;
-  double lambdaLowerBound;
-  double relativeErrorTol;
-  double absoluteErrorTol;
-  double errorTol;
-  double minModelFidelity;
-  bool useFixedLambdaFactor;
-  bool diagonalDamping;
   bool enableDetailedProfiling;
-  double minDiagonal;
-  double maxDiagonal;
-  gtsam::cuda::CudaSfmLinearSolverType linearSolver;
-
-  string getLinearSolver() const;
-  void setLinearSolver(const string& solver);
+  gtsam::cuda::LinearSolverType getLinearSolver() const;
+  void setLinearSolver(gtsam::cuda::LinearSolverType solver);
+  double getMinDiagonal() const;
+  double getMaxDiagonal() const;
+  void setMinDiagonal(double value);
+  void setMaxDiagonal(double value);
   void print(const string& str = "") const;
 };
 
-class CudaSfmLevenbergMarquardtResult {
-  CudaSfmLevenbergMarquardtResult();
+class SfmLevenbergMarquardtResult {
+  SfmLevenbergMarquardtResult();
 
   double initialError;
   double finalError;
@@ -65,13 +56,7 @@ class CudaSfmLevenbergMarquardtResult {
   double projectionBatchH2dCopyElapsed;
   size_t projectionBatchH2dBytes;
   double initialErrorElapsed;
-  double cudssSolverConstructionElapsed;
   double denseSchurSolverConstructionElapsed;
-  double csrStructureElapsed;
-  double uploadPatternElapsed;
-  double uploadPatternDeviceAllocElapsed;
-  double uploadPatternH2dCopyElapsed;
-  size_t uploadPatternH2dBytes;
   double firstCudssAnalyzeElapsed;
   double downloadElapsed;
   double downloadHostAllocElapsed;
@@ -89,25 +74,28 @@ class CudaSfmLevenbergMarquardtResult {
   gtsam::Values optimizedValues;
 };
 
-gtsam::cuda::CudaSfmLevenbergMarquardtResult OptimizeCudaSfm(
+gtsam::cuda::SfmLevenbergMarquardtResult optimizeSfm(
     const gtsam::SfmData& data,
-    const gtsam::cuda::CudaSfmLevenbergMarquardtParams& params);
+    const gtsam::cuda::SfmLevenbergMarquardtParams& params);
 
-gtsam::cuda::CudaSfmLevenbergMarquardtResult
-OptimizeCudaSfmWithoutValueDownload(
+gtsam::cuda::SfmLevenbergMarquardtResult
+optimizeSfmWithoutValueDownload(
     const gtsam::SfmData& data,
-    const gtsam::cuda::CudaSfmLevenbergMarquardtParams& params);
+    const gtsam::cuda::SfmLevenbergMarquardtParams& params);
 
-virtual class CudaSfmLevenbergMarquardtOptimizer
-    : gtsam::NonlinearOptimizer {
-  CudaSfmLevenbergMarquardtOptimizer(
+class SfmLevenbergMarquardtOptimizer {
+  SfmLevenbergMarquardtOptimizer(
       const gtsam::NonlinearFactorGraph& graph,
       const gtsam::Values& initialValues,
-      const gtsam::cuda::CudaSfmLevenbergMarquardtParams& params =
-          gtsam::cuda::CudaSfmLevenbergMarquardtParams());
+      const gtsam::cuda::SfmLevenbergMarquardtParams& params =
+          gtsam::cuda::SfmLevenbergMarquardtParams());
 
-  const gtsam::cuda::CudaSfmLevenbergMarquardtParams& params() const;
-  const gtsam::cuda::CudaSfmLevenbergMarquardtResult& result() const;
+  const gtsam::cuda::SfmLevenbergMarquardtParams& params() const;
+  const gtsam::cuda::SfmLevenbergMarquardtResult& result() const;
+  const gtsam::Values& optimize();
+  const gtsam::Values& values() const;
+  double error() const;
+  size_t iterations() const;
 };
 
 }  // namespace cuda

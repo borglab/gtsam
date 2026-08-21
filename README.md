@@ -42,6 +42,7 @@ On top of the C++ library, GTSAM includes [wrappers for MATLAB & Python](#wrappe
 
 - **C++ API Docs:** [https://gtsam.org/doxygen/](https://gtsam.org/doxygen/)
 - **Python API Docs:** [https://borglab.github.io/gtsam/](https://borglab.github.io/gtsam/)
+- **CUDA linear solvers:** [docs/CUDA_LINEAR_SOLVERS.md](docs/CUDA_LINEAR_SOLVERS.md)
 <!-- TODO: Perhaps include links to source code as well? But the wrappers doesn't really help too much understanding the source code. 
 C++: https://github.com/borglab/gtsam/tree/develop/gtsam
 Matlab wrapper: https://github.com/borglab/gtsam/blob/develop/matlab/README.md

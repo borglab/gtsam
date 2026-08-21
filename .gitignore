@@ -35,6 +35,7 @@ conductor/
 gtsam_unstable/timing/data/
 timing/results/bayes_tree_covariance/
 timing/**/benchmark_logs/
+timing/cuda_sparse/results/
 
 # Local development docs/artifacts
 docs/*
