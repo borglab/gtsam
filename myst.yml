@@ -41,6 +41,9 @@ project:
       - file: ./gtsam/navigation/navigation.md
         children:
         - pattern: ./gtsam/navigation/doc/*
+      - file: ./gtsam/sfm/sfm.md
+        children:
+        - pattern: ./gtsam/sfm/doc/*
       - file: ./gtsam/slam/slam.md
         children:
         - pattern: ./gtsam/slam/doc/*

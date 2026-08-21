@@ -20,7 +20,7 @@
 
 #include <gtsam/base/cuda/DeviceArray.h>
 #include <gtsam/sfm/SfmData.h>
-#include <gtsam/slam/cuda/SfmTypes.h>
+#include <gtsam/sfm/cuda/SfmTypes.h>
 
 #include <cuda_runtime_api.h>
 

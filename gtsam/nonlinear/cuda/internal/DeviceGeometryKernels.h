@@ -24,7 +24,7 @@
  * no allocation, no virtual calls, and no Eigen.
  *
  * Everything here is __host__ __device__ so tests can call it directly, which is
- * how the duplication is kept honest. In gtsam/slam/tests/testCudaSfm.cpp,
+ * how the duplication is kept honest. In gtsam/sfm/tests/testCudaSfm.cpp,
  * DeviceGeometryKernels.RetractCameraMatchesHostCameraRetract compares
  * retractCamera() against PinholeCamera<Cal3Bundler>::retract, and the
  * SfmProjectionLinearization cases compare the projection's residuals and
@@ -46,7 +46,7 @@
 
 #include <gtsam/config.h>
 #include <gtsam/nonlinear/cuda/internal/DeviceGeometryTypes.h>
-#include <gtsam/slam/cuda/SfmTypes.h>
+#include <gtsam/sfm/cuda/SfmTypes.h>
 
 #include <cuda_runtime_api.h>
 

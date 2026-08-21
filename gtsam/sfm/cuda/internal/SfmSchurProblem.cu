@@ -18,12 +18,12 @@
 
 #include <gtsam/base/cuda/Errors.h>
 #include <gtsam/nonlinear/cuda/internal/DeviceGeometryTypes.h>
-#include <gtsam/slam/cuda/internal/SfmDenseSchurSolver.h>
-#include <gtsam/slam/cuda/internal/SfmProjectionLinearization.h>
-#include <gtsam/slam/cuda/internal/SfmReducedCsrPlan.h>
-#include <gtsam/slam/cuda/internal/SfmSchurOperator.h>
-#include <gtsam/slam/cuda/internal/SfmSchurProblem.h>
-#include <gtsam/slam/cuda/internal/SfmSparseSchur.h>
+#include <gtsam/sfm/cuda/internal/SfmDenseSchurSolver.h>
+#include <gtsam/sfm/cuda/internal/SfmProjectionLinearization.h>
+#include <gtsam/sfm/cuda/internal/SfmReducedCsrPlan.h>
+#include <gtsam/sfm/cuda/internal/SfmSchurOperator.h>
+#include <gtsam/sfm/cuda/internal/SfmSchurProblem.h>
+#include <gtsam/sfm/cuda/internal/SfmSparseSchur.h>
 
 #include <algorithm>
 #include <cmath>

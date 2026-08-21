@@ -120,7 +120,7 @@ endif()
 
 if(GTSAM_ENABLE_CUDA)
     list(APPEND interface_headers
-        ${PROJECT_SOURCE_DIR}/gtsam/slam/cuda/cuda_sfm.i
+        ${PROJECT_SOURCE_DIR}/gtsam/sfm/cuda/cuda_sfm.i
     )
 endif()
 

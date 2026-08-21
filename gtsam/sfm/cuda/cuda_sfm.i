@@ -10,7 +10,7 @@ namespace gtsam {
 
 namespace cuda {
 
-#include <gtsam/slam/cuda/SfmLevenbergMarquardt.h>
+#include <gtsam/sfm/cuda/SfmLevenbergMarquardt.h>
 
 enum class LinearSolverType {
   DenseCholesky,

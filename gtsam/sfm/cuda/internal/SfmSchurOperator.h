@@ -21,8 +21,8 @@
 #include <gtsam/base/cuda/DeviceArray.h>
 #include <gtsam/dllexport.h>
 #include <gtsam/linear/cuda/LinearSystem.h>
-#include <gtsam/slam/cuda/internal/SfmProjectionBatch.h>
-#include <gtsam/slam/cuda/internal/SfmProjectionLinearization.h>
+#include <gtsam/sfm/cuda/internal/SfmProjectionBatch.h>
+#include <gtsam/sfm/cuda/internal/SfmProjectionLinearization.h>
 
 namespace gtsam::cuda {
 

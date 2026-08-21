@@ -59,10 +59,3 @@ Helper functions and classes for SLAM tasks.
 `fastSync<T>` reads matching `BetweenFactor<T>` measurements and accepts only finite, positive, isotropic Gaussian noise. Anisotropic, constrained, and robust between-factor models are rejected. The measurement graph must be non-empty and connected; disconnected graphs are detected during QR elimination and raise `IndeterminateSystemException`. The graph may contain at most one matching `PriorFactor<T>`.
 
 The relaxed problem uses fixed-size `N`-by-`N` matrices for measurements, reduced-system blocks, back-substitution, and projection, where `N` is obtained from the matrix representation returned by `T::matrix()`. The complete Gaussian graph retains dynamic sparse storage because its topology is only known at runtime. FAST-Sync defaults to a METIS nested-dissection ordering, accepts another supported `OrderingType` such as COLAMD or a caller-supplied complete `Ordering`, and uses an exact identity gauge at the ordering's final key. Projection to the target group occurs only after the complete ambient-space solve. If a matching prior is present, the rounded solution is subsequently left-aligned to that prior; without a prior, the selected ordering's gauge is retained. Selecting METIS in a build without METIS support reports the nested-dissection error. New fixed-size matrix Lie groups can opt in by specializing `FastSyncProjection<T>`.
-
-## CUDA Acceleration
-
-GPU-accelerated optimization for bundle adjustment (requires a CUDA build; see `gtsam/slam/cuda/`).
-
--   [SfmLevenbergMarquardtOptimizer](doc/SfmLevenbergMarquardtOptimizer.ipynb) : Fully GPU-resident Levenberg-Marquardt for BAL-style bundle adjustment (`GeneralSFMFactor<PinholeCamera<Cal3Bundler>, Point3>` graphs); dense-Schur, cuDSS, or PCG linear solvers.
--   [GNC with the CUDA SFM optimizer](doc/CudaSfmGncOptimizer.ipynb) : Robust bundle adjustment, using the optimizer above as the GNC inner solver.

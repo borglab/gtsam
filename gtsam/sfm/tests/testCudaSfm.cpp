@@ -25,13 +25,13 @@
 #include <gtsam/nonlinear/cuda/internal/DeviceGeometryTypes.h>
 #include <gtsam/sfm/SfmData.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
-#include <gtsam/slam/cuda/SfmLevenbergMarquardt.h>
-#include <gtsam/slam/cuda/internal/SfmDenseSchurSolver.h>
-#include <gtsam/slam/cuda/internal/SfmProjectionBatch.h>
-#include <gtsam/slam/cuda/internal/SfmProjectionLinearization.h>
-#include <gtsam/slam/cuda/internal/SfmReducedCsrPlan.h>
-#include <gtsam/slam/cuda/internal/SfmSchurProblem.h>
-#include <gtsam/slam/cuda/internal/SfmValues.h>
+#include <gtsam/sfm/cuda/SfmLevenbergMarquardt.h>
+#include <gtsam/sfm/cuda/internal/SfmDenseSchurSolver.h>
+#include <gtsam/sfm/cuda/internal/SfmProjectionBatch.h>
+#include <gtsam/sfm/cuda/internal/SfmProjectionLinearization.h>
+#include <gtsam/sfm/cuda/internal/SfmReducedCsrPlan.h>
+#include <gtsam/sfm/cuda/internal/SfmSchurProblem.h>
+#include <gtsam/sfm/cuda/internal/SfmValues.h>
 
 #include <CppUnitLite/TestHarness.h>
 
