@@ -523,6 +523,11 @@ class ISAM2Result {
   bool getBatchReorderTriggered() const;
   double getErrorBefore() const;
   double getErrorAfter() const;
+  size_t getFactorsRecalculated() const;
+  const gtsam::KeySet& getUnusedKeys() const;
+  const gtsam::KeyVector& getObservedKeys() const;
+  const gtsam::KeySet& getKeysWithRemovedFactors() const;
+  const gtsam::KeySet& getMarkedKeys() const;
 };
 
 class ISAM2 {
