@@ -134,8 +134,14 @@ TEST( Rot3, AxisAngle2)
   // convert Rot3 to quaternion using GTSAM
   const auto [actualAxis, actualAngle] = R1.axisAngle();
   
+  // Regression guard for BOTH #886 and #1233: this matrix is real data rounded
+  // to 6 digits (orthogonality defect ~4e-6) at an angle 2e-3 away from pi, so
+  // it exercises the near-pi branch on non-orthogonal input. 1e-5 was loose
+  // enough to only catch the gross #886 failure; 1e-7 also catches the #1233
+  // accuracy loss. The residual 4.8e-8 is the truncation of the literal below,
+  // not the implementation (60-digit reference: 3.1396582476).
   double expectedAngle = 3.1396582;
-  CHECK(assert_equal(expectedAngle, actualAngle, 1e-5));
+  CHECK(assert_equal(expectedAngle, actualAngle, 1e-7));
 }
 
 /* ************************************************************************* */
