@@ -12,9 +12,14 @@
 /**
  * @file testGraph.cpp
  * @date Jan 12, 2010
- * @author nikai
+ * @author Kai Ni
  * @brief unit test for graph-inl.h
  */
+
+// GCC reports false positives in Boost.Graph adjacency-list copies.
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/MatrixConstants.h>
