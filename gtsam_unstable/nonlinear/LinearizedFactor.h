@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <vector>
 #include <gtsam_unstable/dllexport.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
@@ -27,6 +31,8 @@ namespace gtsam {
 
 /**
  * A base factor class for the Jacobian and Hessian linearized factors
+ * @deprecated Use LinearContainerFactor to place linear factors in nonlinear
+ * graphs.
  */
 class GTSAM_UNSTABLE_EXPORT LinearizedGaussianFactor : public NonlinearFactor {
 public:
@@ -75,6 +81,7 @@ private:
 /**
  * A factor that takes a linear, Jacobian factor and inserts it into
  * a nonlinear graph.
+ * @deprecated Use LinearContainerFactor.
  */
 class GTSAM_UNSTABLE_EXPORT LinearizedJacobianFactor : public LinearizedGaussianFactor {
 
@@ -168,6 +175,7 @@ struct traits<LinearizedJacobianFactor> : public Testable<LinearizedJacobianFact
 /**
  * A factor that takes a linear, Hessian factor and inserts it into
  * a nonlinear graph.
+ * @deprecated Use LinearContainerFactor.
  */
 class GTSAM_UNSTABLE_EXPORT LinearizedHessianFactor : public LinearizedGaussianFactor {
 
@@ -296,3 +304,5 @@ struct traits<LinearizedHessianFactor> : public Testable<LinearizedHessianFactor
 };
 
 } // \namespace aspn
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

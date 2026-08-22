@@ -9,12 +9,20 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam_unstable/dllexport.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Pose3.h>
 
 namespace gtsam {
 
+/**
+ * Manifold measurement between two points on a unit sphere.
+ * @deprecated Use Unit3 for spherical bearings.
+ */
 class GTSAM_UNSTABLE_EXPORT BearingS2 {
 protected:
   Rot2 azimuth_, elevation_;
@@ -106,3 +114,5 @@ private:
 template<> struct traits<BearingS2> : public Testable<BearingS2> {};
 
 } // \namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
