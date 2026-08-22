@@ -209,6 +209,9 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
     Values Y;
     std::vector<Vector> lambdaEq;
     double stationarity = 0.0;
+    /// Penalty the inner solver finished on. BCL raises it during the solve,
+    /// so this is not `bclInitialPenalty`.
+    double penalty = 0.0;
   };
 
   /// Construct from a QCQP-representable factor graph and an initial

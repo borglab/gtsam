@@ -1101,6 +1101,50 @@ TEST(RiemannianStaircase, LeastSquaresMultipliersRespectSigmaAndAsymmetry) {
 /* ************************************************************************* */
 
 /* ************************************************************************* */
+namespace inner_solver_state {
+using namespace RingFixture;
+
+constexpr size_t kNumPoses = 5;
+const double kDelta = 2.0 * kPi / static_cast<double>(kNumPoses);
+
+// BCL raises the penalty during the solve, so the value the saddle merit needs
+// is the one the solver finished on, not `bclInitialPenalty`.
+TEST(RiemannianStaircase, InnerSolveReportsFinalPenalty) {
+  const QcqpProblem qcqp(RingGraph(kNumPoses, kDelta), 2);
+  const Values initial = RingQcqpValuesD2(kNumPoses, kDelta, 0.3);
+
+  auto almParams = DefaultAlmParams();
+  almParams->bclInitialPenalty = 7.0;
+  const auto inner =
+      RiemannianStaircaseOptimizer::runLocalSolver(qcqp, initial, almParams);
+  EXPECT(inner.penalty > 0.0);
+  EXPECT(inner.penalty >= almParams->bclInitialPenalty);
+}
+
+// A null almParams means "use the defaults" to runLocalSolver, so it must mean
+// the same to the staircase. It used to be dereferenced unchecked on the lift
+// path, which crashed as soon as a level failed to certify.
+TEST(RiemannianStaircase, NullAlmParamsIsNormalized) {
+  RiemannianStaircaseParams params;
+  params.pMin = 2;
+  params.pMax = 3;
+  params.eta = -1.0;  // Reject every level, so the lift path is exercised.
+  params.almParams = nullptr;
+
+  const RiemannianStaircaseOptimizer optimizer(
+      RingGraph(kNumPoses, kDelta), RingQcqpValuesD2(kNumPoses, kDelta, 0.3),
+      params);
+  EXPECT(optimizer.params().almParams != nullptr);
+
+  const auto result = optimizer.optimize();
+  EXPECT(!result.certified);
+  LONGS_EQUAL(2, result.ranksVisited.size());
+}
+
+}  // namespace inner_solver_state
+/* ************************************************************************* */
+
+/* ************************************************************************* */
 namespace stage_two_is_not_authoritative {
 
 // Reaching Stage 2 means the Cholesky test already failed, so Stage 2 must

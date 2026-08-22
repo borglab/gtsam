@@ -63,6 +63,11 @@ RiemannianStaircaseOptimizer::RiemannianStaircaseOptimizer(
     const RiemannianStaircaseParams& params)
     : graph_(graph), initialValues_(initialValues), params_(params) {
   validateParams(params_);
+  /// `runLocalSolver` reads a null `almParams` as "use the defaults". Settle
+  /// that here so the rest of the class can dereference it freely.
+  if (!params_.almParams) {
+    params_.almParams = std::make_shared<AugmentedLagrangianParams>();
+  }
   const auto buildStart = Clock::now();
   try {
     pMinQcqp_ = std::make_shared<QcqpProblem>(graph_, params_.pMin);
@@ -263,7 +268,7 @@ RiemannianStaircaseOptimizer::runLocalSolver(
         "progress.");
   }
   const auto& last = alm.progress().back();
-  return {Y, last.lambdaEq, last.augmentedLagrangianStationarity};
+  return {Y, last.lambdaEq, last.augmentedLagrangianStationarity, last.muEq};
 }
 
 /* ************************************************************************* */
@@ -915,8 +920,7 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
       carriedQcqp = std::make_shared<QcqpProblem>(graph_, p + 1);
       carriedQcqpBuildTime = ElapsedSeconds(buildStart);
       Y = saddleEscapeWithLineSearch(*carriedQcqp, layout, Y, vMin, lambdaEq,
-                                     params_.almParams->bclInitialPenalty,
-                                     lambdaMin, params_)
+                                     inner.penalty, lambdaMin, params_)
               .lifted;
     } else {
       result.minEigenvalue = lambdaMin;
