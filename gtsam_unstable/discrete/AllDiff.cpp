@@ -51,6 +51,68 @@ DecisionTreeFactor AllDiff::toDecisionTreeFactor() const {
 }
 
 /* ************************************************************************* */
+TableFactor AllDiff::toTableFactor() const {
+  DiscreteKeys discreteKeys;
+  discreteKeys.reserve(keys_.size());
+  for (size_t i = 0; i < keys_.size(); ++i) {
+    discreteKeys.push_back(discreteKey(i));
+  }
+  uint64_t cardinalityProduct = 1;
+  size_t maximumCardinality = 0;
+  for (const DiscreteKey& key : discreteKeys) {
+    cardinalityProduct *= key.second;
+    maximumCardinality = std::max(maximumCardinality, key.second);
+  }
+
+  std::vector<size_t> sortedCardinalities;
+  sortedCardinalities.reserve(discreteKeys.size());
+  for (const DiscreteKey& key : discreteKeys) {
+    sortedCardinalities.push_back(key.second);
+  }
+  std::sort(sortedCardinalities.begin(), sortedCardinalities.end());
+  uint64_t validAssignmentCount = 1;
+  for (size_t i = 0; i < sortedCardinalities.size(); ++i) {
+    if (sortedCardinalities[i] <= i) {
+      validAssignmentCount = 0;
+      break;
+    }
+    validAssignmentCount *= sortedCardinalities[i] - i;
+  }
+
+  Eigen::SparseVector<double> table(cardinalityProduct);
+  table.reserve(validAssignmentCount);
+  std::vector<bool> used(maximumCardinality, false);
+  const auto addValidAssignments = [&](const auto& add, size_t depth,
+                                       uint64_t index) -> void {
+    if (depth == discreteKeys.size()) {
+      // The recursion visits mixed-radix indices in increasing order, so append
+      // directly instead of searching for each sparse insertion position.
+      table.insertBack(index) = 1.0;
+      return;
+    }
+    const size_t cardinality = discreteKeys[depth].second;
+    for (size_t value = 0; value < cardinality; ++value) {
+      if (!used[value]) {
+        used[value] = true;
+        add(add, depth + 1, index * cardinality + value);
+        used[value] = false;
+      }
+    }
+  };
+  addValidAssignments(addValidAssignments, 0, 0);
+  return TableFactor(discreteKeys, table);
+}
+
+/* ************************************************************************* */
+DiscreteFactor::shared_ptr AllDiff::multiply(
+    const DiscreteFactor::shared_ptr& factor) const {
+  if (const auto table = std::dynamic_pointer_cast<TableFactor>(factor)) {
+    return std::make_shared<TableFactor>(*table * toTableFactor());
+  }
+  return Constraint::multiply(factor);
+}
+
+/* ************************************************************************* */
 DecisionTreeFactor AllDiff::operator*(const DecisionTreeFactor& f) const {
   // TODO: can we do this more efficiently?
   return toDecisionTreeFactor() * f;
@@ -61,8 +123,8 @@ bool AllDiff::ensureArcConsistency(Key j, Domains* domains) const {
   Domain& Dj = domains->at(j);
 
   // Though strictly not part of allDiff, we check for
-  // a value in domains->at(j) that does not occur in any other connected domain.
-  // If found, we make this a singleton...
+  // a value in domains->at(j) that does not occur in any other connected
+  // domain. If found, we make this a singleton...
   // TODO: make a new constraint where this really is true
   std::optional<Domain> maybeChanged = Dj.checkAllDiff(keys_, *domains);
   if (maybeChanged) {
@@ -88,7 +150,8 @@ bool AllDiff::ensureArcConsistency(Key j, Domains* domains) const {
 }
 
 /* ************************************************************************* */
-Constraint::shared_ptr AllDiff::partiallyApply(const DiscreteValues& values) const {
+Constraint::shared_ptr AllDiff::partiallyApply(
+    const DiscreteValues& values) const {
   DiscreteKeys newKeys;
   // loop over keys and add them only if they do not appear in values
   for (Key k : keys_)
@@ -99,8 +162,7 @@ Constraint::shared_ptr AllDiff::partiallyApply(const DiscreteValues& values) con
 }
 
 /* ************************************************************************* */
-Constraint::shared_ptr AllDiff::partiallyApply(
-    const Domains& domains) const {
+Constraint::shared_ptr AllDiff::partiallyApply(const Domains& domains) const {
   DiscreteValues known;
   for (Key k : keys_) {
     const Domain& Dk = domains.at(k);

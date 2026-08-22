@@ -8,6 +8,7 @@
 #pragma once
 
 #include <gtsam/discrete/DiscreteKey.h>
+#include <gtsam/discrete/TableFactor.h>
 #include <gtsam_unstable/discrete/BinaryAllDiff.h>
 
 namespace gtsam {
@@ -17,8 +18,6 @@ namespace gtsam {
  * Returns 1 if values for all keys are different, 0 otherwise.
  */
 class GTSAM_UNSTABLE_EXPORT AllDiff : public Constraint {
-  std::map<Key, size_t> cardinalities_;
-
   DiscreteKey discreteKey(size_t i) const {
     Key j = keys_[i];
     return DiscreteKey(j, cardinalities_.at(j));
@@ -50,13 +49,21 @@ class GTSAM_UNSTABLE_EXPORT AllDiff : public Constraint {
   /// Convert into a decisiontree, can be *very* expensive !
   DecisionTreeFactor toDecisionTreeFactor() const override;
 
+  /// Convert directly into a sparse table, enumerating only valid assignments.
+  TableFactor toTableFactor() const;
+
+  /// Multiply factors, preserving TableFactor when possible.
+  DiscreteFactor::shared_ptr multiply(
+      const DiscreteFactor::shared_ptr& factor) const override;
+
   /// Multiply into a decisiontree
   DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
 
   /*
    * Ensure Arc-consistency by checking every possible value of domain j.
    * @param j domain to be checked
-   * @param (in/out) domains all domains, but only domains->at(j) will be checked.
+   * @param (in/out) domains all domains, but only domains->at(j) will be
+   * checked.
    * @return true if domains->at(j) was changed, false otherwise.
    */
   bool ensureArcConsistency(Key j, Domains* domains) const override;
@@ -65,8 +72,7 @@ class GTSAM_UNSTABLE_EXPORT AllDiff : public Constraint {
   Constraint::shared_ptr partiallyApply(const DiscreteValues&) const override;
 
   /// Partially apply known values, domain version
-  Constraint::shared_ptr partiallyApply(
-      const Domains&) const override;
+  Constraint::shared_ptr partiallyApply(const Domains&) const override;
 };
 
 }  // namespace gtsam
