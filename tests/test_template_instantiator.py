@@ -21,7 +21,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from gtwrap.interface_parser import (Argument, ArgumentList, Class,
                                      Constructor, ForwardDeclaration,
                                      GlobalFunction, Include, Method,
-                                     Namespace, ReturnType, StaticMethod,
+                                     Module, Namespace, ReturnType, StaticMethod,
                                      Typename)
 from gtwrap.template_instantiator import (InstantiatedClass,
                                           InstantiatedConstructor,
@@ -126,6 +126,7 @@ class TestInstantiatedGlobalFunction(unittest.TestCase):
     def setUp(self):
         original = GlobalFunction.rule.parse_string("""
             template<T={int}, R={double}>
+            @pybind_lambda
             R function(const T& x);
         """)[0]
         instantiations = [
@@ -142,6 +143,7 @@ class TestInstantiatedGlobalFunction(unittest.TestCase):
         self.assertEqual(len(self.func.args.list()), 1)
         self.assertEqual(self.func.args.list()[0].ctype.get_typename(), "int")
         self.assertEqual(self.func.return_type.type1.get_typename(), "double")
+        self.assertTrue(self.func.force_pybind_lambda)
 
     def test_to_cpp(self):
         """Test to_cpp method."""
@@ -210,6 +212,7 @@ class TestInstantiatedMethod(unittest.TestCase):
     def setUp(self):
         method = Method.rule.parse_string("""
             template<U={double}>
+            @pybind_lambda
             double method(const U& param);
             """)[0]
         instantiations = [Typename.rule.parse_string("double")[0]]
@@ -220,11 +223,13 @@ class TestInstantiatedMethod(unittest.TestCase):
         self.assertIsInstance(self.method, InstantiatedMethod)
         self.assertIsInstance(self.method.original, Method)
         self.assertEqual(self.method.name, "methodDouble")
+        self.assertTrue(self.method.force_pybind_lambda)
 
     def test_construct(self):
         """Test the construct classmethod."""
         method = Method.rule.parse_string("""
             template<U={double}>
+            @pybind_lambda
             T method(U& param);
             """)[0]
         method_instantiations = [Typename.rule.parse_string("double")[0]]
@@ -249,6 +254,7 @@ class TestInstantiatedMethod(unittest.TestCase):
             instantiated_method.args.list()[0].ctype.get_typename(), "double")
         self.assertEqual(instantiated_method.return_type.type1.get_typename(),
                          "string")
+        self.assertTrue(instantiated_method.force_pybind_lambda)
 
     def test_to_cpp(self):
         """Test the to_cpp method."""
@@ -262,6 +268,7 @@ class TestInstantiatedStaticMethod(unittest.TestCase):
     def setUp(self):
         static_method = StaticMethod.rule.parse_string("""
             template<U={double}>
+            @pybind_lambda
             static T staticMethod(const U& param);
             """)[0]
         instantiations = [Typename.rule.parse_string("double")[0]]
@@ -273,11 +280,13 @@ class TestInstantiatedStaticMethod(unittest.TestCase):
         self.assertIsInstance(self.static_method, InstantiatedStaticMethod)
         self.assertIsInstance(self.static_method.original, StaticMethod)
         self.assertEqual(self.static_method.name, "staticMethodDouble")
+        self.assertTrue(self.static_method.force_pybind_lambda)
 
     def test_construct(self):
         """Test the construct classmethod."""
         static_method = StaticMethod.rule.parse_string("""
             template<U={double}>
+            @pybind_lambda
             static T staticMethod(U& param);
             """)[0]
         method_instantiations = [Typename.rule.parse_string("double")[0]]
@@ -304,6 +313,7 @@ class TestInstantiatedStaticMethod(unittest.TestCase):
         self.assertEqual(
             instantiated_static_method.return_type.type1.get_typename(),
             "string")
+        self.assertTrue(instantiated_static_method.force_pybind_lambda)
 
     def test_to_cpp(self):
         """Test the to_cpp method."""
@@ -614,6 +624,26 @@ class TestTemplateInstantiator(unittest.TestCase):
         self.assertEqual(
             instantiated_namespace.content[1].static_methods[0].name,
             "staticMethodDouble")
+
+    def test_annotation_survives_typedef_instantiation(self):
+        """An annotation on a templated class member survives a typedef."""
+        module = Module.parse_string("""
+            namespace adapters {
+                template<T>
+                class Adapter {
+                    @pybind_lambda
+                    T value(T input) const;
+                };
+                typedef adapters::Adapter<int> IntAdapter;
+            }
+        """)
+
+        instantiated = instantiate_namespace(module)
+        namespace = instantiated.content[0]
+        typedef_class = next(
+            item for item in namespace.content
+            if isinstance(item, Class) and item.name == "IntAdapter")
+        self.assertTrue(typedef_class.methods[0].force_pybind_lambda)
 
 
 if __name__ == '__main__':

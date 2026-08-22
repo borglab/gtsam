@@ -16,6 +16,8 @@ from typing import List, Union
 
 from pyparsing import Forward, ParseResults, ZeroOrMore  # type: ignore
 
+from .annotations import (UNSUPPORTED_ANNOTATION,
+                          UNSUPPORTED_TEMPLATED_ANNOTATION)
 from .classes import Class, collect_namespaces
 from .declaration import ForwardDeclaration, Include
 from .enum import Enum
@@ -72,6 +74,8 @@ class Namespace:
             ^ Enum.rule  #
             ^ Variable.rule  #
             ^ rule  #
+            ^ UNSUPPORTED_TEMPLATED_ANNOTATION  #
+            ^ UNSUPPORTED_ANNOTATION  #
         )("content")  # BR
         + RBRACE  #
     ).set_parse_action(lambda t: Namespace.from_parse_result(t))
