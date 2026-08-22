@@ -23,6 +23,7 @@
 #include "../timeSFMBAL.h"
 #include "GncOutlierSampling.h"
 
+#include <gtsam/base/cuda/Errors.h>
 #include <gtsam/config.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/GncOptimizer.h>
@@ -606,9 +607,11 @@ CudaGraphLmRun runCudaGraphLm(
     std::optional<gtsam::cuda::SfmLevenbergMarquardtOptimizer> optimizer;
     run.optimizerConstructionElapsed = gtsam::timing::measureSeconds(
         [&] { optimizer.emplace(graph, initial, params); });
+    GTSAM_CUDA_CHECK(cudaDeviceSynchronize());
     run.optimizeElapsed = gtsam::timing::measureSeconds([&] {
       const Values& optimized = optimizer->optimize();
       (void)optimized;
+      GTSAM_CUDA_CHECK(cudaDeviceSynchronize());
     });
     run.resultQueryElapsed = gtsam::timing::measureSeconds([&] {
       run.initialError = optimizer->result().initialError;
@@ -1674,7 +1677,7 @@ int RunMain(int argc, char* argv[]) {
         printCudaGraphLmRun(run, options.cudaLinearSolver,
                             options.cudaGraphKind, options.profile);
       } else {
-        const CudaBackendLmRun backendRun{run.elapsed, run.backend};
+        const CudaBackendLmRun backendRun{run.optimizeElapsed, run.backend};
         printCudaMatrixResult(options, dataset, backendRun,
                               cudaMatrixCsvHeaderPending);
         cudaMatrixCsvHeaderPending = false;
