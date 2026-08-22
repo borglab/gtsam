@@ -135,7 +135,7 @@ The typed `getLinearSolver()` and `setLinearSolver()` conveniences coexist with 
 
 :::{card} Optional CHOLMOD
 
-When SuiteSparse CHOLMOD is found, `NonlinearOptimizerParams::CHOLMOD` works for ordinary nonlinear optimizers and both CPU SFM modes. The reusable session accepts arbitrary variable dimensions, loads Jacobian and Hessian factors directly into the sparse normal system, expands key orderings into scalar permutations, and reuses symbolic analysis.
+When SuiteSparse CHOLMOD is found, `NonlinearOptimizerParams::CHOLMOD` works for ordinary nonlinear optimizers and both CPU SFM modes. The reusable session accepts arbitrary variable dimensions, loads ordinary Jacobian, compact batch Jacobian, and Hessian factors directly into the sparse normal system, expands key orderings into scalar permutations, and reuses symbolic analysis. Compact batches contribute their fixed-size normal blocks without a dense intermediate.
 
 A build without CHOLMOD remains valid; selecting it produces an actionable runtime error. Constrained, non-SPD, and factorization failures are reported rather than silently falling back.
 :::
@@ -168,22 +168,20 @@ Release-mode arm64 measurements on August 21, 2026 used macOS 26.5.2 on a MacBoo
 | Schur + `MULTIFRONTAL_SOLVER` | 0.231 | 0.955 | 1.374 |
 | Schur + sequential Cholesky | 0.405 | 1.360 | 1.930 |
 | Schur + multifrontal Cholesky | 0.378 | 1.296 | 1.943 |
-| Schur + CHOLMOD | 0.388 | 1.311 | 2.151 |
 | Schur + PCG | 0.386 | 1.379 | 2.665 |
+| Schur + CHOLMOD | 0.711 | 2.060 | 2.780 |
 | Schur + multifrontal QR | 0.383 | 2.206 | 3.200 |
 | Full + sequential Cholesky | 0.640 | 3.684 | 4.432 |
 | Full + PCG | 0.536 | 4.119 | 5.413 |
-| Full + multifrontal Cholesky | 0.490 | 1.571 | 6.310 |
+| Full + CHOLMOD | 1.373 | 3.807 | 7.865 |
+| Full + multifrontal Cholesky | 0.637 | 1.973 | 8.102 |
 | Schur + sequential QR | 0.417 | 3.355 | 8.273 |
 | Full + sequential QR | 2.361 | 74.741 | 203.216 |
 | Full + multifrontal QR | 2.457 | 84.486 | - |
-| Full + CHOLMOD | unsupported¹ | unsupported¹ | unsupported¹ |
-| Full + SubgraphSolver | unsupported² | unsupported² | unsupported² |
-| Schur + SubgraphSolver | unsupported² | unsupported² | unsupported² |
+| Full + SubgraphSolver | unsupported¹ | unsupported¹ | unsupported¹ |
+| Schur + SubgraphSolver | unsupported¹ | unsupported¹ | unsupported¹ |
 
-¹ Full CHOLMOD accepts ordinary `JacobianFactor` and `HessianFactor` inputs, but this point-batched benchmark linearizes to `BatchJacobianFactor`. Schur CHOLMOD is supported because landmark elimination exports ordinary Hessian factors.
-
-² SubgraphSolver was attempted on all three datasets but failed before the first LM iteration. Its spanning-tree builder only uses unary and binary factors; the Full point-batched graph and the Schur camera clique graph contain higher-arity factors, so no spanning tree can be constructed.
+¹ SubgraphSolver was attempted on all three datasets but failed before the first LM iteration. Its spanning-tree builder only uses unary and binary factors; the Full point-batched graph and the Schur camera clique graph contain higher-arity factors, so no spanning tree can be constructed.
 
 The BAL-135 Full QR phase reached a 22.4 GB process peak on this 24 GB machine. Full multifrontal QR crossed the five-minute cap; Full sequential QR completed but took more than three minutes per optimization. These combinations are supported, but poor choices for this problem structure and hardware.
 

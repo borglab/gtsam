@@ -15,6 +15,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/internal/CholmodSolver.h>
@@ -37,6 +38,21 @@ GaussianFactorGraph jacobianGraph(double rhsScale = 1.0) {
       42, (Matrix(2, 1) << 2.0, 1.0).finished(),
       rhsScale * (Vector(2) << 0.5, -1.0).finished());
   return graph;
+}
+
+GaussianFactorGraph batchJacobianGraph(
+    double rhsScale = 1.0, const SharedDiagonal& model = SharedDiagonal()) {
+  using Batch = BatchJacobianFactor<2, 2, 1>;
+  auto batch = std::make_shared<Batch>(KeyVector{7, 42},
+                                       std::vector<size_t>{2, 1}, model);
+  batch->reserve(2);
+  batch->addRow(Batch::SlotIndices{0, 1},
+                {Matrix22{{1.0, 0.0}, {0.0, 1.0}}, Matrix21{{1.0}, {2.0}}},
+                rhsScale * Vector2(1.0, -0.5));
+  batch->addRow(Batch::SlotIndices{0, 1},
+                {Matrix22{{2.0, 1.0}, {1.0, -1.0}}, Matrix21{{-1.0}, {0.5}}},
+                rhsScale * Vector2(0.25, 2.0));
+  return GaussianFactorGraph{batch};
 }
 
 }  // namespace
@@ -90,6 +106,26 @@ TEST(CholmodSolver, MixedJacobianAndHessianFactors) {
   internal::CholmodSolver solver;
   EXPECT(assert_equal(reference.optimize(ordering),
                       solver.solve(mixed, ordering), 1e-9));
+}
+
+/* ************************************************************************* */
+// Verifies direct compact batch assembly, weighting, ordering, and reuse.
+TEST(CholmodSolver, BatchJacobianFactors) {
+  if (!internal::CholmodSolver::available()) return;
+
+  const Ordering ordering{42, 7};
+  const SharedDiagonal model = noiseModel::Diagonal::Sigmas(
+      (Vector4() << 0.5, 1.0, 2.0, 0.75).finished());
+  internal::CholmodSolver solver;
+  for (double scale : {1.0, 2.0}) {
+    const GaussianFactorGraph graph = batchJacobianGraph(scale, model);
+    const auto batch =
+        std::dynamic_pointer_cast<BatchJacobianFactorBase>(graph.at(0));
+    GaussianFactorGraph expanded;
+    expanded.emplace_shared<JacobianFactor>(batch->toJacobianFactor());
+    EXPECT(assert_equal(expanded.optimize(ordering),
+                        solver.solve(graph, ordering), 1e-9));
+  }
 }
 
 /* ************************************************************************* */

@@ -14,13 +14,16 @@
  * @brief Optional reusable CHOLMOD solver for Gaussian factor graphs.
  */
 
+#include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/SparseEigen.h>
+#include <gtsam/linear/internal/BatchJacobianFactorElimination.h>
 #include <gtsam/linear/internal/CholmodSolver.h>
 #include <gtsam/linear/linearExceptions.h>
 
 #include <Eigen/Sparse>
+#include <algorithm>
 #include <map>
 #include <stdexcept>
 #include <unordered_set>
@@ -42,87 +45,145 @@ struct SparseNormalSystem {
   std::map<Key, size_t> dimensions;
 };
 
+struct VariableLayout {
+  std::map<Key, size_t> dimensions;
+  std::map<Key, DenseIndex> scalarOffsets;
+  DenseIndex dimension = 0;
+};
+
+VariableLayout createVariableLayout(const GaussianFactorGraph& graph,
+                                    const Ordering& ordering) {
+  VariableLayout layout;
+  layout.dimensions = graph.getKeyDimMap();
+  if (ordering.size() != layout.dimensions.size()) {
+    throw std::invalid_argument(
+        "CHOLMOD ordering must contain every Gaussian variable exactly once");
+  }
+  std::unordered_set<Key> seen;
+  for (Key key : ordering) {
+    if (!layout.dimensions.count(key) || !seen.insert(key).second) {
+      throw std::invalid_argument(
+          "CHOLMOD ordering contains an unknown or duplicate key");
+    }
+    layout.scalarOffsets.emplace(key, layout.dimension);
+    layout.dimension += static_cast<DenseIndex>(layout.dimensions.at(key));
+  }
+  return layout;
+}
+
+class TripletNormalAccumulator : public SparseNormalAccumulator {
+ public:
+  TripletNormalAccumulator(std::vector<Eigen::Triplet<double, int>>* entries,
+                           Vector* rhs)
+      : entries_(entries), rhs_(rhs) {}
+
+  void addHessianBlock(DenseIndex rowOffset, DenseIndex columnOffset,
+                       DenseIndex rows, DenseIndex columns,
+                       const double* values) override {
+    for (DenseIndex column = 0; column < columns; ++column) {
+      for (DenseIndex row = 0; row < rows; ++row) {
+        const DenseIndex globalRow = rowOffset + row;
+        const DenseIndex globalColumn = columnOffset + column;
+        if (rowOffset == columnOffset && globalRow > globalColumn) continue;
+        const double value = values[row + column * rows];
+        const DenseIndex upperRow = std::min(globalRow, globalColumn);
+        const DenseIndex upperColumn = std::max(globalRow, globalColumn);
+        entries_->emplace_back(static_cast<int>(upperRow),
+                               static_cast<int>(upperColumn), value);
+      }
+    }
+  }
+
+  void addRhsBlock(DenseIndex offset, DenseIndex dimension,
+                   const double* values) override {
+    rhs_->segment(offset, dimension) +=
+        Eigen::Map<const Vector>(values, dimension);
+  }
+
+ private:
+  std::vector<Eigen::Triplet<double, int>>* entries_;
+  Vector* rhs_;
+};
+
+void appendHessianFactor(const HessianFactor& factor,
+                         const VariableLayout& layout,
+                         TripletNormalAccumulator* accumulator) {
+  for (size_t i = 0; i < factor.size(); ++i) {
+    const Key keyI = factor.keys().at(i);
+    const DenseIndex offsetI = layout.scalarOffsets.at(keyI);
+    const DenseIndex dimensionI = factor.getDim(factor.begin() + i);
+    accumulator->addRhsBlock(offsetI, dimensionI,
+                             factor.linearTerm(factor.begin() + i).data());
+
+    for (size_t j = i; j < factor.size(); ++j) {
+      const Key keyJ = factor.keys().at(j);
+      const DenseIndex offsetJ = layout.scalarOffsets.at(keyJ);
+      const Matrix block = i == j
+                               ? Matrix(factor.info().diagonalBlock(i))
+                               : Matrix(factor.info().aboveDiagonalBlock(i, j));
+      accumulator->addHessianBlock(offsetI, offsetJ, block.rows(), block.cols(),
+                                   block.data());
+    }
+  }
+}
+
+void appendBatchFactor(const BatchJacobianFactorBase& factor,
+                       const VariableLayout& layout,
+                       TripletNormalAccumulator* accumulator) {
+  std::vector<DenseIndex> scalarOffsets;
+  scalarOffsets.reserve(factor.size());
+  for (Key key : factor.keys()) {
+    scalarOffsets.push_back(layout.scalarOffsets.at(key));
+  }
+  BatchJacobianFactorElimination::addSparseNormal(factor, scalarOffsets,
+                                                  accumulator);
+}
+
+void appendFactor(const GaussianFactor& factor, const VariableLayout& layout,
+                  TripletNormalAccumulator* accumulator) {
+  if (const auto* hessian = dynamic_cast<const HessianFactor*>(&factor)) {
+    appendHessianFactor(*hessian, layout, accumulator);
+    return;
+  }
+  if (const auto* jacobian = dynamic_cast<const JacobianFactor*>(&factor)) {
+    appendHessianFactor(HessianFactor(*jacobian), layout, accumulator);
+    return;
+  }
+  if (const auto* batch =
+          dynamic_cast<const BatchJacobianFactorBase*>(&factor)) {
+    appendBatchFactor(*batch, layout, accumulator);
+    return;
+  }
+  throw std::invalid_argument(
+      "CHOLMOD supports JacobianFactor, BatchJacobianFactor, and HessianFactor "
+      "inputs");
+}
+
+SparseEigen finalizeSparseHessian(
+    DenseIndex dimension,
+    const std::vector<Eigen::Triplet<double, int>>& entries) {
+  SparseEigen hessian(dimension, dimension);
+  hessian.setFromTriplets(entries.begin(), entries.end());
+  hessian.makeCompressed();
+  return hessian;
+}
+
 SparseNormalSystem buildSparseNormalSystem(const GaussianFactorGraph& graph,
                                            const Ordering& ordering) {
   if (hasConstraints(graph)) {
     throw std::invalid_argument(
         "CHOLMOD does not support constrained Gaussian factors");
   }
-  const std::map<Key, size_t> dimensions = graph.getKeyDimMap();
-  if (ordering.size() != dimensions.size()) {
-    throw std::invalid_argument(
-        "CHOLMOD ordering must contain every Gaussian variable exactly once");
-  }
-  std::unordered_set<Key> seen;
-  for (Key key : ordering) {
-    if (!dimensions.count(key) || !seen.insert(key).second) {
-      throw std::invalid_argument(
-          "CHOLMOD ordering contains an unknown or duplicate key");
-    }
-  }
+  const VariableLayout layout = createVariableLayout(graph, ordering);
+  std::vector<Eigen::Triplet<double, int>> entries;
+  Vector rhs = Vector::Zero(layout.dimension);
+  TripletNormalAccumulator accumulator(&entries, &rhs);
 
-  std::map<Key, int> scalarOffsets;
-  int dimension = 0;
-  for (Key key : ordering) {
-    scalarOffsets.emplace(key, dimension);
-    dimension += static_cast<int>(dimensions.at(key));
-  }
-
-  std::vector<Eigen::Triplet<double, int>> hessianEntries;
-  Vector rhs = Vector::Zero(dimension);
   for (const GaussianFactor::shared_ptr& factor : graph) {
-    if (!factor) continue;
-
-    const HessianFactor* hessian =
-        dynamic_cast<const HessianFactor*>(factor.get());
-    std::unique_ptr<HessianFactor> converted;
-    if (!hessian) {
-      if (const auto* jacobian =
-              dynamic_cast<const JacobianFactor*>(factor.get())) {
-        converted = std::make_unique<HessianFactor>(*jacobian);
-        hessian = converted.get();
-      } else {
-        throw std::invalid_argument(
-            "CHOLMOD supports JacobianFactor and HessianFactor inputs");
-      }
-    }
-
-    for (size_t i = 0; i < hessian->size(); ++i) {
-      const Key keyI = hessian->keys().at(i);
-      const int offsetI = scalarOffsets.at(keyI);
-      const int dimensionI = static_cast<int>(
-          hessian->getDim(hessian->begin() + static_cast<DenseIndex>(i)));
-      rhs.segment(offsetI, dimensionI) +=
-          hessian->linearTerm(hessian->begin() + i).col(0);
-
-      for (size_t j = i; j < hessian->size(); ++j) {
-        const Key keyJ = hessian->keys().at(j);
-        const int offsetJ = scalarOffsets.at(keyJ);
-        const Matrix block =
-            i == j ? Matrix(hessian->info().diagonalBlock(i))
-                   : Matrix(hessian->info().aboveDiagonalBlock(i, j));
-        for (DenseIndex row = 0; row < block.rows(); ++row) {
-          for (DenseIndex column = 0; column < block.cols(); ++column) {
-            if (i == j && row > column) continue;
-            const int globalRow = offsetI + static_cast<int>(row);
-            const int globalColumn = offsetJ + static_cast<int>(column);
-            if (globalRow <= globalColumn) {
-              hessianEntries.emplace_back(globalRow, globalColumn,
-                                          block(row, column));
-            } else {
-              hessianEntries.emplace_back(globalColumn, globalRow,
-                                          block(row, column));
-            }
-          }
-        }
-      }
-    }
+    if (factor) appendFactor(*factor, layout, &accumulator);
   }
-
-  SparseEigen hessian(dimension, dimension);
-  hessian.setFromTriplets(hessianEntries.begin(), hessianEntries.end());
-  hessian.makeCompressed();
-  return {std::move(hessian), std::move(rhs), dimensions};
+  return {finalizeSparseHessian(layout.dimension, entries), std::move(rhs),
+          layout.dimensions};
 }
 
 }  // namespace
@@ -137,9 +198,8 @@ struct CholmodSolver::Impl {
   Impl() {
     cholmod_start(&common);
     common.print = 0;
-    // sparseJacobian() already expands the caller's key ordering into scalar
-    // column order. Keep that order instead of silently replacing it with
-    // CHOLMOD's own AMD choice.
+    // The assembled normal system already expands the caller's key ordering
+    // into scalar order. Keep it instead of silently using CHOLMOD's AMD.
     common.nmethods = 1;
     common.method[0].ordering = CHOLMOD_NATURAL;
     common.postorder = false;

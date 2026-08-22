@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
     gtsam::timing::Arguments arguments(argc, argv);
     if (arguments.helpRequested()) {
       std::cout << "Usage: timeSfmPartialElimination [--repetitions N] "
-                   "[--max-seconds S] [--subgraph-only] "
+                   "[--max-seconds S] [--subgraph-only|--cholmod-only] "
                    "[--configuration NAME] [BALfile]\n";
       return 0;
     }
@@ -141,13 +141,18 @@ int main(int argc, char* argv[]) {
     const bool subgraphOnly = arguments.flag("--subgraph-only");
     const std::optional<std::string> configuration =
         arguments.optionalString("--configuration");
+    const bool cholmodOnly = arguments.flag("--cholmod-only");
     if (repetitions == 0) {
       throw std::invalid_argument("--repetitions must be at least one");
     }
     if (maximumSeconds <= 0.0) {
       throw std::invalid_argument("--max-seconds must be positive");
     }
-    if (configuration && subgraphOnly) {
+    if (subgraphOnly && cholmodOnly) {
+      throw std::invalid_argument(
+          "--subgraph-only and --cholmod-only are mutually exclusive");
+    }
+    if (configuration && (subgraphOnly || cholmodOnly)) {
       throw std::invalid_argument(
           "--configuration cannot be combined with a solver-only flag");
     }
@@ -211,6 +216,9 @@ int main(int argc, char* argv[]) {
     for (const SolverChoice& choice : choices) {
       if (subgraphOnly &&
           choice.iterativeBackend != IterativeBackend::Subgraph) {
+        continue;
+      }
+      if (cholmodOnly && choice.type != NonlinearOptimizerParams::CHOLMOD) {
         continue;
       }
       if (configuration && choice.name != *configuration) continue;
