@@ -167,8 +167,8 @@ class QuadraticRangeFactor
 
     InsertQcqpConstraints<Direction, d>(this->key3(), constraints);
 
-    /// The direction is a Rot2 in 2D, which takes 2 rows, and a Unit3 in 3D,
-    /// which takes 1. Only the first row is used; any others stay zero.
+    // The direction is a Rot2 in 2D, which takes 2 rows, and a Unit3 in 3D,
+    // which takes 1. Only the first row is used; any others stay zero.
     const double sw = std::sqrt(weight_);
     Matrix B = Matrix::Zero(1, 2 + kDirectionRows);
     B(0, 0) = -sw;            // pose translation
