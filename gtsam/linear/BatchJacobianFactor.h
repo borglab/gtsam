@@ -653,6 +653,18 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
                                  std::make_index_sequence<NumSlots + 1>{});
   }
 
+  /// Add an expression to a frontal block without packetizing scalar results.
+  template <typename DestinationType, typename XprType>
+  static void addFrontalBlock(DestinationType* destination,
+                              const XprType& xpr) {
+    if constexpr (XprType::SizeAtCompileTime == 1) {
+      assert(destination->rows() == 1 && destination->cols() == 1);
+      (*destination)(0, 0) += xpr.coeff(0, 0);
+    } else {
+      *destination += xpr.eval();
+    }
+  }
+
   /// Add one block to a frontal row of a rectangular augmented Hessian.
   template <size_t I, size_t J>
   void updateFrontalHessianBlock(size_t rowIndex, const DenseIndex* mappedSlots,
@@ -672,16 +684,18 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     if constexpr (J == NumSlots) {
       const RhsVector& b = rhs_[rowIndex];
       if (weights) {
-        destination += (Ai.transpose() * weights->asDiagonal() * b).eval();
+        addFrontalBlock(
+            &destination, Ai.transpose() * weights->asDiagonal() * b);
       } else {
-        destination += (Ai.transpose() * b).eval();
+        addFrontalBlock(&destination, Ai.transpose() * b);
       }
     } else {
       const auto& Aj = std::get<J>(blocks_)[rowIndex];
       if (weights) {
-        destination += (Ai.transpose() * weights->asDiagonal() * Aj).eval();
+        addFrontalBlock(
+            &destination, Ai.transpose() * weights->asDiagonal() * Aj);
       } else {
-        destination += (Ai.transpose() * Aj).eval();
+        addFrontalBlock(&destination, Ai.transpose() * Aj);
       }
     }
   }
