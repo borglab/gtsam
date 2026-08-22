@@ -1,0 +1,12 @@
+fgz 1
+style node_size=18mm factor_size=3mm label_sep=0.2pt label_font=scriptsize
+
+root = a_0,a_1,a_2
+c0 = x_0:a_0
+c1 = x_1:a_1
+c2 = x_2:a_2
+
+node root {} (3.5, 3) color=orange!20
+node c0 {root} (0, 0) color=cyan!15
+node c1 {root} (3.5, 0) color=cyan!15
+node c2 {root} (7, 0) color=cyan!15
