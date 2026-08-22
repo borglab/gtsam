@@ -1145,6 +1145,81 @@ TEST(RiemannianStaircase, NullAlmParamsIsNormalized) {
 /* ************************************************************************* */
 
 /* ************************************************************************* */
+namespace cached_data_matrix {
+using namespace RingFixture;
+
+constexpr size_t kNumPoses = 6;
+const double kDelta = 2.0 * kPi / static_cast<double>(kNumPoses);
+
+// Caching Q for the whole climb is only sound because Q does not depend on the
+// rank: the layout is indexed by row dimension, and lifting adds columns only.
+TEST(RiemannianStaircase, DataMatrixIsRankIndependent) {
+  const NonlinearFactorGraph graph = RingGraph(kNumPoses, kDelta);
+  Matrix reference;
+  for (int p = 2; p <= 5; ++p) {
+    const QcqpProblem qcqp(graph, p);
+    Values Y;
+    for (size_t i = 0; i < kNumPoses; ++i)
+      Y.insert(Symbol('x', i), Matrix(Matrix::Zero(2, p)));
+    const auto layout = RiemannianStaircaseOptimizer::Layout::From(Y);
+    const Matrix Q =
+        Matrix(RiemannianStaircaseOptimizer::buildDataMatrix(qcqp, layout));
+    if (p == 2) {
+      reference = Q;
+    } else {
+      EXPECT(assert_equal(reference, Q, 1e-12));
+    }
+  }
+}
+
+// The optimizer caches Q at construction; it must equal a freshly built one.
+TEST(RiemannianStaircase, CachedDataMatrixMatchesFreshBuild) {
+  const NonlinearFactorGraph graph = RingGraph(kNumPoses, kDelta);
+  const Values initial = RingQcqpValuesD2(kNumPoses, kDelta, 0.01);
+  RiemannianStaircaseParams params;
+  params.pMin = 2;
+  params.pMax = 3;
+  params.almParams = DefaultAlmParams();
+
+  const RiemannianStaircaseOptimizer optimizer(graph, initial, params);
+  const QcqpProblem qcqp(graph, 2);
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(initial);
+  EXPECT(assert_equal(
+      Matrix(RiemannianStaircaseOptimizer::buildDataMatrix(qcqp, layout)),
+      Matrix(optimizer.dataMatrix()), 1e-12));
+}
+
+// Passing Q explicitly must give exactly what rebuilding it internally gives,
+// for both routines that consume it.
+TEST(RiemannianStaircase, ReusingDataMatrixMatchesRebuilding) {
+  const NonlinearFactorGraph graph = RingGraph(kNumPoses, kDelta);
+  const Values Y = RingQcqpValuesD2(kNumPoses, kDelta, 0.3);
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(Y);
+  const QcqpProblem qcqp(graph, 2);
+  const auto Q = RiemannianStaircaseOptimizer::buildDataMatrix(qcqp, layout);
+
+  const auto rebuilt =
+      RiemannianStaircaseOptimizer::leastSquaresMultipliers(qcqp, layout, Y);
+  const auto reused = RiemannianStaircaseOptimizer::leastSquaresMultipliers(
+      qcqp, layout, Y, Q);
+  EXPECT_DOUBLES_EQUAL(rebuilt.totalResidual, reused.totalResidual, 1e-12);
+  LONGS_EQUAL(rebuilt.lambdaEq.size(), reused.lambdaEq.size());
+  for (size_t m = 0; m < rebuilt.lambdaEq.size(); ++m) {
+    EXPECT(assert_equal(rebuilt.lambdaEq[m], reused.lambdaEq[m], 1e-12));
+  }
+
+  EXPECT(assert_equal(
+      Matrix(RiemannianStaircaseOptimizer::buildCertificate(qcqp, layout,
+                                                            reused.lambdaEq)),
+      Matrix(RiemannianStaircaseOptimizer::buildCertificate(
+          qcqp, layout, reused.lambdaEq, Q)),
+      1e-12));
+}
+
+}  // namespace cached_data_matrix
+/* ************************************************************************* */
+
+/* ************************************************************************* */
 namespace stage_two_is_not_authoritative {
 
 // Reaching Stage 2 means the Cholesky test already failed, so Stage 2 must

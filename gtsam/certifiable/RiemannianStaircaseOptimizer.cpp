@@ -63,8 +63,6 @@ RiemannianStaircaseOptimizer::RiemannianStaircaseOptimizer(
     const RiemannianStaircaseParams& params)
     : graph_(graph), initialValues_(initialValues), params_(params) {
   validateParams(params_);
-  /// `runLocalSolver` reads a null `almParams` as "use the defaults". Settle
-  /// that here so the rest of the class can dereference it freely.
   if (!params_.almParams) {
     params_.almParams = std::make_shared<AugmentedLagrangianParams>();
   }
@@ -78,6 +76,9 @@ RiemannianStaircaseOptimizer::RiemannianStaircaseOptimizer(
                     "Underlying error: ") +
         e.what());
   }
+  /// Q is the same matrix at every staircase level, so assemble it here and
+  /// let each level reuse it.
+  dataMatrix_ = buildDataMatrix(*pMinQcqp_, Layout::From(initialValues_));
   pMinQcqpBuildTime_ = ElapsedSeconds(buildStart);
 }
 
@@ -381,6 +382,15 @@ RiemannianStaircaseOptimizer::LeastSquaresMultipliers
 RiemannianStaircaseOptimizer::leastSquaresMultipliers(const QcqpProblem& qcqp,
                                                      const Layout& layout,
                                                      const Values& Y) {
+  return leastSquaresMultipliers(qcqp, layout, Y,
+                                 buildDataMatrix(qcqp, layout));
+}
+
+/* ************************************************************************* */
+RiemannianStaircaseOptimizer::LeastSquaresMultipliers
+RiemannianStaircaseOptimizer::leastSquaresMultipliers(
+    const QcqpProblem& qcqp, const Layout& layout, const Values& Y,
+    const Eigen::SparseMatrix<double>& dataMatrix) {
   const size_t M = qcqp.eConstraints().size();
   LeastSquaresMultipliers result;
   result.lambdaEq.assign(M, Vector1(0.0));
@@ -420,7 +430,7 @@ RiemannianStaircaseOptimizer::leastSquaresMultipliers(const QcqpProblem& qcqp,
   }
 
   const Matrix Ystack = layout.stack(Y);
-  const Matrix G = buildDataMatrix(qcqp, layout) * Ystack;
+  const Matrix G = dataMatrix * Ystack;
 
   /// Solve for each variable's multipliers separately, which the separability
   /// above allows: variable n only sees its own block (QY)_n and its own A_k.
@@ -470,7 +480,16 @@ RiemannianStaircaseOptimizer::leastSquaresMultipliers(const QcqpProblem& qcqp,
 Eigen::SparseMatrix<double> RiemannianStaircaseOptimizer::buildCertificate(
     const QcqpProblem& qcqp, const Layout& layout,
     const std::vector<Vector>& lambdaEq) {
-  Eigen::SparseMatrix<double> S = buildDataMatrix(qcqp, layout);
+  return buildCertificate(qcqp, layout, lambdaEq,
+                          buildDataMatrix(qcqp, layout));
+}
+
+/* ************************************************************************* */
+Eigen::SparseMatrix<double> RiemannianStaircaseOptimizer::buildCertificate(
+    const QcqpProblem& qcqp, const Layout& layout,
+    const std::vector<Vector>& lambdaEq,
+    const Eigen::SparseMatrix<double>& dataMatrix) {
+  Eigen::SparseMatrix<double> S = dataMatrix;
   /// The factor of two reconciles the cost and constraint conventions:
   /// QpCost is 0.5 * tr(X' Q X) so its gradient is Q Y, while a
   /// QuadraticConstraint h = tr(X' A X) - b has gradient 2 A X. Stationarity of
@@ -875,7 +894,7 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
     }
     if (maxAbsLambda == 0.0) {
       const LeastSquaresMultipliers ls =
-          leastSquaresMultipliers(*qcqp, layout, Y);
+          leastSquaresMultipliers(*qcqp, layout, Y, dataMatrix_);
       lambdaEq = ls.lambdaEq;
       if (params_.verbose) {
         std::cout << "  [multipliers] ALM returned lambda = 0; using "
@@ -885,7 +904,7 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
     }
 
     const Eigen::SparseMatrix<double> S =
-        buildCertificate(*qcqp, layout, lambdaEq);
+        buildCertificate(*qcqp, layout, lambdaEq, dataMatrix_);
     /// S*Y = 0 at a critical point, so any column of Y is a null-space vector
     /// and a good starting point for the Lanczos pass.
     auto [passed, lambdaMin, vMin] =

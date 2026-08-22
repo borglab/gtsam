@@ -209,8 +209,6 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
     Values Y;
     std::vector<Vector> lambdaEq;
     double stationarity = 0.0;
-    /// Penalty the inner solver finished on. BCL raises it during the solve,
-    /// so this is not `bclInitialPenalty`.
     double penalty = 0.0;
   };
 
@@ -237,6 +235,9 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
   /// Build Q = sum_k H_k, the data Hessian assembled from each QpCost
   /// factor's `hessianFactor()`. Each H_k is laid out in K-Kronecker form;
   /// the natural rowDim_i x rowDim_j block is its top-left corner.
+  ///
+  /// Q does not depend on the staircase rank: `layout` is indexed by row
+  /// dimension, and lifting only adds columns. `dataMatrix()` caches it.
   static Eigen::SparseMatrix<double> buildDataMatrix(
       const QcqpProblem& qcqp, const Layout& layout);
 
@@ -259,6 +260,12 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
   static Eigen::SparseMatrix<double> buildCertificate(
       const QcqpProblem& qcqp, const Layout& layout,
       const std::vector<Vector>& lambdaEq);
+
+  /// Overload reusing an already-assembled Q, which is rank-independent.
+  static Eigen::SparseMatrix<double> buildCertificate(
+      const QcqpProblem& qcqp, const Layout& layout,
+      const std::vector<Vector>& lambdaEq,
+      const Eigen::SparseMatrix<double>& dataMatrix);
 
   /// Multipliers recovered from a point, with the residual they leave.
   struct LeastSquaresMultipliers {
@@ -283,6 +290,11 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
   /// the problem splits into one small solve per constrained variable.
   static LeastSquaresMultipliers leastSquaresMultipliers(
       const QcqpProblem& qcqp, const Layout& layout, const Values& Y);
+
+  /// Overload reusing an already-assembled Q, which is rank-independent.
+  static LeastSquaresMultipliers leastSquaresMultipliers(
+      const QcqpProblem& qcqp, const Layout& layout, const Values& Y,
+      const Eigen::SparseMatrix<double>& dataMatrix);
 
   /// Outcome of a line-searched saddle escape.
   struct SaddleEscape {
@@ -333,6 +345,10 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
   const Values& initialValues() const { return initialValues_; }
   const RiemannianStaircaseParams& params() const { return params_; }
 
+  /// The data matrix Q, assembled once at construction and reused at every
+  /// staircase level.
+  const Eigen::SparseMatrix<double>& dataMatrix() const { return dataMatrix_; }
+
  private:
   static std::tuple<bool, double, Vector> verifyDenseEigen(
       const Eigen::SparseMatrix<double>& S,
@@ -348,6 +364,7 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
   Values initialValues_;
   RiemannianStaircaseParams params_;
   std::shared_ptr<const QcqpProblem> pMinQcqp_;
+  Eigen::SparseMatrix<double> dataMatrix_;
   double pMinQcqpBuildTime_ = 0.0;
 };
 
