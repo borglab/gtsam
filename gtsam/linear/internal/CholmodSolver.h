@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <gtsam/dllexport.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
@@ -24,7 +25,7 @@
 
 namespace gtsam::internal {
 
-class CholmodSolver {
+class GTSAM_EXPORT CholmodSolver {
  public:
   CholmodSolver();
   ~CholmodSolver();
