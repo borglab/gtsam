@@ -883,7 +883,6 @@ TEST(RiemannianStaircase, LeastSquaresMultipliersSolveTheNormalEquations) {
 
   // d/d lambda_m of ||S Y||^2 vanishes: <A_m Y_n, (S Y)_n> = 0 for every m.
   const Matrix SY = Matrix(S) * layout.stack(Y);
-  size_t m = 0;
   for (const auto& factor : qcqp.eConstraints()) {
     const auto quadratic =
         std::dynamic_pointer_cast<const QuadraticEqualityConstraintFactor>(
@@ -894,7 +893,6 @@ TEST(RiemannianStaircase, LeastSquaresMultipliersSolveTheNormalEquations) {
     const Matrix Gn = SY.middleRows(slice.offset, slice.rowDim);
     EXPECT_DOUBLES_EQUAL(0.0, (constraint.A() * Yn).cwiseProduct(Gn).sum(),
                          1e-8);
-    ++m;
   }
 }
 
