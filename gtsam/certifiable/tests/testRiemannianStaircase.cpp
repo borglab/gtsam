@@ -132,6 +132,11 @@ TEST(RiemannianStaircase, ReusesCachedPMinQcqp) {
   EXPECT_LONGS_EQUAL(result.ranksVisited.size(), result.nlpTimePerLevel.size());
   EXPECT_LONGS_EQUAL(result.ranksVisited.size(),
                      result.verifyTimePerLevel.size());
+  EXPECT_LONGS_EQUAL(result.ranksVisited.size(), result.costPerLevel.size());
+  EXPECT_LONGS_EQUAL(result.ranksVisited.size(),
+                     result.minEigenvaluePerLevel.size());
+  EXPECT_LONGS_EQUAL(result.ranksVisited.size(),
+                     result.stationarityPerLevel.size());
 
   double accountedTime = 0.0;
   for (size_t i = 0; i < result.ranksVisited.size(); ++i) {

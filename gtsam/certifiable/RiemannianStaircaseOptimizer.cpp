@@ -848,6 +848,7 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
     Y = inner.Y;
 
     result.costPerLevel.push_back(qcqp->costs().error(Y));
+    result.stationarityPerLevel.push_back(inner.stationarity);
 
     /// Certificate + verify (Alg. 1 lines 4-9). Pass => global SDP optimum.
     const auto verifyStart = Clock::now();

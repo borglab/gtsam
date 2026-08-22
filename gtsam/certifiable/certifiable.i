@@ -38,6 +38,7 @@ class RiemannianStaircaseResult {
   gtsam::Vector getRanksVisited() const;
   gtsam::Vector getCostPerLevel() const;
   gtsam::Vector getMinEigenvaluePerLevel() const;
+  gtsam::Vector getStationarityPerLevel() const;
   gtsam::Vector getQcqpBuildTimePerLevel() const;
   gtsam::Vector getNlpTimePerLevel() const;
   gtsam::Vector getVerifyTimePerLevel() const;
