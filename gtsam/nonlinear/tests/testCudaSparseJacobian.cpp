@@ -354,7 +354,7 @@ DownloadedSparseNormalEquations DownloadNormalEquations(
 
 DenseJacobianReference AssembleDenseReferenceBySlot(
     const NonlinearFactorGraph& graph, const Values& values,
-    const SparseJacobianColumnLayout& columns, const SparseJacobianPlan& plan) {
+    const KeyInfo& columns, const SparseJacobianPlan& plan) {
   DenseJacobianReference reference{Matrix::Zero(plan.rows(), plan.columns()),
                                    Vector::Zero(plan.rows())};
   const GaussianFactorGraph::shared_ptr linear = graph.linearize(values);
@@ -377,11 +377,13 @@ DenseJacobianReference AssembleDenseReferenceBySlot(
     const SparseJacobianFactorWritePlan& factorPlan = plan.factor(factorIndex);
     Eigen::Index localColumn = 0;
     for (Key key : jacobian->keys()) {
-      const VariableBlock& column = columns.at(key);
-      reference.jacobian.block(factorPlan.rowBegin, column.scalarOffset,
-                               factorPlan.rowCount, column.dimension) =
-          localA.middleCols(localColumn, column.dimension);
-      localColumn += column.dimension;
+      const KeyInfoEntry& column = columns.at(key);
+      reference.jacobian.block(
+          factorPlan.rowBegin, static_cast<Eigen::Index>(column.start),
+          factorPlan.rowCount, static_cast<Eigen::Index>(column.dim)) =
+          localA.middleCols(localColumn,
+                            static_cast<Eigen::Index>(column.dim));
+      localColumn += static_cast<Eigen::Index>(column.dim);
     }
     reference.rhs.segment(factorPlan.rowBegin, factorPlan.rowCount) = localB;
   }
@@ -473,7 +475,7 @@ StreamingAndPackingFailureResult RunStreamingAndPackingFailure(
   graph.push_back(std::make_shared<ReturningGaussianFactor>(
       KeyVector{kFirstStreamingKey}, 2, returned));
 
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian host(plan);
   host.clear();
@@ -537,7 +539,7 @@ struct DeviceSystemAddresses {
 
 DenseJacobianReference LinearizeSparseJacobian(
     const NonlinearFactorGraph& graph, const Values& values,
-    const SparseJacobianColumnLayout& columns, const SparseJacobianPlan& plan,
+    const KeyInfo& columns, const SparseJacobianPlan& plan,
     HostSparseJacobian* host) {
   host->clear();
   const DirectJacobianStatus status =
@@ -561,55 +563,44 @@ struct DenseAttemptReference {
   return expected;
 }
 
-// Verifies SparseJacobianColumnLayout::UsesNaturalKeyOrderAndConvertsDeltas.
-TEST(SparseJacobianColumnLayout, UsesNaturalKeyOrderAndConvertsDeltas) {
+// Verifies KeyInfo::UsesNaturalKeyOrderAndConvertsDeltas.
+TEST(KeyInfo, UsesNaturalKeyOrderAndConvertsDeltas) {
   const Values values = makeValues();
-  const SparseJacobianColumnLayout layout(values);
+  const KeyInfo layout(values.dims());
 
-  EXPECT_LONGS_EQUAL(5, layout.totalColumns());
-  EXPECT_LONGS_EQUAL(2, layout.blocks().size());
+  EXPECT_LONGS_EQUAL(5, layout.numCols());
+  EXPECT_LONGS_EQUAL(2, layout.size());
 
-  EXPECT_LONGS_EQUAL(kPoseKey, layout.blocks()[0].key);
-  EXPECT_LONGS_EQUAL(3, layout.blocks()[0].dimension);
-  EXPECT_LONGS_EQUAL(0, layout.blocks()[0].scalarOffset);
+  EXPECT_LONGS_EQUAL(kPoseKey, layout.ordering()[0]);
+  EXPECT_LONGS_EQUAL(3, layout.at(kPoseKey).dim);
+  EXPECT_LONGS_EQUAL(0, layout.at(kPoseKey).start);
 
-  EXPECT_LONGS_EQUAL(kPointKey, layout.blocks()[1].key);
-  EXPECT_LONGS_EQUAL(2, layout.blocks()[1].dimension);
-  EXPECT_LONGS_EQUAL(3, layout.blocks()[1].scalarOffset);
+  EXPECT_LONGS_EQUAL(kPointKey, layout.ordering()[1]);
+  EXPECT_LONGS_EQUAL(2, layout.at(kPointKey).dim);
+  EXPECT_LONGS_EQUAL(3, layout.at(kPointKey).start);
 
-  EXPECT_LONGS_EQUAL(0, layout.at(kPoseKey).scalarOffset);
-  EXPECT_LONGS_EQUAL(3, layout.at(kPointKey).scalarOffset);
+  EXPECT_LONGS_EQUAL(0, layout.at(kPoseKey).start);
+  EXPECT_LONGS_EQUAL(3, layout.at(kPointKey).start);
 
   const Vector flatDelta = (Vector(5) << 1.0, 2.0, 3.0, 4.0, 5.0).finished();
-  const VectorValues delta = layout.toVectorValues(flatDelta);
+  const VectorValues delta = buildVectorValues(flatDelta, layout);
   EXPECT(assert_equal(Vector3(1.0, 2.0, 3.0), delta.at(kPoseKey)));
   EXPECT(assert_equal(Vector2(4.0, 5.0), delta.at(kPointKey)));
 }
 
-// Verifies SparseJacobianColumnLayout::RejectsUnknownKeyAndWrongDeltaSize.
-TEST(SparseJacobianColumnLayout, RejectsUnknownKeyAndWrongDeltaSize) {
-  const SparseJacobianColumnLayout layout(makeValues());
+// Verifies KeyInfo::RejectsUnknownKeyAndWrongDeltaSize.
+TEST(KeyInfo, RejectsUnknownKeyAndWrongDeltaSize) {
+  const KeyInfo layout(makeValues().dims());
 
   CHECK_EXCEPTION(layout.at(999), std::out_of_range);
-  CHECK_EXCEPTION(layout.toVectorValues(Vector::Zero(4)),
+  CHECK_EXCEPTION(buildVectorValues(Vector::Zero(4), layout),
                   std::invalid_argument);
-}
-
-// Verifies SparseJacobianColumnLayout::MatchesTheCompleteKeyDimensionSequence.
-TEST(SparseJacobianColumnLayout, MatchesTheCompleteKeyDimensionSequence) {
-  const SparseJacobianColumnLayout layout(makeValues());
-  CHECK(layout.matches(makeValues()));
-
-  Values changedValues;
-  changedValues.insert(kPoseKey, Pose2());
-  changedValues.insert(kPointKey, Point3(4.0, 5.0, 6.0));
-  CHECK(!layout.matches(changedValues));
 }
 
 // Verifies SparseJacobianPlan::BuildsScalarCsrInGlobalColumnOrder.
 TEST(SparseJacobianPlan, BuildsScalarCsrInGlobalColumnOrder) {
   const Values values = makeValues();
-  const SparseJacobianColumnLayout layout(values);
+  const KeyInfo layout(values.dims());
   const SparseJacobianPlan plan(makeGraph(), layout);
 
   EXPECT_LONGS_EQUAL(5, plan.rows());
@@ -645,7 +636,7 @@ TEST(SparseJacobianPlan, BuildsScalarCsrInGlobalColumnOrder) {
 
 // Verifies SparseJacobianPlan::RejectsMissingAndRepeatedFactorKeys.
 TEST(SparseJacobianPlan, RejectsMissingAndRepeatedFactorKeys) {
-  const SparseJacobianColumnLayout layout(makeValues());
+  const KeyInfo layout(makeValues().dims());
 
   NonlinearFactorGraph missing;
   missing.emplace_shared<PriorFactor<Pose2>>(kPoseKey, Pose2());
@@ -661,7 +652,7 @@ TEST(SparseJacobianPlan, RejectsMissingAndRepeatedFactorKeys) {
 
 // Verifies SparseJacobianPlan::RejectsAnUncoveredValuesKey.
 TEST(SparseJacobianPlan, RejectsAnUncoveredValuesKey) {
-  const SparseJacobianColumnLayout layout(makeValues());
+  const KeyInfo layout(makeValues().dims());
 
   NonlinearFactorGraph graph;
   graph.emplace_shared<PriorFactor<Pose2>>(kPoseKey, Pose2());
@@ -680,7 +671,7 @@ TEST(SparseJacobianPlan, RejectsAnUncoveredValuesKey) {
 
 // Verifies SparseJacobianPlan::ZeroRowFactorDoesNotProvideStructuralCoverage.
 TEST(SparseJacobianPlan, ZeroRowFactorDoesNotProvideStructuralCoverage) {
-  const SparseJacobianColumnLayout layout(makeValues());
+  const KeyInfo layout(makeValues().dims());
 
   NonlinearFactorGraph graph;
   graph.emplace_shared<PriorFactor<Pose2>>(kPoseKey, Pose2());
@@ -692,7 +683,7 @@ TEST(SparseJacobianPlan, ZeroRowFactorDoesNotProvideStructuralCoverage) {
 TEST(SparseJacobianPlan, RejectsFactorCountsOutsideSignedIntCapacity) {
   Values values;
   values.insert(kPointKey, Point2(4.0, 5.0));
-  const SparseJacobianColumnLayout layout(values);
+  const KeyInfo layout(values.dims());
 
   NonlinearFactorGraph rowOverflow;
   rowOverflow.push_back(std::make_shared<StructuralFactor>(
@@ -712,7 +703,7 @@ TEST(SparseJacobianPlan, RejectsFactorCountsOutsideSignedIntCapacity) {
 // Verifies SparseJacobianPlan::PreservesNullSlotsAndLaterRowOffsets.
 TEST(SparseJacobianPlan, PreservesNullSlotsAndLaterRowOffsets) {
   const Values values = makeValues();
-  const SparseJacobianColumnLayout layout(values);
+  const KeyInfo layout(values.dims());
 
   NonlinearFactorGraph graph;
   graph.emplace_shared<PriorFactor<Pose2>>(kPoseKey, Pose2());
@@ -734,12 +725,12 @@ TEST(SparseJacobianPlan, PreservesNullSlotsAndLaterRowOffsets) {
 // Verifies SparseJacobianPlan::MatchesOnlyIdenticalStructure.
 TEST(SparseJacobianPlan, MatchesOnlyIdenticalStructure) {
   const Values values = makeValues();
-  const SparseJacobianColumnLayout layout(values);
+  const KeyInfo layout(values.dims());
   const NonlinearFactorGraph graph = makeGraph();
   const SparseJacobianPlan plan(graph, layout);
 
   const Values identicalValues = makeValues();
-  const SparseJacobianColumnLayout identicalLayout(identicalValues);
+  const KeyInfo identicalLayout(identicalValues.dims());
   const NonlinearFactorGraph identicalGraph = makeGraph();
   const SparseJacobianPlan identicalPlan(identicalGraph, identicalLayout);
   CHECK(plan.matches(identicalGraph, identicalLayout));
@@ -748,7 +739,7 @@ TEST(SparseJacobianPlan, MatchesOnlyIdenticalStructure) {
   Values changedValues;
   changedValues.insert(kPoseKey, Pose2());
   changedValues.insert(kPointKey, Point3(0.0, 0.0, 0.0));
-  const SparseJacobianColumnLayout changedLayout(changedValues);
+  const KeyInfo changedLayout(changedValues.dims());
   CHECK(!plan.matches(graph, changedLayout));
 
   NonlinearFactorGraph reorderedGraph;
@@ -779,7 +770,7 @@ TEST(SparseJacobianPlan, MatchesOnlyIdenticalStructure) {
 
 // Verifies SparseJacobianPlan::FingerprintAndMatchesIncludeNullMarkers.
 TEST(SparseJacobianPlan, FingerprintAndMatchesIncludeNullMarkers) {
-  const SparseJacobianColumnLayout layout(makeValues());
+  const KeyInfo layout(makeValues().dims());
 
   NonlinearFactorGraph nullGraph;
   nullGraph.emplace_shared<PriorFactor<Pose2>>(kPoseKey, Pose2());
@@ -917,7 +908,7 @@ TEST(PinnedHostArray, OverflowLeavesExistingAllocationValid) {
 // Verifies HostSparseJacobian::ClearsInPlaceWithoutChangingBufferAddresses.
 TEST(HostSparseJacobian, ClearsInPlaceWithoutChangingBufferAddresses) {
   const Values values = makeValues();
-  const SparseJacobianColumnLayout layout(values);
+  const KeyInfo layout(values.dims());
   const SparseJacobianPlan plan(makeGraph(), layout);
   HostSparseJacobian host(plan);
 
@@ -956,7 +947,7 @@ TEST(StreamingSparseJacobianLinearizer,
      StreamsUnitDiagonalAndRobustFactorsIntoPlannedCsr) {
   const Values values = makeStreamingValues();
   const NonlinearFactorGraph graph = makeStreamingGraph();
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian host(plan);
   host.clear();
@@ -987,7 +978,7 @@ TEST(StreamingSparseJacobianLinearizer,
   NonlinearFactorGraph graph;
   graph.push_back(std::make_shared<ReturningGaussianFactor>(
       KeyVector{kFirstStreamingKey}, 2, returned));
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian host(plan);
   host.clear();
@@ -1013,7 +1004,7 @@ TEST(StreamingSparseJacobianLinearizer,
   values.insert(kFirstStreamingKey, Point2(2.0, 3.0));
   NonlinearFactorGraph graph;
   graph.push_back(std::make_shared<InactivePointFactor>(kFirstStreamingKey));
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian host(plan);
   SeedFactorRange(plan, 0, 19.0, &host);
@@ -1043,7 +1034,7 @@ TEST(StreamingSparseJacobianLinearizer,
         NonlinearFactorGraph graph;
         graph.push_back(std::make_shared<ReturningGaussianFactor>(plannedKeys,
                                                                   2, returned));
-        const SparseJacobianColumnLayout columns(values);
+        const KeyInfo columns(values.dims());
         const SparseJacobianPlan plan(graph, columns);
         HostSparseJacobian host(plan);
         host.clear();
@@ -1106,7 +1097,7 @@ TEST(StreamingSparseJacobianLinearizer,
       std::make_shared<RecordingPointFactor>(kFirstStreamingKey, false);
   graph.push_back(nonSendableFactor);
 
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian host(plan);
   host.clear();
@@ -1144,7 +1135,7 @@ TEST(StreamingSparseJacobianLinearizer,
     graph.push_back(std::make_shared<DelayedProfilePointFactor>(
         kFirstStreamingKey, isSendable, kProfileRows));
 
-    const SparseJacobianColumnLayout columns(values);
+    const KeyInfo columns(values.dims());
     const SparseJacobianPlan plan(graph, columns);
     HostSparseJacobian unprofiledHost(plan);
     HostSparseJacobian profiledHost(plan);
@@ -1188,7 +1179,7 @@ TEST(StreamingSparseJacobianLinearizer,
      ResetsProfileBeforeReturningStructuralFailure) {
   const Values values = makeStreamingValues();
   const NonlinearFactorGraph graph = makeStreamingGraph();
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const SparseJacobianPlan plan(graph, columns);
   StreamingLinearizationProfile profile{
       std::numeric_limits<double>::quiet_NaN(), -1.0};
@@ -1223,7 +1214,7 @@ TEST(StreamingSparseJacobianLinearizer,
   graph.push_back(higherSendable);
   graph.push_back(higherNonSendable);
 
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian host(plan);
   host.clear();
@@ -1254,7 +1245,7 @@ TEST(StreamingSparseJacobianLinearizer,
   NonlinearFactorGraph graph;
   graph.push_back(factor);
 
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian host(plan);
   host.clear();
@@ -1361,7 +1352,7 @@ TEST(StreamingSparseJacobianLinearizer,
      RejectsInvalidGlobalInputsBeforeLinearizing) {
   const Values values = makeStreamingValues();
   const NonlinearFactorGraph graph = makeStreamingGraph();
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian host(plan);
   const StreamingSparseJacobianLinearizer linearizer;
@@ -1411,7 +1402,7 @@ TEST(StreamingSparseJacobianLinearizer,
      PacksOnlySlotAlignedGaussianFactorGraphs) {
   const Values values = makeStreamingValues();
   const NonlinearFactorGraph graph = makeStreamingGraph();
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian streamed(plan), packed(plan);
   streamed.clear();
@@ -1468,7 +1459,7 @@ TEST(DeviceSparseJacobianNormalEquations,
   secondValues.insert(kPointKey, Point2(-2.5, 3.75));
 
   const NonlinearFactorGraph graph = makeGraph();
-  const SparseJacobianColumnLayout columns(firstValues);
+  const KeyInfo columns(firstValues.dims());
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian host(plan);
   const StreamingSparseJacobianLinearizer linearizer;
@@ -1524,7 +1515,7 @@ TEST(DeviceSparseJacobianNormalEquations,
   values.insert(kPointKey, Point2(4.0, 5.0));
 
   const NonlinearFactorGraph graph = makeGraph();
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian host(plan);
   LinearizeSparseJacobian(graph, values, columns, plan, &host);
@@ -1567,9 +1558,9 @@ TEST(DeviceSparseJacobianNormalEquations,
         MakeDenseAttemptReference(reference, expectedHessian);
     EXPECT(assert_equal(expected.delta, attempt.delta, 1e-9));
     const double expectedOldError = linearGraph->error(
-        columns.toVectorValues(Vector::Zero(plan.columns())));
+        buildVectorValues(Vector::Zero(plan.columns()), columns));
     const double expectedNewError =
-        linearGraph->error(columns.toVectorValues(attempt.delta));
+        linearGraph->error(buildVectorValues(attempt.delta, columns));
     DOUBLES_EQUAL(expectedOldError, attempt.model.oldError, 1e-9);
     DOUBLES_EQUAL(expectedNewError, attempt.model.newError, 1e-9);
     DOUBLES_EQUAL(expectedOldError - expectedNewError, attempt.model.change(),
@@ -1597,7 +1588,7 @@ TEST(DeviceSparseJacobianNormalEquations,
   values.insert(kPointKey, Point2(-2.5, 3.75));
 
   const NonlinearFactorGraph graph = makeGraph();
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian host(plan);
   LinearizeSparseJacobian(graph, values, columns, plan, &host);
@@ -1647,9 +1638,9 @@ TEST(DeviceSparseJacobianNormalEquations,
         MakeDenseAttemptReference(reference, expectedHessian);
     EXPECT(assert_equal(expected.delta, attempt.delta, 1e-9));
     const double expectedOldError = linearGraph->error(
-        columns.toVectorValues(Vector::Zero(plan.columns())));
+        buildVectorValues(Vector::Zero(plan.columns()), columns));
     const double expectedNewError =
-        linearGraph->error(columns.toVectorValues(attempt.delta));
+        linearGraph->error(buildVectorValues(attempt.delta, columns));
     DOUBLES_EQUAL(expectedOldError, attempt.model.oldError, 1e-9);
     DOUBLES_EQUAL(expectedNewError, attempt.model.newError, 1e-9);
     DOUBLES_EQUAL(expectedOldError - expectedNewError, attempt.model.change(),
@@ -1680,7 +1671,7 @@ TEST(DeviceSparseJacobianNormalEquations,
   secondValues.insert(kPointKey, Point2(-2.5, 3.75));
 
   const NonlinearFactorGraph graph = makeGraph();
-  const SparseJacobianColumnLayout columns(firstValues);
+  const KeyInfo columns(firstValues.dims());
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian firstHost(plan);
   HostSparseJacobian secondHost(plan);
@@ -1732,9 +1723,9 @@ TEST(DeviceSparseJacobianNormalEquations,
       MakeDenseAttemptReference(secondReference, secondDampedHessian);
   EXPECT(assert_equal(secondExpected.delta, secondAttempt.delta, 1e-9));
   const double expectedOldError = secondLinearGraph->error(
-      columns.toVectorValues(Vector::Zero(plan.columns())));
+      buildVectorValues(Vector::Zero(plan.columns()), columns));
   const double expectedNewError =
-      secondLinearGraph->error(columns.toVectorValues(secondAttempt.delta));
+      secondLinearGraph->error(buildVectorValues(secondAttempt.delta, columns));
   DOUBLES_EQUAL(expectedOldError, secondAttempt.model.oldError, 1e-9);
   DOUBLES_EQUAL(expectedNewError, secondAttempt.model.newError, 1e-9);
   DOUBLES_EQUAL(expectedOldError - expectedNewError,
@@ -1763,9 +1754,9 @@ TEST(DeviceSparseJacobianNormalEquations,
   EXPECT(assert_equal(reinitializedExpected.delta, reinitializedAttempt.delta,
                       1e-9));
   const double reinitializedOldError = secondLinearGraph->error(
-      columns.toVectorValues(Vector::Zero(plan.columns())));
+      buildVectorValues(Vector::Zero(plan.columns()), columns));
   const double reinitializedNewError = secondLinearGraph->error(
-      columns.toVectorValues(reinitializedAttempt.delta));
+      buildVectorValues(reinitializedAttempt.delta, columns));
   DOUBLES_EQUAL(reinitializedOldError, reinitializedAttempt.model.oldError,
                 1e-9);
   DOUBLES_EQUAL(reinitializedNewError, reinitializedAttempt.model.newError,
@@ -1786,7 +1777,7 @@ TEST(DeviceSparseJacobianNormalEquations,
 #if GTSAM_TEST_EXPECT_SPGEMM_REUSE
   const Values values = makeValues();
   const NonlinearFactorGraph graph = makeGraph();
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian host(plan);
   LinearizeSparseJacobian(graph, values, columns, plan, &host);
@@ -1867,7 +1858,7 @@ TEST(DeviceSparseJacobianNormalEquations,
 #if GTSAM_TEST_EXPECT_SPGEMM_REUSE
   const Values values = makeValues();
   const NonlinearFactorGraph graph = makeGraph();
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian host(plan);
   LinearizeSparseJacobian(graph, values, columns, plan, &host);
@@ -1900,7 +1891,7 @@ TEST(DeviceSparseJacobianNormalEquations,
 TEST(StreamingSparseJacobianLinearizer,
      RejectsMismatchedHostFingerprintBeforeFactorEvaluation) {
   const Values values = makeStreamingValues();
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const NonlinearFactorGraph firstGraph = makeFingerprintPlanGraph(false);
   const NonlinearFactorGraph secondGraph = makeFingerprintPlanGraph(true);
   const SparseJacobianPlan firstPlan(firstGraph, columns);
@@ -1932,7 +1923,7 @@ TEST(StreamingSparseJacobianLinearizer,
 TEST(StreamingSparseJacobianLinearizer,
      PackingRejectsMismatchedHostFingerprintBeforeWrites) {
   const Values values = makeStreamingValues();
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const NonlinearFactorGraph firstGraph = makeFingerprintPlanGraph(false);
   const NonlinearFactorGraph secondGraph = makeFingerprintPlanGraph(true);
   const SparseJacobianPlan firstPlan(firstGraph, columns);
@@ -1961,7 +1952,7 @@ TEST(StreamingSparseJacobianLinearizer,
 TEST(DeviceSparseJacobianNormalEquations,
      RejectsEqualSizedHostWithDifferentStructuralFingerprint) {
   const Values values = makeStreamingValues();
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const NonlinearFactorGraph firstGraph = makeFingerprintPlanGraph(false);
   const NonlinearFactorGraph secondGraph = makeFingerprintPlanGraph(true);
   const SparseJacobianPlan firstPlan(firstGraph, columns);
@@ -1998,7 +1989,7 @@ TEST(DeviceSparseJacobianNormalEquations,
 TEST(DeviceSparseJacobianNormalEquations, RejectsEmptyRowsColumnsAndNonzeros) {
   const Values values;
   const NonlinearFactorGraph graph;
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const SparseJacobianPlan plan(graph, columns);
   DeviceSparseJacobianNormalEquations normalEquations;
 

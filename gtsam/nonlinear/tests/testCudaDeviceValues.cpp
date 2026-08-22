@@ -106,7 +106,7 @@ ProfiledDeviceRun RunProfiledDevicePipeline(bool collectProfile) {
   NonlinearFactorGraph graph;
   graph.emplace_shared<PriorFactor<Point2>>(kProfileKey, Point2(0.0, 0.0),
                                             noiseModel::Unit::Create(2));
-  const SparseJacobianColumnLayout columns(values);
+  const KeyInfo columns(values.dims());
   const SparseJacobianPlan plan(graph, columns);
   HostSparseJacobian host(plan);
   if (plan.rows() != 2 || plan.columns() != 2 || plan.nonzeros() != 4) {

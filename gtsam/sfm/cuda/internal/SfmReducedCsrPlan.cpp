@@ -18,10 +18,12 @@
 
 #include <gtsam/sfm/cuda/internal/SfmReducedCsrPlan.h>
 
+#include <gtsam/linear/cuda/internal/BlockOrdering.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 
 #include <algorithm>
 #include <limits>
+#include <map>
 #include <set>
 #include <stdexcept>
 #include <unordered_set>
@@ -70,13 +72,14 @@ SfmReducedCsrPlan::SfmReducedCsrPlan(
     throw std::invalid_argument("camera keys must be unique");
   }
 
-  dimension_ = cameraCount_ * kCameraDimension;
-  cameraBlocks_.reserve(cameraKeys.size());
+  std::map<Key, size_t> cameraDimensions;
   for (int camera = 0; camera < cameraCount_; ++camera) {
-    cameraBlocks_.push_back(
-        {cameraKeys_[camera], camera * kCameraDimension, kCameraDimension});
+    cameraDimensions.emplace(cameraKeys_[camera], kCameraDimension);
     cameraPairs_.emplace(pairKey(camera, camera), true);
   }
+  cameraKeyInfo_ = KeyInfo(
+      cameraDimensions, Ordering(cameraKeys_.begin(), cameraKeys_.end()));
+  dimension_ = cudaBlockOffsets(cameraKeyInfo_).back();
 
   for (size_t point = 0; point < data.numberTracks(); ++point) {
     std::vector<int> cameras;

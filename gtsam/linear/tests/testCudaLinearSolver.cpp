@@ -23,10 +23,13 @@
 #include <gtsam/linear/cuda/LinearSolver.h>
 #include <gtsam/linear/cuda/internal/BlockOrdering.h>
 
+#include <limits>
+#include <map>
 #include <stdexcept>
 #include <optional>
 
 using namespace gtsam::cuda;
+using gtsam::KeyInfo;
 using gtsam::Ordering;
 using gtsam::symbol_shorthand::L;
 using gtsam::symbol_shorthand::X;
@@ -193,17 +196,19 @@ TEST(DeviceSparseSpdSystem, RejectsMissingDiagonalOnCapture) {
 
 // Verifies BlockOrdering::ExpandsKeysToScalars.
 TEST(BlockOrdering, ExpandsKeysToScalars) {
-  const BlockLayout layout{{X(1), 0, 2},
-                               {L(4), 2, 3},
-                               {X(7), 5, 1}};
+  const KeyInfo layout(
+      std::map<gtsam::Key, size_t>{{X(1), 2}, {L(4), 3}, {X(7), 1}},
+      Ordering{X(1), L(4), X(7)});
   const std::vector<int> expected{2, 3, 4, 0, 1, 5};
   EXPECT(expected ==
          compileScalarPermutation(layout, Ordering{L(4), X(1), X(7)}));
+  EXPECT((std::vector<int>{0, 2, 5, 6} == cudaBlockOffsets(layout)));
 }
 
 // Verifies BlockOrdering::RejectsInvalidOrderings.
 TEST(BlockOrdering, RejectsInvalidOrderings) {
-  const BlockLayout layout{{X(1), 0, 2}, {X(2), 2, 2}};
+  const KeyInfo layout(
+      std::map<gtsam::Key, size_t>{{X(1), 2}, {X(2), 2}});
   CHECK_EXCEPTION(compileScalarPermutation(layout, Ordering{X(1)}),
                   std::invalid_argument);
   CHECK_EXCEPTION(
@@ -216,16 +221,19 @@ TEST(BlockOrdering, RejectsInvalidOrderings) {
 
 // Verifies BlockOrdering::RejectsInvalidLayouts.
 TEST(BlockOrdering, RejectsInvalidLayouts) {
-  CHECK_EXCEPTION(compileScalarPermutation(
-                      {{X(1), 0, 2}, {X(2), 3, 1}},
-                      Ordering{X(1), X(2)}),
-                  std::invalid_argument);
-  CHECK_EXCEPTION(compileScalarPermutation(
-                      {{X(1), 0, 2}, {X(1), 2, 1}},
-                      Ordering{X(1), X(1)}),
-                  std::invalid_argument);
-  CHECK_EXCEPTION(compileScalarPermutation(
-                      {{X(1), 0, 0}}, Ordering{X(1)}),
+  KeyInfo noncontiguous(
+      std::map<gtsam::Key, size_t>{{X(1), 2}, {X(2), 1}});
+  noncontiguous.at(X(2)).start = 3;
+  CHECK_EXCEPTION(cudaBlockOffsets(noncontiguous), std::invalid_argument);
+
+  const KeyInfo zeroDimension(
+      std::map<gtsam::Key, size_t>{{X(1), 0}});
+  CHECK_EXCEPTION(cudaBlockOffsets(zeroDimension), std::invalid_argument);
+
+  const KeyInfo intOverflow(std::map<gtsam::Key, size_t>{
+      {X(1), static_cast<size_t>(std::numeric_limits<int>::max()) + 1}});
+  CHECK_EXCEPTION(cudaBlockOffsets(intOverflow), std::invalid_argument);
+  CHECK_EXCEPTION(compileScalarPermutation(zeroDimension, Ordering{X(1)}),
                   std::invalid_argument);
 }
 
