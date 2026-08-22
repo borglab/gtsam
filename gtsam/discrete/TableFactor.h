@@ -255,24 +255,6 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    */
   TableFactor apply(const TableFactor& f, Binary op) const;
 
-  /**
-   * Return keys in contract mode.
-   *
-   * Modes are each of the dimensions of a sparse tensor,
-   * and the contract modes represent which dimensions will
-   * be involved in contraction (aka tensor multiplication).
-   */
-  DiscreteKeys contractDkeys(const TableFactor& f) const;
-
-  /**
-   * @brief Return keys in free mode which are the dimensions
-   * not involved in the contraction operation.
-   */
-  DiscreteKeys freeDkeys(const TableFactor& f) const;
-
-  /// Return union of DiscreteKeys in two factors.
-  DiscreteKeys unionDkeys(const TableFactor& f) const;
-
   /// Create unique representation of union modes.
   uint64_t unionRep(const DiscreteKeys& keys, const DiscreteValues& assign,
                     const uint64_t idx) const;
@@ -378,6 +360,22 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   double error(const HybridValues& values) const override;
 
   /// @}
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  /// @name Deprecated scope helpers
+  /// @{
+
+  /// @deprecated Use standard set operations on discreteKeys() instead.
+  DiscreteKeys contractDkeys(const TableFactor& factor) const;
+
+  /// @deprecated Use standard set operations on discreteKeys() instead.
+  DiscreteKeys freeDkeys(const TableFactor& factor) const;
+
+  /// @deprecated Use standard set operations on discreteKeys() instead.
+  DiscreteKeys unionDkeys(const TableFactor& factor) const;
+
+  /// @}
+#endif
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
