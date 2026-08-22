@@ -327,9 +327,13 @@ TEST( Rot3, log) {
   EXPECT(assert_equal(Vector3(0.264451979, -0.742197651, -3.04098211),
                       (Vector)Rot3::Logmap(Rlund), 1e-8));
 #else
-  // SO3 will be approximate because of the non-orthogonality
-  EXPECT(assert_equal(Vector3(0.264452, -0.742197708, -3.04098184),
-                        (Vector)Rot3::Logmap(Rlund), 1e-8));
+  // This matrix is 179.9887 degrees from identity, so it lands in the
+  // near-pi branch. The previous expectation was ~1.2e-7 off because that
+  // branch pivoted on 2 + 2*R_aa (see #1233); the value below is the exact
+  // Logmap of this matrix, verified against a 60-digit reference, and is
+  // now matched to ~1e-16.
+  EXPECT(assert_equal(Vector3(0.264451957511, -0.74219758996, -3.04098186076),
+                      (Vector)Rot3::Logmap(Rlund), 1e-8));
 #endif
 }
 
