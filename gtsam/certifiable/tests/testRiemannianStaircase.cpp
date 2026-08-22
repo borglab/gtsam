@@ -203,7 +203,7 @@ TEST(RiemannianStaircase, FastSyncRot3QcqpInitialization) {
 }  // namespace FastSyncRot3Fixture
 
 /* ************************************************************************* */
-// At an ALM-converged Ystar, S = Q + sum_m lambda_m * A_m is PSD and S * Y ≈ 0
+// At an ALM-converged Ystar, the certificate S is PSD and S * Y ≈ 0
 // (1st-order KKT for the BM problem at eq. (16)).
 TEST(RiemannianStaircase, CertificateMatchesKKT) {
   using namespace RingFixture;
@@ -864,7 +864,7 @@ QcqpProblem OneVariableProblem(const Matrix2& Q, double sigma) {
   return qcqp;
 }
 
-// The defining property: lambda minimizes ||(Q + A*(lambda)) Y||, so the
+// The defining property: lambda minimizes ||S(lambda) Y||, so the
 // residual it leaves is orthogonal to every direction the multipliers can move
 // in. Checked away from a stationary point, where the residual is nonzero and
 // the condition has content.

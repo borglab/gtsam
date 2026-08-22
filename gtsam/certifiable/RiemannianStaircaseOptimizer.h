@@ -114,8 +114,11 @@ struct GTSAM_EXPORT RiemannianStaircaseParams {
  *                    (Z = Y Y' parameterizes the SDP at rank <= p).
  *
  * KKT certificate matrix (eq. 20):
- *      S := Q + A*(lambda) = Q + sum_m lambda_m * A_m,
- * where A* is the adjoint of the constraint map A(Z)_m := <A_m, Z>. At a
+ *      S := Q + 2 * sum_m (lambda_m / sigma_m) * A_m,
+ * which is eq. (20)'s S = Q + A*(lambda) written in GTSAM's conventions:
+ * QpCost is 0.5 * tr(X' Q X) while a QuadraticConstraint has gradient 2 A X,
+ * and ALM multipliers pair with the whitened residual h_m / sigma_m. A* is
+ * the adjoint of the constraint map A(Z)_m := <A_m, Z>. At a
  * 1st-order KKT point Y of the BM problem, Y is a global SDP optimum iff
  * S >= 0 (Thm 1(a)). Otherwise Thm 1(b) gives v with v' S v < 0, and
  * Y+ = [Y | 0] lifted with descent direction [0 | v] is a feasible
@@ -247,12 +250,16 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
   /// factors `h_m(X) = (trace(X' A_m X) - b_m) / sigma_m`; we divide by
   /// sigma_m to recover the unwhitened multiplier that pairs with A_m.
   /// `sigma_m` is GTSAM noise-model bookkeeping, not part of the SDP math.
+  ///
+  /// This returns A*(lambda) undoubled; `buildCertificate` applies the factor
+  /// of two that the constraint gradient contributes.
   static Eigen::SparseMatrix<double> buildMultiplierMatrix(
       const QcqpProblem& qcqp, const Layout& layout,
       const std::vector<Vector>& lambdaEq);
 
-  /// Build the SDP dual matrix S = Q + A*(lambda), i.e. `buildDataMatrix`
-  /// plus `buildMultiplierMatrix`.
+  /// Build the SDP dual matrix S = Q + 2 * A*(lambda), i.e. `buildDataMatrix`
+  /// plus twice `buildMultiplierMatrix`. The factor of two comes from the
+  /// constraint gradient, as above.
   ///
   /// Assumes Y is a 1st-order KKT point of the BM problem (what the local
   /// solver should return). Under that assumption, S >= 0 iff Z = Y Y' is
@@ -281,13 +288,16 @@ class GTSAM_EXPORT RiemannianStaircaseOptimizer {
 
   /// Least-squares Lagrange multipliers at `Y`:
   ///
-  ///     lambda_LS = argmin_lambda || [Q + A*(lambda)] Y ||_F
+  ///     lambda_LS = argmin_lambda || S(lambda) Y ||_F
   ///
-  /// These are the multipliers that come closest to satisfying KKT
-  /// stationarity. They are unique when LICQ holds at `Y`.
+  /// with `S(lambda)` the same matrix `buildCertificate` forms, so the result
+  /// can be passed straight to it. These are the multipliers that come
+  /// closest to satisfying KKT stationarity, and are unique when LICQ holds
+  /// at `Y`.
   ///
-  /// Constraints are block-separable, so `A*(lambda)` is block diagonal and
-  /// the problem splits into one small solve per constrained variable.
+  /// Constraints are block-separable, so the multiplier term is block
+  /// diagonal and the problem splits into one small solve per constrained
+  /// variable.
   static LeastSquaresMultipliers leastSquaresMultipliers(
       const QcqpProblem& qcqp, const Layout& layout, const Values& Y);
 
