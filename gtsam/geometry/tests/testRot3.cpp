@@ -319,22 +319,15 @@ TEST( Rot3, log) {
              -0.03997006, -0.88835923, 0.45740671,   //
              -0.16293753, 0.45743998, 0.87418537);
 
-  // Rot3's Logmap returns different, but equivalent compacted
-  // axis-angle vectors depending on whether Rot3 is implemented
-  // by Quaternions or SO3.
-#if defined(GTSAM_USE_QUATERNIONS)
-  // Quaternion bounds angle to [-pi, pi] resulting in ~179.9 degrees
-  EXPECT(assert_equal(Vector3(0.264451979, -0.742197651, -3.04098211),
-                      (Vector)Rot3::Logmap(Rlund), 1e-8));
-#else
-  // This matrix is 179.9887 degrees from identity, so it lands in the
-  // near-pi branch. The previous expectation was ~1.2e-7 off because that
-  // branch pivoted on 2 + 2*R_aa (see #1233); the value below is the exact
-  // Logmap of this matrix, verified against a 60-digit reference, and is
-  // now matched to ~1e-16.
+  // This matrix is 179.9887 degrees from identity, so it lands in the near-pi
+  // branch. Both backends now agree here to machine precision, so the two
+  // expectations that used to be split on GTSAM_USE_QUATERNIONS have been
+  // merged: the SO3 path was fixed in #1233, and the quaternion path no longer
+  // assumes unit norm (the quaternion Rot3Q builds from these nine doubles has
+  // norm 1.000000082). The value below is the exact Logmap of this matrix,
+  // verified against a 60-digit reference.
   EXPECT(assert_equal(Vector3(0.264451957511, -0.74219758996, -3.04098186076),
                       (Vector)Rot3::Logmap(Rlund), 1e-8));
-#endif
 }
 
 /* ************************************************************************* */
