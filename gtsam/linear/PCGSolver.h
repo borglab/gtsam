@@ -29,7 +29,6 @@
 namespace gtsam {
 
 class GaussianFactorGraph;
-class KeyInfo;
 class Preconditioner;
 struct PreconditionerParameters;
 
@@ -217,16 +216,6 @@ class GTSAM_EXPORT GaussianFactorGraphSystem {
 GTSAM_EXPORT VectorValues
 buildVectorValues(const Vector& v, const Ordering& ordering,
                   const std::map<Key, size_t>& dimensions);
-
-/**
- * Convert a flat vector to keyed blocks using KeyInfo offsets and dimensions.
- *
- * @param v Flat vector laid out according to @p keyInfo.
- * @param keyInfo Key ordering, dimensions, and scalar offsets.
- * @return Keyed vector blocks copied from @p v.
- */
-GTSAM_EXPORT VectorValues buildVectorValues(const Vector& v,
-                                            const KeyInfo& keyInfo);
 
 /// @}
 

@@ -782,13 +782,4 @@ VectorValues buildVectorValues(const Vector& v, const Ordering& ordering,
   return result;
 }
 
-/**********************************************************************************/
-VectorValues buildVectorValues(const Vector& v, const KeyInfo& keyInfo) {
-  VectorValues result;
-  for (const KeyInfo::value_type& item : keyInfo) {
-    result.emplace(item.first, v.segment(item.second.start, item.second.dim));
-  }
-  return result;
-}
-
 }  // namespace gtsam
