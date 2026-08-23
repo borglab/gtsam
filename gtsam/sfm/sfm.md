@@ -54,10 +54,10 @@ Both modes use one cached, point-first multifrontal factorization. They do not m
 
 `SfmLevenbergMarquardtOptimizer` separates the elimination strategy from the linear solver:
 
-1. `SfmEliminationMode::Full` solves the joint camera–landmark system.
-2. `SfmEliminationMode::Schur` eliminates landmarks first and solves the camera system.
+1. `SfmEliminationMode::Full` solves the joint system.
+2. `SfmEliminationMode::Schur` eliminates every active `Point3` and `Unit3` first, then solves for all remaining variables.
 
-CPU defaults to `Full`, `MULTIFRONTAL_SOLVER`, and an automatically generated natural-points/METIS-cameras ordering. That default won BAL-16 and BAL-88 and was within 0.3% of Schur on BAL-135. CUDA defaults to `Schur` and retains its CUDA backend selection.
+On CPU, the retained system is selected by value type rather than by one camera template: poses, camera objects, shared or per-camera calibrations, and any other value types remain after Schur elimination. This supports variable and global calibration without specializing the optimizer. CPU defaults to `Full`, `MULTIFRONTAL_SOLVER`, and an automatically generated natural-landmarks/METIS-retained ordering. That default won BAL-16 and BAL-88 and was within 0.3% of Schur on BAL-135. CUDA defaults to `Schur` and retains its existing camera/`Point3` backend assumptions.
 
 | Platform | Full | Schur | Linear solvers |
 | --- | --- | --- | --- |
@@ -73,12 +73,12 @@ gtsam::SfmLevenbergMarquardtParams params =
     gtsam::SfmLevenbergMarquardtParams::ceresDefaults();
 
 // For the fastest measured path, graph uses point-batched projection factors.
-const gtsam::Ordering cameras =
-    gtsam::SfmLevenbergMarquardtOptimizer::CreateCameraOrdering(
+const gtsam::Ordering schurOrdering =
+    gtsam::SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(
         graph, initial);
 params.setOrdering(
     gtsam::SfmLevenbergMarquardtOptimizer::CreatePointFirstOrdering(
-        graph, cameras));
+        graph, schurOrdering));
 
 gtsam::SfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
 const gtsam::Values& result = optimizer.optimize();
@@ -89,9 +89,9 @@ const gtsam::Values& result = optimizer.optimize();
 ::::{tab-set}
 :::{tab-item} MULTIFRONTAL_SOLVER
 
-Schur mode constructs a complete ordering with a natural landmark prefix followed by the camera ordering. One cached `MultifrontalSolver` factorization eliminates the landmarks, factors the camera Schur complement, and back-substitutes through the same Bayes tree.
+Schur mode constructs a complete ordering with a natural `Point3`/`Unit3` prefix followed by the retained-variable ordering. One cached `MultifrontalSolver` factorization eliminates those landmarks, factors the Schur complement over the remaining variables, and back-substitutes through the same Bayes tree.
 
-No reduced factor graph is created. This is mathematically the same point-first elimination used in Full mode when it receives the identical complete ordering; the explicit `Schur` mode lets SFM construct that ordering from a camera-only input.
+No reduced factor graph is created. This is mathematically the same landmark-first elimination used in Full mode when it receives the identical complete ordering; explicit `Schur` mode lets SFM construct that ordering from a retained-variable-only input.
 :::
 
 :::{tab-item} Other CPU solvers
@@ -99,24 +99,24 @@ No reduced factor graph is created. This is mathematically the same point-first 
 Schur mode creates an explicit solver boundary:
 
 1. `MultifrontalSolver::eliminatePartialInPlace()` eliminates landmarks.
-2. `remainingFactorGraph()` exports the camera Hessian graph.
-3. The selected ordinary solver computes the camera step.
-4. `updateSolution(cameraDelta)` back-substitutes the landmark step.
+2. `remainingFactorGraph()` exports the retained-variable Hessian graph.
+3. The selected ordinary solver computes the retained-variable step.
+4. `updateSolution(retainedDelta)` back-substitutes the eliminated step.
 
-The partial-elimination symbolic state is reused across LM attempts and iterations. This path lets CHOLMOD, legacy Cholesky or QR, and iterative solvers operate on the reduced graph, at the cost of materializing camera factors and running a separate solve.
+The partial-elimination symbolic state is reused across LM attempts and iterations. This path lets CHOLMOD, legacy Cholesky or QR, and iterative solvers operate on the reduced graph, at the cost of materializing retained-variable factors and running a separate solve.
 :::
 ::::
 
-### Camera-only ordering
+### Retained-variable ordering
 
-In Full mode, a supplied ordering has ordinary all-variable semantics. In Schur mode, supply only camera keys:
+In Full mode, a supplied ordering has ordinary all-variable semantics. In CPU Schur mode, supply every active key whose value is neither `Point3` nor `Unit3`:
 
 ```cpp
-gtsam::Ordering cameras{camera0Key, camera1Key, camera2Key};
-params.setOrdering(cameras);
+gtsam::Ordering retained{pose0Key, pose1Key, globalCalibrationKey};
+params.setOrdering(retained);
 ```
 
-`CreateCameraOrdering(graph, initial)` symbolically eliminates the natural point ordering and runs METIS on the resulting camera graph. The optimizer prefixes that camera ordering with active non-camera keys in natural key order; `CreatePointFirstOrdering(graph, cameras)` exposes the identical complete ordering when Full mode or benchmarking needs it. Duplicate, missing, landmark, and unknown camera keys are rejected. Direct reduced solvers and iterative solvers that consume an ordering receive the same camera-only suffix.
+`CreateSchurOrdering(graph, initial)` symbolically eliminates active `Point3` and `Unit3` values in natural key order and runs METIS on the resulting retained graph. `CreatePointFirstOrdering(graph, retained)` prefixes the returned ordering with those eliminated keys for Full mode or benchmarking. Duplicate, missing, eliminated, and unknown retained keys are rejected. Direct reduced solvers and iterative solvers that consume an ordering receive the same retained-only suffix.
 
 ::::{grid} 1 1 2 2
 
@@ -125,7 +125,7 @@ params.setOrdering(cameras);
 Select `NonlinearOptimizerParams::Iterative` and supply the same parameter object as an ordinary nonlinear optimizer:
 
 - `PCGSolverParameters` selects PCG.
-- `SubgraphSolverParameters` selects `SubgraphSolver` and receives the camera ordering in Schur mode.
+- `SubgraphSolverParameters` selects `SubgraphSolver` and receives the retained-variable ordering in Schur mode.
 - Missing or unrecognized parameters throw the ordinary `NonlinearOptimizer::solve` error.
 
 `SubgraphSolver` additionally requires a Gaussian graph with enough unary and binary factors to construct its spanning-tree preconditioner. Higher-arity point batches and camera clique factors do not satisfy that requirement.

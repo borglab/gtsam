@@ -11,7 +11,7 @@
 
 /**
  * @file SfmLevenbergMarquardt.h
- * @brief CPU Levenberg-Marquardt optimizer with optional point elimination.
+ * @brief CPU Levenberg-Marquardt optimizer with optional landmark elimination.
  */
 
 #pragma once
@@ -59,28 +59,30 @@ class GTSAM_EXPORT SfmLevenbergMarquardtParams
 };
 
 /**
- * CPU SFM optimizer supporting either a joint solve or point-first Schur
- * elimination. `MULTIFRONTAL_SOLVER` performs Schur elimination in one fused
- * factorization; other solvers receive an explicitly reduced camera graph.
+ * CPU SFM optimizer supporting either a joint solve or Schur elimination of
+ * Point3 and Unit3 variables. `MULTIFRONTAL_SOLVER` performs Schur elimination
+ * in one fused factorization; other solvers receive an explicitly reduced
+ * graph containing every other variable type.
  */
 class GTSAM_EXPORT SfmLevenbergMarquardtOptimizer
     : public LevenbergMarquardtOptimizer {
  public:
   /**
-   * Create a fill-reducing camera ordering by eliminating active non-camera
-   * variables in natural key order and running METIS on the reduced camera
-   * graph. This is the ordering accepted by Schur-mode parameters.
+   * Create a fill-reducing ordering for the variables retained after Schur
+   * elimination. Active Point3 and Unit3 variables are symbolically eliminated
+   * in natural key order before METIS orders every remaining variable. This is
+   * the ordering accepted by Schur-mode parameters.
    */
-  static Ordering CreateCameraOrdering(const NonlinearFactorGraph& graph,
-                                       const Values& initialValues);
+  static Ordering CreateSchurOrdering(const NonlinearFactorGraph& graph,
+                                      const Values& initialValues);
 
   /**
-   * Prefix a camera ordering with all other active graph keys in natural key
-   * order. This is the complete point-first ordering used by Full mode and by
-   * the fused Schur multifrontal path.
+   * Prefix a Schur ordering with all other active graph keys in natural key
+   * order. This is the complete landmark-first ordering used by Full mode and
+   * by the fused Schur multifrontal path.
    */
   static Ordering CreatePointFirstOrdering(const NonlinearFactorGraph& graph,
-                                           const Ordering& cameraOrdering);
+                                           const Ordering& schurOrdering);
 
   SfmLevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph,
                                  const Values& initialValues,

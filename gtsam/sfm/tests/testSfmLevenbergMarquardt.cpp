@@ -15,11 +15,14 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Unit3.h>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/Preconditioner.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/sfm/SfmData.h>
 #include <gtsam/sfm/SfmLevenbergMarquardt.h>
+#include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/dataset.h>
 
@@ -30,7 +33,9 @@
 #include <vector>
 
 using namespace gtsam;
+using symbol_shorthand::L;
 using symbol_shorthand::P;
+using symbol_shorthand::X;
 
 namespace {
 
@@ -68,6 +73,42 @@ SmallProblem smallProblem(bool hardConstraints = true) {
       1, result.initial.at<SfmCamera>(1).retract(cameraPerturbation));
   result.initial.update(
       P(2), result.initial.at<Point3>(P(2)) + Point3(1e-2, -2e-2, 1e-2));
+  return result;
+}
+
+SmallProblem globalCalibrationProblem() {
+  const std::vector<Pose3> poses{
+      Pose3(), Pose3(Rot3::Ypr(0.03, -0.02, 0.01), Point3(1.0, 0.0, 0.0))};
+  const std::vector<Point3> points{
+      Point3(-1.0, -0.5, 5.0), Point3(0.8, -0.6, 4.5), Point3(-0.7, 0.9, 5.5),
+      Point3(1.1, 0.8, 6.0),   Point3(0.2, 0.1, 4.0),  Point3(-0.2, 0.4, 6.5)};
+  const Cal3_S2 calibration(500.0, 505.0, 0.0, 320.0, 240.0);
+  const Key calibrationKey = Symbol('k', 0);
+  const auto measurementNoise = noiseModel::Isotropic::Sigma(2, 1.0);
+
+  SmallProblem result;
+  for (size_t i = 0; i < poses.size(); ++i) {
+    result.initial.insert(X(i), poses[i]);
+    const PinholeCamera<Cal3_S2> camera(poses[i], calibration);
+    for (size_t j = 0; j < points.size(); ++j) {
+      result.graph.emplace_shared<GeneralSFMFactor2<Cal3_S2>>(
+          camera.project(points[j]), measurementNoise, X(i), L(j),
+          calibrationKey);
+    }
+  }
+  for (size_t j = 0; j < points.size(); ++j) {
+    result.initial.insert(L(j), points[j] + Point3(0.01, -0.02, 0.01));
+  }
+  result.initial.insert(calibrationKey,
+                        Cal3_S2(510.0, 495.0, 0.0, 318.0, 242.0));
+
+  result.graph.emplace_shared<PriorFactor<Pose3>>(
+      X(0), poses[0], noiseModel::Isotropic::Sigma(6, 1e-3));
+  result.graph.emplace_shared<PriorFactor<Point3>>(
+      L(0), points[0], noiseModel::Isotropic::Sigma(3, 1e-3));
+  result.graph.emplace_shared<PriorFactor<Cal3_S2>>(
+      calibrationKey, calibration,
+      noiseModel::Diagonal::Sigmas(Vector5{50.0, 50.0, 0.1, 10.0, 10.0}));
   return result;
 }
 
@@ -222,7 +263,7 @@ TEST(SfmLevenbergMarquardt, IterativeFailuresMatchOrdinaryDispatch) {
 }
 
 /* ************************************************************************* */
-TEST(SfmLevenbergMarquardt, CameraOrderingValidation) {
+TEST(SfmLevenbergMarquardt, SchurOrderingValidation) {
   const SmallProblem problem = smallProblem();
   auto params = parameters(SfmEliminationMode::Schur);
 
@@ -248,52 +289,132 @@ TEST(SfmLevenbergMarquardt, CameraOrderingValidation) {
 }
 
 /* ************************************************************************* */
-TEST(SfmLevenbergMarquardt, CreatesReusablePointFirstOrdering) {
-  const SmallProblem problem = smallProblem();
-  const Ordering cameras = SfmLevenbergMarquardtOptimizer::CreateCameraOrdering(
+TEST(SfmLevenbergMarquardt, SchurRetainsGlobalCalibration) {
+  const SmallProblem problem = globalCalibrationProblem();
+  const Key calibrationKey = Symbol('k', 0);
+  const Ordering retained = SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(
       problem.graph, problem.initial);
-  const Ordering full =
-      SfmLevenbergMarquardtOptimizer::CreatePointFirstOrdering(problem.graph,
-                                                               cameras);
 
-  EXPECT_LONGS_EQUAL(3, cameras.size());
-  EXPECT_LONGS_EQUAL(problem.graph.keys().size(), full.size());
-  const size_t pointCount = full.size() - cameras.size();
-  EXPECT(std::is_sorted(full.begin(), full.begin() + pointCount));
-  EXPECT(std::equal(cameras.begin(), cameras.end(), full.begin() + pointCount));
+  EXPECT_LONGS_EQUAL(3, retained.size());
+  EXPECT(std::find(retained.begin(), retained.end(), X(0)) != retained.end());
+  EXPECT(std::find(retained.begin(), retained.end(), X(1)) != retained.end());
+  EXPECT(std::find(retained.begin(), retained.end(), calibrationKey) !=
+         retained.end());
+  for (size_t i = 0; i < 6; ++i) {
+    EXPECT(std::find(retained.begin(), retained.end(), L(i)) == retained.end());
+  }
 
-  auto params = parameters(SfmEliminationMode::Schur);
-  params.setOrdering(cameras);
-  SfmLevenbergMarquardtOptimizer optimizer(problem.graph, problem.initial,
-                                           params);
-  EXPECT(optimizer.sfmParams().ordering->equals(cameras));
+  for (const auto solver : {NonlinearOptimizerParams::MULTIFRONTAL_SOLVER,
+                            NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY}) {
+    auto full = parameters(SfmEliminationMode::Full);
+    auto schur = parameters(SfmEliminationMode::Schur);
+    full.setLinearSolver(solver);
+    schur.setLinearSolver(solver);
+    const double fullError = optimizeError(problem, full);
+    const double schurError = optimizeError(problem, schur);
+    EXPECT_DOUBLES_EQUAL(fullError, schurError, 1e-5);
+  }
 }
 
 /* ************************************************************************* */
-TEST(SfmLevenbergMarquardt, FusedMultifrontalCompletesCameraOrdering) {
+TEST(SfmLevenbergMarquardt, SchurEliminatesPoint3AndUnit3Only) {
+  const Key pointKey = Symbol('l', 0);
+  const Key directionKey = Symbol('u', 0);
+  const Key poseKey = Symbol('x', 0);
+  const Key calibrationKey = Symbol('k', 0);
+  NonlinearFactorGraph graph;
+  Values values;
+
+  const Point3 point(0.0, 0.0, 5.0);
+  const Unit3 direction(0.0, 0.0, 1.0);
+  const Pose3 pose;
+  const Cal3_S2 calibration(500.0, 500.0, 0.0, 320.0, 240.0);
+  values.insert(pointKey, point + Point3(0.1, -0.1, 0.1));
+  values.insert(directionKey, Unit3(0.1, 0.0, 1.0));
+  values.insert(poseKey, Pose3(Rot3(), Point3(0.1, 0.0, 0.0)));
+  values.insert(calibrationKey, Cal3_S2(510.0, 490.0, 0.0, 318.0, 242.0));
+  graph.emplace_shared<PriorFactor<Point3>>(pointKey, point,
+                                            noiseModel::Unit::Create(3));
+  graph.emplace_shared<PriorFactor<Unit3>>(directionKey, direction,
+                                           noiseModel::Unit::Create(2));
+  graph.emplace_shared<PriorFactor<Pose3>>(poseKey, pose,
+                                           noiseModel::Unit::Create(6));
+  graph.emplace_shared<PriorFactor<Cal3_S2>>(calibrationKey, calibration,
+                                             noiseModel::Unit::Create(5));
+
+  const Ordering retained =
+      SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(graph, values);
+  EXPECT_LONGS_EQUAL(2, retained.size());
+  EXPECT(std::find(retained.begin(), retained.end(), poseKey) !=
+         retained.end());
+  EXPECT(std::find(retained.begin(), retained.end(), calibrationKey) !=
+         retained.end());
+  EXPECT(std::find(retained.begin(), retained.end(), pointKey) ==
+         retained.end());
+  EXPECT(std::find(retained.begin(), retained.end(), directionKey) ==
+         retained.end());
+
+  const Ordering full =
+      SfmLevenbergMarquardtOptimizer::CreatePointFirstOrdering(graph, retained);
+  EXPECT_LONGS_EQUAL(pointKey, full[0]);
+  EXPECT_LONGS_EQUAL(directionKey, full[1]);
+
+  auto params = parameters(SfmEliminationMode::Schur);
+  params.setLinearSolver(NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY);
+  SfmLevenbergMarquardtOptimizer optimizer(graph, values, params);
+  const double initialError = graph.error(values);
+  optimizer.optimize();
+  EXPECT(optimizer.error() < initialError);
+}
+
+/* ************************************************************************* */
+TEST(SfmLevenbergMarquardt, CreatesReusablePointFirstOrdering) {
+  const SmallProblem problem = smallProblem();
+  const Ordering retained = SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(
+      problem.graph, problem.initial);
+  const Ordering full =
+      SfmLevenbergMarquardtOptimizer::CreatePointFirstOrdering(problem.graph,
+                                                               retained);
+
+  EXPECT_LONGS_EQUAL(3, retained.size());
+  EXPECT_LONGS_EQUAL(problem.graph.keys().size(), full.size());
+  const size_t pointCount = full.size() - retained.size();
+  EXPECT(std::is_sorted(full.begin(), full.begin() + pointCount));
+  EXPECT(
+      std::equal(retained.begin(), retained.end(), full.begin() + pointCount));
+
+  auto params = parameters(SfmEliminationMode::Schur);
+  params.setOrdering(retained);
+  SfmLevenbergMarquardtOptimizer optimizer(problem.graph, problem.initial,
+                                           params);
+  EXPECT(optimizer.sfmParams().ordering->equals(retained));
+}
+
+/* ************************************************************************* */
+TEST(SfmLevenbergMarquardt, FusedMultifrontalCompletesSchurOrdering) {
   const SmallProblem problem = smallProblem();
   auto params = parameters(SfmEliminationMode::Schur);
   params.setLinearSolver(NonlinearOptimizerParams::MULTIFRONTAL_SOLVER);
-  const Ordering cameras{2, 1, 0};
-  params.setOrdering(cameras);
+  const Ordering retained{2, 1, 0};
+  params.setOrdering(retained);
 
   SfmLevenbergMarquardtOptimizer optimizer(problem.graph, problem.initial,
                                            params);
-  EXPECT(optimizer.sfmParams().ordering->equals(cameras));
+  EXPECT(optimizer.sfmParams().ordering->equals(retained));
 
   const Ordering& internal = *optimizer.params().ordering;
   EXPECT_LONGS_EQUAL(problem.graph.keys().size(), internal.size());
   const KeySet keys = problem.graph.keys();
-  Ordering expectedPoints;
+  Ordering expectedEliminated;
   for (Key key : keys) {
-    if (std::find(cameras.begin(), cameras.end(), key) == cameras.end()) {
-      expectedPoints.push_back(key);
+    if (std::find(retained.begin(), retained.end(), key) == retained.end()) {
+      expectedEliminated.push_back(key);
     }
   }
-  EXPECT(std::equal(expectedPoints.begin(), expectedPoints.end(),
+  EXPECT(std::equal(expectedEliminated.begin(), expectedEliminated.end(),
                     internal.begin()));
-  EXPECT(std::equal(cameras.begin(), cameras.end(),
-                    internal.end() - cameras.size()));
+  EXPECT(std::equal(retained.begin(), retained.end(),
+                    internal.end() - retained.size()));
 }
 
 /* ************************************************************************* */
@@ -325,11 +446,11 @@ TEST(SfmLevenbergMarquardt, DefaultsCloneAndEquality) {
 /* ************************************************************************* */
 TEST(SfmLevenbergMarquardt, DefaultCreatesFastPointFirstOrdering) {
   const SmallProblem problem = smallProblem();
-  const Ordering cameras = SfmLevenbergMarquardtOptimizer::CreateCameraOrdering(
+  const Ordering retained = SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(
       problem.graph, problem.initial);
   const Ordering expected =
       SfmLevenbergMarquardtOptimizer::CreatePointFirstOrdering(problem.graph,
-                                                               cameras);
+                                                               retained);
 
   SfmLevenbergMarquardtOptimizer optimizer(problem.graph, problem.initial);
   EXPECT(optimizer.sfmParams().getEliminationMode() ==

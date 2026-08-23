@@ -461,12 +461,12 @@ std::vector<PointCholeskyProfileRow> profilePointFirstCholesky(
       bal::buildGeneralSfmGraph(db, config);
   const NonlinearFactorGraph batchGraph =
       bal::buildBatchSfmGraph(db, config, false, batchChunkSize);
-  const Ordering cameraOrdering =
-      SfmLevenbergMarquardtOptimizer::CreateCameraOrdering(regularGraph,
-                                                           initial);
+  const Ordering schurOrdering =
+      SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(regularGraph,
+                                                          initial);
   const Ordering ordering =
       SfmLevenbergMarquardtOptimizer::CreatePointFirstOrdering(regularGraph,
-                                                               cameraOrdering);
+                                                               schurOrdering);
 
   std::vector<PointCholeskyProfileRow> rows;
   rows.push_back(profilePointFirstCholeskyVariant(
@@ -588,10 +588,10 @@ int main(int argc, char* argv[]) {
     Ordering ordering;
     Ordering cameraFirstOrdering;
     if (options.config.useSchur) {
-      const Ordering cameraOrdering =
-          SfmLevenbergMarquardtOptimizer::CreateCameraOrdering(graph, initial);
+      const Ordering schurOrdering =
+          SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(graph, initial);
       ordering = SfmLevenbergMarquardtOptimizer::CreatePointFirstOrdering(
-          graph, cameraOrdering);
+          graph, schurOrdering);
       if (options.cameraBatch) {
         cameraFirstOrdering = bal::createCameraFirstOrdering(db);
       }

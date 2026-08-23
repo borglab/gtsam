@@ -14,7 +14,8 @@
  * @brief CPU SFM Levenberg-Marquardt implementation.
  */
 
-#include <gtsam/sfm/SfmData.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Unit3.h>
 #include <gtsam/sfm/SfmLevenbergMarquardt.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 
@@ -38,60 +39,82 @@ const char* eliminationModeName(SfmEliminationMode mode) {
   return "Unknown";
 }
 
-KeyVector activeCameraKeys(const NonlinearFactorGraph& graph,
-                           const Values& initialValues) {
-  const auto cameras = initialValues.extract<SfmCamera>();
-  KeyVector result;
+struct SchurPartition {
+  Ordering eliminated;
+  Ordering retained;
+};
+
+SchurPartition createSchurPartition(const NonlinearFactorGraph& graph,
+                                    const Values& initialValues) {
+  const auto points = initialValues.extract<Point3>();
+  const auto directions = initialValues.extract<Unit3>();
+  SchurPartition result;
   for (Key key : graph.keys()) {
-    if (cameras.find(key) != cameras.end()) result.push_back(key);
+    if (!initialValues.exists(key)) {
+      throw std::invalid_argument(
+          "SFM graph key is missing from the initial values");
+    }
+    if (points.count(key) || directions.count(key)) {
+      result.eliminated.push_back(key);
+    } else {
+      result.retained.push_back(key);
+    }
   }
-  if (result.empty() && !graph.empty()) {
+  if (result.eliminated.empty() && !graph.empty()) {
     throw std::invalid_argument(
-        "SFM Schur mode found no active SfmCamera values");
+        "SFM Schur mode found no active Point3 or Unit3 values to eliminate");
+  }
+  if (result.retained.empty() && !graph.empty()) {
+    throw std::invalid_argument(
+        "SFM Schur mode found no variables to retain after eliminating "
+        "Point3 and Unit3 values");
   }
   return result;
 }
 
-Ordering resolveCameraOrdering(const NonlinearFactorGraph& graph,
-                               const Values& initialValues,
-                               const SfmLevenbergMarquardtParams& params) {
-  const KeyVector cameras = activeCameraKeys(graph, initialValues);
-  const std::unordered_set<Key> cameraSet(cameras.begin(), cameras.end());
+Ordering resolveSchurOrdering(const NonlinearFactorGraph& graph,
+                              const Values& initialValues,
+                              const SfmLevenbergMarquardtParams& params) {
+  const SchurPartition partition = createSchurPartition(graph, initialValues);
+  const std::unordered_set<Key> retainedSet(partition.retained.begin(),
+                                            partition.retained.end());
 
   if (params.ordering) {
-    if (params.ordering->size() != cameras.size()) {
+    if (params.ordering->size() != partition.retained.size()) {
       throw std::invalid_argument(
-          "SFM Schur ordering must contain every active camera exactly once");
+          "SFM Schur ordering must contain every active non-Point3/Unit3 "
+          "variable exactly once");
     }
     std::unordered_set<Key> seen;
     for (Key key : *params.ordering) {
-      if (!cameraSet.count(key)) {
+      if (!retainedSet.count(key)) {
         throw std::invalid_argument(
-            "SFM Schur ordering may contain camera keys only");
+            "SFM Schur ordering may contain retained non-Point3/Unit3 keys "
+            "only");
       }
       if (!seen.insert(key).second) {
         throw std::invalid_argument(
-            "SFM Schur ordering contains a duplicate camera key");
+            "SFM Schur ordering contains a duplicate retained key");
       }
     }
     return *params.ordering;
   }
-  return SfmLevenbergMarquardtOptimizer::CreateCameraOrdering(graph,
-                                                              initialValues);
+  return SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(graph,
+                                                             initialValues);
 }
 
 template <class FACTOR_GRAPH>
 Ordering completeSchurOrdering(const FACTOR_GRAPH& graph,
-                               const Ordering& cameraOrdering) {
+                               const Ordering& schurOrdering) {
   const KeySet graphKeys = graph.keys();
-  const std::unordered_set<Key> cameraSet(cameraOrdering.begin(),
-                                          cameraOrdering.end());
+  const std::unordered_set<Key> retainedSet(schurOrdering.begin(),
+                                            schurOrdering.end());
   Ordering result;
   result.reserve(graphKeys.size());
   for (Key key : graphKeys) {
-    if (!cameraSet.count(key)) result.push_back(key);
+    if (!retainedSet.count(key)) result.push_back(key);
   }
-  for (Key key : cameraOrdering) {
+  for (Key key : schurOrdering) {
     if (graphKeys.count(key)) result.push_back(key);
   }
   return result;
@@ -101,31 +124,31 @@ SfmLevenbergMarquardtParams resolveParams(const NonlinearFactorGraph& graph,
                                           const Values& initialValues,
                                           SfmLevenbergMarquardtParams params) {
   if (params.eliminationMode == SfmEliminationMode::Schur) {
-    const Ordering cameraOrdering =
-        resolveCameraOrdering(graph, initialValues, params);
+    const Ordering schurOrdering =
+        resolveSchurOrdering(graph, initialValues, params);
     params.ordering =
         params.linearSolverType == NonlinearOptimizerParams::MULTIFRONTAL_SOLVER
             ? SfmLevenbergMarquardtOptimizer::CreatePointFirstOrdering(
-                  graph, cameraOrdering)
-            : cameraOrdering;
+                  graph, schurOrdering)
+            : schurOrdering;
     params.orderingType = Ordering::CUSTOM;
   } else if (!params.ordering) {
-    const Ordering cameraOrdering =
-        SfmLevenbergMarquardtOptimizer::CreateCameraOrdering(graph,
-                                                             initialValues);
+    const Ordering schurOrdering =
+        SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(graph,
+                                                            initialValues);
     params.ordering = SfmLevenbergMarquardtOptimizer::CreatePointFirstOrdering(
-        graph, cameraOrdering);
+        graph, schurOrdering);
     params.orderingType = Ordering::CUSTOM;
   }
   return params;
 }
 
 Ordering retainedOrdering(const GaussianFactorGraph& graph,
-                          const Ordering& cameraOrdering) {
+                          const Ordering& schurOrdering) {
   const KeySet keys = graph.keys();
   Ordering result;
-  result.reserve(cameraOrdering.size());
-  for (Key key : cameraOrdering) {
+  result.reserve(schurOrdering.size());
+  for (Key key : schurOrdering) {
     if (keys.count(key)) result.push_back(key);
   }
   return result;
@@ -139,34 +162,27 @@ SfmLevenbergMarquardtParams::SfmLevenbergMarquardtParams() {
 }
 
 /* ************************************************************************* */
-Ordering SfmLevenbergMarquardtOptimizer::CreateCameraOrdering(
+Ordering SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(
     const NonlinearFactorGraph& graph, const Values& initialValues) {
-  const KeyVector cameras = activeCameraKeys(graph, initialValues);
-  const std::unordered_set<Key> cameraSet(cameras.begin(), cameras.end());
-
-  Ordering eliminated;
-  for (Key key : graph.keys()) {
-    if (!cameraSet.count(key)) eliminated.push_back(key);
-  }
+  const SchurPartition partition = createSchurPartition(graph, initialValues);
   SymbolicFactorGraph symbolic;
   symbolic.reserve(graph.size());
   for (const NonlinearFactor::shared_ptr& factor : graph) {
     if (factor) symbolic.emplace_shared<SymbolicFactor>(*factor);
   }
   const SymbolicFactorGraph::shared_ptr reduced =
-      symbolic.eliminatePartialSequential(eliminated).second;
-  Ordering cameraOrdering = Ordering::Metis(*reduced);
-  if (cameraOrdering.size() != cameras.size()) {
-    throw std::runtime_error(
-        "SFM Schur automatic camera ordering is incomplete");
+      symbolic.eliminatePartialSequential(partition.eliminated).second;
+  Ordering schurOrdering = Ordering::Metis(*reduced);
+  if (schurOrdering.size() != partition.retained.size()) {
+    throw std::runtime_error("SFM automatic Schur ordering is incomplete");
   }
-  return cameraOrdering;
+  return schurOrdering;
 }
 
 /* ************************************************************************* */
 Ordering SfmLevenbergMarquardtOptimizer::CreatePointFirstOrdering(
-    const NonlinearFactorGraph& graph, const Ordering& cameraOrdering) {
-  return completeSchurOrdering(graph, cameraOrdering);
+    const NonlinearFactorGraph& graph, const Ordering& schurOrdering) {
+  return completeSchurOrdering(graph, schurOrdering);
 }
 
 /* ************************************************************************* */
@@ -220,8 +236,8 @@ bool SfmLevenbergMarquardtParams::equals(
 struct SfmLevenbergMarquardtOptimizer::SchurState {
   std::unique_ptr<MultifrontalSolver> partialSolver;
   Ordering fullOrdering;
-  Ordering cameraOrdering;
-  size_t pointCount = 0;
+  Ordering retainedOrdering;
+  size_t eliminatedCount = 0;
 };
 
 /* ************************************************************************* */
@@ -239,10 +255,11 @@ SfmLevenbergMarquardtOptimizer::SfmLevenbergMarquardtOptimizer(
   if (eliminationMode == SfmEliminationMode::Schur &&
       sfmParams_.linearSolverType ==
           NonlinearOptimizerParams::MULTIFRONTAL_SOLVER) {
-    const size_t cameraCount = activeCameraKeys(graph, initialValues).size();
+    const size_t retainedCount =
+        createSchurPartition(graph, initialValues).retained.size();
     const Ordering& fullOrdering = *sfmParams_.ordering;
     sfmParams_.ordering =
-        Ordering(fullOrdering.end() - cameraCount, fullOrdering.end());
+        Ordering(fullOrdering.end() - retainedCount, fullOrdering.end());
   }
 }
 
@@ -268,7 +285,7 @@ VectorValues SfmLevenbergMarquardtOptimizer::solve(
   }
   if (!params.ordering) {
     throw std::logic_error(
-        "SFM Schur mode requires a resolved camera ordering");
+        "SFM Schur mode requires a resolved retained-variable ordering");
   }
 
   if (params.linearSolverType ==
@@ -284,35 +301,37 @@ VectorValues SfmLevenbergMarquardtOptimizer::solve(
 
   SchurState& state = *schurState_;
   if (!state.partialSolver) {
-    state.cameraOrdering = *params.ordering;
-    state.fullOrdering = completeSchurOrdering(graph, state.cameraOrdering);
-    state.pointCount = state.fullOrdering.size() -
-                       retainedOrdering(graph, state.cameraOrdering).size();
-    if (state.pointCount == 0 ||
-        state.pointCount >= state.fullOrdering.size()) {
+    state.retainedOrdering = *params.ordering;
+    state.fullOrdering = completeSchurOrdering(graph, state.retainedOrdering);
+    state.eliminatedCount =
+        state.fullOrdering.size() -
+        retainedOrdering(graph, state.retainedOrdering).size();
+    if (state.eliminatedCount == 0 ||
+        state.eliminatedCount >= state.fullOrdering.size()) {
       throw std::invalid_argument(
-          "SFM Schur mode requires at least one eliminated point and one "
-          "retained camera");
+          "SFM Schur mode requires at least one eliminated Point3/Unit3 "
+          "variable and one retained variable");
     }
     MultifrontalParameters pointEliminationParams = params.multifrontalParams;
     pointEliminationParams.qrMode = MultifrontalParameters::QRMode::Off;
     state.partialSolver = std::make_unique<MultifrontalSolver>(
-        graph, state.fullOrdering, state.pointCount, pointEliminationParams);
+        graph, state.fullOrdering, state.eliminatedCount,
+        pointEliminationParams);
   }
 
   state.partialSolver->eliminatePartialInPlace(graph);
   const GaussianFactorGraph reduced =
       state.partialSolver->remainingFactorGraph();
   const Ordering reducedOrdering =
-      retainedOrdering(reduced, state.cameraOrdering);
+      retainedOrdering(reduced, state.retainedOrdering);
 
   LevenbergMarquardtParams reducedParams = sfmParams_;
   reducedParams.ordering = reducedOrdering;
   reducedParams.orderingType = Ordering::CUSTOM;
-  const VectorValues cameraDelta =
+  const VectorValues retainedDelta =
       NonlinearOptimizer::solve(reduced, reducedParams);
 
-  return state.partialSolver->updateSolution(cameraDelta);
+  return state.partialSolver->updateSolution(retainedDelta);
 }
 
 }  // namespace gtsam

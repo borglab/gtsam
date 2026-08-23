@@ -20,8 +20,8 @@ namespace gtsam {
 
 /// Determines whether an SFM optimizer solves the joint or reduced system.
 enum class SfmEliminationMode {
-  Full,   ///< Send the complete camera-point system to the selected solver.
-  Schur,  ///< Eliminate points before solving the retained camera system.
+  Full,   ///< Send the complete system to the selected solver.
+  Schur,  ///< Eliminate landmark variables before solving the retained system.
 };
 
 }  // namespace gtsam
