@@ -454,7 +454,7 @@ Vector RhsFromHost(const HostSparseJacobian& host) {
 
 DenseJacobianReference AssembleDenseReferenceBySlot(
     const NonlinearFactorGraph& graph, const Values& values,
-    const SparseJacobianColumnLayout& columns, const SparseJacobianPlan& plan) {
+    const KeyInfo& columns, const SparseJacobianPlan& plan) {
   DenseJacobianReference reference{Matrix::Zero(plan.rows(), plan.columns()),
                                    Vector::Zero(plan.rows())};
   const GaussianFactorGraph::shared_ptr linear = graph.linearize(values);
@@ -474,11 +474,13 @@ DenseJacobianReference AssembleDenseReferenceBySlot(
     const SparseJacobianFactorWritePlan& factorPlan = plan.factor(factorIndex);
     Eigen::Index localColumn = 0;
     for (const Key key : jacobian->keys()) {
-      const VariableBlock& column = columns.at(key);
-      reference.jacobian.block(factorPlan.rowBegin, column.scalarOffset,
-                               factorPlan.rowCount, column.dimension) =
-          localA.middleCols(localColumn, column.dimension);
-      localColumn += column.dimension;
+      const KeyInfoEntry& column = columns.at(key);
+      reference.jacobian.block(
+          factorPlan.rowBegin, static_cast<Eigen::Index>(column.start),
+          factorPlan.rowCount, static_cast<Eigen::Index>(column.dim)) =
+          localA.middleCols(localColumn,
+                            static_cast<Eigen::Index>(column.dim));
+      localColumn += static_cast<Eigen::Index>(column.dim);
     }
     reference.rhs.segment(factorPlan.rowBegin, factorPlan.rowCount) = localB;
   }
@@ -746,7 +748,7 @@ TEST(SparseLevenbergMarquardt,
      ProfilesTwoAcceptedOuterIterationsWithExactTransfers) {
   if (!CanRunSparseLevenbergMarquardt()) return;
   const Pose2LmProblem problem = MakePose2LmProblem();
-  const SparseJacobianColumnLayout columns(problem.initial);
+  const KeyInfo columns(problem.initial.dims());
   const SparseJacobianPlan plan(problem.graph, columns);
   const SparseLevenbergMarquardtResult result =
       RunTwoOuterProfiledPose2(problem, true);
@@ -780,7 +782,7 @@ TEST(SparseLevenbergMarquardt,
      TimingDisabledKeepsTimingsZeroAndExactTransfers) {
   if (!CanRunSparseLevenbergMarquardt()) return;
   const Pose2LmProblem problem = MakePose2LmProblem();
-  const SparseJacobianColumnLayout columns(problem.initial);
+  const KeyInfo columns(problem.initial.dims());
   const SparseJacobianPlan plan(problem.graph, columns);
   const SparseLevenbergMarquardtResult result =
       RunTwoOuterProfiledPose2(problem, false);
@@ -933,7 +935,7 @@ TEST(SparseLevenbergMarquardt,
   EXPECT_LONGS_EQUAL(1, result.acceptedSteps);
   EXPECT_LONGS_EQUAL(1, result.lambdaAttempts);
   EXPECT_LONGS_EQUAL(1, result.cudssAnalyses);
-  const SparseJacobianColumnLayout prefixColumns(initial);
+  const KeyInfo prefixColumns(initial.dims());
   const SparseJacobianPlan prefixPlan(graph, prefixColumns);
   CHECK(result.systemSize.factors == graph.size());
   CHECK(result.systemSize.jacobianRows ==
@@ -1248,7 +1250,7 @@ void CheckStreamedJacobiansAtSnapshots(TestResult& result_,
                                        const NonlinearFactorGraph& graph,
                                        const std::vector<Values>& snapshots) {
   for (const Values& values : snapshots) {
-    const SparseJacobianColumnLayout columns(values);
+    const KeyInfo columns(values.dims());
     const SparseJacobianPlan plan(graph, columns);
     HostSparseJacobian host(plan);
     host.clear();

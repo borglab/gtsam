@@ -22,6 +22,10 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Pose3.h>
@@ -41,6 +45,7 @@ namespace gtsam {
  * \f$ \xi_k \f$ as a variable. So it is a three-way factor.
  * Note: this factor is necessary if one needs to smooth the entire graph. It's not needed
  *  in sequential update method.
+ * @deprecated This experimental dynamics factor has no maintained replacement.
  */
 class Reconstruction
     : public NoiseModelFactorT<Vector6, Pose3, Pose3, Vector6> {
@@ -95,6 +100,7 @@ public:
 
 /**
  * Implement the Discrete Euler-Poincare' equation:
+ * @deprecated This experimental dynamics factor has no maintained replacement.
  */
 class DiscreteEulerPoincareHelicopter
     : public NoiseModelFactorT<Vector6, Vector6, Vector6, Pose3> {
@@ -224,3 +230,5 @@ public:
 };
 
 }  // namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

@@ -50,6 +50,26 @@ TEST(Quaternion , Logmap) {
 }
 
 //******************************************************************************
+// Rot3Q builds its quaternion directly from a user-supplied rotation matrix and
+// never renormalizes, so Logmap must not assume unit norm. It must also stay
+// accurate just above the old NearlyOne threshold, where acos(qw) is poorly
+// conditioned.
+TEST(Quaternion , LogmapUnnormalized) {
+  const Vector3 axis = Vector3(1, 2, 3).normalized();
+  for (double theta : {1e-4, 1e-2, 1.0, 3.0, 3.1415}) {
+    const Q unit(Eigen::AngleAxisd(theta, axis));
+    const Vector3 expected = theta * axis;
+    EXPECT(assert_equal((Vector)expected, (Vector)traits<Q>::Logmap(unit),
+                        1e-14));
+    for (double s : {0.5, 1.0 + 1e-7, 2.0}) {
+      const Q scaled(s * unit.w(), s * unit.x(), s * unit.y(), s * unit.z());
+      EXPECT(assert_equal((Vector)expected, (Vector)traits<Q>::Logmap(scaled),
+                          1e-14));
+    }
+  }
+}
+
+//******************************************************************************
 TEST(Quaternion , Local) {
   Vector3 z_axis(0, 0, 1);
   Q q1(Eigen::AngleAxisd(0, z_axis));

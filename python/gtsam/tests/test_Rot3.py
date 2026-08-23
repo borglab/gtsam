@@ -2018,7 +2018,10 @@ class TestRot3(GtsamTestCase):
         # get back angle in radians
         _, actual_angle = Rot3(R).axisAngle()
         expected_angle = 3.1396582
-        np.testing.assert_almost_equal(actual_angle, expected_angle, 1e-7)
+        # NOTE: the third positional argument of assert_almost_equal is
+        # `decimal`, so passing 1e-7 here amounted to a ~1.5 radian tolerance.
+        # decimal=7 is the intended check and is met by the current Logmap.
+        np.testing.assert_almost_equal(actual_angle, expected_angle, decimal=7)
 
     def test_axis_angle_stress_test(self) -> None:
         """Test that .axisAngle() yields angles less than 180 degrees for specific inputs."""

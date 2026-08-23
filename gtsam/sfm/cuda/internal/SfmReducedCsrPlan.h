@@ -19,8 +19,7 @@
 #pragma once
 
 #include <gtsam/dllexport.h>
-#include <gtsam/inference/Ordering.h>
-#include <gtsam/linear/cuda/internal/BlockOrdering.h>
+#include <gtsam/linear/KeyInfo.h>
 #include <gtsam/sfm/SfmData.h>
 
 #include <cstdint>
@@ -45,7 +44,7 @@ class GTSAM_EXPORT SfmReducedCsrPlan {
   int dimension() const { return dimension_; }
   const std::vector<int>& rowPointers() const { return rowPointers_; }
   const std::vector<int>& columnIndices() const { return columnIndices_; }
-  const BlockLayout& cameraBlocks() const { return cameraBlocks_; }
+  const KeyInfo& cameraKeyInfo() const { return cameraKeyInfo_; }
 
   bool hasCameraPair(int cameraI, int cameraJ) const;
 
@@ -63,7 +62,7 @@ class GTSAM_EXPORT SfmReducedCsrPlan {
   int cameraCount_ = 0;
   int dimension_ = 0;
   std::vector<Key> cameraKeys_;
-  BlockLayout cameraBlocks_;
+  KeyInfo cameraKeyInfo_;
   std::vector<int> rowPointers_;
   std::vector<int> columnIndices_;
   std::unordered_map<std::uint64_t, int> scalarOffsets_;

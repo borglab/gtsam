@@ -19,6 +19,7 @@
 #include <gtsam/base/cuda/Context.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/cuda/internal/BlockOrdering.h>
 #include <gtsam/nonlinear/BatchFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/cuda/internal/DeviceGeometryKernels.h>
@@ -540,6 +541,14 @@ TEST(SfmReducedCsrPlan, BuildsStableCameraOnlyCovisibilityPattern) {
   const SfmReducedCsrPlan repeated(data, cameraKeys);
 
   LONGS_EQUAL(36, plan.dimension());
+  EXPECT(plan.cameraKeyInfo().ordering() == Ordering(cameraKeys.begin(),
+                                                     cameraKeys.end()));
+  for (size_t camera = 0; camera < cameraKeys.size(); ++camera) {
+    const KeyInfoEntry& entry = plan.cameraKeyInfo().at(cameraKeys[camera]);
+    LONGS_EQUAL(camera, entry.index);
+    LONGS_EQUAL(9, entry.dim);
+    LONGS_EQUAL(9 * camera, entry.start);
+  }
   EXPECT(plan.rowPointers() == repeated.rowPointers());
   EXPECT(plan.columnIndices() == repeated.columnIndices());
   EXPECT(plan.hasCameraPair(0, 0));
@@ -559,7 +568,7 @@ TEST(SfmReducedCsrPlan, BuildsStableCameraOnlyCovisibilityPattern) {
   }
 
   const std::vector<int> scalarPermutation = compileScalarPermutation(
-      plan.cameraBlocks(), Ordering{C(2), C(0), C(3), C(1)});
+      plan.cameraKeyInfo(), Ordering{C(2), C(0), C(3), C(1)});
   std::vector<int> expected;
   for (const int camera : {2, 0, 3, 1}) {
     for (int scalar = 0; scalar < 9; ++scalar) {
@@ -1290,7 +1299,7 @@ TEST(SfmLevenbergMarquardt,
   CHECK(sparse.linearSystemNonzeros > 0);
   EXPECT(sparse.appliedScalarPermutation ==
          compileScalarPermutation(
-             SfmReducedCsrPlan(data, {C(0), C(1)}).cameraBlocks(),
+             SfmReducedCsrPlan(data, {C(0), C(1)}).cameraKeyInfo(),
              *sparseParams.ordering));
 }
 

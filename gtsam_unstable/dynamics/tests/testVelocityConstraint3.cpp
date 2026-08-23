@@ -3,7 +3,11 @@
  * @author Duy-Nguyen Ta
  */
 
+#include <gtsam/config.h>
 #include <CppUnitLite/TestHarness.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam_unstable/dynamics/VelocityConstraint3.h>
@@ -27,6 +31,8 @@ TEST( testVelocityConstraint3, evaluateError) {
 }
 
 /* ************************************************************************* */
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

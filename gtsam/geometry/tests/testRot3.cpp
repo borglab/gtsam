@@ -134,8 +134,14 @@ TEST( Rot3, AxisAngle2)
   // convert Rot3 to quaternion using GTSAM
   const auto [actualAxis, actualAngle] = R1.axisAngle();
   
+  // Regression guard for BOTH #886 and #1233: this matrix is real data rounded
+  // to 6 digits (orthogonality defect ~4e-6) at an angle 2e-3 away from pi, so
+  // it exercises the near-pi branch on non-orthogonal input. 1e-5 was loose
+  // enough to only catch the gross #886 failure; 1e-7 also catches the #1233
+  // accuracy loss. The residual 4.8e-8 is the truncation of the literal below,
+  // not the implementation (60-digit reference: 3.1396582476).
   double expectedAngle = 3.1396582;
-  CHECK(assert_equal(expectedAngle, actualAngle, 1e-5));
+  CHECK(assert_equal(expectedAngle, actualAngle, 1e-7));
 }
 
 /* ************************************************************************* */
@@ -313,18 +319,15 @@ TEST( Rot3, log) {
              -0.03997006, -0.88835923, 0.45740671,   //
              -0.16293753, 0.45743998, 0.87418537);
 
-  // Rot3's Logmap returns different, but equivalent compacted
-  // axis-angle vectors depending on whether Rot3 is implemented
-  // by Quaternions or SO3.
-#if defined(GTSAM_USE_QUATERNIONS)
-  // Quaternion bounds angle to [-pi, pi] resulting in ~179.9 degrees
-  EXPECT(assert_equal(Vector3(0.264451979, -0.742197651, -3.04098211),
+  // This matrix is 179.9887 degrees from identity, so it lands in the near-pi
+  // branch. Both backends now agree here to machine precision, so the two
+  // expectations that used to be split on GTSAM_USE_QUATERNIONS have been
+  // merged: the SO3 path was fixed in #1233, and the quaternion path no longer
+  // assumes unit norm (the quaternion Rot3Q builds from these nine doubles has
+  // norm 1.000000082). The value below is the exact Logmap of this matrix,
+  // verified against a 60-digit reference.
+  EXPECT(assert_equal(Vector3(0.264451957511, -0.74219758996, -3.04098186076),
                       (Vector)Rot3::Logmap(Rlund), 1e-8));
-#else
-  // SO3 will be approximate because of the non-orthogonality
-  EXPECT(assert_equal(Vector3(0.264452, -0.742197708, -3.04098184),
-                        (Vector)Rot3::Logmap(Rlund), 1e-8));
-#endif
 }
 
 /* ************************************************************************* */

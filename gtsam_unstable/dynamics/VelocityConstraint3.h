@@ -17,11 +17,19 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 namespace gtsam {
 
+/**
+ * Three-way scalar velocity constraint.
+ * @deprecated This experimental dynamics factor has no maintained replacement.
+ */
 class VelocityConstraint3
     : public NoiseModelFactorT<Vector1, double, double, double> {
 public:
@@ -77,3 +85,5 @@ private:
 }; // \VelocityConstraint3
 
 }
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

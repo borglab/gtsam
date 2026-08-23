@@ -837,7 +837,7 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
       // every other backend, so the reduced plan is available here.
       if (params.ordering) {
         result.appliedScalarPermutation = compileScalarPermutation(
-            reducedPlan->cameraBlocks(), *params.ordering);
+            reducedPlan->cameraKeyInfo(), *params.ordering);
       }
     }
     sparseSchurProblem.initialize(batch, numCameras);

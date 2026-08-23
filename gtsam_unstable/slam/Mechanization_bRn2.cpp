@@ -5,6 +5,10 @@
  * @author Frank Dellaert
  */
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include "Mechanization_bRn2.h"
 
 namespace gtsam {
@@ -113,3 +117,5 @@ Mechanization_bRn2 Mechanization_bRn2::integrate(const Vector3& u,
 }
 
 } /* namespace gtsam */
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

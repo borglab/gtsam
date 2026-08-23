@@ -50,13 +50,6 @@ class gtsam::StereoPoint2;
 
 namespace gtsam {
 
-#include <gtsam_unstable/base/Dummy.h>
-class Dummy {
-  Dummy();
-  void print(string s) const;
-  unsigned char dummyTwoVar(unsigned char a) const;
-};
-
 #include <gtsam_unstable/geometry/Pose3Upright.h>
 class Pose3Upright {
   Pose3Upright();
@@ -101,29 +94,6 @@ class Pose3Upright {
 
   void serializable() const; // enabling serialization functionality
 }; // \class Pose3Upright
-
-#include <gtsam_unstable/geometry/BearingS2.h>
-class BearingS2 {
-  BearingS2();
-  BearingS2(double azimuth_double, double elevation_double);
-  BearingS2(const gtsam::Rot2& azimuth, const gtsam::Rot2& elevation);
-
-  const gtsam::Rot2& azimuth() const;
-  const gtsam::Rot2& elevation() const;
-
-  static gtsam::BearingS2 fromDownwardsObservation(const gtsam::Pose3& A, const gtsam::Point3& B);
-  static gtsam::BearingS2 fromForwardObservation(const gtsam::Pose3& A, const gtsam::Point3& B);
-
-  void print(string s) const;
-  bool equals(const gtsam::BearingS2& x, double tol) const;
-
-  size_t dim() const;
-  gtsam::BearingS2 retract(const gtsam::Vector& v) const;
-  gtsam::Vector localCoordinates(const gtsam::BearingS2& p2) const;
-
-  void serializable() const; // enabling serialization functionality
-};
-
 
 #include <gtsam_unstable/geometry/SimWall2D.h>
 class SimWall2D {
@@ -340,62 +310,6 @@ virtual class TOAFactor : gtsam::NoiseModelFactor {
   static void InsertEvent(gtsam::Key key, const gtsam::Event& event, gtsam::Values* values);
 };
 
-#include <gtsam_unstable/dynamics/VelocityConstraint3.h>
-virtual class VelocityConstraint3 : gtsam::NoiseModelFactor {
-  /** Standard constructor */
-  VelocityConstraint3(gtsam::Key key1, gtsam::Key key2, gtsam::Key velKey, double dt);
-
-  gtsam::Vector evaluateError(const double& x1, const double& x2, const double& v) const;
-};
-
-#include <gtsam_unstable/dynamics/Pendulum.h>
-virtual class PendulumFactor1 : gtsam::NoiseModelFactor {
-  /** Standard constructor */
-  PendulumFactor1(gtsam::Key k1, gtsam::Key k, gtsam::Key velKey, double dt);
-
-  gtsam::Vector evaluateError(const double& qk1, const double& qk, const double& v) const;
-};
-
-#include <gtsam_unstable/dynamics/Pendulum.h>
-virtual class PendulumFactor2 : gtsam::NoiseModelFactor {
-  /** Standard constructor */
-  PendulumFactor2(gtsam::Key vk1, gtsam::Key vk, gtsam::Key qKey, double dt, double L, double g);
-
-  gtsam::Vector evaluateError(const double& vk1, const double& vk, const double& q) const;
-};
-
-virtual class PendulumFactorPk : gtsam::NoiseModelFactor {
-  /** Standard constructor */
-  PendulumFactorPk(gtsam::Key pk, gtsam::Key qk, gtsam::Key qk1, double h, double m, double r, double g, double alpha);
-
-  gtsam::Vector evaluateError(const double& pk, const double& qk, const double& qk1) const;
-};
-
-virtual class PendulumFactorPk1 : gtsam::NoiseModelFactor {
-  /** Standard constructor */
-  PendulumFactorPk1(gtsam::Key pk1, gtsam::Key qk, gtsam::Key qk1, double h, double m, double r, double g, double alpha);
-
-  gtsam::Vector evaluateError(const double& pk1, const double& qk, const double& qk1) const;
-};
-
-#include <gtsam_unstable/dynamics/SimpleHelicopter.h>
-virtual class Reconstruction : gtsam::NoiseModelFactor {
-  Reconstruction(gtsam::Key gKey1, gtsam::Key gKey, gtsam::Key xiKey, double h);
-
-  gtsam::Vector evaluateError(
-      const gtsam::Pose3& gK1, const gtsam::Pose3& gK,
-      const gtsam::Vector6& xiK) const;
-};
-
-virtual class DiscreteEulerPoincareHelicopter : gtsam::NoiseModelFactor {
-  DiscreteEulerPoincareHelicopter(gtsam::Key xiKey, gtsam::Key xiKey_1, gtsam::Key gKey,
-      double h, gtsam::Matrix Inertia, gtsam::Vector Fu, double m);
-
-  gtsam::Vector evaluateError(
-      const gtsam::Vector6& xiK, const gtsam::Vector6& xiK_1,
-      const gtsam::Pose3& gK) const;
-};
-
 //*************************************************************************
 // nonlinear
 //*************************************************************************
@@ -483,11 +397,6 @@ virtual class RelativeElevationFactor: gtsam::NoiseModelFactor {
   //void print(string s) const;
 };
 
-#include <gtsam_unstable/slam/DummyFactor.h>
-virtual class DummyFactor : gtsam::NonlinearFactor {
-  DummyFactor(gtsam::Key key1, size_t dim1, gtsam::Key key2, size_t dim2);
-};
-
 #include <gtsam_unstable/slam/InvDepthFactorVariant1.h>
 virtual class InvDepthFactorVariant1 : gtsam::NoiseModelFactor {
   InvDepthFactorVariant1(gtsam::Key poseKey, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
@@ -506,37 +415,6 @@ virtual class InvDepthFactorVariant3b : gtsam::NoiseModelFactor {
   InvDepthFactorVariant3b(gtsam::Key poseKey1, gtsam::Key poseKey2, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
 };
 
-
-#include <gtsam_unstable/slam/Mechanization_bRn2.h>
-class Mechanization_bRn2 {
-  Mechanization_bRn2();
-  Mechanization_bRn2(
-      const gtsam::Rot3& initial_bRn = gtsam::Rot3(),
-      const gtsam::Vector3& initial_x_g = gtsam::Z_3x1,
-      const gtsam::Vector3& initial_x_a = gtsam::Z_3x1);
-  gtsam::Vector3 b_g(double g_e) const;
-  const gtsam::Rot3& bRn() const;
-  const gtsam::Vector3& x_g() const;
-  const gtsam::Vector3& x_a() const;
-  static gtsam::Mechanization_bRn2 initialize(
-      const gtsam::Matrix& U, const gtsam::Matrix& F,
-      double g_e = 0, bool flat = false);
-  gtsam::Mechanization_bRn2 correct(const gtsam::Vector9& dx) const;
-  gtsam::Mechanization_bRn2 integrate(
-      const gtsam::Vector3& u, double dt) const;
-  //void print(string s) const;
-};
-
-#include <gtsam_unstable/slam/AHRS.h>
-class AHRS {
-  AHRS(const gtsam::Matrix& U, const gtsam::Matrix& F, double g_e,
-       bool flat = false);
-  pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> initialize(double g_e);
-  pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> integrate(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, const gtsam::Vector& u, double dt);
-  pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> aid(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, const gtsam::Vector& f, bool Farrel = false) const;
-  pair<gtsam::Mechanization_bRn2, gtsam::GaussianDensity*> aidGeneral(const gtsam::Mechanization_bRn2& mech, gtsam::GaussianDensity* state, const gtsam::Vector& f, const gtsam::Vector& f_expected, const gtsam::Rot3& increment) const;
-  //void print(string s) const;
-};
 
 // Tectonic SAM Factors
 
