@@ -19,6 +19,7 @@
  *  @author Frank Dellaert
  **/
 
+#include <gtsam/navigation/GalileanImuFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/LieGroupPreintegration.h>
 #include <gtsam/navigation/ManifoldPreintegration.h>
@@ -184,12 +185,14 @@ template class GTSAM_EXPORT ImuFactorT<PreintegratedImuMeasurementsT<ManifoldPre
 template class GTSAM_EXPORT ImuFactorT<PreintegratedImuMeasurementsT<TangentPreintegration>>;
 template class GTSAM_EXPORT
     ImuFactorT<PreintegratedImuMeasurementsT<LieGroupPreintegration>>;
+template class GTSAM_EXPORT ImuFactorT<PreintegratedImuMeasurementsG>;
 
 // ImuFactor2T instantiations
 template class GTSAM_EXPORT ImuFactor2T<PreintegratedImuMeasurementsT<ManifoldPreintegration>>;
 template class GTSAM_EXPORT ImuFactor2T<PreintegratedImuMeasurementsT<TangentPreintegration>>;
 template class GTSAM_EXPORT
     ImuFactor2T<PreintegratedImuMeasurementsT<LieGroupPreintegration>>;
+template class GTSAM_EXPORT ImuFactor2T<PreintegratedImuMeasurementsG>;
 
 // operator<< instantiations
 template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsT<ManifoldPreintegration>>(
@@ -200,6 +203,9 @@ template GTSAM_EXPORT std::ostream&
 operator<< <PreintegratedImuMeasurementsT<LieGroupPreintegration>>(
     std::ostream& os,
     const ImuFactorT<PreintegratedImuMeasurementsT<LieGroupPreintegration>>& f);
+template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsG>(
+    std::ostream& os,
+    const ImuFactorT<PreintegratedImuMeasurementsG>& f);
 
 template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsT<ManifoldPreintegration>>(
     std::ostream& os, const ImuFactor2T<PreintegratedImuMeasurementsT<ManifoldPreintegration>>& f);
@@ -210,5 +216,8 @@ operator<< <PreintegratedImuMeasurementsT<LieGroupPreintegration>>(
     std::ostream& os,
     const ImuFactor2T<PreintegratedImuMeasurementsT<LieGroupPreintegration>>&
         f);
+template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsG>(
+    std::ostream& os,
+    const ImuFactor2T<PreintegratedImuMeasurementsG>& f);
 }
 // namespace gtsam

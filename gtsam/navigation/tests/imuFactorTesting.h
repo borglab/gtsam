@@ -111,7 +111,7 @@ namespace {
     testGroup##testName##Helper<PT, CT>(result_, this->name_); \
     testGroup##testName##Helper<PL, CL>(result_, this->name_); \
     using PG = PreintegratedImuMeasurementsG;                  \
-    testGroup##testName##Helper<PG, CT>(result_, this->name_); \
+    testGroup##testName##Helper<PG, CL>(result_, this->name_); \
   }                                                            \
   template <class PIM, class CombinedPIM>                      \
   void testGroup##testName##Helper(TestResult& result_,        \

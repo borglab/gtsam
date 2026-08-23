@@ -116,6 +116,11 @@ Matrix9 residualChartJacobian(const PimTemplate<PreintegrationType>& pim) {
   }
 }
 
+// Galilean preintegration already exposes covariance in the factor chart.
+Matrix9 residualChartJacobian(const PreintegratedImuMeasurementsG&) {
+  return I_9x9;
+}
+
 template <class CombinedPIM>
 CombinedPIM integrateIdealCombinedMeasurements(
     const std::shared_ptr<PreintegrationCombinedParams>& params) {
