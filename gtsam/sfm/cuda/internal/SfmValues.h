@@ -24,9 +24,9 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/cuda/internal/DeviceGeometryTypes.h>
 #include <gtsam/nonlinear/cuda/internal/DeviceValues.h>
 #include <gtsam/sfm/SfmData.h>
+#include <gtsam/sfm/cuda/internal/DeviceGeometryTypes.h>
 
 #include <cuda_runtime_api.h>
 

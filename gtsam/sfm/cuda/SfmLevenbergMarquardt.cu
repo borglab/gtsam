@@ -24,11 +24,11 @@
 #include <gtsam/linear/cuda/internal/BlockOrdering.h>
 #include <gtsam/nonlinear/BatchFactor.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
-#include <gtsam/nonlinear/cuda/internal/DeviceGeometryKernels.h>
 #include <gtsam/nonlinear/cuda/internal/PcgLmPolicy.h>
 #include <gtsam/nonlinear/internal/LevenbergMarquardtPolicy.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/sfm/cuda/SfmLevenbergMarquardt.h>
+#include <gtsam/sfm/cuda/internal/DeviceGeometryKernels.h>
 #include <gtsam/sfm/cuda/internal/SfmDenseSchurSolver.h>
 #include <gtsam/sfm/cuda/internal/SfmProjectionLinearization.h>
 #include <gtsam/sfm/cuda/internal/SfmReducedCsrPlan.h>
