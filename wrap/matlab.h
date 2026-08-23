@@ -33,9 +33,7 @@ using gtsam::Matrix;
 using gtsam::Point2;
 using gtsam::Point3;
 
-extern "C" {
 #include <mex.h>
-}
 
 #include <cstdint>
 #include <limits>
