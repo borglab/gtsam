@@ -30,6 +30,35 @@ focused.
   compatibility code itself, also verify a build with the corresponding
   `GTSAM_ALLOW_DEPRECATED_SINCE_*` option enabled.
 
+### Moving functionality between directories
+
+* When relocating functionality between directories, move every associated
+  `.h` and `.cpp` file with `git mv`. This applies both to promotions from
+  `gtsam_unstable/` to `gtsam/` and to moves between directories within
+  `gtsam/`; do not copy the implementation to its destination while modifying
+  the original headers in place.
+* When an old include path must remain available for backward compatibility,
+  first move the original header to its canonical destination with `git mv`,
+  then add a new forwarding header at the old path. Keep forwarding headers
+  minimal: document the replacement, apply the appropriate versioned
+  deprecation guard, and include the canonical header.
+* Update build manifests, internal includes, tests, wrappers, and documentation
+  to use the canonical destination. The old path should remain only as the
+  compatibility surface.
+* When moving classes, also move their corresponding notebooks from the old
+  `doc/` directory to the destination's `doc/` directory with `git mv`. Update
+  the relevant documentation indices so they list and link to the notebooks at
+  their canonical locations. Review path-dependent links inside each moved
+  notebook as well: in particular, update its "Open in Colab" button and links
+  to source files when their targets changed.
+* Review export directives whenever a move changes the library that owns the
+  functionality. Use the destination library's export macro consistently on
+  public declarations and any exported definitions; for example, replace
+  `GTSAM_UNSTABLE_EXPORT` with `GTSAM_EXPORT` when promoting functionality from
+  `gtsam_unstable/` into `gtsam/`. Follow
+  [`Using-GTSAM-EXPORT.md`](../Using-GTSAM-EXPORT.md) for the applicable
+  platform and template rules.
+
 ## C++ style
 
 * Classes and types are `UpperCamelCase`; methods and functions are
