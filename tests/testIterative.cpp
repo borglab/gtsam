@@ -19,10 +19,14 @@
 #include <gtsam/base/VectorConstants.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/KeyInfo.h>
 #include <gtsam/linear/iterative.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <tests/smallExample.h>
+
+#include <limits>
+#include <map>
 
 using namespace std;
 using namespace gtsam;
@@ -33,6 +37,72 @@ using symbol_shorthand::L; // to create landmark keys
 static ConjugateGradientParameters parameters;
 // add following below to add printing:
 // parameters.verbosity_ = ConjugateGradientParameters::COMPLEXITY;
+
+/* ************************************************************************* */
+// Verifies natural-order construction from a key-to-dimension map.
+TEST(KeyInfo, ConstructsFromDimensionsInNaturalOrder) {
+  const std::map<Key, size_t> dimensions{{X(2), 3}, {X(1), 2}};
+  const KeyInfo info(dimensions);
+
+  EXPECT((info.ordering() == Ordering{X(1), X(2)}));
+  LONGS_EQUAL(5, info.numCols());
+  LONGS_EQUAL(0, info.at(X(1)).index);
+  LONGS_EQUAL(0, info.at(X(1)).start);
+  LONGS_EQUAL(2, info.at(X(1)).dim);
+  LONGS_EQUAL(1, info.at(X(2)).index);
+  LONGS_EQUAL(2, info.at(X(2)).start);
+  LONGS_EQUAL(3, info.at(X(2)).dim);
+}
+
+/* ************************************************************************* */
+// Verifies explicit-order construction from a key-to-dimension map.
+TEST(KeyInfo, ConstructsFromDimensionsInExplicitOrder) {
+  const std::map<Key, size_t> dimensions{{X(1), 2}, {X(2), 3}};
+  const KeyInfo info(dimensions, Ordering{X(2), X(1)});
+
+  EXPECT((info.ordering() == Ordering{X(2), X(1)}));
+  LONGS_EQUAL(0, info.at(X(2)).index);
+  LONGS_EQUAL(0, info.at(X(2)).start);
+  LONGS_EQUAL(1, info.at(X(1)).index);
+  LONGS_EQUAL(3, info.at(X(1)).start);
+  LONGS_EQUAL(5, info.numCols());
+}
+
+/* ************************************************************************* */
+// Verifies incomplete, duplicate, and unknown explicit ordering rejection.
+TEST(KeyInfo, RejectsMalformedDimensionOrdering) {
+  const std::map<Key, size_t> dimensions{{X(1), 2}, {X(2), 3}};
+
+  CHECK_EXCEPTION(KeyInfo(dimensions, Ordering{X(1)}),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(KeyInfo(dimensions, Ordering{X(1), X(1)}),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(KeyInfo(dimensions, Ordering{X(1), X(3)}),
+                  std::invalid_argument);
+}
+
+/* ************************************************************************* */
+// Verifies scalar prefix sums cannot overflow size_t.
+TEST(KeyInfo, RejectsScalarDimensionOverflow) {
+  const std::map<Key, size_t> dimensions{
+      {X(1), std::numeric_limits<size_t>::max()}, {X(2), 1}};
+
+  CHECK_EXCEPTION(KeyInfo{dimensions}, std::overflow_error);
+}
+
+/* ************************************************************************* */
+// Verifies flat-vector conversion and exact scalar-dimension validation.
+TEST(KeyInfo, BuildsVectorValuesAndRejectsWrongDimension) {
+  const KeyInfo info(std::map<Key, size_t>{{X(1), 2}, {X(2), 1}},
+                     Ordering{X(2), X(1)});
+  const Vector flat = (Vector(3) << 4.0, 2.0, 3.0).finished();
+  const VectorValues values = buildVectorValues(flat, info);
+
+  EXPECT(assert_equal(Vector1(4.0), values.at(X(2))));
+  EXPECT(assert_equal(Vector2(2.0, 3.0), values.at(X(1))));
+  CHECK_EXCEPTION(buildVectorValues(Vector::Zero(2), info),
+                  std::invalid_argument);
+}
 
 /* ************************************************************************* */
 TEST( Iterative, steepestDescent )

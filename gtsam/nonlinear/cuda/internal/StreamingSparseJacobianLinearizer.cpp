@@ -46,6 +46,16 @@ struct PerFactorTiming {
   double csrPacking = 0.0;
 };
 
+bool columnsMatchValues(const KeyInfo& columns, const Values& values) {
+  const auto dimensions = values.dims();
+  if (columns.size() != dimensions.size()) return false;
+  for (const auto& [key, entry] : columns) {
+    const auto found = dimensions.find(key);
+    if (found == dimensions.end() || found->second != entry.dim) return false;
+  }
+  return true;
+}
+
 DirectJacobianStatus failureStatus(DirectJacobianFailure failure,
                              std::string detail) {
   DirectJacobianStatus status;
@@ -193,7 +203,7 @@ DirectJacobianStatus scatterOneFactor(
 
 DirectJacobianStatus StreamingSparseJacobianLinearizer::linearize(
     const NonlinearFactorGraph& graph, const Values& values,
-    const SparseJacobianColumnLayout& columns, const SparseJacobianPlan& plan,
+    const KeyInfo& columns, const SparseJacobianPlan& plan,
     HostSparseJacobian* output, StreamingLinearizationStats* stats,
     bool validateStructure, StreamingLinearizationProfile* profile) const {
   if (stats) {
@@ -211,7 +221,7 @@ DirectJacobianStatus StreamingSparseJacobianLinearizer::linearize(
     return failureStatus(DirectJacobianFailure::StructuralMismatch,
                    "nonlinear graph slot count does not match the sparse plan");
   }
-  if (validateStructure && !columns.matches(values)) {
+  if (validateStructure && !columnsMatchValues(columns, values)) {
     return failureStatus(DirectJacobianFailure::StructuralMismatch,
                    "Values dimensions do not match the column layout");
   }

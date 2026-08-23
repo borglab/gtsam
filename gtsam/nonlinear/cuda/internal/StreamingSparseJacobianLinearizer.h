@@ -86,7 +86,7 @@ class GTSAM_EXPORT StreamingSparseJacobianLinearizer {
    */
   DirectJacobianStatus linearize(
       const NonlinearFactorGraph& graph, const Values& values,
-      const SparseJacobianColumnLayout& columns, const SparseJacobianPlan& plan,
+      const KeyInfo& columns, const SparseJacobianPlan& plan,
       HostSparseJacobian* output, StreamingLinearizationStats* stats = nullptr,
       bool validateStructure = true,
       StreamingLinearizationProfile* profile = nullptr) const;

@@ -18,43 +18,16 @@
 
 #pragma once
 
-#include <gtsam/base/FastMap.h>
-#include <gtsam/base/Vector.h>
 #include <gtsam/dllexport.h>
 #include <gtsam/inference/Key.h>
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/linear/cuda/internal/BlockOrdering.h>
+#include <gtsam/linear/KeyInfo.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/Values.h>
 
 #include <cstddef>
 #include <cstdint>
 #include <vector>
 
 namespace gtsam::cuda {
-
-/// Immutable host layout mapping Values keys to flattened Jacobian columns.
-class GTSAM_EXPORT SparseJacobianColumnLayout {
- public:
-  /// Builds a deterministic layout in Values key order.
-  explicit SparseJacobianColumnLayout(const Values& values);
-
-  /// Returns the block for key or throws std::out_of_range.
-  const VariableBlock& at(Key key) const;
-  /// Borrows all column blocks in flattened order.
-  const BlockLayout& blocks() const;
-  /// Returns the total scalar column count.
-  int totalColumns() const;
-  /// Checks whether values has exactly the stored keys, order, and dimensions.
-  bool matches(const Values& values) const;
-  /// Splits a flat tangent vector into keyed VectorValues.
-  VectorValues toVectorValues(const Vector& flatDelta) const;
-
- private:
-  BlockLayout blocks_;
-  FastMap<Key, size_t> keyToBlock_;
-  int totalColumns_ = 0;
-};
 
 /// Describes where one factor key writes within every CSR row it owns.
 struct SparseJacobianBlockWritePlan {
@@ -93,7 +66,7 @@ class GTSAM_EXPORT SparseJacobianPlan {
  public:
   /// Compiles graph structure against columns and validates full coverage.
   SparseJacobianPlan(const NonlinearFactorGraph& graph,
-                     const SparseJacobianColumnLayout& columns);
+                     const KeyInfo& columns);
 
   /// Returns the total residual row count.
   int rows() const;
@@ -113,7 +86,7 @@ class GTSAM_EXPORT SparseJacobianPlan {
   uint64_t structuralFingerprint() const;
   /// Checks exact structural compatibility without retaining either input.
   bool matches(const NonlinearFactorGraph& graph,
-               const SparseJacobianColumnLayout& columns) const;
+               const KeyInfo& columns) const;
 
  private:
   int rows_ = 0;
@@ -123,7 +96,7 @@ class GTSAM_EXPORT SparseJacobianPlan {
   std::vector<SparseJacobianFactorWritePlan> factors_;
   uint64_t structuralFingerprint_ = 0;
 
-  BlockLayout columnBlocks_;
+  KeyInfo columnInfo_;
   std::vector<bool> factorIsNull_;
 };
 

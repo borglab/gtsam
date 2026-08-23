@@ -147,7 +147,7 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
   // destroyed (and synchronizes its fixed stream) before the pinned host
   // buffer and before the stream-owning context.
   std::unique_ptr<Context> context;
-  std::unique_ptr<SparseJacobianColumnLayout> layout;
+  std::unique_ptr<KeyInfo> keyInfo;
   std::unique_ptr<SparseJacobianPlan> plan;
   std::unique_ptr<HostSparseJacobian> host;
   std::unique_ptr<StreamingSparseJacobianLinearizer> linearizer;
@@ -248,7 +248,7 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
     linearizer.reset();
     host.reset();
     plan.reset();
-    layout.reset();
+    keyInfo.reset();
     context.reset();
   }
 
@@ -362,8 +362,8 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
     const Clock::time_point planStart =
         maybeStartTiming(parameters.collectTiming);
     try {
-      layout = std::make_unique<SparseJacobianColumnLayout>(initialValues);
-      plan = std::make_unique<SparseJacobianPlan>(*graph, *layout);
+      keyInfo = std::make_unique<KeyInfo>(initialValues.dims());
+      plan = std::make_unique<SparseJacobianPlan>(*graph, *keyInfo);
       if (plan->rows() <= 0 || plan->columns() <= 0 || plan->nonzeros() <= 0) {
         throw std::invalid_argument(
             "direct sparse Jacobian plan must have positive dimensions");
@@ -388,7 +388,7 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
             "CUDA sparse LM GTSAM ordering is supported only by cuDSS");
       }
       solverOptions.scalarPermutation =
-          compileScalarPermutation(layout->blocks(), *parameters.ordering);
+          compileScalarPermutation(*keyInfo, *parameters.ordering);
       optimizationResult.appliedScalarPermutation =
           solverOptions.scalarPermutation;
     }
@@ -400,12 +400,7 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
           parameters.pcg.convergenceCheckInterval;
       solverOptions.pcg.preconditioner =
           DevicePcgPreconditioner::BlockJacobi;
-      solverOptions.columnBlockOffsets.reserve(layout->blocks().size() + 1);
-      solverOptions.columnBlockOffsets.push_back(0);
-      for (const VariableBlock& block : layout->blocks()) {
-        solverOptions.columnBlockOffsets.push_back(block.scalarOffset +
-                                                   block.dimension);
-      }
+      solverOptions.columnBlockOffsets = cudaBlockOffsets(*keyInfo);
     }
 
     stageStart = maybeStartTiming(parameters.collectTiming);
@@ -440,7 +435,7 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
       stageStart = maybeStartTiming(parameters.collectTiming);
       StreamingLinearizationProfile streamingProfile;
       const DirectJacobianStatus linearizationStatus = linearizer->linearize(
-          *graph, currentValues, *layout, *plan, host.get(), nullptr,
+          *graph, currentValues, *keyInfo, *plan, host.get(), nullptr,
           parameters.validateStructureEveryIteration,
           parameters.collectTiming ? &streamingProfile : nullptr);
       if (parameters.collectTiming) {
@@ -585,7 +580,7 @@ struct SparseLevenbergMarquardtOptimizer::Impl {
 
         if (linearizedChange >= 0.0) {
           const VectorValues delta =
-              layout->toVectorValues(deviceAttempt.delta);
+              buildVectorValues(deviceAttempt.delta, *keyInfo);
           stageStart = maybeStartTiming(parameters.collectTiming);
           trialValues = currentValues.retract(delta);
           accumulateTiming(parameters.collectTiming, stageStart,
