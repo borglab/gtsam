@@ -221,6 +221,8 @@ TEST(BlockOrdering, RejectsInvalidOrderings) {
 
 // Verifies BlockOrdering::RejectsInvalidLayouts.
 TEST(BlockOrdering, RejectsInvalidLayouts) {
+  EXPECT((std::vector<int>{0} == cudaBlockOffsets(KeyInfo{})));
+
   KeyInfo noncontiguous(
       std::map<gtsam::Key, size_t>{{X(1), 2}, {X(2), 1}});
   noncontiguous.at(X(2)).start = 3;
@@ -233,6 +235,20 @@ TEST(BlockOrdering, RejectsInvalidLayouts) {
   const KeyInfo intOverflow(std::map<gtsam::Key, size_t>{
       {X(1), static_cast<size_t>(std::numeric_limits<int>::max()) + 1}});
   CHECK_EXCEPTION(cudaBlockOffsets(intOverflow), std::invalid_argument);
+
+  KeyInfo invalidIndex(std::map<gtsam::Key, size_t>{{X(1), 1}});
+  invalidIndex.at(X(1)).index = 1;
+  CHECK_EXCEPTION(cudaBlockOffsets(invalidIndex), std::invalid_argument);
+
+  KeyInfo invalidCardinality(
+      std::map<gtsam::Key, size_t>{{X(1), 1}, {X(2), 1}});
+  invalidCardinality.erase(X(2));
+  CHECK_EXCEPTION(cudaBlockOffsets(invalidCardinality), std::invalid_argument);
+
+  KeyInfo staleTotal(std::map<gtsam::Key, size_t>{{X(1), 2}});
+  staleTotal.at(X(1)).dim = 1;
+  CHECK_EXCEPTION(cudaBlockOffsets(staleTotal), std::invalid_argument);
+
   CHECK_EXCEPTION(compileScalarPermutation(zeroDimension, Ordering{X(1)}),
                   std::invalid_argument);
 }

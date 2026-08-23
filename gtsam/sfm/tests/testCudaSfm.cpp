@@ -541,6 +541,14 @@ TEST(SfmReducedCsrPlan, BuildsStableCameraOnlyCovisibilityPattern) {
   const SfmReducedCsrPlan repeated(data, cameraKeys);
 
   LONGS_EQUAL(36, plan.dimension());
+  EXPECT(plan.cameraKeyInfo().ordering() == Ordering(cameraKeys.begin(),
+                                                     cameraKeys.end()));
+  for (size_t camera = 0; camera < cameraKeys.size(); ++camera) {
+    const KeyInfoEntry& entry = plan.cameraKeyInfo().at(cameraKeys[camera]);
+    LONGS_EQUAL(camera, entry.index);
+    LONGS_EQUAL(9, entry.dim);
+    LONGS_EQUAL(9 * camera, entry.start);
+  }
   EXPECT(plan.rowPointers() == repeated.rowPointers());
   EXPECT(plan.columnIndices() == repeated.columnIndices());
   EXPECT(plan.hasCameraPair(0, 0));

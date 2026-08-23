@@ -39,6 +39,7 @@ static ConjugateGradientParameters parameters;
 // parameters.verbosity_ = ConjugateGradientParameters::COMPLEXITY;
 
 /* ************************************************************************* */
+// Verifies natural-order construction from a key-to-dimension map.
 TEST(KeyInfo, ConstructsFromDimensionsInNaturalOrder) {
   const std::map<Key, size_t> dimensions{{X(2), 3}, {X(1), 2}};
   const KeyInfo info(dimensions);
@@ -54,6 +55,7 @@ TEST(KeyInfo, ConstructsFromDimensionsInNaturalOrder) {
 }
 
 /* ************************************************************************* */
+// Verifies explicit-order construction from a key-to-dimension map.
 TEST(KeyInfo, ConstructsFromDimensionsInExplicitOrder) {
   const std::map<Key, size_t> dimensions{{X(1), 2}, {X(2), 3}};
   const KeyInfo info(dimensions, Ordering{X(2), X(1)});
@@ -67,6 +69,7 @@ TEST(KeyInfo, ConstructsFromDimensionsInExplicitOrder) {
 }
 
 /* ************************************************************************* */
+// Verifies incomplete, duplicate, and unknown explicit ordering rejection.
 TEST(KeyInfo, RejectsMalformedDimensionOrdering) {
   const std::map<Key, size_t> dimensions{{X(1), 2}, {X(2), 3}};
 
@@ -79,6 +82,7 @@ TEST(KeyInfo, RejectsMalformedDimensionOrdering) {
 }
 
 /* ************************************************************************* */
+// Verifies scalar prefix sums cannot overflow size_t.
 TEST(KeyInfo, RejectsScalarDimensionOverflow) {
   const std::map<Key, size_t> dimensions{
       {X(1), std::numeric_limits<size_t>::max()}, {X(2), 1}};
@@ -87,6 +91,7 @@ TEST(KeyInfo, RejectsScalarDimensionOverflow) {
 }
 
 /* ************************************************************************* */
+// Verifies flat-vector conversion and exact scalar-dimension validation.
 TEST(KeyInfo, BuildsVectorValuesAndRejectsWrongDimension) {
   const KeyInfo info(std::map<Key, size_t>{{X(1), 2}, {X(2), 1}},
                      Ordering{X(2), X(1)});

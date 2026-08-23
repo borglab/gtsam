@@ -108,6 +108,7 @@ class Fnv1a64 {
 
 void appendColumns(Fnv1a64* hash, const KeyInfo& keyInfo) {
   hash->appendSize(keyInfo.size());
+  hash->appendSize(keyInfo.numCols());
   for (const Key key : keyInfo.ordering()) {
     const KeyInfoEntry& entry = keyInfo.at(key);
     hash->appendUint64(static_cast<uint64_t>(key));
