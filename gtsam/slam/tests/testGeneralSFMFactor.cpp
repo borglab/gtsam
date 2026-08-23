@@ -21,7 +21,7 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/PinholeCamera.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/linear/VectorValues.h>

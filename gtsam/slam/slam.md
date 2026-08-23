@@ -41,8 +41,6 @@ Factors representing various geometric relationships or constraints.
 -   [KarcherMeanFactor](doc/KarcherMeanFactor.ipynb) : Factor for constraining the Karcher mean (geometric average) of a set of rotations or other manifold values.
 -   [FrobeniusFactor](doc/FrobeniusFactor.ipynb) : Factors operating directly on rotation matrix entries using the Frobenius norm, an alternative to Lie algebra-based factors.
 -   [ReferenceFrameFactor](doc/ReferenceFrameFactor.ipynb) : Factor relating the same landmark observed in two different coordinate frames via an unknown transformation, useful for map merging.
--   [BoundingConstraint](doc/BoundingConstraint.ipynb) : Abstract base class for creating inequality constraints (e.g., keeping a variable within certain bounds). Requires C++ derivation.
--   [AntiFactor](doc/AntiFactor.ipynb) : A factor designed to negate the effect of another factor, useful for dynamically removing constraints.
 
 ## Initialization & Utilities
 

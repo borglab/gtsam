@@ -27,11 +27,11 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
-#include <tests/simulated2DConstraints.h>
+#include <gtsam/constrained/tests/simulated2DConstraints.h>
 
 using namespace std;
 using namespace gtsam;

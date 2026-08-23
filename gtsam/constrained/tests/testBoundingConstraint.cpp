@@ -22,7 +22,7 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <tests/simulated2DConstraints.h>
+#include <gtsam/constrained/tests/simulated2DConstraints.h>
 
 namespace iq2D = simulated2D::inequality_constraints;
 using namespace std;

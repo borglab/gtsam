@@ -939,67 +939,6 @@ virtual class VectorNormFactor : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
-#include <gtsam/nonlinear/NonlinearEquality.h>
-template <T = {gtsam::Point2,
-               gtsam::StereoPoint2,
-               gtsam::Point3,
-               gtsam::Rot2,
-               gtsam::SO3,
-               gtsam::SO4,
-               gtsam::SOn,
-               gtsam::SL4,
-               gtsam::Rot3,
-               gtsam::Pose2,
-               gtsam::Gal3,
-               gtsam::Pose3,
-               gtsam::Similarity2,
-               gtsam::Similarity3,
-               gtsam::Cal3_S2,
-               gtsam::CalibratedCamera,
-               gtsam::PinholeCamera<gtsam::Cal3_S2>,
-               gtsam::PinholeCamera<gtsam::Cal3Bundler>,
-               gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
-               gtsam::PinholeCamera<gtsam::Cal3Unified>,
-               gtsam::SphericalCamera,
-               gtsam::imuBias::ConstantBias}>
-virtual class NonlinearEquality : gtsam::NoiseModelFactor {
-  // Constructor - forces exact evaluation
-  NonlinearEquality(gtsam::Key j, const T& feasible);
-  // Constructor - allows inexact evaluation
-  NonlinearEquality(gtsam::Key j, const T& feasible, double error_gain);
-
-  // enabling serialization functionality
-  void serialize() const;
-};
-
-template <T = {gtsam::Point2,
-               gtsam::StereoPoint2,
-               gtsam::Point3,
-               gtsam::Rot2,
-               gtsam::Gal3,
-               gtsam::SO3,
-               gtsam::SO4,
-               gtsam::SOn,
-               gtsam::SL4,
-               gtsam::Rot3,
-               gtsam::Pose2,
-               gtsam::Pose3,
-               gtsam::Similarity2,
-               gtsam::Similarity3,
-               gtsam::Cal3_S2,
-               gtsam::CalibratedCamera,
-               gtsam::PinholeCamera<gtsam::Cal3_S2>,
-               gtsam::PinholeCamera<gtsam::Cal3Bundler>,
-               gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
-               gtsam::PinholeCamera<gtsam::Cal3Unified>,
-               gtsam::imuBias::ConstantBias}>
-virtual class NonlinearEquality2 : gtsam::NoiseModelFactor {
-  NonlinearEquality2(gtsam::Key key1, gtsam::Key key2, double mu = 1e4);
-  gtsam::Vector evaluateError(const T& x1, const T& x2,
-                              gtsam::OptionalMatrixType H1 = nullptr,
-                              gtsam::OptionalMatrixType H2 = nullptr) const;
-};
-
 #include <gtsam/nonlinear/FixedLagSmoother.h>
 // This class is not available in python, just use a dictionary
 class FixedLagSmootherKeyTimestampMapValue {

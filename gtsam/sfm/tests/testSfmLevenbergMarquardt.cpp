@@ -19,7 +19,7 @@
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/Preconditioner.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/sfm/SfmData.h>
 #include <gtsam/sfm/SfmLevenbergMarquardt.h>
 #include <gtsam/slam/GeneralSFMFactor.h>

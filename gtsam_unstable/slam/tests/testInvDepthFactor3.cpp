@@ -18,7 +18,7 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <gtsam/geometry/PinholeCamera.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/inference/Symbol.h>

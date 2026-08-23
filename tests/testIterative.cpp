@@ -21,7 +21,7 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/KeyInfo.h>
 #include <gtsam/linear/iterative.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <tests/smallExample.h>
 

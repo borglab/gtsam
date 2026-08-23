@@ -18,7 +18,7 @@
 
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/VectorConstants.h>
-#include <gtsam/base/kruskal.h>
+#include <gtsam/inference/kruskal.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
