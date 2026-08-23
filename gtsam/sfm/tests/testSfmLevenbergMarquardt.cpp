@@ -367,35 +367,6 @@ TEST(SfmLevenbergMarquardt, SchurEliminatesPoint3AndUnit3Only) {
 }
 
 /* ************************************************************************* */
-TEST(SfmLevenbergMarquardt, SchurEliminatesDynamicThreeVectorPoints) {
-  const Key pointKey = Symbol('l', 0);
-  const Key poseKey = Symbol('x', 0);
-  const Point3 point(0.0, 0.0, 5.0);
-
-  NonlinearFactorGraph graph;
-  graph.emplace_shared<PriorFactor<Point3>>(pointKey, point,
-                                            noiseModel::Unit::Create(3));
-  graph.emplace_shared<PriorFactor<Pose3>>(poseKey, Pose3(),
-                                           noiseModel::Unit::Create(6));
-
-  Values values;
-  values.insert(pointKey, Vector(point + Point3(0.1, -0.1, 0.2)));
-  values.insert(poseKey, Pose3(Rot3(), Point3(0.1, 0.0, 0.0)));
-
-  const Ordering reduced =
-      SfmLevenbergMarquardtOptimizer::CreateReducedOrdering(graph, values);
-  EXPECT_LONGS_EQUAL(1, reduced.size());
-  EXPECT_LONGS_EQUAL(poseKey, reduced.front());
-
-  auto params = parameters(SfmEliminationMode::Schur);
-  params.setLinearSolver(NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY);
-  SfmLevenbergMarquardtOptimizer optimizer(graph, values, params);
-  const double initialError = graph.error(values);
-  optimizer.optimize();
-  EXPECT(optimizer.error() < initialError);
-}
-
-/* ************************************************************************* */
 TEST(SfmLevenbergMarquardt, CreatesReusableSchurOrdering) {
   const SmallProblem problem = smallProblem();
   const Ordering reduced =

@@ -84,7 +84,10 @@ gtsam::SfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
 const gtsam::Values& result = optimizer.optimize();
 ```
 
-[Run the Python Full-and-Schur tutorial](../../python/gtsam/examples/SfmLevenbergMarquardtOptimizerExample.ipynb), including a calibration shared by every camera.
+[Run the Python Full-and-Schur tutorial](../../python/gtsam/examples/SfmLevenbergMarquardtOptimizerExample.ipynb),
+including a calibration shared by every camera. When constructing `Values` from
+NumPy arrays, use `Values.insertPoint3()` for landmarks so Python preserves
+their fixed-size `Point3` type.
 
 ## What Schur means for each solver
 

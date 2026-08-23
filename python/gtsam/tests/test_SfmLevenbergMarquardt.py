@@ -78,7 +78,8 @@ class TestSfmLevenbergMarquardt(unittest.TestCase):
             initial.insert(X(i), pose.retract(
                 np.array([0.01, -0.01, 0.01, 0.02, 0.0, -0.01])))
         for j, point in enumerate(points):
-            initial.insert(L(j), point + np.array([0.01, -0.02, 0.01]))
+            initial.insertPoint3(
+                L(j), point + np.array([0.01, -0.02, 0.01]))
         initial.insert(
             K(0), gtsam.Cal3_S2(510.0, 495.0, 0.0, 318.0, 242.0))
 

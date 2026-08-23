@@ -49,11 +49,7 @@ SchurPartition createSchurPartition(const NonlinearFactorGraph& graph,
   SchurPartition result;
   for (Key key : graph.keys()) {
     const Value& value = initialValues.at(key);
-    const auto* dynamicVector =
-        dynamic_cast<const GenericValue<Vector>*>(&value);
-    // Python's Values.insert stores NumPy Point3 values as dynamic vectors.
     if (dynamic_cast<const GenericValue<Point3>*>(&value) ||
-        (dynamicVector && dynamicVector->value().size() == 3) ||
         dynamic_cast<const GenericValue<Unit3>*>(&value)) {
       result.eliminated.push_back(key);
     } else {

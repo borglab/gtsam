@@ -283,6 +283,11 @@ namespace gtsam {
     /// version for double
     void insertDouble(Key j, double c) { insert<double>(j,c); }
 
+    /// Insert a fixed-size 3-vector without Python overload ambiguity.
+    void insertPoint3(Key j, const Vector3& point3) {
+      insert<Vector3>(j, point3);
+    }
+
     /** single element change of existing element */
     void update(Key j, const Value& val);
 
