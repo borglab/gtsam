@@ -203,6 +203,26 @@ TEST(TableFactor, Conversion) {
 }
 
 /* ************************************************************************* */
+// Check multiplication with a TableDistribution in both operand orders.
+TEST(TableFactor, TableDistributionMultiplication) {
+  const DiscreteKey key(0, 3);
+  const auto table =
+      std::make_shared<TableFactor>(key, std::vector<double>{2.0, 3.0, 4.0});
+  const auto distribution = std::make_shared<TableDistribution>(key, "1 2 3");
+  const TableFactor expected(key, std::vector<double>{1.0 / 3.0, 1.0, 2.0});
+
+  const auto tableFirst =
+      std::dynamic_pointer_cast<TableFactor>(table->multiply(distribution));
+  const auto distributionFirst =
+      std::dynamic_pointer_cast<TableFactor>(distribution->multiply(table));
+
+  CHECK(tableFirst);
+  CHECK(distributionFirst);
+  EXPECT(assert_equal(expected, *tableFirst));
+  EXPECT(assert_equal(expected, *distributionFirst));
+}
+
+/* ************************************************************************* */
 TEST(TableFactor, Empty) {
   DiscreteKey X(1, 2);
 

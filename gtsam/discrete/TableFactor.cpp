@@ -351,9 +351,10 @@ DiscreteFactor::shared_ptr TableFactor::multiply(
     result = std::make_shared<TableFactor>(this->operator*(*tf));
 
   } else if (auto dtf = std::dynamic_pointer_cast<DecisionTreeFactor>(f)) {
-    // If `f` is a DecisionTreeFactor, we convert to a TableFactor which is
-    // cheaper than converting `this` to a DecisionTreeFactor.
-    result = std::make_shared<TableFactor>(this->operator*(TableFactor(*dtf)));
+    // Use the virtual conversion so derived decision tree factors can provide
+    // their actual sparse representation.
+    result =
+        std::make_shared<TableFactor>(this->operator*(dtf->toTableFactor()));
 
   } else {
     // Let the other factor choose its most efficient table representation,
