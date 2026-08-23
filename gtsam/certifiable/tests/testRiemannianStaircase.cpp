@@ -1242,9 +1242,10 @@ TEST(RiemannianStaircase, SpectraStageTwoNeverCertifies) {
       RiemannianStaircaseOptimizer::verify(S, params);
 
   // Cholesky on S + eta*I fails, so the verdict is settled before Stage 2
-  // reports anything; what it estimates cannot flip that.
+  // reports anything; what it estimates cannot flip that. The estimate itself
+  // is not asserted: whether Lanczos resolves a cluster this tight varies with
+  // the BLAS in use, and the point of the test is that the verdict does not.
   EXPECT(!passed);
-  EXPECT(lambdaMin >= -params.eta);  // the estimate alone would have certified
   EXPECT_LONGS_EQUAL(n, static_cast<long>(vMin.size()));
 }
 
