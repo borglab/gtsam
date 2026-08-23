@@ -15,6 +15,8 @@
 #include <gtsam/base/kruskal.h>
 #include <gtsam/base/kruskal-inl.h>
 #include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/slam/EssentialMatrixConstraint.h>
+#include <gtsam/slam/EssentialMatrixFactor.h>
 #include <gtsam/slam/AntiFactor.h>
 #include <gtsam/slam/BoundingConstraint.h>
 
@@ -26,6 +28,9 @@ using namespace gtsam;
 // Verifies that the deprecated headers expose the canonical declarations.
 TEST(HeaderMoveCompatibility, DeprecatedHeaders) {
   static_assert(std::is_base_of_v<NonlinearFactor, AntiFactor>);
+  static_assert(std::is_base_of_v<NonlinearFactor,
+                                  EssentialMatrixConstraint>);
+  static_assert(std::is_base_of_v<NonlinearFactor, EssentialMatrixFactor>);
   static_assert(std::is_base_of_v<NonlinearEqualityConstraint,
                                   NonlinearEquality<Point2>>);
   static_assert(std::is_base_of_v<NonlinearInequalityConstraint,

@@ -15,8 +15,6 @@ Factors specifically designed for visual data (camera measurements).
 -   [GenericProjectionFactor](doc/ProjectionFactor.ipynb) : Standard monocular projection factor relating a 3D landmark, camera pose, and fixed calibration to a 2D measurement.
 -   [GeneralSFMFactor](doc/GeneralSFMFactor.ipynb) : Projection factors used when camera calibration is unknown or optimized alongside poses and landmarks.
 -   [StereoFactor](doc/StereoFactor.ipynb) : Standard stereo projection factor relating a 3D landmark, camera pose, and fixed stereo calibration to a `StereoPoint2` measurement.
--   [EssentialMatrixFactor](doc/EssentialMatrixFactor.ipynb) : Factors constraining poses or calibration based on the Essential matrix derived from calibrated cameras.
--   [EssentialMatrixConstraint](doc/EssentialMatrixConstraint.ipynb) : Factor constraining the relative pose between two cameras based on a measured Essential matrix.
 -   [TriangulationFactor](doc/TriangulationFactor.ipynb) : Factor constraining a 3D point based on a measurement from a single known camera view, useful for triangulation.
 -   [PlanarProjectionFactor](doc/PlanarProjectionFactor.ipynb) : Projection factors specialized for robots moving on a 2D plane.
 

@@ -147,6 +147,61 @@ virtual class SelfCalibrationFactor : gtsam::NoiseModelFactor {
                const gtsam::noiseModel::Base* model = nullptr);
 };
 
+#include <gtsam/sfm/EssentialMatrixFactor.h>
+virtual class EssentialMatrixFactor : gtsam::NoiseModelFactor {
+  EssentialMatrixFactor(gtsam::Key key,
+                        const gtsam::Point2& pA, const gtsam::Point2& pB,
+                        const gtsam::noiseModel::Base* model);
+  gtsam::Vector evaluateError(const gtsam::EssentialMatrix& E) const;
+};
+
+virtual class EssentialMatrixFactor2 : gtsam::NoiseModelFactor {
+  EssentialMatrixFactor2(gtsam::Key key1, gtsam::Key key2,
+                         const gtsam::Point2& pA, const gtsam::Point2& pB,
+                         const gtsam::noiseModel::Base* model);
+  gtsam::Vector evaluateError(const gtsam::EssentialMatrix& E,
+                              const double& d) const;
+};
+
+virtual class EssentialMatrixFactor3 : gtsam::EssentialMatrixFactor2 {
+  EssentialMatrixFactor3(gtsam::Key key1, gtsam::Key key2,
+                         const gtsam::Point2& pA, const gtsam::Point2& pB,
+                         const gtsam::Rot3& cRb,
+                         const gtsam::noiseModel::Base* model);
+};
+
+template <CALIBRATION = {gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3f, gtsam::Cal3Bundler,
+                         gtsam::Cal3Fisheye, gtsam::Cal3Unified}>
+virtual class EssentialMatrixFactor4 : gtsam::NoiseModelFactor {
+  EssentialMatrixFactor4(gtsam::Key keyE, gtsam::Key keyK,
+                         const gtsam::Point2& pA, const gtsam::Point2& pB,
+                         const gtsam::noiseModel::Base* model = nullptr);
+  gtsam::Vector evaluateError(const gtsam::EssentialMatrix& E,
+                              const CALIBRATION& K) const;
+};
+
+template <CALIBRATION = {gtsam::Cal3_S2, gtsam::Cal3DS2, gtsam::Cal3f, gtsam::Cal3Bundler,
+                         gtsam::Cal3Fisheye, gtsam::Cal3Unified}>
+virtual class EssentialMatrixFactor5 : gtsam::NoiseModelFactor {
+  EssentialMatrixFactor5(gtsam::Key keyE, gtsam::Key keyKa, gtsam::Key keyKb,
+                         const gtsam::Point2& pA, const gtsam::Point2& pB,
+                         const gtsam::noiseModel::Base* model = nullptr);
+  gtsam::Vector evaluateError(const gtsam::EssentialMatrix& E,
+                              const CALIBRATION& Ka,
+                              const CALIBRATION& Kb) const;
+};
+
+#include <gtsam/sfm/EssentialMatrixConstraint.h>
+virtual class EssentialMatrixConstraint : gtsam::NoiseModelFactor {
+  EssentialMatrixConstraint(
+      gtsam::Key key1, gtsam::Key key2,
+      const gtsam::EssentialMatrix& measuredE,
+      const gtsam::noiseModel::Base* model);
+  gtsam::Vector evaluateError(const gtsam::Pose3& p1,
+                              const gtsam::Pose3& p2) const;
+  const gtsam::EssentialMatrix& measured() const;
+};
+
 #include <gtsam/sfm/ShonanFactor.h>
 
 virtual class ShonanFactor3 : gtsam::NoiseModelFactor {

@@ -23,7 +23,7 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Symbol.h>
-#include <gtsam/slam/EssentialMatrixConstraint.h>
+#include <gtsam/sfm/EssentialMatrixConstraint.h>
 
 using namespace std::placeholders;
 using namespace std;

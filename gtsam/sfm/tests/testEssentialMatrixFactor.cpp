@@ -15,7 +15,7 @@
 #include <gtsam/nonlinear/expressionTesting.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/sfm/SfmData.h>
-#include <gtsam/slam/EssentialMatrixFactor.h>
+#include <gtsam/sfm/EssentialMatrixFactor.h>
 #include <gtsam/slam/dataset.h>
 
 using namespace std::placeholders;
