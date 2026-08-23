@@ -287,10 +287,7 @@ TEST(SO3, LogmapDerivative) {
                        {0.324237, 0.902975, 0.281968},
                        {-0.674322, 0.429668, -0.600562},
                        {-0.663445, 0.00458662, 0.748211}});
-  size_t i = 0;
   for (const SO3& R : { R0, R1, R2, R3, R4 }) {
-    const bool nearPi = (i == 2 || i == 3); // Flag cases near pi
-
     Matrix3 actualH; // H computed by Logmap(R, H) using LogmapDerivative(omega)
     const Vector3 omega = SO3::Logmap(R, actualH);
 
@@ -301,20 +298,37 @@ TEST(SO3, LogmapDerivative) {
     Matrix3 J_r_inv = local.InvJacobian().right(); // J_r^{-1} via Local
     EXPECT(assert_equal(J_r_inv, actualH)); // This test is crucial and should pass
 
-    // 2. Check analytical derivative against numerical derivative:
-    //    Only perform this check AWAY from the pi singularity, where
-    //    numerical differentiation of Logmap is expected to be reliable
-    //    and should match the analytical derivative.
-    if (!nearPi) {
-      const Matrix expectedH = numericalDerivative11<Vector3, SO3>(
-          [](const SO3& value) { return SO3::Logmap(value); }, R, 1e-7);
-      EXPECT(assert_equal(expectedH, actualH, 1e-6)); // 1e-6 needed to pass R4
+    // 2. Check analytical derivative against numerical derivative.
+    //    R2 and R3 used to be exempted from this check, because the old
+    //    Logmap was only first-order accurate near pi and its numerical
+    //    derivative therefore did not match J_r^{-1}. Logmap is now accurate
+    //    to machine precision there, so all five cases are checked. The 1e-6
+    //    tolerance is set by the orthogonality defect of the R2/R3/R4 data
+    //    (~1e-6), not by the Logmap implementation.
+    const Matrix expectedH = numericalDerivative11<Vector3, SO3>(
+        [](const SO3& value) { return SO3::Logmap(value); }, R, 1e-7);
+    EXPECT(assert_equal(expectedH, actualH, 1e-6));
+  }
+}
+
+//******************************************************************************
+// Regression test for issue #1233: Logmap(Expmap(v)) must round-trip to
+// machine precision for ||v|| near pi, with no discontinuity where the
+// implementation switches branches.
+TEST(SO3, LogmapNearPi) {
+  std::vector<Vector3> axes = {Vector3(1, 0, 0),
+                               Vector3(0, 1, 0),
+                               Vector3(0, 0, 1),
+                               Vector3(1, 1, 1).normalized(),
+                               Vector3(1, 2, 3).normalized(),
+                               Vector3(-3, 1, 2).normalized(),
+                               Vector3(2, -5, 1).normalized()};
+  for (double delta : {1e-1, 3e-2, 1e-2, 1e-3, 1e-4, 1e-6, 1e-8, 1e-12}) {
+    for (const Vector3& axis : axes) {
+      const Vector3 expected = (M_PI - delta) * axis;
+      const Vector3 actual = SO3::Logmap(SO3::Expmap(expected));
+      EXPECT(assert_equal(expected, actual, 1e-14));
     }
-    else {
-      // We accept that the numerical derivative of this specific Logmap implementation
-      // near pi will not match the standard analytical derivative J_r^{-1}.
-    }
-    i++;
   }
 }
 //******************************************************************************
