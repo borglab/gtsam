@@ -29,6 +29,9 @@ The `navigation` module in GTSAM provides specialized tools for inertial navigat
 - **LieGroupPreintegration**: Integrates IMU increments with the `NavState`
   $SE_2(3)$ group exponential described by [Brossard, Barrau, and
   Bonnabel](https://arxiv.org/abs/2007.14097).
+- **[GalileanImuFactor](doc/GalileanImuFactor.ipynb)**: Develops Galilean
+  IMU preintegration with bias-coupled, left-invariant errors and right-applied
+  updates consistent with GTSAM conventions.
 - **[ImuFactor](doc/ImuFactor.ipynb)**: IMU factor.
 - **[CombinedImuFactor](doc/CombinedImuFactor.ipynb)**: IMU factor with built-in bias evolution.
 
