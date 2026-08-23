@@ -672,7 +672,7 @@ virtual class RelativeTranslationFactor : gtsam::NoiseModelFactor {
                             gtsam::Key translationKey2,
                             const gtsam::Vector& measured, double weight);
 
-  gtsam::Vector measured() const;
+  const Eigen::Matrix<double, d, 1>& measured() const;
   double weight() const;
 };
 
