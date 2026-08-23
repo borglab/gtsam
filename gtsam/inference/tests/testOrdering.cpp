@@ -293,6 +293,21 @@ TEST(Ordering, Metis) {
 }
 
 /* ************************************************************************* */
+// An edgeless graph needs no fill reduction, so METIS ordering returns every
+// isolated variable without calling METIS_NodeND.
+TEST(Ordering, MetisEdgelessGraph) {
+  SymbolicFactorGraph symbolicGraph;
+  symbolicGraph.push_factor(0);
+  symbolicGraph.push_factor(1);
+
+  const Ordering metis = Ordering::Metis(symbolicGraph);
+
+  EXPECT_LONGS_EQUAL(2, metis.size());
+  EXPECT(metis.contains(0));
+  EXPECT(metis.contains(1));
+}
+
+/* ************************************************************************* */
 TEST(Ordering, MetisLoop) {
 
   // create linear graph
