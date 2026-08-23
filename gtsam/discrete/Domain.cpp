@@ -7,7 +7,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
-#include <gtsam_unstable/discrete/Domain.h>
+#include <gtsam/discrete/Domain.h>
 
 #include <sstream>
 namespace gtsam {
@@ -61,7 +61,7 @@ bool Domain::ensureArcConsistency(Key j, Domains* domains) const {
 
 /* ************************************************************************* */
 std::optional<Domain> Domain::checkAllDiff(const KeyVector keys,
-                                             const Domains& domains) const {
+                                           const Domains& domains) const {
   Key j = key();
   // for all values in this domain
   for (const size_t value : values_) {
@@ -77,7 +77,8 @@ std::optional<Domain> Domain::checkAllDiff(const KeyVector keys,
 }
 
 /* ************************************************************************* */
-Constraint::shared_ptr Domain::partiallyApply(const DiscreteValues& values) const {
+Constraint::shared_ptr Domain::partiallyApply(
+    const DiscreteValues& values) const {
   DiscreteValues::const_iterator it = values.find(key());
   if (it != values.end() && !contains(it->second))
     throw runtime_error("Domain::partiallyApply: unsatisfiable");
