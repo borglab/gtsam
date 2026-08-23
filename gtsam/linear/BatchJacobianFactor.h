@@ -44,6 +44,21 @@ namespace gtsam {
 
 namespace internal {
 class BatchJacobianFactorElimination;
+
+/** Receives sparse normal-equation blocks from compact batch factors. */
+class SparseNormalAccumulator {
+ public:
+  virtual ~SparseNormalAccumulator() = default;
+
+  /** Add a dense Hessian block at the given scalar offsets. */
+  virtual void addHessianBlock(DenseIndex rowOffset, DenseIndex columnOffset,
+                               DenseIndex rows, DenseIndex columns,
+                               const double* values) = 0;
+
+  /** Add a dense right-hand-side block at the given scalar offset. */
+  virtual void addRhsBlock(DenseIndex offset, DenseIndex dimension,
+                           const double* values) = 0;
+};
 }  // namespace internal
 
 /**
@@ -81,6 +96,11 @@ class GTSAM_EXPORT BatchJacobianFactorBase : public GaussianFactor,
   virtual size_t scatterInto(
       VerticalBlockMatrix& target, size_t rowOffset,
       const std::vector<DenseIndex>& targetBlockIndices) const = 0;
+
+  /** Add this factor directly to a sparse normal-equation accumulator. */
+  virtual void updateSparseNormal(
+      const std::vector<DenseIndex>& scalarOffsets,
+      internal::SparseNormalAccumulator* accumulator) const = 0;
 
  public:
   /// Print this compact factor by converting to a JacobianFactor.
@@ -633,6 +653,18 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
                                  std::make_index_sequence<NumSlots + 1>{});
   }
 
+  /// Add an expression to a frontal block without packetizing scalar results.
+  template <typename DestinationType, typename XprType>
+  static void addFrontalBlock(DestinationType* destination,
+                              const XprType& xpr) {
+    if constexpr (XprType::SizeAtCompileTime == 1) {
+      assert(destination->rows() == 1 && destination->cols() == 1);
+      (*destination)(0, 0) += xpr.coeff(0, 0);
+    } else {
+      *destination += xpr.eval();
+    }
+  }
+
   /// Add one block to a frontal row of a rectangular augmented Hessian.
   template <size_t I, size_t J>
   void updateFrontalHessianBlock(size_t rowIndex, const DenseIndex* mappedSlots,
@@ -652,16 +684,18 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     if constexpr (J == NumSlots) {
       const RhsVector& b = rhs_[rowIndex];
       if (weights) {
-        destination += (Ai.transpose() * weights->asDiagonal() * b).eval();
+        addFrontalBlock(
+            &destination, Ai.transpose() * weights->asDiagonal() * b);
       } else {
-        destination += (Ai.transpose() * b).eval();
+        addFrontalBlock(&destination, Ai.transpose() * b);
       }
     } else {
       const auto& Aj = std::get<J>(blocks_)[rowIndex];
       if (weights) {
-        destination += (Ai.transpose() * weights->asDiagonal() * Aj).eval();
+        addFrontalBlock(
+            &destination, Ai.transpose() * weights->asDiagonal() * Aj);
       } else {
-        destination += (Ai.transpose() * Aj).eval();
+        addFrontalBlock(&destination, Ai.transpose() * Aj);
       }
     }
   }
@@ -816,6 +850,80 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
                                    std::index_sequence<Slots...>) const {
     (hessianBlockDiagonalRowAdd<Slots>(rowIndex, blockSlots, weights,
                                        diagonalBlocks),
+     ...);
+  }
+
+  /// Add one compact row's Hessian block to a sparse normal accumulator.
+  template <size_t I, size_t J>
+  void updateSparseNormalBlock(
+      size_t rowIndex, const std::vector<DenseIndex>& scalarOffsets,
+      const RhsVector& weights,
+      internal::SparseNormalAccumulator* accumulator) const {
+    using BlockTypeI = typename std::tuple_element<I, Blocks>::type::value_type;
+    using BlockTypeJ = typename std::tuple_element<J, Blocks>::type::value_type;
+    constexpr int BlockDimI = BlockTypeI::ColsAtCompileTime;
+    constexpr int BlockDimJ = BlockTypeJ::ColsAtCompileTime;
+    const auto& blockI = std::get<I>(blocks_)[rowIndex];
+    const auto& blockJ = std::get<J>(blocks_)[rowIndex];
+    Eigen::Matrix<double, BlockDimI, BlockDimJ> contribution;
+    contribution.noalias() = blockI.transpose() * weights.asDiagonal() * blockJ;
+    const size_t keySlotI = static_cast<size_t>(rowSlots_[rowIndex][I]);
+    const size_t keySlotJ = static_cast<size_t>(rowSlots_[rowIndex][J]);
+    accumulator->addHessianBlock(scalarOffsets[keySlotI],
+                                 scalarOffsets[keySlotJ], BlockDimI, BlockDimJ,
+                                 contribution.data());
+  }
+
+  /// Add Hessian blocks preceding and including compact row slot J.
+  template <size_t J, size_t... Is>
+  void updateSparseNormalColumn(size_t rowIndex,
+                                const std::vector<DenseIndex>& scalarOffsets,
+                                const RhsVector& weights,
+                                internal::SparseNormalAccumulator* accumulator,
+                                std::index_sequence<Is...>) const {
+    (updateSparseNormalBlock<Is, J>(rowIndex, scalarOffsets, weights,
+                                    accumulator),
+     ...);
+  }
+
+  /// Add every upper-triangular Hessian block from one compact row.
+  template <size_t... Js>
+  void updateSparseNormalBlocks(size_t rowIndex,
+                                const std::vector<DenseIndex>& scalarOffsets,
+                                const RhsVector& weights,
+                                internal::SparseNormalAccumulator* accumulator,
+                                std::index_sequence<Js...>) const {
+    (updateSparseNormalColumn<Js>(rowIndex, scalarOffsets, weights, accumulator,
+                                  std::make_index_sequence<Js + 1>{}),
+     ...);
+  }
+
+  /// Add one compact row's right-hand-side block to a sparse accumulator.
+  template <size_t Slot>
+  void updateSparseNormalRhs(
+      size_t rowIndex, const std::vector<DenseIndex>& scalarOffsets,
+      const RhsVector& weightedRhs,
+      internal::SparseNormalAccumulator* accumulator) const {
+    using BlockType =
+        typename std::tuple_element<Slot, Blocks>::type::value_type;
+    constexpr int BlockDim = BlockType::ColsAtCompileTime;
+    Eigen::Matrix<double, BlockDim, 1> contribution;
+    contribution.noalias() =
+        std::get<Slot>(blocks_)[rowIndex].transpose() * weightedRhs;
+    const size_t keySlot = static_cast<size_t>(rowSlots_[rowIndex][Slot]);
+    accumulator->addRhsBlock(scalarOffsets[keySlot], BlockDim,
+                             contribution.data());
+  }
+
+  /// Add every right-hand-side block from one compact row.
+  template <size_t... Slots>
+  void updateSparseNormalRhsBlocks(
+      size_t rowIndex, const std::vector<DenseIndex>& scalarOffsets,
+      const RhsVector& weightedRhs,
+      internal::SparseNormalAccumulator* accumulator,
+      std::index_sequence<Slots...>) const {
+    (updateSparseNormalRhs<Slots>(rowIndex, scalarOffsets, weightedRhs,
+                                  accumulator),
      ...);
   }
 
@@ -1038,6 +1146,33 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
           1) = rhs_[rowIndex];
     }
     return rows();
+  }
+
+  void updateSparseNormal(
+      const std::vector<DenseIndex>& scalarOffsets,
+      internal::SparseNormalAccumulator* accumulator) const override {
+    if (!accumulator) {
+      throw std::invalid_argument(
+          "BatchJacobianFactor::updateSparseNormal: null accumulator.");
+    }
+    if (scalarOffsets.size() != keys_.size()) {
+      throw std::invalid_argument(
+          "BatchJacobianFactor::updateSparseNormal: offset count mismatch.");
+    }
+    if (model_ && !model_->isUnit() && model_->isConstrained()) {
+      throw std::invalid_argument(
+          "BatchJacobianFactor::updateSparseNormal: constrained noise model "
+          "is not supported.");
+    }
+    for (size_t rowIndex = 0; rowIndex < rowSlots_.size(); ++rowIndex) {
+      const RhsVector weights = rowWeights(rowIndex);
+      updateSparseNormalBlocks(rowIndex, scalarOffsets, weights, accumulator,
+                               std::make_index_sequence<NumSlots>{});
+      const RhsVector weightedRhs = weights.asDiagonal() * rhs_[rowIndex];
+      updateSparseNormalRhsBlocks(rowIndex, scalarOffsets, weightedRhs,
+                                  accumulator,
+                                  std::make_index_sequence<NumSlots>{});
+    }
   }
 
   /**

@@ -13,3 +13,25 @@ html.dark
     url("gtsam-manifold-optimization-dark.png") /
     "GTSAM manifold optimization workflow: build a factor graph, linearize and solve in tangent spaces, retract to manifolds, and iterate to convergence.";
 }
+
+/* SFM landing page ------------------------------------------------------- */
+
+.sfm-hero img {
+  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+  border-radius: 1rem;
+  box-shadow: 0 1rem 2.5rem rgb(15 23 42 / 16%);
+}
+
+.sfm-capability-grid .myst-card {
+  border-top: 0.25rem solid #7c3aed !important;
+}
+
+.sfm-fast-path {
+  border-left-width: 0.4rem !important;
+  background:
+    linear-gradient(135deg, rgb(109 40 217 / 10%), rgb(22 163 74 / 8%));
+}
+
+.sfm-guide-grid .myst-card {
+  height: 100%;
+}

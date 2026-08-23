@@ -41,6 +41,10 @@ if("@GTSAM_USE_SYSTEM_CCOLAMD@")
   find_dependency(CCOLAMD CONFIG)
 endif()
 
+if("@GTSAM_ENABLE_CHOLMOD@")
+  find_dependency(CHOLMOD CONFIG)
+endif()
+
 if(@GTSAM_ENABLE_CUDA@)
   if(${CMAKE_VERSION} VERSION_LESS "3.17")
     message(FATAL_ERROR "GTSAM_ENABLE_CUDA requires CMake 3.17 or newer")

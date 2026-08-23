@@ -94,6 +94,132 @@ in that component. The end-to-end full-system and reduced-camera PCG comparison
 is isolated in `SfmPcgBenchmark` so `timeSFMBAL.cpp` remains focused on selecting
 and reporting benchmark modes.
 
+## Public SFM Solver Matrix
+
+The public CPU matrix is implemented by `timeSfmPartialElimination.cpp`. The
+CUDA matrix uses the public `gtsam::cuda::SfmLevenbergMarquardtOptimizer` path
+in `sfm_ba/timeCudaSFMBAL.cpp`; it does not use the former
+`SfmFullNormalProblem` timing path or a CPU fallback.
+
+### Recorded environment
+
+The August 21, 2026 measurements used Ubuntu 24.04.4 LTS with Linux
+7.0.0-28-generic on an Intel Core i7-14700F: one socket, 20 physical cores, 28
+logical CPUs, one NUMA node, and 31 GiB RAM. The NVIDIA GeForce RTX 5060 Ti had
+compute capability 12.0 and 16,311 MiB VRAM with driver 580.173.02.
+
+The Release build used GNU C++ 13.3.0, CMake 4.2.3, CUDA toolkit 13.0.88,
+cuDSS 0.8.0, CHOLMOD 5.3.1, and SuiteSparse_config 7.10.1. CMake detected the
+Ubuntu TBB 2021.11.0 package. Because the CHOLMOD conda directory precedes the
+system directory in the generated runpath, the executables loaded ABI-compatible
+TBB 2021.13.0 at runtime. The exact configuration was:
+
+```bash
+cmake -S . -B build-cuda \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.0/bin/nvcc \
+  -DCMAKE_CUDA_ARCHITECTURES=native \
+  '-DCMAKE_CXX_FLAGS_RELEASE=-O3 -DNDEBUG' \
+  '-DCMAKE_CUDA_FLAGS_RELEASE=-O3 -DNDEBUG' \
+  -DGTSAM_ENABLE_CUDA=ON -DGTSAM_ENABLE_CUDSS=ON \
+  -DCUDSS_ROOT=/home/dellaert/.local/opt/cudss-0.8.0-cuda13 \
+  -DGTSAM_WITH_TBB=ON \
+  -DTBB_DIR=/usr/lib/x86_64-linux-gnu/cmake/TBB \
+  -DCHOLMOD_DIR=/home/dellaert/miniconda3/envs/gtsfm-v1/lib/cmake/CHOLMOD \
+  -DSuiteSparse_config_DIR=/home/dellaert/miniconda3/envs/gtsfm-v1/lib/cmake/SuiteSparse_config \
+  -DGTSAM_BUILD_TIMING_ALWAYS=ON -DGTSAM_BUILD_TESTS=ON \
+  -DGTSAM_BUILD_DOCS=ON -DGTSAM_BUILD_PYTHON=OFF
+cmake --build build-cuda --target \
+  timeSfmPartialElimination timeCudaSFMBAL -j6
+```
+
+### CPU procedure and results
+
+Each cell was measured in three separate invocations under a hard five-minute
+process limit. The datasets were `dubrovnik-16-22106-pre.txt`,
+`dubrovnik-88-64298-pre.txt`, and `dubrovnik-135-90642-pre.txt`.
+
+```bash
+timeout 300s build-cuda/timing/timeSfmPartialElimination \
+  --repetitions 1 --max-seconds 300 \
+  --configuration 'CONFIGURATION' examples/Data/DATASET
+```
+
+The exact configuration names use a `Full/` or `Schur/` prefix followed by
+`MultifrontalSolver`, `MultifrontalCholesky`, `MultifrontalQR`,
+`SequentialCholesky`, `SequentialQR`, `PCG`, `SubgraphSolver`, or `CHOLMOD`.
+The program creates one natural-points/METIS-cameras ordering per dataset and
+reuses it. Data loading, ordering, and optimizer construction are excluded.
+
+Values are medians in seconds, sorted by completed BAL-135 time. A dash means
+the run reached the five-minute cap.
+
+| Configuration | BAL-16 | BAL-88 | BAL-135 |
+| --- | ---: | ---: | ---: |
+| Schur/MultifrontalSolver | 0.258 | 1.003 | 1.419 |
+| Full/MultifrontalSolver | 0.252 | 1.001 | 1.423 |
+| Schur/MultifrontalCholesky | 0.422 | 1.378 | 2.009 |
+| Schur/CHOLMOD | 0.454 | 1.429 | 2.035 |
+| Schur/SequentialCholesky | 0.423 | 1.394 | 2.048 |
+| Schur/PCG | 0.426 | 1.515 | 2.054 |
+| Full/MultifrontalCholesky | 0.531 | 1.866 | 2.968 |
+| Schur/MultifrontalQR | 0.430 | 2.266 | 3.227 |
+| Full/SequentialCholesky | 0.843 | 3.456 | 4.412 |
+| Full/PCG | 0.658 | 3.826 | 4.646 |
+| Full/CHOLMOD | 1.293 | 5.418 | 6.293 |
+| Schur/SequentialQR | 0.441 | 4.309 | 12.446 |
+| Full/SequentialQR | 3.813 | 121.922 | - |
+| Full/MultifrontalQR | 4.984 | 152.545 | - |
+| Full/SubgraphSolver | unsupported | unsupported | unsupported |
+| Schur/SubgraphSolver | unsupported | unsupported | unsupported |
+
+Both SubgraphSolver modes fail before the first LM iteration because the
+spanning-tree builder only uses unary and binary factors, while these graphs
+contain higher-arity factors. Full multifrontal and sequential QR both reached
+the BAL-135 cap.
+
+### CUDA procedure and results
+
+The CUDA runs used point-batched graphs and Schur elimination. Each command was
+run three times under the same hard cap. Dataset loading and optimizer
+construction are excluded, and CUDA is synchronized immediately before and
+after the timed `optimize()` call.
+
+```bash
+build-cuda/timing/sfm_ba/timeCudaSFMBAL --list-configurations
+timeout 300s build-cuda/timing/sfm_ba/timeCudaSFMBAL \
+  --cuda-lm-graph --cuda-lm-graph-kind point-batch \
+  --configuration CONFIGURATION --output-format json \
+  examples/Data/DATASET
+```
+
+`CONFIGURATION` was `schur-dense`, `schur-cudss-auto`,
+`schur-cudss-gtsam`, or `schur-pcg`. Values are medians in seconds.
+
+| Configuration | BAL-16 | BAL-88 | BAL-135 |
+| --- | ---: | ---: | ---: |
+| Schur/dense Cholesky | 0.055 | 0.218 | 0.290 |
+| Schur/cuDSS, automatic ordering | 0.093 | 0.790 | 1.104 |
+| Schur/cuDSS, GTSAM ordering | 0.093 | 0.786 | 1.107 |
+| Schur/PCG | 0.164 | 1.127 | 1.282 |
+
+CUDA Full is reserved but not implemented. Selecting it produces
+`CUDA SFM Full elimination mode is not implemented; select Schur.`
+
+### Correctness observations
+
+All completed repetitions had stable objectives and iteration counts. Full and
+Schur `MULTIFRONTAL_SOLVER` agreed at 18,033.914832, 291,581.106404, and
+377,782.056028. Direct Full CPU solvers and direct CUDA backends converged near
+18,034.103054, 291,611.296974, and 378,041.329924. Explicit-Schur CPU direct
+solvers converged near 18,122.993769, 293,146.832936, and 378,183.228886. The
+largest objective spread across completed CPU configurations was 0.61%.
+
+These are end-to-end optimizer timings, not fixed reduced-system
+microbenchmarks. Numerical differences can alter LM trajectories and iteration
+counts, so final objectives and iteration counts should accompany elapsed-time
+comparisons.
+
 `timeSFMBALsmart` compares camera-only, structureless bundle adjustment using
 smart factors. Its default run reports Hessian smart factors with multifrontal
 Cholesky, Hessian smart factors with parallel block-Jacobi PCG, and implicit

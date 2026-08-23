@@ -82,6 +82,7 @@ class Values {
   void insert(gtsam::Key j, const gtsam::Matrix& matrix);
   void insert(gtsam::Key j, const gtsam::Point2& point2);
   void insert(gtsam::Key j, const gtsam::Point3& point3);
+  void insertPoint3(gtsam::Key j, const gtsam::Point3& point3);
   void insert(gtsam::Key j, const gtsam::Gal3& T);
   void insert(gtsam::Key j, const gtsam::Se23& T);
   void insert(gtsam::Key j, const gtsam::ExtendedPose3d& T);

@@ -4,6 +4,38 @@
 
 namespace gtsam {
 
+#include <gtsam/sfm/SfmEliminationMode.h>
+enum class SfmEliminationMode { Full, Schur };
+
+#include <gtsam/sfm/SfmLevenbergMarquardt.h>
+virtual class SfmLevenbergMarquardtParams
+    : gtsam::LevenbergMarquardtParams {
+  SfmLevenbergMarquardtParams();
+
+  static gtsam::SfmLevenbergMarquardtParams legacyDefaults();
+  static gtsam::SfmLevenbergMarquardtParams ceresDefaults();
+
+  gtsam::SfmEliminationMode getEliminationMode() const;
+  void setEliminationMode(gtsam::SfmEliminationMode mode);
+  void print(const string& str = "") const;
+};
+
+virtual class SfmLevenbergMarquardtOptimizer
+    : gtsam::LevenbergMarquardtOptimizer {
+  static gtsam::Ordering CreateReducedOrdering(
+      const gtsam::NonlinearFactorGraph& graph,
+      const gtsam::Values& initialValues);
+  static gtsam::Ordering CreateSchurOrdering(
+      const gtsam::NonlinearFactorGraph& graph,
+      const gtsam::Ordering& reducedOrdering);
+
+  SfmLevenbergMarquardtOptimizer(
+      const gtsam::NonlinearFactorGraph& graph,
+      const gtsam::Values& initialValues,
+      const gtsam::SfmLevenbergMarquardtParams& params =
+          gtsam::SfmLevenbergMarquardtParams());
+};
+
 #include <gtsam/sfm/SfmTrack.h>
 class SfmTrack2d {
   std::vector<gtsam::SfmMeasurement> measurements;

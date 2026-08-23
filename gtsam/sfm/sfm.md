@@ -1,131 +1,234 @@
-# SfM
+---
+title: Structure from Motion
+subtitle: Bundle adjustment, elimination strategy, and CPU/CUDA solver selection
+description: User guides and performance guidance for GTSAM structure from motion.
+thumbnail: ./doc/images/cuda-optimizers.webp
+---
 
-> SfM = Structure from Motion
+GTSAM's `sfm` module spans the full reconstruction pipeline: feature tracks, global rotation and translation recovery, trajectory alignment, and high-performance CPU and CUDA bundle adjustment.
 
-The `sfm` module provides dataset containers and algorithms for global structure from motion: feature-track assembly, three-view transfer, focal-length self-calibration, rotation averaging, translation and location recovery, trajectory alignment, and bundle-adjustment setup.
+```{figure} doc/images/cuda-optimizers.webp
+:name: fig-sfm-cuda-optimizers
+:alt: Architecture of GTSAM's general and structure-from-motion CUDA Levenberg-Marquardt optimizers
+:align: center
+:class: sfm-hero
 
-## Fastest CPU bundle-adjustment path
+The general and SFM Levenberg–Marquardt paths on the GPU. The SFM optimizer uses bespoke CUDA kernels to form its camera Schur complement before dispatching to dense Cholesky, cuDSS, or PCG.
+```
 
-For the fastest currently merged **GTSAM-only CPU path without Ceres or CHOLMOD**, use the point-batched multifrontal configuration (see [issue #2299](https://github.com/borglab/gtsam/issues/2299)):
+::::{grid} 1 1 2 2
+:class: sfm-capability-grid
 
-1. Group every landmark's reprojection measurements into one `BatchFactor<SfmFactor, 2>`.
-2. Supply an explicit Schur ordering with **all landmark keys first, followed by all camera keys**.
-3. Select `NonlinearOptimizerParams::MULTIFRONTAL_SOLVER`.
-4. Compile GTSAM in Release mode with TBB enabled.
+:::{card} CPU bundle adjustment
 
-Example:
+**Full or Schur** · standard nonlinear solver selection
+
+Use multifrontal or sequential Cholesky/QR, `MULTIFRONTAL_SOLVER`, iterative PCG/SubgraphSolver, or optional CHOLMOD.
+
+**Fastest measured family:** point-first `MULTIFRONTAL_SOLVER` (`Full` or `Schur`)
+
++++
+[Open the CPU guide](doc/SfmLevenbergMarquardtOptimizer.ipynb)
+:::
+
+:::{card} CUDA bundle adjustment
+
+**Schur today** · Full mode reserved
+
+The bespoke CUDA Schur path supports dense Cholesky, cuDSS, and PCG. `Full` is already part of the public API but throws a clear not-implemented exception.
+
++++
+[Open the CUDA guide](doc/CudaSfmLevenbergMarquardtOptimizer.ipynb) · [Use GNC with CUDA SFM](doc/CudaSfmGncOptimizer.ipynb)
+:::
+::::
+
+:::{admonition} Fastest tested CPU path
+:class: tip sfm-fast-path
+
+For BAL-style problems, use **point-batched projection factors + `MULTIFRONTAL_SOLVER`** in a Release build with TBB enabled. Construct the complete ordering once with natural points followed by METIS cameras. `Full` was fastest on BAL-16 and BAL-88, while `Schur` was fastest on BAL-135, so these measurements do not identify one universally fastest elimination mode.
+
+Both modes use one cached, point-first multifrontal factorization. They do not materialize an intermediate reduced graph or invoke a second solver.
+:::
+
+## Two independent choices
+
+`SfmLevenbergMarquardtOptimizer` separates the elimination strategy from the linear solver:
+
+1. `SfmEliminationMode::Full` solves the joint system.
+2. `SfmEliminationMode::Schur` eliminates every active `Point3` and `Unit3` first, then solves for all remaining variables.
+
+CPU Schur partitioning eliminates active `Point3` and `Unit3` values while retaining every other value type, including poses, camera objects, and shared or per-camera calibrations. This value-based partition supports variable and global calibration without specializing the optimizer for one camera template.
+
+CPU and CUDA defaults reflect their current fast paths and graph support. CPU defaults to `Full`, `MULTIFRONTAL_SOLVER`, and an automatically generated natural-landmark prefix followed by a METIS ordering of the reduced system; that combination won BAL-16 and BAL-88 and was within 0.3% of Schur on BAL-135. CUDA defaults to `Schur` and keeps its existing camera/`Point3` backend assumptions.
+
+| Platform | Full | Schur | Linear solvers |
+| --- | --- | --- | --- |
+| **CPU** | **Supported (default)** | Supported | **`MULTIFRONTAL_SOLVER` (default)**, multifrontal/sequential Cholesky or QR, `Iterative`, optional `CHOLMOD` |
+| **CUDA** | Planned; currently throws | **Supported (default)** | dense Cholesky, cuDSS, PCG |
+
+### CPU quick start
 
 ```cpp
-using Camera = gtsam::PinholeCamera<gtsam::Cal3Bundler>;
-using SfmFactor = gtsam::GeneralSFMFactor<Camera, gtsam::Point3>;
+#include <gtsam/sfm/SfmLevenbergMarquardt.h>
 
-gtsam::NonlinearFactorGraph graph;
-for (size_t j = 0; j < data.numberTracks(); ++j) {
-  const auto& track = data.tracks[j];
-  if (track.measurements.size() < 2) continue;
+gtsam::SfmLevenbergMarquardtParams params =
+    gtsam::SfmLevenbergMarquardtParams::ceresDefaults();
 
-  std::map<gtsam::Key, gtsam::Point2> measurements;
-  for (const auto& [cameraIndex, imagePoint] : track.measurements) {
-    measurements[gtsam::Symbol('c', cameraIndex)] = imagePoint;
-  }
-  graph.add(std::make_shared<gtsam::BatchFactor<SfmFactor, 2>>(
-      measurements, gtsam::Symbol('p', j), projectionNoise));
-}
+// For the fastest measured path, graph uses point-batched projection factors.
+const gtsam::Ordering reducedOrdering =
+    gtsam::SfmLevenbergMarquardtOptimizer::CreateReducedOrdering(
+        graph, initial);
+params.setOrdering(
+    gtsam::SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(
+        graph, reducedOrdering));
 
-gtsam::Ordering pointFirstOrdering;
-for (size_t j = 0; j < data.numberTracks(); ++j) {
-  pointFirstOrdering.push_back(gtsam::Symbol('p', j));
-}
-for (size_t i = 0; i < data.numberCameras(); ++i) {
-  pointFirstOrdering.push_back(gtsam::Symbol('c', i));
-}
-
-gtsam::LevenbergMarquardtParams params;
-gtsam::LevenbergMarquardtParams::SetCeresDefaults(&params);
-params.linearSolverType =
-    gtsam::NonlinearOptimizerParams::MULTIFRONTAL_SOLVER;
-params.multifrontalParams.qrMode =
-    gtsam::MultifrontalParameters::QRMode::Allow;
-params.setOrdering(pointFirstOrdering);
-
-gtsam::LevenbergMarquardtOptimizer optimizer(graph, initial, params);
-const gtsam::Values result = optimizer.optimize();
+gtsam::SfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
+const gtsam::Values& result = optimizer.optimize();
 ```
 
-Add the camera and landmark gauge priors required by the reconstruction before optimizing. The complete reference construction is in [`timing/internal/SfmBalBenchmark.cpp`](../../timing/internal/SfmBalBenchmark.cpp), and the matching solver configuration is in [`timing/timeSFMBAL.cpp`](../../timing/timeSFMBAL.cpp).
+[The Python Full-and-Schur tutorial](../../python/gtsam/examples/SfmLevenbergMarquardtOptimizerExample.ipynb) demonstrates both elimination modes with a calibration shared by every camera. When constructing `Values` from NumPy arrays, use `Values.insertPoint3()` for landmarks so Python preserves their fixed-size `Point3` type.
 
-The arm64/TBB measurements reported in issue #2299 are benchmark guidance, not performance guarantees:
+## What Schur means for each solver
 
-| BAL dataset | Point-batch / `MultifrontalSolver` total optimization time |
-| --- | ---: |
-| BAL-16 | 0.247 s |
-| BAL-88 | 0.975 s |
-| BAL-135 | 1.349 s |
+::::{tab-set}
+:::{tab-item} MULTIFRONTAL_SOLVER
 
-Why this is fast: point batching reduces factor and allocation overhead, point-first elimination forms the camera Schur complement instead of dense landmark-camera fill, and `MULTIFRONTAL_SOLVER` reuses the symbolic structure throughout the nonlinear iterations. Do not substitute unconstrained COLAMD or METIS and assume it will discover the same ordering; ordering is heuristic and has a large effect on bundle adjustment.
+Schur mode constructs a complete ordering with a natural `Point3`/`Unit3` prefix followed by the reduced-system ordering. One cached `MultifrontalSolver` factorization eliminates those landmarks, factors the Schur complement over the remaining variables, and back-substitutes through the same Bayes tree.
 
-The point-batch factor and `MultifrontalParameters` tuning interface are currently C++ APIs. Python can set a point-first `Ordering` and select `MULTIFRONTAL_SOLVER`, but it cannot reproduce the full recommended point-batched configuration yet.
+No reduced factor graph is created. This is mathematically the same landmark-first elimination used in Full mode when it receives the identical complete ordering; explicit `Schur` mode lets SFM construct that ordering from a reduced-system input.
+:::
 
-If GTSAM is built with CHOLMOD, the timing program also exposes the explicit point-batch sparse-Schur comparison:
+:::{tab-item} Other CPU solvers
 
-```sh
-./timing/timeSFMBAL --point-batch-schur-cholmod-only \
-  /path/to/problem-135-90642-pre.txt
+Schur mode creates an explicit solver boundary:
+
+1. `MultifrontalSolver::eliminatePartialInPlace()` eliminates landmarks.
+2. `remainingFactorGraph()` exports the reduced Hessian graph.
+3. The selected ordinary solver computes the reduced-system step.
+4. `updateSolution(reducedDelta)` back-substitutes the eliminated step.
+
+The partial-elimination symbolic state is reused across LM attempts and iterations. This path lets CHOLMOD, legacy Cholesky or QR, and iterative solvers operate on the reduced graph, at the cost of materializing reduced factors and running a separate solve.
+:::
+::::
+
+### Reduced-system ordering
+
+In Full mode, a supplied ordering has ordinary all-variable semantics. In CPU Schur mode, supply every active key whose value is neither `Point3` nor `Unit3`:
+
+```cpp
+gtsam::Ordering reduced{pose0Key, pose1Key, globalCalibrationKey};
+params.setOrdering(reduced);
 ```
 
-Issue #2299 reports this benchmark path within roughly 13–16% of Ceres total solver time on matched BAL-88 and BAL-135 solve budgets. It is a specialized timing path, whereas the point-batch multifrontal recipe above uses the ordinary GTSAM nonlinear optimizer.
+Two public ordering helpers build and validate the reusable point-first ordering. `CreateReducedOrdering(graph, initial)` symbolically eliminates active `Point3` and `Unit3` values in natural key order and runs METIS on the resulting reduced graph. `CreateSchurOrdering(graph, reduced)` prefixes that reduced ordering with the eliminated keys; its result is the complete Schur ordering used by Full mode or the fused multifrontal path. Duplicate, missing, eliminated, and unknown reduced keys are rejected. Direct reduced solvers and iterative solvers that consume an ordering receive the same reduced-only suffix.
 
-## CUDA acceleration
+::::{grid} 1 1 2 2
 
-The SFM CUDA implementation requires a CUDA-enabled build and lives in `gtsam/sfm/cuda/`. The public C++ API remains in the `gtsam::cuda` namespace, and Python exposes it as `gtsam.cuda`.
+:::{card} Iterative dispatch
 
-- [SfmLevenbergMarquardtOptimizer](doc/SfmLevenbergMarquardtOptimizer.ipynb): Fully GPU-resident Levenberg-Marquardt for BAL-style bundle adjustment using dense-Schur, cuDSS, or PCG linear solvers.
-- [GNC with the CUDA SFM optimizer](doc/CudaSfmGncOptimizer.ipynb): Robust bundle adjustment using the CUDA SFM optimizer as the GNC inner solver.
+Select `NonlinearOptimizerParams::Iterative` and supply the same parameter object as an ordinary nonlinear optimizer:
 
-## Data and feature tracks
+- `PCGSolverParameters` selects PCG.
+- `SubgraphSolverParameters` selects `SubgraphSolver` and receives the reduced-system ordering in Schur mode.
+- Missing or unrecognized parameters throw the ordinary `NonlinearOptimizer::solve` error.
 
-- [Keypoints](doc/Keypoints.ipynb): Image feature coordinates and pairwise-match track generation.
-- [SfmTrack2d](doc/SfmTrack2d.ipynb): Camera-indexed two-dimensional observations of one feature track.
-- [SfmTrack](doc/SfmTrack.ipynb): A 2D track with its reconstructed 3D point and optional color.
-- [SfmData](doc/SfmData.ipynb): BAL/Bundler cameras and tracks, graph construction, and initialization.
+`SubgraphSolver` additionally requires a Gaussian graph with enough unary and binary factors to construct its spanning-tree preconditioner. Higher-arity point batches and camera clique factors do not satisfy that requirement.
 
-## Measurement records
+The typed `getLinearSolver()` and `setLinearSolver()` conveniences coexist with the compatible string APIs.
+:::
 
-- [UnaryMeasurement](doc/UnaryMeasurement.ipynb): A typed measurement and noise model attached to one key.
-- [BinaryMeasurement](doc/BinaryMeasurement.ipynb): A typed, directed measurement and noise model between two keys.
+:::{card} Optional CHOLMOD
 
-## Three-view transfer and self-calibration
+When SuiteSparse CHOLMOD is found, `NonlinearOptimizerParams::CHOLMOD` works for ordinary nonlinear optimizers and both CPU SFM modes. The reusable session accepts arbitrary variable dimensions, loads ordinary Jacobian, compact batch Jacobian, and Hessian factors directly into the sparse normal system, expands key orderings into scalar permutations, and reuses symbolic analysis. Compact batches contribute their fixed-size normal blocks without a dense intermediate.
 
-- [TransferEdges](doc/TransferEdges.ipynb): C++ edge-orientation helper shared by transfer factors.
-- [TransferFactor](doc/TransferFactor.ipynb): Three-view transfer using fundamental matrices.
-- [EssentialTransferFactor](doc/EssentialTransferFactor.ipynb): Three-view transfer using essential matrices and fixed shared calibration.
-- [EssentialTransferFactorK](doc/EssentialTransferFactorK.ipynb): Three-view transfer with calibration variables.
-- [SelfCalibrationFactor](doc/SelfCalibrationFactor.ipynb): Two-camera focal-length constraints from a fundamental matrix.
+A build without CHOLMOD remains valid; selecting it produces an actionable runtime error. Constrained, non-SPD, and factorization failures are reported rather than silently falling back.
+:::
+::::
 
-## Rotation averaging
+### CUDA semantics
 
-- [ShonanFactor](doc/ShonanFactor.ipynb): One relative-rotation factor at a lifted relaxation level.
-- [ShonanGaugeFactor](doc/ShonanGaugeFactor.ipynb): C++ stabilizer-gauge constraint for lifted Shonan variables.
-- [ShonanAveragingParameters](doc/ShonanAveragingParameters.ipynb): Anchoring, robustness, optimization, and certification settings.
-- [ShonanAveraging](doc/ShonanAveraging.ipynb): Common C++ staircase and certificate implementation.
-- [ShonanAveraging2](doc/ShonanAveraging2.ipynb): Planar rotation averaging.
-- [ShonanAveraging3](doc/ShonanAveraging3.ipynb): Spatial rotation averaging.
+CUDA SFM currently supports only its bespoke Schur path; selecting `SfmEliminationMode::Full` fails immediately because full-system CUDA solving is intentionally deferred. The Schur path uses the landmark-elimination kernels shown in {numref}`fig-sfm-cuda-optimizers`, then solves the camera system with dense Cholesky, cuDSS, or PCG. CUDA orderings remain camera-only and are accepted only by backends that consume them.
 
-## Translation and position recovery
+## Performance at a glance
 
-- [TranslationFactor](doc/TranslationFactor.ipynb): C++ chordal translation-direction factor.
-- [BilinearAngleTranslationFactor](doc/BilinearAngleTranslationFactor.ipynb): C++ BATA factor with a per-edge scale variable.
-- [LocationRecovery](doc/LocationRecovery.ipynb): Generic graph construction for direction-based position recovery.
-- [TranslationRecovery](doc/TranslationRecovery.ipynb): Translation averaging with gauge fixing and optional metric edges.
-- [GlobalPositioner](doc/GlobalPositioner.ipynb): GLOMAP-style joint camera and landmark positioning.
-- [MFAS](doc/MFAS.ipynb): 1DSfM ordering and translation-edge outlier scoring.
+The primary Release-mode benchmark compares the public CPU and CUDA fast paths on Ubuntu 24.04 with an **Intel Core i7-14700F (20 physical cores, 28 logical CPUs) and 31 GiB RAM**, plus an **NVIDIA GeForce RTX 5060 Ti with 16 GiB VRAM**. Values are median end-to-end optimization times from three runs.
 
-## Trajectory alignment
+| Public optimizer path | BAL-16 s | BAL-88 s | BAL-135 s |
+| --- | ---: | ---: | ---: |
+| CPU Full + `MULTIFRONTAL_SOLVER` | **0.252** | **1.001** | 1.423 |
+| CPU Schur + `MULTIFRONTAL_SOLVER` | 0.258 | 1.003 | **1.419** |
+| CUDA Schur + dense Cholesky | **0.055** | **0.218** | **0.290** |
 
-- [TrajectoryAlignerSim3](doc/TrajectoryAlignerSim3.ipynb): Similarity alignment of one or more child pose trajectories to a parent trajectory.
+An [independent run](https://github.com/borglab/gtsam/pull/2727#issuecomment-5383045325) on a Ryzen 9 5900X (12C/24T) and RTX 5090 produced the following median times; parentheses show speedup relative to CUDA `schur-dense`.
 
-## Python wrapper support types
+| Configuration | BAL-16 | BAL-88 | BAL-135 |
+| --- | ---: | ---: | ---: |
+| CUDA `schur-dense` | 0.070 | 0.200 | 0.267 |
+| Schur/MultifrontalSolver | 0.412 (5.9×) | 1.505 (7.5×) | 2.115 (7.9×) |
+| Full/MultifrontalSolver | 0.437 (6.2×) | 1.511 (7.6×) | 2.107 (7.9×) |
+| Schur/MultifrontalCholesky | 0.643 (9.2×) | 2.232 (11.2×) | 3.012 (11.3×) |
+| Schur/PCG | 0.678 (9.7×) | 2.349 (11.7×) | 3.029 (11.3×) |
 
-Template classes appear in Python under concrete names. `BinaryMeasurementUnit3`, `BinaryMeasurementRot3`, and `BinaryMeasurementPoint3` are covered by the `BinaryMeasurement` guide; the corresponding `UnaryMeasurement` variants are covered by its guide. Transfer and Shonan template instantiations are likewise listed in their source-class notebooks.
+Absolute times—and even the narrow Full-versus-Schur winner—vary with hardware and build, so benchmark your workload.
 
-The wrapper-only containers `BinaryMeasurementsUnit3`, `BinaryMeasurementsRot3`, `BinaryMeasurementsPoint3`, `KeyPairDoubleMap`, `MatchIndicesMap`, and `KeypointsVector` only adapt C++ containers at language boundaries. Python users should normally pass and receive native lists and dictionaries, as demonstrated in the related class guides.
+:::{admonition} Fast-path guidance
+:class: tip
+
+For CPU BAL-style problems, start with point-batched projection factors, the natural-points/METIS-cameras ordering, and `MULTIFRONTAL_SOLVER`. Full is the default and won two datasets; Schur was effectively tied and won the largest by only 0.25%. This benchmark does not measure parallel scaling, so physical core count alone is not a processor-performance prediction.
+
+For CUDA at these problem sizes, use Schur with dense Cholesky. It was about 4.6–4.9× faster than the best CPU result. CUDA Full remains planned and is rejected rather than silently falling back to the CPU.
+:::
+
+The [timing benchmark README](../../timing/README.md#public-sfm-solver-matrix) contains the complete solver matrices, build record, commands, timeout/unsupported results, and numerical checks.
+
+## User guides by class
+
+::::{grid} 1 1 2 2
+:class: sfm-guide-grid
+
+:::{card} Data and feature tracks
+
+- [Keypoints](doc/Keypoints.ipynb)
+- [SfmTrack2d](doc/SfmTrack2d.ipynb)
+- [SfmTrack](doc/SfmTrack.ipynb)
+- [SfmData](doc/SfmData.ipynb)
+:::
+
+:::{card} Measurement and transfer factors
+
+- [UnaryMeasurement](doc/UnaryMeasurement.ipynb)
+- [BinaryMeasurement](doc/BinaryMeasurement.ipynb)
+- [TransferEdges](doc/TransferEdges.ipynb)
+- [TransferFactor](doc/TransferFactor.ipynb)
+- [EssentialTransferFactor](doc/EssentialTransferFactor.ipynb)
+- [EssentialTransferFactorK](doc/EssentialTransferFactorK.ipynb)
+- [SelfCalibrationFactor](doc/SelfCalibrationFactor.ipynb)
+:::
+
+:::{card} Rotation averaging
+
+- [ShonanFactor](doc/ShonanFactor.ipynb)
+- [ShonanGaugeFactor](doc/ShonanGaugeFactor.ipynb)
+- [ShonanAveragingParameters](doc/ShonanAveragingParameters.ipynb)
+- [ShonanAveraging](doc/ShonanAveraging.ipynb)
+- [ShonanAveraging2](doc/ShonanAveraging2.ipynb)
+- [ShonanAveraging3](doc/ShonanAveraging3.ipynb)
+:::
+
+:::{card} Translation and position recovery
+
+- [TranslationFactor](doc/TranslationFactor.ipynb)
+- [BilinearAngleTranslationFactor](doc/BilinearAngleTranslationFactor.ipynb)
+- [LocationRecovery](doc/LocationRecovery.ipynb)
+- [TranslationRecovery](doc/TranslationRecovery.ipynb)
+- [GlobalPositioner](doc/GlobalPositioner.ipynb)
+- [MFAS](doc/MFAS.ipynb)
+:::
+
+:::{card} Trajectory alignment
+
+- [TrajectoryAlignerSim3](doc/TrajectoryAlignerSim3.ipynb)
+:::
+::::
+
+Template classes appear in Python under concrete names. Wrapper-only containers adapt C++ containers at language boundaries; Python users should normally pass native lists and dictionaries as shown in the related guides.

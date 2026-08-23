@@ -28,6 +28,7 @@
 namespace gtsam {
 
 namespace internal {
+class CholmodSolver;
 struct NonlinearOptimizerState;
 }
 class NonlinearMultifrontalSolver;
@@ -91,6 +92,9 @@ class GTSAM_EXPORT NonlinearOptimizer {
   /// Solver for multifrontal Cholesky, lazily created
   mutable std::unique_ptr<NonlinearMultifrontalSolver>
       nonlinearMultifrontalSolver_;
+
+  /// Optional reusable CHOLMOD numerical and symbolic session.
+  mutable std::unique_ptr<internal::CholmodSolver> cholmodSolver_;
 
  private:
   /// Cached indexed junction tree used to avoid rebuilding the symbolic structure
@@ -178,8 +182,8 @@ class GTSAM_EXPORT NonlinearOptimizer {
    * multifrontal initialization fails, it also returns false (and callers
    * should fall back to the legacy linear solver path).
    */
-  bool ensureMultifrontalSolver(const NonlinearOptimizerParams& params,
-                                const Values& values) const;
+  virtual bool ensureMultifrontalSolver(
+      const NonlinearOptimizerParams& params, const Values& values) const;
 
   /** Constructor for initial construction of base classes. Takes ownership of
    * state. */

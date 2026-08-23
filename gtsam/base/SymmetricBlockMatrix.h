@@ -289,10 +289,22 @@ class CompactLeafSchurKernel;
     template <typename XprType>
     void updateOffDiagonalBlock(DenseIndex I, DenseIndex J, const XprType& xpr) {
       assert(I != J);
-      if (I < J) {
-        block_(I, J).noalias() += xpr;
+      if constexpr (XprType::SizeAtCompileTime == 1) {
+        if (I < J) {
+          auto destination = block_(I, J);
+          assert(destination.rows() == 1 && destination.cols() == 1);
+          destination(0, 0) += xpr.coeff(0, 0);
+        } else {
+          auto destination = block_(J, I);
+          assert(destination.rows() == 1 && destination.cols() == 1);
+          destination(0, 0) += xpr.coeff(0, 0);
+        }
       } else {
-        block_(J, I).noalias() += xpr.transpose();
+        if (I < J) {
+          block_(I, J).noalias() += xpr;
+        } else {
+          block_(J, I).noalias() += xpr.transpose();
+        }
       }
     }
 
@@ -301,7 +313,11 @@ class CompactLeafSchurKernel;
     void updateOffDiagonalBlockAt(DenseIndex rowOffset, DenseIndex colOffset,
                                   const XprType& xpr) {
       assert(rowOffset < colOffset);
-      matrix_.block(rowOffset, colOffset, xpr.rows(), xpr.cols()) += xpr;
+      if constexpr (XprType::SizeAtCompileTime == 1) {
+        matrix_(rowOffset, colOffset) += xpr.coeff(0, 0);
+      } else {
+        matrix_.block(rowOffset, colOffset, xpr.rows(), xpr.cols()) += xpr;
+      }
     }
 
     /// Increment a fixed-size upper block using cached scalar offsets.
@@ -310,7 +326,12 @@ class CompactLeafSchurKernel;
                                        DenseIndex colOffset,
                                        const XprType& xpr) {
       assert(rowOffset < colOffset);
-      matrix_.template block<Rows, Cols>(rowOffset, colOffset) += xpr;
+      if constexpr (Rows == 1 && Cols == 1) {
+        assert(xpr.rows() == 1 && xpr.cols() == 1);
+        matrix_(rowOffset, colOffset) += xpr.coeff(0, 0);
+      } else {
+        matrix_.template block<Rows, Cols>(rowOffset, colOffset) += xpr;
+      }
     }
 
     /// Update this matrix with blocks from another block matrix using a mapping.
