@@ -2,12 +2,12 @@
 title: Structure from Motion
 subtitle: Bundle adjustment, elimination strategy, and CPU/CUDA solver selection
 description: User guides and performance guidance for GTSAM structure from motion.
-thumbnail: ./doc/images/cuda-optimizers.png
+thumbnail: ./doc/images/cuda-optimizers.webp
 ---
 
 GTSAM's `sfm` module spans the full reconstruction pipeline: feature tracks, global rotation and translation recovery, trajectory alignment, and high-performance CPU and CUDA bundle adjustment.
 
-```{figure} doc/images/cuda-optimizers.png
+```{figure} doc/images/cuda-optimizers.webp
 :name: fig-sfm-cuda-optimizers
 :alt: Architecture of GTSAM's general and structure-from-motion CUDA Levenberg-Marquardt optimizers
 :align: center
