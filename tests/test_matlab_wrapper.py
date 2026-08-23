@@ -480,6 +480,34 @@ class TestWrap(unittest.TestCase):
             '  }\n'
             '  delete self;', cpp_content)
 
+    def test_mex_error_path_restores_stream(self):
+        """MEX failures restore std::cout before leaving the gateway."""
+        file = osp.join(self.INTERFACE_DIR, 'functions.i')
+        wrapper = MatlabWrapper(
+            module_name='functions',
+            top_module_namespace=['gtsam'],
+            ignore_classes=[''],
+        )
+        wrapper.wrap([file], path=self.MATLAB_ACTUAL_DIR)
+
+        cpp_file = osp.join(self.MATLAB_ACTUAL_DIR,
+                            'functions_wrapper.cpp')
+        with open(cpp_file, 'r', encoding='UTF-8') as generated_file:
+            cpp_content = generated_file.read()
+
+        self.assertIn(
+            '} catch(const std::exception& e) {\n'
+            '    std::cout.rdbuf(outbuf);\n'
+            '    mexErrMsgTxt(', cpp_content)
+
+        matlab_header = osp.join(self.TEST_DIR, '..', 'matlab.h')
+        with open(matlab_header, 'r', encoding='UTF-8') as header_file:
+            header_content = header_file.read()
+
+        self.assertIn('#include <mex.h>', header_content)
+        self.assertNotIn('extern "C" {\n#include <mex.h>\n}',
+                         header_content)
+
     def test_size_t_round_trip(self):
         """Generated size_t wrappers use alias-safe scalar conversions."""
         file = osp.join(self.INTERFACE_DIR, 'matlab_integer_aliases.i')

@@ -315,6 +315,7 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       break;
     }
   } catch(const std::exception& e) {
+    std::cout.rdbuf(outbuf);
     mexErrMsgTxt(("Exception from gtsam:\n" + std::string(e.what()) + "\n").c_str());
   }
 
