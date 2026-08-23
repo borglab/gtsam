@@ -18,6 +18,18 @@ focused.
   [`Using-GTSAM-EXPORT.md`](../Using-GTSAM-EXPORT.md), including its template
   specialization and header-only rules.
 
+### Deprecating C++ APIs
+
+* Use GTSAM's versioned deprecation mechanism rather than adding a standalone
+  `[[deprecated]]` attribute. For APIs deprecated since GTSAM 4.3, wrap their
+  declarations, definitions, and any tests in
+  `#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43`.
+* Add a Doxygen `@deprecated` comment that names the supported replacement or
+  migration path.
+* Verify the normal configuration with deprecated APIs disabled. When changing
+  compatibility code itself, also verify a build with the corresponding
+  `GTSAM_ALLOW_DEPRECATED_SINCE_*` option enabled.
+
 ## C++ style
 
 * Classes and types are `UpperCamelCase`; methods and functions are

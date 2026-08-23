@@ -193,6 +193,9 @@ namespace gtsam {
     /// Convert into a decision tree
     DecisionTreeFactor toDecisionTreeFactor() const override { return *this; }
 
+    /// Convert directly into a sparse table.
+    TableFactor toTableFactor() const override;
+
     /// Use sum() from AlgebraicDecisionTree
     using ADT::sum;
 

@@ -1,0 +1,28 @@
+fgz 1
+style node_size=9mm factor_size=4mm label_sep=0.2pt label_font=small
+
+p0 = p_0
+p1 = p_1
+p2 = p_2
+l0 = l_0
+l1 = l_1
+l2 = l_2
+c = c
+
+variable x_0 (0, 2.4) color=cyan!15
+variable x_1 (3.5, 2.4) color=cyan!15
+variable x_2 (7, 2.4) color=cyan!15
+
+variable a_0 (0, 0) color=orange!20
+variable a_1 (3.5, 0) color=orange!20
+variable a_2 (7, 0) color=orange!20
+
+factor {x_0} (0, 3.8) shape=square color=green!15 label=p0 size=6.5mm font=scriptsize
+factor {x_1} (3.5, 3.8) shape=square color=green!15 label=p1 size=6.5mm font=scriptsize
+factor {x_2} (7, 3.8) shape=square color=green!15 label=p2 size=6.5mm font=scriptsize
+
+factor {x_0, a_0} shape=square color=red!12 label=l0 size=6.5mm font=scriptsize
+factor {x_1, a_1} shape=square color=red!12 label=l1 size=6.5mm font=scriptsize
+factor {x_2, a_2} shape=square color=red!12 label=l2 size=6.5mm font=scriptsize
+
+factor {a_0, a_1, a_2} (3.5, -1.5) shape=square color=gray!20 label=c size=6.5mm font=scriptsize

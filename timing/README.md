@@ -22,6 +22,28 @@ These helpers are private to the timing targets and do not add public GTSAM
 API. Legacy `gttic_` microbenchmarks continue to use `gtsam/base/timing` and are
 not candidates for migration to this harness.
 
+## Hybrid Inference Benchmark
+
+`timeHybridInference` constructs a small 2D data-association problem with a
+sparse one-to-one association constraint using only core GTSAM APIs. It times
+the four tutorial-level hybrid inference operations independently: sequential
+Bayes-net creation, Bayes-net optimization, multifrontal Bayes-tree creation,
+and Bayes-tree optimization. Creation performs sum-product elimination, while
+optimization obtains the max-product assignment and its continuous solution.
+The executable verifies that the sequential and multifrontal solutions agree
+before collecting timings.
+
+Build and run it from the build directory:
+
+```bash
+make -j6 timeHybridInference
+./timing/timeHybridInference --objects 3 --warmup 1 --repeats 10 \
+  --iterations 10 --output hybrid_inference.json
+```
+
+The AllDiff-specific table-dispatch comparison lives in
+`gtsam_unstable/timing/timeHybridAllDiff.cpp`.
+
 ## BetweenFactor Jacobian Benchmark
 
 `timeBetweenFactor` measures `BetweenFactor<Rot3>::evaluateError` with both
