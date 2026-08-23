@@ -50,8 +50,6 @@
 #include <utility>
 #include <vector>
 
-#define GTSAM_HYBRID_WITH_TABLEFACTOR 1
-
 namespace gtsam {
 
 /// Specialize EliminateableFactorGraph for HybridGaussianFactorGraph:
@@ -255,11 +253,7 @@ static DiscreteFactor::shared_ptr DiscreteFactorFromErrors(
   double min_log = errors.min();
   AlgebraicDecisionTree<Key> potentials(
       errors, [&min_log](const double x) { return exp(-(x - min_log)); });
-#if GTSAM_HYBRID_WITH_TABLEFACTOR
   return std::make_shared<TableFactor>(discreteKeys, potentials);
-#else
-  return std::make_shared<DecisionTreeFactor>(discreteKeys, potentials);
-#endif
 }
 
 /* ************************************************************************ */
@@ -292,18 +286,7 @@ static DiscreteFactorGraph CollectDiscreteFactors(
 #if GTSAM_HYBRID_TIMING
       gttic_(ConvertConditionalToTableFactor);
 #endif
-      if (auto dtc = std::dynamic_pointer_cast<TableDistribution>(dc)) {
-        /// Get the underlying TableFactor
-        dfg.push_back(dtc->table());
-      } else {
-#if GTSAM_HYBRID_WITH_TABLEFACTOR
-        // Convert DiscreteConditional to TableFactor
-        auto tdc = std::make_shared<TableFactor>(*dc);
-        dfg.push_back(tdc);
-#else
-        dfg.push_back(dc);
-#endif
-      }
+      dfg.push_back(dc->toTableFactor());
 #if GTSAM_HYBRID_TIMING
       gttoc_(ConvertConditionalToTableFactor);
 #endif
@@ -330,7 +313,6 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
 #if GTSAM_HYBRID_TIMING
   gttic_(EliminateDiscrete);
 #endif
-#if GTSAM_HYBRID_WITH_TABLEFACTOR
   // Check if separator is empty.
   // This is the same as checking if the number of frontal variables
   // is the same as the number of variables in the DiscreteFactorGraph.
@@ -340,15 +322,7 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
     // Get product factor
     DiscreteFactor::shared_ptr product = dfg.scaledProduct();
 
-    // Check type of product, and get as TableFactor for efficiency.
-    // Use object instead of pointer since we need it
-    // for the TableDistribution constructor.
-    TableFactor p;
-    if (auto tf = std::dynamic_pointer_cast<TableFactor>(product)) {
-      p = *tf;
-    } else {
-      p = TableFactor(product->toDecisionTreeFactor());
-    }
+    TableFactor p = product->toTableFactor();
     auto conditional = std::make_shared<TableDistribution>(p);
 
     DiscreteFactor::shared_ptr sum = p.sum(frontalKeys);
@@ -356,13 +330,10 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
     return {std::make_shared<HybridConditional>(conditional), sum};
 
   } else {
-#endif
     // Perform sum-product.
     auto result = EliminateDiscrete(dfg, frontalKeys);
     return {std::make_shared<HybridConditional>(result.first), result.second};
-#if GTSAM_HYBRID_WITH_TABLEFACTOR
   }
-#endif
 #if GTSAM_HYBRID_TIMING
   gttoc_(EliminateDiscrete);
 #endif
