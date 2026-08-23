@@ -84,6 +84,8 @@ gtsam::SfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
 const gtsam::Values& result = optimizer.optimize();
 ```
 
+[Run the Python Full-and-Schur tutorial](../../python/gtsam/examples/SfmLevenbergMarquardtOptimizerExample.ipynb), including a calibration shared by every camera.
+
 ## What Schur means for each solver
 
 ::::{tab-set}
