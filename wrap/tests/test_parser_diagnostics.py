@@ -92,6 +92,50 @@ class Foo {
         )
         self.assertIn("without an access label", error.hint)
 
+    def test_unknown_callable_annotation(self):
+        error = self.assert_parse_error(
+            "@pybind_adapter int function();",
+            line=1,
+            column=1,
+            context="callable annotation",
+            expected="malformed or unknown annotation '@pybind_adapter'",
+        )
+        self.assertIn("@pybind_lambda", error.hint)
+
+    def test_malformed_callable_annotation(self):
+        self.assert_parse_error(
+            "@pybind-lambda int function();",
+            line=1,
+            column=1,
+            context="callable annotation",
+            expected="malformed or unknown annotation '@pybind-lambda'",
+        )
+
+    def test_misplaced_callable_annotation(self):
+        error = self.assert_parse_error(
+            "class Foo { @pybind_lambda Foo(); };",
+            line=1,
+            column=13,
+            context="callable annotation",
+            expected=(
+                "annotation '@pybind_lambda' can only be applied to a method, "
+                "static method, or global function"
+            ),
+        )
+        self.assertIn("immediately before the callable", error.hint)
+
+    def test_misplaced_annotation_after_template(self):
+        self.assert_parse_error(
+            "class Foo { template<T> @pybind_lambda Foo(T value); };",
+            line=1,
+            column=25,
+            context="callable annotation",
+            expected=(
+                "annotation '@pybind_lambda' can only be applied to a method, "
+                "static method, or global function"
+            ),
+        )
+
     def test_nested_namespace_failure(self):
         self.assert_parse_error(
             "namespace ns { class Foo { void bar(???); }; }",

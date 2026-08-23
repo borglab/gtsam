@@ -16,8 +16,8 @@ const size_t max_it = 100000;
 std::minstd_rand SimPolygon2D::rng(42u);
 
 /* ************************************************************************* */
-void SimPolygon2D::seedGenerator(unsigned long seed) {
-  rng = std::minstd_rand(seed);
+void SimPolygon2D::seedGenerator(size_t seed) {
+  rng = std::minstd_rand(static_cast<std::minstd_rand::result_type>(seed));
 }
 
 /* ************************************************************************* */
@@ -323,4 +323,3 @@ bool SimPolygon2D::nearExisting(const Point2Vector& S,
 }
 
 } //\namespace gtsam
-

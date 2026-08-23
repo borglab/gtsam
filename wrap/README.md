@@ -48,7 +48,7 @@ For more information, please follow our [tutorial](https://github.com/borglab/gt
 
 ## Documentation
 
-Documentation for wrapping C++ code can be found [here](https://github.com/borglab/wrap/blob/master/DOCS.md).
+Documentation for wrapping C++ code can be found [here](https://github.com/borglab/wrap/blob/master/DOCS.md), including the [pybind callable-adapter annotation](https://github.com/borglab/wrap/blob/master/DOCS.md#pybind-callable-adapters).
 
 ## Python Wrapper
 

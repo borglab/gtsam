@@ -34,12 +34,15 @@ class Symbol {
   void print(const string& s = "") const;
   bool equals(const gtsam::Symbol& expected, double tol) const;
 
+  @pybind_lambda
   char chr() const;
   uint64_t index() const;
   string string() const;
 };
 
+@pybind_lambda
 gtsam::Key symbol(char chr, uint64_t index);
+@pybind_lambda
 char symbolChr(gtsam::Key key);
 uint64_t symbolIndex(gtsam::Key key);
 

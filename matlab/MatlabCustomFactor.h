@@ -2,6 +2,8 @@
 
 #include <gtsam/nonlinear/CustomFactor.h>
 
+#include <stdexcept>
+
 #ifdef GTSAM_USE_TBB
 #include <tbb/global_control.h>
 #endif
@@ -75,8 +77,21 @@ class MatlabCustomFactor : public CustomFactor {
     };
 
     mxArray* outputs[2] = {nullptr, nullptr};
-    mexCallMATLAB(jacobians ? 2 : 1, outputs, 4, args, "feval");
+    mxArray* callbackException = mexCallMATLABWithTrap(
+        jacobians ? 2 : 1, outputs, 4, args, "feval");
     destroyCallbackArgs(args, 4);
+
+    if (callbackException || !outputs[0] || (jacobians && !outputs[1])) {
+      const bool callbackFailed = callbackException != nullptr;
+      if (callbackException) {
+        mxDestroyArray(callbackException);
+      }
+      destroyCallbackArgs(outputs, 2);
+      throw std::runtime_error(
+          callbackFailed
+              ? "MATLAB CustomFactor callback invocation failed."
+              : "MATLAB CustomFactor callback returned missing outputs.");
+    }
 
     // The registry returns the residual as the first output in both calling
     // modes. Validate the dimension here so MATLAB callback bugs fail close to

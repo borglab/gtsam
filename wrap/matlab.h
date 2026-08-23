@@ -33,19 +33,19 @@ using gtsam::Matrix;
 using gtsam::Point2;
 using gtsam::Point3;
 
-extern "C" {
 #include <mex.h>
-}
 
 #include <cstdint>
 #include <limits>
 #include <list>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <streambuf>
 #include <string>
 #include <type_traits>
 #include <typeinfo>
+#include <utility>
 
 using namespace std;
 
@@ -151,6 +151,19 @@ mxArray* wrap(const Class& value) {
   return wrapDefault(value, IsMatlabSizeOrKeyScalar<Class>());
 }
 
+/**
+ * Wrap a C++ optional as either MATLAB [] or the normally wrapped value.
+ *
+ * The callback keeps ownership policy in the generated wrapper: scalar and
+ * matrix values are copied into MATLAB arrays, while wrapped class values can
+ * be copied into a shared_ptr-backed MATLAB proxy.
+ */
+template <typename Class, typename Wrapper>
+mxArray* wrap_optional(const std::optional<Class>& value, Wrapper&& wrapper) {
+  if (!value) return mxCreateDoubleMatrix(0, 0, mxREAL);
+  return std::forward<Wrapper>(wrapper)(*value);
+}
+
 // specialization to string
 // wraps into a character array
 template<>
@@ -194,6 +207,24 @@ mxArray* wrap<int>(const int& value) {
 template<>
 mxArray* wrap<double>(const double& value) {
   return mxCreateDoubleScalar(value);
+}
+
+// Wrap a fixed-size Eigen matrix or vector as a MATLAB double array.
+template <typename Derived>
+mxArray* wrapFixedSizeEigen(const Eigen::MatrixBase<Derived>& value) {
+  static_assert(std::is_same<typename Derived::Scalar, double>::value,
+                "MATLAB wrappers only support double-valued Eigen aliases");
+  const mwSize rows = static_cast<mwSize>(value.rows());
+  const mwSize cols = static_cast<mwSize>(value.cols());
+  mxArray* result = mxCreateDoubleMatrix(rows, cols, mxREAL);
+  double* data = mxGetPr(result);
+  for (mwSize j = 0; j < cols; ++j) {
+    for (mwSize i = 0; i < rows; ++i, ++data) {
+      *data = value(static_cast<Eigen::Index>(i),
+                    static_cast<Eigen::Index>(j));
+    }
+  }
+  return result;
 }
 
 // wrap a const Eigen vector into a double vector
@@ -299,6 +330,15 @@ T unwrap(const mxArray* array) {
   return unwrapDefault<T>(array, IsMatlabSizeOrKeyScalar<T>());
 }
 
+/** Unwrap MATLAB [] as nullopt, or unwrap an engaged optional's value. */
+template <typename Class, typename Unwrapper>
+std::optional<Class> unwrap_optional(const mxArray* array,
+                                     Unwrapper&& unwrapper) {
+  if (mxIsEmpty(array)) return std::nullopt;
+  return std::optional<Class>{
+      std::forward<Unwrapper>(unwrapper)(array)};
+}
+
 /// @brief Unwrap from matlab array to C++ enum type
 /// @tparam T The C++ enum type
 /// @param array Matlab mxArray
@@ -362,6 +402,36 @@ template<>
 double unwrap<double>(const mxArray* array) {
   checkScalar(array,"unwrap<double>");
   return myGetScalar<double>(array);
+}
+
+// Unwrap a MATLAB double array into a fixed-size Eigen matrix or vector.
+template <typename EigenType>
+EigenType unwrapFixedSizeEigen(const mxArray* array) {
+  static_assert(std::is_same<typename EigenType::Scalar, double>::value,
+                "MATLAB wrappers only support double-valued Eigen aliases");
+  static_assert(EigenType::RowsAtCompileTime != Eigen::Dynamic &&
+                    EigenType::ColsAtCompileTime != Eigen::Dynamic,
+                "unwrapFixedSizeEigen requires a fixed-size Eigen type");
+  if (!mxIsDouble(array) || mxIsComplex(array) || mxIsSparse(array)) {
+    error("unwrapFixedSizeEigen: not a full real double matrix");
+  }
+
+  const mwSize rows = mxGetM(array);
+  const mwSize cols = mxGetN(array);
+  if (rows != static_cast<mwSize>(EigenType::RowsAtCompileTime) ||
+      cols != static_cast<mwSize>(EigenType::ColsAtCompileTime)) {
+    error("unwrapFixedSizeEigen: matrix dimensions do not match C++ type");
+  }
+
+  const double* data = static_cast<const double*>(mxGetData(array));
+  EigenType result;
+  for (mwSize j = 0; j < cols; ++j) {
+    for (mwSize i = 0; i < rows; ++i, ++data) {
+      result(static_cast<Eigen::Index>(i), static_cast<Eigen::Index>(j)) =
+          *data;
+    }
+  }
+  return result;
 }
 
 // specialization to Eigen vector

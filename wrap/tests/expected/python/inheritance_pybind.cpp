@@ -42,14 +42,14 @@ PYBIND11_MODULE(inheritance_py, m_) {
         .def("templatedMethodPoint3",[](MyTemplate<gtsam::Point2>* self, const gtsam::Point3& t){return self->templatedMethod<gtsam::Point3>(t);}, gtwrap::internal::py_arg<const gtsam::Point3&>("t"))
         .def("templatedMethodVector",[](MyTemplate<gtsam::Point2>* self, const gtsam::Vector& t){return self->templatedMethod<gtsam::Vector>(t);}, gtwrap::internal::py_arg<const gtsam::Vector&>("t"))
         .def("templatedMethodMatrix",[](MyTemplate<gtsam::Point2>* self, const gtsam::Matrix& t){return self->templatedMethod<gtsam::Matrix>(t);}, gtwrap::internal::py_arg<const gtsam::Matrix&>("t"))
-        .def("accept_T",[](MyTemplate<gtsam::Point2>* self, const gtsam::Point2& value){ self->accept_T(value);}, gtwrap::internal::py_arg<const gtsam::Point2&>("value"))
-        .def("accept_Tptr",[](MyTemplate<gtsam::Point2>* self, std::shared_ptr<gtsam::Point2> value){ self->accept_Tptr(value);}, gtwrap::internal::py_arg<std::shared_ptr<gtsam::Point2>>("value"))
-        .def("return_Tptr",[](MyTemplate<gtsam::Point2>* self, std::shared_ptr<gtsam::Point2> value){return self->return_Tptr(value);}, gtwrap::internal::py_arg<std::shared_ptr<gtsam::Point2>>("value"))
-        .def("return_T",[](MyTemplate<gtsam::Point2>* self, gtsam::Point2* value){return self->return_T(value);}, gtwrap::internal::py_arg<gtsam::Point2*>("value"))
-        .def("create_ptrs",[](MyTemplate<gtsam::Point2>* self){return self->create_ptrs();})
-        .def("create_MixedPtrs",[](MyTemplate<gtsam::Point2>* self){return self->create_MixedPtrs();})
-        .def("return_ptrs",[](MyTemplate<gtsam::Point2>* self, std::shared_ptr<gtsam::Point2> p1, std::shared_ptr<gtsam::Point2> p2){return self->return_ptrs(p1, p2);}, gtwrap::internal::py_arg<std::shared_ptr<gtsam::Point2>>("p1"), gtwrap::internal::py_arg<std::shared_ptr<gtsam::Point2>>("p2"))
-        .def_static("Level",[](const gtsam::Point2& K){return MyTemplate<gtsam::Point2>::Level(K);}, gtwrap::internal::py_arg<const gtsam::Point2&>("K"));
+        .def("accept_T",static_cast<void (MyTemplate<gtsam::Point2>::*)(const gtsam::Point2&) const>(&MyTemplate<gtsam::Point2>::accept_T), gtwrap::internal::py_arg<const gtsam::Point2&>("value"))
+        .def("accept_Tptr",static_cast<void (MyTemplate<gtsam::Point2>::*)(std::shared_ptr<gtsam::Point2>) const>(&MyTemplate<gtsam::Point2>::accept_Tptr), gtwrap::internal::py_arg<std::shared_ptr<gtsam::Point2>>("value"))
+        .def("return_Tptr",static_cast<std::shared_ptr<gtsam::Point2> (MyTemplate<gtsam::Point2>::*)(std::shared_ptr<gtsam::Point2>) const>(&MyTemplate<gtsam::Point2>::return_Tptr), gtwrap::internal::py_arg<std::shared_ptr<gtsam::Point2>>("value"))
+        .def("return_T",static_cast<gtsam::Point2 (MyTemplate<gtsam::Point2>::*)(gtsam::Point2*) const>(&MyTemplate<gtsam::Point2>::return_T), gtwrap::internal::py_arg<gtsam::Point2*>("value"))
+        .def("create_ptrs",static_cast<std::pair<std::shared_ptr<gtsam::Point2>,std::shared_ptr<gtsam::Point2>> (MyTemplate<gtsam::Point2>::*)() const>(&MyTemplate<gtsam::Point2>::create_ptrs))
+        .def("create_MixedPtrs",static_cast<std::pair<gtsam::Point2,std::shared_ptr<gtsam::Point2>> (MyTemplate<gtsam::Point2>::*)() const>(&MyTemplate<gtsam::Point2>::create_MixedPtrs))
+        .def("return_ptrs",static_cast<std::pair<std::shared_ptr<gtsam::Point2>,std::shared_ptr<gtsam::Point2>> (MyTemplate<gtsam::Point2>::*)(std::shared_ptr<gtsam::Point2>, std::shared_ptr<gtsam::Point2>) const>(&MyTemplate<gtsam::Point2>::return_ptrs), gtwrap::internal::py_arg<std::shared_ptr<gtsam::Point2>>("p1"), gtwrap::internal::py_arg<std::shared_ptr<gtsam::Point2>>("p2"))
+        .def_static("Level",static_cast<MyTemplate<gtsam::Point2> (*)(const gtsam::Point2&)>(&MyTemplate<gtsam::Point2>::Level), gtwrap::internal::py_arg<const gtsam::Point2&>("K"));
 
     py::class_<MyTemplate<gtsam::Matrix>, MyBase, std::shared_ptr<MyTemplate<gtsam::Matrix>>>(m_, "MyTemplateMatrix")
         .def(py::init<>())
@@ -57,14 +57,14 @@ PYBIND11_MODULE(inheritance_py, m_) {
         .def("templatedMethodPoint3",[](MyTemplate<gtsam::Matrix>* self, const gtsam::Point3& t){return self->templatedMethod<gtsam::Point3>(t);}, gtwrap::internal::py_arg<const gtsam::Point3&>("t"))
         .def("templatedMethodVector",[](MyTemplate<gtsam::Matrix>* self, const gtsam::Vector& t){return self->templatedMethod<gtsam::Vector>(t);}, gtwrap::internal::py_arg<const gtsam::Vector&>("t"))
         .def("templatedMethodMatrix",[](MyTemplate<gtsam::Matrix>* self, const gtsam::Matrix& t){return self->templatedMethod<gtsam::Matrix>(t);}, gtwrap::internal::py_arg<const gtsam::Matrix&>("t"))
-        .def("accept_T",[](MyTemplate<gtsam::Matrix>* self, const gtsam::Matrix& value){ self->accept_T(value);}, gtwrap::internal::py_arg<const gtsam::Matrix&>("value"))
-        .def("accept_Tptr",[](MyTemplate<gtsam::Matrix>* self, std::shared_ptr<gtsam::Matrix> value){ self->accept_Tptr(value);}, gtwrap::internal::py_arg<std::shared_ptr<gtsam::Matrix>>("value"))
-        .def("return_Tptr",[](MyTemplate<gtsam::Matrix>* self, std::shared_ptr<gtsam::Matrix> value){return self->return_Tptr(value);}, gtwrap::internal::py_arg<std::shared_ptr<gtsam::Matrix>>("value"))
-        .def("return_T",[](MyTemplate<gtsam::Matrix>* self, gtsam::Matrix* value){return self->return_T(value);}, gtwrap::internal::py_arg<gtsam::Matrix*>("value"))
-        .def("create_ptrs",[](MyTemplate<gtsam::Matrix>* self){return self->create_ptrs();})
-        .def("create_MixedPtrs",[](MyTemplate<gtsam::Matrix>* self){return self->create_MixedPtrs();})
-        .def("return_ptrs",[](MyTemplate<gtsam::Matrix>* self, std::shared_ptr<gtsam::Matrix> p1, std::shared_ptr<gtsam::Matrix> p2){return self->return_ptrs(p1, p2);}, gtwrap::internal::py_arg<std::shared_ptr<gtsam::Matrix>>("p1"), gtwrap::internal::py_arg<std::shared_ptr<gtsam::Matrix>>("p2"))
-        .def_static("Level",[](const gtsam::Matrix& K){return MyTemplate<gtsam::Matrix>::Level(K);}, gtwrap::internal::py_arg<const gtsam::Matrix&>("K"));
+        .def("accept_T",static_cast<void (MyTemplate<gtsam::Matrix>::*)(const gtsam::Matrix&) const>(&MyTemplate<gtsam::Matrix>::accept_T), gtwrap::internal::py_arg<const gtsam::Matrix&>("value"))
+        .def("accept_Tptr",static_cast<void (MyTemplate<gtsam::Matrix>::*)(std::shared_ptr<gtsam::Matrix>) const>(&MyTemplate<gtsam::Matrix>::accept_Tptr), gtwrap::internal::py_arg<std::shared_ptr<gtsam::Matrix>>("value"))
+        .def("return_Tptr",static_cast<std::shared_ptr<gtsam::Matrix> (MyTemplate<gtsam::Matrix>::*)(std::shared_ptr<gtsam::Matrix>) const>(&MyTemplate<gtsam::Matrix>::return_Tptr), gtwrap::internal::py_arg<std::shared_ptr<gtsam::Matrix>>("value"))
+        .def("return_T",static_cast<gtsam::Matrix (MyTemplate<gtsam::Matrix>::*)(gtsam::Matrix*) const>(&MyTemplate<gtsam::Matrix>::return_T), gtwrap::internal::py_arg<gtsam::Matrix*>("value"))
+        .def("create_ptrs",static_cast<std::pair<std::shared_ptr<gtsam::Matrix>,std::shared_ptr<gtsam::Matrix>> (MyTemplate<gtsam::Matrix>::*)() const>(&MyTemplate<gtsam::Matrix>::create_ptrs))
+        .def("create_MixedPtrs",static_cast<std::pair<gtsam::Matrix,std::shared_ptr<gtsam::Matrix>> (MyTemplate<gtsam::Matrix>::*)() const>(&MyTemplate<gtsam::Matrix>::create_MixedPtrs))
+        .def("return_ptrs",static_cast<std::pair<std::shared_ptr<gtsam::Matrix>,std::shared_ptr<gtsam::Matrix>> (MyTemplate<gtsam::Matrix>::*)(std::shared_ptr<gtsam::Matrix>, std::shared_ptr<gtsam::Matrix>) const>(&MyTemplate<gtsam::Matrix>::return_ptrs), gtwrap::internal::py_arg<std::shared_ptr<gtsam::Matrix>>("p1"), gtwrap::internal::py_arg<std::shared_ptr<gtsam::Matrix>>("p2"))
+        .def_static("Level",static_cast<MyTemplate<gtsam::Matrix> (*)(const gtsam::Matrix&)>(&MyTemplate<gtsam::Matrix>::Level), gtwrap::internal::py_arg<const gtsam::Matrix&>("K"));
 
     py::class_<MyTemplate<A>, MyBase, std::shared_ptr<MyTemplate<A>>>(m_, "MyTemplateA")
         .def(py::init<>())
@@ -72,21 +72,21 @@ PYBIND11_MODULE(inheritance_py, m_) {
         .def("templatedMethodPoint3",[](MyTemplate<A>* self, const gtsam::Point3& t){return self->templatedMethod<gtsam::Point3>(t);}, gtwrap::internal::py_arg<const gtsam::Point3&>("t"))
         .def("templatedMethodVector",[](MyTemplate<A>* self, const gtsam::Vector& t){return self->templatedMethod<gtsam::Vector>(t);}, gtwrap::internal::py_arg<const gtsam::Vector&>("t"))
         .def("templatedMethodMatrix",[](MyTemplate<A>* self, const gtsam::Matrix& t){return self->templatedMethod<gtsam::Matrix>(t);}, gtwrap::internal::py_arg<const gtsam::Matrix&>("t"))
-        .def("accept_T",[](MyTemplate<A>* self, const A& value){ self->accept_T(value);}, gtwrap::internal::py_arg<const A&>("value"))
-        .def("accept_Tptr",[](MyTemplate<A>* self, std::shared_ptr<A> value){ self->accept_Tptr(value);}, gtwrap::internal::py_arg<std::shared_ptr<A>>("value"))
-        .def("return_Tptr",[](MyTemplate<A>* self, std::shared_ptr<A> value){return self->return_Tptr(value);}, gtwrap::internal::py_arg<std::shared_ptr<A>>("value"))
-        .def("return_T",[](MyTemplate<A>* self, A* value){return self->return_T(value);}, gtwrap::internal::py_arg<A*>("value"))
-        .def("create_ptrs",[](MyTemplate<A>* self){return self->create_ptrs();})
-        .def("create_MixedPtrs",[](MyTemplate<A>* self){return self->create_MixedPtrs();})
-        .def("return_ptrs",[](MyTemplate<A>* self, std::shared_ptr<A> p1, std::shared_ptr<A> p2){return self->return_ptrs(p1, p2);}, gtwrap::internal::py_arg<std::shared_ptr<A>>("p1"), gtwrap::internal::py_arg<std::shared_ptr<A>>("p2"))
-        .def_static("Level",[](const A& K){return MyTemplate<A>::Level(K);}, gtwrap::internal::py_arg<const A&>("K"));
+        .def("accept_T",static_cast<void (MyTemplate<A>::*)(const A&) const>(&MyTemplate<A>::accept_T), gtwrap::internal::py_arg<const A&>("value"))
+        .def("accept_Tptr",static_cast<void (MyTemplate<A>::*)(std::shared_ptr<A>) const>(&MyTemplate<A>::accept_Tptr), gtwrap::internal::py_arg<std::shared_ptr<A>>("value"))
+        .def("return_Tptr",static_cast<std::shared_ptr<A> (MyTemplate<A>::*)(std::shared_ptr<A>) const>(&MyTemplate<A>::return_Tptr), gtwrap::internal::py_arg<std::shared_ptr<A>>("value"))
+        .def("return_T",static_cast<A (MyTemplate<A>::*)(A*) const>(&MyTemplate<A>::return_T), gtwrap::internal::py_arg<A*>("value"))
+        .def("create_ptrs",static_cast<std::pair<std::shared_ptr<A>,std::shared_ptr<A>> (MyTemplate<A>::*)() const>(&MyTemplate<A>::create_ptrs))
+        .def("create_MixedPtrs",static_cast<std::pair<A,std::shared_ptr<A>> (MyTemplate<A>::*)() const>(&MyTemplate<A>::create_MixedPtrs))
+        .def("return_ptrs",static_cast<std::pair<std::shared_ptr<A>,std::shared_ptr<A>> (MyTemplate<A>::*)(std::shared_ptr<A>, std::shared_ptr<A>) const>(&MyTemplate<A>::return_ptrs), gtwrap::internal::py_arg<std::shared_ptr<A>>("p1"), gtwrap::internal::py_arg<std::shared_ptr<A>>("p2"))
+        .def_static("Level",static_cast<MyTemplate<A> (*)(const A&)>(&MyTemplate<A>::Level), gtwrap::internal::py_arg<const A&>("K"));
 
     py::class_<ForwardKinematicsFactor, gtsam::BetweenFactor<gtsam::Pose3>, std::shared_ptr<ForwardKinematicsFactor>>(m_, "ForwardKinematicsFactor");
 
     py::class_<ParentHasTemplate<double>, MyTemplate<double>, std::shared_ptr<ParentHasTemplate<double>>>(m_, "ParentHasTemplateDouble");
 
     py::class_<Base, std::shared_ptr<Base>>(m_, "Base")
-        .def_static("Create",[](double x){return Base::Create(x);}, gtwrap::internal::py_arg<double>("x"));
+        .def_static("Create",static_cast<std::shared_ptr<gtsam::Base> (*)(double)>(&Base::Create), gtwrap::internal::py_arg<double>("x"));
 
     py::class_<Derived, Base, std::shared_ptr<Derived>>(m_, "Derived");
 

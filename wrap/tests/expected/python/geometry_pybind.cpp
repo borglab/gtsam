@@ -42,20 +42,20 @@ PYBIND11_MODULE(geometry_py, m_) {
     py::class_<gtsam::Point2, std::shared_ptr<gtsam::Point2>>(m_gtsam, "Point2")
         .def(py::init<>())
         .def(py::init<double, double>(), gtwrap::internal::py_arg<double>("x"), gtwrap::internal::py_arg<double>("y"))
-        .def("x",[](gtsam::Point2* self){return self->x();})
-        .def("y",[](gtsam::Point2* self){return self->y();})
-        .def("dim",[](gtsam::Point2* self){return self->dim();})
-        .def("returnChar",[](gtsam::Point2* self){return self->returnChar();})
-        .def("argChar",[](gtsam::Point2* self, char a){ self->argChar(a);}, gtwrap::internal::py_arg<char>("a"))
-        .def("argChar",[](gtsam::Point2* self, std::shared_ptr<char> a){ self->argChar(a);}, gtwrap::internal::py_arg<std::shared_ptr<char>>("a"))
-        .def("argChar",[](gtsam::Point2* self, char& a){ self->argChar(a);}, gtwrap::internal::py_arg<char&>("a"))
-        .def("argChar",[](gtsam::Point2* self, char* a){ self->argChar(a);}, gtwrap::internal::py_arg<char*>("a"))
-        .def("argChar",[](gtsam::Point2* self, const std::shared_ptr<char> a){ self->argChar(a);}, gtwrap::internal::py_arg<const std::shared_ptr<char>>("a"))
-        .def("argChar",[](gtsam::Point2* self, const char& a){ self->argChar(a);}, gtwrap::internal::py_arg<const char&>("a"))
-        .def("argChar",[](gtsam::Point2* self, const char* a){ self->argChar(a);}, gtwrap::internal::py_arg<const char*>("a"))
-        .def("argUChar",[](gtsam::Point2* self, unsigned char a){ self->argUChar(a);}, gtwrap::internal::py_arg<unsigned char>("a"))
-        .def("eigenArguments",[](gtsam::Point2* self, const gtsam::Vector& v, const gtsam::Matrix& m){ self->eigenArguments(v, m);}, gtwrap::internal::py_arg<const gtsam::Vector&>("v"), gtwrap::internal::py_arg<const gtsam::Matrix&>("m"))
-        .def("vectorConfusion",[](gtsam::Point2* self){return self->vectorConfusion();})
+        .def("x",static_cast<double (gtsam::Point2::*)() const>(&gtsam::Point2::x))
+        .def("y",static_cast<double (gtsam::Point2::*)() const>(&gtsam::Point2::y))
+        .def("dim",static_cast<int (gtsam::Point2::*)() const>(&gtsam::Point2::dim))
+        .def("returnChar",static_cast<char (gtsam::Point2::*)() const>(&gtsam::Point2::returnChar))
+        .def("argChar",static_cast<void (gtsam::Point2::*)(char) const>(&gtsam::Point2::argChar), gtwrap::internal::py_arg<char>("a"))
+        .def("argChar",static_cast<void (gtsam::Point2::*)(std::shared_ptr<char>) const>(&gtsam::Point2::argChar), gtwrap::internal::py_arg<std::shared_ptr<char>>("a"))
+        .def("argChar",static_cast<void (gtsam::Point2::*)(char&) const>(&gtsam::Point2::argChar), gtwrap::internal::py_arg<char&>("a"))
+        .def("argChar",static_cast<void (gtsam::Point2::*)(char*) const>(&gtsam::Point2::argChar), gtwrap::internal::py_arg<char*>("a"))
+        .def("argChar",static_cast<void (gtsam::Point2::*)(const std::shared_ptr<char>) const>(&gtsam::Point2::argChar), gtwrap::internal::py_arg<const std::shared_ptr<char>>("a"))
+        .def("argChar",static_cast<void (gtsam::Point2::*)(const char&) const>(&gtsam::Point2::argChar), gtwrap::internal::py_arg<const char&>("a"))
+        .def("argChar",static_cast<void (gtsam::Point2::*)(const char*) const>(&gtsam::Point2::argChar), gtwrap::internal::py_arg<const char*>("a"))
+        .def("argUChar",static_cast<void (gtsam::Point2::*)(unsigned char) const>(&gtsam::Point2::argUChar), gtwrap::internal::py_arg<unsigned char>("a"))
+        .def("eigenArguments",static_cast<void (gtsam::Point2::*)(const gtsam::Vector&, const gtsam::Matrix&) const>(&gtsam::Point2::eigenArguments), gtwrap::internal::py_arg<const gtsam::Vector&>("v"), gtwrap::internal::py_arg<const gtsam::Matrix&>("m"))
+        .def("vectorConfusion",static_cast<VectorNotEigen (gtsam::Point2::*)()>(&gtsam::Point2::vectorConfusion))
         .def("serialize", [](gtsam::Point2* self){ return gtsam::serialize(*self); })
         .def("deserialize", [](gtsam::Point2* self, string serialized){ gtsam::deserialize(serialized, *self); }, py::arg("serialized"))
         .def(py::pickle(
@@ -64,14 +64,14 @@ PYBIND11_MODULE(geometry_py, m_) {
 
     py::class_<gtsam::Point3, std::shared_ptr<gtsam::Point3>>(m_gtsam, "Point3")
         .def(py::init<double, double, double>(), gtwrap::internal::py_arg<double>("x"), gtwrap::internal::py_arg<double>("y"), gtwrap::internal::py_arg<double>("z"))
-        .def("norm",[](gtsam::Point3* self){return self->norm();})
+        .def("norm",static_cast<double (gtsam::Point3::*)() const>(&gtsam::Point3::norm))
         .def("serialize", [](gtsam::Point3* self){ return gtsam::serialize(*self); })
         .def("deserialize", [](gtsam::Point3* self, string serialized){ gtsam::deserialize(serialized, *self); }, py::arg("serialized"))
         .def(py::pickle(
             [](const gtsam::Point3 &a){ /* __getstate__: Returns a string that encodes the state of the object */ return py::make_tuple(gtsam::serialize(a)); },
             [](py::tuple t){ /* __setstate__ */ gtsam::Point3 obj; gtsam::deserialize(t[0].cast<std::string>(), obj); return obj; }))
-        .def_static("staticFunction",[](){return gtsam::Point3::staticFunction();})
-        .def_static("StaticFunctionRet",[](double z){return gtsam::Point3::StaticFunctionRet(z);}, gtwrap::internal::py_arg<double>("z"));
+        .def_static("staticFunction",static_cast<double (*)()>(&gtsam::Point3::staticFunction))
+        .def_static("StaticFunctionRet",static_cast<gtsam::Point3 (*)(double)>(&gtsam::Point3::StaticFunctionRet), gtwrap::internal::py_arg<double>("z"));
 
 
 #include "python/specializations.h"
