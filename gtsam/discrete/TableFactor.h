@@ -365,13 +365,16 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// @name Deprecated scope helpers
   /// @{
 
-  /// @deprecated Use standard set operations on discreteKeys() instead.
+  /// @deprecated Sort both discreteKeys() results, then use
+  /// std::set_intersection instead.
   DiscreteKeys contractDkeys(const TableFactor& factor) const;
 
-  /// @deprecated Use standard set operations on discreteKeys() instead.
+  /// @deprecated Sort both discreteKeys() results, then use std::set_difference
+  /// instead.
   DiscreteKeys freeDkeys(const TableFactor& factor) const;
 
-  /// @deprecated Use standard set operations on discreteKeys() instead.
+  /// @deprecated Sort both discreteKeys() results, then use std::set_union
+  /// instead.
   DiscreteKeys unionDkeys(const TableFactor& factor) const;
 
   /// @}
