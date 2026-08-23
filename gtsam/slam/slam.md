@@ -12,7 +12,7 @@ These are fundamental factor types often used as building blocks in SLAM.
 
 Factors specifically designed for visual data (camera measurements).
 
--   [GenericProjectionFactor](doc/GenericProjectionFactor.ipynb) : Standard monocular projection factor relating a 3D landmark, camera pose, and fixed calibration to a 2D measurement.
+-   [GenericProjectionFactor](doc/ProjectionFactor.ipynb) : Standard monocular projection factor relating a 3D landmark, camera pose, and fixed calibration to a 2D measurement.
 -   [GeneralSFMFactor](doc/GeneralSFMFactor.ipynb) : Projection factors used when camera calibration is unknown or optimized alongside poses and landmarks.
 -   [StereoFactor](doc/StereoFactor.ipynb) : Standard stereo projection factor relating a 3D landmark, camera pose, and fixed stereo calibration to a `StereoPoint2` measurement.
 -   [EssentialMatrixFactor](doc/EssentialMatrixFactor.ipynb) : Factors constraining poses or calibration based on the Essential matrix derived from calibrated cameras.
@@ -24,7 +24,7 @@ Factors specifically designed for visual data (camera measurements).
 
 Factors that implicitly manage landmark variables, marginalizing them out during optimization.
 
--   [SmartFactorParams](doc/SmartFactorParams.ipynb) : Configuration parameters controlling the behavior of smart factors (linearization, degeneracy handling, etc.).
+-   [SmartFactorParams](doc/SmartProjectionParams.ipynb) : Configuration parameters controlling the behavior of smart factors (linearization, degeneracy handling, etc.).
 -   [SmartProjectionFactor](doc/SmartProjectionFactor.ipynb) : Smart factor for monocular measurements where both camera pose and calibration are optimized.
 -   [SmartProjectionPoseFactor](doc/SmartProjectionPoseFactor.ipynb) : Smart factor for monocular measurements where camera calibration is fixed, optimizing only poses.
 -   [SmartProjectionRigFactor](doc/SmartProjectionRigFactor.ipynb) : Smart factor for calibrated multi-camera rigs, optimizing only the rig's body pose.
