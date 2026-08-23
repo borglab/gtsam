@@ -241,18 +241,15 @@ virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
       gtsam::noiseModel::mEstimator::GemanMcClure::GradScheme graduation,
       gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
 
-  @pybind_lambda
-  static gtsam::noiseModel::mEstimator::GemanMcClure* Create(double c);
-  static gtsam::noiseModel::mEstimator::GemanMcClure* Create(
-      double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
-  @pybind_lambda
   static gtsam::noiseModel::mEstimator::GemanMcClure* Create(
       double c,
-      gtsam::noiseModel::mEstimator::GemanMcClure::GradScheme graduation);
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block);
   static gtsam::noiseModel::mEstimator::GemanMcClure* Create(
       double c,
       gtsam::noiseModel::mEstimator::GemanMcClure::GradScheme graduation,
-      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block);
 
   // enabling serialization functionality
   void serializable() const;
@@ -275,18 +272,15 @@ virtual class TruncatedLeastSquares: gtsam::noiseModel::mEstimator::Base {
       double c,
       gtsam::noiseModel::mEstimator::TruncatedLeastSquares::GradScheme graduation,
       gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
-  @pybind_lambda
-  static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(double c);
-  static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(
-      double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
-  @pybind_lambda
   static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(
       double c,
-      gtsam::noiseModel::mEstimator::TruncatedLeastSquares::GradScheme graduation);
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block);
   static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(
       double c,
       gtsam::noiseModel::mEstimator::TruncatedLeastSquares::GradScheme graduation,
-      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block);
 
   // enabling serialization functionality
   void serializable() const;
@@ -379,23 +373,16 @@ virtual class Custom: gtsam::noiseModel::mEstimator::Base {
          gtsam::noiseModel::mEstimator::CustomGraduatedLossFunction gradLoss,
          gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
          std::string name);
-  @pybind_lambda
-  static gtsam::noiseModel::mEstimator::Custom* Create(
-      gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
-      gtsam::noiseModel::mEstimator::CustomLossFunction loss);
-  @pybind_lambda
   static gtsam::noiseModel::mEstimator::Custom* Create(
       gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
       gtsam::noiseModel::mEstimator::CustomLossFunction loss,
-      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
-      std::string name);
-  static gtsam::noiseModel::mEstimator::Custom* Create(
-      gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
-      gtsam::noiseModel::mEstimator::CustomLossFunction loss,
-      gtsam::noiseModel::mEstimator::CustomGraduatedWeightFunction gradWeight,
-      gtsam::noiseModel::mEstimator::CustomGraduatedLossFunction gradLoss,
-      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
-      const std::string& name);
+      gtsam::noiseModel::mEstimator::CustomGraduatedWeightFunction gradWeight =
+          std::nullopt,
+      gtsam::noiseModel::mEstimator::CustomGraduatedLossFunction gradLoss =
+          std::nullopt,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block,
+      const std::string& name = "Custom");
 
   // enabling serialization functionality
   void serializable() const;
@@ -594,14 +581,14 @@ class GaussianFactorGraph {
               gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  std::shared_ptr<gtsam::GaussianBayesTree> eliminateMultifrontal(
+  gtsam::GaussianBayesTree* eliminateMultifrontal(
       gtsam::GaussianFactorGraph::OptionalOrderingType orderingType = std::nullopt,
       const gtsam::GaussianFactorGraph::Eliminate& function =
           gtsam::GaussianFactorGraph::Eliminate(
               gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  std::shared_ptr<gtsam::GaussianBayesTree> eliminateMultifrontal(
+  gtsam::GaussianBayesTree* eliminateMultifrontal(
       const gtsam::Ordering& ordering,
       const gtsam::GaussianFactorGraph::Eliminate& function =
           gtsam::GaussianFactorGraph::Eliminate(
@@ -911,7 +898,7 @@ virtual class GaussianBayesNet {
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
   void saveGraph(
-      const string& s,
+      const std::string& s,
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
 };
