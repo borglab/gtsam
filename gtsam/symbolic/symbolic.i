@@ -142,6 +142,7 @@ virtual class SymbolicFactorGraph {
   gtsam::KeySet keys() const;
   void push_back(const gtsam::SymbolicFactorGraph& graph);
   void push_back(const gtsam::SymbolicBayesNet& bayesNet);
+  @pybind_lambda
   void push_back(const gtsam::SymbolicBayesTree& bayesTree);
 
   // Advanced Interface

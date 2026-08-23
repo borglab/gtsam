@@ -289,9 +289,13 @@ namespace so3 {
     DexpFunctor(const gtsam::Vector3& omega, double nearZeroThresholdSq, double nearPiThresholdSq);
 
     // Kernels
+    @pybind_lambda
     gtsam::so3::Kernel Rodrigues() const;
+    @pybind_lambda
     gtsam::so3::Kernel Jacobian() const;
+    @pybind_lambda
     gtsam::so3::InvJKernel InvJacobian() const;
+    @pybind_lambda
     gtsam::so3::Kernel Gamma() const;
 
     // access to (lazily evaluated) coefficients
@@ -309,6 +313,7 @@ class SO3 {
   // Standard Constructors
   SO3();
   SO3(gtsam::Matrix3 R);
+  @pybind_lambda
   static gtsam::SO3 FromMatrix(gtsam::Matrix3 R);
   static gtsam::SO3 AxisAngle(const gtsam::Vector3& axis, double theta);
   static gtsam::SO3 ClosestTo(const gtsam::Matrix3& M);
@@ -375,6 +380,7 @@ class SO4 {
   // Standard Constructors
   SO4();
   SO4(gtsam::Matrix4 R);
+  @pybind_lambda
   static gtsam::SO4 FromMatrix(gtsam::Matrix4 R);
 
   // Testable
@@ -433,7 +439,9 @@ class SO4 {
 class SOn {
   // Standard Constructors
   SOn(size_t n);
+  @pybind_lambda
   static gtsam::SOn FromMatrix(gtsam::Matrix R);
+  @pybind_lambda
   static gtsam::SOn Lift(size_t n, gtsam::Matrix R);
 
   // Testable
@@ -441,6 +449,7 @@ class SOn {
   bool equals(const gtsam::SOn& other, double tol) const;
 
   // Group
+  @pybind_lambda
   static gtsam::SOn Identity();
   gtsam::SOn inverse() const;
   gtsam::SOn between(const gtsam::SOn& Q) const;
@@ -792,12 +801,14 @@ class Pose3 {
   // Manifold
   static int Dim();
   size_t dim() const;
-  gtsam::Pose3 retract(const gtsam::Vector& v) const;
-  gtsam::Pose3 retract(const gtsam::Vector& v,
+  gtsam::Pose3 retract(const gtsam::Vector6& v) const;
+  @pybind_lambda
+  gtsam::Pose3 retract(const gtsam::Vector6& v,
                       gtsam::OptionalJacobian<6, 6> H1,
                       gtsam::OptionalJacobian<6, 6> H2 = nullptr) const;
-  gtsam::Vector localCoordinates(const gtsam::Pose3& pose) const;
-  gtsam::Vector localCoordinates(
+  gtsam::Vector6 localCoordinates(const gtsam::Pose3& pose) const;
+  @pybind_lambda
+  gtsam::Vector6 localCoordinates(
       const gtsam::Pose3& pose, gtsam::OptionalJacobian<6, 6> H1,
       gtsam::OptionalJacobian<6, 6> H2 = nullptr) const;
 

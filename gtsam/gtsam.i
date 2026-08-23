@@ -36,6 +36,7 @@ class KeyList {
   void pop_back();
   void pop_front();
   void sort();
+  @pybind_lambda
   void remove(const gtsam::Key& key);
 
   void serialize() const;
@@ -63,6 +64,7 @@ class KeySet {
   void clear();
 
   // structure specific methods
+  @pybind_lambda
   void insert(gtsam::Key key);
   void merge(const gtsam::KeySet& other);
   size_t erase(const gtsam::Key& key);
@@ -184,6 +186,7 @@ void insertBackprojections(gtsam::Values& values,
                            const gtsam::PinholeCamera<gtsam::Cal3_S2>& camera,
                            const gtsam::Vector& J, gtsam::ConstMatrixView Z,
                            double depth);
+@pybind_lambda
 void insertProjectionFactors(
     gtsam::NonlinearFactorGraph& graph, gtsam::Key i, const gtsam::Vector& J,
     gtsam::ConstMatrixView Z,

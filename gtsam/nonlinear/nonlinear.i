@@ -468,7 +468,8 @@ class ISAM2ThresholdMap {
   void clear();
 
   // structure specific methods
-  void insert(const gtsam::ISAM2ThresholdMapValue& value) const;
+  @pybind_lambda
+  void insert(const gtsam::ISAM2ThresholdMapValue& value);
 };
 
 class ISAM2Params {
@@ -920,7 +921,7 @@ virtual class VectorNormFactor : gtsam::NoiseModelFactor {
 
   // Standard Interface
   double norm() const;
-  gtsam::Vector evaluateError(const gtsam::Point3& v);
+  gtsam::Vector evaluateError(const gtsam::Vector3& v) const;
 
   // enabling serialization functionality
   void serialize() const;

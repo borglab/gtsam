@@ -191,8 +191,10 @@ class DiscreteBayesNet {
   DiscreteBayesNet();
   void add(const gtsam::DiscreteConditional& s);
   void add(const gtsam::DiscreteKey& key, const string& spec);
+  @pybind_lambda
   void add(const gtsam::DiscreteKey& key, const gtsam::DiscreteKeys& parents,
            string spec);
+  @pybind_lambda
   void add(const gtsam::DiscreteKey& key,
            const std::vector<gtsam::DiscreteKey>& parents, string spec);
   bool empty() const;
@@ -415,10 +417,14 @@ class DiscreteFactorGraph {
   void push_back(const gtsam::DiscreteConditional* conditional);
   void push_back(const gtsam::DiscreteFactorGraph& graph);
   void push_back(const gtsam::DiscreteBayesNet& bayesNet);
+  @pybind_lambda
   void push_back(const gtsam::DiscreteBayesTree& bayesTree);
+  @pybind_lambda
   void add(const gtsam::DiscreteKey& j, string spec);
   void add(const gtsam::DiscreteKey& j, const std::vector<double>& spec);
+  @pybind_lambda
   void add(const gtsam::DiscreteKeys& keys, string spec);
+  @pybind_lambda
   void add(const std::vector<gtsam::DiscreteKey>& keys, string spec);
   void add(const std::vector<gtsam::DiscreteKey>& keys, const std::vector<double>& spec);
 

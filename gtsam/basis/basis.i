@@ -70,10 +70,10 @@ class Chebyshev2 {
 #include <gtsam/basis/CardinalSplineBasis.h>
 
 class CardinalSplineBasis {
-  static gtsam::Vector CalculateWeights(size_t N, double x);
-  static gtsam::Vector CalculateWeights(size_t N, double x, double a, double b);
-  static gtsam::Vector DerivativeWeights(size_t N, double x);
-  static gtsam::Vector DerivativeWeights(size_t N, double x, double a,
+  static gtsam::Weights CalculateWeights(size_t N, double x);
+  static gtsam::Weights CalculateWeights(size_t N, double x, double a, double b);
+  static gtsam::Weights DerivativeWeights(size_t N, double x);
+  static gtsam::Weights DerivativeWeights(size_t N, double x, double a,
                                          double b);
 };
 
@@ -88,7 +88,7 @@ class CumulativeSplineTrajectory {
 
   T sampleTrajectory(double timestamp, double windowStart = 0.0,
                      double windowEnd = -1.0) const;
-  gtsam::Vector sampleTrajectoryDerivative(
+  gtsam::This::TangentVector sampleTrajectoryDerivative(
       double timestamp, double windowStart = 0.0, double windowEnd = -1.0,
       size_t derivative = 1) const;
 };

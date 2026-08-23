@@ -331,6 +331,7 @@ virtual class HybridFactorGraph : gtsam::FactorGraph<gtsam::Factor> {
   void push_back(const gtsam::HybridConditional* conditional);
   void push_back(const gtsam::HybridGaussianFactorGraph& graph);
   void push_back(const gtsam::HybridBayesNet& bayesNet);
+  @pybind_lambda
   void push_back(const gtsam::HybridBayesTree& bayesTree);
   void push_back(const gtsam::HybridGaussianFactor* gmm);
   void push_back(gtsam::DecisionTreeFactor* factor);

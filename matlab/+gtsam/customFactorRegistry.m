@@ -12,7 +12,7 @@ function varargout = customFactorRegistry(operation, varargin)
 persistent callbacks nextId
 
 if isempty(callbacks)
-    callbacks = containers.Map('KeyType', 'char', 'ValueType', 'any');
+    callbacks = containers.Map('KeyType', 'uint64', 'ValueType', 'any');
     nextId = uint64(1);
 end
 
@@ -27,24 +27,23 @@ switch operation
         % returns and the final wrapper object exists.
         callbackId = nextId;
         nextId = nextId + uint64(1);
-        callbacks(callbackKey(callbackId)) = struct('callback', callback, ...
-                                                    'factor', []);
+        callbacks(callbackId) = struct('callback', callback, 'factor', []);
         varargout{1} = callbackId;
 
     case 'bind'
-        callbackId = varargin{1};
+        callbackId = uint64(varargin{1});
         entry = lookupEntry(callbacks, callbackId);
         % Store the user-visible MATLAB factor handle so invoke() can preserve
         % the callback signature errorFunc(this, values[, ...]).
         entry.factor = varargin{2};
-        callbacks(callbackKey(callbackId)) = entry;
+        callbacks(callbackId) = entry;
 
     case 'invoke'
-        callbackId = varargin{1};
+        callbackId = uint64(varargin{1});
         entry = lookupEntry(callbacks, callbackId);
         if isempty(entry.factor)
-            error('CustomFactor callback %s is not bound to a factor', ...
-                  callbackKey(callbackId));
+            error('CustomFactor callback %u is not bound to a factor', ...
+                  callbackId);
         end
         % Forward all remaining arguments so C++ can request either:
         %   err = callback(this, values)
@@ -57,10 +56,9 @@ switch operation
         end
 
     case 'remove'
-        callbackId = varargin{1};
-        key = callbackKey(callbackId);
-        if isKey(callbacks, key)
-            remove(callbacks, key);
+        callbackId = uint64(varargin{1});
+        if isKey(callbacks, callbackId)
+            remove(callbacks, callbackId);
         end
 
     case 'count'
@@ -73,13 +71,9 @@ end
 end
 
 function entry = lookupEntry(callbacks, callbackId)
-key = callbackKey(callbackId);
-if ~isKey(callbacks, key)
-    error('CustomFactor callback %s is not registered', key);
+callbackId = uint64(callbackId);
+if ~isKey(callbacks, callbackId)
+    error('CustomFactor callback %u is not registered', callbackId);
 end
-entry = callbacks(key);
-end
-
-function key = callbackKey(callbackId)
-key = char(string(uint64(callbackId)));
+entry = callbacks(callbackId);
 end

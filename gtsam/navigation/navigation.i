@@ -254,7 +254,7 @@ class PreintegratedImuMeasurements {
   gtsam::Rot3 deltaRij() const;
   gtsam::Vector3 deltaPij() const;
   gtsam::Vector3 deltaVij() const;
-  gtsam::Vector so3TangentAt(double t) const;
+  gtsam::Vector3 so3TangentAt(double t) const;
   gtsam::Matrix deskewPoints(gtsam::ConstMatrixView points,
       const gtsam::Vector3& velocity_i = gtsam::Vector3::Zero()) const;
   gtsam::Matrix deskewPointsAtTimes(gtsam::ConstMatrixView points,
@@ -295,7 +295,7 @@ virtual class ImuFactor2: gtsam::NoiseModelFactor {
 
   // Standard Interface
   const gtsam::PreintegratedImuMeasurements& preintegratedMeasurements() const;
-  gtsam::Vector evaluateError(const gtsam::NavState& state_i,
+  gtsam::Vector9 evaluateError(const gtsam::NavState& state_i,
                               const gtsam::NavState& state_j,
                               const gtsam::imuBias::ConstantBias& bias_i,
                               gtsam::OptionalMatrixType H1 = nullptr,
@@ -317,11 +317,13 @@ virtual class ImuFactorWithGravityT : gtsam::NoiseModelFactor {
       const PIM& preintegratedMeasurements, double gravityMagnitude);
 
   // Standard Interface
-  PIM preintegratedMeasurements() const;
+  const PIM& preintegratedMeasurements() const;
   double gravityMagnitude() const;
-  gtsam::Vector evaluateError(const gtsam::Pose3& pose_i, gtsam::Vector vel_i,
-      const gtsam::Pose3& pose_j, gtsam::Vector vel_j,
-      const gtsam::imuBias::ConstantBias& bias_i, const GRAVITY& gravity);
+  gtsam::Vector evaluateError(const gtsam::Pose3& pose_i,
+      const gtsam::Vector3& vel_i, const gtsam::Pose3& pose_j,
+      const gtsam::Vector3& vel_j,
+      const gtsam::imuBias::ConstantBias& bias_i,
+      const GRAVITY& gravity) const;
 
   // enable serialization functionality
   void serialize() const;
@@ -380,7 +382,7 @@ class PreintegratedCombinedMeasurements {
   gtsam::Rot3 deltaRij() const;
   gtsam::Vector3 deltaPij() const;
   gtsam::Vector3 deltaVij() const;
-  gtsam::Vector so3TangentAt(double t) const;
+  gtsam::Vector3 so3TangentAt(double t) const;
   gtsam::Matrix deskewPoints(gtsam::ConstMatrixView points,
       const gtsam::Vector3& velocity_i = gtsam::Vector3::Zero()) const;
   gtsam::Matrix deskewPointsAtTimes(gtsam::ConstMatrixView points,
@@ -433,12 +435,14 @@ virtual class CombinedImuFactorWithGravityT : gtsam::NoiseModelFactor {
       double gravityMagnitude);
 
   // Standard Interface
-  PIM preintegratedMeasurements() const;
+  const PIM& preintegratedMeasurements() const;
   double gravityMagnitude() const;
-  gtsam::Vector evaluateError(const gtsam::Pose3& pose_i, gtsam::Vector vel_i,
-      const gtsam::Pose3& pose_j, gtsam::Vector vel_j,
+  gtsam::Vector evaluateError(const gtsam::Pose3& pose_i,
+      const gtsam::Vector3& vel_i, const gtsam::Pose3& pose_j,
+      const gtsam::Vector3& vel_j,
       const gtsam::imuBias::ConstantBias& bias_i,
-      const gtsam::imuBias::ConstantBias& bias_j, const GRAVITY& gravity);
+      const gtsam::imuBias::ConstantBias& bias_j,
+      const GRAVITY& gravity) const;
 
   // enable serialization functionality
   void serialize() const;
