@@ -335,7 +335,7 @@ Vector3 SO3::Logmap(const SO3& Q) {
 template <>
 GTSAM_EXPORT
 Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
-  using std::atan2;
+  using std::atan;
   using std::sqrt;
 
   const Matrix3& R = Q.matrix();
@@ -355,24 +355,36 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
   if (tr > 0.0) {
     // theta < 2*pi/3, so the anti-symmetric part is well conditioned:
     //     (1 + tr, vee(R - R')) == 4 * cos(theta/2) * (w, v)
+    // No small-angle series is needed here (cf. #746): w = 1 + tr >= 1 is
+    // bounded away from zero, and 2*atan(n/w)/n tends smoothly to 2/w as
+    // n -> 0. The n == 0 case (R == I exactly) is handled below.
     w = 1.0 + tr;
     v << R(2, 1) - R(1, 2), R(0, 2) - R(2, 0), R(1, 0) - R(0, 1);
   } else {
-    // theta > 2*pi/3: pivot on the largest diagonal entry instead.
-    int i = 0;
-    if (R(1, 1) > R(0, 0)) i = 1;
-    if (R(2, 2) > R(i, i)) i = 2;
-    const int j = (i + 1) % 3, k = (j + 1) % 3;
+    // theta > 2*pi/3: pivot on the largest diagonal entry instead. The three
+    // cases are written out rather than indexed by a runtime i/j/k, so that
+    // the compiler can keep v in registers.
+    //
     // NOTE(#1233): r^2 = 1 + 2*R(i,i) - tr equals 4*v_i^2 for *every* theta.
-    // The previous code used 2 + 2*R(i,i), which differs from it by exactly
-    // 1 + tr = 4*cos^2(theta/2) and is therefore correct only at theta == pi;
-    // that is what produced the ~1e-4 error plateau reported in issue #1233.
-    const double r = sqrt(1.0 + 2.0 * R(i, i) - tr);
-    const double invr = 1.0 / r;
-    v(i) = r;
-    v(j) = (R(j, i) + R(i, j)) * invr;
-    v(k) = (R(k, i) + R(i, k)) * invr;
-    w = (R(k, j) - R(j, k)) * invr;
+    // Using 2 + 2*R(i,i) instead differs from it by exactly 1 + tr, and is
+    // correct only at theta == pi; that produced the error plateau in #1233.
+    if (R(2, 2) > R(1, 1) && R(2, 2) > R(0, 0)) {
+      const double r = sqrt(1.0 + 2.0 * R(2, 2) - tr), invr = 1.0 / r;
+      v << (R(0, 2) + R(2, 0)) * invr, (R(1, 2) + R(2, 1)) * invr, r;
+      w = (R(1, 0) - R(0, 1)) * invr;
+    } else if (R(1, 1) > R(0, 0)) {
+      const double r = sqrt(1.0 + 2.0 * R(1, 1) - tr), invr = 1.0 / r;
+      v << (R(0, 1) + R(1, 0)) * invr, r, (R(2, 1) + R(1, 2)) * invr;
+      w = (R(0, 2) - R(2, 0)) * invr;
+    } else {
+      const double r = sqrt(1.0 + 2.0 * R(0, 0) - tr), invr = 1.0 / r;
+      v << r, (R(1, 0) + R(0, 1)) * invr, (R(2, 0) + R(0, 2)) * invr;
+      w = (R(2, 1) - R(1, 2)) * invr;
+    }
+    if (w < 0.0) {  // canonicalize so that theta lands in [0, pi]
+      w = -w;
+      v = -v;
+    }
   }
 
   const double n = v.norm();
@@ -380,10 +392,11 @@ Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
   if (n == 0.0) {
     omega = Vector3::Zero();  // R == I
   } else {
-    // Fold the sign of w into atan2 to wrap theta into (-pi, pi].
-    const double scale =
-        (w < 0.0) ? 2.0 * atan2(-n, -w) / n : 2.0 * atan2(n, w) / n;
-    omega = scale * v;
+    // theta = 2 * atan2(n, w), split by hand into the two well-conditioned
+    // halves so that atan() can be used: atan is measurably cheaper than
+    // atan2, and w >= 0 is guaranteed above, so the quadrant logic is free.
+    const double theta = (w > n) ? 2.0 * atan(n / w) : M_PI - 2.0 * atan(w / n);
+    omega = (theta / n) * v;
   }
 
   if (H) *H = LogmapDerivative(omega);
