@@ -31,23 +31,60 @@ using namespace std;
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(class_py, m_) {
-    m_.doc() = "pybind11 wrapper of class_py";
 
 
-    py::class_<FunRange, std::shared_ptr<FunRange>>(m_, "FunRange")
+void gtwrap_declare_class_py(py::module_ &m_) {
+
+    py::class_<FunRange, std::shared_ptr<FunRange>>(m_, "FunRange");
+
+    py::class_<Fun<double>, std::shared_ptr<Fun<double>>>(m_, "FunDouble");
+
+    py::class_<Test, std::shared_ptr<Test>>(m_, "Test");
+
+    py::class_<PrimitiveRef<double>, std::shared_ptr<PrimitiveRef<double>>>(m_, "PrimitiveRefDouble");
+
+    py::class_<MyVector<3>, std::shared_ptr<MyVector<3>>>(m_, "MyVector3");
+
+    py::class_<MyVector<12>, std::shared_ptr<MyVector<12>>>(m_, "MyVector12");
+
+    py::class_<MultipleTemplates<int, double>, std::shared_ptr<MultipleTemplates<int, double>>>(m_, "MultipleTemplatesIntDouble");
+
+    py::class_<MultipleTemplates<int, float>, std::shared_ptr<MultipleTemplates<int, float>>>(m_, "MultipleTemplatesIntFloat");
+
+    py::class_<ForwardKinematics, std::shared_ptr<ForwardKinematics>>(m_, "ForwardKinematics");
+
+    py::class_<TemplatedConstructor, std::shared_ptr<TemplatedConstructor>>(m_, "TemplatedConstructor");
+
+    py::class_<FastSet, std::shared_ptr<FastSet>>(m_, "FastSet");
+
+    py::class_<HessianFactor, gtsam::GaussianFactor, std::shared_ptr<HessianFactor>>(m_, "HessianFactor");
+
+    py::class_<SmartProjectionRigFactor<gtsam::PinholeCamera<gtsam::Cal3_S2>>, gtsam::SmartProjectionFactor<gtsam::PinholeCamera<gtsam::Cal3_S2>>, std::shared_ptr<SmartProjectionRigFactor<gtsam::PinholeCamera<gtsam::Cal3_S2>>>>(m_, "SmartProjectionRigFactorPinholeCameraCal3_S2");
+
+    py::class_<MyFactor<gtsam::Pose2, gtsam::Matrix>, std::shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>>>(m_, "MyFactorPosePoint2");
+
+    py::class_<SuperCoolFactor<gtsam::Pose3>, std::shared_ptr<SuperCoolFactor<gtsam::Pose3>>>(m_, "SuperCoolFactorPose3");
+}
+
+void gtwrap_bind_class_py(py::module_ &m_) {
+#include "python/specializations.h"
+
+    auto gtwrap_class_m__FunRange = py::reinterpret_borrow<py::class_<FunRange, std::shared_ptr<FunRange>>>(m_.attr("FunRange"));
+    gtwrap_class_m__FunRange
         .def(py::init<>())
         .def("range",static_cast<FunRange (FunRange::*)(double)>(&FunRange::range), gtwrap::internal::py_arg<double>("d"))
         .def_static("create",static_cast<FunRange (*)()>(&FunRange::create));
 
-    py::class_<Fun<double>, std::shared_ptr<Fun<double>>>(m_, "FunDouble")
+    auto gtwrap_class_m__FunDouble = py::reinterpret_borrow<py::class_<Fun<double>, std::shared_ptr<Fun<double>>>>(m_.attr("FunDouble"));
+    gtwrap_class_m__FunDouble
         .def("templatedMethodString",[](Fun<double>* self, double d, string t){return self->templatedMethod<string>(d, t);}, gtwrap::internal::py_arg<double>("d"), gtwrap::internal::py_arg<string>("t"))
         .def("multiTemplatedMethodStringSize_t",[](Fun<double>* self, double d, string t, size_t u){return self->multiTemplatedMethod<string,size_t>(d, t, u);}, gtwrap::internal::py_arg<double>("d"), gtwrap::internal::py_arg<string>("t"), gtwrap::internal::py_arg<size_t>("u"))
         .def("sets",static_cast<std::map<double, Fun<double>::double> (Fun<double>::*)()>(&Fun<double>::sets))
         .def_static("staticMethodWithThis",static_cast<Fun<double> (*)()>(&Fun<double>::staticMethodWithThis))
         .def_static("templatedStaticMethodInt",[](const int& m){return Fun<double>::templatedStaticMethod<int>(m);}, gtwrap::internal::py_arg<const int&>("m"));
 
-    py::class_<Test, std::shared_ptr<Test>>(m_, "Test")
+    auto gtwrap_class_m__Test = py::reinterpret_borrow<py::class_<Test, std::shared_ptr<Test>>>(m_.attr("Test"));
+    gtwrap_class_m__Test
         .def(py::init<>())
         .def(py::init<double, const gtsam::Matrix&>(), gtwrap::internal::py_arg<double>("a"), gtwrap::internal::py_arg<const gtsam::Matrix&>("b"))
         .def("return_pair",static_cast<std::pair<gtsam::Vector,gtsam::Matrix> (Test::*)(const gtsam::Vector&, const gtsam::Matrix&) const>(&Test::return_pair), gtwrap::internal::py_arg<const gtsam::Vector&>("v"), gtwrap::internal::py_arg<const gtsam::Matrix&>("A"))
@@ -89,42 +126,47 @@ PYBIND11_MODULE(class_py, m_) {
         .def_readwrite("value", &Test::value)
         .def_readwrite("name", &Test::name);
 
-    py::class_<PrimitiveRef<double>, std::shared_ptr<PrimitiveRef<double>>>(m_, "PrimitiveRefDouble")
+    auto gtwrap_class_m__PrimitiveRefDouble = py::reinterpret_borrow<py::class_<PrimitiveRef<double>, std::shared_ptr<PrimitiveRef<double>>>>(m_.attr("PrimitiveRefDouble"));
+    gtwrap_class_m__PrimitiveRefDouble
         .def(py::init<>())
         .def_static("Brutal",static_cast<PrimitiveRef<double> (*)(const double&)>(&PrimitiveRef<double>::Brutal), gtwrap::internal::py_arg<const double&>("t"));
 
-    py::class_<MyVector<3>, std::shared_ptr<MyVector<3>>>(m_, "MyVector3")
+    auto gtwrap_class_m__MyVector3 = py::reinterpret_borrow<py::class_<MyVector<3>, std::shared_ptr<MyVector<3>>>>(m_.attr("MyVector3"));
+    gtwrap_class_m__MyVector3
         .def(py::init<>());
 
-    py::class_<MyVector<12>, std::shared_ptr<MyVector<12>>>(m_, "MyVector12")
+    auto gtwrap_class_m__MyVector12 = py::reinterpret_borrow<py::class_<MyVector<12>, std::shared_ptr<MyVector<12>>>>(m_.attr("MyVector12"));
+    gtwrap_class_m__MyVector12
         .def(py::init<>());
 
-    py::class_<MultipleTemplates<int, double>, std::shared_ptr<MultipleTemplates<int, double>>>(m_, "MultipleTemplatesIntDouble");
-
-    py::class_<MultipleTemplates<int, float>, std::shared_ptr<MultipleTemplates<int, float>>>(m_, "MultipleTemplatesIntFloat");
-
-    py::class_<ForwardKinematics, std::shared_ptr<ForwardKinematics>>(m_, "ForwardKinematics")
+    auto gtwrap_class_m__ForwardKinematics = py::reinterpret_borrow<py::class_<ForwardKinematics, std::shared_ptr<ForwardKinematics>>>(m_.attr("ForwardKinematics"));
+    gtwrap_class_m__ForwardKinematics
         .def(py::init<const gtdynamics::Robot&, const string&, const string&, const gtsam::Values&, const gtsam::Pose3&>(), gtwrap::internal::py_arg<const gtdynamics::Robot&>("robot"), gtwrap::internal::py_arg<const string&>("start_link_name"), gtwrap::internal::py_arg<const string&>("end_link_name"), gtwrap::internal::py_arg<const gtsam::Values&>("joint_angles"), gtwrap::internal::py_arg<const gtsam::Pose3&>("l2Tp") = gtsam::Pose3());
 
-    py::class_<TemplatedConstructor, std::shared_ptr<TemplatedConstructor>>(m_, "TemplatedConstructor")
+    auto gtwrap_class_m__TemplatedConstructor = py::reinterpret_borrow<py::class_<TemplatedConstructor, std::shared_ptr<TemplatedConstructor>>>(m_.attr("TemplatedConstructor"));
+    gtwrap_class_m__TemplatedConstructor
         .def(py::init<>())
         .def(py::init<const string&>(), gtwrap::internal::py_arg<const string&>("arg"))
         .def(py::init<const int&>(), gtwrap::internal::py_arg<const int&>("arg"))
         .def(py::init<const double&>(), gtwrap::internal::py_arg<const double&>("arg"));
 
-    py::class_<FastSet, std::shared_ptr<FastSet>>(m_, "FastSet")
+    auto gtwrap_class_m__FastSet = py::reinterpret_borrow<py::class_<FastSet, std::shared_ptr<FastSet>>>(m_.attr("FastSet"));
+    gtwrap_class_m__FastSet
         .def(py::init<>())
         .def("__len__",[](FastSet* self){return std::distance(self->begin(), self->end());})
         .def("__contains__",[](FastSet* self, size_t key){return std::find(self->begin(), self->end(), key) != self->end();}, gtwrap::internal::py_arg<size_t>("key"))
         .def("__iter__",[](FastSet* self){return py::make_iterator(self->begin(), self->end());});
 
-    py::class_<HessianFactor, gtsam::GaussianFactor, std::shared_ptr<HessianFactor>>(m_, "HessianFactor")
+    auto gtwrap_class_m__HessianFactor = py::reinterpret_borrow<py::class_<HessianFactor, gtsam::GaussianFactor, std::shared_ptr<HessianFactor>>>(m_.attr("HessianFactor"));
+    gtwrap_class_m__HessianFactor
         .def(py::init<const gtsam::KeyVector&, const std::vector<gtsam::Matrix>&, const std::vector<gtsam::Vector>&, double>(), gtwrap::internal::py_arg<const gtsam::KeyVector&>("js"), gtwrap::internal::py_arg<const std::vector<gtsam::Matrix>&>("Gs"), gtwrap::internal::py_arg<const std::vector<gtsam::Vector>&>("gs"), gtwrap::internal::py_arg<double>("f"));
 
-    py::class_<SmartProjectionRigFactor<gtsam::PinholeCamera<gtsam::Cal3_S2>>, gtsam::SmartProjectionFactor<gtsam::PinholeCamera<gtsam::Cal3_S2>>, std::shared_ptr<SmartProjectionRigFactor<gtsam::PinholeCamera<gtsam::Cal3_S2>>>>(m_, "SmartProjectionRigFactorPinholeCameraCal3_S2")
+    auto gtwrap_class_m__SmartProjectionRigFactorPinholeCameraCal3_S2 = py::reinterpret_borrow<py::class_<SmartProjectionRigFactor<gtsam::PinholeCamera<gtsam::Cal3_S2>>, gtsam::SmartProjectionFactor<gtsam::PinholeCamera<gtsam::Cal3_S2>>, std::shared_ptr<SmartProjectionRigFactor<gtsam::PinholeCamera<gtsam::Cal3_S2>>>>>(m_.attr("SmartProjectionRigFactorPinholeCameraCal3_S2"));
+    gtwrap_class_m__SmartProjectionRigFactorPinholeCameraCal3_S2
         .def("add",static_cast<void (SmartProjectionRigFactor<gtsam::PinholeCamera<gtsam::Cal3_S2>>::*)(const gtsam::PinholeCamera<gtsam::Cal3_S2>::Measurement&, const gtsam::Key&, const size_t&)>(&SmartProjectionRigFactor<gtsam::PinholeCamera<gtsam::Cal3_S2>>::add), gtwrap::internal::py_arg<const gtsam::PinholeCamera<gtsam::Cal3_S2>::Measurement&>("measured"), gtwrap::internal::py_arg<const gtsam::Key&>("poseKey"), gtwrap::internal::py_arg<const size_t&>("cameraId") = 0);
 
-    py::class_<MyFactor<gtsam::Pose2, gtsam::Matrix>, std::shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>>>(m_, "MyFactorPosePoint2")
+    auto gtwrap_class_m__MyFactorPosePoint2 = py::reinterpret_borrow<py::class_<MyFactor<gtsam::Pose2, gtsam::Matrix>, std::shared_ptr<MyFactor<gtsam::Pose2, gtsam::Matrix>>>>(m_.attr("MyFactorPosePoint2"));
+    gtwrap_class_m__MyFactorPosePoint2
         .def(py::init<size_t, size_t, double, const std::shared_ptr<gtsam::noiseModel::Base>>(), gtwrap::internal::py_arg<size_t>("key1"), gtwrap::internal::py_arg<size_t>("key2"), gtwrap::internal::py_arg<double>("measured"), gtwrap::internal::py_arg<const std::shared_ptr<gtsam::noiseModel::Base>>("noiseModel"))
         .def("print",[](MyFactor<gtsam::Pose2, gtsam::Matrix>* self, const string& s, const gtsam::KeyFormatter& keyFormatter){ py::scoped_ostream_redirect output; self->print(s, keyFormatter);}, gtwrap::internal::py_arg<const string&>("s") = "factor: ", gtwrap::internal::py_arg<const gtsam::KeyFormatter&>("keyFormatter") = gtsam::DefaultKeyFormatter)
         .def("__repr__",
@@ -134,9 +176,11 @@ PYBIND11_MODULE(class_py, m_) {
                         return redirect.str();
                     }, gtwrap::internal::py_arg<const string&>("s") = "factor: ", gtwrap::internal::py_arg<const gtsam::KeyFormatter&>("keyFormatter") = gtsam::DefaultKeyFormatter);
 
-    py::class_<SuperCoolFactor<gtsam::Pose3>, std::shared_ptr<SuperCoolFactor<gtsam::Pose3>>>(m_, "SuperCoolFactorPose3");
-
-#include "python/specializations.h"
-
 }
 
+PYBIND11_MODULE(class_py, m_) {
+    m_.doc() = "pybind11 wrapper of class_py";
+
+gtwrap_declare_class_py(m_);
+gtwrap_bind_class_py(m_);
+}

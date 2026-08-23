@@ -30,13 +30,33 @@ using namespace std;
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(inheritance_py, m_) {
-    m_.doc() = "pybind11 wrapper of inheritance_py";
 
+
+void gtwrap_declare_inheritance_py(py::module_ &m_) {
 
     py::class_<MyBase, std::shared_ptr<MyBase>>(m_, "MyBase");
 
-    py::class_<MyTemplate<gtsam::Point2>, MyBase, std::shared_ptr<MyTemplate<gtsam::Point2>>>(m_, "MyTemplatePoint2")
+    py::class_<MyTemplate<gtsam::Point2>, MyBase, std::shared_ptr<MyTemplate<gtsam::Point2>>>(m_, "MyTemplatePoint2");
+
+    py::class_<MyTemplate<gtsam::Matrix>, MyBase, std::shared_ptr<MyTemplate<gtsam::Matrix>>>(m_, "MyTemplateMatrix");
+
+    py::class_<MyTemplate<A>, MyBase, std::shared_ptr<MyTemplate<A>>>(m_, "MyTemplateA");
+
+    py::class_<ForwardKinematicsFactor, gtsam::BetweenFactor<gtsam::Pose3>, std::shared_ptr<ForwardKinematicsFactor>>(m_, "ForwardKinematicsFactor");
+
+    py::class_<ParentHasTemplate<double>, MyTemplate<double>, std::shared_ptr<ParentHasTemplate<double>>>(m_, "ParentHasTemplateDouble");
+
+    py::class_<Base, std::shared_ptr<Base>>(m_, "Base");
+
+    py::class_<Derived, Base, std::shared_ptr<Derived>>(m_, "Derived");
+
+}
+
+void gtwrap_bind_inheritance_py(py::module_ &m_) {
+#include "python/specializations.h"
+
+    auto gtwrap_class_m__MyTemplatePoint2 = py::reinterpret_borrow<py::class_<MyTemplate<gtsam::Point2>, MyBase, std::shared_ptr<MyTemplate<gtsam::Point2>>>>(m_.attr("MyTemplatePoint2"));
+    gtwrap_class_m__MyTemplatePoint2
         .def(py::init<>())
         .def("templatedMethodPoint2",[](MyTemplate<gtsam::Point2>* self, const gtsam::Point2& t){return self->templatedMethod<gtsam::Point2>(t);}, gtwrap::internal::py_arg<const gtsam::Point2&>("t"))
         .def("templatedMethodPoint3",[](MyTemplate<gtsam::Point2>* self, const gtsam::Point3& t){return self->templatedMethod<gtsam::Point3>(t);}, gtwrap::internal::py_arg<const gtsam::Point3&>("t"))
@@ -51,7 +71,8 @@ PYBIND11_MODULE(inheritance_py, m_) {
         .def("return_ptrs",static_cast<std::pair<std::shared_ptr<gtsam::Point2>,std::shared_ptr<gtsam::Point2>> (MyTemplate<gtsam::Point2>::*)(std::shared_ptr<gtsam::Point2>, std::shared_ptr<gtsam::Point2>) const>(&MyTemplate<gtsam::Point2>::return_ptrs), gtwrap::internal::py_arg<std::shared_ptr<gtsam::Point2>>("p1"), gtwrap::internal::py_arg<std::shared_ptr<gtsam::Point2>>("p2"))
         .def_static("Level",static_cast<MyTemplate<gtsam::Point2> (*)(const gtsam::Point2&)>(&MyTemplate<gtsam::Point2>::Level), gtwrap::internal::py_arg<const gtsam::Point2&>("K"));
 
-    py::class_<MyTemplate<gtsam::Matrix>, MyBase, std::shared_ptr<MyTemplate<gtsam::Matrix>>>(m_, "MyTemplateMatrix")
+    auto gtwrap_class_m__MyTemplateMatrix = py::reinterpret_borrow<py::class_<MyTemplate<gtsam::Matrix>, MyBase, std::shared_ptr<MyTemplate<gtsam::Matrix>>>>(m_.attr("MyTemplateMatrix"));
+    gtwrap_class_m__MyTemplateMatrix
         .def(py::init<>())
         .def("templatedMethodPoint2",[](MyTemplate<gtsam::Matrix>* self, const gtsam::Point2& t){return self->templatedMethod<gtsam::Point2>(t);}, gtwrap::internal::py_arg<const gtsam::Point2&>("t"))
         .def("templatedMethodPoint3",[](MyTemplate<gtsam::Matrix>* self, const gtsam::Point3& t){return self->templatedMethod<gtsam::Point3>(t);}, gtwrap::internal::py_arg<const gtsam::Point3&>("t"))
@@ -66,7 +87,8 @@ PYBIND11_MODULE(inheritance_py, m_) {
         .def("return_ptrs",static_cast<std::pair<std::shared_ptr<gtsam::Matrix>,std::shared_ptr<gtsam::Matrix>> (MyTemplate<gtsam::Matrix>::*)(std::shared_ptr<gtsam::Matrix>, std::shared_ptr<gtsam::Matrix>) const>(&MyTemplate<gtsam::Matrix>::return_ptrs), gtwrap::internal::py_arg<std::shared_ptr<gtsam::Matrix>>("p1"), gtwrap::internal::py_arg<std::shared_ptr<gtsam::Matrix>>("p2"))
         .def_static("Level",static_cast<MyTemplate<gtsam::Matrix> (*)(const gtsam::Matrix&)>(&MyTemplate<gtsam::Matrix>::Level), gtwrap::internal::py_arg<const gtsam::Matrix&>("K"));
 
-    py::class_<MyTemplate<A>, MyBase, std::shared_ptr<MyTemplate<A>>>(m_, "MyTemplateA")
+    auto gtwrap_class_m__MyTemplateA = py::reinterpret_borrow<py::class_<MyTemplate<A>, MyBase, std::shared_ptr<MyTemplate<A>>>>(m_.attr("MyTemplateA"));
+    gtwrap_class_m__MyTemplateA
         .def(py::init<>())
         .def("templatedMethodPoint2",[](MyTemplate<A>* self, const gtsam::Point2& t){return self->templatedMethod<gtsam::Point2>(t);}, gtwrap::internal::py_arg<const gtsam::Point2&>("t"))
         .def("templatedMethodPoint3",[](MyTemplate<A>* self, const gtsam::Point3& t){return self->templatedMethod<gtsam::Point3>(t);}, gtwrap::internal::py_arg<const gtsam::Point3&>("t"))
@@ -81,17 +103,15 @@ PYBIND11_MODULE(inheritance_py, m_) {
         .def("return_ptrs",static_cast<std::pair<std::shared_ptr<A>,std::shared_ptr<A>> (MyTemplate<A>::*)(std::shared_ptr<A>, std::shared_ptr<A>) const>(&MyTemplate<A>::return_ptrs), gtwrap::internal::py_arg<std::shared_ptr<A>>("p1"), gtwrap::internal::py_arg<std::shared_ptr<A>>("p2"))
         .def_static("Level",static_cast<MyTemplate<A> (*)(const A&)>(&MyTemplate<A>::Level), gtwrap::internal::py_arg<const A&>("K"));
 
-    py::class_<ForwardKinematicsFactor, gtsam::BetweenFactor<gtsam::Pose3>, std::shared_ptr<ForwardKinematicsFactor>>(m_, "ForwardKinematicsFactor");
-
-    py::class_<ParentHasTemplate<double>, MyTemplate<double>, std::shared_ptr<ParentHasTemplate<double>>>(m_, "ParentHasTemplateDouble");
-
-    py::class_<Base, std::shared_ptr<Base>>(m_, "Base")
+    auto gtwrap_class_m__Base = py::reinterpret_borrow<py::class_<Base, std::shared_ptr<Base>>>(m_.attr("Base"));
+    gtwrap_class_m__Base
         .def_static("Create",static_cast<std::shared_ptr<gtsam::Base> (*)(double)>(&Base::Create), gtwrap::internal::py_arg<double>("x"));
-
-    py::class_<Derived, Base, std::shared_ptr<Derived>>(m_, "Derived");
-
-
-#include "python/specializations.h"
 
 }
 
+PYBIND11_MODULE(inheritance_py, m_) {
+    m_.doc() = "pybind11 wrapper of inheritance_py";
+
+gtwrap_declare_inheritance_py(m_);
+gtwrap_bind_inheritance_py(m_);
+}

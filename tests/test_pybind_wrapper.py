@@ -42,8 +42,18 @@ class TestWrap(unittest.TestCase):
 using namespace std;
 namespace py = pybind11;
 
-PYBIND11_MODULE({module_name}, m_) {{
-{wrapped_namespace}
+{submodules}
+
+{declaration_module_def} {{
+{wrapped_declarations}
+}}
+
+{binding_module_def} {{
+{wrapped_bindings}
+}}
+
+{module_def} {{
+{module_init}
 }}
 """
 
@@ -168,6 +178,72 @@ PYBIND11_MODULE({module_name}, m_) {{
 
         self.compare_and_diff('special_cases_pybind.cpp', output)
 
+        with open(output, 'r', encoding='UTF-8') as output_file:
+            content = output_file.read()
+
+        # Typedef template instantiations are moved to the end by the
+        # instantiator. Their declarations must still precede methods which
+        # use them in generated docstring signatures.
+        class_declaration = (
+            'py::class_<gtsam::PinholeCamera<gtsam::Cal3Bundler>, '
+            'std::shared_ptr<gtsam::PinholeCamera<gtsam::Cal3Bundler>>>'
+            '(m_gtsam, "PinholeCameraCal3Bundler");')
+        self.assertLess(content.index(class_declaration),
+                        content.index('.def("addPriorPinholeCameraCal3Bundler"'))
+
+    def test_module_wide_declare_then_bind_order(self):
+        """Declare every interface file before binding any of them."""
+        main_source = osp.join(self.INTERFACE_DIR, 'declare_bind_main.i')
+        late_source = osp.join(self.INTERFACE_DIR, 'declare_bind_late.i')
+        output = self.wrap_content([main_source, late_source],
+                                   'declare_bind_py',
+                                   self.PYTHON_ACTUAL_DIR)
+
+        with open(output, 'r', encoding='UTF-8') as output_file:
+            module_init = output_file.read().split(
+                'PYBIND11_MODULE(declare_bind_py, m_)', 1)[1]
+
+        ordered_calls = [
+            'gtwrap_declare_declare_bind_py(m_);',
+            'gtwrap_declare_declare_bind_late(m_);',
+            'gtwrap_bind_declare_bind_py(m_);',
+            'gtwrap_bind_declare_bind_late(m_);',
+        ]
+        positions = [module_init.index(call) for call in ordered_calls]
+        self.assertEqual(positions, sorted(positions))
+
+        with open(osp.join(self.TEST_DIR, 'pybind_wrapper.tpl'),
+                  encoding='UTF-8') as template_file:
+            module_template = template_file.read()
+        with open(late_source, encoding='UTF-8') as interface_file:
+            late_content = interface_file.read()
+        wrapper = PybindWrapper(module_name='declare_bind_py',
+                                top_module_namespaces=[''],
+                                ignore_classes=[''],
+                                module_template=module_template)
+        generated_submodule = wrapper.wrap_file(
+            late_content,
+            module_name='declare_bind_late',
+            source_name=late_source)
+        self.assertIn(
+            'void gtwrap_declare_declare_bind_late(py::module_ &m_)',
+            generated_submodule)
+        self.assertIn('void gtwrap_bind_declare_bind_late(py::module_ &m_)',
+                      generated_submodule)
+
+    def test_legacy_template_reports_missing_phase_fields(self):
+        """Reject templates that cannot express module-wide two-phase init."""
+        wrapper = PybindWrapper(module_name='legacy',
+                                top_module_namespaces=[''],
+                                ignore_classes=[''],
+                                module_template=(
+                                    '{module_def} {{\n'
+                                    '{module_init}\n'
+                                    '}}'))
+
+        with self.assertRaisesRegex(ValueError, 'declare-then-bind fields'):
+            wrapper.wrap_file('class Example {};', module_name='legacy')
+
     def test_enum(self):
         """
         Test if enum generation is correct.
@@ -188,10 +264,19 @@ PYBIND11_MODULE({module_name}, m_) {{
 
 namespace py = pybind11;
 
-PYBIND11_MODULE({module_name}, m_) {{
-    m_.doc() = "pybind11 wrapper of {module_name}";
+{submodules}
 
-{wrapped_namespace}
+{declaration_module_def} {{
+{wrapped_declarations}
+}}
+
+{binding_module_def} {{
+{wrapped_bindings}
+}}
+
+{module_def} {{
+    m_.doc() = "pybind11 wrapper of {module_name}";
+{module_init}
 
 }}
 """
