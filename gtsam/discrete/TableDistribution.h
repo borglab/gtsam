@@ -160,6 +160,9 @@ class GTSAM_EXPORT TableDistribution : public DiscreteConditional {
     return table_.toDecisionTreeFactor();
   }
 
+  /// Get the sparse table representation.
+  TableFactor toTableFactor() const override { return table_; }
+
   /// Get the number of non-zero values.
   uint64_t nrValues() const override { return table_.sparseTable().nonZeros(); }
 

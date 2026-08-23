@@ -50,11 +50,7 @@ class GTSAM_UNSTABLE_EXPORT AllDiff : public Constraint {
   DecisionTreeFactor toDecisionTreeFactor() const override;
 
   /// Convert directly into a sparse table, enumerating only valid assignments.
-  TableFactor toTableFactor() const;
-
-  /// Multiply factors, preserving TableFactor when possible.
-  DiscreteFactor::shared_ptr multiply(
-      const DiscreteFactor::shared_ptr& factor) const override;
+  TableFactor toTableFactor() const override;
 
   /// Multiply into a decisiontree
   DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;

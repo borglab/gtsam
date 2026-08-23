@@ -213,6 +213,9 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// Convert into a decisiontree
   DecisionTreeFactor toDecisionTreeFactor() const override;
 
+  /// Return this sparse table representation.
+  TableFactor toTableFactor() const override { return *this; }
+
   /// Create a TableFactor that is a subset of this TableFactor
   TableFactor choose(const DiscreteValues parentAssignments,
                      DiscreteKeys parent_keys) const;

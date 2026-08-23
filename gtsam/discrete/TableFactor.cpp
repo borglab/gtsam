@@ -356,14 +356,9 @@ DiscreteFactor::shared_ptr TableFactor::multiply(
     result = std::make_shared<TableFactor>(this->operator*(TableFactor(*dtf)));
 
   } else {
-    // The virtual call dispatches on f's runtime type. Its multiply override
-    // can dynamic-cast the argument back to TableFactor and use a sparse
-    // specialization; otherwise its existing DecisionTreeFactor fallback runs.
-    // The virtual interface accepts an owning shared_ptr. Since this object may
-    // be stack-allocated and TableFactor does not support shared_from_this,
-    // pass an owned copy rather than a potentially dangling non-owning pointer.
-    const auto table = std::make_shared<TableFactor>(*this);
-    result = f->multiply(table);
+    // Let the other factor choose its most efficient table representation,
+    // then multiply it without copying this potentially large sparse table.
+    result = std::make_shared<TableFactor>(this->operator*(f->toTableFactor()));
   }
   return result;
 }

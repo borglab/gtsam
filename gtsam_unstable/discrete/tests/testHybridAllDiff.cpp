@@ -23,6 +23,7 @@
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam_unstable/discrete/AllDiff.h>
+#include <gtsam_unstable/discrete/SingleValue.h>
 
 #include <memory>
 #include <stdexcept>
@@ -99,6 +100,26 @@ TEST(HybridAllDiff, TableMultiplicationAvoidsDecisionTree) {
   EXPECT(assert_equal(expected, *constraintFirst));
   EXPECT(assert_equal(expected, *tableFirst));
   LONGS_EQUAL(6, tableFirst->nrValues());
+}
+
+// Verifies the generic constraint fallback retains TableFactor in both
+// multiplication orders.
+TEST(HybridAllDiff, GenericConstraintTableMultiplication) {
+  const DiscreteKey key(A(0), 3);
+  const auto constraint = std::make_shared<SingleValue>(key, 1);
+  const auto table =
+      std::make_shared<TableFactor>(key, std::vector<double>{1.0, 2.0, 3.0});
+  const TableFactor expected(key, std::vector<double>{0.0, 2.0, 0.0});
+
+  const auto constraintFirst =
+      std::dynamic_pointer_cast<TableFactor>(constraint->multiply(table));
+  const auto tableFirst =
+      std::dynamic_pointer_cast<TableFactor>(table->multiply(constraint));
+
+  CHECK(constraintFirst);
+  CHECK(tableFirst);
+  EXPECT(assert_equal(expected, *constraintFirst));
+  EXPECT(assert_equal(expected, *tableFirst));
 }
 
 // Verifies sequential inference recovers the expected one-to-one association

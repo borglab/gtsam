@@ -89,6 +89,11 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
+  TableFactor DecisionTreeFactor::toTableFactor() const {
+    return TableFactor(*this);
+  }
+
+  /* ************************************************************************ */
   DiscreteFactor::shared_ptr DecisionTreeFactor::operator/(
       const DiscreteFactor::shared_ptr& f) const {
     if (auto tf = std::dynamic_pointer_cast<TableFactor>(f)) {

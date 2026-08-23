@@ -104,15 +104,6 @@ TableFactor AllDiff::toTableFactor() const {
 }
 
 /* ************************************************************************* */
-DiscreteFactor::shared_ptr AllDiff::multiply(
-    const DiscreteFactor::shared_ptr& factor) const {
-  if (const auto table = std::dynamic_pointer_cast<TableFactor>(factor)) {
-    return std::make_shared<TableFactor>(*table * toTableFactor());
-  }
-  return Constraint::multiply(factor);
-}
-
-/* ************************************************************************* */
 DecisionTreeFactor AllDiff::operator*(const DecisionTreeFactor& f) const {
   // TODO: can we do this more efficiently?
   return toDecisionTreeFactor() * f;
