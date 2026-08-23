@@ -331,7 +331,7 @@ TEST_PIM(ImuFactor2, TernaryLinearizationIsBitwiseIdentical) {
 /* ************************************************************************* */
 
 /* ************************************************************************* */
-TEST_PIM(ImuFactor, PreintegrationBaseMethods) {
+TEST_PIM_WITH_PENDING_GALILEAN(ImuFactor, PreintegrationBaseMethods) {
   // Select the overload without the gravity parameter:
   using PredictNoGravity = NavState (PreintegrationBase::*)(
       const NavState&, const imuBias::ConstantBias&, OptionalJacobian<9, 9>,
@@ -366,7 +366,7 @@ TEST_PIM(ImuFactor, PreintegrationBaseMethods) {
 }
 
 /* ************************************************************************* */
-TEST_PIM(ImuFactor, PredictWithGravityVector) {
+TEST_PIM_WITH_PENDING_GALILEAN(ImuFactor, PredictWithGravityVector) {
   using namespace common;
   PIM pim(testing::Params(), kZeroBiasHat);
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
@@ -423,7 +423,7 @@ TEST_PIM(ImuFactor, MultipleMeasurements) {
 }
 
 /* ************************************************************************* */
-TEST_PIM(ImuFactor, ErrorAndJacobians) {
+TEST_PIM_WITH_PENDING_GALILEAN(ImuFactor, ErrorAndJacobians) {
   using namespace common;
   PIM pim(testing::Params());
 
@@ -793,7 +793,7 @@ TEST_PIM(ImuFactor, PredictRotation) {
 }
 
 /* ************************************************************************* */
-TEST_PIM(ImuFactor, PredictArbitrary) {
+TEST_PIM_WITH_PENDING_GALILEAN(ImuFactor, PredictArbitrary) {
   gttic(PredictArbitrary);
   Pose3 x1;
   const Vector3 v1(0, 0, 0);

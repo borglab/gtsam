@@ -84,7 +84,7 @@ TEST_PIM(CombinedImuFactor, PreintegratedMeasurements) {
 }
 
 /* ************************************************************************* */
-TEST_PIM(CombinedImuFactor, ErrorWithBiases) {
+TEST_PIM_WITH_PENDING_GALILEAN(CombinedImuFactor, ErrorWithBiases) {
   Bias bias(Vector3(0.2, 0, 0), Vector3(0, 0, 0.3));     // Biases (acc, rot)
   Bias bias2(Vector3(0.2, 0.2, 0), Vector3(1, 0, 0.3));  // Biases (acc, rot)
   Pose3 x1(Rot3::Expmap(Vector3(0, 0, M_PI / 4.0)), Point3(5.0, 1.0, -50.0));

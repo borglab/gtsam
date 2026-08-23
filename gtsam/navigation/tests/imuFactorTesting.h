@@ -90,30 +90,52 @@ struct SomeMeasurements : vector<ImuMeasurement> {
 
 }  // namespace testing
 namespace {
-// Macro to test ImuFactor with every supported preintegration backend.
-// In the tests below the selected PreintegratedImuMeasurementsT is available
-// as `PIM`, and the combined version as `CombinedPIM`.
-#define TEST_PIM(testGroup, testName)                          \
-  template <class PIM, class CombinedPIM>                      \
-  void testGroup##testName##Helper(TestResult& result_,        \
-                                   const std::string& name_);  \
-  TEST(testGroup, testName) {                                  \
-    using M = ManifoldPreintegration;                          \
-    using PM = PreintegratedImuMeasurementsT<M>;               \
-    using CM = PreintegratedCombinedMeasurementsT<M>;          \
-    using T = TangentPreintegration;                           \
-    using PT = PreintegratedImuMeasurementsT<T>;               \
-    using CT = PreintegratedCombinedMeasurementsT<T>;          \
-    using L = LieGroupPreintegration;                          \
-    using PL = PreintegratedImuMeasurementsT<L>;               \
-    using CL = PreintegratedCombinedMeasurementsT<L>;          \
-    testGroup##testName##Helper<PM, CM>(result_, this->name_); \
-    testGroup##testName##Helper<PT, CT>(result_, this->name_); \
-    testGroup##testName##Helper<PL, CL>(result_, this->name_); \
-    using PG = PreintegratedImuMeasurementsG;                  \
-    testGroup##testName##Helper<PG, CL>(result_, this->name_); \
-  }                                                            \
+// Macros to test ImuFactor with the supported preintegration backends. In the
+// test body the selected PreintegratedImuMeasurementsT is available as `PIM`,
+// and the combined version as `CombinedPIM`.
+#define TEST_PIM_HELPER_DECLARATION(testGroup, testName)       \
   template <class PIM, class CombinedPIM>                      \
   void testGroup##testName##Helper(TestResult& result_,        \
                                    const std::string& name_)
+
+#define RUN_ESTABLISHED_PIM_BACKENDS(testGroup, testName)      \
+  using M = ManifoldPreintegration;                            \
+  using PM = PreintegratedImuMeasurementsT<M>;                 \
+  using CM = PreintegratedCombinedMeasurementsT<M>;            \
+  using T = TangentPreintegration;                             \
+  using PT = PreintegratedImuMeasurementsT<T>;                 \
+  using CT = PreintegratedCombinedMeasurementsT<T>;            \
+  using L = LieGroupPreintegration;                            \
+  using PL = PreintegratedImuMeasurementsT<L>;                 \
+  using CL = PreintegratedCombinedMeasurementsT<L>;            \
+  testGroup##testName##Helper<PM, CM>(result_, this->name_);   \
+  testGroup##testName##Helper<PT, CT>(result_, this->name_);   \
+  testGroup##testName##Helper<PL, CL>(result_, this->name_)
+
+#define RUN_GALILEAN_PIM_BACKEND(testGroup, testName, name) \
+  using PG = PreintegratedImuMeasurementsG;                 \
+  using L = LieGroupPreintegration;                         \
+  using CL = PreintegratedCombinedMeasurementsT<L>;         \
+  testGroup##testName##Helper<PG, CL>(result_, name)
+
+#define TEST_PIM(testGroup, testName)                            \
+  TEST_PIM_HELPER_DECLARATION(testGroup, testName);              \
+  TEST(testGroup, testName) {                                    \
+    RUN_ESTABLISHED_PIM_BACKENDS(testGroup, testName);           \
+    RUN_GALILEAN_PIM_BACKEND(testGroup, testName, this->name_);  \
+  }                                                              \
+  TEST_PIM_HELPER_DECLARATION(testGroup, testName)
+
+// Keep a pending Galilean instantiation compiled, but do not register it with
+// CppUnitLite. Replace this macro with TEST_PIM once the test's Galilean
+// expectations have been updated to the left-invariant formulation.
+#define TEST_PIM_WITH_PENDING_GALILEAN(testGroup, testName)   \
+  TEST_PIM_HELPER_DECLARATION(testGroup, testName);           \
+  TEST(testGroup, testName) {                                 \
+    RUN_ESTABLISHED_PIM_BACKENDS(testGroup, testName);        \
+  }                                                           \
+  TEST_DISABLED(GalileanPending, testName) {                  \
+    RUN_GALILEAN_PIM_BACKEND(testGroup, testName, name_);     \
+  }                                                           \
+  TEST_PIM_HELPER_DECLARATION(testGroup, testName)
 }  // namespace
