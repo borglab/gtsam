@@ -35,7 +35,8 @@ class InstantiatedMethod(parser.Method):
                          self.return_type,
                          self.args,
                          self.is_const,
-                         parent=self.parent)
+                         parent=self.parent,
+                         force_pybind_lambda=original.force_pybind_lambda)
 
     @classmethod
     def construct(cls, original, typenames, class_instantiations,
@@ -51,6 +52,7 @@ class InstantiatedMethod(parser.Method):
             args=parser.ArgumentList(instantiated_args),
             is_const=original.is_const,
             parent=parent,
+            force_pybind_lambda=original.force_pybind_lambda,
         )
         return InstantiatedMethod(method, instantiations=method_instantiations)
 
@@ -87,7 +89,8 @@ class InstantiatedStaticMethod(parser.StaticMethod):
         self.parent = original.parent
 
         super().__init__(self.name, self.return_type, self.args, self.template,
-                         self.parent)
+                         self.parent,
+                         force_pybind_lambda=original.force_pybind_lambda)
 
     @classmethod
     def construct(cls, original, typenames, class_instantiations,
@@ -104,6 +107,7 @@ class InstantiatedStaticMethod(parser.StaticMethod):
             args=parser.ArgumentList(instantiated_args),
             template=original.template,
             parent=parent,
+            force_pybind_lambda=original.force_pybind_lambda,
         )
         return InstantiatedStaticMethod(method,
                                         instantiations=method_instantiations)

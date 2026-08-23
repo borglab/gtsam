@@ -103,16 +103,47 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
       factorsToRemove, constrainedKeys, {}, additionalMarkedKeys);
 
   if (debug) {
+    std::cout << "Unused Keys After Update: ";
+    if (not isamResult_.unusedKeys.empty()) {
+      for (auto key : isamResult_.unusedKeys) {
+        std::cout << DefaultKeyFormatter(key) << "  ";
+      }
+    }
+    std::cout << std::endl;
+  }
+
+  if (not isamResult_.unusedKeys.empty()) {
+    // Remove keys that became unused after update from the key-timestamp
+    // database
+    eraseKeyTimestampMap(KeyVector{isamResult_.unusedKeys.begin(),
+                                   isamResult_.unusedKeys.end()});
+
+    if (marginalizableKeys.size() > 0) {
+      // Remove keys that became unused after update from the marginalizable
+      // keys to avoid marginalizing keys that have been removed from ISAM2.
+      marginalizableKeys.erase(
+          std::remove_if(marginalizableKeys.begin(), marginalizableKeys.end(),
+                         [&](const auto& key) {
+                           return isamResult_.unusedKeys.find(key) !=
+                                  isamResult_.unusedKeys.end();
+                         }),
+          marginalizableKeys.end());
+    }
+  }
+
+  if (debug) {
     PrintSymbolicTree(isam_,
         "Bayes Tree After Update, Before Marginalization:");
     std::cout << "END" << std::endl;
   }
 
   // Marginalize out any needed variables
+  FactorIndices marginalFactorIndices;  
+  FactorIndices deletedFactorIndices; 
   if (marginalizableKeys.size() > 0) {
     FastList<Key> leafKeys(marginalizableKeys.begin(),
         marginalizableKeys.end());
-    isam_.marginalizeLeaves(leafKeys);
+    isam_.marginalizeLeaves(leafKeys, &marginalFactorIndices, &deletedFactorIndices);
   }
 
   // Remove marginalized keys from the KeyTimestampMap
@@ -129,6 +160,9 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   result.linearVariables = 0;
   result.nonlinearVariables = 0;
   result.error = 0;
+  result.marginalFactorIndices = marginalFactorIndices;
+  result.deletedFactorIndices = deletedFactorIndices;
+  result.keysOfDeletedNodes = KeySet(marginalizableKeys);
 
   if (debug)
     std::cout << "IncrementalFixedLagSmoother::update() Finish" << std::endl;
@@ -165,7 +199,7 @@ void IncrementalFixedLagSmoother::createOrderingConstraints(
 }
 
 /* ************************************************************************* */
-void IncrementalFixedLagSmoother::PrintKeySet(const std::set<Key>& keys,
+void IncrementalFixedLagSmoother::PrintKeySet(const KeySet& keys,
     const std::string& label) {
   std::cout << label;
   for(Key key: keys) {

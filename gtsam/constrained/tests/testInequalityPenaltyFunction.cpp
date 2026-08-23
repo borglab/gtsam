@@ -24,7 +24,7 @@
 
 using namespace gtsam;
 
-/* ********************************************************************************************* */
+/* ************************************************************************* */
 TEST(RampFunction, error_and_jacobian) {
   /// Helper function for numerical Jacobian computation.
   auto ramp_helper = [&](const double& x) { return RampFunction::Ramp(x); };
@@ -42,14 +42,16 @@ TEST(RampFunction, error_and_jacobian) {
     EXPECT_DOUBLES_EQUAL(expected_r_vec.at(i), r, 1e-9);
 
     /// Check derivative.
-    if (abs(x) > 1e-6) {  // function is not smooth at 0, so Jacobian is undefined.
-      Matrix expected_H = gtsam::numericalDerivative11<double, double, 1>(ramp_helper, x, 1e-6);
+    if (abs(x) >
+        1e-6) {  // function is not smooth at 0, so Jacobian is undefined.
+      Matrix expected_H =
+          gtsam::numericalDerivative11<double, double, 1>(ramp_helper, x, 1e-6);
       EXPECT(assert_equal(expected_H, H));
     }
   }
 }
 
-/* ********************************************************************************************* */
+/* ************************************************************************* */
 TEST(RampFunctionPoly2, error_and_jacobian) {
   /// Helper function for numerical Jacobian computation.
   SmoothRampPoly2 p_ramp(2.0);
@@ -68,12 +70,13 @@ TEST(RampFunctionPoly2, error_and_jacobian) {
     EXPECT_DOUBLES_EQUAL(expected_r_vec.at(i), r, 1e-9);
 
     /// Check derivative.
-    Matrix expected_H = gtsam::numericalDerivative11<double, double, 1>(ramp_helper, x, 1e-6);
+    Matrix expected_H =
+        gtsam::numericalDerivative11<double, double, 1>(ramp_helper, x, 1e-6);
     EXPECT(assert_equal(expected_H, H, 1e-6));
   }
 }
 
-/* ********************************************************************************************* */
+/* ************************************************************************* */
 TEST(RampFunctionPoly3, error_and_jacobian) {
   /// Helper function for numerical Jacobian computation.
   SmoothRampPoly3 p_ramp(2.0);
@@ -92,12 +95,13 @@ TEST(RampFunctionPoly3, error_and_jacobian) {
     EXPECT_DOUBLES_EQUAL(expected_r_vec.at(i), r, 1e-9);
 
     /// Check derivative.
-    Matrix expected_H = gtsam::numericalDerivative11<double, double, 1>(ramp_helper, x, 1e-6);
+    Matrix expected_H =
+        gtsam::numericalDerivative11<double, double, 1>(ramp_helper, x, 1e-6);
     EXPECT(assert_equal(expected_H, H, 1e-6));
   }
 }
 
-/* ********************************************************************************************* */
+/* ************************************************************************* */
 TEST(SoftPlusFunction, error_and_jacobian) {
   /// Helper function for numerical Jacobian computation.
   SoftPlusFunction soft_plus(0.5);
@@ -105,8 +109,8 @@ TEST(SoftPlusFunction, error_and_jacobian) {
 
   /// Create a set of values to test the function.
   static std::vector<double> x_vec{-3.0, 0.0, 1.0, 2.0, 3.0};
-  static std::vector<double> expected_r_vec{
-      0.40282656, 1.38629436, 1.94815397, 2.62652338, 3.40282656};
+  static std::vector<double> expected_r_vec{0.40282656, 1.38629436, 1.94815397,
+                                            2.62652338, 3.40282656};
 
   for (size_t i = 0; i < x_vec.size(); i++) {
     double x = x_vec.at(i);
@@ -117,7 +121,8 @@ TEST(SoftPlusFunction, error_and_jacobian) {
     EXPECT_DOUBLES_EQUAL(expected_r_vec.at(i), r, 1e-6);
 
     /// Check derivative.
-    Matrix expected_H = gtsam::numericalDerivative11<double, double, 1>(soft_plus_helper, x, 1e-6);
+    Matrix expected_H = gtsam::numericalDerivative11<double, double, 1>(
+        soft_plus_helper, x, 1e-6);
     EXPECT(assert_equal(expected_H, H, 1e-6));
   }
 }

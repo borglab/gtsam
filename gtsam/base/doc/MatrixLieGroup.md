@@ -29,8 +29,11 @@ You must implement everything from the `LieGroup.md` guide, plus the following:
 
 By inheriting from `gtsam::MatrixLieGroup`, you get:
 
-*   **A default `AdjointMap()` implementation**: This generic version works by repeatedly calling your `Hat` and `Vee` methods. While it is correct, it is often slow. For performance-critical applications, you should still provide a faster, closed-form `AdjointMap()` implementation in your class, which will override the default.
+*   **Default group adjoint methods**: `AdjointMap()`, `Adjoint(xi)`, and `AdjointTranspose(x)` are provided generically, including Jacobians for the latter two.
+*   **Default Lie algebra methods**: `adjointMap(xi)`, `adjoint(xi, y)`, and `adjointTranspose(xi, y)` are provided generically, including Jacobians for the latter two.
 *   **A `vec()` method**: This vectorizes the `N x N` matrix representation of your group element into an `(N*N) x 1` vector.
+
+**Performance Note:** The generic implementation of `AdjointMap()` is correct but may be slower because it is derived via the `Hat`/`Vee` mappings. If a closed-form expression for `AdjointMap()` is available for your group, consider overriding the default implementation for better performance.
 
 ### 4. Traits and Concept Checking
 

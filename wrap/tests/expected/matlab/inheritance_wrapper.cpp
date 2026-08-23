@@ -20,6 +20,10 @@ typedef std::set<std::shared_ptr<ForwardKinematicsFactor>*> Collector_ForwardKin
 static Collector_ForwardKinematicsFactor collector_ForwardKinematicsFactor;
 typedef std::set<std::shared_ptr<ParentHasTemplateDouble>*> Collector_ParentHasTemplateDouble;
 static Collector_ParentHasTemplateDouble collector_ParentHasTemplateDouble;
+typedef std::set<std::shared_ptr<Base>*> Collector_Base;
+static Collector_Base collector_Base;
+typedef std::set<std::shared_ptr<Derived>*> Collector_Derived;
+static Collector_Derived collector_Derived;
 
 
 void _deleteAllObjects()
@@ -64,6 +68,18 @@ void _deleteAllObjects()
     collector_ParentHasTemplateDouble.erase(iter++);
     anyDeleted = true;
   } }
+  { for(Collector_Base::iterator iter = collector_Base.begin();
+      iter != collector_Base.end(); ) {
+    delete *iter;
+    collector_Base.erase(iter++);
+    anyDeleted = true;
+  } }
+  { for(Collector_Derived::iterator iter = collector_Derived.begin();
+      iter != collector_Derived.end(); ) {
+    delete *iter;
+    collector_Derived.erase(iter++);
+    anyDeleted = true;
+  } }
 
   if(anyDeleted)
     cout <<
@@ -84,6 +100,8 @@ void _inheritance_RTTIRegister() {
     types.insert(std::make_pair(typeid(MyTemplateA).name(), "MyTemplateA"));
     types.insert(std::make_pair(typeid(ForwardKinematicsFactor).name(), "ForwardKinematicsFactor"));
     types.insert(std::make_pair(typeid(ParentHasTemplateDouble).name(), "ParentHasTemplateDouble"));
+    types.insert(std::make_pair(typeid(Base).name(), "Base"));
+    types.insert(std::make_pair(typeid(Derived).name(), "Derived"));
 
 
     mxArray *registry = mexGetVariable("global", "gtsamwrap_rttiRegistry");
@@ -138,8 +156,8 @@ void MyBase_deconstructor_2(int nargout, mxArray *out[], int nargin, const mxArr
   item = collector_MyBase.find(self);
   if(item != collector_MyBase.end()) {
     collector_MyBase.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void MyTemplatePoint2_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -188,8 +206,8 @@ void MyTemplatePoint2_deconstructor_6(int nargout, mxArray *out[], int nargin, c
   item = collector_MyTemplatePoint2.find(self);
   if(item != collector_MyTemplatePoint2.end()) {
     collector_MyTemplatePoint2.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void MyTemplatePoint2_accept_T_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -356,8 +374,8 @@ void MyTemplateMatrix_deconstructor_22(int nargout, mxArray *out[], int nargin, 
   item = collector_MyTemplateMatrix.find(self);
   if(item != collector_MyTemplateMatrix.end()) {
     collector_MyTemplateMatrix.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void MyTemplateMatrix_accept_T_23(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -524,8 +542,8 @@ void MyTemplateA_deconstructor_38(int nargout, mxArray *out[], int nargin, const
   item = collector_MyTemplateA.find(self);
   if(item != collector_MyTemplateA.end()) {
     collector_MyTemplateA.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void MyTemplateA_accept_T_39(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -659,8 +677,8 @@ void ForwardKinematicsFactor_deconstructor_53(int nargout, mxArray *out[], int n
   item = collector_ForwardKinematicsFactor.find(self);
   if(item != collector_ForwardKinematicsFactor.end()) {
     collector_ForwardKinematicsFactor.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void ParentHasTemplateDouble_collectorInsertAndMakeBase_54(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -694,8 +712,81 @@ void ParentHasTemplateDouble_deconstructor_56(int nargout, mxArray *out[], int n
   item = collector_ParentHasTemplateDouble.find(self);
   if(item != collector_ParentHasTemplateDouble.end()) {
     collector_ParentHasTemplateDouble.erase(item);
+    delete self;
   }
-  delete self;
+}
+
+void Base_collectorInsertAndMakeBase_57(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef std::shared_ptr<Base> Shared;
+
+  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
+  collector_Base.insert(self);
+}
+
+void Base_upcastFromVoid_58(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
+  mexAtExit(&_deleteAllObjects);
+  typedef std::shared_ptr<Base> Shared;
+  std::shared_ptr<void> *asVoid = *reinterpret_cast<std::shared_ptr<void>**> (mxGetData(in[0]));
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  Shared *self = new Shared(std::static_pointer_cast<Base>(*asVoid));
+  *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
+}
+
+void Base_deconstructor_59(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef std::shared_ptr<Base> Shared;
+  checkArguments("delete_Base",nargout,nargin,1);
+  Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
+  Collector_Base::iterator item;
+  item = collector_Base.find(self);
+  if(item != collector_Base.end()) {
+    collector_Base.erase(item);
+    delete self;
+  }
+}
+
+void Base_Create_60(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  checkArguments("Base.Create",nargout,nargin,1);
+  double x = unwrap< double >(in[0]);
+  out[0] = wrap_shared_ptr(Base::Create(x),"gtsam.Base", true);
+}
+
+void Derived_collectorInsertAndMakeBase_61(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  mexAtExit(&_deleteAllObjects);
+  typedef std::shared_ptr<Derived> Shared;
+
+  Shared *self = *reinterpret_cast<Shared**> (mxGetData(in[0]));
+  collector_Derived.insert(self);
+
+  typedef std::shared_ptr<Base> SharedBase;
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  *reinterpret_cast<SharedBase**>(mxGetData(out[0])) = new SharedBase(*self);
+}
+
+void Derived_upcastFromVoid_62(int nargout, mxArray *out[], int nargin, const mxArray *in[]) {
+  mexAtExit(&_deleteAllObjects);
+  typedef std::shared_ptr<Derived> Shared;
+  std::shared_ptr<void> *asVoid = *reinterpret_cast<std::shared_ptr<void>**> (mxGetData(in[0]));
+  out[0] = mxCreateNumericMatrix(1, 1, mxUINT32OR64_CLASS, mxREAL);
+  Shared *self = new Shared(std::static_pointer_cast<Derived>(*asVoid));
+  *reinterpret_cast<Shared**>(mxGetData(out[0])) = self;
+}
+
+void Derived_deconstructor_63(int nargout, mxArray *out[], int nargin, const mxArray *in[])
+{
+  typedef std::shared_ptr<Derived> Shared;
+  checkArguments("delete_Derived",nargout,nargin,1);
+  Shared *self = *reinterpret_cast<Shared**>(mxGetData(in[0]));
+  Collector_Derived::iterator item;
+  item = collector_Derived.find(self);
+  if(item != collector_Derived.end()) {
+    collector_Derived.erase(item);
+    delete self;
+  }
 }
 
 
@@ -881,8 +972,30 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
     case 56:
       ParentHasTemplateDouble_deconstructor_56(nargout, out, nargin-1, in+1);
       break;
+    case 57:
+      Base_collectorInsertAndMakeBase_57(nargout, out, nargin-1, in+1);
+      break;
+    case 58:
+      Base_upcastFromVoid_58(nargout, out, nargin-1, in+1);
+      break;
+    case 59:
+      Base_deconstructor_59(nargout, out, nargin-1, in+1);
+      break;
+    case 60:
+      Base_Create_60(nargout, out, nargin-1, in+1);
+      break;
+    case 61:
+      Derived_collectorInsertAndMakeBase_61(nargout, out, nargin-1, in+1);
+      break;
+    case 62:
+      Derived_upcastFromVoid_62(nargout, out, nargin-1, in+1);
+      break;
+    case 63:
+      Derived_deconstructor_63(nargout, out, nargin-1, in+1);
+      break;
     }
   } catch(const std::exception& e) {
+    std::cout.rdbuf(outbuf);
     mexErrMsgTxt(("Exception from gtsam:\n" + std::string(e.what()) + "\n").c_str());
   }
 

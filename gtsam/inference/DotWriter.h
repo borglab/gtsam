@@ -55,7 +55,7 @@ struct GTSAM_EXPORT DotWriter {
   std::map<char, double> positionHints;
 
   /** A set of keys that will be displayed as a box */
-  std::set<Key> boxes;
+  KeySet boxes;
 
   /**
    * Factor positions can be optionally specified and will be included in the

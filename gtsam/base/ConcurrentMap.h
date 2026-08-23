@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/global_includes.h>
+#include <gtsam/base/FastMap.h>
 
 // Change class depending on whether we are using TBB
 #ifdef GTSAM_USE_TBB
@@ -41,8 +42,7 @@ using ConcurrentMapBase = tbb::concurrent_unordered_map<
 
 #else
 
-// If we're not using TBB, use a FastMap for ConcurrentMap
-#include <gtsam/base/FastMap.h>
+// If we're not using TBB, use a std::map
 template <typename KEY, typename VALUE>
 using ConcurrentMapBase = gtsam::FastMap<KEY, VALUE>;
 

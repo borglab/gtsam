@@ -8,6 +8,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/geometry/Rot3.h>
 
 namespace gtsam {
@@ -57,7 +58,7 @@ public:
     // predict p_ as q = R*z_, derivative H will be filled if not none
     Point3 q = R.rotate(z_,H);
     // error is just difference, and note derivative of that wrpt q is I3
-    return (Vector(3) << q.x()-p_.x(), q.y()-p_.y(), q.z()-p_.z()).finished();
+    return Vector{{q.x() - p_.x(), q.y() - p_.y(), q.z() - p_.z()}};
   }
 
 };
@@ -117,8 +118,6 @@ public:
     }
     return error;
   }
-
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 }  // namespace gtsam
 

@@ -114,10 +114,6 @@ class GTSAM_EXPORT HybridNonlinearISAM {
   void saveGraph(const std::string& s,
                  const KeyFormatter& keyFormatter = DefaultKeyFormatter) const;
 
-  /// @}
-  /// @name Advanced Interface
-  /// @{
-
   /** Add new factors along with their initial linearization points */
   void update(const HybridNonlinearFactorGraph& newFactors,
               const Values& initialValues,

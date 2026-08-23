@@ -1,0 +1,15 @@
+/*
+ * MyST flattens the README's <picture> element to its fallback <img>. Replace
+ * that fallback with the matching README artwork for the selected site theme.
+ */
+img[data-canonical-url="doc/images/gtsam-manifold-optimization-light.png"] {
+  /* MyST treats the linked README image as inline content by default. */
+  max-height: none !important;
+}
+
+html.dark
+  img[data-canonical-url="doc/images/gtsam-manifold-optimization-light.png"] {
+  content:
+    url("gtsam-manifold-optimization-dark.png") /
+    "GTSAM manifold optimization workflow: build a factor graph, linearize and solve in tangent spaces, retract to manifolds, and iterate to convergence.";
+}

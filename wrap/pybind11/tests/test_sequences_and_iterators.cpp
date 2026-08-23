@@ -90,7 +90,7 @@ PYBIND11_MAKE_OPAQUE(std::vector<NonCopyableInt>)
 PYBIND11_MAKE_OPAQUE(std::vector<NonCopyableIntPair>)
 
 template <typename PythonType>
-py::list test_random_access_iterator(PythonType x) {
+py::list test_random_access_iterator(const PythonType &x) {
     if (x.size() < 5) {
         throw py::value_error("Please provide at least 5 elements for testing.");
     }
@@ -556,7 +556,7 @@ TEST_SUBMODULE(sequences_and_iterators, m) {
     });
 
     m.def("count_nonzeros", [](const py::dict &d) {
-        return std::count_if(d.begin(), d.end(), [](std::pair<py::handle, py::handle> p) {
+        return std::count_if(d.begin(), d.end(), [](const std::pair<py::handle, py::handle> &p) {
             return p.second.cast<int>() != 0;
         });
     });

@@ -22,12 +22,8 @@
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/Ring.h>
-#include <gtsam/inference/Ordering.h>
 
-#include <algorithm>
-#include <map>
 #include <memory>
-#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -196,6 +192,9 @@ namespace gtsam {
 
     /// Convert into a decision tree
     DecisionTreeFactor toDecisionTreeFactor() const override { return *this; }
+
+    /// Convert directly into a sparse table.
+    TableFactor toTableFactor() const override;
 
     /// Use sum() from AlgebraicDecisionTree
     using ADT::sum;

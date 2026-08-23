@@ -48,7 +48,11 @@ TEST(InitializePose3, computePoses2D) {
   const Values poses = initialize::computePoses<Pose2>(orientations, &poseGraph);
 
   // posesInFile is seriously noisy, so we check error of recovered poses
-  EXPECT_DOUBLES_EQUAL(0.0810283, inputGraph->error(poses), 1e-6);
+#ifdef GTSAM_SLOW_BUT_CORRECT_EXPMAP
+  EXPECT_DOUBLES_EQUAL(0.08088329719, inputGraph->error(poses), 1e-6);
+#else
+  EXPECT_DOUBLES_EQUAL(0.081750999177, inputGraph->error(poses), 1e-6);
+#endif
 }
 
 /* ************************************************************************* */

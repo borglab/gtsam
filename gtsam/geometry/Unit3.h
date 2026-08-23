@@ -136,7 +136,20 @@ public:
   /// Return unit-norm Vector
   Vector3 unitVector(OptionalJacobian<3, 2> H = {}) const;
 
-  /// Return scaled direction as Point3
+  /**
+   * Return this direction scaled by a magnitude, i.e. magnitude * unitVector().
+   * Useful to reconstruct a physical vector from a direction and a known (or
+   * separately estimated) magnitude, e.g. a gravity or magnetic field vector.
+   * @param magnitude scale applied to the unit vector
+   * @param H_this optional 3x2 Jacobian wrt this direction
+   * @param H_magnitude optional 3x1 Jacobian wrt the magnitude
+   * @sa operator*(double, const Unit3&), which returns the same value
+   *     without Jacobians
+   */
+  Vector3 scaled(double magnitude, OptionalJacobian<3, 2> H_this = {},
+                 OptionalJacobian<3, 1> H_magnitude = {}) const;
+
+  /// Return scaled direction as Point3 (no Jacobians; see scaled())
   friend Point3 operator*(double s, const Unit3& d) {
     return Point3(s * d.p_);
   }
@@ -154,14 +167,12 @@ public:
   double distance(const Unit3& q, OptionalJacobian<1, 2> H = {}) const;
 
   /// Cross-product between two Unit3s
-  Unit3 cross(const Unit3& q) const {
-    return Unit3(p_.cross(q.p_));
-  }
+  Unit3 cross(const Unit3& q, OptionalJacobian<2, 2> H_p = {},
+              OptionalJacobian<2, 2> H_q = {}) const;
 
   /// Cross-product w Point3
-  Point3 cross(const Point3& q) const {
-    return point3().cross(q);
-  }
+  Point3 cross(const Point3& q, OptionalJacobian<3, 2> H_p = {},
+               OptionalJacobian<3, 3> H_q = {}) const;
 
   /// @}
   /// @name Manifold
@@ -211,12 +222,24 @@ private:
 #endif
 
   /// @}
-
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
-// Define GTSAM traits
+/// cross product Unit3 x Unit3
+GTSAM_EXPORT Unit3 cross(const Unit3& p, const Unit3& q,
+                         OptionalJacobian<2, 2> H_p = {},
+                         OptionalJacobian<2, 2> H_q = {});
+
+/// cross product Unit3 x Point3
+GTSAM_EXPORT Point3 cross(const Unit3& p, const Point3& q,
+                          OptionalJacobian<3, 2> H_p = {},
+                          OptionalJacobian<3, 3> H_q = {});
+
+/// cross product Point3 x Unit3
+GTSAM_EXPORT Point3 cross(const Point3& p, const Unit3& q,
+                          OptionalJacobian<3, 3> H_p = {},
+                          OptionalJacobian<3, 2> H_q = {});
+
+/// Define GTSAM traits
 template<> struct traits<Unit3> : public internal::Manifold<Unit3> {
 };
 

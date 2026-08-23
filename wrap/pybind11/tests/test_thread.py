@@ -5,6 +5,7 @@ import threading
 
 import pytest
 
+import env
 from pybind11_tests import thread as m
 
 
@@ -47,3 +48,33 @@ def test_implicit_conversion_no_gil():
         x.start()
     for x in [c, b, a]:
         x.join()
+
+
+@pytest.mark.skipif(sys.platform.startswith("emscripten"), reason="Requires threads")
+def test_bind_shared_instance():
+    nb_threads = 4
+    b = threading.Barrier(nb_threads)
+
+    def access_shared_instance():
+        b.wait()
+        for _ in range(1000):
+            m.EmptyStruct.SharedInstance  # noqa: B018
+
+    threads = [
+        threading.Thread(target=access_shared_instance) for _ in range(nb_threads)
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+
+
+@pytest.mark.skipif(sys.platform.startswith("emscripten"), reason="Requires threads")
+@pytest.mark.skipif(not m.defined_PYBIND11_HAS_STD_BARRIER, reason="no <barrier>")
+@pytest.mark.skipif(env.sys_is_gil_enabled(), reason="Deadlock with the GIL")
+def test_pythread_state_clear_destructor():
+    class Foo:
+        def __del__(self):
+            m.acquire_gil()
+
+    m.test_pythread_state_clear_destructor(Foo)

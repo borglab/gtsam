@@ -26,9 +26,7 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Vector9 Cal3Fisheye::vector() const {
-  Vector9 v;
-  v << fx_, fy_, s_, u0_, v0_, k1_, k2_, k3_, k4_;
-  return v;
+  return Vector9{fx_, fy_, s_, u0_, v0_, k1_, k2_, k3_, k4_};
 }
 
 /* ************************************************************************* */
@@ -50,22 +48,19 @@ Point2 Cal3Fisheye::uncalibrate(const Point2& p, OptionalJacobian<2, 9> H1,
   const double r2 = xi * xi + yi * yi, r = sqrt(r2);
   const double t = atan2(r, zi);
   const double t2 = t * t, t4 = t2 * t2, t6 = t2 * t4, t8 = t4 * t4;
-  Vector5 K, T;
-  K << 1, k1_, k2_, k3_, k4_;
-  T << 1, t2, t4, t6, t8;
+  Vector5 K{1, k1_, k2_, k3_, k4_}, T{1, t2, t4, t6, t8};
   const double scaling = Scaling(r);
   const double s = scaling * K.dot(T);
   const double xd = s * xi, yd = s * yi;
   Point2 uv(fx_ * xd + s_ * yd + u0_, fy_ * yd + v0_);
 
   Matrix2 DK;
-  if (H1 || H2) DK << fx_, s_, 0.0, fy_;
+  if (H1 || H2) DK = Matrix2{{fx_, s_}, {0.0, fy_}};
 
   // Derivative for calibration parameters (2 by 9)
   if (H1) {
-    Matrix25 DR1;
     // order: fx, fy, s, u0, v0
-    DR1 << xd, 0.0, yd, 1.0, 0.0, 0.0, yd, 0.0, 0.0, 1.0;
+    Matrix25 DR1{{xd, 0.0, yd, 1.0, 0.0}, {0.0, yd, 0.0, 0.0, 1.0}};
 
     // order: k1, k2, k3, k4
     Matrix24 DR2;
@@ -97,8 +92,7 @@ Point2 Cal3Fisheye::uncalibrate(const Point2& p, OptionalJacobian<2, 9> H1,
       const double dyd_dxi = dxd_dyi;
       const double dyd_dyi = dtd_dr * s2 + s * (1 - s2);
 
-      Matrix2 DR;
-      DR << dxd_dxi, dxd_dyi, dyd_dxi, dyd_dyi;
+      Matrix2 DR{{dxd_dxi, dxd_dyi}, {dyd_dxi, dyd_dyi}};
 
       *H2 = DK * DR;
     }

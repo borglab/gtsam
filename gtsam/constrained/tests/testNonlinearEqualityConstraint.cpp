@@ -20,10 +20,15 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/constrained/NonlinearEqualityConstraint.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/inference/VariableIndex.h>
+#include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/slam/expressions.h>
+
+#include <cmath>
 
 #include "constrainedExample.h"
 
@@ -32,10 +37,11 @@ using constrained_example::pow;
 using constrained_example::x1, constrained_example::x2;
 using constrained_example::x1_key, constrained_example::x2_key;
 
+/* ************************************************************************* */
 // Test methods of DoubleExpressionEquality.
 TEST(ExpressionEqualityConstraint, double) {
   // create constraint from double expression
-  // g(x1, x2) = x1 + x1^3 + x2 + x2^2, from Vanderbergh slides
+  // g(x1, x2) = x1 + x1^3 + x2 + x2^2, from Vandenberghe slides
   Vector sigmas = Vector1(0.1);
   auto g = x1 + pow(x1, 3) + x2 + pow(x2, 2);
   auto constraint = ExpressionEqualityConstraint<double>(g, 0.0, sigmas);
@@ -62,8 +68,10 @@ TEST(ExpressionEqualityConstraint, double) {
   EXPECT(!constraint.feasible(values2));
 
   // Check constraint violation is indeed g(x) at values2.
-  EXPECT(assert_equal(Vector::Constant(1, 4.0), constraint.unwhitenedError(values2)));
-  EXPECT(assert_equal(Vector::Constant(1, 40), constraint.whitenedError(values2)));
+  EXPECT(assert_equal(Vector::Constant(1, 4.0),
+                      constraint.unwhitenedError(values2)));
+  EXPECT(
+      assert_equal(Vector::Constant(1, 40), constraint.whitenedError(values2)));
   EXPECT(assert_equal(800, constraint.error(values2)));
 
   // Check dimension is 1 for scalar g.
@@ -93,6 +101,7 @@ TEST(ExpressionEqualityConstraint, double) {
   EXPECT_CORRECT_FACTOR_JACOBIANS(*merit_factor, values2, 1e-7, 1e-5);
 }
 
+/* ************************************************************************* */
 // Test methods of VectorExpressionEquality.
 TEST(ExpressionEqualityConstraint, Vector2) {
   // g(v1, v2) = v1 + v2, our own example.
@@ -100,7 +109,8 @@ TEST(ExpressionEqualityConstraint, Vector2) {
   Vector2_ x2_vec_expr(x2_key);
   auto g = x1_vec_expr + x2_vec_expr;
   auto sigmas = Vector2(0.1, 0.5);
-  auto constraint = ExpressionEqualityConstraint<Vector2>(g, Vector2::Zero(), sigmas);
+  auto constraint =
+      ExpressionEqualityConstraint<Vector2>(g, Vector2::Zero(), sigmas);
 
   EXPECT(constraint.noiseModel()->isConstrained());
   EXPECT(assert_equal(sigmas, constraint.noiseModel()->sigmas()));
@@ -116,21 +126,25 @@ TEST(ExpressionEqualityConstraint, Vector2) {
   EXPECT(constraint.feasible(values1));
 
   // Check that violation evaluates as 0 at values1.
-  auto expected_violation1 = (Vector(2) << 0, 0).finished();
-  EXPECT(assert_equal(expected_violation1, constraint.unwhitenedError(values1)));
-  auto expected_scaled_violation1 = (Vector(2) << 0, 0).finished();
-  EXPECT(assert_equal(expected_scaled_violation1, constraint.whitenedError(values1)));
+  Vector expected_violation1{{0, 0}};
+  EXPECT(
+      assert_equal(expected_violation1, constraint.unwhitenedError(values1)));
+  Vector expected_scaled_violation1{{0, 0}};
+  EXPECT(assert_equal(expected_scaled_violation1,
+                      constraint.whitenedError(values1)));
 
   // Check that values2 are indeed deemed infeasible.
   EXPECT(!constraint.feasible(values2));
 
   // Check constraint violation is indeed g(x) at values2.
-  auto expected_violation2 = (Vector(2) << 2, 2).finished();
-  EXPECT(assert_equal(expected_violation2, constraint.unwhitenedError(values2)));
+  Vector expected_violation2{{2, 2}};
+  EXPECT(
+      assert_equal(expected_violation2, constraint.unwhitenedError(values2)));
 
   // Check scaled violation is indeed g(x)/sigmas at values2.
-  auto expected_scaled_violation2 = (Vector(2) << 20, 4).finished();
-  EXPECT(assert_equal(expected_scaled_violation2, constraint.whitenedError(values2)));
+  Vector expected_scaled_violation2{{20, 4}};
+  EXPECT(assert_equal(expected_scaled_violation2,
+                      constraint.whitenedError(values2)));
 
   // Check dim is the dimension of the vector.
   EXPECT(constraint.dim() == 2);
@@ -154,6 +168,7 @@ TEST(ExpressionEqualityConstraint, Vector2) {
   EXPECT_CORRECT_FACTOR_JACOBIANS(*merit_factor, values2, 1e-7, 1e-5);
 }
 
+/* ************************************************************************* */
 // Test methods of FactorZeroErrorConstraint.
 TEST(ZeroCostConstraint, BetweenFactor) {
   Key x1_key = 1;
@@ -161,7 +176,8 @@ TEST(ZeroCostConstraint, BetweenFactor) {
   Vector sigmas = Vector2(0.5, 0.1);
   auto noise = noiseModel::Diagonal::Sigmas(sigmas);
 
-  auto factor = std::make_shared<BetweenFactor<Vector2>>(x1_key, x2_key, Vector2(1, 1), noise);
+  auto factor = std::make_shared<BetweenFactor<Vector2>>(x1_key, x2_key,
+                                                         Vector2(1, 1), noise);
   auto constraint = ZeroCostConstraint(factor);
 
   EXPECT(constraint.noiseModel()->isConstrained());
@@ -178,21 +194,25 @@ TEST(ZeroCostConstraint, BetweenFactor) {
   EXPECT(constraint.feasible(values1));
 
   // Check that violation evaluates as 0 at values1.
-  auto expected_violation1 = (Vector(2) << 0, 0).finished();
-  EXPECT(assert_equal(expected_violation1, constraint.unwhitenedError(values1)));
-  auto expected_scaled_violation1 = (Vector(2) << 0, 0).finished();
-  EXPECT(assert_equal(expected_scaled_violation1, constraint.whitenedError(values1)));
+  Vector expected_violation1{{0, 0}};
+  EXPECT(
+      assert_equal(expected_violation1, constraint.unwhitenedError(values1)));
+  Vector expected_scaled_violation1{{0, 0}};
+  EXPECT(assert_equal(expected_scaled_violation1,
+                      constraint.whitenedError(values1)));
 
   // Check that values2 are indeed deemed infeasible.
   EXPECT(!constraint.feasible(values2));
 
   // Check constraint violation is indeed g(x) at values2.
-  auto expected_violation2 = (Vector(2) << 1, 2).finished();
-  EXPECT(assert_equal(expected_violation2, constraint.unwhitenedError(values2)));
+  Vector expected_violation2{{1, 2}};
+  EXPECT(
+      assert_equal(expected_violation2, constraint.unwhitenedError(values2)));
 
   // Check scaled violation is indeed g(x)/sigmas at values2.
-  auto expected_scaled_violation2 = (Vector(2) << 2, 20).finished();
-  EXPECT(assert_equal(expected_scaled_violation2, constraint.whitenedError(values2)));
+  Vector expected_scaled_violation2{{2, 20}};
+  EXPECT(assert_equal(expected_scaled_violation2,
+                      constraint.whitenedError(values2)));
 
   // Check dim is the dimension of the vector.
   EXPECT(constraint.dim() == 2);
@@ -216,6 +236,7 @@ TEST(ZeroCostConstraint, BetweenFactor) {
   EXPECT_CORRECT_FACTOR_JACOBIANS(*merit_factor, values2, 1e-7, 1e-5);
 }
 
+/* ************************************************************************* */
 TEST(NonlinearEqualityConstraints, Container) {
   NonlinearEqualityConstraints constraints;
 
@@ -226,8 +247,10 @@ TEST(NonlinearEqualityConstraints, Container) {
   auto g2 = x1_vec_expr + x2_vec_expr;
   Vector sigmas2 = Vector2(0.1, 0.5);
 
-  constraints.emplace_shared<ExpressionEqualityConstraint<double>>(g1, 0.0, sigmas1);
-  constraints.emplace_shared<ExpressionEqualityConstraint<Vector2>>(g2, Vector2::Zero(), sigmas2);
+  constraints.emplace_shared<ExpressionEqualityConstraint<double>>(g1, 0.0,
+                                                                   sigmas1);
+  constraints.emplace_shared<ExpressionEqualityConstraint<Vector2>>(
+      g2, Vector2::Zero(), sigmas2);
 
   // Check size.
   EXPECT_LONGS_EQUAL(2, constraints.size());
@@ -251,8 +274,56 @@ TEST(NonlinearEqualityConstraints, Container) {
   // Check constraint violation.
 }
 
-TEST(NonlinearEqualityConstraints, FromCostGraph) {}
+TEST(GtsamConstrained, VectorEqualityViolationVectorMixedDims) {
+  using namespace gtsam;
 
+  const Symbol x_key('x', 0);  // Pose3 (dim 6)
+  const Symbol p_key('p', 0);  // Vector3 (dim 3)
+
+  const Pose3_ x(x_key);
+  const Vector3_ p(p_key);
+  const Vector3_ world_point(x, &Pose3::transformFrom, p);
+
+  // Create many constraints so the stacked violation vector is non-trivial.
+  // 28 * 3 = 84 to mirror real-world constraint stacks.
+  NonlinearEqualityConstraints constraints;
+  const Vector3 target(0.1, -0.2, 0.3);
+  const Vector3_ target_expr(target);
+  const Vector3_ error_expr = world_point - target_expr;
+
+  // Use the "cost-factor wrapped as a constraint" path (ZeroCostConstraint),
+  // as this matches how downstream projects (like GTDynamics) typically
+  // construct constraints.
+  const auto noise = noiseModel::Isotropic::Sigma(3, 1.0);
+  for (size_t i = 0; i < 28; ++i) {
+    auto factor = std::make_shared<ExpressionFactor<Vector3>>(
+        noise, Vector3::Zero(), error_expr);
+    constraints.emplace_shared<ZeroCostConstraint>(factor);
+  }
+
+  Values values;
+  values.insert(x_key, Pose3());
+  values.insert(p_key, Vector3(0.0, 0.0, 0.0));
+
+  // This call is the primary reproducer: it should return a finite vector with
+  // size 84. On affected platforms/builds it may abort inside Eigen.
+  const Vector v = constraints.violationVector(values);
+  EXPECT_LONGS_EQUAL(84, static_cast<long>(v.size()));
+  for (int i = 0; i < static_cast<int>(v.size()); ++i) {
+    EXPECT(std::isfinite(v(i)));
+  }
+
+  // Also probe per-constraint violation evaluation, as some failures only show
+  // up when the constraint graph is small.
+  for (size_t i = 0; i < constraints.size(); ++i) {
+    NonlinearEqualityConstraints single;
+    single.push_back(constraints.at(i));
+    const double norm = single.violationNorm(values);
+    EXPECT(std::isfinite(norm));
+  }
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

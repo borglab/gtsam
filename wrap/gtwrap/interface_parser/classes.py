@@ -15,6 +15,8 @@ from typing import Any, Iterable, List, Union
 from pyparsing import ZeroOrMore  # type: ignore
 from pyparsing import Literal, Optional, Word, alphas
 
+from .annotations import (PYBIND_LAMBDA, UNSUPPORTED_ANNOTATION,
+                          UNSUPPORTED_TEMPLATED_ANNOTATION)
 from .enum import Enum
 from .function import ArgumentList, ReturnType
 from .template import Template
@@ -23,6 +25,7 @@ from .tokens import (CLASS, COLON, CONST, DUNDER, IDENT, LBRACE, LPAREN,
 from .type import TemplatedType, Typename
 from .utils import collect_namespaces
 from .variable import Variable
+from .diagnostics import semantic_error
 
 
 class Method:
@@ -38,6 +41,7 @@ class Method:
     """
     rule = (
         Optional(Template.rule("template"))  #
+        + Optional(PYBIND_LAMBDA("pybind_lambda"))  #
         + ReturnType.rule("return_type")  #
         + IDENT("name")  #
         + LPAREN  #
@@ -45,8 +49,14 @@ class Method:
         + RPAREN  #
         + Optional(CONST("is_const"))  #
         + SEMI_COLON  # BR
-    ).setParseAction(lambda t: Method(t.template, t.name, t.return_type, t.
-                                      args_list, t.is_const))
+    ).set_parse_action(lambda t: Method(
+        t.template,
+        t.name,
+        t.return_type,
+        t.args_list,
+        t.is_const,
+        force_pybind_lambda=bool(t.pybind_lambda),
+    ))
 
     def __init__(self,
                  template: Union[Template, Any],
@@ -54,12 +64,14 @@ class Method:
                  return_type: ReturnType,
                  args: ArgumentList,
                  is_const: str,
-                 parent: Union["Class", Any] = ''):
+                 parent: Union["Class", Any] = '',
+                 force_pybind_lambda: bool = False):
         self.template = template
         self.name = name
         self.return_type = return_type
         self.args = args
         self.is_const = is_const
+        self.force_pybind_lambda = force_pybind_lambda
 
         self.parent = parent
 
@@ -90,6 +102,7 @@ class StaticMethod:
     """
     rule = (
         Optional(Template.rule("template"))  #
+        + Optional(PYBIND_LAMBDA("pybind_lambda"))  #
         + STATIC  #
         + ReturnType.rule("return_type")  #
         + IDENT("name")  #
@@ -97,19 +110,26 @@ class StaticMethod:
         + ArgumentList.rule("args_list")  #
         + RPAREN  #
         + SEMI_COLON  # BR
-    ).setParseAction(
-        lambda t: StaticMethod(t.name, t.return_type, t.args_list, t.template))
+    ).set_parse_action(lambda t: StaticMethod(
+        t.name,
+        t.return_type,
+        t.args_list,
+        t.template,
+        force_pybind_lambda=bool(t.pybind_lambda),
+    ))
 
     def __init__(self,
                  name: str,
                  return_type: ReturnType,
                  args: ArgumentList,
                  template: Union[Template, Any] = None,
-                 parent: Union["Class", Any] = ''):
+                 parent: Union["Class", Any] = '',
+                 force_pybind_lambda: bool = False):
         self.name = name
         self.return_type = return_type
         self.args = args
         self.template = template
+        self.force_pybind_lambda = force_pybind_lambda
 
         self.parent = parent
 
@@ -133,18 +153,23 @@ class Constructor:
         + ArgumentList.rule("args_list")  #
         + RPAREN  #
         + SEMI_COLON  # BR
-    ).setParseAction(lambda t: Constructor(t.name, t.args_list, t.template))
+    ).set_parse_action(lambda s, loc, t: Constructor(
+        t.name, t.args_list, t.template, source=s, location=loc))
 
     def __init__(self,
                  name: str,
                  args: ArgumentList,
                  template: Union[Template, Any],
-                 parent: Union["Class", Any] = ''):
+                 parent: Union["Class", Any] = '',
+                 source: str = '',
+                 location: int = 0):
         self.name = name
         self.args = args
         self.template = template
 
         self.parent = parent
+        self.source = source
+        self.location = location
 
     def __repr__(self) -> str:
         return "Constructor: {}{}".format(self.name, self.args)
@@ -169,8 +194,15 @@ class Operator:
         + RPAREN  #
         + CONST("is_const")  #
         + SEMI_COLON  # BR
-    ).setParseAction(lambda t: Operator(t.name, t.operator, t.return_type, t.
-                                        args_list, t.is_const))
+    ).set_parse_action(lambda s, loc, t: Operator(
+        t.name,
+        t.operator,
+        t.return_type,
+        t.args_list,
+        t.is_const,
+        source=s,
+        location=loc,
+    ))
 
     def __init__(self,
                  name: str,
@@ -178,7 +210,9 @@ class Operator:
                  return_type: ReturnType,
                  args: ArgumentList,
                  is_const: str,
-                 parent: Union["Class", Any] = ''):
+                 parent: Union["Class", Any] = '',
+                 source: str = '',
+                 location: int = 0):
         self.name = name
         self.operator = operator
         self.return_type = return_type
@@ -187,21 +221,41 @@ class Operator:
         self.is_unary = len(args) == 0
 
         self.parent = parent
+        self.source = source
+        self.location = location
 
         # Check for valid unary operators
         if self.is_unary and self.operator not in ('+', '-'):
-            raise ValueError("Invalid unary operator {} used for {}".format(
-                self.operator, self))
+            raise semantic_error(
+                source,
+                location,
+                "operator declaration",
+                f"unsupported unary operator '{self.operator}'",
+            )
 
         # Check that number of arguments are either 0 or 1
-        assert 0 <= len(args) < 2, \
-            "Operator overload should be at most 1 argument, " \
-                "{} arguments provided".format(len(args))
+        if not 0 <= len(args) < 2:
+            raise semantic_error(
+                source,
+                location,
+                "operator declaration",
+                "operator overload must have at most one argument; "
+                f"found {len(args)}",
+            )
 
         # Check to ensure arg and return type are the same.
         if len(args) == 1 and self.operator not in ("()", "[]"):
-            assert args.list()[0].ctype.typename.name == return_type.type1.typename.name, \
-                "Mixed type overloading not supported. Both arg and return type must be the same."
+            argument_type = args.list()[0].ctype.typename.name
+            return_type_name = return_type.type1.typename.name
+            if argument_type != return_type_name:
+                raise semantic_error(
+                    source,
+                    location,
+                    "operator declaration",
+                    "mixed-type operator overloads are unsupported; "
+                    f"argument type '{argument_type}' does not match return "
+                    f"type '{return_type_name}'",
+                )
 
     def __repr__(self) -> str:
         return "Operator: {}{}{}({}) {}".format(
@@ -223,7 +277,7 @@ class DunderMethod:
         + ArgumentList.rule("args_list")  #
         + RPAREN  #
         + SEMI_COLON  # BR
-    ).setParseAction(lambda t: DunderMethod(t.name, t.args_list))
+    ).set_parse_action(lambda t: DunderMethod(t.name, t.args_list))
 
     def __init__(self, name: str, args: ArgumentList):
         self.name = name
@@ -256,7 +310,9 @@ class Class:
                           ^ Variable.rule  #
                           ^ Operator.rule  #
                           ^ Enum.rule  #
-                          ).setParseAction(lambda t: Class.Members(t.asList()))
+                          ^ UNSUPPORTED_TEMPLATED_ANNOTATION  #
+                          ^ UNSUPPORTED_ANNOTATION  #
+                          ).set_parse_action(lambda t: Class.Members(t.as_list()))
 
         def __init__(self, members: List[Union[Constructor, Method,
                                                StaticMethod, Variable,
@@ -295,7 +351,7 @@ class Class:
         + Members.rule("members")  #
         + RBRACE  #
         + SEMI_COLON  # BR
-    ).setParseAction(lambda t: Class(
+    ).set_parse_action(lambda t: Class(
         t.template, t.is_virtual, t.name, t.parent_class, t.members.ctors, t.
         members.methods, t.members.static_methods, t.members.dunder_methods, t.
         members.properties, t.members.operators, t.members.enums))
@@ -345,8 +401,13 @@ class Class:
         # Make sure ctors' names and class name are the same.
         for ctor in self.ctors:
             if ctor.name != self.name:
-                raise ValueError("Error in constructor name! {} != {}".format(
-                    ctor.name, self.name))
+                raise semantic_error(
+                    ctor.source,
+                    ctor.location,
+                    "constructor declaration",
+                    f"constructor name '{ctor.name}' must match class "
+                    f"name '{self.name}'",
+                )
 
         for ctor in self.ctors:
             ctor.parent = self

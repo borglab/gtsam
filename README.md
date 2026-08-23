@@ -1,8 +1,21 @@
+
 # GTSAM: Georgia Tech Smoothing and Mapping Library
+[![C++ API](https://img.shields.io/badge/API-C%2B%2B-blue.svg)](https://gtsam.org/doxygen/)
+[![Docs](https://img.shields.io/badge/Docs-Python%20%7C%20C%2B%2B-green.svg)](https://borglab.github.io/gtsam/)
+
+<p align="center">
+  <a href="https://borglab.github.io/gtsam/">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="doc/images/gtsam-manifold-optimization-dark.png">
+      <source media="(prefers-color-scheme: light)" srcset="doc/images/gtsam-manifold-optimization-light.png">
+      <img alt="GTSAM manifold optimization workflow: build a factor graph, linearize and solve in tangent spaces, retract to manifolds, and iterate to convergence." src="doc/images/gtsam-manifold-optimization-light.png" width="100%">
+    </picture>
+  </a>
+</p>
 
 **Important Note**
 
-**As of January 2023, the `develop` branch is officially in "Pre 4.3" mode. We envision several API-breaking changes as we switch to C++17 and away from boost.**
+**The `develop` branch is officially in "Pre 4.3" mode. We envision several API-breaking changes as we switch to C++17 and away from boost.**
 
 In addition, features deprecated in 4.2 will be removed. Please use the stable [4.2 release](https://github.com/borglab/gtsam/releases/tag/4.2) if you need those features. However, most are easily converted and can be tracked down (in 4.2) by disabling the cmake flag `GTSAM_ALLOW_DEPRECATED_SINCE_V42`.
 
@@ -14,6 +27,7 @@ Networks as the underlying computing paradigm rather than sparse
 matrices.
 
 
+
 <!-- Main CI Badges (develop branch) -->
 | CI Status | Platform | Compiler |
 |:----------|:---------|:---------|
@@ -22,6 +36,18 @@ matrices.
 | [![Build Wheels for Develop](https://github.com/borglab/gtsam/actions/workflows/build-cibw.yml/badge.svg?branch=develop)](https://github.com/borglab/gtsam/actions/workflows/build-cibw.yml?query=branch%3Adevelop) | See [pypi files](https://pypi.org/project/gtsam-develop/#files); no Windows| - |
 
 On top of the C++ library, GTSAM includes [wrappers for MATLAB & Python](#wrappers).
+
+
+## Documentation
+
+- **C++ API Docs:** [https://gtsam.org/doxygen/](https://gtsam.org/doxygen/)
+- **Python API Docs:** [https://borglab.github.io/gtsam/](https://borglab.github.io/gtsam/)
+- **CUDA linear solvers:** [docs/CUDA_LINEAR_SOLVERS.md](docs/CUDA_LINEAR_SOLVERS.md)
+<!-- TODO: Perhaps include links to source code as well? But the wrappers doesn't really help too much understanding the source code. 
+C++: https://github.com/borglab/gtsam/tree/develop/gtsam
+Matlab wrapper: https://github.com/borglab/gtsam/blob/develop/matlab/README.md
+Python wrapper https://github.com/borglab/gtsam/blob/develop/python/README.md
+-->
 
 
 ## Quickstart
@@ -43,7 +69,7 @@ Prerequisites:
     - Mac: at least xcode-14.2
     - Linux: at least clang-11 or gcc-9
     - Windows: at least msvc-14.2
-- [CMake](http://www.cmake.org/cmake/resources/software.html) >= 3.0
+- [CMake](http://www.cmake.org/cmake/resources/software.html) >= 3.16
     - Ubuntu: `sudo apt-get install cmake`
 
 Optional Boost prerequisite:
@@ -137,7 +163,7 @@ Read about important [GTSAM-Concepts](doc/GTSAM-Concepts.md) here. A primer on G
 which support (superfast) automatic differentiation,
 can be found on the [GTSAM wiki on BitBucket](https://bitbucket.org/gtborg/gtsam/wiki/Home).
 
-See the [`INSTALL`](INSTALL.md) file for more detailed installation instructions.
+See the [`INSTALL`](INSTALL.md) file for more detailed installation instructions. Our CI/CD process is detailed in [workflows.md](doc/workflows.md).
 
 GTSAM is open source under the BSD license, see the [`LICENSE`](LICENSE) and [`LICENSE.BSD`](LICENSE.BSD) files.
 

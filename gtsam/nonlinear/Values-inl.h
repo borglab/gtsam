@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include <cassert>
 #include <utility>
 #include <gtsam/nonlinear/Values.h>
 
@@ -255,8 +256,8 @@ namespace gtsam {
    }  // internal
 
    /* ************************************************************************* */
-   template <typename ValueType>
-   const ValueType Values::at(Key j) const {
+  template <typename ValueType>
+  const ValueType Values::at(Key j) const {
      // Find the item
      KeyValueMap::const_iterator item = values_.find(j);
 
@@ -266,7 +267,28 @@ namespace gtsam {
      // Check the type and throw exception if incorrect
      // h() split in two lines to avoid internal compiler error (MSVC2017)
      auto h = internal::handle<ValueType>();
-     return h(j, item->second.get());
+    return h(j, item->second.get());
+  }
+
+  /* ************************************************************************* */
+  template <typename ValueType>
+  const ValueType& Values::atRef(Key j) const {
+    // Find the item
+    KeyValueMap::const_iterator item = values_.find(j);
+
+    // Throw exception if it does not exist
+    if (item == values_.end()) throw ValuesKeyDoesNotExist("atRef", j);
+
+    const Value* value = item->second.get();
+#ifndef NDEBUG
+    auto ptr = dynamic_cast<const GenericValue<ValueType>*>(value);
+    assert(ptr && "Values::atRef: incorrect ValueType");
+    if (!ptr) throw ValuesIncorrectType(j, typeid(*value), typeid(ValueType));
+    return ptr->value();
+#else
+    auto ptr = static_cast<const GenericValue<ValueType>*>(value);
+    return ptr->value();
+#endif
   }
 
   /* ************************************************************************* */

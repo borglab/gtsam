@@ -21,13 +21,13 @@ inline bool type_is_managed_by_our_internals(PyTypeObject *type_obj) {
     return bool(internals.registered_types_py.find(type_obj)
                 != internals.registered_types_py.end());
 #else
-    return bool(type_obj->tp_new == pybind11_object_new);
+    return (type_obj->tp_new == pybind11_object_new);
 #endif
 }
 
 inline bool is_instance_method_of_type(PyTypeObject *type_obj, PyObject *attr_name) {
     PyObject *descr = _PyType_Lookup(type_obj, attr_name);
-    return bool((descr != nullptr) && PyInstanceMethod_Check(descr));
+    return ((descr != nullptr) && PyInstanceMethod_Check(descr));
 }
 
 inline object try_get_cpp_conduit_method(PyObject *obj) {
@@ -70,8 +70,6 @@ inline void *try_raw_pointer_ephemeral_from_cpp_conduit(handle src,
     }
     return nullptr;
 }
-
-#define PYBIND11_HAS_CPP_CONDUIT 1
 
 PYBIND11_NAMESPACE_END(detail)
 PYBIND11_NAMESPACE_END(PYBIND11_NAMESPACE)

@@ -155,8 +155,152 @@ namespace gtsam {
           tg.run_and_wait(RootTask(roots, rootData, visitorPre, visitorPost, problemSizeThreshold, tg));
       }
 
-    }
+      /* *************************************************************************
+       */
+      template <typename NODE, typename VISITOR_POST>
+      class LeafPostOrderBatchTask {
+       public:
+        std::shared_ptr<NODE> parent;
+        size_t begin;
+        size_t end;
+        VISITOR_POST& visitorPost;
 
+        LeafPostOrderBatchTask(const std::shared_ptr<NODE>& parent,
+                               size_t begin, size_t end,
+                               VISITOR_POST& visitorPost)
+            : parent(parent),
+              begin(begin),
+              end(end),
+              visitorPost(visitorPost) {}
+
+        void operator()() const {
+          for (size_t i = begin; i < end; ++i) {
+            (void)visitorPost(parent->children[i]);
+          }
+        }
+      };
+
+      /* *************************************************************************
+       */
+      template <typename NODE, typename VISITOR_POST>
+      class PostOrderTask {
+       public:
+        const std::shared_ptr<NODE>& treeNode;
+        VISITOR_POST& visitorPost;
+        int problemSizeThreshold;
+        size_t leafAggregationProblemSize;
+        tbb::task_group& tg;
+        bool makeNewTasks;
+
+        // Keep track of order phase across multiple calls to the same functor
+        mutable bool isPostOrderPhase;
+
+        PostOrderTask(const std::shared_ptr<NODE>& treeNode,
+                      VISITOR_POST& visitorPost, int problemSizeThreshold,
+                      size_t leafAggregationProblemSize, tbb::task_group& tg,
+                      bool makeNewTasks = true)
+            : treeNode(treeNode),
+              visitorPost(visitorPost),
+              problemSizeThreshold(problemSizeThreshold),
+              leafAggregationProblemSize(leafAggregationProblemSize),
+              tg(tg),
+              makeNewTasks(makeNewTasks),
+              isPostOrderPhase(false) {}
+
+        void operator()() const {
+          if (isPostOrderPhase) return (void)visitorPost(treeNode);
+          if (!makeNewTasks) return processNodeRecursively(treeNode);
+          if (treeNode->children.empty()) return (void)visitorPost(treeNode);
+
+          const bool overThreshold =
+              (treeNode->problemSize() >= problemSizeThreshold);
+          tbb::task_group ctg;
+          for (size_t i = 0; i < treeNode->children.size();) {
+            const std::shared_ptr<NODE>& child = treeNode->children[i];
+            if (leafAggregationProblemSize > 0 && child &&
+                child->children.empty()) {
+              const size_t begin = i;
+              size_t batchProblemSize = 0;
+              do {
+                const auto& leaf = treeNode->children[i];
+                const int leafProblemSize = leaf->problemSize();
+                const size_t contribution =
+                    leafProblemSize > 0 ? static_cast<size_t>(leafProblemSize)
+                                        : 1;
+                if (i > begin &&
+                    batchProblemSize + contribution >
+                        leafAggregationProblemSize) {
+                  break;
+                }
+                batchProblemSize += contribution;
+                ++i;
+              } while (i < treeNode->children.size() &&
+                       treeNode->children[i] &&
+                       treeNode->children[i]->children.empty());
+              ctg.run(LeafPostOrderBatchTask<NODE, VISITOR_POST>(
+                  treeNode, begin, i, visitorPost));
+            } else {
+              ctg.run(PostOrderTask(child, visitorPost, problemSizeThreshold,
+                                    leafAggregationProblemSize, ctg,
+                                    overThreshold));
+              ++i;
+            }
+          }
+          ctg.wait();
+          isPostOrderPhase = true;
+          tg.run(*this);
+        }
+
+        void processNodeRecursively(const std::shared_ptr<NODE>& node) const {
+          for (const std::shared_ptr<NODE>& child : node->children) {
+            processNodeRecursively(child);
+          }
+          (void)visitorPost(node);
+        }
+      };
+
+      /* *************************************************************************
+       */
+      template <typename ROOTS, typename NODE, typename VISITOR_POST>
+      class RootPostOrderTask {
+       public:
+        const ROOTS& roots;
+        VISITOR_POST& visitorPost;
+        int problemSizeThreshold;
+        size_t leafAggregationProblemSize;
+        tbb::task_group& tg;
+        RootPostOrderTask(const ROOTS& roots, VISITOR_POST& visitorPost,
+                          int problemSizeThreshold,
+                          size_t leafAggregationProblemSize,
+                          tbb::task_group& tg)
+            : roots(roots),
+              visitorPost(visitorPost),
+              problemSizeThreshold(problemSizeThreshold),
+              leafAggregationProblemSize(leafAggregationProblemSize),
+              tg(tg) {}
+
+        void operator()() const {
+          typedef PostOrderTask<NODE, VISITOR_POST> PostOrderTask;
+          for (const std::shared_ptr<NODE>& root : roots) {
+            tg.run(PostOrderTask(root, visitorPost, problemSizeThreshold,
+                                 leafAggregationProblemSize, tg));
+          }
+        }
+      };
+
+      template <typename NODE, typename ROOTS, typename VISITOR_POST>
+      void CreateRootPostOrderTask(const ROOTS& roots,
+                                   VISITOR_POST& visitorPost,
+                                   int problemSizeThreshold,
+                                   size_t leafAggregationProblemSize = 0) {
+        typedef RootPostOrderTask<ROOTS, NODE, VISITOR_POST> RootPostOrderTask;
+        tbb::task_group tg;
+        tg.run_and_wait(
+            RootPostOrderTask(roots, visitorPost, problemSizeThreshold,
+                              leafAggregationProblemSize, tg));
+      }
+
+      }  // namespace internal
   }
 
 }

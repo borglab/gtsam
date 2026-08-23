@@ -12,12 +12,12 @@ Author: Varun Agrawal
 import unittest
 
 import numpy as np
-from gtsam.symbol_shorthand import B, V, X
 from gtsam.utils.test_case import GtsamTestCase
 
 import gtsam
 
 
+@unittest.skipUnless(hasattr(gtsam.Pose3, "serialize"), "Serialization not enabled")
 class TestDeepCopy(GtsamTestCase):
     """Tests for deep copy of various GTSAM objects."""
 

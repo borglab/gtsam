@@ -18,11 +18,14 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/EssentialMatrix.h>
 #include <gtsam/geometry/FundamentalMatrix.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/inference/EdgeKey.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 #include <cstdint>
+#include <stdexcept>
 
 namespace gtsam {
 
@@ -34,6 +37,14 @@ class TransferEdges {
  protected:
   EdgeKey edge1_, edge2_;  ///< The two EdgeKeys.
   uint32_t c_;             ///< The transfer target
+
+  // Return appropriate noise model
+  static SharedNoiseModel defaultNoiseModel(size_t dim,
+                                            const SharedNoiseModel& model) {
+    if (!model) return noiseModel::Unit::Create(dim);
+    if (model->dim() == dim) return model;
+    throw std::runtime_error("TransferFactor: noise model dimension mismatch.");
+  }
 
  public:
   TransferEdges(EdgeKey edge1, EdgeKey edge2)
@@ -100,12 +111,13 @@ class TransferFactor : public NoiseModelFactorN<F, F>, public TransferEdges<F> {
    * @param edge2 Second EdgeKey specifying F2: (b, c) or (c, b).
    * @param triplets A vector of triplets containing (pa, pb, pc).
    * @param model An optional SharedNoiseModel that defines the noise model
-   *              for this factor. Defaults to nullptr.
+   *              for this factor. Defaults to unit noise.
    */
   TransferFactor(EdgeKey edge1, EdgeKey edge2,
                  const std::vector<Triplet>& triplets,
                  const SharedNoiseModel& model = nullptr)
-      : Base(model, edge1, edge2),
+      : Base(TransferEdges<F>::defaultNoiseModel(2 * triplets.size(), model),
+             edge1, edge2),
         TransferEdges<F>(edge1, edge2),
         triplets_(triplets) {}
 
@@ -246,7 +258,8 @@ class EssentialTransferFactorK
   EssentialTransferFactorK(EdgeKey edge1, EdgeKey edge2,
                            const std::vector<Triplet>& triplets,
                            const SharedNoiseModel& model = nullptr)
-      : Base(model, edge1, edge2,
+      : Base(TransferEdges<EM>::defaultNoiseModel(2 * triplets.size(), model),
+             edge1, edge2,
              Symbol('k', ViewA(edge1, edge2)),   // calibration key for view a
              Symbol('k', ViewB(edge1, edge2)),   // calibration key for view b
              Symbol('k', ViewC(edge1, edge2))),  // calibration key for target c
@@ -267,7 +280,8 @@ class EssentialTransferFactorK
   EssentialTransferFactorK(EdgeKey edge1, EdgeKey edge2, Key keyK,
                            const std::vector<Triplet>& triplets,
                            const SharedNoiseModel& model = nullptr)
-      : Base(model, edge1, edge2, keyK, keyK, keyK),
+      : Base(TransferEdges<EM>::defaultNoiseModel(2 * triplets.size(), model),
+             edge1, edge2, keyK, keyK, keyK),
         TransferEdges<EM>(edge1, edge2),
         triplets_(triplets) {}
 

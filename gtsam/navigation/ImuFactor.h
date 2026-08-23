@@ -22,17 +22,22 @@
 #pragma once
 
 /* GTSAM includes */
-#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/base/debug.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
+#include <gtsam/navigation/LieGroupPreintegration.h>
 #include <gtsam/navigation/ManifoldPreintegration.h>
 #include <gtsam/navigation/TangentPreintegration.h>
-#include <gtsam/base/debug.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
-#include <type_traits> // For std::is_same, std::enable_if
- 
+#include <type_traits>  // For std::is_same, std::enable_if
+
 namespace gtsam {
 
 // Determine default preintegration backend
-#ifdef GTSAM_TANGENT_PREINTEGRATION
+#ifdef GTSAM_LIEGROUP_PREINTEGRATION
+typedef LieGroupPreintegration DefaultPreintegrationType;
+#elif defined(GTSAM_TANGENT_PREINTEGRATION)
 typedef TangentPreintegration DefaultPreintegrationType;
 #else
 typedef ManifoldPreintegration DefaultPreintegrationType;
@@ -137,6 +142,35 @@ public:
   /// Return pre-integrated measurement covariance
   Matrix preintMeasCov() const { return preintMeasCov_; }
 
+  /**
+   * Express the covariance propagated by the selected backend in the
+   * NavState local-coordinate chart used by the IMU factor residual.
+   *
+   * TangentPreintegration propagates covariance for additive perturbations of
+   * \f$\zeta=(\theta,p,v)\f$. The unchanged factor residual instead uses
+   * NavState::localCoordinates at the predicted state. At zero residual, the
+   * differential from the additive chart to that residual chart is
+   * \f[
+   * J = \operatorname{diag}\left(J_r(\theta),\Delta R^T,\Delta R^T\right),
+   * \qquad \Delta R=\operatorname{Exp}(\theta),
+   * \f]
+   * where \f$J_r\f$ is the SO(3) right Jacobian. Therefore its covariance is
+   * converted as \f$J P J^T\f$. ManifoldPreintegration and
+   * LieGroupPreintegration already propagate covariance in the residual chart
+   * and return it unchanged. This conversion does not redefine the nonlinear
+   * residual or alter the raw covariance returned by preintMeasCov().
+   */
+  Matrix9 residualCovariance() const {
+    if constexpr (std::is_same_v<PreintegrationType,
+                                 TangentPreintegration>) {
+      Matrix9 chartJacobian;
+      NavState().retract(this->preintegrated_, {}, &chartJacobian);
+      return chartJacobian * preintMeasCov_ * chartJacobian.transpose();
+    } else {
+      return preintMeasCov_;
+    }
+  }
+
   /// Merge in a different set of measurements and update bias derivatives accordingly
   /// This method is specific to TangentPreintegration backend.
   template <typename PB = PreintegrationType,
@@ -215,7 +249,8 @@ public:
    */
   ImuFactorT(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
       const PIM& preintegratedMeasurements)
-      : Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov()),
+      : Base(noiseModel::Gaussian::Covariance(
+                 preintegratedMeasurements.residualCovariance()),
              pose_i, vel_i, pose_j, vel_j, bias),
         pim_(preintegratedMeasurements) {}
 
@@ -349,11 +384,15 @@ GTSAM_EXPORT std::ostream& operator<<(std::ostream& os, const ImuFactorT<PIM>& f
  * @ingroup navigation
  */
 template <class PIM = PreintegratedImuMeasurements>
-class GTSAM_EXPORT ImuFactor2T : public NoiseModelFactorN<NavState, NavState, imuBias::ConstantBias> {
+class GTSAM_EXPORT ImuFactor2T
+    : public NoiseModelFactorT<Vector9, NavState, NavState,
+                               imuBias::ConstantBias> {
 private:
 
   typedef ImuFactor2T<PIM> This;
-  typedef NoiseModelFactorN<NavState, NavState, imuBias::ConstantBias> Base;
+  typedef NoiseModelFactorT<Vector9, NavState, NavState,
+                            imuBias::ConstantBias>
+      Base;
 
   PIM pim_;
 
@@ -373,7 +412,8 @@ public:
    */
   ImuFactor2T(Key state_i, Key state_j, Key bias,
              const PIM& preintegratedMeasurements)
-      : Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov()),
+      : Base(noiseModel::Gaussian::Covariance(
+                 preintegratedMeasurements.residualCovariance()),
              state_i, state_j, bias),
         pim_(preintegratedMeasurements) {}
 
@@ -403,10 +443,10 @@ public:
   /** implement functions needed to derive from Factor */
 
   /// vector of errors
-  Vector evaluateError(const NavState& state_i, const NavState& state_j,
-                       const imuBias::ConstantBias& bias_i,  //
-                       OptionalMatrixType H1, OptionalMatrixType H2,
-                       OptionalMatrixType H3) const override;
+  Vector9 evaluateError(const NavState& state_i, const NavState& state_j,
+                        const imuBias::ConstantBias& bias_i,  //
+                        OptionalMatrixType H1, OptionalMatrixType H2,
+                        OptionalMatrixType H3) const override;
 
 private:
 

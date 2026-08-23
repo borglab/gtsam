@@ -20,6 +20,10 @@ if (NOT MSVC)
     option(GTSAM_BUILD_WITH_MARCH_NATIVE  "Enable/Disable building with all instructions supported by native architecture (binary may not be portable!)" OFF)
 endif()
 
+if(MSVC)
+    option(GTSAM_BUILD_WITH_PRECOMPILED_HEADERS "Enable/Disable building with precompiled headers" ON)
+endif()
+
 # Configurable Options
 option(BUILD_SHARED_LIBS                     "Build shared libraries" ON)
 if(GTSAM_UNSTABLE_AVAILABLE)
@@ -38,16 +42,25 @@ option(GTSAM_HYBRID_TIMING                  "Enable the timing of hybrid factor 
 option(GTSAM_ENABLE_CONSISTENCY_CHECKS      "Enable/Disable expensive consistency checks" OFF)
 option(GTSAM_ENABLE_MEMORY_SANITIZER        "Enable/Disable memory sanitizer" OFF)
 option(GTSAM_WITH_TBB                       "Use Intel Threaded Building Blocks (TBB) if available" ON)
+option(GTSAM_TBB_BOUNDED_MEMORY_GROWTH      "Avoid large increase in memory usage due to parallel tree traversal" OFF)
 option(GTSAM_WITH_EIGEN_MKL                 "Eigen will use Intel MKL if available" OFF)
 option(GTSAM_WITH_EIGEN_MKL_OPENMP          "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" OFF)
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION     "Throw exception when a triangulated point is behind a camera" ON)
 option(GTSAM_BUILD_PYTHON                   "Enable/Disable building & installation of Python module with pybind11" OFF)
+option(GTSAM_USE_SYSTEM_PYBIND              "Find and use system-installed pybind11. If 'off', use the one bundled with GTSAM" OFF)
 option(GTSAM_INSTALL_MATLAB_TOOLBOX         "Enable/Disable installation of matlab toolbox"  OFF)
 option(GTSAM_ALLOW_DEPRECATED_SINCE_V43     "Allow use of methods/functions deprecated in GTSAM 4.3" ON)
 option(GTSAM_SUPPORT_NESTED_DISSECTION      "Support Metis-based nested dissection" ON)
 option(GTSAM_TANGENT_PREINTEGRATION         "Use new ImuFactor with integration on tangent space" ON)
-option(GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR "Use the slower but correct version of BetweenFactor" OFF)
-option(GTSAM_SLOW_BUT_CORRECT_EXPMAP        "Use slower but correct expmap for Pose2"  OFF)
+option(GTSAM_LIEGROUP_PREINTEGRATION        "Use NavState SE_2(3) Lie-group IMU preintegration by default (takes precedence over tangent preintegration)" OFF)
+option(GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
+       "Use Local Jacobians in BetweenFactor and PriorFactor when provided by traits" ON)
+option(GTSAM_SLOW_BUT_CORRECT_EXPMAP        "Use slower but correct expmap for Pose2"  ON)
+
+if (NOT GTSAM_SLOW_BUT_CORRECT_EXPMAP)
+    message(WARNING
+            "Disabling GTSAM_SLOW_BUT_CORRECT_EXPMAP is deprecated and will be removed in a future release.")
+endif()
 
 if (GTSAM_FORCE_SHARED_LIB AND GTSAM_FORCE_STATIC_LIB)
     message(FATAL_ERROR "GTSAM_FORCE_SHARED_LIB and GTSAM_FORCE_STATIC_LIB are both true. Please, to unambiguously select the desired library type to use to build GTSAM, set one of GTSAM_FORCE_SHARED_LIB=ON, GTSAM_FORCE_STATIC_LIB=ON, or BUILD_SHARED_LIBS={ON/OFF}")

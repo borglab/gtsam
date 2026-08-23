@@ -30,15 +30,15 @@ static volatile sf_action_t sf_error_actions[] = {
     SF_ERROR_IGNORE  /* SF_ERROR__LAST */
 };
 
-void sf_error_set_action(sf_error_t code, sf_action_t action) {
+void gtsam_cephes_sf_error_set_action(sf_error_t code, sf_action_t action) {
   sf_error_actions[(int)code] = action;
 }
 
-sf_action_t sf_error_get_action(sf_error_t code) {
+sf_action_t gtsam_cephes_sf_error_get_action(sf_error_t code) {
   return sf_error_actions[(int)code];
 }
 
-void sf_error(const char *func_name, sf_error_t code, const char *fmt, ...) {
+void gtsam_cephes_sf_error(const char *func_name, sf_error_t code, const char *fmt, ...) {
   va_list ap;
   va_start(ap, fmt);
   va_end(ap);

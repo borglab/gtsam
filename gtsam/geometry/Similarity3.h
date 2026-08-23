@@ -118,7 +118,9 @@ class GTSAM_EXPORT Similarity3 : public MatrixLieGroup<Similarity3, 7, 4> {
    * This group action satisfies the compatibility condition.
    * For more details, refer to: https://en.wikipedia.org/wiki/Group_action
    */
-  Pose3 transformFrom(const Pose3& T) const;
+  Pose3 transformFrom(const Pose3& T, 
+    OptionalJacobian<6, 7> H1 = {},  //
+    OptionalJacobian<6, 6> H2 = {}) const;
 
   /** syntactic sugar for transformFrom */
   Point3 operator*(const Point3& p) const;
@@ -149,23 +151,19 @@ class GTSAM_EXPORT Similarity3 : public MatrixLieGroup<Similarity3, 7, 4> {
   /** Log map at the identity
    * \f$ [R_x,R_y,R_z, t_x, t_y, t_z, \lambda] \f$
    */
-  static Vector7 Logmap(const Similarity3& s,  //
-                        OptionalJacobian<7, 7> Hm = {});
+  static Vector7 Logmap(const Similarity3& s);
 
   /** Exponential map at the identity
    */
-  static Similarity3 Expmap(const Vector7& v,  //
-                            OptionalJacobian<7, 7> Hm = {});
+  static Similarity3 Expmap(const Vector7& v);
 
   /// Chart at the origin
   struct ChartAtOrigin {
-    static Similarity3 Retract(const Vector7& v,
-                               ChartJacobian H = {}) {
-      return Similarity3::Expmap(v, H);
+    static Similarity3 Retract(const Vector7& v) {
+      return Similarity3::Expmap(v);
     }
-    static Vector7 Local(const Similarity3& other,
-                         ChartJacobian H = {}) {
-      return Similarity3::Logmap(other, H);
+    static Vector7 Local(const Similarity3& other) {
+      return Similarity3::Logmap(other);
     }
   };
 
@@ -173,6 +171,9 @@ class GTSAM_EXPORT Similarity3 : public MatrixLieGroup<Similarity3, 7, 4> {
 
   /// Project from one tangent space to another
   Matrix7 AdjointMap() const;
+
+  /// Compute the Lie algebra adjoint map associated with a tangent vector.
+  static Matrix7 adjointMap(const Vector7& xi);
 
   /**
    * Hat for Similarity3:
@@ -191,14 +192,14 @@ class GTSAM_EXPORT Similarity3 : public MatrixLieGroup<Similarity3, 7, 4> {
   /// Calculate 4*4 matrix group equivalent
   Matrix4 matrix() const;
 
-  /// Return a GTSAM rotation
-  Rot3 rotation() const { return R_; }
+  /// Return a rotation
+  Rot3 rotation(OptionalJacobian<3, 7> Hself = {}) const;
 
-  /// Return a GTSAM translation
-  Point3 translation() const { return t_; }
+  /// Return a translation with pushforward
+  Point3 translation(OptionalJacobian<3, 7> Hself = {}) const;
 
   /// Return the scale
-  double scale() const { return s_; }
+  double scale(OptionalJacobian<1, 7> Hself = {}) const;
 
   /// @}
   /// @name Deprecated

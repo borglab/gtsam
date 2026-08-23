@@ -23,6 +23,7 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 
@@ -33,6 +34,9 @@ Rot3 Scenario::rotation(double t) const {
 }
 NavState Scenario::navState(double t) const { 
   return NavState(pose(t), velocity_n(t));
+}
+Gal3 Scenario::gal3(double t) const {
+  return Gal3::FromPoseVelocityTime(pose(t), velocity_n(t), t);
 }
 
 Vector3 Scenario::velocity_b(double t) const {
@@ -93,14 +97,52 @@ Vector3 DiscreteScenario::acceleration_n(double t) const {
   return interpolate(accelerations_n_, t);
 }
 
+double DiscreteScenario::duration() const {
+  return t_;
+}
+
 DiscreteScenario DiscreteScenario::FromCSV(const string& csv_filepath) {
   ifstream file(csv_filepath);
   if (!file.is_open()) {
-    throw runtime_error(
-        "DiscreteScenario::FromCSV: Could not open file " + csv_filepath);
+    throw runtime_error("DiscreteScenario::FromCSV: Could not open file " +
+                        csv_filepath);
   }
 
-  // Temporary storage for data before timestamp normalization
+  // Header parsing
+  string header_line;
+  if (!getline(file, header_line)) {
+    throw runtime_error(
+        "DiscreteScenario::FromCSV: CSV file is empty or contains no header.");
+  }
+
+  map<string, int> columnIndex;
+  stringstream header_ss(header_line);
+  string column_name;
+  int index = 0;
+  while (getline(header_ss, column_name, ',')) {
+    // Basic trim for whitespace, in case of " col1, col2 "
+    column_name.erase(0, column_name.find_first_not_of(" \t\r\n"));
+    column_name.erase(column_name.find_last_not_of(" \t\r\n") + 1);
+    columnIndex[column_name] = index++;
+  }
+
+  // Define and validate required columns
+  // These are the header names we expect to find in the CSV. Based on EuRoC MAV
+  // dataset format.
+  const vector<string> required_columns = {
+      "t", "p_x", "p_y", "p_z", "q_w", "q_x", "q_y", "q_z",
+      "v_x", "v_y", "v_z", "w_x", "w_y", "w_z", "a_x", "a_y",
+      "a_z"};
+
+  for (const auto& col : required_columns) {
+    if (columnIndex.find(col) == columnIndex.end()) {
+      throw runtime_error(
+          "DiscreteScenario::FromCSV: Missing required column header '" + col +
+          "' in file " + csv_filepath);
+    }
+  }
+
+  // Temporary storage for data
   struct DataPoint {
     double t;
     Pose3 pose;
@@ -108,38 +150,64 @@ DiscreteScenario DiscreteScenario::FromCSV(const string& csv_filepath) {
   };
   vector<DataPoint> data_points;
 
-  string line;
-  // Skip header line
-  if (!getline(file, line)) {
-    throw runtime_error(
-        "DiscreteScenario::FromCSV: CSV file is empty or contains no data.");
-  }
-
   // Read data rows
-  int line_number = 1;
-  while (getline(file, line)) {
+  string data_line;
+  int line_number = 1; // Header was line 1
+  while (getline(file, data_line)) {
     line_number++;
-    stringstream ss(line);
-    char comma; // To consume the commas
-    DataPoint dp;
-    double px, py, pz, qw, qx, qy, qz;
-
-    // clang-format off
-    if (!(ss >> dp.t >> comma >> px >> comma >> py >> comma >> pz >> comma >>
-          qw >> comma >> qx >> comma >> qy >> comma >> qz >> comma >>
-          dp.velocity_n[0] >> comma >> dp.velocity_n[1] >> comma >> 
-          dp.velocity_n[2] >> comma >> dp.omega_b[0] >> comma >> 
-          dp.omega_b[1] >> comma >> dp.omega_b[2] >> comma >> 
-          dp.acceleration_n[0] >> comma >> dp.acceleration_n[1] >> comma >> 
-          dp.acceleration_n[2])) {
-      throw runtime_error(
-          "DiscreteScenario::FromCSV: Malformed data at line " +
-          to_string(line_number));
+    stringstream data_ss(data_line);
+    vector<string> values;
+    string value;
+    while (getline(data_ss, value, ',')) {
+      values.push_back(value);
     }
-    // clang-format on
+
+    if (values.size() != columnIndex.size()) {
+       throw runtime_error(
+          "DiscreteScenario::FromCSV: Malformed data at line " +
+          to_string(line_number) + ". Expected " + to_string(columnIndex.size()) +
+          " columns, but found " + to_string(values.size()) + ".");
+    }
     
-    dp.pose = Pose3(Rot3::Quaternion(qw, qx, qy, qz), Point3(px, py, pz));
-    data_points.push_back(dp);
+    try {
+      DataPoint dp;
+      // Use the columnIndex map to get data by name, not by fixed position
+      dp.t = stod(values[columnIndex.at("t")]);
+      
+      double px = stod(values[columnIndex.at("p_x")]);
+      double py = stod(values[columnIndex.at("p_y")]);
+      double pz = stod(values[columnIndex.at("p_z")]);
+      
+      double qw = stod(values[columnIndex.at("q_w")]);
+      double qx = stod(values[columnIndex.at("q_x")]);
+      double qy = stod(values[columnIndex.at("q_y")]);
+      double qz = stod(values[columnIndex.at("q_z")]);
+
+      dp.velocity_n = Vector3{stod(values[columnIndex.at("v_x")]),
+                              stod(values[columnIndex.at("v_y")]),
+                              stod(values[columnIndex.at("v_z")])};
+
+      dp.omega_b = Vector3{stod(values[columnIndex.at("w_x")]),
+                           stod(values[columnIndex.at("w_y")]),
+                           stod(values[columnIndex.at("w_z")])};
+
+      dp.acceleration_n = Vector3{stod(values[columnIndex.at("a_x")]),
+                                  stod(values[columnIndex.at("a_y")]),
+                                  stod(values[columnIndex.at("a_z")])};
+
+      dp.pose = Pose3(Rot3::Quaternion(qw, qx, qy, qz), Point3(px, py, pz));
+      data_points.push_back(dp);
+
+    } catch (const std::invalid_argument& e) {
+        throw runtime_error(
+          "DiscreteScenario::FromCSV: Non-numeric data at line " +
+          to_string(line_number) + ". " + e.what());
+    } catch (const std::out_of_range& e) {
+        // This can be triggered by stod or by map::at if something is wrong
+        throw runtime_error(
+          "DiscreteScenario::FromCSV: Data conversion error at line " +
+          to_string(line_number) + ". " + e.what());
+    }
   }
 
   if (data_points.empty()) {

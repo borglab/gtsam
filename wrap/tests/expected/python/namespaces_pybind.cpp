@@ -11,6 +11,24 @@
 #include "path/to/ns3.h"
 #include "gtsam/nonlinear/Values.h"
 
+#include <type_traits>
+
+namespace gtwrap {
+namespace internal {
+
+template <typename T>
+struct PyArgPolicy {
+  static pybind11::arg make(const char* name) { return pybind11::arg(name); }
+};
+
+template <typename T>
+pybind11::arg py_arg(const char* name) {
+  return PyArgPolicy<typename std::decay<T>::type>::make(name);
+}
+
+}  // namespace internal
+}  // namespace gtwrap
+
 
 
 
@@ -29,14 +47,14 @@ PYBIND11_MODULE(namespaces_py, m_) {
     py::class_<ns1::ClassB, std::shared_ptr<ns1::ClassB>>(m_ns1, "ClassB")
         .def(py::init<>());
 
-    m_ns1.def("aGlobalFunction",[](){return ns1::aGlobalFunction();});    pybind11::module m_ns2 = m_.def_submodule("ns2", "ns2 submodule");
+    m_ns1.def("aGlobalFunction",static_cast<gtsam::Vector (*)()>(&ns1::aGlobalFunction));    pybind11::module m_ns2 = m_.def_submodule("ns2", "ns2 submodule");
 
     py::class_<ns2::ClassA, std::shared_ptr<ns2::ClassA>>(m_ns2, "ClassA")
         .def(py::init<>())
-        .def("memberFunction",[](ns2::ClassA* self){return self->memberFunction();})
-        .def("nsArg",[](ns2::ClassA* self, const ns1::ClassB& arg){return self->nsArg(arg);}, py::arg("arg"))
-        .def("nsReturn",[](ns2::ClassA* self, double q){return self->nsReturn(q);}, py::arg("q"))
-        .def_static("afunction",[](){return ns2::ClassA::afunction();});
+        .def("memberFunction",static_cast<double (ns2::ClassA::*)()>(&ns2::ClassA::memberFunction))
+        .def("nsArg",static_cast<int (ns2::ClassA::*)(const ns1::ClassB&)>(&ns2::ClassA::nsArg), gtwrap::internal::py_arg<const ns1::ClassB&>("arg"))
+        .def("nsReturn",static_cast<ns2::ns3::ClassB (ns2::ClassA::*)(double)>(&ns2::ClassA::nsReturn), gtwrap::internal::py_arg<double>("q"))
+        .def_static("afunction",static_cast<double (*)()>(&ns2::ClassA::afunction));
     pybind11::module m_ns2_ns3 = m_ns2.def_submodule("ns3", "ns3 submodule");
 
     py::class_<ns2::ns3::ClassB, std::shared_ptr<ns2::ns3::ClassB>>(m_ns2_ns3, "ClassB")
@@ -46,9 +64,9 @@ PYBIND11_MODULE(namespaces_py, m_) {
         .def(py::init<>());
 
     m_ns2.attr("aNs2Var") = ns2::aNs2Var;
-    m_ns2.def("aGlobalFunction",[](){return ns2::aGlobalFunction();});
-    m_ns2.def("overloadedGlobalFunction",[](const ns1::ClassA& a){return ns2::overloadedGlobalFunction(a);}, py::arg("a"));
-    m_ns2.def("overloadedGlobalFunction",[](const ns1::ClassA& a, double b){return ns2::overloadedGlobalFunction(a, b);}, py::arg("a"), py::arg("b"));
+    m_ns2.def("aGlobalFunction",static_cast<gtsam::Vector (*)()>(&ns2::aGlobalFunction));
+    m_ns2.def("overloadedGlobalFunction",static_cast<ns1::ClassA (*)(const ns1::ClassA&)>(&ns2::overloadedGlobalFunction), gtwrap::internal::py_arg<const ns1::ClassA&>("a"));
+    m_ns2.def("overloadedGlobalFunction",static_cast<ns1::ClassA (*)(const ns1::ClassA&, double)>(&ns2::overloadedGlobalFunction), gtwrap::internal::py_arg<const ns1::ClassA&>("a"), gtwrap::internal::py_arg<double>("b"));
     py::class_<ClassD, std::shared_ptr<ClassD>>(m_, "ClassD")
         .def(py::init<>());
 
@@ -56,11 +74,11 @@ PYBIND11_MODULE(namespaces_py, m_) {
 
     py::class_<gtsam::Values, std::shared_ptr<gtsam::Values>>(m_gtsam, "Values")
         .def(py::init<>())
-        .def(py::init<const gtsam::Values&>(), py::arg("other"))
-        .def("insert_vector",[](gtsam::Values* self, size_t j, const gtsam::Vector& vector){ self->insert(j, vector);}, py::arg("j"), py::arg("vector"))
-        .def("insert",[](gtsam::Values* self, size_t j, const gtsam::Vector& vector){ self->insert(j, vector);}, py::arg("j"), py::arg("vector"))
-        .def("insert_matrix",[](gtsam::Values* self, size_t j, const gtsam::Matrix& matrix){ self->insert(j, matrix);}, py::arg("j"), py::arg("matrix"))
-        .def("insert",[](gtsam::Values* self, size_t j, const gtsam::Matrix& matrix){ self->insert(j, matrix);}, py::arg("j"), py::arg("matrix"));
+        .def(py::init<const gtsam::Values&>(), gtwrap::internal::py_arg<const gtsam::Values&>("other"))
+        .def("insert_vector",[](gtsam::Values* self, size_t j, const gtsam::Vector& vector){ self->insert(j, vector);}, gtwrap::internal::py_arg<size_t>("j"), gtwrap::internal::py_arg<const gtsam::Vector&>("vector"))
+        .def("insert",static_cast<void (gtsam::Values::*)(size_t, const gtsam::Vector&)>(&gtsam::Values::insert), gtwrap::internal::py_arg<size_t>("j"), gtwrap::internal::py_arg<const gtsam::Vector&>("vector"))
+        .def("insert_matrix",[](gtsam::Values* self, size_t j, const gtsam::Matrix& matrix){ self->insert(j, matrix);}, gtwrap::internal::py_arg<size_t>("j"), gtwrap::internal::py_arg<const gtsam::Matrix&>("matrix"))
+        .def("insert",static_cast<void (gtsam::Values::*)(size_t, const gtsam::Matrix&)>(&gtsam::Values::insert), gtwrap::internal::py_arg<size_t>("j"), gtwrap::internal::py_arg<const gtsam::Matrix&>("matrix"));
 
 
 #include "python/specializations.h"

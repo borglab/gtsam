@@ -11,5 +11,6 @@
  * mutations on Python side will not be reflected on C++.
  */
 
-// Added so that CustomFactor can pass the JacobianVector to the C++ side
-PYBIND11_MAKE_OPAQUE(std::vector<gtsam::Matrix>); // JacobianVector
+// JacobianVector (std::vector<gtsam::Matrix>) is made opaque in
+// python/gtsam/optional_jacobian_pybind.h, which both module templates include,
+// so that it is opaque in every translation unit rather than only this one.

@@ -81,11 +81,11 @@ TEST(HybridNonlinearFactor, Printing) {
       R"(Hybrid [x1 x2; 1]
 HybridNonlinearFactor
  Choice(1) 
- 0 Leaf BetweenFactor(x1,x2)
+ 0 Leaf (val=0) BetweenFactor(x1,x2)
   measured:  0
   noise model: diagonal sigmas [1];
 
- 1 Leaf BetweenFactor(x1,x2)
+ 1 Leaf (val=0) BetweenFactor(x1,x2)
   measured:  1
   noise model: diagonal sigmas [1];
 

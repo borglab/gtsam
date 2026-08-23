@@ -22,7 +22,6 @@
 #include <gtsam/discrete/AlgebraicDecisionTree.h>
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/inference/Factor.h>
-#include <gtsam/inference/Ordering.h>
 
 #include <string>
 namespace gtsam {
@@ -30,6 +29,8 @@ namespace gtsam {
 class DecisionTreeFactor;
 class DiscreteConditional;
 class HybridValues;
+class Ordering;
+class TableFactor;
 
 /**
  * Base class for discrete probabilistic factors
@@ -141,13 +142,16 @@ class GTSAM_EXPORT DiscreteFactor : public Factor {
    * @return DiscreteFactor::shared_ptr
    */
   virtual DiscreteFactor::shared_ptr multiply(
-      const DiscreteFactor::shared_ptr& df) const = 0;
+      const DiscreteFactor::shared_ptr& df) const;
 
   /// divide by DiscreteFactor::shared_ptr f (safely)
   virtual DiscreteFactor::shared_ptr operator/(
       const DiscreteFactor::shared_ptr& df) const = 0;
 
   virtual DecisionTreeFactor toDecisionTreeFactor() const = 0;
+
+  /// Convert to a sparse table, falling back through a decision tree.
+  virtual TableFactor toTableFactor() const;
 
   /// Create new factor by summing all values with the same separator values
   virtual DiscreteFactor::shared_ptr sum(size_t nrFrontals) const = 0;

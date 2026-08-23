@@ -1,14 +1,31 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file testPendulumExplicitEuler.cpp
  * @author Duy-Nguyen Ta
  */
 
+#include <gtsam/config.h>
 #include <CppUnitLite/TestHarness.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
+#include <gtsam/base/Vector.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam_unstable/dynamics/SimpleHelicopter.h>
-#include "gtsam/base/Vector.h"
-#include "gtsam/geometry/Pose3.h"
 
 /* ************************************************************************* */
 using namespace std::placeholders;
@@ -21,8 +38,8 @@ const double h = 0.01;
 //const double deg2rad = M_PI/180.0;
 //Pose3 g1(Rot3::Ypr(deg2rad*10.0, deg2rad*20.0, deg2rad*30.0), Point3(100.0, 200.0, 300.0));
 Pose3 g1(Rot3(), Point3(100.0, 0.0, 300.0));
-//Vector6 v1((Vector(6) << 0.1, 0.05, 0.02, 10.0, 20.0, 30.0).finished());
-Vector6 V1_w((Vector(6) << 0.0, 0.0, M_PI/3, 0.0, 0.0, 30.0).finished());
+// Vector6 v1(Vector{{0.1, 0.05, 0.02, 10.0, 20.0, 30.0}});
+Vector6 V1_w(Vector{{0.0, 0.0, M_PI / 3, 0.0, 0.0, 30.0}});
 Vector6 V1_g1 = g1.inverse().Adjoint(V1_w);
 Pose3 g2(g1.expmap(h*V1_g1));
 //Vector6 v2 = Pose3::Logmap(g1.between(g2));
@@ -32,19 +49,21 @@ Vector gamma2 = Vector2(0.0, 0.0);  // no shape
 Vector u2 = Vector2(0.0, 0.0); // no control at time 2
 double distT = 1.0; // distance from the body-centered x axis to the big top motor
 double distR = 5.0; // distance from the body-centered z axis to the small motor
-Matrix Mass = ((Vector(3) << mass, mass, mass).finished()).asDiagonal();
-Matrix Inertia = (Vector(6) << 2.0/5.0*mass*distR*distR, 2.0/5.0*mass*distR*distR, 2.0/5.0*mass*distR*distR, mass, mass, mass).finished().asDiagonal();
+Matrix Mass = Vector{{mass, mass, mass}}.asDiagonal();
+Matrix Inertia = Vector{
+    {2.0 / 5.0 * mass * distR * distR, 2.0 / 5.0 * mass * distR * distR,
+     2.0 / 5.0 * mass * distR * distR, mass, mass,
+     mass}}.asDiagonal();
 
 Vector computeFu(const Vector& gamma, const Vector& control) {
   double gamma_r = gamma(0), gamma_p = gamma(1);
 
-  Matrix F = (Matrix(6, 2) << distT*sin(gamma_r), 0.0,
-                           distT*sin(gamma_p*cos(gamma_r)), 0.0,
-                           0.0, distR,
-                           sin(gamma_p)*cos(gamma_r), 0.0,
-                          -sin(gamma_r), -1.0,
-                           cos(gamma_p)*sin(gamma_r), 0.0
-                            ).finished();
+  Matrix F{{distT * sin(gamma_r), 0.0},
+           {distT * sin(gamma_p * cos(gamma_r)), 0.0},
+           {0.0, distR},
+           {sin(gamma_p) * cos(gamma_r), 0.0},
+           {-sin(gamma_r), -1.0},
+           {cos(gamma_p) * sin(gamma_r), 0.0}};
   return F*control;
 }
 
@@ -78,10 +97,25 @@ TEST( Reconstruction, evaluateError) {
 #endif
 }
 
+TEST(Reconstruction, TernaryLinearization) {
+  const Reconstruction factor(G(2), G(1), V(1), h);
+  const Values values{{G(2), genericValue(g2)},
+                      {G(1), genericValue(g1)},
+                      {V(1), genericValue(V1_g1)}};
+
+  const auto generic = factor.NoiseModelFactor::linearize(values);
+  const auto optimized = factor.linearize(values);
+  const bool isTernary = static_cast<bool>(
+      std::dynamic_pointer_cast<FixedJacobianFactor<6, 6, 6, 6>>(
+          optimized));
+  CHECK(isTernary);
+  EXPECT(assert_equal(*generic, *optimized, 1e-12));
+}
+
 /* ************************************************************************* */
 // Implement Newton-Euler equation for rigid body dynamics
 Vector newtonEuler(const Vector& Vb, const Vector& Fb, const Matrix& Inertia) {
-  Matrix W = Pose3::adjointMap((Vector(6) << Vb(0), Vb(1), Vb(2), 0., 0., 0.).finished());
+  Matrix W = Pose3::adjointMap(Vector{{Vb(0), Vb(1), Vb(2), 0., 0., 0.}});
   Vector dV = Inertia.inverse()*(Fb - W*Inertia*Vb);
   return dV;
 }
@@ -124,5 +158,7 @@ TEST( DiscreteEulerPoincareHelicopter, evaluateError) {
 }
 
 /* ************************************************************************* */
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

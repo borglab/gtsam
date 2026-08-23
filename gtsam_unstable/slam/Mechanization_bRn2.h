@@ -7,13 +7,24 @@
 
 #pragma once
 
-#include <gtsam/geometry/Rot3.h>
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/geometry/Rot3.h>
 #include <gtsam_unstable/dllexport.h>
+
 #include <list>
 
 namespace gtsam {
 
+/**
+ * Experimental AHRS mechanization state.
+ * @deprecated Use supported GTSAM navigation preintegration and attitude
+ * estimation facilities.
+ */
 class GTSAM_UNSTABLE_EXPORT Mechanization_bRn2 {
 
 private:
@@ -85,7 +96,8 @@ public:
     std::cout << s + ".x_g" << x_g_ << std::endl;
     std::cout << s + ".x_a" << x_a_ << std::endl;
   }
-
 };
 
 } // namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

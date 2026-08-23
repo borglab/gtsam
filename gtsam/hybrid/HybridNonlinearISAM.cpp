@@ -19,7 +19,6 @@
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/hybrid/HybridNonlinearISAM.h>
-#include <gtsam/inference/Ordering.h>
 
 #include <iostream>
 

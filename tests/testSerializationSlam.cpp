@@ -312,7 +312,6 @@ TEST (testSerializationSLAM, factors) {
   SharedNoiseModel model5 = noiseModel::Isotropic::Sigma(5, 0.3);
   SharedNoiseModel model6 = noiseModel::Isotropic::Sigma(6, 0.3);
   SharedNoiseModel model9 = noiseModel::Isotropic::Sigma(9, 0.3);
-  SharedNoiseModel model11 = noiseModel::Isotropic::Sigma(11, 0.3);
 
   SharedNoiseModel robust1 = noiseModel::Robust::Create(
       noiseModel::mEstimator::Huber::Create(10.0, noiseModel::mEstimator::Huber::Scalar),
@@ -332,7 +331,7 @@ TEST (testSerializationSLAM, factors) {
   PriorFactorCal3_S2 priorFactorCal3_S2(a10, cal3_s2, model5);
   PriorFactorCal3DS2 priorFactorCal3DS2(a11, cal3ds2, model9);
   PriorFactorCalibratedCamera priorFactorCalibratedCamera(a12, calibratedCamera, model6);
-  PriorFactorStereoCamera priorFactorStereoCamera(a14, stereoCamera, model11);
+  PriorFactorStereoCamera priorFactorStereoCamera(a14, stereoCamera, model6);
 
   BetweenFactorPoint2 betweenFactorPoint2(a03, b03, point2, model2);
   BetweenFactorPoint3 betweenFactorPoint3(a05, b05, point3, model3);

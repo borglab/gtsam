@@ -13,11 +13,14 @@ option(GTSAM_USE_SYSTEM_METIS "Find and use system-installed libmetis. If 'off',
 if(GTSAM_USE_SYSTEM_METIS)
   # Debian package: libmetis-dev
   find_package(METIS CONFIG NAMES metis)
-  if(NOT METIS_FOUND)
+  if(METIS_FOUND)
+    set(GTSAM_METIS_LINK_TARGET metis)
+  else()
     find_path(METIS_INCLUDE_DIR metis.h REQUIRED)
     find_library(METIS_LIBRARY metis REQUIRED)
     if(METIS_INCLUDE_DIR AND METIS_LIBRARY)
       set(METIS_FOUND ON)
+      set(GTSAM_METIS_LINK_TARGET ${METIS_LIBRARY})
     endif()
   endif()
 
@@ -25,13 +28,8 @@ if(GTSAM_USE_SYSTEM_METIS)
     mark_as_advanced(METIS_INCLUDE_DIR)
     mark_as_advanced(METIS_LIBRARY)
     add_library(metis-gtsam-if INTERFACE)
-    target_include_directories(metis-gtsam-if BEFORE INTERFACE ${METIS_INCLUDE_DIR}
-      # gtsam_unstable/partition/FindSeparator-inl.h uses internal metislib.h API
-      # via extern "C"
-      $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/metis/libmetis>
-      $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/metis/GKlib>
-    )
-    target_link_libraries(metis-gtsam-if INTERFACE ${METIS_LIBRARY} metis)
+    target_include_directories(metis-gtsam-if BEFORE INTERFACE ${METIS_INCLUDE_DIR})
+    target_link_libraries(metis-gtsam-if INTERFACE ${GTSAM_METIS_LINK_TARGET})
   endif()
 else()
   # Bundled version:
@@ -41,10 +39,6 @@ else()
   target_include_directories(metis-gtsam BEFORE PUBLIC
     $<INSTALL_INTERFACE:include/gtsam/3rdparty/metis/>
     $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/metis/include>
-    # gtsam_unstable/partition/FindSeparator-inl.h uses internal metislib.h API
-    # via extern "C"
-    $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/metis/libmetis>
-    $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/metis/GKlib>
   )
 
   add_library(metis-gtsam-if INTERFACE)

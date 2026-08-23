@@ -295,7 +295,7 @@ TEST(DiscreteScenario, FromCSV_Correct) {
   CHECK(csv_file.is_open());
 
   // Header and data
-  csv_file << "timestamp,px,py,pz,qw,qx,qy,qz,vx,vy,vz,omegax,omegay,omegaz,ax,ay,az\n";
+  csv_file << "t,p_x,p_y,p_z,q_w,q_x,q_y,q_z,v_x,v_y,v_z,w_x,w_y,w_z,a_x,a_y,a_z\n";
   csv_file << "100.0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,0\n"; // t_norm = 0.0
   const Rot3 R1 = Rot3::Rodrigues(0, 0, 0.2);
   const Quaternion q1 = R1.toQuaternion();

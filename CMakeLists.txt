@@ -1,13 +1,13 @@
-cmake_minimum_required(VERSION 3.9...3.29)
+cmake_minimum_required(VERSION 3.16...3.29)
 if (POLICY CMP0167)
-cmake_policy(SET CMP0167 OLD) # Don't complain about boost
+    cmake_policy(SET CMP0167 OLD) # Don't complain about boost
 endif()
 
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 4)
 set (GTSAM_VERSION_MINOR 3)
 set (GTSAM_VERSION_PATCH 0)
-set (GTSAM_PRERELEASE_VERSION "a0")
+set (GTSAM_PRERELEASE_VERSION "a2")
 math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
 
 # Set the version string for the library. 
@@ -98,26 +98,46 @@ include(GtsamTesting)
 include(GtsamPrinting)
 
 ############### Decide on BOOST ######################################
-# Enable or disable serialization with GTSAM_ENABLE_BOOST_SERIALIZATION
-option(GTSAM_ENABLE_BOOST_SERIALIZATION "Enable Boost serialization" ON)
-option(GTSAM_USE_BOOST_FEATURES "Enable Features that use Boost" ON)
+# When building inside colcon (ROS 2 build farm or local colcon build),
+# default to no Boost so ROS packages avoid the dependency.
+# Override explicitly with -DGTSAM_USE_BOOST_FEATURES=ON if needed.
+if(DEFINED ENV{COLCON})
+  set(_gtsam_boost_default OFF)
+else()
+  set(_gtsam_boost_default ON)
+endif()
+option(GTSAM_ENABLE_BOOST_SERIALIZATION "Enable Boost serialization" ${_gtsam_boost_default})
+option(GTSAM_USE_BOOST_FEATURES "Enable Features that use Boost" ${_gtsam_boost_default})
 
 if(GTSAM_ENABLE_BOOST_SERIALIZATION OR GTSAM_USE_BOOST_FEATURES)
 include(cmake/HandleBoost.cmake)
 endif()
 ######################################################################
 
+# ############## Decide on GeographicLib ######################################
+# Enable or disable GeographicLib integration with GTSAM_ENABLE_GEOGRAPHICLIB
+option(GTSAM_ENABLE_GEOGRAPHICLIB "Enable Features that use GeographicLib" OFF)
+
+if (GTSAM_ENABLE_GEOGRAPHICLIB)
+  include(cmake/HandleGeographicLib.cmake)
+endif()
+# ##############################################################################
+
 # Other Libraries:
 include(cmake/HandleCCache.cmake)           # ccache
 include(cmake/HandleCPack.cmake)            # CPack
 include(cmake/HandleEigen.cmake)            # Eigen3
+include(cmake/HandleSpectra.cmake)          # Spectra
+include(cmake/HandleSuiteSparse.cmake)      # CCOLAMD and SuiteSparse_config
 include(cmake/HandleMetis.cmake)            # metis
 include(cmake/HandleCephes.cmake)           # cephes
 include(cmake/HandleMKL.cmake)              # MKL
+include(cmake/HandleMOSEK.cmake)            # MOSEK SDP solver, optional
 include(cmake/HandleOpenMP.cmake)           # OpenMP
 include(cmake/HandlePerfTools.cmake)        # Google perftools
 include(cmake/HandlePython.cmake)           # Python options and commands
 include(cmake/HandleTBB.cmake)              # TBB
+include(cmake/HandleCuda.cmake)             # CUDA acceleration options
 include(cmake/HandleUninstall.cmake)        # for "make uninstall"
 
 include(cmake/HandleAllocators.cmake)       # Must be after tbb, pertools
@@ -154,6 +174,7 @@ if(GTSAM_BUILD_PYTHON OR GTSAM_INSTALL_MATLAB_TOOLBOX)
         CACHE STRING "The Python version to use for wrapping")
     # Set the include directory for matlab.h
     set(GTWRAP_INCLUDE_NAME "wrap")
+    set(GTWRAP_USE_SYSTEM_PYBIND ${GTSAM_USE_SYSTEM_PYBIND})
 
     # Copy matlab.h to the correct folder.
     configure_file(${PROJECT_SOURCE_DIR}/wrap/matlab.h

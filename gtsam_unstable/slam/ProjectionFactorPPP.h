@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
 
@@ -30,7 +31,8 @@ namespace gtsam {
    * @ingroup slam
    */
   template<class POSE, class LANDMARK, class CALIBRATION = Cal3_S2>
-  class ProjectionFactorPPP: public NoiseModelFactorN<POSE, POSE, LANDMARK> {
+  class ProjectionFactorPPP
+      : public NoiseModelFactorT<Vector2, POSE, POSE, LANDMARK> {
   protected:
 
     // Keep a copy of measurement and calibration for I/O
@@ -44,7 +46,7 @@ namespace gtsam {
   public:
 
     /// shorthand for base class type
-    typedef NoiseModelFactor3<POSE, POSE, LANDMARK> Base;
+    typedef NoiseModelFactorT<Vector2, POSE, POSE, LANDMARK> Base;
 
     // Provide access to the Matrix& version of evaluateError:
     using Base::evaluateError;
@@ -123,8 +125,10 @@ namespace gtsam {
     }
 
     /// Evaluate error h(x)-z and optionally derivatives
-    Vector evaluateError(const Pose3& pose, const Pose3& transform, const Point3& point,
-        OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3) const override {
+    Vector2 evaluateError(const Pose3& pose, const Pose3& transform,
+                          const Point3& point, OptionalMatrixType H1,
+                          OptionalMatrixType H2,
+                          OptionalMatrixType H3) const override {
       try {
           if(H1 || H2 || H3) {
             Matrix H0, H02;
@@ -143,7 +147,7 @@ namespace gtsam {
         if (H3) *H3 = Matrix::Zero(2,3);
         if (verboseCheirality_)
             std::cout << e.what() << ": Landmark "
-                      << DefaultKeyFormatter(this->key2())
+                      << DefaultKeyFormatter(this->key3())
                       << " moved behind camera "
                       << DefaultKeyFormatter(this->key1())
                       << std::endl;

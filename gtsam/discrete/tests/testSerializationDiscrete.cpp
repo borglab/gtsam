@@ -32,11 +32,11 @@ BOOST_CLASS_EXPORT_GUID(Tree, "gtsam_DecisionTreeStringInt")
 BOOST_CLASS_EXPORT_GUID(Tree::Leaf, "gtsam_DecisionTreeStringInt_Leaf")
 BOOST_CLASS_EXPORT_GUID(Tree::Choice, "gtsam_DecisionTreeStringInt_Choice")
 
-BOOST_CLASS_EXPORT_GUID(DecisionTreeFactor, "gtsam_DecisionTreeFactor");
-BOOST_CLASS_EXPORT_GUID(TableFactor, "gtsam_TableFactor");
+BOOST_CLASS_EXPORT_GUID(DecisionTreeFactor, "gtsam_DecisionTreeFactor")
+BOOST_CLASS_EXPORT_GUID(TableFactor, "gtsam_TableFactor")
 
 using ADT = AlgebraicDecisionTree<Key>;
-BOOST_CLASS_EXPORT_GUID(ADT, "gtsam_AlgebraicDecisionTree");
+BOOST_CLASS_EXPORT_GUID(ADT, "gtsam_AlgebraicDecisionTree")
 BOOST_CLASS_EXPORT_GUID(ADT::Leaf, "gtsam_AlgebraicDecisionTree_Leaf")
 BOOST_CLASS_EXPORT_GUID(ADT::Choice, "gtsam_AlgebraicDecisionTree_Choice")
 

@@ -14,6 +14,7 @@ class InstantiatedGlobalFunction(parser.GlobalFunction):
         template<T = {double}>
         T add(const T& x, const T& y);
     """
+
     def __init__(self, original, instantiations=(), new_name=''):
         self.original = original
         self.instantiations = instantiations
@@ -49,21 +50,20 @@ class InstantiatedGlobalFunction(parser.GlobalFunction):
                          self.return_type,
                          self.args,
                          self.template,
-                         parent=self.parent)
+                         parent=self.parent,
+                         force_pybind_lambda=original.force_pybind_lambda)
 
     def to_cpp(self):
         """Generate the C++ code for wrapping."""
         if self.original.template:
-            instantiated_names = [
+            instantiated_params = [
                 "::".join(inst.namespaces + [inst.instantiated_name()])
                 for inst in self.instantiations
             ]
-            ret = "{}<{}>".format(self.original.name,
-                                  ",".join(instantiated_names))
+            ret = f"{self.original.name}<{','.join(instantiated_params)}>"
         else:
             ret = self.original.name
         return ret
 
     def __repr__(self):
-        return "Instantiated {}".format(
-            super(InstantiatedGlobalFunction, self).__repr__())
+        return f"Instantiated {super().__repr__()}"

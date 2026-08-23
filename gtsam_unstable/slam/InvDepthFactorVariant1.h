@@ -1,3 +1,13 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
 
 /**
  * @file InvDepthFactorVariant1.h
@@ -11,6 +21,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/geometry/PinholeCamera.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Pose3.h>
@@ -22,7 +33,8 @@ namespace gtsam {
 /**
  * Binary factor representing a visual measurement using an inverse-depth parameterization
  */
-class InvDepthFactorVariant1: public NoiseModelFactorN<Pose3, Vector6> {
+class InvDepthFactorVariant1
+    : public NoiseModelFactorT<Vector2, Pose3, Vector6> {
 protected:
 
   // Keep a copy of measurement and calibration for I/O
@@ -32,7 +44,7 @@ protected:
 public:
 
   /// shorthand for base class type
-  typedef NoiseModelFactor2<Pose3, Vector6> Base;
+  typedef NoiseModelFactorT<Vector2, Pose3, Vector6> Base;
 
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
@@ -99,12 +111,13 @@ public:
           << std::endl;
       return Vector::Ones(2) * 2.0 * K_->fx();
     }
-    return (Vector(1) << 0.0).finished();
+    return Vector{{0.0}};
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
-  Vector evaluateError(const Pose3& pose, const Vector6& landmark,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override {
+  Vector2 evaluateError(const Pose3& pose, const Vector6& landmark,
+                        OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
 
     if (H1) {
       (*H1) = numericalDerivative11<Vector, Pose3>(

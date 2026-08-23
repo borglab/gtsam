@@ -8,12 +8,16 @@
  * @author Alex Cunningham
  */
 
+#include <gtsam/config.h>
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam_unstable/slam/DummyFactor.h>
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
-#include <gtsam/geometry/Point3.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam_unstable/slam/DummyFactor.h>
 
 using namespace gtsam;
 
@@ -46,11 +50,13 @@ TEST( testDummyFactor, basics ) {
   GaussianFactor::shared_ptr actLinearization = dummyfactor.linearize(c);
   CHECK(actLinearization);
   noiseModel::Diagonal::shared_ptr model3 = noiseModel::Unit::Create(3);
-  GaussianFactor::shared_ptr expLinearization(new JacobianFactor(
-      key1, Matrix::Zero(3,3), key2, Matrix::Zero(3,3), Z_3x1, model3));
+  GaussianFactor::shared_ptr expLinearization(
+      new JacobianFactor(key1, Z_3x3, key2, Z_3x3, Z_3x1, model3));
   EXPECT(assert_equal(*expLinearization, *actLinearization, tol));
 }
 
 /* ************************************************************************* */
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

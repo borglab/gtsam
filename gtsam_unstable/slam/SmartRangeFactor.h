@@ -9,17 +9,18 @@
 
 #pragma once
 
-#include <gtsam_unstable/dllexport.h>
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/inference/Key.h>
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/inference/Key.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam_unstable/dllexport.h>
 
 #include <list>
 #include <map>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <optional>
 
 namespace gtsam {
 
@@ -185,4 +186,3 @@ class SmartRangeFactor: public NoiseModelFactor {
   }
 };
 }  // \namespace gtsam
-

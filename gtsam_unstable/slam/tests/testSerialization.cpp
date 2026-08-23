@@ -17,16 +17,11 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <boost/filesystem.hpp>
-
-#include <iostream>
-#include <cstdlib>
-#include <fstream>
-#include <sstream>
+#include <filesystem>
 
 using namespace std;
 using namespace gtsam;
-namespace fs = boost::filesystem;
+namespace fs = std::filesystem;
 #ifdef TOPSRCDIR
 static string topdir = TOPSRCDIR;
 #else

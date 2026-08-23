@@ -48,7 +48,10 @@ Checks: |
   readability-misplaced-array-index,
   readability-non-const-parameter,
   readability-qualified-auto,
+  readability-redundant-casting,
   readability-redundant-function-ptr-dereference,
+  readability-redundant-inline-specifier,
+  readability-redundant-member-init,
   readability-redundant-smartptr-get,
   readability-redundant-string-cstr,
   readability-simplify-subscript-expr,
@@ -63,6 +66,7 @@ Checks: |
   -bugprone-reserved-identifier,
   -bugprone-unused-raii,
   -performance-enum-size,
+  -performance-inefficient-string-concatenation,
 
 CheckOptions:
 - key:             modernize-use-equals-default.IgnoreMacros

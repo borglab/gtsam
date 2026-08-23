@@ -23,6 +23,7 @@
 
 #include <cstddef>
 #include <gtsam/inference/EliminateableFactorGraph.h>
+#include <gtsam/inference/FactorErrorPredicate.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/linear/Errors.h>  // Included here instead of fw-declared so we can use Errors::iterator
 #include <gtsam/linear/GaussianFactor.h>
@@ -166,6 +167,13 @@ namespace gtsam {
 
     /** unnormalized error */
     double error(const VectorValues& x) const;
+
+    /**
+     * Compute the change in error from zero to x, using a single pass
+     * over the factors. Optionally returns the old and new errors.
+     */
+    double deltaError(const VectorValues& x, double* oldError = nullptr,
+                      double* newError = nullptr) const;
 
     /** Unnormalized probability. O(n) */
     double probPrime(const VectorValues& c) const;
@@ -393,10 +401,9 @@ namespace gtsam {
         const VectorValues& x,
         const std::string& str = "GaussianFactorGraph: ",
         const KeyFormatter& keyFormatter = DefaultKeyFormatter,
-        const std::function<bool(const Factor* /*factor*/,
-                                 double /*whitenedError*/, size_t /*index*/)>&
-            printCondition =
-                [](const Factor*, double, size_t) { return true; }) const;
+        const FactorErrorPredicate&
+            printCondition = FactorErrorPredicate{
+                [](const Factor*, double, size_t) { return true; }}) const;
     /// @}
 
   private:

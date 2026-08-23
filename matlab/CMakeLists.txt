@@ -75,19 +75,34 @@ set(interface_files
     ${PROJECT_SOURCE_DIR}/gtsam/inference/inference.i
     ${PROJECT_SOURCE_DIR}/gtsam/discrete/discrete.i
     ${GTSAM_SOURCE_DIR}/gtsam/geometry/geometry.i
+    ${GTSAM_SOURCE_DIR}/gtsam/geometry/cameras.i
     ${GTSAM_SOURCE_DIR}/gtsam/linear/linear.i
     ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
     ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/values.i
     ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/custom.i
+    ${GTSAM_SOURCE_DIR}/gtsam/constrained/constrained.i
+    ${GTSAM_SOURCE_DIR}/gtsam/certifiable/certifiable.i
     ${GTSAM_SOURCE_DIR}/gtsam/symbolic/symbolic.i
     ${GTSAM_SOURCE_DIR}/gtsam/sam/sam.i
     ${GTSAM_SOURCE_DIR}/gtsam/slam/slam.i
     ${GTSAM_SOURCE_DIR}/gtsam/sfm/sfm.i
     ${GTSAM_SOURCE_DIR}/gtsam/navigation/navigation.i
+    # matlab/custom.i lives outside the main gtsam/ tree, see comment below.
+    ${GTSAM_SOURCE_DIR}/matlab/custom.i
 )
-# Wrap
+# The fourth matlab_wrap() argument contains extra include directories for the
+# generated mex target. We point it at matlab/ because matlab/custom.i includes
+# MatlabCustomFactor.h from there.
 matlab_wrap("${interface_files}" "gtsam" "${GTSAM_ADDITIONAL_LIBRARIES}"
-            "" "${mexFlags}" "${ignore}" "${GTSAM_ENABLE_BOOST_SERIALIZATION}")
+            "${GTSAM_SOURCE_DIR}/matlab" "${mexFlags}" "${ignore}" "${GTSAM_ENABLE_BOOST_SERIALIZATION}")
+# Keep the runtime loader fix in GTSAM instead of the wrap subtree. The mex
+# module links against shared libgtsam and needs an rpath back to the install
+# lib directory so MATLAB can load it on macOS/Linux.
+set_target_properties(
+  gtsam_matlab_wrapper
+  PROPERTIES BUILD_RPATH "${PROJECT_BINARY_DIR}/gtsam;${CMAKE_INSTALL_PREFIX}/lib"
+             INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
+             INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 # Wrap version for gtsam_unstable
 if(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)
@@ -100,6 +115,12 @@ if(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)
   # Wrap
   matlab_wrap(${GTSAM_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i "gtsam_unstable"
               "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}" "${ignore}" "${GTSAM_ENABLE_BOOST_SERIALIZATION}")
+  set_target_properties(
+    gtsam_unstable_matlab_wrapper
+    PROPERTIES BUILD_RPATH
+               "${PROJECT_BINARY_DIR}/gtsam_unstable;${PROJECT_BINARY_DIR}/gtsam;${CMAKE_INSTALL_PREFIX}/lib"
+               INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
+               INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)
 
 # Record the root dir for gtsam - needed during external builds, e.g., ROS

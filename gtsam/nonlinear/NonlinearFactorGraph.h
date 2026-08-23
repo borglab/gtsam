@@ -23,8 +23,10 @@
 
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/GraphvizFormatting.h>
 #include <gtsam/inference/FactorGraph.h>
+#include <gtsam/inference/FactorErrorPredicate.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 
 #include <memory>
@@ -90,8 +92,9 @@ namespace gtsam {
     /** print errors along with factors*/
     void printErrors(const Values& values, const std::string& str = "NonlinearFactorGraph: ",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter,
-      const std::function<bool(const Factor* /*factor*/, double /*whitenedError*/, size_t /*index*/)>&
-        printCondition = [](const Factor *,double, size_t) {return true;}) const;
+      const FactorErrorPredicate&
+        printCondition = FactorErrorPredicate{
+            [](const Factor*, double, size_t) { return true; }}) const;
 
     /** Test equality */
     bool equals(const NonlinearFactorGraph& other, double tol = 1e-9) const;
@@ -101,7 +104,7 @@ namespace gtsam {
     /// @{
 
     /** unnormalized error, \f$ \sum_i 0.5 (h_i(X_i)-z)^2 / \sigma^2 \f$ in the most common case */
-    double error(const Values& values) const;
+    virtual double error(const Values& values) const;
 
     /** Unnormalized probability. O(n) */
     double probPrime(const Values& values) const;
@@ -127,7 +130,12 @@ namespace gtsam {
     Ordering orderingCOLAMDConstrained(const FastMap<Key, int>& constraints) const;
 
     /// Linearize a nonlinear factor graph
-    std::shared_ptr<GaussianFactorGraph> linearize(const Values& linearizationPoint) const;
+    virtual std::shared_ptr<GaussianFactorGraph> linearize(const Values& linearizationPoint) const;
+
+    /// Clone into a shared pointer while preserving derived graph behavior.
+    virtual std::shared_ptr<const NonlinearFactorGraph> cloneShared() const {
+      return std::make_shared<NonlinearFactorGraph>(*this);
+    }
 
     /// typdef for dampen functions used below
     typedef std::function<void(const std::shared_ptr<HessianFactor>& hessianFactor)> Dampen;
@@ -267,4 +275,3 @@ struct traits<NonlinearFactorGraph> : public Testable<NonlinearFactorGraph> {
 };
 
 } //\ namespace gtsam
-

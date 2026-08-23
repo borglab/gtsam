@@ -19,6 +19,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/geometry/EssentialMatrix.h>
 
 namespace gtsam {
@@ -27,12 +28,13 @@ namespace gtsam {
  * Binary factor between two Pose3 variables induced by an EssentialMatrix measurement
  * @ingroup slam
  */
-class GTSAM_EXPORT EssentialMatrixConstraint: public NoiseModelFactorN<Pose3, Pose3> {
+class GTSAM_EXPORT EssentialMatrixConstraint
+    : public NoiseModelFactorT<Vector5, Pose3, Pose3> {
 
 private:
 
   typedef EssentialMatrixConstraint This;
-  typedef NoiseModelFactorN<Pose3, Pose3> Base;
+  typedef NoiseModelFactorT<Vector5, Pose3, Pose3> Base;
 
   EssentialMatrix measuredE_; /** The measurement is an essential matrix */
 
@@ -81,8 +83,9 @@ public:
   /** implement functions needed to derive from Factor */
 
   /** vector of errors */
-  Vector evaluateError(const Pose3& p1, const Pose3& p2,
-      OptionalMatrixType Hp1, OptionalMatrixType Hp2) const override;
+  Vector5 evaluateError(const Pose3& p1, const Pose3& p2,
+                        OptionalMatrixType Hp1,
+                        OptionalMatrixType Hp2) const override;
 
   /** return the measured */
   const EssentialMatrix& measured() const {
@@ -103,9 +106,6 @@ private:
     ar & BOOST_SERIALIZATION_NVP(measuredE_);
   }
 #endif
-
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // \class EssentialMatrixConstraint
 

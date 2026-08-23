@@ -20,21 +20,25 @@
 
 namespace gtsam {
 
-/* ********************************************************************************************* */
-ZeroCostConstraint::ZeroCostConstraint(const NoiseModelFactor::shared_ptr& factor)
-    : Base(constrainedNoise(factor->noiseModel()->sigmas()), factor->keys()), factor_(factor) {}
+/* ************************************************************************* */
+ZeroCostConstraint::ZeroCostConstraint(
+    const NoiseModelFactor::shared_ptr& factor)
+    : Base(constrainedNoise(factor->noiseModel()->sigmas()), factor->keys()),
+      factor_(factor) {}
 
-/* ********************************************************************************************* */
-Vector ZeroCostConstraint::unwhitenedError(const Values& x, OptionalMatrixVecType H) const {
+/* ************************************************************************* */
+Vector ZeroCostConstraint::unwhitenedError(const Values& x,
+                                           OptionalMatrixVecType H) const {
   return factor_->unwhitenedError(x, H);
 }
 
-/* ********************************************************************************************* */
-NoiseModelFactor::shared_ptr ZeroCostConstraint::penaltyFactor(const double mu) const {
+/* ************************************************************************* */
+NoiseModelFactor::shared_ptr ZeroCostConstraint::penaltyFactor(
+    const double mu) const {
   return factor_->cloneWithNewNoiseModel(penaltyNoise(mu));
 }
 
-/* ********************************************************************************************* */
+/* ************************************************************************* */
 NonlinearEqualityConstraints NonlinearEqualityConstraints::FromCostGraph(
     const NonlinearFactorGraph& graph) {
   NonlinearEqualityConstraints constraints;
@@ -45,7 +49,7 @@ NonlinearEqualityConstraints NonlinearEqualityConstraints::FromCostGraph(
   return constraints;
 }
 
-/* ********************************************************************************************* */
+/* ************************************************************************* */
 size_t NonlinearEqualityConstraints::dim() const {
   size_t dimension = 0;
   for (const auto& constraint : *this) {
@@ -54,26 +58,29 @@ size_t NonlinearEqualityConstraints::dim() const {
   return dimension;
 }
 
-/* ********************************************************************************************* */
-Vector NonlinearEqualityConstraints::violationVector(const Values& values, bool whiten) const {
+/* ************************************************************************* */
+Vector NonlinearEqualityConstraints::violationVector(const Values& values,
+                                                     bool whiten) const {
   Vector violation(dim());
   size_t start_idx = 0;
   for (const auto& constraint : *this) {
     size_t dim = constraint->dim();
-    violation.middleCols(start_idx, dim) =
-        whiten ? constraint->whitenedError(values) : constraint->unwhitenedError(values);
+    violation.segment(start_idx, dim) =
+        whiten ? constraint->whitenedError(values)
+               : constraint->unwhitenedError(values);
     start_idx += dim;
   }
   return violation;
 }
 
-/* ********************************************************************************************* */
+/* ************************************************************************* */
 double NonlinearEqualityConstraints::violationNorm(const Values& values) const {
   return violationVector(values, true).norm();
 }
 
-/* ********************************************************************************************* */
-NonlinearFactorGraph NonlinearEqualityConstraints::penaltyGraph(const double mu) const {
+/* ************************************************************************* */
+NonlinearFactorGraph NonlinearEqualityConstraints::penaltyGraph(
+    const double mu) const {
   NonlinearFactorGraph graph;
   for (const auto& constraint : *this) {
     graph.add(constraint->penaltyFactor(mu));

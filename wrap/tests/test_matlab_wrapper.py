@@ -8,7 +8,10 @@ Date: March 2019
 import filecmp
 import os
 import os.path as osp
+from pathlib import Path
+import re
 import sys
+import tempfile
 import unittest
 
 sys.path.append(osp.dirname(osp.dirname(osp.abspath(__file__))))
@@ -79,6 +82,310 @@ class TestWrap(unittest.TestCase):
             actual = osp.join(self.MATLAB_ACTUAL_DIR, file)
             self.compare_and_diff(file, actual)
 
+    def test_matrix_view_arguments(self):
+        """Test that matrix view arguments use MATLAB double arrays directly."""
+        file = osp.join(self.INTERFACE_DIR, 'matrix_views.i')
+
+        wrapper = MatlabWrapper(module_name='matrix_views',
+                                top_module_namespace=['gtsam'],
+                                ignore_classes=[''])
+
+        wrapper.wrap([file], path=self.MATLAB_ACTUAL_DIR)
+
+        cpp_file = osp.join(self.MATLAB_ACTUAL_DIR, 'matrix_views_wrapper.cpp')
+        with open(cpp_file, 'r', encoding='UTF-8') as f:
+            cpp_content = f.read()
+
+        self.assertIn(
+            'gtsam::ConstMatrixView points = unwrapMatrixView< gtsam::ConstMatrixView >(in[1]);',
+            cpp_content)
+        self.assertIn('obj->acceptView(points);', cpp_content)
+        self.assertIn('obj->scaleView(points,scale)', cpp_content)
+        self.assertNotIn('unwrap< gtsam::ConstMatrixView >', cpp_content)
+        self.assertNotIn('*points', cpp_content)
+
+        m_file = osp.join(self.MATLAB_ACTUAL_DIR, '+gtsam',
+                          'MatrixViewFixture.m')
+        with open(m_file, 'r', encoding='UTF-8') as f:
+            matlab_content = f.read()
+
+        self.assertIn("isa(varargin{1},'double')", matlab_content)
+
+        matlab_header = osp.join(self.TEST_DIR, '..', 'matlab.h')
+        with open(matlab_header, 'r', encoding='UTF-8') as f:
+            header_content = f.read()
+
+        self.assertIn('unwrapMatrixView', header_content)
+        self.assertIn('mxIsSparse(array)', header_content)
+        self.assertIn('mwSize rows', header_content)
+        self.assertIn('static_cast<unsigned long long>(rows)', header_content)
+        self.assertIn('Eigen::Index m', header_content)
+        self.assertIn('Stride(m, 1)', header_content)
+
+    def test_fixed_size_eigen_values(self):
+        """MatrixN/VectorN aliases are MATLAB double arrays, not handles."""
+        file = osp.join(self.INTERFACE_DIR, 'fixed_size_eigen.i')
+
+        wrapper = MatlabWrapper(module_name='fixed_size_eigen',
+                                top_module_namespace=['gtsam'],
+                                ignore_classes=[''])
+        wrapper.wrap([file], path=self.MATLAB_ACTUAL_DIR)
+
+        cpp_file = osp.join(self.MATLAB_ACTUAL_DIR,
+                            'fixed_size_eigen_wrapper.cpp')
+        with open(cpp_file, 'r', encoding='UTF-8') as f:
+            cpp_content = f.read()
+
+        self.assertIn(
+            'gtsam::Matrix3 matrix = unwrapFixedSizeEigen< gtsam::Matrix3 >(in[0]);',
+            cpp_content)
+        self.assertIn(
+            'gtsam::Vector10 vector = unwrapFixedSizeEigen< gtsam::Vector10 >(in[1]);',
+            cpp_content)
+        self.assertIn('out[0] = wrapFixedSizeEigen(obj->matrix(value));',
+                      cpp_content)
+        self.assertIn(
+            'out[0] = wrapFixedSizeEigen(obj->rectangular(value));',
+            cpp_content)
+        self.assertIn('out[0] = wrapFixedSizeEigen(obj->vector(value));',
+                      cpp_content)
+        self.assertIn(
+            'out[0] = wrapFixedSizeEigen(pairResult.first);', cpp_content)
+        self.assertIn(
+            'out[1] = wrapFixedSizeEigen(pairResult.second);', cpp_content)
+        self.assertIn(
+            'return wrapFixedSizeEigen(value);', cpp_content)
+        self.assertIn(
+            'out[0] = wrapFixedSizeEigen(obj->matrixProperty);', cpp_content)
+        self.assertNotIn('wrap_shared_ptr(std::make_shared<gtsam::Matrix3>',
+                         cpp_content)
+        self.assertNotIn('unwrap_shared_ptr< gtsam::Vector10 >', cpp_content)
+
+        m_file = osp.join(self.MATLAB_ACTUAL_DIR, '+gtsam',
+                          'FixedSizeEigenFixture.m')
+        with open(m_file, 'r', encoding='UTF-8') as f:
+            matlab_content = f.read()
+
+        self.assertNotIn("isa(varargin{1},'gtsam.Matrix3')", matlab_content)
+        self.assertNotIn("isa(varargin{1},'gtsam.Vector10')", matlab_content)
+        self.assertIn(
+            "isa(varargin{1},'double') && size(varargin{1},1)==3 && size(varargin{1},2)==3",
+            matlab_content)
+        self.assertIn(
+            "isa(varargin{2},'double') && size(varargin{2},1)==10 && size(varargin{2},2)==1",
+            matlab_content)
+
+        matlab_header = osp.join(self.TEST_DIR, '..', 'matlab.h')
+        with open(matlab_header, 'r', encoding='UTF-8') as f:
+            header_content = f.read()
+
+        self.assertIn('mxArray* wrapFixedSizeEigen(', header_content)
+        self.assertIn('EigenType unwrapFixedSizeEigen(', header_content)
+        self.assertIn('RowsAtCompileTime', header_content)
+
+    def test_pybind_lambda_annotation_is_ignored(self):
+        """Pybind-only annotations do not alter generated MATLAB files."""
+        source = Path(self.INTERFACE_DIR) / 'pybind_lambda_adapters.i'
+        annotated = source.read_text(encoding='UTF-8')
+        unannotated = re.sub(r'^[ \t]*@pybind_lambda[ \t]*\n',
+                             '',
+                             annotated,
+                             flags=re.MULTILINE)
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            annotated_source = root / 'annotated.i'
+            unannotated_source = root / 'unannotated.i'
+            annotated_source.write_text(annotated, encoding='UTF-8')
+            unannotated_source.write_text(unannotated, encoding='UTF-8')
+            annotated_output = root / 'annotated'
+            unannotated_output = root / 'unannotated'
+            annotated_output.mkdir()
+            unannotated_output.mkdir()
+
+            MatlabWrapper(
+                module_name='pybind_lambda_adapters',
+                top_module_namespace=['adapters'],
+                ignore_classes=[''],
+            ).wrap([str(annotated_source)], path=str(annotated_output))
+            MatlabWrapper(
+                module_name='pybind_lambda_adapters',
+                top_module_namespace=['adapters'],
+                ignore_classes=[''],
+            ).wrap([str(unannotated_source)], path=str(unannotated_output))
+
+            annotated_files = {
+                path.relative_to(annotated_output): path.read_bytes()
+                for path in annotated_output.rglob('*') if path.is_file()
+            }
+            unannotated_files = {
+                path.relative_to(unannotated_output): path.read_bytes()
+                for path in unannotated_output.rglob('*') if path.is_file()
+            }
+            self.assertEqual(annotated_files, unannotated_files)
+
+    def test_eigen_ref_jacobians(self):
+        """Test that Eigen::Ref<MatrixXd> args are treated as Jacobian outputs.
+
+        Ref<MatrixXd> arguments should not appear as inputs in the MATLAB
+        dispatch check, and should be returned as extra output arguments
+        alongside the primary return value in the generated C++ MEX code.
+        Covers: primitive inputs, zero inputs, class-type inputs, static methods.
+        See https://github.com/borglab/gtsam/issues/2492
+        """
+        file = osp.join(self.INTERFACE_DIR, 'eigen_ref.i')
+
+        wrapper = MatlabWrapper(module_name='eigen_ref',
+                                top_module_namespace=['gtsam'],
+                                ignore_classes=[''])
+
+        wrapper.wrap([file], path=self.MATLAB_ACTUAL_DIR)
+
+        cpp_file = osp.join(self.MATLAB_ACTUAL_DIR, 'eigen_ref_wrapper.cpp')
+        with open(cpp_file, 'r', encoding='UTF-8') as f:
+            cpp_content = f.read()
+
+        m_file = osp.join(self.MATLAB_ACTUAL_DIR, '+gtsam', 'Pose3.m')
+        with open(m_file, 'r', encoding='UTF-8') as f:
+            matlab_content = f.read()
+
+        # Must never emit the bogus Eigen.RefMatrixXd MATLAB class check.
+        self.assertNotIn('Eigen.RefMatrixXd', matlab_content)
+        # Must never try to unwrap Ref args from in[].
+        self.assertNotIn('unwrap_shared_ptr< Eigen::MatrixXd >', cpp_content)
+        self.assertNotIn('unwrap< Eigen::MatrixXd >', cpp_content)
+
+        # Case 1: transformFrom — primitive input (Point3) + 2 Ref args.
+        # MATLAB: only 1 varargin (point), nargout == 3.
+        self.assertIn(
+            "length(varargin) == 1 && isa(varargin{1},'double')"
+            " && size(varargin{1},1)==3 && size(varargin{1},2)==1"
+            " && nargout == 3",
+            matlab_content)
+        # C++: allocates both Ref args, passes without dereference, returns out[1]/out[2].
+        self.assertIn('Eigen::MatrixXd Hself = Eigen::MatrixXd();', cpp_content)
+        self.assertIn('Eigen::MatrixXd Hpoint = Eigen::MatrixXd();', cpp_content)
+        self.assertIn('obj->transformFrom(point,Hself,Hpoint)', cpp_content)
+        self.assertIn('out[1] = wrap< Eigen::MatrixXd >(Hself);', cpp_content)
+        self.assertIn('out[2] = wrap< Eigen::MatrixXd >(Hpoint);', cpp_content)
+        self.assertIn('checkArguments("transformFrom",nargout,nargin-1,1);', cpp_content)
+
+        # Case 2: inverse — zero real inputs + 1 Ref arg.
+        # MATLAB: length(varargin) == 0, nargout == 2.
+        self.assertIn('length(varargin) == 0 && nargout == 2', matlab_content)
+        # C++: single Ref arg allocated and returned via out[1].
+        self.assertIn('Eigen::MatrixXd H = Eigen::MatrixXd();', cpp_content)
+        self.assertIn('obj->inverse(H)', cpp_content)
+        self.assertIn('out[1] = wrap< Eigen::MatrixXd >(H);', cpp_content)
+        self.assertIn('checkArguments("inverse",nargout,nargin-1,0);', cpp_content)
+
+        # Case 3: between — class-type input (Pose3) + 2 Ref args.
+        # MATLAB: 1 varargin (pose object), nargout == 3.
+        self.assertIn(
+            "length(varargin) == 1 && isa(varargin{1},'gtsam.Pose3') && nargout == 3",
+            matlab_content)
+        # C++: pose unwrapped correctly, H1/H2 allocated and returned.
+        self.assertIn('Eigen::MatrixXd H1 = Eigen::MatrixXd();', cpp_content)
+        self.assertIn('Eigen::MatrixXd H2 = Eigen::MatrixXd();', cpp_content)
+        self.assertIn('obj->between(pose,H1,H2)', cpp_content)
+        self.assertIn('out[1] = wrap< Eigen::MatrixXd >(H1);', cpp_content)
+        self.assertIn('out[2] = wrap< Eigen::MatrixXd >(H2);', cpp_content)
+
+        # Case 4: Expmap — static method + 1 Ref arg.
+        # MATLAB: 1 varargin (xi), nargout == 2.
+        self.assertIn(
+            "length(varargin) == 1 && isa(varargin{1},'double')"
+            " && size(varargin{1},2)==1 && nargout == 2",
+            matlab_content)
+        # C++: Hxi allocated and returned via out[1], nargin not decremented (static).
+        self.assertIn('Eigen::MatrixXd Hxi = Eigen::MatrixXd();', cpp_content)
+        self.assertIn('gtsam::Pose3::Expmap(xi,Hxi)', cpp_content)
+        self.assertIn('out[1] = wrap< Eigen::MatrixXd >(Hxi);', cpp_content)
+        self.assertIn('checkArguments("gtsam::Pose3.Expmap",nargout,nargin,1);', cpp_content)
+
+    def test_std_optional(self):
+        """Test MATLAB [] <-> std::nullopt and engaged value conversion."""
+        file = osp.join(self.INTERFACE_DIR, 'optionals.i')
+
+        wrapper = MatlabWrapper(module_name='optionals',
+                                top_module_namespace=['gtsam'],
+                                ignore_classes=[''])
+        wrapper.wrap([file], path=self.MATLAB_ACTUAL_DIR)
+
+        cpp_file = osp.join(self.MATLAB_ACTUAL_DIR,
+                            'optionals_wrapper.cpp')
+        with open(cpp_file, 'r', encoding='UTF-8') as f:
+            cpp_content = f.read()
+
+        m_file = osp.join(self.MATLAB_ACTUAL_DIR, '+gtsam', 'Pose3.m')
+        with open(m_file, 'r', encoding='UTF-8') as f:
+            matlab_content = f.read()
+
+        # Empty arrays select nullopt; engaged values retain normal type checks.
+        self.assertIn(
+            "(isempty(varargin{1}) || isa(varargin{1},'double'))",
+            matlab_content)
+        self.assertIn(
+            "(isempty(varargin{1}) || isa(varargin{1},'gtsam.Pose3'))",
+            matlab_content)
+        self.assertIn(
+            "(isempty(varargin{1}) || isa(varargin{1},'double')"
+            " && size(varargin{1},2)==1)", matlab_content)
+        self.assertNotIn("isa(varargin{1},'std.optional", matlab_content)
+
+        # Primitive and class-value optionals recurse through the contained
+        # type's established wrapping policy.
+        self.assertIn(
+            'wrap_optional(maybeDouble(available), '
+            '[](const double& value) { return wrap< double >(value); })',
+            cpp_content)
+        self.assertIn(
+            'wrap_optional(gtsam::Pose3::MaybePose(available), '
+            '[](const gtsam::Pose3& value) { return '
+            'wrap_shared_ptr(std::make_shared<gtsam::Pose3>(value), '
+            '"gtsam.Pose3", false); })', cpp_content)
+        # Arguments and properties use values, not fake optional proxy classes.
+        self.assertIn(
+            'std::optional<double> value = unwrap_optional<double>(in[1], '
+            '[](const mxArray* value) { return unwrap< double >(value); });',
+            cpp_content)
+        self.assertIn(
+            'std::optional<gtsam::Pose3> value = '
+            'unwrap_optional<gtsam::Pose3>(in[1], '
+            '[](const mxArray* value) { return '
+            '*unwrap_shared_ptr< gtsam::Pose3 >'
+            '(value, "ptr_gtsamPose3"); });', cpp_content)
+        self.assertIn('obj->threshold = threshold;', cpp_content)
+        self.assertNotIn('obj->threshold = *threshold;', cpp_content)
+
+        # A pair keeps the wrapper's conventional two-output MATLAB API; an
+        # empty optional produces [] for both outputs.
+        self.assertIn(
+            '[ varargout{1} varargout{2} ] = optionals_wrapper(',
+            matlab_content)
+        self.assertIn('auto optionalPairResult = '
+                      'obj->maybeGaussian(available);', cpp_content)
+        self.assertIn('const auto& pairResult = *optionalPairResult;',
+                      cpp_content)
+        self.assertIn('out[0] = wrap< Vector >(pairResult.first);',
+                      cpp_content)
+        self.assertIn('out[1] = wrap< Matrix >(pairResult.second);',
+                      cpp_content)
+        self.assertGreaterEqual(
+            cpp_content.count('mxCreateDoubleMatrix(0, 0, mxREAL)'), 2)
+
+        self.assertNotIn('make_shared<std::optional', cpp_content)
+        self.assertNotIn('unwrap_shared_ptr< std::optional', cpp_content)
+
+        matlab_header = osp.join(self.TEST_DIR, '..', 'matlab.h')
+        with open(matlab_header, 'r', encoding='UTF-8') as f:
+            header_content = f.read()
+        self.assertIn('mxArray* wrap_optional(', header_content)
+        self.assertIn('std::optional<Class> unwrap_optional(',
+                      header_content)
+        self.assertIn('if (mxIsEmpty(array)) return std::nullopt;',
+                      header_content)
+        
     def test_functions(self):
         """Test interface file with function info."""
         file = osp.join(self.INTERFACE_DIR, 'functions.i')
@@ -105,6 +412,12 @@ class TestWrap(unittest.TestCase):
             'DefaultFuncVector.m',
             'DefaultFuncZero.m',
             'setPose.m',
+            'EliminateDiscrete.m',
+            'triangulatePoint3Cal3_S2.m',
+            'FindKarcherMeanPoint3.m',
+            'FindKarcherMeanSO3.m',
+            'FindKarcherMeanSO4.m',
+            'FindKarcherMeanPose3.m',
         ]
 
         for file in files:
@@ -125,21 +438,121 @@ class TestWrap(unittest.TestCase):
 
         files = [
             'class_wrapper.cpp',
+            'ForwardKinematics.m',
             'FunDouble.m',
             'FunRange.m',
+            'HessianFactor.m',
             'MultipleTemplatesIntDouble.m',
             'MultipleTemplatesIntFloat.m',
             'MyFactorPosePoint2.m',
             'MyVector3.m',
             'MyVector12.m',
             'PrimitiveRefDouble.m',
+            'SmartProjectionRigFactorPinholeCameraCal3_S2.m',
             'Test.m',
-            'ForwardKinematics.m',
         ]
 
         for file in files:
             actual = osp.join(self.MATLAB_ACTUAL_DIR, file)
             self.compare_and_diff(file, actual)
+
+    def test_deconstructors_are_idempotent(self):
+        """Repeated MATLAB destruction only deletes collector-owned handles."""
+        file = osp.join(self.INTERFACE_DIR, 'class.i')
+        wrapper = MatlabWrapper(
+            module_name='class',
+            top_module_namespace=['gtsam'],
+            ignore_classes=[''],
+        )
+        wrapper.wrap([file], path=self.MATLAB_ACTUAL_DIR)
+
+        cpp_file = osp.join(self.MATLAB_ACTUAL_DIR, 'class_wrapper.cpp')
+        with open(cpp_file, 'r', encoding='UTF-8') as generated_file:
+            cpp_content = generated_file.read()
+
+        self.assertIn(
+            'if(item != collector_Test.end()) {\n'
+            '    collector_Test.erase(item);\n'
+            '    delete self;\n'
+            '  }', cpp_content)
+        self.assertNotIn(
+            'collector_Test.erase(item);\n'
+            '  }\n'
+            '  delete self;', cpp_content)
+
+    def test_mex_error_path_restores_stream(self):
+        """MEX failures restore std::cout before leaving the gateway."""
+        file = osp.join(self.INTERFACE_DIR, 'functions.i')
+        wrapper = MatlabWrapper(
+            module_name='functions',
+            top_module_namespace=['gtsam'],
+            ignore_classes=[''],
+        )
+        wrapper.wrap([file], path=self.MATLAB_ACTUAL_DIR)
+
+        cpp_file = osp.join(self.MATLAB_ACTUAL_DIR,
+                            'functions_wrapper.cpp')
+        with open(cpp_file, 'r', encoding='UTF-8') as generated_file:
+            cpp_content = generated_file.read()
+
+        self.assertIn(
+            '} catch(const std::exception& e) {\n'
+            '    std::cout.rdbuf(outbuf);\n'
+            '    mexErrMsgTxt(', cpp_content)
+
+        matlab_header = osp.join(self.TEST_DIR, '..', 'matlab.h')
+        with open(matlab_header, 'r', encoding='UTF-8') as header_file:
+            header_content = header_file.read()
+
+        self.assertIn('#include <mex.h>', header_content)
+        self.assertNotIn('extern "C" {\n#include <mex.h>\n}',
+                         header_content)
+
+    def test_size_t_round_trip(self):
+        """Generated size_t wrappers use alias-safe scalar conversions."""
+        file = osp.join(self.INTERFACE_DIR, 'matlab_integer_aliases.i')
+
+        wrapper = MatlabWrapper(
+            module_name='matlab_integer_aliases',
+            top_module_namespace=['gtsam'],
+            ignore_classes=[''],
+        )
+        wrapper.wrap([file], path=self.MATLAB_ACTUAL_DIR)
+
+        cpp_file = osp.join(self.MATLAB_ACTUAL_DIR,
+                            'matlab_integer_aliases_wrapper.cpp')
+        with open(cpp_file, 'r', encoding='UTF-8') as generated_file:
+            cpp_content = generated_file.read()
+
+        self.assertIn('size_t value = unwrap< size_t >(in[0]);', cpp_content)
+        self.assertIn(
+            'out[0] = wrap< size_t >(roundTripSizeT(value));',
+            cpp_content)
+        self.assertIn('uint64_t value = unwrap< uint64_t >(in[0]);',
+                      cpp_content)
+        self.assertIn(
+            'out[0] = wrap< uint64_t >(roundTripUint64(value));',
+            cpp_content)
+        self.assertNotIn('unwrap_shared_ptr< uint64_t >', cpp_content)
+        self.assertNotIn('wrap_shared_ptr(std::make_shared<uint64_t>',
+                         cpp_content)
+
+        uint64_file = osp.join(self.MATLAB_ACTUAL_DIR, 'roundTripUint64.m')
+        with open(uint64_file, 'r', encoding='UTF-8') as generated_file:
+            uint64_content = generated_file.read()
+        self.assertIn("isa(varargin{1},'numeric')", uint64_content)
+
+        matlab_header = osp.join(self.TEST_DIR, '..', 'matlab.h')
+        with open(matlab_header, 'r', encoding='UTF-8') as header_file:
+            header_content = header_file.read()
+
+        self.assertIn('struct IsMatlabSizeOrKeyScalar', header_content)
+        self.assertIn('std::is_same<T, size_t>::value', header_content)
+        self.assertIn('std::is_same<T, uint64_t>::value', header_content)
+        self.assertNotIn('mxArray* wrap<size_t>', header_content)
+        self.assertNotIn('size_t unwrap<size_t>', header_content)
+        self.assertIn('attempted wrap of invalid type', header_content)
+        self.assertIn('attempted unwrap of invalid type', header_content)
 
     def test_enum(self):
         """Test interface file with only enum info."""
@@ -156,6 +569,7 @@ class TestWrap(unittest.TestCase):
         files = [
             'enum_wrapper.cpp',
             'Color.m',
+            'Pet.m',
             '+Pet/Kind.m',
             '+gtsam/VerbosityLM.m',
             '+gtsam/+MCU/Avengers.m',
@@ -202,9 +616,13 @@ class TestWrap(unittest.TestCase):
         files = [
             'inheritance_wrapper.cpp',
             'MyBase.m',
+            'MyTemplateA.m',
             'MyTemplateMatrix.m',
             'MyTemplatePoint2.m',
             'ForwardKinematicsFactor.m',
+            'ParentHasTemplateDouble.m',
+            'Base.m',
+            'Derived.m',
         ]
 
         for file in files:

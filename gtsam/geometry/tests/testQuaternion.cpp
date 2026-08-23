@@ -16,7 +16,6 @@
  **/
 
 #include <gtsam/geometry/Quaternion.h>
-#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/testLie.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -48,6 +47,26 @@ TEST(Quaternion , Logmap) {
   Vector3 v1 = traits<Q>::Logmap(q1);
   Vector3 v2 = traits<Q>::Logmap(q2);
   EXPECT(assert_equal(v1, v2));
+}
+
+//******************************************************************************
+// Rot3Q builds its quaternion directly from a user-supplied rotation matrix and
+// never renormalizes, so Logmap must not assume unit norm. It must also stay
+// accurate just above the old NearlyOne threshold, where acos(qw) is poorly
+// conditioned.
+TEST(Quaternion , LogmapUnnormalized) {
+  const Vector3 axis = Vector3(1, 2, 3).normalized();
+  for (double theta : {1e-4, 1e-2, 1.0, 3.0, 3.1415}) {
+    const Q unit(Eigen::AngleAxisd(theta, axis));
+    const Vector3 expected = theta * axis;
+    EXPECT(assert_equal((Vector)expected, (Vector)traits<Q>::Logmap(unit),
+                        1e-14));
+    for (double s : {0.5, 1.0 + 1e-7, 2.0}) {
+      const Q scaled(s * unit.w(), s * unit.x(), s * unit.y(), s * unit.z());
+      EXPECT(assert_equal((Vector)expected, (Vector)traits<Q>::Logmap(scaled),
+                          1e-14));
+    }
+  }
 }
 
 //******************************************************************************

@@ -18,16 +18,17 @@
  * @author  Frank Dellaert
  */
 
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/GaussianBayesTree.h>
-#include <gtsam/linear/GaussianEliminationTree.h>
-#include <gtsam/linear/GaussianJunctionTree.h>
-#include <gtsam/linear/HessianFactor.h>
-#include <gtsam/inference/FactorGraph-inst.h>
-#include <gtsam/inference/EliminateableFactorGraph-inst.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
-#include <gtsam/base/cholesky.h>
+#include <gtsam/inference/EliminateableFactorGraph-inst.h>
+#include <gtsam/inference/FactorGraph-inst.h>
+#include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/linear/GaussianEliminationTree.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/HessianFactor.h>
+
+#include <Eigen/Cholesky>
 
 using namespace std;
 using namespace gtsam;
@@ -57,6 +58,7 @@ namespace gtsam {
   std::map<Key, size_t> GaussianFactorGraph::getKeyDimMap() const {
     map<Key, size_t> spec;
     for (const GaussianFactor::shared_ptr& gf : *this) {
+      if (!gf) continue;
       for (GaussianFactor::const_iterator it = gf->begin(); it != gf->end(); it++) {
         map<Key,size_t>::iterator it2 = spec.find(*it);
         if ( it2 == spec.end() ) {
@@ -75,6 +77,35 @@ namespace gtsam {
         total_error += factor->error(x);
     }
     return total_error;
+  }
+
+  /* ************************************************************************* */
+  double GaussianFactorGraph::deltaError(const VectorValues& x, double* oldError,
+                                         double* newError) const {
+    double oldTotal = 0.0;
+    double newTotal = 0.0;
+    double deltaTotal = 0.0;
+    for (const sharedFactor& factor : *this) {
+      if (!factor) {
+        continue;
+      }
+      if (oldError || newError) {
+        double factorOld = 0.0;
+        double factorNew = 0.0;
+        deltaTotal += factor->deltaError(x, &factorOld, &factorNew);
+        oldTotal += factorOld;
+        newTotal += factorNew;
+      } else {
+        deltaTotal += factor->deltaError(x, nullptr, nullptr);
+      }
+    }
+    if (oldError) {
+      *oldError = oldTotal;
+    }
+    if (newError) {
+      *newError = newTotal;
+    }
+    return deltaTotal;
   }
 
   /* ************************************************************************* */

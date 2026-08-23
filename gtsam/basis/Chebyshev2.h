@@ -33,7 +33,6 @@
 #pragma once
 
 #include <gtsam/base/Manifold.h>
-#include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/basis/Basis.h>
 
 namespace gtsam {
@@ -45,8 +44,6 @@ namespace gtsam {
  */
 class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
  public:
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
   using Base = Basis<Chebyshev2>;
   using Parameters = Eigen::Matrix<double, /*Nx1*/ -1, 1>;
   using DiffMatrix = Eigen::Matrix<double, /*NxN*/ -1, -1>;
@@ -102,31 +99,45 @@ class GTSAM_EXPORT Chebyshev2 : public Basis<Chebyshev2> {
   /// Compute D = differentiation matrix, for interval [a,b]
   static DiffMatrix DifferentiationMatrix(size_t N, double a, double b);
 
-  /// IntegrationMatrix returns the (N+1)×(N+1) matrix P such that for any f,
-  /// F = P * f recovers F (the antiderivative) satisfying f = D * F and F(0)=0.
+  /**
+   * Exact integration matrix from N derivative nodes to N+1 state nodes.
+   *
+   * Input values y_r define the degree N-1 interpolant
+   *
+   *   p(t) = sum_r y_r l_r(t)
+   *
+   * on the N Chebyshev-Gauss-Lobatto nodes. The returned matrix P has
+   * (N+1)×N shape and gives F = P*y, where F_j = integral_a^{x_j} p(t) dt at
+   * the N+1 output CGL nodes x_j, with F(a)=0. The final row is exactly the
+   * Clenshaw-Curtis quadrature row IntegrationWeights(N).
+   */
   static Matrix IntegrationMatrix(size_t N);
 
-  /// IntegrationMatrix returns the (N+1)×(N+1) matrix P for interval [a,b]
+  /// Exact (N+1)×N integration matrix on [a,b].
   static Matrix IntegrationMatrix(size_t N, double a, double b);
 
   /**
-   *  Calculate Clenshaw-Curtis integration weights.
-   *  Trefethen00book, pg 128, clencurt.m
-   *  Note that N in clencurt.m is 1 less than our N
+   * Calculate Clenshaw-Curtis weights for integrating a degree N-1 interpolant
+   * represented by values at N CGL nodes over [-1,1].
+   *
+   * Trefethen00book, pg 128, clencurt.m. Note that N in clencurt.m is 1 less
+   * than our N.
    */
   static Weights IntegrationWeights(size_t N);
 
-  /// Calculate Clenshaw-Curtis integration weights, for interval [a,b]
+  /// Calculate Clenshaw-Curtis integration weights for interval [a,b].
   static Weights IntegrationWeights(size_t N, double a, double b);
 
   /**
-   * Calculate Double Clenshaw-Curtis integration weights
-   * We compute them as W * P, where W are the Clenshaw-Curtis weights and P is
-   * the integration matrix.
+   * Calculate double Clenshaw-Curtis integration weights.
+   *
+   * This integrates the exact antiderivative once more: W * P, where P is the
+   * exact N -> N+1 integration matrix and W integrates the N+1 antiderivative
+   * values.
    */
   static Weights DoubleIntegrationWeights(size_t N);
 
-  /// Calculate Double Clenshaw-Curtis integration weights, for interval [a,b]
+  /// Calculate double Clenshaw-Curtis integration weights on [a,b].
   static Weights DoubleIntegrationWeights(size_t N, double a, double b);
 
   /// Create matrix of values at Chebyshev points given vector-valued function.

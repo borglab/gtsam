@@ -58,26 +58,23 @@ int main() {
 
   // Noise & timestep
   double dt = 1.0;
-  Matrix9 Q = Matrix9::Identity() * 0.01;
+  // Continuous-time process noise (scaled by dt inside predict)
+  Matrix9 Qc = Matrix9::Identity() * 0.01;
   Matrix3 R = Matrix3::Identity() * 0.5;
 
   // Two IMU samples [a; ω]
-  Vector6 imu1;
-  imu1 << 0.1, 0, 0, 0, 0.2, 0;
-  Vector6 imu2;
-  imu2 << 0, 0.3, 0, 0.4, 0, 0;
+  Vector6 imu1{0.1, 0, 0, 0, 0.2, 0};
+  Vector6 imu2{0, 0.3, 0, 0.4, 0, 0};
 
   // Two GPS fixes
-  Vector3 z1;
-  z1 << 0.3, 0, 0;
-  Vector3 z2;
-  z2 << 0.6, 0, 0;
+  Vector3 z1{0.3, 0, 0};
+  Vector3 z2{0.6, 0, 0};
 
   cout << "=== Init ===\nX: " << ekf.state() << "\nP: " << ekf.covariance()
     << "\n\n";
 
   // --- first predict/update ---
-  ekf.predict(dynamics(imu1), dt, Q);
+  ekf.predict(dynamics(imu1), dt, Qc);
   cout << "--- After predict 1 ---\nX: " << ekf.state()
     << "\nP: " << ekf.covariance() << "\n\n";
   ekf.update(h_gps, z1, R);
@@ -85,7 +82,7 @@ int main() {
     << "\nP: " << ekf.covariance() << "\n\n";
 
   // --- second predict/update ---
-  ekf.predict(dynamics(imu2), dt, Q);
+  ekf.predict(dynamics(imu2), dt, Qc);
   cout << "--- After predict 2 ---\nX: " << ekf.state()
     << "\nP: " << ekf.covariance() << "\n\n";
   ekf.update(h_gps, z2, R);

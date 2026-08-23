@@ -21,7 +21,17 @@
 #include <cassert>
 
 #include <gtsam/inference/Ordering.h>
+
+#ifdef GTSAM_USE_SYSTEM_CCOLAMD
+#include <ccolamd.h>
+#else
+// These macros must surround the bundled header to rename its declarations.
+// clang-format off
+#include <gtsam/inference/internal/CCOLAMDSymbols.h>
 #include <gtsam/3rdparty/CCOLAMD/Include/ccolamd.h>
+#include <gtsam/inference/internal/CCOLAMDSymbolsUndef.h>
+// clang-format on
+#endif
 
 #ifdef GTSAM_SUPPORT_NESTED_DISSECTION
 #include <metis.h>
@@ -30,6 +40,38 @@
 using namespace std;
 
 namespace gtsam {
+
+namespace {
+
+size_t ccolamdRecommended(int nonzeros, int rows, int columns) {
+#ifdef GTSAM_USE_SYSTEM_CCOLAMD
+  return ::ccolamd_recommended(nonzeros, rows, columns);
+#else
+  return ::gtsam_ccolamd_recommended(nonzeros, rows, columns);
+#endif
+}
+
+void ccolamdSetDefaults(double knobs[CCOLAMD_KNOBS]) {
+#ifdef GTSAM_USE_SYSTEM_CCOLAMD
+  ::ccolamd_set_defaults(knobs);
+#else
+  ::gtsam_ccolamd_set_defaults(knobs);
+#endif
+}
+
+int ccolamdOrder(int rows, int columns, int arrayLength, int rowIndices[],
+                 int columnPointers[], double knobs[CCOLAMD_KNOBS],
+                 int stats[CCOLAMD_STATS], int constraintSet[]) {
+#ifdef GTSAM_USE_SYSTEM_CCOLAMD
+  return ::ccolamd(rows, columns, arrayLength, rowIndices, columnPointers,
+                   knobs, stats, constraintSet);
+#else
+  return ::gtsam_ccolamd(rows, columns, arrayLength, rowIndices, columnPointers,
+                         knobs, stats, constraintSet);
+#endif
+}
+
+}  // namespace
 
 /* ************************************************************************* */
 FastMap<Key, size_t> Ordering::invert() const {
@@ -66,8 +108,9 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
   const size_t nEntries = variableIndex.nEntries(), nFactors =
       variableIndex.nFactors();
   // Convert to compressed column major format colamd wants it in (== MATLAB format!)
-  const size_t Alen = ccolamd_recommended((int) nEntries, (int) nFactors,
-      (int) nVars); /* colamd arg 3: size of the array A */
+  const size_t Alen = ccolamdRecommended(
+      static_cast<int>(nEntries), static_cast<int>(nFactors),
+      static_cast<int>(nVars)); /* colamd arg 3: size of the array A */
   vector<int> A = vector<int>(Alen); /* colamd arg 4: row indices of A, of size Alen */
   vector<int> p = vector<int>(nVars + 1); /* colamd arg 5: column pointers of A, of size n_col+1 */
 
@@ -92,11 +135,12 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
 
   //double* knobs = nullptr; /* colamd arg 6: parameters (uses defaults if nullptr) */
   double knobs[CCOLAMD_KNOBS];
-  ccolamd_set_defaults(knobs);
+  ccolamdSetDefaults(knobs);
   knobs[CCOLAMD_DENSE_ROW] = -1;
   knobs[CCOLAMD_DENSE_COL] = -1;
 
-  int stats[CCOLAMD_STATS]; /* colamd arg 7: colamd output statistics and error codes */
+  /* colamd arg 7: colamd output statistics and error codes */
+  int stats[CCOLAMD_STATS];
 
   gttoc(Prepare);
 
@@ -104,8 +148,9 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
   /* returns (1) if successful, (0) otherwise*/
   if (nVars > 0) {
     gttic(ccolamd);
-    int rv = ccolamd((int) nFactors, (int) nVars, (int) Alen, &A[0], &p[0],
-        knobs, stats, &cmember[0]);
+    int rv = ccolamdOrder(
+        static_cast<int>(nFactors), static_cast<int>(nVars),
+        static_cast<int>(Alen), &A[0], &p[0], knobs, stats, &cmember[0]);
     if (rv != 1) {
       throw runtime_error("ccolamd failed with return value " + to_string(rv));
     }

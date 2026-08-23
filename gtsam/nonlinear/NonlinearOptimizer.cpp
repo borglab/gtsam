@@ -17,15 +17,18 @@
  */
 
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
+#include <gtsam/nonlinear/NonlinearMultifrontalSolver.h>
 #include <gtsam/nonlinear/internal/NonlinearOptimizerState.h>
+#include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/linear/GaussianEliminationTree.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/SubgraphSolver.h>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/symbolic/IndexedJunctionTree.h>
 
-#include <gtsam/inference/Ordering.h>
 
 #include <stdexcept>
 #include <iostream>
@@ -40,7 +43,7 @@ namespace gtsam {
 // http://stackoverflow.com/questions/8114276/
 NonlinearOptimizer::NonlinearOptimizer(const NonlinearFactorGraph& graph,
                                        std::unique_ptr<internal::NonlinearOptimizerState> state)
-    : graph_(graph), state_(std::move(state)) {}
+    : graph_(graph.cloneShared()), state_(std::move(state)) {}
 
 /* ************************************************************************* */
 NonlinearOptimizer::~NonlinearOptimizer() {}
@@ -137,8 +140,15 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
   // Check which solver we are using
   if (params.isMultifrontal()) {
     // Multifrontal QR or Cholesky (decided by params.getEliminationFunction())
-    if (params.ordering)
-      delta = gfg.optimize(*params.ordering, params.getEliminationFunction());
+    if (params.ordering) {
+      if (!indexedJunctionTreeCache_.has_value()) {
+        indexedJunctionTreeCache_ = gfg.buildIndexedJunctionTree(*params.ordering);
+      }
+
+      delta = gfg.eliminateMultifrontal(*indexedJunctionTreeCache_,
+                                        params.getEliminationFunction())
+                  ->optimize();
+    }
     else
       delta = gfg.optimize(params.getEliminationFunction());
   } else if (params.isSequential()) {
@@ -179,8 +189,9 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
 }
 
 /* ************************************************************************* */
-bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold,
-                      double errorThreshold, double currentError, double newError,
+bool checkConvergence(double relativeErrorThreshold,
+                      double absoluteErrorThreshold, double errorThreshold,
+                      double currentError, double newError,
                       NonlinearOptimizerParams::Verbosity verbosity) {
   if (verbosity >= NonlinearOptimizerParams::ERROR) {
     if (newError <= errorThreshold)
@@ -195,26 +206,26 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
   // check if diverges
   double absoluteDecrease = currentError - newError;
   if (verbosity >= NonlinearOptimizerParams::ERROR) {
-    if (absoluteDecrease <= absoluteErrorTreshold)
+    if (absoluteDecrease <= absoluteErrorThreshold)
       cout << "absoluteDecrease: " << setprecision(12) << absoluteDecrease << " < "
-           << absoluteErrorTreshold << endl;
+           << absoluteErrorThreshold << endl;
     else
       cout << "absoluteDecrease: " << setprecision(12) << absoluteDecrease
-           << " >= " << absoluteErrorTreshold << endl;
+           << " >= " << absoluteErrorThreshold << endl;
   }
 
   // calculate relative error decrease and update currentError
   double relativeDecrease = absoluteDecrease / currentError;
   if (verbosity >= NonlinearOptimizerParams::ERROR) {
-    if (relativeDecrease <= relativeErrorTreshold)
+    if (relativeDecrease <= relativeErrorThreshold)
       cout << "relativeDecrease: " << setprecision(12) << relativeDecrease << " < "
-           << relativeErrorTreshold << endl;
+           << relativeErrorThreshold << endl;
     else
       cout << "relativeDecrease: " << setprecision(12) << relativeDecrease
-           << " >= " << relativeErrorTreshold << endl;
+           << " >= " << relativeErrorThreshold << endl;
   }
-  bool converged = (relativeErrorTreshold && (relativeDecrease <= relativeErrorTreshold)) ||
-                   (absoluteDecrease <= absoluteErrorTreshold);
+  bool converged = (relativeErrorThreshold && (relativeDecrease <= relativeErrorThreshold)) ||
+                   (absoluteDecrease <= absoluteErrorThreshold);
   if (verbosity >= NonlinearOptimizerParams::TERMINATION && converged) {
     if (absoluteDecrease >= 0.0)
       cout << "converged" << endl;
@@ -223,9 +234,9 @@ bool checkConvergence(double relativeErrorTreshold, double absoluteErrorTreshold
 
     cout << "errorThreshold: " << newError << " <? " << errorThreshold << endl;
     cout << "absoluteDecrease: " << setprecision(12) << absoluteDecrease << " <? "
-         << absoluteErrorTreshold << endl;
+         << absoluteErrorThreshold << endl;
     cout << "relativeDecrease: " << setprecision(12) << relativeDecrease << " <? "
-         << relativeErrorTreshold << endl;
+         << relativeErrorThreshold << endl;
   }
   return converged;
 }
@@ -236,4 +247,35 @@ GTSAM_EXPORT bool checkConvergence(const NonlinearOptimizerParams& params, doubl
   return checkConvergence(params.relativeErrorTol, params.absoluteErrorTol, params.errorTol,
                           currentError, newError, params.verbosity);
 }
+/* ************************************************************************* */
+bool NonlinearOptimizer::ensureMultifrontalSolver(
+    const NonlinearOptimizerParams& params, const Values& values) const {
+  if (params.linearSolverType != NonlinearOptimizerParams::MULTIFRONTAL_SOLVER)
+    return false;
+  if (!nonlinearMultifrontalSolver_) {
+    NonlinearMultifrontalSolver::DampingParams dampingParams;
+    if (auto lmParams =
+            dynamic_cast<const LevenbergMarquardtParams*>(&params)) {
+      dampingParams.exactHessianDiagonal =
+          lmParams->dampingParams.exactHessianDiagonal;
+      dampingParams.diagonalDamping = lmParams->dampingParams.diagonalDamping;
+      dampingParams.minDiagonal = lmParams->dampingParams.minDiagonal;
+      dampingParams.maxDiagonal = lmParams->dampingParams.maxDiagonal;
+    }
+
+    // Lazily create the solver.
+    // Use default ordering or create one.
+    Ordering ordering;
+    if (params.ordering)
+      ordering = *params.ordering;
+    else
+      ordering = Ordering::Create(params.orderingType, graph());
+
+    // Construct it (may throw if unsupported).
+    nonlinearMultifrontalSolver_ =
+        std::make_unique<NonlinearMultifrontalSolver>(
+            graph(), values, ordering, params.multifrontalParams, dampingParams);
+  }
+  return true;
 }
+} // namespace gtsam

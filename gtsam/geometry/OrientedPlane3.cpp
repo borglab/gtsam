@@ -17,6 +17,7 @@
  * @brief  A plane, represented by a normal direction and perpendicular distance
  */
 
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/geometry/OrientedPlane3.h>
 
 #include <iostream>

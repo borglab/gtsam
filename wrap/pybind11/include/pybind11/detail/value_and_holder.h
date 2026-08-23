@@ -7,6 +7,7 @@
 #include "common.h"
 
 #include <cstddef>
+#include <cstdint>
 #include <typeinfo>
 
 PYBIND11_NAMESPACE_BEGIN(PYBIND11_NAMESPACE)
@@ -53,7 +54,8 @@ struct value_and_holder {
         } else if (v) {
             inst->nonsimple.status[index] |= instance::status_holder_constructed;
         } else {
-            inst->nonsimple.status[index] &= (std::uint8_t) ~instance::status_holder_constructed;
+            inst->nonsimple.status[index]
+                &= static_cast<std::uint8_t>(~instance::status_holder_constructed);
         }
     }
     bool instance_registered() const {
@@ -68,10 +70,23 @@ struct value_and_holder {
         } else if (v) {
             inst->nonsimple.status[index] |= instance::status_instance_registered;
         } else {
-            inst->nonsimple.status[index] &= (std::uint8_t) ~instance::status_instance_registered;
+            inst->nonsimple.status[index]
+                &= static_cast<std::uint8_t>(~instance::status_instance_registered);
         }
     }
 };
+
+// This is a semi-public API to check if the corresponding instance has been constructed with a
+// holder. That is, if the instance has been constructed with a holder, the `__init__` method is
+// called and the C++ object is valid. Otherwise, the C++ object might only be allocated, but not
+// initialized. This will lead to **SEGMENTATION FAULTS** if the C++ object is used in any way.
+// Example usage: https://pybind11.readthedocs.io/en/stable/advanced/classes.html#custom-type-setup
+//                for `tp_traverse` and `tp_clear` implementations.
+// WARNING: The caller is responsible for ensuring that the `reinterpret_cast` is valid.
+inline bool is_holder_constructed(PyObject *obj) {
+    auto *const instance = reinterpret_cast<pybind11::detail::instance *>(obj);
+    return instance->get_value_and_holder().holder_constructed();
+}
 
 PYBIND11_NAMESPACE_END(detail)
 PYBIND11_NAMESPACE_END(PYBIND11_NAMESPACE)

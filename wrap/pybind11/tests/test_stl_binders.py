@@ -258,7 +258,7 @@ def test_noncopyable_containers():
             assert nvnc[i][j].value == j + 1
 
     # Note: maps do not have .values()
-    for _, v in nvnc.items():
+    for v in nvnc.values():
         for i, j in enumerate(v, start=1):
             assert j.value == i
 
@@ -269,7 +269,7 @@ def test_noncopyable_containers():
             assert nmnc[i][j].value == 10 * j
 
     vsum = 0
-    for _, v_o in nmnc.items():
+    for v_o in nmnc.values():
         for k_i, v_i in v_o.items():
             assert v_i.value == 10 * k_i
             vsum += v_i.value
@@ -283,7 +283,7 @@ def test_noncopyable_containers():
             assert numnc[i][j].value == 10 * j
 
     vsum = 0
-    for _, v_o in numnc.items():
+    for v_o in numnc.values():
         for k_i, v_i in v_o.items():
             assert v_i.value == 10 * k_i
             vsum += v_i.value
@@ -301,6 +301,25 @@ def test_map_delitem():
     del mm["a"]
     assert list(mm) == ["b"]
     assert list(mm.items()) == [("b", 2.5)]
+
+    with pytest.raises(KeyError) as excinfo:
+        mm["a_long_key"]
+    assert "a_long_key" in str(excinfo.value)
+
+    with pytest.raises(KeyError) as excinfo:
+        del mm["a_long_key"]
+    assert "a_long_key" in str(excinfo.value)
+
+    cut_length = 100
+    k_very_long = "ab" * cut_length + "xyz"
+    with pytest.raises(KeyError) as excinfo:
+        mm[k_very_long]
+    assert k_very_long in str(excinfo.value)
+    k_very_long += "@"
+    with pytest.raises(KeyError) as excinfo:
+        mm[k_very_long]
+    k_repr = k_very_long[:cut_length] + "✄✄✄" + k_very_long[-cut_length:]
+    assert k_repr in str(excinfo.value)
 
     um = m.UnorderedMapStringDouble()
     um["ua"] = 1.1

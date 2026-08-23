@@ -152,7 +152,7 @@ namespace gtsam {
    * All factor types need to implement an error function.
    * In factor graphs, this is the negative log-likelihood.
    */
-  virtual double error(const HybridValues& c) const;
+  virtual double error(const HybridValues& hybridValues) const;
 
    /**
     * @return the number of variables involved in this factor

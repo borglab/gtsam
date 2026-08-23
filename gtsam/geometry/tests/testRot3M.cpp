@@ -18,6 +18,7 @@
 
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <CppUnitLite/TestHarness.h>
 
 #ifndef GTSAM_USE_QUATERNIONS
@@ -57,6 +58,47 @@ TEST(Rot3, manifold_cayley)
   Rot3 R5 = Rot3::Expmap (5 * d);
   CHECK(assert_equal(R5,R2*R3));
   CHECK(assert_equal(R5,R3*R2));
+}
+
+/* ************************************************************************* */
+TEST(Rot3, CayleyChart_Retract_Jacobian) {
+  auto retract_fn = [](const Vector3& omega) -> Rot3 {
+    return Rot3::CayleyChart::Retract(omega);
+  };
+
+  for (auto omega : {Vector3(0, 0, 0), Vector3(0.1, 0.2, 0.3),
+                     Vector3(1.0, 0.5, -0.7), Vector3(-0.5, 1.2, 0.1)}) {
+    Matrix3 H_analytical;
+    Rot3::CayleyChart::Retract(omega, H_analytical);
+    Matrix3 H_numerical = numericalDerivative11<Rot3, Vector3>(retract_fn, omega);
+    EXPECT(assert_equal(H_numerical, H_analytical, 1e-7));
+  }
+}
+
+/* ************************************************************************* */
+TEST(Rot3, CayleyChart_Local_Jacobian) {
+  auto local_fn = [](const Rot3& R) -> Vector3 {
+    return Rot3::CayleyChart::Local(R);
+  };
+
+  for (auto omega : {Vector3(0, 0, 0), Vector3(0.1, 0.2, 0.3),
+                     Vector3(1.0, 0.5, -0.7), Vector3(-0.5, 1.2, 0.1)}) {
+    Rot3 R = Rot3::CayleyChart::Retract(omega);
+    Matrix3 H_analytical;
+    Rot3::CayleyChart::Local(R, H_analytical);
+    Matrix3 H_numerical = numericalDerivative11<Vector3, Rot3>(local_fn, R);
+    EXPECT(assert_equal(H_numerical, H_analytical, 1e-7));
+  }
+}
+
+/* ************************************************************************* */
+TEST(Rot3, CayleyChart_Retract_Local_InverseJacobians) {
+  for (auto omega : {Vector3(0.1, 0.2, 0.3), Vector3(1.0, 0.5, -0.7)}) {
+    Matrix3 H_retract, H_local;
+    Rot3 R = Rot3::CayleyChart::Retract(omega, H_retract);
+    Rot3::CayleyChart::Local(R, H_local);
+    EXPECT(assert_equal(Matrix3(Matrix3::Identity()), Matrix3(H_retract * H_local), 1e-9));
+  }
 }
 
 #endif

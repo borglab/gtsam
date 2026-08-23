@@ -23,6 +23,7 @@
 #include <gtsam/discrete/Ring.h>
 #include <gtsam/discrete/Signature.h>
 #include <gtsam/hybrid/HybridValues.h>
+#include <gtsam/inference/Ordering.h>
 
 #include <algorithm>
 #include <cassert>
@@ -86,7 +87,7 @@ DiscreteConditional DiscreteConditional::operator*(
   }
 
   // Take union of frontal keys
-  std::set<Key> newFrontals;
+  KeySet newFrontals;
   for (auto&& key : this->frontals()) newFrontals.insert(key);
   for (auto&& key : other.frontals()) newFrontals.insert(key);
 

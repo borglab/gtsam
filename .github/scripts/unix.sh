@@ -8,17 +8,6 @@
 set -e   # Make sure any error makes the script to return an error code
 set -x   # echo
 
-# install TBB with _debug.so files
-function install_tbb()
-{
-  echo install_tbb  
-  if [ "$(uname)" == "Linux" ]; then
-    sudo apt-get -y install libtbb-dev
-
-  elif [ "$(uname)" == "Darwin" ]; then
-    brew install tbb
-  fi
-}
 
 # common tasks before either build or test
 function configure()
@@ -26,23 +15,14 @@ function configure()
   # delete old build
   rm -rf build
 
-  if [ "${GTSAM_WITH_TBB:-OFF}" == "ON" ]; then
-    install_tbb
-  fi
-
-  if [ ! -z "$GCC_VERSION" ]; then
-    export CC=gcc-$GCC_VERSION
-    export CXX=g++-$GCC_VERSION
-  fi
-
   # GTSAM_BUILD_WITH_MARCH_NATIVE=OFF: to avoid crashes in builder VMs
   # CMAKE_CXX_FLAGS="-w": Suppress warnings to avoid IO latency in CI logs
-  export CMAKE_GENERATOR=Ninja
   cmake $GITHUB_WORKSPACE \
-      -B build \
+      -B build -G Ninja \
       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug} \
       -DCMAKE_CXX_FLAGS="-w" \
       -DGTSAM_BUILD_TESTS=${GTSAM_BUILD_TESTS:-OFF} \
+      -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
       -DGTSAM_BUILD_UNSTABLE=${GTSAM_BUILD_UNSTABLE:-ON} \
       -DGTSAM_WITH_TBB=${GTSAM_WITH_TBB:-OFF} \
       -DGTSAM_BUILD_EXAMPLES_ALWAYS=${GTSAM_BUILD_EXAMPLES_ALWAYS:-OFF} \
@@ -54,8 +34,10 @@ function configure()
       -DGTSAM_USE_SYSTEM_METIS=${GTSAM_USE_SYSTEM_METIS:-OFF} \
       -DGTSAM_USE_BOOST_FEATURES=${GTSAM_USE_BOOST_FEATURES:-OFF} \
       -DGTSAM_ENABLE_BOOST_SERIALIZATION=${GTSAM_ENABLE_BOOST_SERIALIZATION:-OFF} \
+      -DGTSAM_ENABLE_CONSISTENCY_CHECKS=${GTSAM_ENABLE_CONSISTENCY_CHECKS:-OFF} \
       -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
-      -DGTSAM_SINGLE_TEST_EXE=${GTSAM_SINGLE_TEST_EXE:-OFF}
+      -DGTSAM_SINGLE_TEST_EXE=${GTSAM_SINGLE_TEST_EXE:-OFF} \
+      -DGTSAM_ENABLE_GEOGRAPHICLIB=${GTSAM_ENABLE_GEOGRAPHICLIB:-OFF}
 }
 
 
@@ -95,15 +77,20 @@ function test ()
 
   configure
 
+  build_targets=(check)
+  if [ "${GTSAM_BUILD_EXAMPLES_ALWAYS:-OFF}" == "ON" ]; then
+    build_targets+=(examples)
+  fi
+
   # Actual testing
   if [ "$(uname)" == "Linux" ]; then
     if (($(nproc) > 2)); then
-      cmake --build build -j$(nproc) --target check
+      cmake --build build -j$(nproc) --target "${build_targets[@]}"
     else
-      cmake --build build -j2 --target check
+      cmake --build build -j2 --target "${build_targets[@]}"
     fi
   elif [ "$(uname)" == "Darwin" ]; then
-    cmake --build build -j$(sysctl -n hw.physicalcpu) --target check
+    cmake --build build -j$(sysctl -n hw.physicalcpu) --target "${build_targets[@]}"
   fi
 
   finish

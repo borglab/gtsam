@@ -29,14 +29,15 @@ class KeyList {
   void clear();
 
   // structure specific methods
-  size_t front() const;
-  size_t back() const;
-  void push_back(gtsam::Key key);
-  void push_front(gtsam::Key key);
+  const gtsam::Key& front() const;
+  const gtsam::Key& back() const;
+  void push_back(const gtsam::Key& key);
+  void push_front(const gtsam::Key& key);
   void pop_back();
   void pop_front();
   void sort();
-  void remove(gtsam::Key key);
+  @pybind_lambda
+  void remove(const gtsam::Key& key);
 
   void serialize() const;
 
@@ -55,7 +56,7 @@ class KeySet {
 
   // Testable
   void print(string s = "") const;
-  bool equals(const gtsam::KeySet& other) const;
+  bool equals(const gtsam::KeySet& other, double tol = 1e-9) const;
 
   // common STL methods
   size_t size() const;
@@ -63,10 +64,11 @@ class KeySet {
   void clear();
 
   // structure specific methods
+  @pybind_lambda
   void insert(gtsam::Key key);
   void merge(const gtsam::KeySet& other);
-  bool erase(gtsam::Key key);        // returns true if value was removed
-  bool count(gtsam::Key key) const;  // returns true if value exists
+  size_t erase(const gtsam::Key& key);
+  size_t count(const gtsam::Key& key) const;
 
   void serialize() const;
 
@@ -89,9 +91,9 @@ class KeyVector {
   void clear();
 
   // structure specific methods
-  size_t at(size_t i) const;
-  size_t front() const;
-  size_t back() const;
+  gtsam::Key at(size_t i) const;
+  gtsam::Key front() const;
+  gtsam::Key back() const;
   void push_back(gtsam::Key key) const;
 
   void serialize() const;
@@ -114,9 +116,9 @@ class KeyGroupMap {
   void clear();
 
   // structure specific methods
-  size_t at(gtsam::Key key) const;
-  int erase(gtsam::Key key);
-  bool insert2(gtsam::Key key, int val);
+  const int& at(const gtsam::Key& key) const;
+  size_t erase(const gtsam::Key& key);
+  bool insert2(const gtsam::Key& key, const int& val);
 };
 
 // Actually a FastSet<FactorIndex>
@@ -131,9 +133,9 @@ class FactorIndexSet {
   void clear();
 
   // structure specific methods
-  void insert(size_t factorIndex);
-  bool erase(size_t factorIndex);        // returns true if value was removed
-  bool count(size_t factorIndex) const;  // returns true if value exists
+  void insert(gtsam::FactorIndex factorIndex);
+  bool erase(gtsam::FactorIndex factorIndex);        // returns true if value was removed
+  bool count(gtsam::FactorIndex factorIndex) const;  // returns true if value exists
 };
 
 // Actually a vector<FactorIndex>
@@ -148,10 +150,10 @@ class FactorIndices {
   void clear();
 
   // structure specific methods
-  size_t at(size_t i) const;
-  size_t front() const;
-  size_t back() const;
-  void push_back(size_t factorIndex) const;
+  gtsam::FactorIndex at(size_t i) const;
+  gtsam::FactorIndex front() const;
+  gtsam::FactorIndex back() const;
+  void push_back(gtsam::FactorIndex factorIndex) const;
 };
 
 //*************************************************************************
@@ -161,42 +163,47 @@ class FactorIndices {
 namespace utilities {
 
 #include <gtsam/nonlinear/utilities.h>
-gtsam::KeyList createKeyList(gtsam::Vector I);
-gtsam::KeyList createKeyList(string s, gtsam::Vector I);
-gtsam::KeyVector createKeyVector(gtsam::Vector I);
-gtsam::KeyVector createKeyVector(string s, gtsam::Vector I);
-gtsam::KeySet createKeySet(gtsam::Vector I);
-gtsam::KeySet createKeySet(string s, gtsam::Vector I);
+gtsam::KeyList createKeyList(const gtsam::Vector& I);
+gtsam::KeyList createKeyList(string s, const gtsam::Vector& I);
+gtsam::KeyVector createKeyVector(const gtsam::Vector& I);
+gtsam::KeyVector createKeyVector(string s, const gtsam::Vector& I);
+gtsam::KeySet createKeySet(const gtsam::Vector& I);
+gtsam::KeySet createKeySet(string s, const gtsam::Vector& I);
 gtsam::Matrix extractPoint2(const gtsam::Values& values);
 gtsam::Matrix extractPoint3(const gtsam::Values& values);
-gtsam::Values allPose2s(gtsam::Values& values);
+gtsam::Values allPose2s(const gtsam::Values& values);
 gtsam::Matrix extractPose2(const gtsam::Values& values);
-gtsam::Values allPose3s(gtsam::Values& values);
+gtsam::Values allPose3s(const gtsam::Values& values);
 gtsam::Matrix extractPose3(const gtsam::Values& values);
 gtsam::Matrix extractVectors(const gtsam::Values& values, char c);
 void perturbPoint2(gtsam::Values& values, double sigma, int seed = 42u);
 void perturbPose2(gtsam::Values& values, double sigmaT, double sigmaR,
                   int seed = 42u);
 void perturbPoint3(gtsam::Values& values, double sigma, int seed = 42u);
+void perturbPose3(gtsam::Values& values, double sigmaT, double sigmaR,
+                  int seed = 42u);
 void insertBackprojections(gtsam::Values& values,
-                           const gtsam::PinholeCamera<gtsam::Cal3_S2>& c,
-                           gtsam::Vector J, gtsam::Matrix Z, double depth);
+                           const gtsam::PinholeCamera<gtsam::Cal3_S2>& camera,
+                           const gtsam::Vector& J, gtsam::ConstMatrixView Z,
+                           double depth);
+@pybind_lambda
 void insertProjectionFactors(
-    gtsam::NonlinearFactorGraph& graph, size_t i, gtsam::Vector J, gtsam::Matrix Z,
-    const gtsam::noiseModel::Base* model, const gtsam::Cal3_S2* K,
+    gtsam::NonlinearFactorGraph& graph, gtsam::Key i, const gtsam::Vector& J,
+    gtsam::ConstMatrixView Z,
+    const gtsam::noiseModel::Base* model,
+    const gtsam::Cal3_S2* K,
     const gtsam::Pose3& body_P_sensor = gtsam::Pose3());
 gtsam::Matrix reprojectionErrors(const gtsam::NonlinearFactorGraph& graph,
                           const gtsam::Values& values);
-gtsam::Values localToWorld(const gtsam::Values& local,
-                           const gtsam::Pose2& base);
-gtsam::Values localToWorld(const gtsam::Values& local, const gtsam::Pose2& base,
-                           const gtsam::KeyVector& keys);
+gtsam::Values localToWorld(
+    const gtsam::Values& local, const gtsam::Pose2& base,
+    const gtsam::KeyVector user_keys = gtsam::KeyVector());
 
 }  // namespace utilities
 
 class RedirectCout {
   RedirectCout();
-  string str();
+  string str() const;
 };
 
 }  // namespace gtsam

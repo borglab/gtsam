@@ -1,5 +1,7 @@
 """Mixins for reducing the amount of boilerplate in the main wrapper class."""
 
+import re
+
 from typing import Any, Tuple, Union
 
 import gtwrap.interface_parser as parser
@@ -9,10 +11,25 @@ import gtwrap.template_instantiator as instantiator
 class CheckMixin:
     """Mixin to provide various checks."""
     # Data types that are primitive types
-    not_ptr_type: Tuple = ('int', 'double', 'bool', 'char', 'unsigned char',
-                           'size_t')
+    not_ptr_type: Tuple = (
+        "int",
+        "double",
+        "bool",
+        "char",
+        "unsigned char",
+        "size_t",
+        "uint64_t",
+        "Key",  # This is an alias for a uint64_t
+    )
     # Ignore the namespace for these datatypes
     ignore_namespace: Tuple = ('Matrix', 'Vector', 'Point2', 'Point3')
+    # Matrix-like view types that can alias MATLAB double matrix storage.
+    matrix_view_types: Tuple = ('ConstMatrixView', )
+    # Eigen Ref types used as Jacobian output arguments (not inputs).
+    eigen_ref_types: Tuple = ('MatrixXd', )
+    # Fixed-size GTSAM Eigen aliases, such as Matrix3, Matrix36, and Vector9.
+    fixed_size_eigen_pattern = re.compile(
+        r'^(?:Matrix\d+(?:x\d+)?|Vector\d+)$')
     # Methods that should be ignored
     ignore_methods: Tuple = ('pickle', )
     # Methods that should not be wrapped directly
@@ -35,6 +52,8 @@ class CheckMixin:
         """
         return (arg_type.typename.name not in self.not_ptr_type
                 and arg_type.typename.name not in self.ignore_namespace
+                and not self.is_fixed_size_eigen_value(arg_type)
+                and not self.is_matrix_view(arg_type)
                 and arg_type.typename.name != 'string')
 
     def is_shared_ptr(self, arg_type: parser.Type):
@@ -57,8 +76,84 @@ class CheckMixin:
         reference in the wrapper.
         """
         return arg_type.typename.name not in self.ignore_namespace and \
+               not self.is_fixed_size_eigen_value(arg_type) and \
                arg_type.typename.name not in self.not_ptr_type and \
                arg_type.is_ref
+
+    def is_fixed_size_eigen_value(self, arg_type: parser.Type):
+        """Check for a fixed-size MatrixN/VectorN value or reference alias."""
+        return (not arg_type.is_shared_ptr and not arg_type.is_ptr
+                and self.fixed_size_eigen_pattern.fullmatch(
+                    arg_type.typename.name) is not None)
+
+    def fixed_size_eigen_dimensions(self, arg_type: parser.Type):
+        """Infer dimensions when a GTSAM fixed-size alias is unambiguous."""
+        if not self.is_fixed_size_eigen_value(arg_type):
+            return None
+
+        name = arg_type.typename.name
+        vector = re.fullmatch(r'Vector(\d+)', name)
+        if vector:
+            return int(vector.group(1)), 1
+
+        explicit_matrix = re.fullmatch(r'Matrix(\d+)x(\d+)', name)
+        if explicit_matrix:
+            return int(explicit_matrix.group(1)), int(explicit_matrix.group(2))
+
+        # GTSAM defines MatrixN as NxN, and MatrixMN as MxN for M,N=1..9.
+        square_matrix = re.fullmatch(r'Matrix([1-9])', name)
+        if square_matrix:
+            dimension = int(square_matrix.group(1))
+            return dimension, dimension
+
+        rectangular_matrix = re.fullmatch(r'Matrix([1-9])([1-9])', name)
+        if rectangular_matrix:
+            return int(rectangular_matrix.group(1)), int(
+                rectangular_matrix.group(2))
+
+        return None
+
+    def is_matrix_view(self, arg_type: parser.Type):
+        """Check if `arg_type` should be unwrapped as a matrix view."""
+        return arg_type.typename.name in self.matrix_view_types
+
+    def is_eigen_ref(self, arg_type) -> bool:
+        """Check if `arg_type` is an Eigen Ref output argument (e.g. Ref<MatrixXd>).
+
+        These are Jacobian output arguments in C++ that should be treated as
+        extra return values in MATLAB rather than input arguments.
+        Eigen::Ref<Eigen::MatrixXd> parses as a TemplatedType with
+        typename.name == 'Ref' and a MatrixXd template parameter.
+        """
+        return (arg_type.typename.name == 'Ref'
+                and hasattr(arg_type, 'template_params')
+                and len(arg_type.template_params) == 1
+                and arg_type.template_params[0].typename.name
+                in self.eigen_ref_types)
+
+    @staticmethod
+    def is_optional(arg_type: parser.Type) -> bool:
+        """Check whether ``arg_type`` is a ``std::optional<T>``."""
+        return (isinstance(arg_type, parser.TemplatedType)
+                and arg_type.typename.qualified_name() == 'std::optional'
+                and len(arg_type.template_params) == 1)
+
+    def optional_value_type(self, arg_type: parser.Type) -> parser.Type:
+        """Return ``T`` from ``std::optional<T>``.
+
+        Raises:
+            ValueError: If ``arg_type`` is not a well-formed ``std::optional``.
+        """
+        if not self.is_optional(arg_type):
+            raise ValueError(f'Expected std::optional<T>, got {arg_type}')
+        return arg_type.template_params[0]
+
+    @staticmethod
+    def is_pair(arg_type: parser.Type) -> bool:
+        """Check whether ``arg_type`` is a ``std::pair<T, U>``."""
+        return (isinstance(arg_type, parser.TemplatedType)
+                and arg_type.typename.qualified_name() in ('pair', 'std::pair')
+                and len(arg_type.template_params) == 2)
 
     def is_class_enum(self, arg_type: parser.Type, class_: parser.Class):
         """Check if arg_type is an enum in the class `class_`."""
@@ -111,6 +206,9 @@ class FormatMixin:
                           is_constructor: bool = False,
                           is_method: bool = False):
         """
+        Helper method to get the string version of `type_name` which can go into the wrapper generated C++ code.
+        This is specific to the semantics of Matlab.
+
         Args:
             type_name: an interface_parser.Typename to reformat
             separator: the statement to add between namespaces and typename
@@ -132,6 +230,9 @@ class FormatMixin:
             for namespace in type_name.namespaces:
                 if name not in self.ignore_namespace and namespace != '':
                     formatted_type_name += namespace + separator
+
+        # Get string representation so we can use as dict key.
+        name = str(name)
 
         if is_constructor:
             formatted_type_name += self.data_type.get(name) or name
@@ -175,6 +276,18 @@ class FormatMixin:
             include_namespace: whether to include namespaces when reformatting
         """
         return_wrap = ''
+
+        optional_pair_types = self._optional_pair_types(return_type.type1)
+        if optional_pair_types:
+            return 'optional<pair< {type1}, {type2} >>'.format(
+                type1=self._format_type_name(
+                    optional_pair_types[0].typename,
+                    separator=separator,
+                    include_namespace=include_namespace),
+                type2=self._format_type_name(
+                    optional_pair_types[1].typename,
+                    separator=separator,
+                    include_namespace=include_namespace))
 
         if self._return_count(return_type) == 1:
             return_wrap = self._format_type_name(

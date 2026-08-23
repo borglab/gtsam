@@ -14,7 +14,10 @@
  * @author Alex Cunningham
  */
 
+#include <gtsam/config.h>
 #include <CppUnitLite/TestHarness.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 #include <gtsam_unstable/base/FixedVector.h>
 
@@ -28,7 +31,7 @@ static const double tol = 1e-9;
 /* ************************************************************************* */
 TEST( testFixedVector, conversions ) {
   double data1[] = {1.0, 2.0, 3.0};
-  Vector v1  = (Vector(3) << data1[0], data1[1], data1[2]).finished();
+  Vector v1{{data1[0], data1[1], data1[2]}};
   TestVector3 fv1(v1), fv2(data1);
 
   Vector actFv2(fv2);
@@ -47,7 +50,7 @@ TEST( testFixedVector, variable_constructor ) {
 TEST( testFixedVector, equals ) {
   TestVector3 vec1(Vector3(1.0, 2.0, 3.0)), vec2(Vector3(1.0, 2.0, 3.0)),
       vec3(Vector3(2.0, 3.0, 4.0));
-  TestVector5 vec4((Vector(5) << 1.0, 2.0, 3.0, 4.0, 5.0).finished());
+  TestVector5 vec4(Vector{{1.0, 2.0, 3.0, 4.0, 5.0}});
 
   EXPECT(assert_equal(vec1, vec1, tol));
   EXPECT(assert_equal(vec1, vec2, tol));
@@ -82,7 +85,8 @@ TEST( testFixedVector, static_constructors ) {
 }
 
 /* ************************************************************************* */
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
-
 

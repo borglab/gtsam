@@ -16,13 +16,16 @@
 #include <pybind11/operators.h>
 #include <pybind11/functional.h>
 #include <pybind11/iostream.h>
+#include "python/gtsam/optional_jacobian_pybind.h"
 #include "gtsam/config.h"
 #include "gtsam/base/serialization.h"
 #include "gtsam/base/utilities.h"  // for RedirectCout.
 
 // These are the included headers listed in `gtsam.i`
 {includes}
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/export.hpp>
+#endif
 
 // Export classes for serialization
 {boost_class_export}
@@ -47,4 +50,3 @@ namespace py = pybind11;
 {wrapped_namespace}
 
 }}
-

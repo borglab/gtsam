@@ -17,24 +17,42 @@ project:
       - file: ./gtsam/geometry/geometry.md
         children:
         - pattern: ./gtsam/geometry/doc/*
+      - file: ./gtsam/basis/basis.md
+        children:
+        - pattern: ./gtsam/basis/doc/*
       - file: ./gtsam/inference/inference.md
         children:
         - pattern: ./gtsam/inference/doc/*
+      - file: ./gtsam/linear/linear.md
+        children:
+        - pattern: ./gtsam/linear/doc/*
       - file: ./gtsam/hybrid/hybrid.md
         children:
         - pattern: ./gtsam/hybrid/doc/*
       - file: ./gtsam/nonlinear/nonlinear.md
         children:
         - pattern: ./gtsam/nonlinear/doc/*
+      - file: ./gtsam/constrained/constrained.md
+        children:
+        - pattern: ./gtsam/constrained/doc/*
       - file: ./gtsam/symbolic/symbolic.md
         children:
         - pattern: ./gtsam/symbolic/doc/*
       - file: ./gtsam/navigation/navigation.md
         children:
         - pattern: ./gtsam/navigation/doc/*
+      - file: ./gtsam/sfm/sfm.md
+        children:
+        - pattern: ./gtsam/sfm/doc/*
       - file: ./gtsam/slam/slam.md
         children:
         - pattern: ./gtsam/slam/doc/*
+      - file: ./gtsam/discrete/discrete.md
+        children:
+        - pattern: ./gtsam/discrete/doc/*
+      - file: ./gtsam/hybrid/hybrid.md
+        children:
+        - pattern: ./gtsam/hybrid/doc/*
     - file: ./doc/examples.md
       children: 
       - pattern: ./python/gtsam/examples/*.ipynb
@@ -46,7 +64,9 @@ site:
     - title: C++ reference
       url: https://gtsam.org/doxygen/
   options:
-    logo_text: GTSAM 
+    logo_text: GTSAM
+    style: ./doc/gtsam-site.css
+    favicon: ./doc/gt-favicon.svg
   template: book-theme
 
   # TODO: Graphics for favicon, site logo

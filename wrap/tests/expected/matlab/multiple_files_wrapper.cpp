@@ -107,8 +107,8 @@ void gtsamClass1_deconstructor_2(int nargout, mxArray *out[], int nargin, const 
   item = collector_gtsamClass1.find(self);
   if(item != collector_gtsamClass1.end()) {
     collector_gtsamClass1.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void gtsamClass2_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -140,8 +140,8 @@ void gtsamClass2_deconstructor_5(int nargout, mxArray *out[], int nargin, const 
   item = collector_gtsamClass2.find(self);
   if(item != collector_gtsamClass2.end()) {
     collector_gtsamClass2.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void gtsamClassA_collectorInsertAndMakeBase_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -173,8 +173,8 @@ void gtsamClassA_deconstructor_8(int nargout, mxArray *out[], int nargin, const 
   item = collector_gtsamClassA.find(self);
   if(item != collector_gtsamClassA.end()) {
     collector_gtsamClassA.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 
@@ -218,6 +218,7 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       break;
     }
   } catch(const std::exception& e) {
+    std::cout.rdbuf(outbuf);
     mexErrMsgTxt(("Exception from gtsam:\n" + std::string(e.what()) + "\n").c_str());
   }
 

@@ -21,7 +21,6 @@
 
 #include <gtsam/discrete/DecisionTree.h>
 
-#include <algorithm>
 #include <cassert>
 #include <fstream>
 #include <iterator>
@@ -32,6 +31,10 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+
+#if defined(__APPLE__)
+#include <TargetConditionals.h>  // for TARGET_OS_IPHONE in DecisionTree::dot()
+#endif
 
 namespace gtsam {
 
@@ -1077,11 +1080,18 @@ namespace gtsam {
                                bool showZero) const {
     std::ofstream os((name + ".dot").c_str());
     dot(os, labelFormatter, valueFormatter, showZero);
+#if defined(__APPLE__) && TARGET_OS_IPHONE
+    // iOS marks std::system() unavailable, breaking the build. The PDF
+    // rendering is a debug convenience over the always-emitted .dot file;
+    // callers who want a PDF on iOS-targeted builds can run
+    // `dot -Tpdf <name>.dot -o <name>.pdf` themselves on a host with a shell.
+#else
     int result =
         system(("dot -Tpdf " + name + ".dot -o " + name + ".pdf >& /dev/null")
                    .c_str());
     if (result == -1)
       throw std::runtime_error("DecisionTree::dot system call failed");
+#endif
   }
 
   template <typename L, typename Y>

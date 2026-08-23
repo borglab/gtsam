@@ -18,6 +18,8 @@
 
 #include "GPSFactor.h"
 
+#include <stdexcept>
+
 using namespace std;
 
 namespace gtsam {
@@ -47,6 +49,11 @@ pair<Pose3, Vector3> GPSFactor::EstimateState(double t1, const Point3& NED1,
     double t2, const Point3& NED2, double timestamp) {
   // Estimate initial velocity as difference in NED frame
   double dt = t2 - t1;
+  if (dt == 0.0) {
+    throw std::invalid_argument(
+        "GPSFactor::EstimateState: t2 - t1 is zero; cannot estimate "
+        "velocity by dividing by dt.");
+  }
   Point3 nV = (NED2 - NED1) / dt;
 
   // Estimate initial position as linear interpolation
@@ -110,8 +117,9 @@ bool GPSFactorArmCalib::equals(const NonlinearFactor& expected, double tol) cons
 }
 
 //***************************************************************************
-Vector GPSFactorArmCalib::evaluateError(const Pose3& nTb, const Point3& bL,
-    OptionalMatrixType H1, OptionalMatrixType H2) const {
+Vector3 GPSFactorArmCalib::evaluateError(const Pose3& nTb, const Point3& bL,
+                                         OptionalMatrixType H1,
+                                         OptionalMatrixType H2) const {
   const Matrix3 nRb = nTb.rotation().matrix();
   if (H1) {
     H1->resize(3, 6);
@@ -193,8 +201,10 @@ bool GPSFactor2ArmCalib::equals(const NonlinearFactor& expected, double tol) con
 }
 
 //***************************************************************************
-Vector GPSFactor2ArmCalib::evaluateError(const NavState& nTb, const Point3& bL,
-    OptionalMatrixType H1, OptionalMatrixType H2) const {
+Vector3 GPSFactor2ArmCalib::evaluateError(const NavState& nTb,
+                                          const Point3& bL,
+                                          OptionalMatrixType H1,
+                                          OptionalMatrixType H2) const {
   const Matrix3 nRb = nTb.attitude().matrix();
   if (H1) {
     H1->resize(3, 9);

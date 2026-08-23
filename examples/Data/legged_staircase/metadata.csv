@@ -1,0 +1,7 @@
+key,value_0,value_1,value_2,value_3
+format_version,2
+sequence_name,staircase_example
+foot_names,FL,FR,RL,RR
+dense_contact_stream,1
+contact_state_value,1
+timestamp_source,record

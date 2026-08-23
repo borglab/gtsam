@@ -20,10 +20,14 @@ The `nonlinear` module in GTSAM includes a comprehensive set of tools for nonlin
 - [LevenbergMarquardtOptimizer](doc/LevenbergMarquardtOptimizer.ipynb): Implements Levenberg-Marquardt optimization.
     - [LevenbergMarquardtParams](https://github.com/borglab/gtsam/blob/develop/gtsam/nonlinear/LevenbergMarquardtParams.h): Parameters for Levenberg-Marquardt optimization.
 
+- [SparseLevenbergMarquardtOptimizer](doc/SparseLevenbergMarquardtOptimizer.ipynb): GPU-accelerated Levenberg-Marquardt for general factor graphs (CUDA builds); cuDSS direct or matrix-free PCG linear solvers, with automatic CPU fallback.
+    - [SparseLevenbergMarquardtParams](https://github.com/borglab/gtsam/blob/develop/gtsam/nonlinear/cuda/SparseLevenbergMarquardt.h): Parameters selecting the CUDA optimizer and its device linear-solver backend.
+
 - [DoglegOptimizer](doc/DoglegOptimizer.ipynb): Implements Powell's Dogleg optimization.
     - [DoglegParams](https://github.com/borglab/gtsam/blob/develop/gtsam/nonlinear/DoglegParams.h): Parameters for Dogleg optimization.
 
 - [GncOptimizer](doc/GncOptimizer.ipynb): Implements robust optimization using Graduated Non-Convexity.
+    - For GPU-accelerated GNC on bundle adjustment problems, see [GNC with the CUDA SFM optimizer](../sfm/doc/CudaSfmGncOptimizer.ipynb).
     - [GncParams](https://github.com/borglab/gtsam/blob/develop/gtsam/nonlinear/GncParams.h): Parameters for Graduated Non-Convexity optimization.
 
 ## Incremental Optimizers
@@ -49,5 +53,6 @@ The `nonlinear` module in GTSAM includes a comprehensive set of tools for nonlin
 
 ## Analysis and Visualization
 
-- [Marginals](https://github.com/borglab/gtsam/blob/develop/gtsam/nonlinear/Marginals.h): Computes marginal covariances from optimization results.
+- [Marginals](doc/Marginals.ipynb): Computes marginal covariances and joint marginals from optimization results.
+- [`Marginals.h`](https://github.com/borglab/gtsam/blob/develop/gtsam/nonlinear/Marginals.h): C++ API declaration for `Marginals` and `JointMarginal`.
 - [GraphvizFormatting](https://github.com/borglab/gtsam/blob/develop/gtsam/nonlinear/GraphvizFormatting.h): Provides customization for factor graph visualization.

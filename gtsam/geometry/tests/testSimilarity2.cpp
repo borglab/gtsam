@@ -73,10 +73,9 @@ TEST(Similarity2, HatAndVee) {
   EXPECT(assert_equal(v3, Similarity2::Vee(Similarity2::Hat(v3))));
 
   // Check the structure of the Lie Algebra element
-  Matrix3 expected;
-  expected << 0, -3, 1,
-    3, 0, 2,
-    0, 0, -4;
+  Matrix3 expected{{0, -3, 1},  //
+                   {3, 0, 2},
+                   {0, 0, -4}};
 
   EXPECT(assert_equal(expected, Similarity2::Hat(v1)));
 }
@@ -144,6 +143,19 @@ TEST(Similarity2, Identity) {
 }
 
 //******************************************************************************
+TEST(Similarity2, InverseMatrix) {
+  Rot2 R = Rot2::fromDegrees(60);
+  Point2 t(3, -2);
+  double s = 4.0;
+  Similarity2 S(R, t, s);
+
+  Matrix3 S_inv_mat = S.inverse().matrix();
+  Matrix3 S_mat_inv = S.matrix().inverse();
+
+  EXPECT(assert_equal(S_inv_mat, S_mat_inv));
+}
+
+//******************************************************************************
 TEST(Similarity2, TransformFrom_Point2) {
   // Setup
   Rot2 R = Rot2::fromAngle(M_PI / 4); // 45 degrees
@@ -191,21 +203,18 @@ TEST(Similarity2, Vec) {
   const Similarity2 sim(R_test, t_test, s_test);
 
   // 1. Test the Value
-  Vector9 expected_vec;
   const double c = cos(theta), si = sin(theta);
-  expected_vec << c, si, 0,               // First column
-    -si, c, 0,                            // Second column
-    t_test.x(), t_test.y(), 1.0 / s_test; // Third column
+  Vector9 expected_vec{c,          si,         0,              // First column
+                       -si,        c,          0,              // Second column
+                       t_test.x(), t_test.y(), 1.0 / s_test};  // Third column
   Vector9 actual_vec = sim.vec();
   EXPECT(assert_equal(expected_vec, actual_vec, 1e-9));
 
   // 2. Test the Jacobian
   Matrix94 H_actual;
   sim.vec(H_actual);
-  auto vec_fun = [](const Similarity2& sim_arg) -> Vector9 {
-    return sim_arg.vec();
-    };
-  Matrix H_numerical = numericalDerivative11<Vector9, Similarity2, 4>(vec_fun, sim);
+  auto f = [](const Similarity2& g) -> Vector9 { return g.vec(); };
+  Matrix H_numerical = numericalDerivative11(f, sim);
   EXPECT(assert_equal(H_numerical, H_actual, 1e-7));
 }
 
@@ -225,6 +234,56 @@ TEST(Similarity2, AdjointMap) {
 
   // Assert that they are equal
   EXPECT(assert_equal(specialized_Adj, generic_Adj, 1e-9));
+}
+
+//******************************************************************************
+TEST(Similarity2, AdjointTranspose) {
+  const Similarity2 sim(Rot2::fromAngle(-0.7), Point2(1.5, -2.3), 0.5);
+  const Vector4 xi(0.2, -0.4, 0.7, -0.1);
+
+  EXPECT(assert_equal(Vector(sim.AdjointMap().transpose() * xi),
+                      Vector(sim.AdjointTranspose(xi))));
+
+  Matrix44 actualH1, actualH2;
+  auto adjointT = [](const Similarity2& g, const Vector4& x) {
+    return Vector4(g.AdjointTranspose(x));
+  };
+  sim.AdjointTranspose(xi, actualH1, actualH2);
+  EXPECT(
+      assert_equal(numericalDerivative21(adjointT, sim, xi), actualH1, 1e-8));
+  EXPECT(assert_equal(numericalDerivative22(adjointT, sim, xi), actualH2));
+}
+
+//******************************************************************************
+TEST(Similarity2, adjointTranspose) {
+  const Vector4 xi(0.2, -0.4, 0.7, -0.1);
+  const Vector4 y(-0.3, 0.5, 0.9, -0.2);
+
+  auto f = [](const Vector4& x, const Vector4& v) {
+    return Vector4(Similarity2::adjointTranspose(x, v));
+  };
+
+  Matrix44 Hxi, Hy;
+  const Vector4 actual = Similarity2::adjointTranspose(xi, y, Hxi, Hy);
+  EXPECT(assert_equal(f(xi, y), actual));
+  EXPECT(assert_equal(numericalDerivative21(f, xi, y, 1e-5), Hxi, 1e-5));
+  EXPECT(assert_equal(numericalDerivative22(f, xi, y, 1e-5), Hy, 1e-5));
+}
+
+//******************************************************************************
+TEST(Similarity2, adjoint) {
+  const Vector4 xi(0.2, -0.4, 0.7, -0.1);
+  const Vector4 y(-0.3, 0.5, 0.9, -0.2);
+
+  auto f = [](const Vector4& x, const Vector4& v) {
+    return Vector4(Similarity2::adjoint(x, v));
+  };
+
+  Matrix44 Hxi, Hy;
+  const Vector4 actual = Similarity2::adjoint(xi, y, Hxi, Hy);
+  EXPECT(assert_equal(f(xi, y), actual));
+  EXPECT(assert_equal(numericalDerivative21(f, xi, y, 1e-5), Hxi, 1e-5));
+  EXPECT(assert_equal(numericalDerivative22(f, xi, y, 1e-5), Hy, 1e-5));
 }
 
 //******************************************************************************

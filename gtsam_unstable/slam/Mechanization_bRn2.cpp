@@ -5,6 +5,10 @@
  * @author Frank Dellaert
  */
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include "Mechanization_bRn2.h"
 
 namespace gtsam {
@@ -32,14 +36,14 @@ Mechanization_bRn2 Mechanization_bRn2::initialize(const Matrix& U,
   if(g_e == 0) {
     if (flat)
       // acceleration measured is  along the z-axis.
-      b_g = (Vector3(3) << 0.0, 0.0, meanF.norm()).finished();
+      b_g = Vector3{0.0, 0.0, meanF.norm()};
     else
       // acceleration measured is the opposite of gravity (10.13)
       b_g = -meanF;
   } else {
     if (flat)
       // gravity is downward along the z-axis since we are flat on the ground
-      b_g = (Vector3(3) << 0.0,0.0,g_e).finished();
+      b_g = Vector3{0.0, 0.0, g_e};
     else
       // normalize b_g and attribute remainder to biases
       b_g = - g_e * meanF/meanF.norm();
@@ -113,3 +117,5 @@ Mechanization_bRn2 Mechanization_bRn2::integrate(const Vector3& u,
 }
 
 } /* namespace gtsam */
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

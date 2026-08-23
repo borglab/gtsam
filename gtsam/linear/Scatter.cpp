@@ -18,7 +18,6 @@
 
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/Scatter.h>
-#include <gtsam/inference/Ordering.h>
 
 #include <algorithm>
 

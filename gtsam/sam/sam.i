@@ -21,7 +21,7 @@ virtual class RangeFactor : gtsam::NoiseModelFactor {
   // enabling serialization functionality
   void serialize() const;
 
-  const double measured() const;
+  const double& measured() const;
 };
 
 // between points:
@@ -58,7 +58,7 @@ virtual class RangeFactorWithTransform : gtsam::NoiseModelFactor {
   void serialize() const;
 
   // Use `double` instead of template since that is all we need.
-  const double measured() const;
+  const double& measured() const;
 };
 
 typedef gtsam::RangeFactorWithTransform<gtsam::Pose2, gtsam::Point2>
@@ -69,6 +69,25 @@ typedef gtsam::RangeFactorWithTransform<gtsam::Pose2, gtsam::Pose2>
     RangeFactorWithTransformPose2;
 typedef gtsam::RangeFactorWithTransform<gtsam::Pose3, gtsam::Pose3>
     RangeFactorWithTransformPose3;
+
+#include <gtsam/sam/RangeFactor.h>
+template <POSE, POINT>
+virtual class RangeFactorWithTransformBias : gtsam::NoiseModelFactor {
+  RangeFactorWithTransformBias(gtsam::Key key1, gtsam::Key key2,
+                               gtsam::Key key3, double measured,
+                               const gtsam::noiseModel::Base* noiseModel,
+                               const POSE& body_T_sensor);
+
+  // enabling serialization functionality
+  void serialize() const;
+
+  const double& measured() const;
+};
+
+typedef gtsam::RangeFactorWithTransformBias<gtsam::Pose2, gtsam::Point2>
+    RangeFactorWithTransformBias2D;
+typedef gtsam::RangeFactorWithTransformBias<gtsam::Pose3, gtsam::Point3>
+    RangeFactorWithTransformBias3D;
 
 #include <gtsam/sam/BearingFactor.h>
 template <POSE, POINT, BEARING>
@@ -96,7 +115,7 @@ virtual class BearingRangeFactor : gtsam::NoiseModelFactor {
                      const BEARING& measuredBearing, const RANGE& measuredRange,
                      const gtsam::noiseModel::Base* noiseModel);
 
-  gtsam::BearingRange<POSE, POINT, BEARING, RANGE> measured() const;
+  const gtsam::BearingRange<POSE, POINT, BEARING, RANGE>& measured() const;
 
   // enabling serialization functionality
   void serialize() const;

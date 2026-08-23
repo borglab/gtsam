@@ -18,6 +18,7 @@
 
 #include <gtsam/base/MatrixLieGroup.h>
 #include <gtsam/geometry/Event.h>
+#include <gtsam/geometry/BearingRange.h>
 #include <gtsam/geometry/Pose3.h>
 
 #include <cmath>       // For std::sqrt, std::cos, std::sin
@@ -113,6 +114,22 @@ class GTSAM_EXPORT Gal3 : public MatrixLieGroup<Gal3, 10, 5> {
   /// Return time scalar
   const double& t() const { return t_; }
 
+  /**
+   * Calculate range to a 3D landmark.
+   * @param point 3D location of landmark
+   * @return range (double)
+   */
+  double range(const Point3& point, OptionalJacobian<1, 10> Hself = {},
+               OptionalJacobian<1, 3> Hpoint = {}) const;
+
+  /**
+   * Calculate bearing to a 3D landmark.
+   * @param point 3D location of landmark
+   * @return bearing (Unit3)
+   */
+  Unit3 bearing(const Point3& point, OptionalJacobian<2, 10> Hself = {},
+                OptionalJacobian<2, 3> Hpoint = {}) const;
+
   /// @}
   /// @name Testable
   /// @{
@@ -171,17 +188,6 @@ class GTSAM_EXPORT Gal3 : public MatrixLieGroup<Gal3, 10, 5> {
   /// Calculate Adjoint map Ad_g
   Jacobian AdjointMap() const;
 
-  /// Apply this element's AdjointMap Ad_g to a tangent vector xi_base at
-  /// identity
-  TangentVector Adjoint(const TangentVector& xi_base,
-                        OptionalJacobian<10, 10> H_g = {},
-                        OptionalJacobian<10, 10> H_xi = {}) const;
-
-  /// The adjoint action `ad(xi, y)` = `adjointMap(xi) * y`
-  static TangentVector adjoint(const TangentVector& xi, const TangentVector& y,
-                               OptionalJacobian<10, 10> Hxi = {},
-                               OptionalJacobian<10, 10> Hy = {});
-
   /// Compute the adjoint map `ad(xi)` associated with tangent vector xi
   static Jacobian adjointMap(const TangentVector& xi);
 
@@ -191,8 +197,11 @@ class GTSAM_EXPORT Gal3 : public MatrixLieGroup<Gal3, 10, 5> {
   /// Derivative of Logmap(g) w.r.t. g
   static Jacobian LogmapDerivative(const Gal3& g);
 
+  /// Derivative of Logmap(g), tangent version
+  static Jacobian LogmapDerivative(const TangentVector& xi);
+
   /// Chart at origin, uses Expmap/Logmap for Retract/Local
-  struct ChartAtOrigin {
+  struct GTSAM_EXPORT ChartAtOrigin {
     static Gal3 Retract(const TangentVector& xi, ChartJacobian Hxi = {});
     static TangentVector Local(const Gal3& g, ChartJacobian Hg = {});
   };
@@ -241,5 +250,12 @@ struct traits<Gal3> : public internal::MatrixLieGroup<Gal3, 5> {};
 
 template <>
 struct traits<const Gal3> : public internal::MatrixLieGroup<Gal3, 5> {};
+
+// bearing and range traits, used in RangeFactor and BearingFactor
+template <>
+struct Bearing<Gal3, Point3> : HasBearing<Gal3, Point3, Unit3> {};
+
+template <>
+struct Range<Gal3, Point3> : HasRange<Gal3, Point3, double> {};
 
 }  // namespace gtsam

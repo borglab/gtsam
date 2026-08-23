@@ -11,6 +11,7 @@ namespace gtsam {
 #include <gtsam/geometry/Cal3Fisheye.h>
 #include <gtsam/geometry/Cal3Unified.h>
 #include <gtsam/geometry/EssentialMatrix.h>
+#include <gtsam/geometry/ExtendedPose3.h>
 #include <gtsam/geometry/FundamentalMatrix.h>
 #include <gtsam/geometry/Gal3.h>
 #include <gtsam/geometry/OrientedPlane3.h>
@@ -30,6 +31,7 @@ namespace gtsam {
 #include <gtsam/geometry/SL4.h>
 #include <gtsam/geometry/StereoPoint2.h>
 #include <gtsam/geometry/Unit3.h>
+#include <gtsam/geometry/SphericalCamera.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/navigation/NavState.h>
 
@@ -58,6 +60,7 @@ class Values {
   bool exists(gtsam::Key j) const;
   gtsam::KeyVector keys() const;
 
+  std::map<gtsam::Key,size_t> dims() const;
   gtsam::VectorValues zeroVectors() const;
 
   gtsam::Values retract(const gtsam::VectorValues& delta) const;
@@ -75,13 +78,16 @@ class Values {
 
   // The order is important: gtsam::Vector has to precede Point2/Point3 so `atVector`
   // can work for those fixed-size vectors. Same apparently for Cal3Bundler and Cal3f.
-  void insert(gtsam::Key j, gtsam::Vector vector);
-  void insert(gtsam::Key j, gtsam::Matrix matrix);
+  void insert(gtsam::Key j, const gtsam::Vector& vector);
+  void insert(gtsam::Key j, const gtsam::Matrix& matrix);
   void insert(gtsam::Key j, const gtsam::Point2& point2);
   void insert(gtsam::Key j, const gtsam::Point3& point3);
   void insert(gtsam::Key j, const gtsam::Gal3& T);
+  void insert(gtsam::Key j, const gtsam::Se23& T);
+  void insert(gtsam::Key j, const gtsam::ExtendedPose3d& T);
   void insert(gtsam::Key j, const gtsam::Pose2& pose2);
   void insert(gtsam::Key j, const gtsam::Pose3& pose3);
+  void insert(gtsam::Key j, const gtsam::Vector6& pose3tangent);
   void insert(gtsam::Key j, const gtsam::Rot2& rot2);
   void insert(gtsam::Key j, const gtsam::Rot3& rot3);
   void insert(gtsam::Key j, const gtsam::Similarity2& similarity2);
@@ -113,19 +119,23 @@ class Values {
   void insert(gtsam::Key j, const gtsam::PinholePose<gtsam::Cal3DS2>& camera);
   void insert(gtsam::Key j, const gtsam::PinholePose<gtsam::Cal3Fisheye>& camera);
   void insert(gtsam::Key j, const gtsam::PinholePose<gtsam::Cal3Unified>& camera);
+  void insert(gtsam::Key j, const gtsam::SphericalCamera& camera);
   void insert(gtsam::Key j, const gtsam::imuBias::ConstantBias& constant_bias);
   void insert(gtsam::Key j, const gtsam::NavState& nav_state);
-  void insert(gtsam::Key j, double c);
+  void insert(gtsam::Key j, const double& c);
 
   // The order is important: gtsam::Vector has to precede Point2/Point3 so `atVector`
   // can work for those fixed-size vectors.
-  void update(gtsam::Key j, gtsam::Vector vector);
-  void update(gtsam::Key j, gtsam::Matrix matrix);
+  void update(gtsam::Key j, const gtsam::Vector& vector);
+  void update(gtsam::Key j, const gtsam::Matrix& matrix);
   void update(gtsam::Key j, const gtsam::Point2& point2);
   void update(gtsam::Key j, const gtsam::Point3& point3);
   void update(gtsam::Key j, const gtsam::Gal3& T);
+  void update(gtsam::Key j, const gtsam::Se23& T);
+  void update(gtsam::Key j, const gtsam::ExtendedPose3d& T);
   void update(gtsam::Key j, const gtsam::Pose2& pose2);
   void update(gtsam::Key j, const gtsam::Pose3& pose3);
+  void update(gtsam::Key j, const gtsam::Vector6& pose3tangent);
   void update(gtsam::Key j, const gtsam::Rot2& rot2);
   void update(gtsam::Key j, const gtsam::Rot3& rot3);
   void update(gtsam::Key j, const gtsam::Similarity2& similarity2);
@@ -157,19 +167,23 @@ class Values {
   void update(gtsam::Key j, const gtsam::PinholePose<gtsam::Cal3DS2>& camera);
   void update(gtsam::Key j, const gtsam::PinholePose<gtsam::Cal3Fisheye>& camera);
   void update(gtsam::Key j, const gtsam::PinholePose<gtsam::Cal3Unified>& camera);
+  void update(gtsam::Key j, const gtsam::SphericalCamera& camera);
   void update(gtsam::Key j, const gtsam::imuBias::ConstantBias& constant_bias);
   void update(gtsam::Key j, const gtsam::NavState& nav_state);
-  void update(gtsam::Key j, double c);
+  void update(gtsam::Key j, const double& c);
 
   // The order is important: gtsam::Vector has to precede Point2/Point3 so `atVector`
   // can work for those fixed-size vectors.
-  void insert_or_assign(gtsam::Key j, gtsam::Vector vector);
-  void insert_or_assign(gtsam::Key j, gtsam::Matrix matrix);
+  void insert_or_assign(gtsam::Key j, const gtsam::Vector& vector);
+  void insert_or_assign(gtsam::Key j, const gtsam::Matrix& matrix);
   void insert_or_assign(gtsam::Key j, const gtsam::Point2& point2);
   void insert_or_assign(gtsam::Key j, const gtsam::Point3& point3);
   void insert_or_assign(gtsam::Key j, const gtsam::Gal3& T);
+  void insert_or_assign(gtsam::Key j, const gtsam::Se23& T);
+  void insert_or_assign(gtsam::Key j, const gtsam::ExtendedPose3d& T);
   void insert_or_assign(gtsam::Key j, const gtsam::Pose2& pose2);
   void insert_or_assign(gtsam::Key j, const gtsam::Pose3& pose3);
+  void insert_or_assign(gtsam::Key j, const gtsam::Vector6& pose3tangent);
   void insert_or_assign(gtsam::Key j, const gtsam::Rot2& rot2);
   void insert_or_assign(gtsam::Key j, const gtsam::Rot3& rot3);
   void insert_or_assign(gtsam::Key j, const gtsam::Similarity2& similarity2);
@@ -201,17 +215,21 @@ class Values {
   void insert_or_assign(gtsam::Key j, const gtsam::PinholePose<gtsam::Cal3DS2>& camera);
   void insert_or_assign(gtsam::Key j, const gtsam::PinholePose<gtsam::Cal3Fisheye>& camera);
   void insert_or_assign(gtsam::Key j, const gtsam::PinholePose<gtsam::Cal3Unified>& camera);
+  void insert_or_assign(gtsam::Key j, const gtsam::SphericalCamera& camera);
   void insert_or_assign(gtsam::Key j, const gtsam::imuBias::ConstantBias& constant_bias);
   void insert_or_assign(gtsam::Key j, const gtsam::NavState& nav_state);
-  void insert_or_assign(gtsam::Key j, double c);
+  void insert_or_assign(gtsam::Key j, const double& c);
 
   template <T = {gtsam::Vector,
                  gtsam::Matrix,
                  gtsam::Point2,
                  gtsam::Point3,
                  gtsam::Gal3,
+                 gtsam::Se23,
+                 gtsam::ExtendedPose3d,
                  gtsam::Pose2,
                  gtsam::Pose3,
+                 gtsam::Vector6,
                  gtsam::Rot2,
                  gtsam::Rot3,
                  gtsam::Similarity2,
@@ -243,6 +261,7 @@ class Values {
                  gtsam::PinholePose<gtsam::Cal3DS2>,
                  gtsam::PinholePose<gtsam::Cal3Fisheye>,
                  gtsam::PinholePose<gtsam::Cal3Unified>,
+                 gtsam::SphericalCamera,
                  gtsam::imuBias::ConstantBias,
                  gtsam::NavState,
                  double}>

@@ -17,7 +17,7 @@ from gtsam.utils.test_case import GtsamTestCase
 import gtsam
 
 
-class TestUtilites(GtsamTestCase):
+class TestUtilities(GtsamTestCase):
     """Test various GTSAM utilities."""
 
     def test_createKeyList(self):
@@ -79,6 +79,20 @@ class TestUtilites(GtsamTestCase):
         for i, key in enumerate(ks):
             self.assertTrue(key in ks)
             self.assertEqual(I[i], key)
+
+    def test_KeySet_count_and_erase_return_sizes(self):
+        """KeySet count and erase expose their exact C++ size results."""
+        ks = gtsam.utilities.createKeySet([0, 1, 2])
+
+        count = ks.count(1)
+        erased = ks.erase(1)
+
+        self.assertIs(type(count), int)
+        self.assertIs(type(erased), int)
+        self.assertEqual(count, 1)
+        self.assertEqual(ks.count(3), 0)
+        self.assertEqual(erased, 1)
+        self.assertEqual(ks.erase(1), 0)
 
     def test_extractPoint2(self):
         """Test extractPoint2."""
@@ -142,7 +156,7 @@ class TestUtilites(GtsamTestCase):
         values = gtsam.Values()
         values.insert(0, gtsam.Pose3())
         values.insert(1, gtsam.Point2(1, 1))
-        gtsam.utilities.perturbPoint2(values, 1.0)
+        gtsam.utilities.perturbPoint2(values, 1.0, 42)
         self.assertTrue(
             not np.allclose(values.atPoint2(1), gtsam.Point2(1, 1)))
 
@@ -151,7 +165,7 @@ class TestUtilites(GtsamTestCase):
         values = gtsam.Values()
         values.insert(0, gtsam.Pose2())
         values.insert(1, gtsam.Point2(1, 1))
-        gtsam.utilities.perturbPose2(values, 1, 1)
+        gtsam.utilities.perturbPose2(values, 1, 1, 42)
         self.assertTrue(values.atPose2(0) != gtsam.Pose2())
 
     def test_perturbPoint3(self):
@@ -160,37 +174,59 @@ class TestUtilites(GtsamTestCase):
         point3 = gtsam.Point3(0, 0, 0)
         values.insert(0, gtsam.Pose2())
         values.insert(1, point3)
-        gtsam.utilities.perturbPoint3(values, 1)
+        gtsam.utilities.perturbPoint3(values, 1, 42)
         self.assertTrue(not np.allclose(values.atPoint3(1), point3))
+
+    def test_perturbPose3(self):
+        """Test perturbPose3."""
+        values = gtsam.Values()
+        pose3 = gtsam.Pose3()
+        values.insert(0, pose3)
+        values.insert(1, gtsam.Point2(1, 1))
+        gtsam.utilities.perturbPose3(values, 1, 1, 42)
+        self.assertTrue(not values.atPose3(0).equals(pose3, 1e-9))
 
     def test_insertBackprojections(self):
         """Test insertBackprojections."""
-        values = gtsam.Values()
         cam = gtsam.PinholeCameraCal3_S2()
-        gtsam.utilities.insertBackprojections(
-            values, cam, [0, 1, 2], np.asarray([[20, 30, 40], [20, 30, 40]]),
-            10)
-        np.testing.assert_allclose(values.atPoint3(0),
-                                   gtsam.Point3(200, 200, 10))
+        pixels = np.asarray([[20, 30, 40], [20, 30, 40]], dtype=float)
+        for order in ("C", "F"):
+            values = gtsam.Values()
+            gtsam.utilities.insertBackprojections(
+                values, cam, [0, 1, 2], np.array(pixels, order=order), 10)
+            np.testing.assert_allclose(values.atPoint3(0),
+                                       gtsam.Point3(200, 200, 10))
+
+        with self.assertRaises(TypeError):
+            gtsam.utilities.insertBackprojections(
+                gtsam.Values(), cam, [0, 1, 2], pixels.tolist(), 10)
 
     def test_insertProjectionFactors(self):
         """Test insertProjectionFactors."""
+        pixels = np.asarray([[20, 30], [20, 30]], dtype=float)
+        pose_key = gtsam.symbol("x", 0)
         graph = gtsam.NonlinearFactorGraph()
         gtsam.utilities.insertProjectionFactors(
-            graph, 0, [0, 1], np.asarray([[20, 30], [20, 30]]),
+            graph, pose_key, [0, 1], np.array(pixels, order="C"),
             gtsam.noiseModel.Isotropic.Sigma(2, 0.1), gtsam.Cal3_S2())
         self.assertEqual(graph.size(), 2)
+        self.assertEqual(graph.at(0).keys()[0], pose_key)
 
         graph = gtsam.NonlinearFactorGraph()
         gtsam.utilities.insertProjectionFactors(
-            graph, 0, [0, 1], np.asarray([[20, 30], [20, 30]]),
+            graph, pose_key, [0, 1], np.array(pixels, order="F"),
             gtsam.noiseModel.Isotropic.Sigma(2, 0.1), gtsam.Cal3_S2(),
             gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(1, 0, 0)))
         self.assertEqual(graph.size(), 2)
 
+        with self.assertRaises(TypeError):
+            gtsam.utilities.insertProjectionFactors(
+                gtsam.NonlinearFactorGraph(), pose_key, [0, 1], pixels.tolist(),
+                gtsam.noiseModel.Isotropic.Sigma(2, 0.1), gtsam.Cal3_S2())
+
     def test_reprojectionErrors(self):
         """Test reprojectionErrors."""
-        pixels = np.asarray([[20, 30], [20, 30]])
+        pixels = np.asarray([[20, 30], [20, 30]], dtype=float)
         I = [1, 2]
         K = gtsam.Cal3_S2()
         graph = gtsam.NonlinearFactorGraph()

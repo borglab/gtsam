@@ -47,7 +47,7 @@ DiscreteConditional::shared_ptr mixing =
 /// Gaussian density function
 double Gaussian(double mu, double sigma, double z) {
   return exp(-0.5 * pow((z - mu) / sigma, 2)) / sqrt(2 * M_PI * sigma * sigma);
-};
+}
 
 /**
  * Closed form computation of P(m=1|z).
@@ -59,7 +59,7 @@ double prob_m_z(double mu0, double mu1, double sigma0, double sigma1,
   const double p0 = 0.6 * Gaussian(mu0, sigma0, z);
   const double p1 = 0.4 * Gaussian(mu1, sigma1, z);
   return p1 / (p0 + p1);
-};
+}
 
 /*
  * Test a Gaussian Mixture Model P(m)p(z|m) with same sigma.

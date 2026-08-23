@@ -22,44 +22,35 @@ using namespace std;
 
 namespace gtsam {
 
-//******************************************************************************
-SharedNoiseModel
-ConvertNoiseModel(const SharedNoiseModel &model, size_t d, bool defaultToUnit) {
+SharedNoiseModel ConvertNoiseModel(const SharedNoiseModel &model,
+                                   size_t dimension, bool defaultToUnit) {
   double sigma = 1.0;
+  noiseModel::mEstimator::Base::shared_ptr robustLoss;
 
   if (model != nullptr) {
-    const auto &robust = std::dynamic_pointer_cast<noiseModel::Robust>(model);
-    Vector sigmas;
-    if (robust) {
-      sigmas = robust->noise()->sigmas();
-    } else {
-      sigmas = model->sigmas();
+    // Unwrap robust model if present and remember its robust loss
+    SharedNoiseModel baseModel = model;
+    if (auto robust = std::dynamic_pointer_cast<noiseModel::Robust>(model)) {
+      robustLoss = robust->robust();
+      baseModel = robust->noise();
     }
 
-    size_t n = sigmas.size();
-    if (n == 1) {
-      sigma = sigmas(0); // Rot2
-      goto exit;
-    }
-    else if (n == 3 || n == 6) {
-      sigma = sigmas(2); // Pose2, Rot3, or Pose3
-      if (sigmas(0) != sigma || sigmas(1) != sigma) {
-        if (!defaultToUnit) {
-          throw std::runtime_error("Can only convert isotropic rotation noise");
-        }
-      }
-      goto exit;
-    }
-    if (!defaultToUnit) {
-      throw std::runtime_error("Can only convert Pose2/Pose3 noise models");
+    // Use smart constructor to check for isotropy
+    Vector sigmas = baseModel->sigmas();
+    auto smartModel = noiseModel::Diagonal::Sigmas(sigmas, true);
+    auto isotropic =
+        std::dynamic_pointer_cast<noiseModel::Isotropic>(smartModel);
+
+    if (isotropic) {
+      sigma = isotropic->sigma();
+    } else if (!defaultToUnit) {
+      throw std::runtime_error("Can only convert isotropic rotation noise");
     }
   }
-  exit:
-  auto isoModel = noiseModel::Isotropic::Sigma(d, sigma);
-  const auto &robust = std::dynamic_pointer_cast<noiseModel::Robust>(model);
-  if (robust) {
-    return noiseModel::Robust::Create(
-        noiseModel::mEstimator::Huber::Create(1.345), isoModel);
+
+  auto isoModel = noiseModel::Isotropic::Sigma(dimension, sigma);
+  if (robustLoss) {
+    return noiseModel::Robust::Create(robustLoss, isoModel);
   } else {
     return isoModel;
   }
@@ -67,4 +58,4 @@ ConvertNoiseModel(const SharedNoiseModel &model, size_t d, bool defaultToUnit) {
 
 //******************************************************************************
 
-} // namespace gtsam
+}  // namespace gtsam

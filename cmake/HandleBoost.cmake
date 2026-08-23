@@ -13,8 +13,11 @@
 if(MSVC)
     # By default, Boost pre-compiled binaries for Windows are static libraries.
     set(Boost_USE_STATIC_LIBS ON)
+    # GTSAM links Boost through imported CMake targets, so disable Boost's
+    # pragma-based auto-linking to avoid bare library names on the link line.
+    list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_ALL_NO_LIB)
     if(NOT Boost_USE_STATIC_LIBS)
-        list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_ALL_NO_LIB BOOST_ALL_DYN_LINK)
+        list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_ALL_DYN_LINK)
     endif()
     if(MSVC_VERSION LESS 1910) # older than VS2017
       list_append_cache(GTSAM_COMPILE_OPTIONS_PRIVATE -Zm295)
@@ -39,11 +42,11 @@ endif()
 ################################################################################
 
 # Set minimum required Boost version and components.
-# NOTE: "system" is intentionally omitted. It is a transitive dependency of other
-# components (like filesystem) and will be found automatically. Explicitly
-# requesting it can cause issues with modern header-only versions of Boost.
+# Note: Keep this in sync with vcpkg.json.
+# optional, program_options, random, range are all used in tests/examples/Python, but are not library dependencies. timer/chrono is used conditionally.
+# concept_check, move, pool, smart_ptr, tokenizer, type_traits, optional, range are header only and are not components.
 set(BOOST_FIND_MINIMUM_VERSION 1.70)
-set(BOOST_FIND_MINIMUM_COMPONENTS serialization filesystem thread program_options date_time timer chrono regex)
+set(BOOST_FIND_MINIMUM_COMPONENTS graph serialization program_options random timer chrono)
 
 # Find the Boost package. On systems with modern installations (vcpkg, Homebrew),
 # this will use CMake's "Config mode". With manual installations (especially on
@@ -52,22 +55,15 @@ find_package(Boost ${BOOST_FIND_MINIMUM_VERSION} REQUIRED
              COMPONENTS ${BOOST_FIND_MINIMUM_COMPONENTS}
              )
 
+set(GTSAM_BOOST_LIBRARIES Boost::graph Boost::serialization)
 # Verify that the required Boost component targets were successfully found and imported.
-foreach(_t IN ITEMS Boost::serialization Boost::filesystem Boost::thread Boost::date_time)
+foreach(_t IN ITEMS ${GTSAM_BOOST_LIBRARIES})
   if(NOT TARGET ${_t})
     message(FATAL_ERROR "Missing required Boost component target: ${_t}. Please install/upgrade Boost or set BOOST_ROOT/Boost_DIR correctly.")
   endif()
 endforeach()
 
 option(GTSAM_DISABLE_NEW_TIMERS "Disables using Boost.chrono for timing" OFF)
-
-set(GTSAM_BOOST_LIBRARIES
-  Boost::serialization
-  Boost::filesystem
-  Boost::thread
-  Boost::date_time
-  Boost::regex
-)
 
 if(GTSAM_DISABLE_NEW_TIMERS)
   message("WARNING:  GTSAM timing instrumentation manually disabled")

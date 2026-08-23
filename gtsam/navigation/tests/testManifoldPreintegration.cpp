@@ -15,13 +15,14 @@
  * @author  Luca Carlone
  */
 
-#include <gtsam/navigation/ManifoldPreintegration.h>
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam/nonlinear/expressions.h>
+#include <gtsam/navigation/ManifoldPreintegration.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/nonlinear/expressionTesting.h>
-
-#include <CppUnitLite/TestHarness.h>
+#include <gtsam/nonlinear/expressions.h>
 
 #include "imuFactorTesting.h"
 
@@ -31,22 +32,19 @@ using namespace std::placeholders;
 TEST(ManifoldPreintegration, BiasCorrectionJacobians) {
   testing::SomeMeasurements measurements;
 
-  std::function<Rot3(const Vector3&, const Vector3&)> deltaRij =
-      [&](const Vector3& a, const Vector3& w) {
+  auto deltaRij = [&](const Vector3& a, const Vector3& w) {
         ManifoldPreintegration pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
         return pim.deltaRij();
       };
 
-  std::function<Point3(const Vector3&, const Vector3&)> deltaPij =
-      [&](const Vector3& a, const Vector3& w) {
+  auto deltaPij = [&](const Vector3& a, const Vector3& w) {
         ManifoldPreintegration pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
         return pim.deltaPij();
       };
 
-  std::function<Vector3(const Vector3&, const Vector3&)> deltaVij =
-      [&](const Vector3& a, const Vector3& w) {
+  auto deltaVij = [&](const Vector3& a, const Vector3& w) {
         ManifoldPreintegration pim(testing::Params(), Bias(a, w));
         testing::integrateMeasurements(measurements, &pim);
         return pim.deltaVij();
@@ -55,6 +53,9 @@ TEST(ManifoldPreintegration, BiasCorrectionJacobians) {
   // Actual pre-integrated values
   ManifoldPreintegration pim(testing::Params());
   testing::integrateMeasurements(measurements, &pim);
+
+  EXPECT(assert_equal(pim.biasCorrectedDelta(pim.biasHat()),
+                      pim.preintegrated()));
 
   EXPECT(
       assert_equal(numericalDerivative21(deltaRij, kZero, kZero),
@@ -76,26 +77,6 @@ TEST(ManifoldPreintegration, BiasCorrectionJacobians) {
   EXPECT(
       assert_equal(numericalDerivative22(deltaVij, kZero, kZero),
           pim.delVdelBiasOmega(), 1e-3));
-}
-
-/* ************************************************************************* */
-TEST(ManifoldPreintegration, computeError) {
-  ManifoldPreintegration pim(testing::Params());
-  NavState x1, x2;
-  imuBias::ConstantBias bias;
-  Matrix9 aH1, aH2;
-  Matrix96 aH3;
-  pim.computeError(x1, x2, bias, aH1, aH2, aH3);
-  std::function<Vector9(const NavState&, const NavState&,
-                        const imuBias::ConstantBias&)>
-      f = std::bind(&ManifoldPreintegration::computeError, pim,
-                    std::placeholders::_1, std::placeholders::_2,
-                    std::placeholders::_3, nullptr, nullptr,
-                    nullptr);
-  // NOTE(frank): tolerance of 1e-3 on H1 because approximate away from 0
-  EXPECT(assert_equal(numericalDerivative31(f, x1, x2, bias), aH1, 1e-9));
-  EXPECT(assert_equal(numericalDerivative32(f, x1, x2, bias), aH2, 1e-9));
-  EXPECT(assert_equal(numericalDerivative33(f, x1, x2, bias), aH3, 1e-9));
 }
 
 /* ************************************************************************* */

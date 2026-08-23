@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file ImuFactorsExample
+ * @file ImuFactorsExample.cpp
  * @brief Test example for using GTSAM ImuFactor and ImuCombinedFactor
  * navigation code.
  * @author Garrett (ghemann@gmail.com), Luca Carlone
@@ -38,6 +38,7 @@
 #include <boost/program_options.hpp>
 
 // GTSAM related includes.
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/GPSFactor.h>
@@ -181,8 +182,7 @@ int main(int argc, char* argv[]) {
 
   // Assemble prior noise model and add it the graph.`
   auto pose_noise_model = noiseModel::Diagonal::Sigmas(
-      (Vector(6) << 0.01, 0.01, 0.01, 0.5, 0.5, 0.5)
-          .finished());  // rad,rad,rad,m, m, m
+      Vector{{0.01, 0.01, 0.01, 0.5, 0.5, 0.5}});  // rad,rad,rad,m, m, m
   auto velocity_noise_model = noiseModel::Isotropic::Sigma(3, 0.1);  // m/s
   auto bias_noise_model = noiseModel::Isotropic::Sigma(6, 1e-3);
 
@@ -212,10 +212,20 @@ int main(int argc, char* argv[]) {
                       // exactly the same, so keeping this for simplicity.
 
   // All priors have been set up, now iterate through the data file.
-  while (file.good()) {
-    // Parse out first value
-    getline(file, value, ',');
-    int type = stoi(value.c_str());
+  std::string line;
+  int type{1000};
+  while (std::getline(file, line)) {
+    std::stringstream ss(line);
+    std::string value;
+
+    // Read value until comma. Skip to next line on failure to read.
+    if (!std::getline(ss, value, ',')) continue;
+    try {
+      type = std::stoi(value);
+    } catch (const std::invalid_argument& e) {
+      std::cerr << "Invalid integer in input: \"" << value << "\"\n";
+      continue;  // Or break, depending on desired behavior
+    }
 
     if (type == 0) {  // IMU measurement
       Vector6 imu;

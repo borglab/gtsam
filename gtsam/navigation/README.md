@@ -12,6 +12,9 @@ current time step), and the bias estimate.
 Following the preintegration
 scheme proposed in [2], the `ImuFactor` includes many IMU measurements, which
 are "summarized" using the PreintegratedIMUMeasurements class.
+For details on the additional position-integration uncertainty represented by
+`PreintegrationParams::integrationCovariance`, see
+[IMU integration covariance](doc/IMUIntegrationCovariance.md).
 The figure above, courtesy of [Mathworks' navigation toolbox](https://www.mathworks.com/help/nav/index.html), which are also using our work, shows the factor graph fragment for two time slices.
 
 Note that this factor does not model "temporal consistency" of the biases
@@ -36,7 +39,9 @@ If you are using the factor, please cite:
 
 ## The Attitude Factor
 
-The `AttitudeFactor` in GTSAM is a factor that constrains the orientation (attitude) of a robot or sensor platform based on directional measurements. Both `Rot3` and `Pose3` versions are available. 
+The `AttitudeFactor` in GTSAM is a factor that constrains the orientation
+(attitude) of a robot or sensor platform based on directional measurements.
+Both `Rot3` and `Pose3` versions are available.
 
-Written up in detail with the help of ChatGPT [here](AttitudeFactor.md).
-
+Written up in detail in the
+[AttitudeFactor notebook](doc/AttitudeFactor.ipynb).

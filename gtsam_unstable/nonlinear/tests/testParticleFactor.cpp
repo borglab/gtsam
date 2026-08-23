@@ -16,6 +16,7 @@
  * @date    Dec 9, 2013
  */
 
+#include <gtsam/base/MatrixConstants.h>
 #include <gtsam/linear/NoiseModel.h>
 
 namespace gtsam {
@@ -89,9 +90,7 @@ TEST( particleFactor, eliminate) {
 
 /** Small 2D point class implemented as a Vector */
 struct State: Vector {
-  State(double x, double y) :
-      Vector((Vector(2) << x, y).finished()) {
-  }
+  State(double x, double y) : Vector{{x, y}} {}
 };
 
 //******************************************************************************

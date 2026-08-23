@@ -1,127 +1,131 @@
-# GTSAM Containers
+# GTSAM Docker Images
 
-- container files to build images
-- script to push images to a registry
-- instructions to pull images and run containers
+The official Docker images for GTSAM are maintained in the [borglab/docker-images](https://github.com/borglab/docker-images) repository.
 
-## Dependencies
+## Available Images
 
-- a container engine such as [`Docker Engine`](https://docs.docker.com/engine/install/)
+The following images are available on Docker Hub, primarily under the `borglab` namespace:
 
-## Pull from Docker Hub
+-   **[borglab/gtsam](https://hub.docker.com/r/borglab/gtsam)**:
+    A pre-compiled environment containing the latest `develop` branch of GTSAM. Useful for quick testing or as a base for downstream applications.
+    -   *Source:* [`docker-images/gtsam`](https://github.com/borglab/docker-images/tree/main/gtsam)
 
-Various GTSAM image configurations are available at [`docker.io/borglab/gtsam`](https://hub.docker.com/r/borglab/gtsam). Determine which [tag](https://hub.docker.com/r/borglab/gtsam/tags) you want and pull the image.
+-   **[borglab/gtsam-manylinux](https://hub.docker.com/r/borglab/gtsam-manylinux)**:
+    An environment based on `manylinux2014` tailored for building Python wheels for GTSAM.
+    -   *Source:* [`docker-images/gtsam-manylinux`](https://github.com/borglab/docker-images/tree/main/gtsam-manylinux)
 
-Example for pulling an image with GTSAM compiled with TBB and Python support on top of a base Ubuntu 22.04 image.
+-   **[borglab/ubuntu-boost-tbb](https://hub.docker.com/r/borglab/ubuntu-boost-tbb)**:
+    Base image (Ubuntu 24.04) with Boost and TBB libraries pre-installed.
+    -   *Source:* [`docker-images/ubuntu-boost-tbb`](https://github.com/borglab/docker-images/tree/main/ubuntu-boost-tbb)
 
-```bash
-docker pull docker.io/borglab/gtsam:4.2.0-tbb-ON-python-ON_22.04
-```
+-   **CI Images**:
+    Various images used for Continuous Integration, covering different Ubuntu versions (22.04, 24.04) and compilers (Clang, GCC).
+    -   *Source:* [`docker-images/gtsam-ci`](https://github.com/borglab/docker-images/tree/main/gtsam-ci)
 
-[`docker.io/borglab/gtsam-vnc`](https://hub.docker.com/r/borglab/gtsam-vnc) is also provided as an image with GTSAM that will run a VNC server to connect to.
+## Usage
 
-## Using the images
+### Running GTSAM
 
-### Just GTSAM
-
-To start the image, execute
-
-```bash
-docker run -it borglab/gtsam:4.2.0-tbb-ON-python-OFF_22.04
-```
-
-after you will find yourself in a bash shell.
-
-### GTSAM with Python wrapper
-
-To use GTSAM via the python wrapper, similarly execute
+To start an interactive shell in a container with GTSAM pre-installed:
 
 ```bash
-docker run -it borglab/gtsam:4.2.0-tbb-ON-python-ON_22.04
+docker run -it borglab/gtsam:latest
 ```
 
-and then launch `python3`:
+### Using the Python Wrapper
 
-```bash
-python3
->>> import gtsam
->>> gtsam.Pose2(1,2,3)
-(1, 2, 3)
-```
+The `borglab/gtsam` image typically includes Python bindings. To use them:
 
-### GTSAM with Python wrapper and VNC
+1.  Start the container:
+    ```bash
+    docker run -it borglab/gtsam:latest
+    ```
+2.  Launch Python:
+    ```bash
+    python3
+    ```
+3.  Import GTSAM:
+    ```python
+    import gtsam
+    print(gtsam.Pose3())
+    ```
 
-First, start the image, which will run a VNC server on port 5900:
+## Building Images
 
-```bash
-docker run -p 5900:5900 borglab/gtsam-vnc:4.2.0-tbb-ON-python-ON_22.04
-```
+To build these images locally or contribute changes, please refer to the **[borglab/docker-images](https://github.com/borglab/docker-images)** repository. It contains the Dockerfiles and build scripts for all the images listed above.
 
-Then open a remote VNC X client, for example:
+### Legacy Configuration
 
-#### Linux
 
-```bash
-sudo apt-get install tigervnc-viewer
-xtigervncviewer :5900
-```
 
-#### Mac
+The following files in this directory are legacy artifacts and are **no longer actively maintained**:
 
-The Finder's "Connect to Server..." with `vnc://127.0.0.1` does not work, for some reason. Using the free [VNC Viewer](https://www.realvnc.com/en/connect/download/viewer/), enter `0.0.0.0:5900` as the server.
 
-## Build images locally
 
-### Build Dependencies
+-   **`Containerfile`**: Build instructions for a standalone GTSAM image (cloning from git and building from source).
 
-- a [Compose Spec](https://compose-spec.io/) implementation such as [docker-compose](https://docs.docker.com/compose/install/)
+-   **`compose.yaml`**: A Docker Compose wrapper used for configurable builds (via `.env` variables like `GTSAM_WITH_TBB`, `GTSAM_BUILD_PYTHON`) and standardized image tagging.
 
-### `gtsam` image
+-   **`hub_push.sh`**: A utility script to iterate through configuration matrices and push multiple image variants to Docker Hub.
 
-#### `.env` file
 
-- `GTSAM_GIT_TAG`: [git tag from the gtsam repo](https://github.com/borglab/gtsam/tags)
-- `UBUNTU_TAG`: image tag provided by [ubuntu](https://hub.docker.com/_/ubuntu/tags) to base the image off of
-- `GTSAM_WITH_TBB`: to build GTSAM with TBB, set to `ON`
-- `GTSAM_BUILD_PYTHON`: to build python bindings, set to `ON`
-- `CORES`: number of cores to compile with
 
-#### Build `gtsam` image
+For official builds and the most up-to-date configurations, please refer to the **[borglab/docker-images](https://github.com/borglab/docker-images)** repository.
 
-```bash
-docker compose build
-```
 
-### `gtsam-vnc` image
 
-#### `gtsam-vnc/.env` file
+> **TODO**: Consider migrating the configurable build and matrix-pushing functionality from these legacy files into the `docker-images` repository to support more flexible local builds.
 
-- `GTSAM_TAG`: image tag provided by [gtsam](https://hub.docker.com/r/borglab/gtsam/tags)
 
-#### Build `gtsam-vnc` image
 
-```bash
-docker compose --file gtsam-vnc/compose.yaml build
-```
+## VNC Support (`gtsam-vnc`)
 
-## Push to Docker Hub
 
-Make sure you are logged in via: `docker login docker.io`.
 
-### `gtsam` images
+The **gtsam-vnc** image configuration is available locally in the [`gtsam-vnc`](./gtsam-vnc) subdirectory. This image extends the official `borglab/gtsam` image by adding a VNC server, allowing you to view GUI applications (like Matplotlib plots) running inside the container.
 
-Specify the variables described in the `.env` file in the `hub_push.sh` script.
-To push images to Docker Hub, run as follows:
 
-```bash
-./hub_push.sh
-```
 
-### `gtsam-vnc` images
+### Building and Running VNC Image
 
-Specify the variables described in the `gtsam-vnc/.env` file in the `gtsam-vnc/hub_push.sh` script.
-To push images to Docker Hub, run as follows:
 
-```bash
-./gtsam-vnc/hub_push.sh
-```
+
+1.  **Navigate to the directory:**
+
+    ```bash
+
+    cd gtsam-vnc
+
+    ```
+
+
+
+2.  **Build the image:**
+
+    You can build it using Docker Compose or directly with Docker.
+
+    ```bash
+
+    # Example using docker build
+
+    docker build -t gtsam-vnc .
+
+    ```
+
+
+
+3.  **Run with Port Forwarding:**
+
+    Map port 5900 to access the VNC server.
+
+    ```bash
+
+    docker run -p 5900:5900 gtsam-vnc
+
+    ```
+
+
+
+4.  **Connect:**
+
+    Use a VNC client to connect to `localhost:5900`.

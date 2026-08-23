@@ -11,8 +11,8 @@ class SfmTrack2d {
   SfmTrack2d();
   SfmTrack2d(const std::vector<gtsam::SfmMeasurement>& measurements);
   size_t numberMeasurements() const;
-  gtsam::SfmMeasurement measurement(size_t idx) const;
-  pair<size_t, size_t> siftIndex(size_t idx) const;
+  const gtsam::SfmMeasurement& measurement(size_t idx) const;
+  const gtsam::SiftIndex& siftIndex(size_t idx) const;
   void addMeasurement(size_t idx, const gtsam::Point2& m);
   bool hasUniqueCameras() const;
   Eigen::MatrixX2d measurementMatrix() const;
@@ -22,7 +22,8 @@ class SfmTrack2d {
 virtual class SfmTrack : gtsam::SfmTrack2d {
   SfmTrack();
   SfmTrack(const gtsam::Point3& pt);
-  const Point3& point3() const;
+  SfmTrack(const gtsam::Point3& pt, float r, float g, float b);
+  const gtsam::Point3& point3() const;
 
   Point3 p;
 
@@ -42,18 +43,19 @@ virtual class SfmTrack : gtsam::SfmTrack2d {
 #include <gtsam/sfm/SfmData.h>
 class SfmData {
   SfmData();
-  static gtsam::SfmData FromBundlerFile(string filename);
-  static gtsam::SfmData FromBalFile(string filename);
+  static gtsam::SfmData FromBundlerFile(const string& filename);
+  static gtsam::SfmData FromBalFile(const string& filename);
 
-  std::vector<gtsam::SfmTrack>& trackList() const;
-  std::vector<gtsam::PinholeCamera<gtsam::Cal3Bundler>>& cameraList() const;
+  const std::vector<gtsam::SfmTrack>& trackList() const;
+  const std::vector<gtsam::PinholeCamera<gtsam::Cal3Bundler>>& cameraList()
+      const;
 
   void addTrack(const gtsam::SfmTrack& t);
   void addCamera(const gtsam::SfmCamera& cam);
   size_t numberTracks() const;
   size_t numberCameras() const;
-  gtsam::SfmTrack& track(size_t idx) const;
-  gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera(size_t idx) const;
+  const gtsam::SfmTrack& track(size_t idx) const;
+  const gtsam::PinholeCamera<gtsam::Cal3Bundler>& camera(size_t idx) const;
 
   gtsam::NonlinearFactorGraph generalSfmFactors(
       const gtsam::SharedNoiseModel& model =
@@ -61,7 +63,8 @@ class SfmData {
   gtsam::NonlinearFactorGraph sfmFactorGraph(
       const gtsam::SharedNoiseModel& model =
           gtsam::noiseModel::Isotropic::Sigma(2, 1.0),
-      size_t fixedCamera = 0, size_t fixedPoint = 0) const;
+      std::optional<size_t> fixedCamera = 0,
+      std::optional<size_t> fixedPoint = 0) const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -70,8 +73,8 @@ class SfmData {
   bool equals(const gtsam::SfmData& sfmData, double tol) const;
 };
 
-gtsam::SfmData readBal(string filename);
-bool writeBAL(string filename, gtsam::SfmData& data);
+gtsam::SfmData readBal(const string& filename);
+bool writeBAL(const string& filename, const gtsam::SfmData& data);
 gtsam::Values initialCamerasEstimate(const gtsam::SfmData& db);
 gtsam::Values initialCamerasAndPointsEstimate(const gtsam::SfmData& db);
 
@@ -105,14 +108,37 @@ virtual class EssentialTransferFactorK : gtsam::NoiseModelFactor {
                            const gtsam::noiseModel::Base* model = nullptr);
 };
 
+#include <gtsam/sfm/SelfCalibrationFactor.h>
+virtual class SelfCalibrationFactor : gtsam::NoiseModelFactor {
+  SelfCalibrationFactor(gtsam::Key fi_key, gtsam::Key fj_key, const gtsam::Matrix3& F,
+               const gtsam::Vector2& pp_i, const gtsam::Vector2& pp_j,
+               const gtsam::noiseModel::Base* model = nullptr);
+};
+
 #include <gtsam/sfm/ShonanFactor.h>
 
 virtual class ShonanFactor3 : gtsam::NoiseModelFactor {
   ShonanFactor3(gtsam::Key key1, gtsam::Key key2, const gtsam::Rot3& R12, size_t p);
   ShonanFactor3(gtsam::Key key1, gtsam::Key key2, const gtsam::Rot3& R12, size_t p,
                 gtsam::noiseModel::Base* model);
-  gtsam::Vector evaluateError(const gtsam::SOn& Q1, const gtsam::SOn& Q2);
+  gtsam::Vector evaluateError(const gtsam::SOn& Q1, const gtsam::SOn& Q2,
+                              gtsam::OptionalMatrixType H1 = nullptr,
+                              gtsam::OptionalMatrixType H2 = nullptr) const;
 };
+
+#include <gtsam/sfm/UnaryMeasurement.h>
+template <T>
+class UnaryMeasurement {
+  UnaryMeasurement(gtsam::Key key, const T& measured,
+                   const gtsam::noiseModel::Base* model);
+  gtsam::Key key() const;
+  const T& measured() const;
+  const std::shared_ptr<gtsam::noiseModel::Base>& noiseModel() const;
+};
+
+typedef gtsam::UnaryMeasurement<gtsam::Pose3> UnaryMeasurementPose3;
+typedef gtsam::UnaryMeasurement<gtsam::Rot3> UnaryMeasurementRot3;
+typedef gtsam::UnaryMeasurement<gtsam::Point3> UnaryMeasurementPoint3;
 
 #include <gtsam/sfm/BinaryMeasurement.h>
 template <T>
@@ -121,8 +147,8 @@ class BinaryMeasurement {
                     const gtsam::noiseModel::Base* model);
   gtsam::Key key1() const;
   gtsam::Key key2() const;
-  T measured() const;
-  gtsam::noiseModel::Base* noiseModel() const;
+  const T& measured() const;
+  const std::shared_ptr<gtsam::noiseModel::Base>& noiseModel() const;
 };
 
 typedef gtsam::BinaryMeasurement<gtsam::Unit3> BinaryMeasurementUnit3;
@@ -153,6 +179,41 @@ class BinaryMeasurementsRot3 {
   void push_back(const gtsam::BinaryMeasurement<gtsam::Rot3>& measurement);
 };
 
+#include <gtsam/sfm/TrajectoryAlignerSim3.h>
+class TrajectoryAlignerSim3 {
+  TrajectoryAlignerSim3(
+      const std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>& aTi,
+      const std::vector<std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>>& bTi_all);
+
+  TrajectoryAlignerSim3(
+      const std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>& aTi,
+      const std::vector<std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>>& bTi_all,
+      const std::vector<gtsam::Similarity3>& bSa_all);
+
+  TrajectoryAlignerSim3(
+    const std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>& aTi,
+    const std::vector<std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>>& bTi_all,
+    const std::vector<gtsam::Similarity3>& bSa_all, const bool use_gnc_optimizer);
+
+  TrajectoryAlignerSim3(    
+    const std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>& aTi,
+    const std::vector<std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>>& bTi_all,
+    const std::vector<gtsam::Similarity3>& bSa_all, const bool use_gnc_optimizer,
+    const std::vector<std::vector<std::pair<gtsam::Point3, gtsam::Point3>>> &overlapping_points);
+
+  TrajectoryAlignerSim3(
+    const std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>& aTi,
+    const std::vector<std::vector<gtsam::UnaryMeasurement<gtsam::Pose3>>>& bTi_all,
+    const std::vector<gtsam::Similarity3>& bSa_all, const bool use_gnc_optimizer,
+    const std::vector<std::vector<std::pair<gtsam::Point3, gtsam::Point3>>> &overlapping_points,
+    const double point3_factor_sigma);
+
+  gtsam::Values solve() const;
+  gtsam::Marginals marginalize(
+    const gtsam::Values& solution, 
+    const gtsam::Ordering::OrderingType ordering_type = gtsam::Ordering::COLAMD) const;
+};
+
 #include <gtsam/slam/dataset.h>
 #include <gtsam/sfm/ShonanAveraging.h>
 
@@ -165,7 +226,7 @@ class ShonanAveragingParameters {
   void setOptimalityThreshold(double value);
   double getOptimalityThreshold() const;
   void setAnchor(size_t index, const gtsam::This::Rot& value);
-  pair<size_t, gtsam::This::Rot> getAnchor();
+  pair<size_t, gtsam::This::Rot> getAnchor() const;
   void setAnchorWeight(double value);
   double getAnchorWeight() const;
   void setKarcherWeight(double value);
@@ -189,8 +250,8 @@ class ShonanAveraging2 {
   // Query properties
   size_t nrUnknowns() const;
   size_t numberMeasurements() const;
-  gtsam::Rot2 measured(size_t i);
-  gtsam::KeyVector keys(size_t i);
+  const gtsam::Rot2& measured(size_t k) const;
+  const gtsam::KeyVector& keys(size_t k) const;
 
   // gtsam::Matrix API (advanced use, debugging)
   gtsam::Matrix denseD() const;
@@ -200,9 +261,13 @@ class ShonanAveraging2 {
   gtsam::Matrix computeLambda_(const gtsam::Values& values) const;
   gtsam::Matrix computeA_(const gtsam::Values& values) const;
   double computeMinEigenValue(const gtsam::Values& values) const;
+  double computeMinEigenValue(const gtsam::Values& values,
+                              gtsam::Vector& minEigenVector) const;
   gtsam::Values initializeWithDescent(size_t p, const gtsam::Values& values,
                                       const gtsam::Vector& minEigenVector,
-                                      double minEigenValue) const;
+                                      double minEigenValue,
+                                      double gradienTolerance = 1e-2,
+                                      double preconditionedGradNormTolerance = 1e-4) const;
 
   // Advanced API
   gtsam::NonlinearFactorGraph buildGraphAt(size_t p) const;
@@ -211,7 +276,7 @@ class ShonanAveraging2 {
   pair<double, gtsam::Vector> computeMinEigenVector(const gtsam::Values& values) const;
   bool checkOptimality(const gtsam::Values& values) const;
   gtsam::LevenbergMarquardtOptimizer* createOptimizerAt(
-      size_t p, const gtsam::Values& initial);
+      size_t p, const gtsam::Values& initial) const;
   // gtsam::Values tryOptimizingAt(size_t p) const;
   gtsam::Values tryOptimizingAt(size_t p, const gtsam::Values& initial) const;
   gtsam::Values projectFrom(size_t p, const gtsam::Values& values) const;
@@ -222,6 +287,7 @@ class ShonanAveraging2 {
   gtsam::Values initializeRandomly() const;
   pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p,
                                   size_t max_p) const;
+  pair<gtsam::Values, double> run(size_t min_p, size_t max_p) const;
 };
 
 class ShonanAveraging3 {
@@ -239,8 +305,8 @@ class ShonanAveraging3 {
   // Query properties
   size_t nrUnknowns() const;
   size_t numberMeasurements() const;
-  gtsam::Rot3 measured(size_t i);
-  gtsam::KeyVector keys(size_t i);
+  const gtsam::Rot3& measured(size_t k) const;
+  const gtsam::KeyVector& keys(size_t k) const;
 
   // gtsam::Matrix API (advanced use, debugging)
   gtsam::Matrix denseD() const;
@@ -250,9 +316,13 @@ class ShonanAveraging3 {
   gtsam::Matrix computeLambda_(const gtsam::Values& values) const;
   gtsam::Matrix computeA_(const gtsam::Values& values) const;
   double computeMinEigenValue(const gtsam::Values& values) const;
+  double computeMinEigenValue(const gtsam::Values& values,
+                              gtsam::Vector& minEigenVector) const;
   gtsam::Values initializeWithDescent(size_t p, const gtsam::Values& values,
                                       const gtsam::Vector& minEigenVector,
-                                      double minEigenValue) const;
+                                      double minEigenValue,
+                                      double gradienTolerance = 1e-2,
+                                      double preconditionedGradNormTolerance = 1e-4) const;
 
   // Advanced API
   gtsam::NonlinearFactorGraph buildGraphAt(size_t p) const;
@@ -261,7 +331,7 @@ class ShonanAveraging3 {
   pair<double, gtsam::Vector> computeMinEigenVector(const gtsam::Values& values) const;
   bool checkOptimality(const gtsam::Values& values) const;
   gtsam::LevenbergMarquardtOptimizer* createOptimizerAt(
-      size_t p, const gtsam::Values& initial);
+      size_t p, const gtsam::Values& initial) const;
   // gtsam::Values tryOptimizingAt(size_t p) const;
   gtsam::Values tryOptimizingAt(size_t p, const gtsam::Values& initial) const;
   gtsam::Values projectFrom(size_t p, const gtsam::Values& values) const;
@@ -272,6 +342,7 @@ class ShonanAveraging3 {
   gtsam::Values initializeRandomly() const;
   pair<gtsam::Values, double> run(const gtsam::Values& initial, size_t min_p,
                                   size_t max_p) const;
+  pair<gtsam::Values, double> run(size_t min_p, size_t max_p) const;
 };
 
 #include <gtsam/sfm/MFAS.h>
@@ -295,36 +366,69 @@ class MFAS {
   gtsam::KeyVector computeOrdering() const;
 };
 
+#include <gtsam/sfm/LocationRecovery.h>
+
+class LocationRecovery {
+  LocationRecovery(const gtsam::LevenbergMarquardtParams& lmParams);
+  LocationRecovery();
+  gtsam::NonlinearFactorGraph buildGraph(
+      const gtsam::LocationRecovery::DirectionEdges& edges,
+      bool bilinear = true) const;
+  void addAnchorPrior(gtsam::Key anchorKey,
+                      gtsam::NonlinearFactorGraph @graph,
+                      const gtsam::SharedNoiseModel& priorNoiseModel =
+                          gtsam::noiseModel::Isotropic::Sigma(3, 0.01)) const;
+  gtsam::Values initializeRandomly(
+      const std::set<gtsam::Key>& keys, size_t numEdges, bool bilinear,
+      const gtsam::Values& initialValues = gtsam::Values()) const;
+};
+
 #include <gtsam/sfm/TranslationRecovery.h>
 
-class TranslationRecovery {
+class TranslationRecovery : gtsam::LocationRecovery {
   TranslationRecovery(const gtsam::LevenbergMarquardtParams& lmParams,
                       const bool use_bilinear_translation_factor);
   TranslationRecovery(const gtsam::LevenbergMarquardtParams& lmParams);
   TranslationRecovery();  // default params.
-  void addPrior(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
+  void addPrior(
+                const std::vector<gtsam::BinaryMeasurement<gtsam::Unit3>>&
+                    relativeTranslations,
                 const double scale,
-                const gtsam::BinaryMeasurementsPoint3& betweenTranslations,
+                const std::vector<gtsam::BinaryMeasurement<gtsam::Point3>>&
+                    betweenTranslations,
                 gtsam::NonlinearFactorGraph @graph,
-                const gtsam::SharedNoiseModel& priorNoiseModel) const;
-  void addPrior(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
-                const double scale,
-                const gtsam::BinaryMeasurementsPoint3& betweenTranslations,
-                gtsam::NonlinearFactorGraph @graph) const;
+                const gtsam::SharedNoiseModel& priorNoiseModel =
+                    gtsam::noiseModel::Isotropic::Sigma(3, 0.01)) const;
   gtsam::NonlinearFactorGraph buildGraph(
-      const gtsam::BinaryMeasurementsUnit3& relativeTranslations) const;
-  gtsam::Values run(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
-                    const double scale,
-                    const gtsam::BinaryMeasurementsPoint3& betweenTranslations,
-                    const gtsam::Values& initialValues) const;
-  // default random initial values
+      const std::vector<gtsam::BinaryMeasurement<gtsam::Unit3>>&
+          relativeTranslations) const;
   gtsam::Values run(
-      const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
-      const double scale,
-      const gtsam::BinaryMeasurementsPoint3& betweenTranslations) const;
-  // default scale = 1.0, empty betweenTranslations
-  gtsam::Values run(const gtsam::BinaryMeasurementsUnit3& relativeTranslations,
-                    const double scale = 1.0) const;
+      const gtsam::TranslationRecovery::TranslationEdges&
+          relativeTranslations,
+      const double scale = 1.0,
+      const std::vector<gtsam::BinaryMeasurement<gtsam::Point3>>&
+          betweenTranslations =
+              std::vector<gtsam::BinaryMeasurement<gtsam::Point3>>(),
+      const gtsam::Values& initialValues = gtsam::Values()) const;
+};
+
+#include <gtsam/sfm/GlobalPositioner.h>
+
+class GlobalPositioner : gtsam::LocationRecovery {
+  GlobalPositioner(const gtsam::LevenbergMarquardtParams& lmParams);
+  GlobalPositioner();
+  gtsam::Values initializeRandomly(
+      const std::set<gtsam::Key>& cameraKeys,
+      const std::set<gtsam::Key>& landmarkKeys,
+      const gtsam::GlobalPositioner::CameraPointDirections&
+          cameraPointDirections,
+      const gtsam::Values& initialValues = gtsam::Values()) const;
+  gtsam::Values run(
+      const gtsam::GlobalPositioner::CameraPointDirections&
+          cameraPointDirections,
+      const std::set<gtsam::Key>& cameraKeys,
+      const std::set<gtsam::Key>& landmarkKeys, gtsam::Key anchorCameraKey,
+      const gtsam::Values& initialValues = gtsam::Values()) const;
 };
 
 namespace gtsfm {

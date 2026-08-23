@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+#include <gtsam/nonlinear/NonlinearMultifrontalSolver.h>
 #include <gtsam/nonlinear/internal/NonlinearOptimizerState.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
@@ -46,12 +47,18 @@ GaussianFactorGraph::shared_ptr GaussNewtonOptimizer::iterate() {
 
   // Linearize graph
   gttic(GaussNewtonOptimizer_Linearize);
-  GaussianFactorGraph::shared_ptr linear = graph_.linearize(state_->values);
+  GaussianFactorGraph::shared_ptr linear = graph().linearize(state_->values);
   gttoc(GaussNewtonOptimizer_Linearize);
 
-  // Solve Factor Graph
   gttic(GaussNewtonOptimizer_Solve);
-  const VectorValues delta = solve(*linear, params_);
+  VectorValues delta;
+  if (ensureMultifrontalSolver(params_, state_->values)) {
+    nonlinearMultifrontalSolver_->load(*linear);
+    nonlinearMultifrontalSolver_->eliminateInPlace();
+    delta = nonlinearMultifrontalSolver_->updateSolution();
+  } else {
+    delta = solve(*linear, params_);
+  }
   gttoc(GaussNewtonOptimizer_Solve);
 
   // Maybe show output
@@ -60,7 +67,7 @@ GaussianFactorGraph::shared_ptr GaussNewtonOptimizer::iterate() {
 
   // Create new state with new values and new error
   Values newValues = state_->values.retract(delta);
-  state_.reset(new State(std::move(newValues), graph_.error(newValues), state_->iterations + 1));
+  state_.reset(new State(std::move(newValues), graph().error(newValues), state_->iterations + 1));
 
   return linear;
 }

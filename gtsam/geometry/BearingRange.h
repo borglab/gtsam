@@ -19,8 +19,9 @@
 #pragma once
 
 #include <gtsam/base/Manifold.h>
-#include <gtsam/base/Testable.h>
 #include <gtsam/base/OptionalJacobian.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/types.h>
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #endif
@@ -58,6 +59,10 @@ public:
   constexpr static const size_t dimB = traits<B>::dimension;
   constexpr static const size_t dimR = traits<R>::dimension;
   constexpr static const size_t dimension = dimB + dimR;
+  using OptionalJacobian1 =
+      OptionalJacobian<dimension, traits<A1>::dimension>;
+  using OptionalJacobian2 =
+      OptionalJacobian<dimension, traits<A2>::dimension>;
 
   /// @name Standard Constructors
   /// @{
@@ -76,10 +81,9 @@ public:
   const R& range() const { return range_; }
 
   /// Prediction function that stacks measurements
-  static BearingRange Measure(
-    const A1& a1, const A2& a2,
-    OptionalJacobian<dimension, traits<A1>::dimension> H1 = {},
-    OptionalJacobian<dimension, traits<A2>::dimension> H2 = {}) {
+  static BearingRange Measure(const A1& a1, const A2& a2,
+                              OptionalJacobian1 H1 = {},
+                              OptionalJacobian2 H2 = {}) {
     typename MakeJacobian<B, A1>::type HB1;
     typename MakeJacobian<B, A2>::type HB2;
     typename MakeJacobian<R, A1>::type HR1;
@@ -162,11 +166,6 @@ private:
 #endif
 
   /// @}
-
-  // Alignment, see https://eigen.tuxfamily.org/dox/group__TopicStructHavingEigenMembers.html
-  inline constexpr static auto NeedsToAlign = (sizeof(B) % 16) == 0 || (sizeof(R) % 16) == 0;
-public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW_IF(NeedsToAlign)
 };
 
 // Declare this to be both Testable and a Manifold

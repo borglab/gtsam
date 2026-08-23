@@ -12,23 +12,27 @@
 /**
  * @file testGraph.cpp
  * @date Jan 12, 2010
- * @author nikai
+ * @author Kai Ni
  * @brief unit test for graph-inl.h
  */
 
-#include <gtsam/slam/BetweenFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/inference/graph.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/geometry/Pose2.h>
+// GCC reports false positives in Boost.Graph adjacency-list copies.
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
+#endif
 
 #include <CppUnitLite/TestHarness.h>
-
-#include <memory>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/inference/Symbol.h>
+#include <gtsam/inference/graph.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/slam/BetweenFactor.h>
 
 #include <iostream>
+#include <memory>
 
 using namespace std;
 using namespace gtsam;

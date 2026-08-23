@@ -16,14 +16,14 @@
  * @date Feb 7, 2012
  */
 
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/HessianFactor.h>
-#include <gtsam/linear/GaussianISAM.h>
-#include <gtsam/linear/NoiseModel.h>
-
-#include <gtsam/base/serializationTestHelpers.h>
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/serializationTestHelpers.h>
+#include <gtsam/linear/GaussianISAM.h>
+#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/NoiseModel.h>
+#include <gtsam/linear/VectorValues.h>
 
 using namespace std;
 using namespace gtsam;
@@ -41,6 +41,10 @@ BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Diagonal, "gtsam_noiseModel_Diagonal"
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Gaussian, "gtsam_noiseModel_Gaussian")
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Unit, "gtsam_noiseModel_Unit")
 BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::Isotropic, "gtsam_noiseModel_Isotropic")
+
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::Base, "gtsam_noiseModel_mEstimator_Base")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::GemanMcClure, "gtsam_noiseModel_mEstimator_GemanMcClure")
+BOOST_CLASS_EXPORT_GUID(gtsam::noiseModel::mEstimator::TruncatedLeastSquares, "gtsam_noiseModel_mEstimator_TruncatedLeastSquares")
 
 BOOST_CLASS_EXPORT_GUID(gtsam::SharedNoiseModel, "gtsam_SharedNoiseModel")
 BOOST_CLASS_EXPORT_GUID(gtsam::SharedDiagonal, "gtsam_SharedDiagonal")
@@ -124,6 +128,70 @@ TEST (Serialization, SharedDiagonal_noiseModels) {
   EXPECT(equalsDereferencedXML<SharedDiagonal>(constrained3));
 }
 
+/* ************************************************************************* */
+TEST(Serialization, graduatedLossFunctions) {
+  using noiseModel::mEstimator::GemanMcClure;
+  using noiseModel::mEstimator::TruncatedLeastSquares;
+
+  const double k = 2.5;
+  std::vector<noiseModel::mEstimator::Base::shared_ptr> losses{
+      GemanMcClure::Create(k, GemanMcClure::GradScheme::STANDARD),
+      GemanMcClure::Create(k, GemanMcClure::GradScheme::SCALE_INVARIANT),
+      TruncatedLeastSquares::Create(
+          k, TruncatedLeastSquares::GradScheme::STANDARD),
+      TruncatedLeastSquares::Create(
+          k, TruncatedLeastSquares::GradScheme::GNC_LINEAR),
+      TruncatedLeastSquares::Create(
+          k, TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR)};
+
+  for (const auto& loss : losses) {
+    EXPECT(equalsDereferenced<noiseModel::mEstimator::Base::shared_ptr>(loss));
+    EXPECT(
+        equalsDereferencedXML<noiseModel::mEstimator::Base::shared_ptr>(loss));
+    EXPECT(equalsDereferencedBinary<noiseModel::mEstimator::Base::shared_ptr>(
+        loss));
+  }
+
+  // Also verify the scheme survives on the concrete pointer types.
+  auto gmc = GemanMcClure::Create(k, GemanMcClure::GradScheme::SCALE_INVARIANT);
+  EXPECT(equalsDereferenced<GemanMcClure::shared_ptr>(gmc));
+  EXPECT(equalsDereferencedXML<GemanMcClure::shared_ptr>(gmc));
+  EXPECT(equalsDereferencedBinary<GemanMcClure::shared_ptr>(gmc));
+
+  auto tls = TruncatedLeastSquares::Create(
+      k, TruncatedLeastSquares::GradScheme::GNC_LINEAR);
+  EXPECT(equalsDereferenced<TruncatedLeastSquares::shared_ptr>(tls));
+  EXPECT(equalsDereferencedXML<TruncatedLeastSquares::shared_ptr>(tls));
+  EXPECT(equalsDereferencedBinary<TruncatedLeastSquares::shared_ptr>(tls));
+}
+
+/* ************************************************************************* */
+// equals() must distinguish two losses that differ only in graduation scheme.
+TEST(Serialization, graduationSchemeInequality) {
+  using noiseModel::mEstimator::GemanMcClure;
+  using noiseModel::mEstimator::TruncatedLeastSquares;
+
+  const double k = 2.5;
+  auto gmcStandard =
+      GemanMcClure::Create(k, GemanMcClure::GradScheme::STANDARD);
+  auto gmcScaleInvariant =
+      GemanMcClure::Create(k, GemanMcClure::GradScheme::SCALE_INVARIANT);
+  EXPECT(gmcStandard->equals(*GemanMcClure::Create(k)));
+  EXPECT(!gmcStandard->equals(*gmcScaleInvariant));
+  EXPECT(!gmcScaleInvariant->equals(*gmcStandard));
+
+  auto tlsStandard = TruncatedLeastSquares::Create(
+      k, TruncatedLeastSquares::GradScheme::STANDARD);
+  auto tlsGncLinear = TruncatedLeastSquares::Create(
+      k, TruncatedLeastSquares::GradScheme::GNC_LINEAR);
+  auto tlsGncSuperlinear = TruncatedLeastSquares::Create(
+      k, TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR);
+  EXPECT(tlsStandard->equals(*TruncatedLeastSquares::Create(k)));
+  EXPECT(!tlsStandard->equals(*tlsGncLinear));
+  EXPECT(!tlsGncLinear->equals(*tlsGncSuperlinear));
+  EXPECT(!tlsGncSuperlinear->equals(*tlsStandard));
+}
+
 /* Create GUIDs for factors */
 /* ************************************************************************* */
 BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "gtsam::JacobianFactor")
@@ -133,7 +201,7 @@ BOOST_CLASS_EXPORT_GUID(gtsam::GaussianConditional , "gtsam::GaussianConditional
 /* ************************************************************************* */
 TEST (Serialization, linear_factors) {
   VectorValues values;
-  values.insert(0, (Vector(1) << 1.0).finished());
+  values.insert(0, Vector{{1.0}});
   values.insert(1, Vector2(2.0,3.0));
   values.insert(2, Vector2(4.0,5.0));
   EXPECT(equalsObj<VectorValues>(values));
@@ -157,10 +225,10 @@ TEST (Serialization, linear_factors) {
 
 /* ************************************************************************* */
 TEST (Serialization, gaussian_conditional) {
-  Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
-  Matrix A2 = (Matrix(2, 2) << 6., 0.2, 8., 0.4).finished();
-  Matrix R = (Matrix(2, 2) << 0.1, 0.3, 0.0, 0.34).finished();
-  Vector d(2); d << 0.2, 0.5;
+  Matrix A1{{1., 2.}, {3., 4.}};
+  Matrix A2{{6., 0.2}, {8., 0.4}};
+  Matrix R{{0.1, 0.3}, {0.0, 0.34}};
+  Vector d{{0.2, 0.5}};
   GaussianConditional cg(0, d, R, 1, A1, 2, A2);
 
   EXPECT(equalsObj(cg));
@@ -172,10 +240,10 @@ TEST (Serialization, gaussian_conditional) {
 TEST (Serialization, gaussian_factor_graph) {
   GaussianFactorGraph graph;
   {
-    Matrix A1 = (Matrix(2, 2) << 1., 2., 3., 4.).finished();
-    Matrix A2 = (Matrix(2, 2) << 6., 0.2, 8., 0.4).finished();
-    Matrix R = (Matrix(2, 2) << 0.1, 0.3, 0.0, 0.34).finished();
-    Vector d(2); d << 0.2, 0.5;
+    Matrix A1{{1., 2.}, {3., 4.}};
+    Matrix A2{{6., 0.2}, {8., 0.4}};
+    Matrix R{{0.1, 0.3}, {0.0, 0.34}};
+    Vector d{{0.2, 0.5}};
     GaussianConditional cg(0, d, R, 1, A1, 2, A2);
     graph.push_back(cg);
   }
@@ -200,21 +268,21 @@ TEST(Serialization, gaussian_bayes_net) {
   // Create an arbitrary Bayes Net
   GaussianBayesNet gbn;
   gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      0, Vector2(1.0, 2.0), (Matrix2() << 3.0, 4.0, 0.0, 6.0).finished(), 3,
-      (Matrix2() << 7.0, 8.0, 9.0, 10.0).finished(), 4,
-      (Matrix2() << 11.0, 12.0, 13.0, 14.0).finished()));
+      0, Vector2(1.0, 2.0), Matrix2{{3.0, 4.0}, {0.0, 6.0}}, 3,
+      Matrix2{{7.0, 8.0}, {9.0, 10.0}}, 4,
+      Matrix2{{11.0, 12.0}, {13.0, 14.0}}));
   gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      1, Vector2(15.0, 16.0), (Matrix2() << 17.0, 18.0, 0.0, 20.0).finished(),
-      2, (Matrix2() << 21.0, 22.0, 23.0, 24.0).finished(), 4,
-      (Matrix2() << 25.0, 26.0, 27.0, 28.0).finished()));
+      1, Vector2(15.0, 16.0), Matrix2{{17.0, 18.0}, {0.0, 20.0}}, 2,
+      Matrix2{{21.0, 22.0}, {23.0, 24.0}}, 4,
+      Matrix2{{25.0, 26.0}, {27.0, 28.0}}));
   gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      2, Vector2(29.0, 30.0), (Matrix2() << 31.0, 32.0, 0.0, 34.0).finished(),
-      3, (Matrix2() << 35.0, 36.0, 37.0, 38.0).finished()));
+      2, Vector2(29.0, 30.0), Matrix2{{31.0, 32.0}, {0.0, 34.0}}, 3,
+      Matrix2{{35.0, 36.0}, {37.0, 38.0}}));
   gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      3, Vector2(39.0, 40.0), (Matrix2() << 41.0, 42.0, 0.0, 44.0).finished(),
-      4, (Matrix2() << 45.0, 46.0, 47.0, 48.0).finished()));
+      3, Vector2(39.0, 40.0), Matrix2{{41.0, 42.0}, {0.0, 44.0}}, 4,
+      Matrix2{{45.0, 46.0}, {47.0, 48.0}}));
   gbn += GaussianConditional::shared_ptr(new GaussianConditional(
-      4, Vector2(49.0, 50.0), (Matrix2() << 51.0, 52.0, 0.0, 54.0).finished()));
+      4, Vector2(49.0, 50.0), Matrix2{{51.0, 52.0}, {0.0, 54.0}}));
 
   std::string serialized = serialize(gbn);
   GaussianBayesNet actual;
@@ -228,10 +296,14 @@ TEST (Serialization, gaussian_bayes_tree) {
   const Ordering chainOrdering {x2, x1, x3, x4};
   const SharedDiagonal chainNoise = noiseModel::Isotropic::Sigma(1, 0.5);
   const GaussianFactorGraph chain = {
-    std::make_shared<JacobianFactor>(x2, (Matrix(1, 1) << 1.).finished(), x1, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise),
-    std::make_shared<JacobianFactor>(x2, (Matrix(1, 1) << 1.).finished(), x3, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise),
-    std::make_shared<JacobianFactor>(x3, (Matrix(1, 1) << 1.).finished(), x4, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise),
-    std::make_shared<JacobianFactor>(x4, (Matrix(1, 1) << 1.).finished(), (Vector(1) << 1.).finished(),  chainNoise)};
+      std::make_shared<JacobianFactor>(x2, Matrix{{1.}}, x1, Matrix{{1.}},
+                                       Vector{{1.}}, chainNoise),
+      std::make_shared<JacobianFactor>(x2, Matrix{{1.}}, x3, Matrix{{1.}},
+                                       Vector{{1.}}, chainNoise),
+      std::make_shared<JacobianFactor>(x3, Matrix{{1.}}, x4, Matrix{{1.}},
+                                       Vector{{1.}}, chainNoise),
+      std::make_shared<JacobianFactor>(x4, Matrix{{1.}}, Vector{{1.}},
+                                       chainNoise)};
 
   GaussianBayesTree init = *chain.eliminateMultifrontal(chainOrdering);
   GaussianBayesTree expected = *chain.eliminateMultifrontal(chainOrdering);
@@ -241,6 +313,115 @@ TEST (Serialization, gaussian_bayes_tree) {
   deserialize(serialized, actual);
   EXPECT(assert_equal(expected, actual));
 }
+
+/* ************************************************************************* */
+namespace bayes_tree_serialization {
+
+using Clique = GaussianBayesTreeClique;
+
+Clique::shared_ptr makeRoot(Key key) {
+  return std::make_shared<Clique>(std::make_shared<GaussianConditional>(
+      key, Vector{{0.0}}, Matrix{{1.0}}));
+}
+
+Clique::shared_ptr makeChild(Key key, Key parent) {
+  return std::make_shared<Clique>(std::make_shared<GaussianConditional>(
+      key, Vector{{0.0}}, Matrix{{1.0}}, parent, Matrix{{-1.0}}));
+}
+
+Key frontal(const Clique::shared_ptr& clique) {
+  return clique->conditional()->frontals().front();
+}
+
+/** Serializes the recursive Bayes tree representation used by version 0. */
+struct LegacyGaussianBayesTree {
+  GaussianBayesTree::Nodes nodes;
+  GaussianBayesTree::Roots roots;
+
+  explicit LegacyGaussianBayesTree(const GaussianBayesTree& tree)
+      : nodes(tree.nodes()), roots(tree.roots()) {}
+
+  template <class Archive>
+  void serialize(Archive& archive, const unsigned int /*version*/) {
+    archive & boost::serialization::make_nvp("nodes_", nodes);
+    archive & boost::serialization::make_nvp("roots_", roots);
+  }
+};
+
+// Verifies that a deep chain round-trips without recursive serialization.
+TEST(Serialization, LargeGaussianBayesTree) {
+  constexpr size_t kCliqueCount = 10000;
+  GaussianBayesTree input;
+  Clique::shared_ptr parent = makeRoot(kCliqueCount - 1);
+  input.insertRoot(parent);
+  for (size_t key = kCliqueCount - 1; key-- > 0;) {
+    Clique::shared_ptr child = makeChild(key, key + 1);
+    input.addClique(child, parent);
+    parent = child;
+  }
+
+  GaussianBayesTree actual;
+  roundtripBinary(input, actual);
+
+  EXPECT_LONGS_EQUAL(kCliqueCount, actual.nodes().size());
+  EXPECT_LONGS_EQUAL(1, actual.roots().size());
+  Clique::shared_ptr previous, clique = actual.roots().front();
+  for (size_t key = kCliqueCount; key-- > 0;) {
+    EXPECT_LONGS_EQUAL(key, frontal(clique));
+    EXPECT(actual[key] == clique);
+    EXPECT(clique->parent() == previous);
+    EXPECT_LONGS_EQUAL(key == 0 ? 0 : 1, clique->nrChildren());
+    previous = clique;
+    if (key != 0) clique = clique->children.front();
+  }
+}
+
+// Verifies that root and child ordering survive a flat round-trip.
+TEST(Serialization, GaussianBayesTreeStructure) {
+  GaussianBayesTree input;
+  Clique::shared_ptr firstRoot = makeRoot(10), secondRoot = makeRoot(20);
+  input.insertRoot(firstRoot);
+  input.addClique(makeChild(11, 10), firstRoot);
+  input.addClique(makeChild(12, 10), firstRoot);
+  input.insertRoot(secondRoot);
+  input.addClique(makeChild(21, 20), secondRoot);
+
+  GaussianBayesTree actual;
+  roundtripBinary(input, actual);
+
+  EXPECT_LONGS_EQUAL(2, actual.roots().size());
+  EXPECT_LONGS_EQUAL(10, frontal(actual.roots()[0]));
+  EXPECT_LONGS_EQUAL(20, frontal(actual.roots()[1]));
+  EXPECT_LONGS_EQUAL(11, frontal(actual.roots()[0]->children[0]));
+  EXPECT_LONGS_EQUAL(12, frontal(actual.roots()[0]->children[1]));
+  EXPECT_LONGS_EQUAL(21, frontal(actual.roots()[1]->children[0]));
+}
+
+// Verifies loading the recursive format written before BayesTree version 1.
+TEST(Serialization, LegacyGaussianBayesTree) {
+  GaussianBayesTree input;
+  input.insertRoot(makeRoot(7));
+
+  LegacyGaussianBayesTree legacy(input);
+  stringstream stream;
+  {
+    boost::archive::text_oarchive archive(stream);
+    archive << legacy;
+  }
+
+  GaussianBayesTree actual;
+  {
+    boost::archive::text_iarchive archive(stream);
+    archive >> actual;
+  }
+
+  EXPECT_LONGS_EQUAL(1, actual.nodes().size());
+  EXPECT_LONGS_EQUAL(1, actual.roots().size());
+  EXPECT_LONGS_EQUAL(7, frontal(actual.roots().front()));
+}
+
+}  // namespace bayes_tree_serialization
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

@@ -54,7 +54,7 @@ TEST(testNonlinearISAM, markov_chain ) {
     Values new_init;
 
     cur_pose = cur_pose.compose(z);
-    new_init.insert(i, cur_pose.retract(sampler.sample()));
+    new_init.insert(i, sampler.perturb(cur_pose));
     expected.insert(i, cur_pose);
     isamChol.update(new_factors, new_init);
     isamQR.update(new_factors, new_init);
@@ -110,7 +110,7 @@ TEST(testNonlinearISAM, markov_chain_with_disconnects ) {
     Values new_init;
 
     cur_pose = cur_pose.compose(z);
-    new_init.insert(i, cur_pose.retract(sampler.sample()));
+    new_init.insert(i, sampler.perturb(cur_pose));
     expected.insert(i, cur_pose);
 
     // Add a floating landmark constellation
@@ -187,7 +187,7 @@ TEST(testNonlinearISAM, markov_chain_with_reconnect ) {
     Values new_init;
 
     cur_pose = cur_pose.compose(z);
-    new_init.insert(i, cur_pose.retract(sampler.sample()));
+    new_init.insert(i, sampler.perturb(cur_pose));
     expected.insert(i, cur_pose);
 
     // Add a floating landmark constellation

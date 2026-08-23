@@ -28,7 +28,7 @@ The core operations for a manifold are:
 
 These operations must be inverses of each other: `p.retract(p.localCoordinates(q))` should be equal to `q`.
 
-For a detailed guide on creating a new `Manifold` type, see {doc}`../gtsam/base/doc/Manifold.md`.
+For a detailed guide on creating a new `Manifold` type, see [Manifold](../gtsam/base/doc/Manifold.md).
 
 ## Group
 
@@ -38,7 +38,7 @@ Key operations are `compose`, `inverse`, and `between`. GTSAM distinguishes betw
 *   **Multiplicative Groups**: Use `operator*` (e.g., rotations, poses).
 *   **Additive Groups**: Use `operator+` (e.g., vectors).
 
-For a detailed guide on creating a `Group` type, see {doc}`../gtsam/base/doc/Group.md`.
+For a detailed guide on creating a `Group` type, see [Group](../gtsam/base/doc/Group.md).
 
 ## Lie Group
 
@@ -48,14 +48,14 @@ Lie groups have a special identity element, which allows for defining global `Ex
 
 Most Lie groups in GTSAM are also **Matrix Lie Groups**, which have an underlying matrix representation. These require additional Lie algebra operations like `Hat` and `Vee`.
 
-*   For a guide on creating a `LieGroup`, see {doc}`../gtsam/base/doc/LieGroup.md`.
-*   For matrix Lie groups, also see {doc}`../gtsam/base/doc/MatrixLieGroup.md`.
+*   For a guide on creating a `LieGroup`, see [LieGroup](../gtsam/base/doc/LieGroup.md).
+*   For matrix Lie groups, also see [MatrixLieGroup](../gtsam/base/doc/MatrixLieGroup.md).
 
 ## Vector Space
 
 A `VectorSpace` is a specialized `AdditiveGroup` that also supports scalar multiplication, a dot product, and the calculation of a norm. This concept should be satisfied by types that behave like mathematical vectors. In GTSAM, vector spaces are the foundation for tangent spaces on manifolds.
 
-For a detailed guide, see {doc}`../gtsam/base/doc/VectorSpace.md`.
+For a detailed guide, see [VectorSpace](../gtsam/base/doc/VectorSpace.md).
 
 ## Overview
 

@@ -28,8 +28,8 @@ namespace gtsam {
  *    s.t.     h(X) = 0
  *             g(X) <= 0
  * where X represents the variables, 0.5||f(X)||^2 represents the quadratic cost
- * functions, h(X)=0 represents the nonlinear equality constraints, g(x)<=0 represents the
- * inequality constraints.
+ * functions, h(X)=0 represents the nonlinear equality constraints, g(x)<=0
+ * represents the inequality constraints.
  */
 class GTSAM_EXPORT ConstrainedOptProblem {
  public:
@@ -37,9 +37,10 @@ class GTSAM_EXPORT ConstrainedOptProblem {
   typedef std::shared_ptr<This> shared_ptr;
 
  protected:
-  NonlinearFactorGraph costs_;                    // cost function, ||f(X)||^2
-  NonlinearEqualityConstraints eqConstraints_;    // equality constraints, h(X)=0
-  NonlinearInequalityConstraints ineqConstraints_;  // inequality constraints, g(X)<=0
+  NonlinearFactorGraph costs_;                  // cost function, ||f(X)||^2
+  NonlinearEqualityConstraints eqConstraints_;  // equality constraints, h(X)=0
+  NonlinearInequalityConstraints
+      ineqConstraints_;  // inequality constraints, g(X)<=0
 
  public:
   /** Default constructor. */
@@ -57,16 +58,22 @@ class GTSAM_EXPORT ConstrainedOptProblem {
   static ConstrainedOptProblem EqConstrainedOptProblem(
       const NonlinearFactorGraph& costs,
       const NonlinearEqualityConstraints& eqConstraints) {
-    return ConstrainedOptProblem(costs, eqConstraints, NonlinearInequalityConstraints());
+    return ConstrainedOptProblem(costs, eqConstraints,
+                                 NonlinearInequalityConstraints());
   }
 
   /** Member variable access functions. */
   const NonlinearFactorGraph& costs() const { return costs_; }
-  const NonlinearEqualityConstraints& eConstraints() const { return eqConstraints_; }
-  const NonlinearInequalityConstraints& iConstraints() const { return ineqConstraints_; }
+  const NonlinearEqualityConstraints& eConstraints() const {
+    return eqConstraints_;
+  }
+  const NonlinearInequalityConstraints& iConstraints() const {
+    return ineqConstraints_;
+  }
 
   /** Evaluate cost and constraint violations.
-   * Return a tuple representing (cost, e-constraint violation, i-constraint violation).
+   * Return a tuple representing (cost, e-constraint violation, i-constraint
+   * violation).
    */
   std::tuple<double, double, double> evaluate(const Values& values) const;
 

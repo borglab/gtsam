@@ -125,12 +125,12 @@ static double igamc_series(double, double);
 static double asymptotic_series(double, double, int);
 
 
-double igam(double a, double x)
+double gtsam_cephes_igam(double a, double x)
 {
     double absxma_a;
 
     if (x < 0 || a < 0) {
-        sf_error("gammainc", SF_ERROR_DOMAIN, NULL);
+        gtsam_cephes_sf_error("gammainc", SF_ERROR_DOMAIN, NULL);
         return NAN;
     } else if (a == 0) {
         if (x > 0) {
@@ -159,19 +159,19 @@ double igam(double a, double x)
     }
 
     if ((x > 1.0) && (x > a)) {
-	return (1.0 - igamc(a, x));
+	return (1.0 - gtsam_cephes_igamc(a, x));
     }
 
     return igam_series(a, x);
 }
 
 
-double igamc(double a, double x)
+double gtsam_cephes_igamc(double a, double x)
 {
     double absxma_a;
 
     if (x < 0 || a < 0) {
-	sf_error("gammaincc", SF_ERROR_DOMAIN, NULL);
+	gtsam_cephes_sf_error("gammaincc", SF_ERROR_DOMAIN, NULL);
 	return NAN;
     } else if (a == 0) {
         if (x > 0) {
@@ -228,27 +228,27 @@ double igamc(double a, double x)
  * corrected from (15) and (16) in [2] by replacing exp(x - a) with
  * exp(a - x).
  */
-double igam_fac(double a, double x)
+double gtsam_cephes_igam_fac(double a, double x)
 {
     double ax, fac, res, num;
 
     if (fabs(a - x) > 0.4 * fabs(a)) {
-	ax = a * log(x) - x - lgam(a);
+	ax = a * log(x) - x - gtsam_cephes_lgam(a);
 	if (ax < -MAXLOG) {
-	    sf_error("igam", SF_ERROR_UNDERFLOW, NULL);
+	    gtsam_cephes_sf_error("igam", SF_ERROR_UNDERFLOW, NULL);
 	    return 0.0;
 	}
 	return exp(ax);
     }
 
     fac = a + lanczos_g - 0.5;
-    res = sqrt(fac / exp(1)) / lanczos_sum_expg_scaled(a);
+    res = sqrt(fac / exp(1)) / gtsam_cephes_lanczos_sum_expg_scaled(a);
 
     if ((a < 200) && (x < 200)) {
 	res *= exp(a - x) * pow(x / fac, a);
     } else {
 	num = x - a - lanczos_g + 0.5;
-	res *= exp(a * log1pmx(num / fac) + x * (0.5 - lanczos_g) / fac);
+	res *= exp(a * gtsam_cephes_log1pmx(num / fac) + x * (0.5 - lanczos_g) / fac);
     }
 
     return res;
@@ -262,7 +262,7 @@ static double igamc_continued_fraction(double a, double x)
     double ans, ax, c, yc, r, t, y, z;
     double pk, pkm1, pkm2, qk, qkm1, qkm2;
 
-    ax = igam_fac(a, x);
+    ax = gtsam_cephes_igam_fac(a, x);
     if (ax == 0.0) {
 	return 0.0;
     }
@@ -316,7 +316,7 @@ static double igam_series(double a, double x)
     int i;
     double ans, ax, c, r;
 
-    ax = igam_fac(a, x);
+    ax = gtsam_cephes_igam_fac(a, x);
     if (ax == 0.0) {
 	return 0.0;
     }
@@ -359,8 +359,8 @@ static double igamc_series(double a, double x)
     }
 
     logx = log(x);
-    term = -expm1(a * logx - lgam1p(a));
-    return term - exp(a * logx - lgam(a)) * sum;
+    term = -expm1(a * logx - gtsam_cephes_lgam1p(a));
+    return term - exp(a * logx - gtsam_cephes_lgam(a)) * sum;
 }
 
 
@@ -384,9 +384,9 @@ static double asymptotic_series(double a, double x, int func)
     }
 
     if (lambda > 1) {
- 	eta = sqrt(-2 * log1pmx(sigma));
+ 	eta = sqrt(-2 * gtsam_cephes_log1pmx(sigma));
     } else if (lambda < 1) {
-	eta = -sqrt(-2 * log1pmx(sigma));
+	eta = -sqrt(-2 * gtsam_cephes_log1pmx(sigma));
     } else {
 	eta = 0;
     }

@@ -16,6 +16,8 @@ from typing import List, Union
 
 from pyparsing import Forward, ParseResults, ZeroOrMore  # type: ignore
 
+from .annotations import (UNSUPPORTED_ANNOTATION,
+                          UNSUPPORTED_TEMPLATED_ANNOTATION)
 from .classes import Class, collect_namespaces
 from .declaration import ForwardDeclaration, Include
 from .enum import Enum
@@ -72,9 +74,11 @@ class Namespace:
             ^ Enum.rule  #
             ^ Variable.rule  #
             ^ rule  #
+            ^ UNSUPPORTED_TEMPLATED_ANNOTATION  #
+            ^ UNSUPPORTED_ANNOTATION  #
         )("content")  # BR
         + RBRACE  #
-    ).setParseAction(lambda t: Namespace.from_parse_result(t))
+    ).set_parse_action(lambda t: Namespace.from_parse_result(t))
 
     def __init__(self, name: str, content: ZeroOrMore, parent=''):
         self.name = name
@@ -87,7 +91,7 @@ class Namespace:
     def from_parse_result(t: ParseResults):
         """Return the result of parsing."""
         if t.content:
-            content = t.content.asList()
+            content = t.content.as_list()
         else:
             content = []
         return Namespace(t.name, content)

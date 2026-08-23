@@ -144,8 +144,8 @@ void ns1ClassA_deconstructor_2(int nargout, mxArray *out[], int nargin, const mx
   item = collector_ns1ClassA.find(self);
   if(item != collector_ns1ClassA.end()) {
     collector_ns1ClassA.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void ns1ClassB_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -177,8 +177,8 @@ void ns1ClassB_deconstructor_5(int nargout, mxArray *out[], int nargin, const mx
   item = collector_ns1ClassB.find(self);
   if(item != collector_ns1ClassB.end()) {
     collector_ns1ClassB.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void aGlobalFunction_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -215,8 +215,8 @@ void ns2ClassA_deconstructor_9(int nargout, mxArray *out[], int nargin, const mx
   item = collector_ns2ClassA.find(self);
   if(item != collector_ns2ClassA.end()) {
     collector_ns2ClassA.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void ns2ClassA_memberFunction_10(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -277,8 +277,8 @@ void ns2ns3ClassB_deconstructor_16(int nargout, mxArray *out[], int nargin, cons
   item = collector_ns2ns3ClassB.find(self);
   if(item != collector_ns2ns3ClassB.end()) {
     collector_ns2ns3ClassB.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void ns2ClassC_collectorInsertAndMakeBase_17(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -310,8 +310,8 @@ void ns2ClassC_deconstructor_19(int nargout, mxArray *out[], int nargin, const m
   item = collector_ns2ClassC.find(self);
   if(item != collector_ns2ClassC.end()) {
     collector_ns2ClassC.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void aGlobalFunction_20(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -361,8 +361,8 @@ void ClassD_deconstructor_25(int nargout, mxArray *out[], int nargin, const mxAr
   item = collector_ClassD.find(self);
   if(item != collector_ClassD.end()) {
     collector_ClassD.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void gtsamValues_collectorInsertAndMakeBase_26(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -406,8 +406,8 @@ void gtsamValues_deconstructor_29(int nargout, mxArray *out[], int nargin, const
   item = collector_gtsamValues.find(self);
   if(item != collector_gtsamValues.end()) {
     collector_gtsamValues.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void gtsamValues_insert_30(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -538,6 +538,7 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       break;
     }
   } catch(const std::exception& e) {
+    std::cout.rdbuf(outbuf);
     mexErrMsgTxt(("Exception from gtsam:\n" + std::string(e.what()) + "\n").c_str());
   }
 

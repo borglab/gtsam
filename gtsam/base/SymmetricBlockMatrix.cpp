@@ -17,10 +17,12 @@
  */
 
 #include <gtsam/base/SymmetricBlockMatrix.h>
+#include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
 #include <gtsam/base/cholesky.h>
 #include <gtsam/base/timing.h>
-#include <gtsam/base/ThreadsafeException.h>
+
+#include <Eigen/Cholesky>
 
 namespace gtsam {
 
@@ -89,24 +91,107 @@ void SymmetricBlockMatrix::choleskyPartial(DenseIndex nFrontals) {
 }
 
 /* ************************************************************************* */
-VerticalBlockMatrix SymmetricBlockMatrix::split(DenseIndex nFrontals) {
+void SymmetricBlockMatrix::split(DenseIndex nFrontals,
+                                 VerticalBlockMatrix* RSd) {
   gttic(VerticalBlockMatrix_split);
+  assert(RSd);
 
   // Construct a VerticalBlockMatrix that contains [R Sd]
-  const size_t n1 = offset(nFrontals);
-  VerticalBlockMatrix RSd = VerticalBlockMatrix::LikeActiveViewOf(*this, n1);
+  const DenseIndex n1 = offset(nFrontals);
+  assert(RSd->rows() == n1);
+  assert(RSd->cols() == cols());
+  assert(RSd->nBlocks() == nBlocks());
 
   // Copy into it.
-  RSd.full() = matrix_.topRows(n1);
-  RSd.full().triangularView<Eigen::StrictlyLower>().setZero();
+  RSd->full() = matrix_.topRows(n1);
+  RSd->full().triangularView<Eigen::StrictlyLower>().setZero();
 
   // Take lower-right block of Ab_ to get the remaining factor
   blockStart() = nFrontals;
+}
 
+VerticalBlockMatrix SymmetricBlockMatrix::split(DenseIndex nFrontals) {
+  // Construct a VerticalBlockMatrix that contains [R Sd]
+  const DenseIndex n1 = offset(nFrontals);
+  VerticalBlockMatrix RSd = VerticalBlockMatrix::LikeActiveViewOf(*this, n1);
+  split(nFrontals, &RSd);
   return RSd;
+}
+
+/* ************************************************************************* */
+void SymmetricBlockMatrix::updateFromMappedBlocks(
+    const SymmetricBlockMatrix& other,
+    const std::vector<DenseIndex>& blockIndices) {
+  assert(static_cast<DenseIndex>(blockIndices.size()) == other.nBlocks());
+  const DenseIndex otherBlocks = other.nBlocks();
+  for (DenseIndex i = 0; i < otherBlocks; ++i) {
+    const DenseIndex I = blockIndices[i];
+    if (I < 0) continue;
+    assert(I < nBlocks());
+    updateDiagonalBlock(I, other.diagonalBlock(i));
+    for (DenseIndex j = i + 1; j < otherBlocks; ++j) {
+      const DenseIndex J = blockIndices[j];
+      if (J < 0) continue;
+      assert(J < nBlocks());
+      updateOffDiagonalBlock(I, J, other.aboveDiagonalBlock(i, j));
+    }
+  }
+}
+
+/* ************************************************************************* */
+void SymmetricBlockMatrix::updateFromMappedBlocks(
+    const SymmetricBlockMatrix& other,
+    const std::vector<DenseIndex>& blockIndices,
+    const std::vector<DenseIndex>& scalarOffsets) {
+  assert(static_cast<DenseIndex>(blockIndices.size()) == other.nBlocks());
+  assert(scalarOffsets.size() == blockIndices.size());
+  const DenseIndex otherBlocks = other.nBlocks();
+  for (DenseIndex i = 0; i < otherBlocks; ++i) {
+    const DenseIndex I = blockIndices[i];
+    if (I < 0) continue;
+    assert(I < nBlocks());
+    const DenseIndex offsetI = scalarOffsets[i];
+    assert(offsetI == blockScalarOffset(I));
+    updateDiagonalBlockAt(offsetI, other.diagonalBlock(i));
+    for (DenseIndex j = i + 1; j < otherBlocks; ++j) {
+      const DenseIndex J = blockIndices[j];
+      if (J < 0) continue;
+      assert(J < nBlocks());
+      const DenseIndex offsetJ = scalarOffsets[j];
+      assert(offsetJ == blockScalarOffset(J));
+      if (I < J) {
+        updateOffDiagonalBlockAt(offsetI, offsetJ,
+                                 other.aboveDiagonalBlock(i, j));
+      } else {
+        updateOffDiagonalBlockAt(offsetJ, offsetI,
+                                 other.aboveDiagonalBlock(i, j).transpose());
+      }
+    }
+  }
+}
+
+/* ************************************************************************* */
+void SymmetricBlockMatrix::updateFromOuterProductBlocks(
+    const VerticalBlockMatrix& other,
+    const std::vector<DenseIndex>& blockIndices, double alpha) {
+  assert(static_cast<DenseIndex>(blockIndices.size()) == other.nBlocks());
+  const DenseIndex otherBlocks = other.nBlocks();
+  for (DenseIndex i = 0; i < otherBlocks; ++i) {
+    const DenseIndex I = blockIndices[i];
+    if (I < 0) continue;
+    assert(I < nBlocks());
+    const auto Si = other(i);
+    updateDiagonalBlock(I, alpha * Si.transpose() * Si);
+    for (DenseIndex j = i + 1; j < otherBlocks; ++j) {
+      const DenseIndex J = blockIndices[j];
+      if (J < 0) continue;
+      assert(J < nBlocks());
+      const auto Sj = other(j);
+      updateOffDiagonalBlock(I, J, alpha * Si.transpose() * Sj);
+    }
+  }
 }
 
 /* ************************************************************************* */
 
 } //\ namespace gtsam
-

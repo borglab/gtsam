@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  * @file Pendulum.h
  * @brief Three-way factors for the pendulum dynamics as in [Stern06siggraph] for
@@ -9,7 +20,12 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/nonlinear/NonlinearFactor.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 namespace gtsam {
 
@@ -19,12 +35,14 @@ namespace gtsam {
  *    - For explicit Euler method:  q_{k+1} = q_k + h*v_k
  *    - For implicit Euler method:  q_{k+1} = q_k + h*v_{k+1}
  *    - For sympletic Euler method: q_{k+1} = q_k + h*v_{k+1}
+ * @deprecated This experimental dynamics factor has no maintained replacement.
  */
-class PendulumFactor1: public NoiseModelFactorN<double, double, double> {
+class PendulumFactor1
+    : public NoiseModelFactorT<Vector1, double, double, double> {
 public:
 
 protected:
-  typedef NoiseModelFactorN<double, double, double> Base;
+  typedef NoiseModelFactorT<Vector1, double, double, double> Base;
 
   /** default constructor to allow for serialization */
   PendulumFactor1() {}
@@ -48,14 +66,14 @@ public:
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactor1(*this))); }
 
   /** q_k + h*v - q_k1 = 0, with optional derivatives */
-  Vector evaluateError(const double& qk1, const double& qk, const double& v,
-      OptionalMatrixType H1, OptionalMatrixType H2,
-      OptionalMatrixType H3) const override {
+  Vector1 evaluateError(const double& qk1, const double& qk, const double& v,
+                        OptionalMatrixType H1, OptionalMatrixType H2,
+                        OptionalMatrixType H3) const override {
     const size_t p = 1;
     if (H1) *H1 = -Matrix::Identity(p,p);
     if (H2) *H2 = Matrix::Identity(p,p);
     if (H3) *H3 = Matrix::Identity(p,p)*h_;
-    return (Vector(1) << qk+v*h_-qk1).finished();
+    return Vector{{qk + v * h_ - qk1}};
   }
 
 }; // \PendulumFactor1
@@ -67,12 +85,14 @@ public:
  *    - For explicit Euler method:  v_{k+1} = v_k - h*g/L*sin(q_k)
  *    - For implicit Euler method:  v_{k+1} = v_k - h*g/L*sin(q_{k+1})
  *    - For sympletic Euler method: v_{k+1} = v_k - h*g/L*sin(q_k)
+ * @deprecated This experimental dynamics factor has no maintained replacement.
  */
-class PendulumFactor2: public NoiseModelFactorN<double, double, double> {
+class PendulumFactor2
+    : public NoiseModelFactorT<Vector1, double, double, double> {
 public:
 
 protected:
-  typedef NoiseModelFactorN<double, double, double> Base;
+  typedef NoiseModelFactorT<Vector1, double, double, double> Base;
 
   /** default constructor to allow for serialization */
   PendulumFactor2() {}
@@ -98,14 +118,14 @@ public:
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactor2(*this))); }
 
   /**  v_k - h*g/L*sin(q) - v_k1 = 0, with optional derivatives */
-  Vector evaluateError(const double & vk1, const double & vk, const double & q,
-      OptionalMatrixType H1, OptionalMatrixType H2,
-      OptionalMatrixType H3) const override {
+  Vector1 evaluateError(const double & vk1, const double & vk, const double & q,
+                        OptionalMatrixType H1, OptionalMatrixType H2,
+                        OptionalMatrixType H3) const override {
     const size_t p = 1;
     if (H1) *H1 = -Matrix::Identity(p,p);
     if (H2) *H2 = Matrix::Identity(p,p);
     if (H3) *H3 = -Matrix::Identity(p,p)*h_*g_/r_*cos(q);
-    return (Vector(1) << vk - h_ * g_ / r_ * sin(q) - vk1).finished();
+    return Vector{{vk - h_ * g_ / r_ * sin(q) - vk1}};
   }
 
 }; // \PendulumFactor2
@@ -116,12 +136,14 @@ public:
  * This class implements the first position-momentum update rule
  *  \f$ p_k = -D_1 L_d(q_k,q_{k+1},h) = \frac{1}{h}mr^{2}\left(q_{k+1}-q_{k}\right)+mgrh(1-\alpha)\,\sin\left((1-\alpha)q_{k}+\alpha q_{k+1}\right) \f$
  *  \f$ = (1/h)mr^2 (q_{k+1}-q_k) + mgrh(1-alpha) sin ((1-alpha)q_k+\alpha q_{k+1}) \f$
+ * @deprecated This experimental dynamics factor has no maintained replacement.
  */
-class PendulumFactorPk: public NoiseModelFactorN<double, double, double> {
+class PendulumFactorPk
+    : public NoiseModelFactorT<Vector1, double, double, double> {
 public:
 
 protected:
-  typedef NoiseModelFactorN<double, double, double> Base;
+  typedef NoiseModelFactorT<Vector1, double, double, double> Base;
 
   /** default constructor to allow for serialization */
   PendulumFactorPk() {}
@@ -151,9 +173,10 @@ public:
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactorPk(*this))); }
 
   /**  1/h mr^2 (qk1-qk)+mgrh (1-a) sin((1-a)pk + a*pk1) - pk = 0, with optional derivatives */
-  Vector evaluateError(const double & pk, const double & qk, const double & qk1,
-      OptionalMatrixType H1, OptionalMatrixType H2,
-      OptionalMatrixType H3) const override {
+  Vector1 evaluateError(const double & pk, const double & qk,
+                        const double & qk1, OptionalMatrixType H1,
+                        OptionalMatrixType H2,
+                        OptionalMatrixType H3) const override {
     const size_t p = 1;
 
     double qmid = (1-alpha_)*qk + alpha_*qk1;
@@ -164,7 +187,7 @@ public:
     if (H2) *H2 = Matrix::Identity(p,p)*(-mr2_h + mgrh*(1-alpha_)*(1-alpha_)*cos(qmid));
     if (H3) *H3 = Matrix::Identity(p,p)*( mr2_h + mgrh*(1-alpha_)*(alpha_)*cos(qmid));
 
-    return (Vector(1) << mr2_h * (qk1 - qk) + mgrh * (1 - alpha_) * sin(qmid) - pk).finished();
+    return Vector{{mr2_h * (qk1 - qk) + mgrh * (1 - alpha_) * sin(qmid) - pk}};
   }
 
 }; // \PendulumFactorPk
@@ -174,12 +197,14 @@ public:
  * This class implements the second position-momentum update rule
  *  \f$ p_k1 = D_2 L_d(q_k,q_{k+1},h) = \frac{1}{h}mr^{2}\left(q_{k+1}-q_{k}\right)-mgrh\alpha\sin\left((1-\alpha)q_{k}+\alpha q_{k+1}\right) \f$
  *  \f$ = (1/h)mr^2 (q_{k+1}-q_k) - mgrh alpha sin ((1-alpha)q_k+\alpha q_{k+1}) \f$
+ * @deprecated This experimental dynamics factor has no maintained replacement.
  */
-class PendulumFactorPk1: public NoiseModelFactorN<double, double, double> {
+class PendulumFactorPk1
+    : public NoiseModelFactorT<Vector1, double, double, double> {
 public:
 
 protected:
-  typedef NoiseModelFactorN<double, double, double> Base;
+  typedef NoiseModelFactorT<Vector1, double, double, double> Base;
 
   /** default constructor to allow for serialization */
   PendulumFactorPk1() {}
@@ -209,9 +234,10 @@ public:
         gtsam::NonlinearFactor::shared_ptr(new PendulumFactorPk1(*this))); }
 
   /**  1/h mr^2 (qk1-qk) - mgrh a sin((1-a)pk + a*pk1) - pk1 = 0, with optional derivatives */
-  Vector evaluateError(const double & pk1, const double & qk, const double & qk1,
-      OptionalMatrixType H1, OptionalMatrixType H2,
-      OptionalMatrixType H3) const override {
+  Vector1 evaluateError(const double & pk1, const double & qk,
+                        const double & qk1, OptionalMatrixType H1,
+                        OptionalMatrixType H2,
+                        OptionalMatrixType H3) const override {
     const size_t p = 1;
 
     double qmid = (1-alpha_)*qk + alpha_*qk1;
@@ -222,9 +248,11 @@ public:
     if (H2) *H2 = Matrix::Identity(p,p)*(-mr2_h - mgrh*(1-alpha_)*alpha_*cos(qmid));
     if (H3) *H3 = Matrix::Identity(p,p)*( mr2_h - mgrh*alpha_*alpha_*cos(qmid));
 
-    return (Vector(1) << mr2_h * (qk1 - qk) - mgrh * alpha_ * sin(qmid) - pk1).finished();
+    return Vector{{mr2_h * (qk1 - qk) - mgrh * alpha_ * sin(qmid) - pk1}};
   }
 
 }; // \PendulumFactorPk1
 
 }
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

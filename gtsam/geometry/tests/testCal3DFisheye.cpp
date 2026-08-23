@@ -46,8 +46,7 @@ TEST(Cal3Fisheye, retract) {
   EXPECT_LONGS_EQUAL(Cal3Fisheye::Dim(), 9);
   EXPECT_LONGS_EQUAL(expected.dim(), 9);
 
-  Vector9 d;
-  d << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  Vector9 d{1, 2, 3, 4, 5, 6, 7, 8, 9};
   Cal3Fisheye actual = K.retract(d);
   CHECK(assert_equal(expected, actual, 1e-7));
   CHECK(assert_equal(d, K.localCoordinates(actual), 1e-7));

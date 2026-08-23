@@ -201,9 +201,6 @@ class EssentialMatrix {
 #endif
 
   /// @}
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 template<>

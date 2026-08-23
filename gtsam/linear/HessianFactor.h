@@ -23,6 +23,8 @@
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/FastVector.h>
 
+#include <utility>
+
 namespace gtsam {
 
   // Forward declarations
@@ -160,10 +162,17 @@ namespace gtsam {
     HessianFactor(const KeyVector& js, const std::vector<Matrix>& Gs,
         const std::vector<Vector>& gs, double f);
 
-    /** Constructor with an arbitrary number of keys and with the augmented information matrix
-    *   specified as a block matrix. */
+    /** Construct from keys and a copied augmented information block matrix. */
     template<typename KEYS>
     HessianFactor(const KEYS& keys, const SymmetricBlockMatrix& augmentedInformation);
+
+    /**
+     * Construct from keys and take ownership of an augmented information block
+     * matrix. This avoids copying when the caller no longer needs the matrix.
+     */
+    template <typename KEYS>
+    HessianFactor(const KEYS& keys,
+                  SymmetricBlockMatrix&& augmentedInformation);
 
     /** Construct from a JacobianFactor (or from a GaussianConditional since it derives from it) */
     explicit HessianFactor(const JacobianFactor& cg);
@@ -202,6 +211,13 @@ namespace gtsam {
      * returns 0.5*[x -1]'*H*[x -1] (also see constructor documentation)
      */
     double error(const VectorValues& c) const override;
+
+    /**
+     * Compute the change in error from zero to c, optionally returning
+     * the old and new errors.
+     */
+    double deltaError(const VectorValues& c, double* oldError = nullptr,
+                      double* newError = nullptr) const override;
 
     /** Return the dimension of the variable pointed to by the given key iterator
      * todo: Remove this in favor of keeping track of dimensions with variables?
@@ -326,6 +342,17 @@ namespace gtsam {
      */
     void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info) const override;
 
+    /** Update an information matrix by adding the information corresponding to this factor
+     * (used internally during elimination), restricted to a range of block columns,
+     * useful for parallelization.
+     * @param keys The ordered vector of keys for the information matrix to be updated
+     * @param info The information matrix to be updated
+     * @param beginCol First block column index (inclusive) in the range to update
+     * @param endCol Last block column index (exclusive) in the range to update
+     */
+    void updateHessian(const KeyVector& keys, SymmetricBlockMatrix* info,
+                       DenseIndex beginCol, DenseIndex endCol) const override;
+
     /** Update another Hessian factor
      * @param other the HessianFactor to be updated
      */
@@ -361,6 +388,10 @@ namespace gtsam {
     VectorValues solve();
 
  private:
+    /// Validate the shared augmented-information constructor contract.
+    static void CheckAugmentedInformation(
+        size_t keyCount, const SymmetricBlockMatrix& augmentedInformation);
+
     /// Allocate for given scatter pattern
     void Allocate(const Scatter& scatter);
 

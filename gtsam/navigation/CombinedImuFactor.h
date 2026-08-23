@@ -23,11 +23,17 @@
 #pragma once
 
 /* GTSAM includes */
+#include <gtsam/navigation/LieGroupPreintegration.h>
 #include <gtsam/navigation/PreintegrationCombinedParams.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
+
+#include <type_traits>
 
 namespace gtsam {
 
-#ifdef GTSAM_TANGENT_PREINTEGRATION
+#ifdef GTSAM_LIEGROUP_PREINTEGRATION
+typedef LieGroupPreintegration DefaultPreintegrationType;
+#elif defined(GTSAM_TANGENT_PREINTEGRATION)
 typedef TangentPreintegration DefaultPreintegrationType;
 #else
 typedef ManifoldPreintegration DefaultPreintegrationType;
@@ -133,6 +139,46 @@ class GTSAM_EXPORT PreintegratedCombinedMeasurementsT : public PreintegrationTyp
   /// @{
   /// Return pre-integrated measurement covariance
   Matrix preintMeasCov() const { return preintMeasCov_; }
+
+  /**
+   * Express the propagated covariance in the combined IMU factor residual
+   * chart.
+   *
+   * The first nine rows use the same NavState residual chart as ImuFactor.
+   * TangentPreintegration propagates them in additive
+   * \f$(\theta,p,v)\f$ coordinates, whose differential into that chart is
+   * \f[
+   * J_9 = \operatorname{diag}
+   *       \left(J_r(\theta),\Delta R^T,\Delta R^T\right).
+   * \f]
+   * ManifoldPreintegration and LieGroupPreintegration already propagate these
+   * rows in the residual chart, so their \f$J_9\f$ is identity.
+   *
+   * The final six propagated coordinates follow the bias change
+   * \f$b_j-b_i\f$, whereas the factor residual is
+   * \f$b_i-b_j\f$. Consequently the complete conversion is
+   * \f[
+   * J_{15}=\operatorname{diag}(J_9,-I_6), \qquad
+   * P_{\mathrm{res}}=J_{15}P_{\mathrm{native}}J_{15}^T.
+   * \f]
+   * The bias sign leaves its marginal covariance unchanged but reverses the
+   * state--bias cross-covariances. This method changes neither the nonlinear
+   * residual nor the raw covariance returned by preintMeasCov().
+   */
+  Matrix residualCovariance() const {
+    Eigen::Matrix<double, 15, 15> chartJacobian =
+        Eigen::Matrix<double, 15, 15>::Identity();
+    chartJacobian.bottomRightCorner<6, 6>() = -I_6x6;
+
+    if constexpr (std::is_same_v<PreintegrationType, TangentPreintegration>) {
+      Matrix9 preintegrationChartJacobian;
+      NavState().retract(this->preintegrated_, {},
+                         &preintegrationChartJacobian);
+      chartJacobian.topLeftCorner<9, 9>() = preintegrationChartJacobian;
+    }
+
+    return chartJacobian * preintMeasCov_ * chartJacobian.transpose();
+  }
   /// @}
 
   /// @name Testable
@@ -184,9 +230,6 @@ class GTSAM_EXPORT PreintegratedCombinedMeasurementsT : public PreintegrationTyp
     ar& BOOST_SERIALIZATION_NVP(preintMeasCov_);
   }
 #endif
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // For backward compatibility:
@@ -243,10 +286,10 @@ class GTSAM_EXPORT CombinedImuFactorT
    * @param bias_j Current bias key
    * @param PreintegratedCombinedMeasurements Combined IMU measurements
    */
-  CombinedImuFactorT(
-      Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
-      const PIM& preintegratedMeasurements)
-      : Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov()),
+  CombinedImuFactorT(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i,
+                     Key bias_j, const PIM& preintegratedMeasurements)
+      : Base(noiseModel::Gaussian::Covariance(
+                 preintegratedMeasurements.residualCovariance()),
              pose_i, vel_i, pose_j, vel_j, bias_i, bias_j),
         pim_(preintegratedMeasurements) {}
 
@@ -300,9 +343,6 @@ class GTSAM_EXPORT CombinedImuFactorT
     ar& BOOST_SERIALIZATION_NVP(pim_);
   }
 #endif
-
- public:
-  GTSAM_MAKE_ALIGNED_OPERATOR_NEW
 };
 // class CombinedImuFactorT
 
@@ -312,6 +352,79 @@ using CombinedImuFactor = CombinedImuFactorT<>;
 // operator<< for CombinedImuFactorT
 template <class PIM>
 GTSAM_EXPORT std::ostream& operator<<(std::ostream& os, const CombinedImuFactorT<PIM>& f);
+
+namespace internal {
+/// Shared 15-dof error and block-Jacobian assembly for CombinedImuFactorT and
+/// CombinedImuFactorWithGravityT: rows 0-8 are the preintegration error for
+/// the given gravity vector, rows 9-14 the bias random walk. If D_r_gvec is
+/// given, it receives the 9x3 Jacobian of the preintegration rows wrt the
+/// gravity vector (the bias rows have a zero gravity Jacobian).
+template <class PIM>
+Vector combinedImuError(const PIM& pim, const Pose3& pose_i,
+    const Vector3& vel_i, const Pose3& pose_j, const Vector3& vel_j,
+    const imuBias::ConstantBias& bias_i, const imuBias::ConstantBias& bias_j,
+    const Vector3& n_gravity, OptionalMatrixType H1, OptionalMatrixType H2,
+    OptionalMatrixType H3, OptionalMatrixType H4, OptionalMatrixType H5,
+    OptionalMatrixType H6, Matrix93* D_r_gvec) {
+  // error wrt bias evolution model (random walk)
+  Matrix6 Hbias_i, Hbias_j;
+  Vector6 fbias = traits<imuBias::ConstantBias>::Between(bias_j, bias_i,
+      H6 ? &Hbias_j : 0, H5 ? &Hbias_i : 0).vector();
+
+  Matrix96 D_r_pose_i, D_r_pose_j, D_r_bias_i;
+  Matrix93 D_r_vel_i, D_r_vel_j;
+
+  // error wrt preintegrated measurements
+  Vector9 r_Rpv = internal::preintegrationErrorAndJacobians(
+      pim, pose_i, vel_i, pose_j, vel_j, bias_i, n_gravity,
+      H1 ? &D_r_pose_i : nullptr, H2 ? &D_r_vel_i : nullptr,
+      H3 ? &D_r_pose_j : nullptr, H4 ? &D_r_vel_j : nullptr,
+      H5 ? &D_r_bias_i : nullptr, D_r_gvec);
+
+  // if we need the jacobians
+  if (H1) {
+    H1->resize(15, 6);
+    H1->block<9, 6>(0, 0) = D_r_pose_i;
+    // adding: [dBiasAcc/dPi ; dBiasOmega/dPi]
+    H1->block<6, 6>(9, 0).setZero();
+  }
+  if (H2) {
+    H2->resize(15, 3);
+    H2->block<9, 3>(0, 0) = D_r_vel_i;
+    // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
+    H2->block<6, 3>(9, 0).setZero();
+  }
+  if (H3) {
+    H3->resize(15, 6);
+    H3->block<9, 6>(0, 0) = D_r_pose_j;
+    // adding: [dBiasAcc/dPj ; dBiasOmega/dPj]
+    H3->block<6, 6>(9, 0).setZero();
+  }
+  if (H4) {
+    H4->resize(15, 3);
+    H4->block<9, 3>(0, 0) = D_r_vel_j;
+    // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
+    H4->block<6, 3>(9, 0).setZero();
+  }
+  if (H5) {
+    H5->resize(15, 6);
+    H5->block<9, 6>(0, 0) = D_r_bias_i;
+    // adding: [dBiasAcc/dBias_i ; dBiasOmega/dBias_i]
+    H5->block<6, 6>(9, 0) = Hbias_i;
+  }
+  if (H6) {
+    H6->resize(15, 6);
+    H6->block<9, 6>(0, 0).setZero();
+    // adding: [dBiasAcc/dBias_j ; dBiasOmega/dBias_j]
+    H6->block<6, 6>(9, 0) = Hbias_j;
+  }
+
+  // overall error
+  Vector r(15);
+  r << r_Rpv, fbias;  // vector of size 15
+  return r;
+}
+}  // namespace internal
 
 template <>
 struct traits<PreintegrationCombinedParams>

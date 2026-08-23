@@ -7,10 +7,13 @@
  * @author Alex Cunningham
  */
 
+#include <gtsam/config.h>
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/base/TestableAssertions.h>
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/VectorConstants.h>
 #include <gtsam_unstable/geometry/BearingS2.h>
 
 using namespace gtsam;
@@ -56,5 +59,7 @@ TEST( testBearingS2, manifold ) {
 }
 
 /* ************************************************************************* */
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
