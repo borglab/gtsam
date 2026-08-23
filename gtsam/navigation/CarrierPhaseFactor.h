@@ -182,7 +182,7 @@ class GTSAM_EXPORT UndifferencedCarrierPhaseFactor
    * @param satellitePosition    Satellite ECEF position [m].
    * @param tropoWetMapping      Wet mapping function m_w at predicted elevation.
    * @param ionoCoefficient      Ionospheric coefficient mu_f (+1 on L1).
-   * @param lambda               Wavelength [m/cycle].
+   * @param lambda_              Wavelength [m/cycle].
    * @param satelliteClockBias   Satellite clock bias [s].
    * @param model                1-D noise model.
    */
@@ -190,7 +190,7 @@ class GTSAM_EXPORT UndifferencedCarrierPhaseFactor
       Key receiverPositionKey, Key receiverClockBiasKey, Key tropoZenithWetKey,
       Key slantIonoKey, Key ambiguityKey, double measuredCarrierPhaseMeters,
       const Point3& satellitePosition, double tropoWetMapping,
-      double ionoCoefficient, double lambda, double satelliteClockBias = 0.0,
+      double ionoCoefficient, double lambda_, double satelliteClockBias = 0.0,
       const SharedNoiseModel& model = noiseModel::Unit::Create(1));
 
   gtsam::NonlinearFactor::shared_ptr clone() const override {
@@ -270,7 +270,7 @@ class GTSAM_EXPORT UndifferencedCarrierPhaseFactorArm
       Key poseKey, Key receiverClockBiasKey, Key tropoZenithWetKey,
       Key slantIonoKey, Key ambiguityKey, double measuredCarrierPhaseMeters,
       const Point3& satellitePosition, const Point3& leverArm,
-      double tropoWetMapping, double ionoCoefficient, double lambda,
+      double tropoWetMapping, double ionoCoefficient, double lambda_,
       double satelliteClockBias = 0.0,
       const SharedNoiseModel& model = noiseModel::Unit::Create(1));
 
@@ -280,7 +280,7 @@ class GTSAM_EXPORT UndifferencedCarrierPhaseFactorArm
       Key slantIonoKey, Key ambiguityKey, double measuredCarrierPhaseMeters,
       const Point3& satellitePosition, const Point3& leverArm,
       const Pose3& ecef_T_nav, double tropoWetMapping, double ionoCoefficient,
-      double lambda, double satelliteClockBias = 0.0,
+      double lambda_, double satelliteClockBias = 0.0,
       const SharedNoiseModel& model = noiseModel::Unit::Create(1));
 
   gtsam::NonlinearFactor::shared_ptr clone() const override {

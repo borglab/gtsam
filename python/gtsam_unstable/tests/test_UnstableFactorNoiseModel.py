@@ -13,6 +13,8 @@ NoiseModelFactor in C++ expose that interface in Python.
 
 import unittest
 
+import numpy as np
+
 import gtsam
 import gtsam_unstable
 from gtsam.symbol_shorthand import T
@@ -30,6 +32,25 @@ class TestUnstableFactorNoiseModel(GtsamTestCase):
 
         self.assertIsInstance(factor, gtsam.NoiseModelFactor)
         self.assertAlmostEqual(factor.noiseModel().sigma(), 0.05)
+
+    def test_jacobian_vector_from_gtsam(self):
+        """Unstable factors accept the globally registered JacobianVector."""
+        model = gtsam.noiseModel.Isotropic.Sigma(3, 1.0)
+        factor = gtsam_unstable.BetweenFactorEMPose2(
+            0, 1, gtsam.Pose2(), model, model, 0.5, 0.5
+        )
+        values = gtsam.Values()
+        values.insert(0, gtsam.Pose2())
+        values.insert(1, gtsam.Pose2())
+        jacobians = gtsam.JacobianVector(
+            [np.empty((0, 0)), np.empty((0, 0))]
+        )
+
+        factor.whitenedError(values, jacobians)
+
+        self.assertEqual(len(jacobians), 2)
+        self.assertEqual(jacobians[0].shape, (6, 3))
+        self.assertEqual(jacobians[1].shape, (6, 3))
 
 
 if __name__ == "__main__":
