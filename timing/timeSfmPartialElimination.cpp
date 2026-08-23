@@ -62,15 +62,15 @@ struct Result {
 Result run(const SolverChoice& choice, const NonlinearFactorGraph& graph,
            const Values& initial,
            const bal::BalBenchmarkConfig& benchmarkConfig,
-           const Ordering& fullOrdering, const Ordering& schurOrdering,
+           const Ordering& schurOrdering, const Ordering& reducedOrdering,
            size_t repetitions, double maximumSeconds) {
   SfmLevenbergMarquardtParams params;
   static_cast<LevenbergMarquardtParams&>(params) =
       bal::makeLevenbergMarquardtParams(benchmarkConfig, nullptr, "SILENT");
   params.setEliminationMode(choice.mode);
   params.setLinearSolver(choice.type);
-  params.setOrdering(choice.mode == SfmEliminationMode::Full ? fullOrdering
-                                                             : schurOrdering);
+  params.setOrdering(choice.mode == SfmEliminationMode::Full ? schurOrdering
+                                                             : reducedOrdering);
   if (choice.type == NonlinearOptimizerParams::MULTIFRONTAL_SOLVER) {
     params.multifrontalParams.qrMode = MultifrontalParameters::QRMode::Allow;
   } else if (choice.iterativeBackend == IterativeBackend::PCG) {
@@ -171,11 +171,11 @@ int main(int argc, char* argv[]) {
     const NonlinearFactorGraph graph =
         bal::buildBatchSfmGraph(data, config, false, 0);
     const Values initial = bal::buildGeneralSfmInitial(data);
+    const Ordering reducedOrdering =
+        SfmLevenbergMarquardtOptimizer::CreateReducedOrdering(graph, initial);
     const Ordering schurOrdering =
-        SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(graph, initial);
-    const Ordering fullOrdering =
-        SfmLevenbergMarquardtOptimizer::CreatePointFirstOrdering(graph,
-                                                                 schurOrdering);
+        SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(graph,
+                                                            reducedOrdering);
 
     const std::vector<SolverChoice> choices{
         {"Full/MultifrontalSolver", SfmEliminationMode::Full,
@@ -222,8 +222,8 @@ int main(int argc, char* argv[]) {
         continue;
       }
       if (configuration && choice.name != *configuration) continue;
-      results.push_back(run(choice, graph, initial, config, fullOrdering,
-                            schurOrdering, repetitions, maximumSeconds));
+      results.push_back(run(choice, graph, initial, config, schurOrdering,
+                            reducedOrdering, repetitions, maximumSeconds));
     }
     if (results.empty()) {
       throw std::invalid_argument("No timing configuration matched");

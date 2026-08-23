@@ -22,12 +22,12 @@ virtual class SfmLevenbergMarquardtParams
 
 virtual class SfmLevenbergMarquardtOptimizer
     : gtsam::LevenbergMarquardtOptimizer {
-  static gtsam::Ordering CreateSchurOrdering(
+  static gtsam::Ordering CreateReducedOrdering(
       const gtsam::NonlinearFactorGraph& graph,
       const gtsam::Values& initialValues);
-  static gtsam::Ordering CreatePointFirstOrdering(
+  static gtsam::Ordering CreateSchurOrdering(
       const gtsam::NonlinearFactorGraph& graph,
-      const gtsam::Ordering& schurOrdering);
+      const gtsam::Ordering& reducedOrdering);
 
   SfmLevenbergMarquardtOptimizer(
       const gtsam::NonlinearFactorGraph& graph,

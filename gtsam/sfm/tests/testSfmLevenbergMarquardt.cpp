@@ -289,19 +289,20 @@ TEST(SfmLevenbergMarquardt, SchurOrderingValidation) {
 }
 
 /* ************************************************************************* */
-TEST(SfmLevenbergMarquardt, SchurRetainsGlobalCalibration) {
+TEST(SfmLevenbergMarquardt, ReducedSystemIncludesGlobalCalibration) {
   const SmallProblem problem = globalCalibrationProblem();
   const Key calibrationKey = Symbol('k', 0);
-  const Ordering retained = SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(
-      problem.graph, problem.initial);
+  const Ordering reduced =
+      SfmLevenbergMarquardtOptimizer::CreateReducedOrdering(problem.graph,
+                                                            problem.initial);
 
-  EXPECT_LONGS_EQUAL(3, retained.size());
-  EXPECT(std::find(retained.begin(), retained.end(), X(0)) != retained.end());
-  EXPECT(std::find(retained.begin(), retained.end(), X(1)) != retained.end());
-  EXPECT(std::find(retained.begin(), retained.end(), calibrationKey) !=
-         retained.end());
+  EXPECT_LONGS_EQUAL(3, reduced.size());
+  EXPECT(std::find(reduced.begin(), reduced.end(), X(0)) != reduced.end());
+  EXPECT(std::find(reduced.begin(), reduced.end(), X(1)) != reduced.end());
+  EXPECT(std::find(reduced.begin(), reduced.end(), calibrationKey) !=
+         reduced.end());
   for (size_t i = 0; i < 6; ++i) {
-    EXPECT(std::find(retained.begin(), retained.end(), L(i)) == retained.end());
+    EXPECT(std::find(reduced.begin(), reduced.end(), L(i)) == reduced.end());
   }
 
   for (const auto solver : {NonlinearOptimizerParams::MULTIFRONTAL_SOLVER,
@@ -342,22 +343,20 @@ TEST(SfmLevenbergMarquardt, SchurEliminatesPoint3AndUnit3Only) {
   graph.emplace_shared<PriorFactor<Cal3_S2>>(calibrationKey, calibration,
                                              noiseModel::Unit::Create(5));
 
-  const Ordering retained =
-      SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(graph, values);
-  EXPECT_LONGS_EQUAL(2, retained.size());
-  EXPECT(std::find(retained.begin(), retained.end(), poseKey) !=
-         retained.end());
-  EXPECT(std::find(retained.begin(), retained.end(), calibrationKey) !=
-         retained.end());
-  EXPECT(std::find(retained.begin(), retained.end(), pointKey) ==
-         retained.end());
-  EXPECT(std::find(retained.begin(), retained.end(), directionKey) ==
-         retained.end());
+  const Ordering reduced =
+      SfmLevenbergMarquardtOptimizer::CreateReducedOrdering(graph, values);
+  EXPECT_LONGS_EQUAL(2, reduced.size());
+  EXPECT(std::find(reduced.begin(), reduced.end(), poseKey) != reduced.end());
+  EXPECT(std::find(reduced.begin(), reduced.end(), calibrationKey) !=
+         reduced.end());
+  EXPECT(std::find(reduced.begin(), reduced.end(), pointKey) == reduced.end());
+  EXPECT(std::find(reduced.begin(), reduced.end(), directionKey) ==
+         reduced.end());
 
-  const Ordering full =
-      SfmLevenbergMarquardtOptimizer::CreatePointFirstOrdering(graph, retained);
-  EXPECT_LONGS_EQUAL(pointKey, full[0]);
-  EXPECT_LONGS_EQUAL(directionKey, full[1]);
+  const Ordering schur =
+      SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(graph, reduced);
+  EXPECT_LONGS_EQUAL(pointKey, schur[0]);
+  EXPECT_LONGS_EQUAL(directionKey, schur[1]);
 
   auto params = parameters(SfmEliminationMode::Schur);
   params.setLinearSolver(NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY);
@@ -368,26 +367,26 @@ TEST(SfmLevenbergMarquardt, SchurEliminatesPoint3AndUnit3Only) {
 }
 
 /* ************************************************************************* */
-TEST(SfmLevenbergMarquardt, CreatesReusablePointFirstOrdering) {
+TEST(SfmLevenbergMarquardt, CreatesReusableSchurOrdering) {
   const SmallProblem problem = smallProblem();
-  const Ordering retained = SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(
-      problem.graph, problem.initial);
-  const Ordering full =
-      SfmLevenbergMarquardtOptimizer::CreatePointFirstOrdering(problem.graph,
-                                                               retained);
+  const Ordering reduced =
+      SfmLevenbergMarquardtOptimizer::CreateReducedOrdering(problem.graph,
+                                                            problem.initial);
+  const Ordering schur = SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(
+      problem.graph, reduced);
 
-  EXPECT_LONGS_EQUAL(3, retained.size());
-  EXPECT_LONGS_EQUAL(problem.graph.keys().size(), full.size());
-  const size_t pointCount = full.size() - retained.size();
-  EXPECT(std::is_sorted(full.begin(), full.begin() + pointCount));
+  EXPECT_LONGS_EQUAL(3, reduced.size());
+  EXPECT_LONGS_EQUAL(problem.graph.keys().size(), schur.size());
+  const size_t pointCount = schur.size() - reduced.size();
+  EXPECT(std::is_sorted(schur.begin(), schur.begin() + pointCount));
   EXPECT(
-      std::equal(retained.begin(), retained.end(), full.begin() + pointCount));
+      std::equal(reduced.begin(), reduced.end(), schur.begin() + pointCount));
 
   auto params = parameters(SfmEliminationMode::Schur);
-  params.setOrdering(retained);
+  params.setOrdering(reduced);
   SfmLevenbergMarquardtOptimizer optimizer(problem.graph, problem.initial,
                                            params);
-  EXPECT(optimizer.sfmParams().ordering->equals(retained));
+  EXPECT(optimizer.sfmParams().ordering->equals(reduced));
 }
 
 /* ************************************************************************* */
@@ -395,26 +394,26 @@ TEST(SfmLevenbergMarquardt, FusedMultifrontalCompletesSchurOrdering) {
   const SmallProblem problem = smallProblem();
   auto params = parameters(SfmEliminationMode::Schur);
   params.setLinearSolver(NonlinearOptimizerParams::MULTIFRONTAL_SOLVER);
-  const Ordering retained{2, 1, 0};
-  params.setOrdering(retained);
+  const Ordering reduced{2, 1, 0};
+  params.setOrdering(reduced);
 
   SfmLevenbergMarquardtOptimizer optimizer(problem.graph, problem.initial,
                                            params);
-  EXPECT(optimizer.sfmParams().ordering->equals(retained));
+  EXPECT(optimizer.sfmParams().ordering->equals(reduced));
 
   const Ordering& internal = *optimizer.params().ordering;
   EXPECT_LONGS_EQUAL(problem.graph.keys().size(), internal.size());
   const KeySet keys = problem.graph.keys();
   Ordering expectedEliminated;
   for (Key key : keys) {
-    if (std::find(retained.begin(), retained.end(), key) == retained.end()) {
+    if (std::find(reduced.begin(), reduced.end(), key) == reduced.end()) {
       expectedEliminated.push_back(key);
     }
   }
   EXPECT(std::equal(expectedEliminated.begin(), expectedEliminated.end(),
                     internal.begin()));
-  EXPECT(std::equal(retained.begin(), retained.end(),
-                    internal.end() - retained.size()));
+  EXPECT(std::equal(reduced.begin(), reduced.end(),
+                    internal.end() - reduced.size()));
 }
 
 /* ************************************************************************* */
@@ -444,13 +443,13 @@ TEST(SfmLevenbergMarquardt, DefaultsCloneAndEquality) {
 }
 
 /* ************************************************************************* */
-TEST(SfmLevenbergMarquardt, DefaultCreatesFastPointFirstOrdering) {
+TEST(SfmLevenbergMarquardt, DefaultCreatesFastSchurOrdering) {
   const SmallProblem problem = smallProblem();
-  const Ordering retained = SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(
-      problem.graph, problem.initial);
-  const Ordering expected =
-      SfmLevenbergMarquardtOptimizer::CreatePointFirstOrdering(problem.graph,
-                                                               retained);
+  const Ordering reduced =
+      SfmLevenbergMarquardtOptimizer::CreateReducedOrdering(problem.graph,
+                                                            problem.initial);
+  const Ordering expected = SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(
+      problem.graph, reduced);
 
   SfmLevenbergMarquardtOptimizer optimizer(problem.graph, problem.initial);
   EXPECT(optimizer.sfmParams().getEliminationMode() ==

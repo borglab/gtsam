@@ -21,7 +21,7 @@ namespace gtsam {
 /// Determines whether an SFM optimizer solves the joint or reduced system.
 enum class SfmEliminationMode {
   Full,   ///< Send the complete system to the selected solver.
-  Schur,  ///< Eliminate landmark variables before solving the retained system.
+  Schur,  ///< Eliminate landmark variables before solving the reduced system.
 };
 
 }  // namespace gtsam

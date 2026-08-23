@@ -57,7 +57,7 @@ Both modes use one cached, point-first multifrontal factorization. They do not m
 1. `SfmEliminationMode::Full` solves the joint system.
 2. `SfmEliminationMode::Schur` eliminates every active `Point3` and `Unit3` first, then solves for all remaining variables.
 
-On CPU, the retained system is selected by value type rather than by one camera template: poses, camera objects, shared or per-camera calibrations, and any other value types remain after Schur elimination. This supports variable and global calibration without specializing the optimizer. CPU defaults to `Full`, `MULTIFRONTAL_SOLVER`, and an automatically generated natural-landmarks/METIS-retained ordering. That default won BAL-16 and BAL-88 and was within 0.3% of Schur on BAL-135. CUDA defaults to `Schur` and retains its existing camera/`Point3` backend assumptions.
+On CPU, the reduced system is selected by value type rather than by one camera template: poses, camera objects, shared or per-camera calibrations, and any other value types remain after Schur elimination. This supports variable and global calibration without specializing the optimizer. CPU defaults to `Full`, `MULTIFRONTAL_SOLVER`, and an automatically generated natural-landmark prefix followed by a METIS ordering of the reduced system. That default won BAL-16 and BAL-88 and was within 0.3% of Schur on BAL-135. CUDA defaults to `Schur` and keeps its existing camera/`Point3` backend assumptions.
 
 | Platform | Full | Schur | Linear solvers |
 | --- | --- | --- | --- |
@@ -73,12 +73,12 @@ gtsam::SfmLevenbergMarquardtParams params =
     gtsam::SfmLevenbergMarquardtParams::ceresDefaults();
 
 // For the fastest measured path, graph uses point-batched projection factors.
-const gtsam::Ordering schurOrdering =
-    gtsam::SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(
+const gtsam::Ordering reducedOrdering =
+    gtsam::SfmLevenbergMarquardtOptimizer::CreateReducedOrdering(
         graph, initial);
 params.setOrdering(
-    gtsam::SfmLevenbergMarquardtOptimizer::CreatePointFirstOrdering(
-        graph, schurOrdering));
+    gtsam::SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(
+        graph, reducedOrdering));
 
 gtsam::SfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
 const gtsam::Values& result = optimizer.optimize();
@@ -89,9 +89,9 @@ const gtsam::Values& result = optimizer.optimize();
 ::::{tab-set}
 :::{tab-item} MULTIFRONTAL_SOLVER
 
-Schur mode constructs a complete ordering with a natural `Point3`/`Unit3` prefix followed by the retained-variable ordering. One cached `MultifrontalSolver` factorization eliminates those landmarks, factors the Schur complement over the remaining variables, and back-substitutes through the same Bayes tree.
+Schur mode constructs a complete ordering with a natural `Point3`/`Unit3` prefix followed by the reduced-system ordering. One cached `MultifrontalSolver` factorization eliminates those landmarks, factors the Schur complement over the remaining variables, and back-substitutes through the same Bayes tree.
 
-No reduced factor graph is created. This is mathematically the same landmark-first elimination used in Full mode when it receives the identical complete ordering; explicit `Schur` mode lets SFM construct that ordering from a retained-variable-only input.
+No reduced factor graph is created. This is mathematically the same landmark-first elimination used in Full mode when it receives the identical complete ordering; explicit `Schur` mode lets SFM construct that ordering from a reduced-system input.
 :::
 
 :::{tab-item} Other CPU solvers
@@ -99,24 +99,24 @@ No reduced factor graph is created. This is mathematically the same landmark-fir
 Schur mode creates an explicit solver boundary:
 
 1. `MultifrontalSolver::eliminatePartialInPlace()` eliminates landmarks.
-2. `remainingFactorGraph()` exports the retained-variable Hessian graph.
-3. The selected ordinary solver computes the retained-variable step.
-4. `updateSolution(retainedDelta)` back-substitutes the eliminated step.
+2. `remainingFactorGraph()` exports the reduced Hessian graph.
+3. The selected ordinary solver computes the reduced-system step.
+4. `updateSolution(reducedDelta)` back-substitutes the eliminated step.
 
-The partial-elimination symbolic state is reused across LM attempts and iterations. This path lets CHOLMOD, legacy Cholesky or QR, and iterative solvers operate on the reduced graph, at the cost of materializing retained-variable factors and running a separate solve.
+The partial-elimination symbolic state is reused across LM attempts and iterations. This path lets CHOLMOD, legacy Cholesky or QR, and iterative solvers operate on the reduced graph, at the cost of materializing reduced factors and running a separate solve.
 :::
 ::::
 
-### Retained-variable ordering
+### Reduced-system ordering
 
 In Full mode, a supplied ordering has ordinary all-variable semantics. In CPU Schur mode, supply every active key whose value is neither `Point3` nor `Unit3`:
 
 ```cpp
-gtsam::Ordering retained{pose0Key, pose1Key, globalCalibrationKey};
-params.setOrdering(retained);
+gtsam::Ordering reduced{pose0Key, pose1Key, globalCalibrationKey};
+params.setOrdering(reduced);
 ```
 
-`CreateSchurOrdering(graph, initial)` symbolically eliminates active `Point3` and `Unit3` values in natural key order and runs METIS on the resulting retained graph. `CreatePointFirstOrdering(graph, retained)` prefixes the returned ordering with those eliminated keys for Full mode or benchmarking. Duplicate, missing, eliminated, and unknown retained keys are rejected. Direct reduced solvers and iterative solvers that consume an ordering receive the same retained-only suffix.
+`CreateReducedOrdering(graph, initial)` symbolically eliminates active `Point3` and `Unit3` values in natural key order and runs METIS on the resulting reduced graph. `CreateSchurOrdering(graph, reduced)` prefixes that reduced ordering with the eliminated keys; its result is the complete Schur ordering used by Full mode or the fused multifrontal path. Duplicate, missing, eliminated, and unknown reduced keys are rejected. Direct reduced solvers and iterative solvers that consume an ordering receive the same reduced-only suffix.
 
 ::::{grid} 1 1 2 2
 
@@ -125,7 +125,7 @@ params.setOrdering(retained);
 Select `NonlinearOptimizerParams::Iterative` and supply the same parameter object as an ordinary nonlinear optimizer:
 
 - `PCGSolverParameters` selects PCG.
-- `SubgraphSolverParameters` selects `SubgraphSolver` and receives the retained-variable ordering in Schur mode.
+- `SubgraphSolverParameters` selects `SubgraphSolver` and receives the reduced-system ordering in Schur mode.
 - Missing or unrecognized parameters throw the ordinary `NonlinearOptimizer::solve` error.
 
 `SubgraphSolver` additionally requires a Gaussian graph with enough unary and binary factors to construct its spanning-tree preconditioner. Higher-arity point batches and camera clique factors do not satisfy that requirement.

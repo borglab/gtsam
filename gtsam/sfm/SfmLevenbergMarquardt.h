@@ -68,21 +68,21 @@ class GTSAM_EXPORT SfmLevenbergMarquardtOptimizer
     : public LevenbergMarquardtOptimizer {
  public:
   /**
-   * Create a fill-reducing ordering for the variables retained after Schur
-   * elimination. Active Point3 and Unit3 variables are symbolically eliminated
-   * in natural key order before METIS orders every remaining variable. This is
-   * the ordering accepted by Schur-mode parameters.
+   * Create a fill-reducing ordering for the reduced system. Active Point3 and
+   * Unit3 variables are symbolically eliminated in natural key order before
+   * METIS orders every remaining variable. This is the ordering accepted by
+   * Schur-mode parameters.
    */
-  static Ordering CreateSchurOrdering(const NonlinearFactorGraph& graph,
-                                      const Values& initialValues);
+  static Ordering CreateReducedOrdering(const NonlinearFactorGraph& graph,
+                                        const Values& initialValues);
 
   /**
-   * Prefix a Schur ordering with all other active graph keys in natural key
-   * order. This is the complete landmark-first ordering used by Full mode and
-   * by the fused Schur multifrontal path.
+   * Create a Schur ordering by prefixing a reduced-system ordering with all
+   * other active graph keys in natural key order. This complete ordering is
+   * used by Full mode and by the fused Schur multifrontal path.
    */
-  static Ordering CreatePointFirstOrdering(const NonlinearFactorGraph& graph,
-                                           const Ordering& schurOrdering);
+  static Ordering CreateSchurOrdering(const NonlinearFactorGraph& graph,
+                                      const Ordering& reducedOrdering);
 
   SfmLevenbergMarquardtOptimizer(const NonlinearFactorGraph& graph,
                                  const Values& initialValues,

@@ -461,18 +461,18 @@ std::vector<PointCholeskyProfileRow> profilePointFirstCholesky(
       bal::buildGeneralSfmGraph(db, config);
   const NonlinearFactorGraph batchGraph =
       bal::buildBatchSfmGraph(db, config, false, batchChunkSize);
+  const Ordering reducedOrdering =
+      SfmLevenbergMarquardtOptimizer::CreateReducedOrdering(regularGraph,
+                                                            initial);
   const Ordering schurOrdering =
       SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(regularGraph,
-                                                          initial);
-  const Ordering ordering =
-      SfmLevenbergMarquardtOptimizer::CreatePointFirstOrdering(regularGraph,
-                                                               schurOrdering);
+                                                          reducedOrdering);
 
   std::vector<PointCholeskyProfileRow> rows;
   rows.push_back(profilePointFirstCholeskyVariant(
-      dataset, "Regular", regularGraph, initial, ordering, config));
+      dataset, "Regular", regularGraph, initial, schurOrdering, config));
   rows.push_back(profilePointFirstCholeskyVariant(
-      dataset, "PointBatch", batchGraph, initial, ordering, config));
+      dataset, "PointBatch", batchGraph, initial, schurOrdering, config));
 
   std::cout
       << "\n| Dataset | Variant | Nonlinear factors | Linear factors | "
@@ -588,10 +588,10 @@ int main(int argc, char* argv[]) {
     Ordering ordering;
     Ordering cameraFirstOrdering;
     if (options.config.useSchur) {
-      const Ordering schurOrdering =
-          SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(graph, initial);
-      ordering = SfmLevenbergMarquardtOptimizer::CreatePointFirstOrdering(
-          graph, schurOrdering);
+      const Ordering reducedOrdering =
+          SfmLevenbergMarquardtOptimizer::CreateReducedOrdering(graph, initial);
+      ordering = SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(
+          graph, reducedOrdering);
       if (options.cameraBatch) {
         cameraFirstOrdering = bal::createCameraFirstOrdering(db);
       }
