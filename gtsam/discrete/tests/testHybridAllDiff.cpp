@@ -15,6 +15,8 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/discrete/AllDiff.h>
+#include <gtsam/discrete/SingleValue.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
@@ -22,8 +24,6 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
-#include <gtsam_unstable/discrete/AllDiff.h>
-#include <gtsam_unstable/discrete/SingleValue.h>
 
 #include <memory>
 #include <stdexcept>

@@ -8,7 +8,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam_unstable/discrete/CSP.h>
-#include <gtsam_unstable/discrete/Domain.h>
+#include <gtsam/discrete/Domain.h>
 
 using namespace std;
 

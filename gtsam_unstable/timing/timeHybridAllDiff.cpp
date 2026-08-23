@@ -14,7 +14,7 @@
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/TableFactor.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam_unstable/discrete/AllDiff.h>
+#include <gtsam/discrete/AllDiff.h>
 
 #include <Eigen/Sparse>
 #include <cstdint>

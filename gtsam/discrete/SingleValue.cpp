@@ -7,9 +7,8 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/discrete/DecisionTreeFactor.h>
-#include <gtsam_unstable/discrete/Domain.h>
-#include <gtsam_unstable/discrete/SingleValue.h>
-
+#include <gtsam/discrete/Domain.h>
+#include <gtsam/discrete/SingleValue.h>
 
 namespace gtsam {
 
@@ -55,7 +54,8 @@ bool SingleValue::ensureArcConsistency(Key j, Domains* domains) const {
 }
 
 /* ************************************************************************* */
-Constraint::shared_ptr SingleValue::partiallyApply(const DiscreteValues& values) const {
+Constraint::shared_ptr SingleValue::partiallyApply(
+    const DiscreteValues& values) const {
   DiscreteValues::const_iterator it = values.find(keys_[0]);
   if (it != values.end() && it->second != value_)
     throw runtime_error("SingleValue::partiallyApply: unsatisfiable");
