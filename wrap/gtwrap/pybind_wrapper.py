@@ -507,10 +507,13 @@ pybind11::arg py_arg(const char* name) {
         res += ";\n\n"
         return res
 
-    def wrap_enums(self, enums, instantiated_class, prefix=' ' * 4):
+    def wrap_enums(self,
+                   enums,
+                   instantiated_class,
+                   module_var,
+                   prefix=' ' * 4):
         """Wrap multiple enums defined in a class."""
         cpp_class = instantiated_class.to_cpp()
-        module_var = instantiated_class.name.lower()
         res = ''
 
         for enum in enums:
@@ -518,68 +521,94 @@ pybind11::arg py_arg(const char* name) {
                 enum, class_name=cpp_class, module=module_var, prefix=prefix)
         return res
 
-    def wrap_instantiated_class(
+    def _class_binding_type(self, instantiated_class):
+        """Return the complete ``py::class_`` type for a wrapped class."""
+        cpp_class = instantiated_class.to_cpp()
+        if instantiated_class.parent_class:
+            class_parent = f"{instantiated_class.parent_class}, "
+        else:
+            class_parent = ''
+
+        return ('py::class_<{cpp_class}, {class_parent}'
+                'std::shared_ptr<{cpp_class}>>').format(
+                    cpp_class=cpp_class, class_parent=class_parent)
+
+    @staticmethod
+    def _cpp_identifier(value):
+        """Convert a generated name into a valid, deterministic C++ identifier."""
+        identifier = re.sub(r'[^0-9A-Za-z_]', '_', value)
+        if identifier and identifier[0].isdigit():
+            identifier = '_' + identifier
+        return identifier
+
+    def _class_var(self, instantiated_class):
+        """Return a class-handle variable unique within a generated file."""
+        module_var = self._gen_module_var(instantiated_class.namespaces())
+        return self._cpp_identifier(
+            f"gtwrap_class_{module_var}_{instantiated_class.name}")
+
+    def declare_instantiated_class(
             self, instantiated_class: instantiator.InstantiatedClass):
-        """Wrap the class."""
+        """Register a class without binding any of its callables."""
         module_var = self._gen_module_var(instantiated_class.namespaces())
         cpp_class = instantiated_class.to_cpp()
         if cpp_class in self.ignore_classes:
             return ""
-        if instantiated_class.parent_class:
-            class_parent = "{instantiated_class.parent_class}, ".format(
-                instantiated_class=instantiated_class)
-        else:
-            class_parent = ''
+        class_type = self._class_binding_type(instantiated_class)
+        class_var = self._class_var(instantiated_class)
 
+        # Nested enums need the owning Python class object as their scope.
         if instantiated_class.enums:
-            # If class has enums, define an instance and set module_var to the instance
-            instance_name = instantiated_class.name.lower()
-            class_declaration = (
-                '\n    py::class_<{cpp_class}, {class_parent}'
-                'std::shared_ptr<{cpp_class}>> '
-                '{instance_name}({module_var}, "{class_name}");'
-                '\n    {instance_name}').format(
-                    cpp_class=cpp_class,
-                    class_name=instantiated_class.name,
-                    class_parent=class_parent,
-                    instance_name=instance_name,
-                    module_var=module_var)
-            module_var = instance_name
+            declaration = (
+                '\n    {class_type} {class_var}({module_var}, "{class_name}");'
+            ).format(class_type=class_type,
+                     class_var=class_var,
+                     module_var=module_var,
+                     class_name=instantiated_class.name)
+            declaration += self.wrap_enums(instantiated_class.enums,
+                                           instantiated_class, class_var)
+            return declaration
 
-        else:
-            class_declaration = (
-                '\n    py::class_<{cpp_class}, {class_parent}'
-                'std::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")'
-            ).format(cpp_class=cpp_class,
-                     class_name=instantiated_class.name,
-                     class_parent=class_parent,
-                     module_var=module_var)
+        return ('\n    {class_type}({module_var}, "{class_name}");\n').format(
+            class_type=class_type,
+            module_var=module_var,
+            class_name=instantiated_class.name)
 
-        return ('{class_declaration}'
-                '{wrapped_ctors}'
-                '{wrapped_methods}'
-                '{wrapped_static_methods}'
-                '{wrapped_dunder_methods}'
-                '{wrapped_properties}'
-                '{wrapped_operators};\n'.format(
-                    class_declaration=class_declaration,
-                    wrapped_ctors=self.wrap_ctors(instantiated_class),
-                    wrapped_methods=self.wrap_methods(
-                        instantiated_class.methods,
-                        cpp_class),
-                    wrapped_static_methods=self.wrap_methods(
-                        instantiated_class.static_methods,
-                        cpp_class),
-                    wrapped_dunder_methods=self.wrap_dunder_methods(
-                        instantiated_class.dunder_methods, cpp_class),
-                    wrapped_properties=self.wrap_properties(
-                        instantiated_class.properties, cpp_class),
-                    wrapped_operators=self.wrap_operators(
-                        instantiated_class.operators, cpp_class)))
+    def bind_instantiated_class(
+            self, instantiated_class: instantiator.InstantiatedClass):
+        """Bind a class after all generated types have been registered."""
+        module_var = self._gen_module_var(instantiated_class.namespaces())
+        cpp_class = instantiated_class.to_cpp()
+        if cpp_class in self.ignore_classes:
+            return ""
 
-    def wrap_instantiated_declaration(
+        wrapped_members = (
+            self.wrap_ctors(instantiated_class) +
+            self.wrap_methods(instantiated_class.methods, cpp_class) +
+            self.wrap_methods(instantiated_class.static_methods, cpp_class) +
+            self.wrap_dunder_methods(instantiated_class.dunder_methods,
+                                     cpp_class) +
+            self.wrap_properties(instantiated_class.properties, cpp_class) +
+            self.wrap_operators(instantiated_class.operators, cpp_class))
+
+        if not wrapped_members:
+            return ""
+
+        class_type = self._class_binding_type(instantiated_class)
+        class_var = self._class_var(instantiated_class)
+        return (
+            '\n    auto {class_var} = py::reinterpret_borrow<{class_type}>('
+            '{module_var}.attr("{class_name}"));'
+            '\n    {class_var}{wrapped_members};\n').format(
+                class_var=class_var,
+                class_type=class_type,
+                module_var=module_var,
+                class_name=instantiated_class.name,
+                wrapped_members=wrapped_members)
+
+    def declare_instantiated_declaration(
             self, instantiated_decl: instantiator.InstantiatedDeclaration):
-        """Wrap the forward declaration."""
+        """Register an instantiated forward declaration."""
         module_var = self._gen_module_var(instantiated_decl.namespaces())
         cpp_class = instantiated_decl.to_cpp()
         if cpp_class in self.ignore_classes:
@@ -592,34 +621,44 @@ pybind11::arg py_arg(const char* name) {
                         module_var=module_var)
         return res
 
-    def wrap_stl_class(self, stl_class):
-        """Wrap STL containers."""
+    def declare_stl_class(self, stl_class):
+        """Register an STL container class without binding its members."""
         module_var = self._gen_module_var(stl_class.namespaces())
         cpp_class = stl_class.to_cpp()
         if cpp_class in self.ignore_classes:
             return ""
 
-        return ('\n    py::class_<{cpp_class}, {class_parent}'
-                'std::shared_ptr<{cpp_class}>>({module_var}, "{class_name}")'
-                '{wrapped_ctors}'
-                '{wrapped_methods}'
-                '{wrapped_static_methods}'
-                '{wrapped_properties};\n'.format(
-                    cpp_class=cpp_class,
-                    class_name=stl_class.name,
-                    class_parent=str(stl_class.parent_class) +
-                    (', ' if stl_class.parent_class else ''),
-                    module_var=module_var,
-                    wrapped_ctors=self.wrap_ctors(stl_class),
-                    wrapped_methods=self.wrap_methods(
-                        stl_class.methods,
-                        cpp_class),
-                    wrapped_static_methods=self.wrap_methods(
-                        stl_class.static_methods,
-                        cpp_class),
-                    wrapped_properties=self.wrap_properties(
-                        stl_class.properties, cpp_class),
-                ))
+        return ('\n    {class_type}({module_var}, "{class_name}");\n').format(
+            class_type=self._class_binding_type(stl_class),
+            module_var=module_var,
+            class_name=stl_class.name)
+
+    def bind_stl_class(self, stl_class):
+        """Bind an STL container after all generated types are registered."""
+        module_var = self._gen_module_var(stl_class.namespaces())
+        cpp_class = stl_class.to_cpp()
+        if cpp_class in self.ignore_classes:
+            return ""
+
+        wrapped_members = (
+            self.wrap_ctors(stl_class) +
+            self.wrap_methods(stl_class.methods, cpp_class) +
+            self.wrap_methods(stl_class.static_methods, cpp_class) +
+            self.wrap_properties(stl_class.properties, cpp_class))
+        if not wrapped_members:
+            return ""
+
+        class_type = self._class_binding_type(stl_class)
+        class_var = self._class_var(stl_class)
+        return (
+            '\n    auto {class_var} = py::reinterpret_borrow<{class_type}>('
+            '{module_var}.attr("{class_name}"));'
+            '\n    {class_var}{wrapped_members};\n').format(
+                class_var=class_var,
+                class_type=class_type,
+                module_var=module_var,
+                class_name=stl_class.name,
+                wrapped_members=wrapped_members)
 
     def wrap_functions(self,
                        functions,
@@ -703,13 +742,14 @@ pybind11::arg py_arg(const char* name) {
             return name
 
     def wrap_namespace(self, namespace):
-        """Wrap the complete `namespace`."""
-        wrapped = ""
+        """Generate declaration and binding phases for ``namespace``."""
+        declarations = ""
+        bindings = ""
         includes = ""
 
         namespaces = namespace.full_namespaces()
         if not self._partial_match(namespaces, self.top_module_namespaces):
-            return "", ""
+            return "", "", ""
 
         if len(namespaces) < len(self.top_module_namespaces):
             for element in namespace.content:
@@ -720,20 +760,31 @@ pybind11::arg py_arg(const char* name) {
                     includes += include
                 if isinstance(element, parser.Namespace):
                     (
-                        wrapped_namespace,
+                        namespace_declarations,
+                        namespace_bindings,
                         includes_namespace,
                     ) = self.wrap_namespace(  # noqa
                         element)
-                    wrapped += wrapped_namespace
+                    declarations += namespace_declarations
+                    bindings += namespace_bindings
                     includes += includes_namespace
         else:
             module_var = self._gen_module_var(namespaces)
 
             if len(namespaces) > len(self.top_module_namespaces):
-                wrapped += (
-                    ' ' * 4 + 'pybind11::module {module_var} = '
+                declarations += (
+                    '\n' + ' ' * 4 + 'pybind11::module {module_var} = '
                     '{parent_module_var}.def_submodule("{namespace}", "'
                     '{namespace} submodule");\n'.format(
+                        module_var=module_var,
+                        namespace=namespace.name,
+                        parent_module_var=self._gen_module_var(
+                            namespaces[:-1]),
+                    ))
+                bindings += (
+                    '\n' + ' ' * 4 + 'pybind11::module {module_var} = '
+                    'py::reinterpret_borrow<pybind11::module>('
+                    '{parent_module_var}.attr("{namespace}"));\n'.format(
                         module_var=module_var,
                         namespace=namespace.name,
                         parent_module_var=self._gen_module_var(
@@ -748,27 +799,30 @@ pybind11::arg py_arg(const char* name) {
                     include = include.replace('<', '"').replace('>', '"')
                     includes += include
                 elif isinstance(element, parser.Namespace):
-                    wrapped_namespace, includes_namespace = self.wrap_namespace(
-                        element)
-                    wrapped += wrapped_namespace
+                    (namespace_declarations, namespace_bindings,
+                     includes_namespace) = self.wrap_namespace(element)
+                    declarations += namespace_declarations
+                    bindings += namespace_bindings
                     includes += includes_namespace
 
                 elif isinstance(element, instantiator.InstantiatedClass):
-                    wrapped += self.wrap_instantiated_class(element)
-                    wrapped += self.wrap_enums(element.enums, element)
+                    declarations += self.declare_instantiated_class(element)
+                    bindings += self.bind_instantiated_class(element)
 
                 elif isinstance(element, instantiator.InstantiatedDeclaration):
-                    wrapped += self.wrap_instantiated_declaration(element)
+                    declarations += self.declare_instantiated_declaration(
+                        element)
 
                 elif isinstance(element, parser.Variable):
                     variable_namespace = self._add_namespaces('', namespaces)
-                    wrapped += self.wrap_variable(namespace=variable_namespace,
-                                                  module_var=module_var,
-                                                  variable=element,
-                                                  prefix='\n' + ' ' * 4)
+                    bindings += self.wrap_variable(
+                        namespace=variable_namespace,
+                        module_var=module_var,
+                        variable=element,
+                        prefix='\n' + ' ' * 4)
 
                 elif isinstance(element, parser.Enum):
-                    wrapped += self.wrap_enum(element)
+                    declarations += self.wrap_enum(element)
 
             # Global functions.
             all_funcs = [
@@ -776,14 +830,14 @@ pybind11::arg py_arg(const char* name) {
                 if isinstance(func, (parser.GlobalFunction,
                                      instantiator.InstantiatedGlobalFunction))
             ]
-            wrapped += self.wrap_functions(
+            bindings += self.wrap_functions(
                 all_funcs,
                 self._add_namespaces('', namespaces)[:-2],
                 prefix='\n' + ' ' * 4 + module_var,
                 suffix=';',
             )
 
-        return wrapped, includes
+        return declarations, bindings, includes
 
     def wrap_file(self,
                   content,
@@ -799,12 +853,31 @@ pybind11::arg py_arg(const char* name) {
             submodules: List of other interface file names that should be linked to.
             source_name: Name of the interface file for parser diagnostics.
         """
+        required_template_fields = (
+            'module_def',
+            'submodules',
+            'declaration_module_def',
+            'binding_module_def',
+            'wrapped_declarations',
+            'wrapped_bindings',
+            'module_init',
+        )
+        missing_template_fields = [
+            field for field in required_template_fields
+            if '{' + field + '}' not in self.module_template
+        ]
+        if missing_template_fields:
+            raise ValueError(
+                'Pybind module template is missing declare-then-bind fields: '
+                + ', '.join(missing_template_fields))
+
         # Parse the contents of the interface file
         module = parser.Module.parse_string(content, source_name=source_name)
         # Instantiate all templates
         module = instantiator.instantiate_namespace(module)
 
-        wrapped_namespace, includes = self.wrap_namespace(module)
+        wrapped_declarations, wrapped_bindings, includes = self.wrap_namespace(
+            module)
 
         if self.use_boost_serialization:
             includes += "#include <boost/serialization/export.hpp>"
@@ -827,29 +900,58 @@ pybind11::arg py_arg(const char* name) {
         # Reset the serializing classes list
         self._serializing_classes = []
 
-        submodules_init = []
+        phase_name = self._cpp_identifier(module_name)
+        declaration_function = f"gtwrap_declare_{phase_name}"
+        binding_function = f"gtwrap_bind_{phase_name}"
+        declaration_module_def = (
+            f"void {declaration_function}(py::module_ &m_)")
+        binding_module_def = f"void {binding_function}(py::module_ &m_)"
 
         if submodules is not None:
             module_def = "PYBIND11_MODULE({0}, m_)".format(module_name)
+            submodule_declarations = []
+            declare_calls = [f"{declaration_function}(m_);"]
+            bind_calls = [f"{binding_function}(m_);"]
 
-            for idx, submodule in enumerate(submodules):
-                submodules[idx] = "void {0}(py::module_ &);".format(submodule)
-                submodules_init.append("{0}(m_);".format(submodule))
+            for submodule in submodules:
+                submodule_name = self._cpp_identifier(submodule)
+                declare_function = f"gtwrap_declare_{submodule_name}"
+                bind_function = f"gtwrap_bind_{submodule_name}"
+                submodule_declarations.extend([
+                    f"void {declare_function}(py::module_ &);",
+                    f"void {bind_function}(py::module_ &);",
+                ])
+                declare_calls.append(f"{declare_function}(m_);")
+                bind_calls.append(f"{bind_function}(m_);")
+
+            submodules = submodule_declarations
+            module_initialization = "\n".join(declare_calls + bind_calls)
 
         else:
             module_def = "void {0}(py::module_ &m_)".format(module_name)
             submodules = []
+            module_initialization = "\n".join([
+                f"{declaration_function}(m_);",
+                f"{binding_function}(m_);",
+            ])
 
         includes += self.ARG_POLICY_SUPPORT
 
         return self.module_template.format(
             module_def=module_def,
+            declaration_module_def=declaration_module_def,
+            binding_module_def=binding_module_def,
             module_name=module_name,
             includes=includes,
-            wrapped_namespace=wrapped_namespace,
+            wrapped_declarations=wrapped_declarations,
+            wrapped_bindings=wrapped_bindings,
+            module_init=module_initialization,
+            # Alias retained for templates transitioning from the old
+            # single-phase placeholder.
+            wrapped_namespace=module_initialization,
             boost_class_export=boost_class_export,
             submodules="\n".join(submodules),
-            submodules_init="\n".join(submodules_init),
+            submodules_init="",
         )
 
     def wrap_submodule(self, source):

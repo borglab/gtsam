@@ -19,14 +19,23 @@ namespace py = pybind11;
 
 {submodules}
 
+{declaration_module_def} {{
+// Declaration specializations must only register Python types. Projects can
+// replace this include with their own per-generated-file declaration hook.
+#include "python/declarations/{module_name}.h"
+
+{wrapped_declarations}
+}}
+
+{binding_module_def} {{
+// Callable and property specializations belong in the binding phase.
+#include "python/specializations/{module_name}.h"
+
+{wrapped_bindings}
+}}
+
 {module_def} {{
     m_.doc() = "pybind11 wrapper of {module_name}";
 
-{submodules_init}
-
-{wrapped_namespace}
-
-#include "python/specializations.h"
-
+{module_init}
 }}
-

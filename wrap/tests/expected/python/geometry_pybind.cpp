@@ -34,12 +34,25 @@ using namespace std;
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(geometry_py, m_) {
-    m_.doc() = "pybind11 wrapper of geometry_py";
+
+
+void gtwrap_declare_geometry_py(py::module_ &m_) {
 
     pybind11::module m_gtsam = m_.def_submodule("gtsam", "gtsam submodule");
 
-    py::class_<gtsam::Point2, std::shared_ptr<gtsam::Point2>>(m_gtsam, "Point2")
+    py::class_<gtsam::Point2, std::shared_ptr<gtsam::Point2>>(m_gtsam, "Point2");
+
+    py::class_<gtsam::Point3, std::shared_ptr<gtsam::Point3>>(m_gtsam, "Point3");
+
+}
+
+void gtwrap_bind_geometry_py(py::module_ &m_) {
+#include "python/specializations.h"
+
+    pybind11::module m_gtsam = py::reinterpret_borrow<pybind11::module>(m_.attr("gtsam"));
+
+    auto gtwrap_class_m_gtsam_Point2 = py::reinterpret_borrow<py::class_<gtsam::Point2, std::shared_ptr<gtsam::Point2>>>(m_gtsam.attr("Point2"));
+    gtwrap_class_m_gtsam_Point2
         .def(py::init<>())
         .def(py::init<double, double>(), gtwrap::internal::py_arg<double>("x"), gtwrap::internal::py_arg<double>("y"))
         .def("x",static_cast<double (gtsam::Point2::*)() const>(&gtsam::Point2::x))
@@ -62,7 +75,8 @@ PYBIND11_MODULE(geometry_py, m_) {
             [](const gtsam::Point2 &a){ /* __getstate__: Returns a string that encodes the state of the object */ return py::make_tuple(gtsam::serialize(a)); },
             [](py::tuple t){ /* __setstate__ */ gtsam::Point2 obj; gtsam::deserialize(t[0].cast<std::string>(), obj); return obj; }));
 
-    py::class_<gtsam::Point3, std::shared_ptr<gtsam::Point3>>(m_gtsam, "Point3")
+    auto gtwrap_class_m_gtsam_Point3 = py::reinterpret_borrow<py::class_<gtsam::Point3, std::shared_ptr<gtsam::Point3>>>(m_gtsam.attr("Point3"));
+    gtwrap_class_m_gtsam_Point3
         .def(py::init<double, double, double>(), gtwrap::internal::py_arg<double>("x"), gtwrap::internal::py_arg<double>("y"), gtwrap::internal::py_arg<double>("z"))
         .def("norm",static_cast<double (gtsam::Point3::*)() const>(&gtsam::Point3::norm))
         .def("serialize", [](gtsam::Point3* self){ return gtsam::serialize(*self); })
@@ -73,8 +87,11 @@ PYBIND11_MODULE(geometry_py, m_) {
         .def_static("staticFunction",static_cast<double (*)()>(&gtsam::Point3::staticFunction))
         .def_static("StaticFunctionRet",static_cast<gtsam::Point3 (*)(double)>(&gtsam::Point3::StaticFunctionRet), gtwrap::internal::py_arg<double>("z"));
 
-
-#include "python/specializations.h"
-
 }
 
+PYBIND11_MODULE(geometry_py, m_) {
+    m_.doc() = "pybind11 wrapper of geometry_py";
+
+gtwrap_declare_geometry_py(m_);
+gtwrap_bind_geometry_py(m_);
+}

@@ -24,14 +24,29 @@ pybind11::arg py_arg(const char* name) {
 using namespace std;
 namespace py = pybind11;
 
-PYBIND11_MODULE(pybind_lambda_adapters_py, m_) {
+
+
+void gtwrap_declare_pybind_lambda_adapters_py(py::module_ &m_) {
+
     pybind11::module m_adapters = m_.def_submodule("adapters", "adapters submodule");
 
-    py::class_<adapters::BaseAdapter, std::shared_ptr<adapters::BaseAdapter>>(m_adapters, "BaseAdapter")
+    py::class_<adapters::BaseAdapter, std::shared_ptr<adapters::BaseAdapter>>(m_adapters, "BaseAdapter");
+
+    py::class_<adapters::Adapter<int>, adapters::BaseAdapter, std::shared_ptr<adapters::Adapter<int>>>(m_adapters, "AdapterInt");
+
+}
+
+void gtwrap_bind_pybind_lambda_adapters_py(py::module_ &m_) {
+
+    pybind11::module m_adapters = py::reinterpret_borrow<pybind11::module>(m_.attr("adapters"));
+
+    auto gtwrap_class_m_adapters_BaseAdapter = py::reinterpret_borrow<py::class_<adapters::BaseAdapter, std::shared_ptr<adapters::BaseAdapter>>>(m_adapters.attr("BaseAdapter"));
+    gtwrap_class_m_adapters_BaseAdapter
         .def(py::init<>())
         .def("inherited",[](adapters::BaseAdapter* self, int value){return self->inherited(value);}, gtwrap::internal::py_arg<int>("value"));
 
-    py::class_<adapters::Adapter<int>, adapters::BaseAdapter, std::shared_ptr<adapters::Adapter<int>>>(m_adapters, "AdapterInt")
+    auto gtwrap_class_m_adapters_AdapterInt = py::reinterpret_borrow<py::class_<adapters::Adapter<int>, adapters::BaseAdapter, std::shared_ptr<adapters::Adapter<int>>>>(m_adapters.attr("AdapterInt"));
+    gtwrap_class_m_adapters_AdapterInt
         .def(py::init<>())
         .def("exact",static_cast<int (adapters::Adapter<int>::*)(int)>(&adapters::Adapter<int>::exact), gtwrap::internal::py_arg<int>("value"))
         .def("exactConst",static_cast<int (adapters::Adapter<int>::*)(int) const>(&adapters::Adapter<int>::exactConst), gtwrap::internal::py_arg<int>("value"))
@@ -54,4 +69,9 @@ PYBIND11_MODULE(pybind_lambda_adapters_py, m_) {
     m_adapters.def("globalOverload",static_cast<int (*)(int)>(&adapters::globalOverload), gtwrap::internal::py_arg<int>("value"));
     m_adapters.def("globalOverload",static_cast<double (*)(double)>(&adapters::globalOverload), gtwrap::internal::py_arg<double>("value"));
     m_adapters.def("globalTemplatedInt",[](int value){return adapters::globalTemplated<int>(value);}, gtwrap::internal::py_arg<int>("value"));
+}
+
+PYBIND11_MODULE(pybind_lambda_adapters_py, m_) {
+gtwrap_declare_pybind_lambda_adapters_py(m_);
+gtwrap_bind_pybind_lambda_adapters_py(m_);
 }
