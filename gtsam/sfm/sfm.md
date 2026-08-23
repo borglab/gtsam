@@ -57,7 +57,9 @@ Both modes use one cached, point-first multifrontal factorization. They do not m
 1. `SfmEliminationMode::Full` solves the joint system.
 2. `SfmEliminationMode::Schur` eliminates every active `Point3` and `Unit3` first, then solves for all remaining variables.
 
-On CPU, the reduced system is selected by value type rather than by one camera template: poses, camera objects, shared or per-camera calibrations, and any other value types remain after Schur elimination. This supports variable and global calibration without specializing the optimizer. CPU defaults to `Full`, `MULTIFRONTAL_SOLVER`, and an automatically generated natural-landmark prefix followed by a METIS ordering of the reduced system. That default won BAL-16 and BAL-88 and was within 0.3% of Schur on BAL-135. CUDA defaults to `Schur` and keeps its existing camera/`Point3` backend assumptions.
+CPU Schur partitioning eliminates active `Point3` and `Unit3` values while retaining every other value type, including poses, camera objects, and shared or per-camera calibrations. This value-based partition supports variable and global calibration without specializing the optimizer for one camera template.
+
+CPU and CUDA defaults reflect their current fast paths and graph support. CPU defaults to `Full`, `MULTIFRONTAL_SOLVER`, and an automatically generated natural-landmark prefix followed by a METIS ordering of the reduced system; that combination won BAL-16 and BAL-88 and was within 0.3% of Schur on BAL-135. CUDA defaults to `Schur` and keeps its existing camera/`Point3` backend assumptions.
 
 | Platform | Full | Schur | Linear solvers |
 | --- | --- | --- | --- |
@@ -84,10 +86,7 @@ gtsam::SfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
 const gtsam::Values& result = optimizer.optimize();
 ```
 
-[Run the Python Full-and-Schur tutorial](../../python/gtsam/examples/SfmLevenbergMarquardtOptimizerExample.ipynb),
-including a calibration shared by every camera. When constructing `Values` from
-NumPy arrays, use `Values.insertPoint3()` for landmarks so Python preserves
-their fixed-size `Point3` type.
+[The Python Full-and-Schur tutorial](../../python/gtsam/examples/SfmLevenbergMarquardtOptimizerExample.ipynb) demonstrates both elimination modes with a calibration shared by every camera. When constructing `Values` from NumPy arrays, use `Values.insertPoint3()` for landmarks so Python preserves their fixed-size `Point3` type.
 
 ## What Schur means for each solver
 
@@ -121,7 +120,7 @@ gtsam::Ordering reduced{pose0Key, pose1Key, globalCalibrationKey};
 params.setOrdering(reduced);
 ```
 
-`CreateReducedOrdering(graph, initial)` symbolically eliminates active `Point3` and `Unit3` values in natural key order and runs METIS on the resulting reduced graph. `CreateSchurOrdering(graph, reduced)` prefixes that reduced ordering with the eliminated keys; its result is the complete Schur ordering used by Full mode or the fused multifrontal path. Duplicate, missing, eliminated, and unknown reduced keys are rejected. Direct reduced solvers and iterative solvers that consume an ordering receive the same reduced-only suffix.
+Two public ordering helpers build and validate the reusable point-first ordering. `CreateReducedOrdering(graph, initial)` symbolically eliminates active `Point3` and `Unit3` values in natural key order and runs METIS on the resulting reduced graph. `CreateSchurOrdering(graph, reduced)` prefixes that reduced ordering with the eliminated keys; its result is the complete Schur ordering used by Full mode or the fused multifrontal path. Duplicate, missing, eliminated, and unknown reduced keys are rejected. Direct reduced solvers and iterative solvers that consume an ordering receive the same reduced-only suffix.
 
 ::::{grid} 1 1 2 2
 
@@ -148,17 +147,29 @@ A build without CHOLMOD remains valid; selecting it produces an actionable runti
 
 ### CUDA semantics
 
-CUDA Schur mode retains the bespoke landmark-elimination kernels shown in {numref}`fig-sfm-cuda-optimizers`. Dense Cholesky, cuDSS, and PCG solve the resulting camera system. CUDA orderings remain camera-only and are accepted only by backends that consume them. Selecting `SfmEliminationMode::Full` fails immediately; the full-system CUDA implementation is intentionally deferred.
+CUDA SFM currently supports only its bespoke Schur path; selecting `SfmEliminationMode::Full` fails immediately because full-system CUDA solving is intentionally deferred. The Schur path uses the landmark-elimination kernels shown in {numref}`fig-sfm-cuda-optimizers`, then solves the camera system with dense Cholesky, cuDSS, or PCG. CUDA orderings remain camera-only and are accepted only by backends that consume them.
 
 ## Performance at a glance
 
-These Release-mode measurements were collected on Ubuntu 24.04 with an **Intel Core i7-14700F (20 physical cores, 28 logical CPUs) and 31 GiB RAM**, plus an **NVIDIA GeForce RTX 5060 Ti with 16 GiB VRAM**. Values are median end-to-end optimization times from three runs.
+The primary Release-mode benchmark compares the public CPU and CUDA fast paths on Ubuntu 24.04 with an **Intel Core i7-14700F (20 physical cores, 28 logical CPUs) and 31 GiB RAM**, plus an **NVIDIA GeForce RTX 5060 Ti with 16 GiB VRAM**. Values are median end-to-end optimization times from three runs.
 
 | Public optimizer path | BAL-16 s | BAL-88 s | BAL-135 s |
 | --- | ---: | ---: | ---: |
 | CPU Full + `MULTIFRONTAL_SOLVER` | **0.252** | **1.001** | 1.423 |
 | CPU Schur + `MULTIFRONTAL_SOLVER` | 0.258 | 1.003 | **1.419** |
 | CUDA Schur + dense Cholesky | **0.055** | **0.218** | **0.290** |
+
+An [independent run](https://github.com/borglab/gtsam/pull/2727#issuecomment-5383045325) on a Ryzen 9 5900X (12C/24T) and RTX 5090 produced the following median times; parentheses show speedup relative to CUDA `schur-dense`.
+
+| Configuration | BAL-16 | BAL-88 | BAL-135 |
+| --- | ---: | ---: | ---: |
+| CUDA `schur-dense` | 0.070 | 0.200 | 0.267 |
+| Schur/MultifrontalSolver | 0.412 (5.9×) | 1.505 (7.5×) | 2.115 (7.9×) |
+| Full/MultifrontalSolver | 0.437 (6.2×) | 1.511 (7.6×) | 2.107 (7.9×) |
+| Schur/MultifrontalCholesky | 0.643 (9.2×) | 2.232 (11.2×) | 3.012 (11.3×) |
+| Schur/PCG | 0.678 (9.7×) | 2.349 (11.7×) | 3.029 (11.3×) |
+
+Absolute times—and even the narrow Full-versus-Schur winner—vary with hardware and build, so benchmark your workload.
 
 :::{admonition} Fast-path guidance
 :class: tip
