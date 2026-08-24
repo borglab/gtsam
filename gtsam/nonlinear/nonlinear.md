@@ -40,7 +40,7 @@ The `nonlinear` module in GTSAM includes a comprehensive set of tools for nonlin
 ## Specialized Factors
 
 - [PriorFactor](doc/PriorFactor.ipynb): Imposes a prior constraint on a variable.
-- [NonlinearEquality](doc/NonlinearEquality.ipynb): Enforces equality constraints between variables.
+- [AntiFactor](https://github.com/borglab/gtsam/blob/develop/gtsam/nonlinear/AntiFactor.h): Negates an arbitrary nonlinear factor so it can be removed through a graph update.
 - [LinearContainerFactor](doc/LinearContainerFactor.ipynb): Wraps linear factors for inclusion in nonlinear factor graphs.
 - [WhiteNoiseFactor](doc/WhiteNoiseFactor.ipynb): Binary factor to estimate parameters of zero-mean Gaussian white noise.
 

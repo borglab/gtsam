@@ -44,7 +44,7 @@
 #include <gtsam/geometry/StereoCamera.h>
 #include <gtsam/geometry/SimpleCamera.h>
 
-#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/linear/GaussianISAM.h>

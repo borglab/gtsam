@@ -17,7 +17,7 @@
  */
 
 #include <gtsam/base/cuda/Errors.h>
-#include <gtsam/nonlinear/cuda/internal/DeviceGeometryTypes.h>
+#include <gtsam/sfm/cuda/internal/DeviceGeometryTypes.h>
 #include <gtsam/sfm/cuda/internal/SfmDenseSchurSolver.h>
 #include <gtsam/sfm/cuda/internal/SfmProjectionLinearization.h>
 #include <gtsam/sfm/cuda/internal/SfmReducedCsrPlan.h>

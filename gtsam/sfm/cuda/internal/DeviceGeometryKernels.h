@@ -45,7 +45,7 @@
 #pragma once
 
 #include <gtsam/config.h>
-#include <gtsam/nonlinear/cuda/internal/DeviceGeometryTypes.h>
+#include <gtsam/sfm/cuda/internal/DeviceGeometryTypes.h>
 #include <gtsam/sfm/cuda/SfmTypes.h>
 
 #include <cuda_runtime_api.h>

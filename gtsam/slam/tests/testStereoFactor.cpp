@@ -16,7 +16,7 @@
  */
 
 #include <gtsam/slam/StereoFactor.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>

@@ -29,7 +29,7 @@
 #include <gtsam/linear/PowerMethod.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/sfm/ShonanAveraging.h>
 #include <gtsam/sfm/ShonanFactor.h>

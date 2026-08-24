@@ -17,7 +17,7 @@
  */
 
 #include <gtsam/base/cuda/Errors.h>
-#include <gtsam/nonlinear/cuda/internal/DeviceGeometryKernels.h>
+#include <gtsam/sfm/cuda/internal/DeviceGeometryKernels.h>
 #include <gtsam/sfm/cuda/internal/SfmProjectionLinearization.h>
 
 #include <algorithm>

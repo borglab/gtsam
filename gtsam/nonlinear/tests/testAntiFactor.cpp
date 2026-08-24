@@ -17,7 +17,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 
-#include <gtsam/slam/AntiFactor.h>
+#include <gtsam/nonlinear/AntiFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>

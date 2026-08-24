@@ -21,7 +21,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/slam/ReferenceFrameFactor.h>
 

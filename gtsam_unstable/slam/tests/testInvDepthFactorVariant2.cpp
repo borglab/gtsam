@@ -7,7 +7,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam_unstable/slam/InvDepthFactorVariant2.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/inference/Symbol.h>
