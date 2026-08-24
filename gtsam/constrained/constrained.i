@@ -3,6 +3,28 @@
 //*************************************************************************
 namespace gtsam {
 
+#include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/Cal3Fisheye.h>
+#include <gtsam/geometry/Cal3Unified.h>
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/geometry/Gal3.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Rot2.h>
+#include <gtsam/geometry/Rot3.h>
+#include <gtsam/geometry/SL4.h>
+#include <gtsam/geometry/SO3.h>
+#include <gtsam/geometry/SO4.h>
+#include <gtsam/geometry/SOn.h>
+#include <gtsam/geometry/Similarity2.h>
+#include <gtsam/geometry/Similarity3.h>
+#include <gtsam/geometry/SphericalCamera.h>
+#include <gtsam/geometry/StereoPoint2.h>
+#include <gtsam/navigation/ImuBias.h>
 #include <gtsam/constrained/NonlinearEquality.h>
 template <T = {gtsam::Point2,
                gtsam::StereoPoint2,

@@ -120,8 +120,11 @@ virtual class TransferFactor : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/Cal3DS2.h>
 #include <gtsam/geometry/Cal3f.h>
 #include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/Cal3Fisheye.h>
+#include <gtsam/geometry/Cal3Unified.h>
 template <K = {gtsam::Cal3_S2, gtsam::Cal3f, gtsam::Cal3Bundler}>
 virtual class EssentialTransferFactor : gtsam::NoiseModelFactor {
   EssentialTransferFactor(gtsam::EdgeKey edge1, gtsam::EdgeKey edge2,
