@@ -178,6 +178,92 @@ spanning-tree builder only uses unary and binary factors, while these graphs
 contain higher-arity factors. Full multifrontal and sequential QR both reached
 the BAL-135 cap.
 
+### Hybrid multifrontal parent-gather acceptance
+
+The August 24, 2026 focused rerun measured the hybrid parent-gather candidate
+on the same i7-14700F host and toolchain. Three detached worktrees used
+identical CPU-only Release builds with TBB enabled:
+
+| Role | Measured commit | Rebased PR commit |
+| --- | --- | --- |
+| Original parent-gather baseline | `dd79e05e9` | not part of the PR |
+| Linear-cleanup reference plus timing harness | `f02e1bcb8` | `fe9a1352c` |
+| Hybrid parent-gather candidate | `bbd2864f9` | `b95413654` |
+
+`git range-diff` reports the cleanup and candidate patches as identical before
+and after the rebase.
+
+All processes were pinned to logical CPUs 0-20. The regular-factor benchmark
+also set `--threads 21` explicitly; the SFM benchmark used the solver's normal
+three-quarter-hardware default, which is 21 threads on this 28-CPU host. The
+build command for each worktree was:
+
+```bash
+cmake -S SOURCE -B BUILD -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  '-DCMAKE_CXX_FLAGS_RELEASE=-O3 -DNDEBUG' \
+  -DGTSAM_WITH_TBB=ON -DGTSAM_ENABLE_CUDA=OFF \
+  -DGTSAM_BUILD_TIMING_ALWAYS=ON -DGTSAM_BUILD_TESTS=OFF \
+  -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF -DGTSAM_BUILD_UNSTABLE=OFF \
+  -DGTSAM_BUILD_PYTHON=OFF
+cmake --build BUILD -j6 --target \
+  timeMultifrontalSolver timeSfmPartialElimination
+```
+
+The regular graph command measures two eliminate-and-solve iterations after
+one untimed warmup:
+
+```bash
+taskset -c 0-20 BUILD/timing/timeMultifrontalSolver \
+  --bal-dataset DATASET --samples SAMPLES --iterations 2 --threads 21
+```
+
+BAL-16 and BAL-88 are three-sample diagnostics. BAL-135 is the formal gate:
+seven separate one-sample baseline/candidate invocations, alternating which
+binary ran first. Negative changes are improvements.
+
+| Dataset | `dd79e05e9` s | `f02e1bcb8` s | `bbd2864f9` s | Candidate vs. original | Result |
+| --- | ---: | ---: | ---: | ---: | --- |
+| BAL-16 | 0.168448 | 0.168262 | 0.058755 | -65.1% | diagnostic pass |
+| BAL-88 | 2.608010 | 2.580410 | 0.942307 | -63.9% | diagnostic pass |
+| BAL-135 | 4.955640 | - | 2.199900 | **-55.6%** | **passes the 5% gate** |
+
+The point-batched public SFM path used one optimizer repetition per BAL-135
+invocation and cycled the baseline, cleanup, and candidate run order. BAL-16
+and BAL-88 used three repetitions per diagnostic invocation:
+
+```bash
+taskset -c 0-20 BUILD/timing/timeSfmPartialElimination \
+  --repetitions REPETITIONS --max-seconds 300 \
+  --configuration 'Full/MultifrontalSolver' examples/Data/DATASET
+# Repeat with Schur/MultifrontalSolver.
+```
+
+The no-regression limit is at most 3% slower than both references. All six
+candidate medians pass; negative percentages are faster.
+
+| Dataset | Mode | `dd79e05e9` s | `f02e1bcb8` s | `bbd2864f9` s | Vs. original | Vs. cleanup |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| BAL-16 | Full | 0.231144 | 0.230305 | 0.228180 | -1.3% | -0.9% |
+| BAL-16 | Schur | 0.230632 | 0.228250 | 0.228183 | -1.1% | -0.03% |
+| BAL-88 | Full | 0.889642 | 0.880253 | 0.868962 | -2.3% | -1.3% |
+| BAL-88 | Schur | 0.893126 | 0.877075 | 0.873318 | -2.2% | -0.4% |
+| BAL-135 | Full | 1.432247 | 1.429569 | 1.436844 | +0.3% | +0.5% |
+| BAL-135 | Schur | 1.421049 | 1.418110 | 1.426606 | +0.4% | +0.6% |
+
+Full and Schur produced identical results in every build: final objectives of
+18,033.914832, 291,581.106404, and 377,782.056028 with respectively 5/5, 4/4,
+and 2/2 LM/inner iterations on BAL-16, BAL-88, and BAL-135.
+
+Peak full-process RSS for the regular BAL-135 command fell from 4,065,540 KiB
+to 3,957,944 KiB, a reduction of 105.1 MiB (2.65%). The process peak includes
+the loaded graph and factorization state, so it understates the scratch-memory
+reduction itself.
+
+These focused results supersede only the two `MultifrontalSolver` rows when
+evaluating the hybrid gather change. The complete solver matrix above remains
+the August 21 record for comparisons with the other solver families.
+
 ### CUDA procedure and results
 
 The CUDA runs used point-batched graphs and Schur elimination. Each command was

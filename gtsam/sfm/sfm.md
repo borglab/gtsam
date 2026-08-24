@@ -45,7 +45,7 @@ The bespoke CUDA Schur path supports dense Cholesky, cuDSS, and PCG. `Full` is a
 :::{admonition} Fastest tested CPU path
 :class: tip sfm-fast-path
 
-For BAL-style problems, use **point-batched projection factors + `MULTIFRONTAL_SOLVER`** in a Release build with TBB enabled. Construct the complete ordering once with natural points followed by METIS cameras. `Full` was fastest on BAL-16 and BAL-88, while `Schur` was fastest on BAL-135, so these measurements do not identify one universally fastest elimination mode.
+For BAL-style problems, use **point-batched projection factors + `MULTIFRONTAL_SOLVER`** in a Release build with TBB enabled. Construct the complete ordering once with natural points followed by METIS cameras. `Full` and `Schur` were effectively tied on BAL-16, `Full` was fastest on BAL-88, and `Schur` was fastest on BAL-135, so these measurements do not identify one universally fastest elimination mode.
 
 Both modes use one cached, point-first multifrontal factorization. They do not materialize an intermediate reduced graph or invoke a second solver.
 :::
@@ -59,7 +59,7 @@ Both modes use one cached, point-first multifrontal factorization. They do not m
 
 CPU Schur partitioning eliminates active `Point3` and `Unit3` values while retaining every other value type, including poses, camera objects, and shared or per-camera calibrations. This value-based partition supports variable and global calibration without specializing the optimizer for one camera template.
 
-CPU and CUDA defaults reflect their current fast paths and graph support. CPU defaults to `Full`, `MULTIFRONTAL_SOLVER`, and an automatically generated natural-landmark prefix followed by a METIS ordering of the reduced system; that combination won BAL-16 and BAL-88 and was within 0.3% of Schur on BAL-135. CUDA defaults to `Schur` and keeps its existing camera/`Point3` backend assumptions.
+CPU and CUDA defaults reflect their current fast paths and graph support. CPU defaults to `Full`, `MULTIFRONTAL_SOLVER`, and an automatically generated natural-landmark prefix followed by a METIS ordering of the reduced system; that combination was effectively tied on BAL-16, won BAL-88, and was within 0.8% of Schur on BAL-135. CUDA defaults to `Schur` and keeps its existing camera/`Point3` backend assumptions.
 
 | Platform | Full | Schur | Linear solvers |
 | --- | --- | --- | --- |
@@ -151,12 +151,12 @@ CUDA SFM currently supports only its bespoke Schur path; selecting `SfmEliminati
 
 ## Performance at a glance
 
-The primary Release-mode benchmark compares the public CPU and CUDA fast paths on Ubuntu 24.04 with an **Intel Core i7-14700F (20 physical cores, 28 logical CPUs) and 31 GiB RAM**, plus an **NVIDIA GeForce RTX 5060 Ti with 16 GiB VRAM**. Values are median end-to-end optimization times from three runs.
+The primary Release-mode benchmark compares the public CPU and CUDA fast paths on Ubuntu 24.04 with an **Intel Core i7-14700F (20 physical cores, 28 logical CPUs) and 31 GiB RAM**, plus an **NVIDIA GeForce RTX 5060 Ti with 16 GiB VRAM**. CPU values are median end-to-end optimization times from three BAL-16/BAL-88 repetitions and seven separately invoked BAL-135 runs; CUDA values are medians from three runs.
 
 | Public optimizer path | BAL-16 s | BAL-88 s | BAL-135 s |
 | --- | ---: | ---: | ---: |
-| CPU Full + `MULTIFRONTAL_SOLVER` | **0.252** | **1.001** | 1.423 |
-| CPU Schur + `MULTIFRONTAL_SOLVER` | 0.258 | 1.003 | **1.419** |
+| CPU Full + `MULTIFRONTAL_SOLVER` | **0.228** | **0.869** | 1.437 |
+| CPU Schur + `MULTIFRONTAL_SOLVER` | **0.228** | 0.873 | **1.427** |
 | CUDA Schur + dense Cholesky | **0.055** | **0.218** | **0.290** |
 
 An [independent run](https://github.com/borglab/gtsam/pull/2727#issuecomment-5383045325) on a Ryzen 9 5900X (12C/24T) and RTX 5090 produced the following median times; parentheses show speedup relative to CUDA `schur-dense`.
@@ -174,7 +174,7 @@ Absolute times—and even the narrow Full-versus-Schur winner—vary with hardwa
 :::{admonition} Fast-path guidance
 :class: tip
 
-For CPU BAL-style problems, start with point-batched projection factors, the natural-points/METIS-cameras ordering, and `MULTIFRONTAL_SOLVER`. Full is the default and won two datasets; Schur was effectively tied and won the largest by only 0.25%. This benchmark does not measure parallel scaling, so physical core count alone is not a processor-performance prediction.
+For CPU BAL-style problems, start with point-batched projection factors, the natural-points/METIS-cameras ordering, and `MULTIFRONTAL_SOLVER`. Full is the default, tied Schur on BAL-16, and won BAL-88; Schur won BAL-135 by about 0.7%. This benchmark does not measure parallel scaling, so physical core count alone is not a processor-performance prediction.
 
 For CUDA at these problem sizes, use Schur with dense Cholesky. It was about 4.6–4.9× faster than the best CPU result. CUDA Full remains planned and is rejected rather than silently falling back to the CPU.
 :::
