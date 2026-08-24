@@ -197,15 +197,21 @@ public:
   static void CSRFormat(std::vector<int>& xadj,
       std::vector<int>& adj, const FACTOR_GRAPH& graph);
 
-  /// Compute an ordering determined by METIS from a VariableIndex
-  static Ordering Metis(const MetisIndex& met);
+  /** Compute an ordering determined by METIS from a VariableIndex.
+   * METIS's nested dissection is randomized: `seed` initializes METIS's
+   * internal generator, which drives its initial bisections, matching order,
+   * and refinement tie-breaks. The default 4321 is the value METIS itself
+   * uses when no seed is supplied, so it reproduces the historical ordering
+   * exactly; other seeds draw different orderings, and keeping the best of k
+   * seeds (by fill or maximum clique) is a cheap quality boost. */
+  static Ordering Metis(const MetisIndex& met, int seed = 4321);
 
   template<class FACTOR_GRAPH>
-  static Ordering Metis(const FACTOR_GRAPH& graph) {
+  static Ordering Metis(const FACTOR_GRAPH& graph, int seed = 4321) {
     if (graph.empty())
       return Ordering();
     else
-      return Metis(MetisIndex(graph));
+      return Metis(MetisIndex(graph), seed);
   }
 
   /// @}

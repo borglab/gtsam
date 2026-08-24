@@ -253,7 +253,7 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
 }
 
 /* ************************************************************************* */
-Ordering Ordering::Metis(const MetisIndex& met) {
+Ordering Ordering::Metis(const MetisIndex& met, int seed) {
 #ifdef GTSAM_SUPPORT_NESTED_DISSECTION
   gttic(Ordering_METIS);
 
@@ -279,8 +279,15 @@ Ordering Ordering::Metis(const MetisIndex& met) {
     return result;
   }
 
+  // METIS seeds its internal random generator from METIS_OPTION_SEED; when no
+  // options are given it falls back to 4321, so the default argument passes
+  // that same value and reproduces the historical ordering exactly.
+  idx_t options[METIS_NOPTIONS];
+  METIS_SetDefaultOptions(options);
+  options[METIS_OPTION_SEED] = seed;
+
   const int outputError =
-      METIS_NodeND(&size, xadj.data(), adj.data(), nullptr, nullptr,
+      METIS_NodeND(&size, xadj.data(), adj.data(), nullptr, options,
                    perm.data(), iperm.data());
 
   if (outputError != METIS_OK) {
