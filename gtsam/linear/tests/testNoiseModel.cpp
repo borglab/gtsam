@@ -619,6 +619,37 @@ TEST(NoiseModel, robustFunctionFair)
   DOUBLES_EQUAL(0.441961080151135, fair->loss(error4), 1e-8);
 }
 
+// All robust reweight overloads apply identical block and scalar weights.
+TEST(NoiseModel, RobustReweightOverloadEquivalence) {
+  for (const auto scheme : {mEstimator::Base::Block,
+                            mEstimator::Base::Scalar}) {
+    const auto model = mEstimator::Huber::Create(1.345, scheme);
+    const Matrix A1{{1.0, 2.0}, {3.0, 4.0}};
+    const Matrix A2{{5.0}, {6.0}};
+    const Matrix A3{{7.0, 8.0}, {9.0, 10.0}};
+    const Vector error{{2.0, -0.5}};
+
+    vector<Matrix> expectedMatrices{A1, A2, A3};
+    Vector expectedError = error;
+    model->reweight(expectedMatrices, expectedError);
+
+    Matrix actual1 = A1, actual2 = A2, actual3 = A3;
+    Vector actualError = error;
+    model->reweight(actual1, actual2, actual3, actualError);
+    EXPECT(assert_equal(expectedMatrices[0], actual1));
+    EXPECT(assert_equal(expectedMatrices[1], actual2));
+    EXPECT(assert_equal(expectedMatrices[2], actual3));
+    EXPECT(assert_equal(expectedError, actualError));
+
+    vector<Matrix> noMatrices;
+    Vector vectorExpected = error, vectorActual = error;
+    model->reweight(noMatrices, vectorExpected);
+    model->reweight(vectorActual);
+    EXPECT(assert_equal(vectorExpected, vectorActual));
+  }
+}
+
+/* ************************************************************************* */
 TEST(NoiseModel, robustFunctionHuber)
 {
   const double k = 5.0, error1 = 1.0, error2 = 10.0, error3 = -10.0, error4 = -1.0;

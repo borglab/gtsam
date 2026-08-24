@@ -320,7 +320,7 @@ public:
           std::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError,
                       this, std::placeholders::_1, Vel1, Bias1, Pose2, Vel2),
           Pose1);
-      *H1 = stack(2, &H1_Pose, &H1_Vel);
+      *H1 = stack(std::vector<Matrix>{H1_Pose, H1_Vel});
     }
 
     // Jacobian w.r.t. Vel1
@@ -334,7 +334,7 @@ public:
           std::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError,
                       this, Pose1, std::placeholders::_1, Bias1, Pose2, Vel2),
           Vel1);
-      *H2 = stack(2, &H2_Pose, &H2_Vel);
+      *H2 = stack(std::vector<Matrix>{H2_Pose, H2_Vel});
     }
 
     // Jacobian w.r.t. IMUBias1
@@ -347,7 +347,7 @@ public:
           std::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError,
                       this, Pose1, Vel1, std::placeholders::_1, Pose2, Vel2),
           Bias1);
-      *H3 = stack(2, &H3_Pose, &H3_Vel);
+      *H3 = stack(std::vector<Matrix>{H3_Pose, H3_Vel});
     }
 
     // Jacobian w.r.t. Pose2
@@ -360,7 +360,7 @@ public:
           std::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError,
                       this, Pose1, Vel1, Bias1, std::placeholders::_1, Vel2),
           Pose2);
-      *H4 = stack(2, &H4_Pose, &H4_Vel);
+      *H4 = stack(std::vector<Matrix>{H4_Pose, H4_Vel});
     }
 
     // Jacobian w.r.t. Vel2
@@ -374,13 +374,13 @@ public:
           std::bind(&EquivInertialNavFactor_GlobalVel::evaluateVelocityError,
                       this, Pose1, Vel1, Bias1, Pose2, std::placeholders::_1),
           Vel2);
-      *H5 = stack(2, &H5_Pose, &H5_Vel);
+      *H5 = stack(std::vector<Matrix>{H5_Pose, H5_Vel});
     }
 
     Vector ErrPoseVector(POSE::Logmap(evaluatePoseError(Pose1, Vel1, Bias1, Pose2, Vel2)));
     Vector ErrVelVector(evaluateVelocityError(Pose1, Vel1, Bias1, Pose2, Vel2));
 
-    return concatVectors(2, &ErrPoseVector, &ErrVelVector);
+    return concatVectors(std::list<Vector>{ErrPoseVector, ErrVelVector});
   }
 
 
@@ -481,7 +481,7 @@ public:
                     delta_pos_in_t0, std::placeholders::_1),
         delta_vel_in_t0);
     Matrix H_pos_angles = Z_3x3;
-    Matrix H_pos_bias = collect(2, &Z3x3, &Z3x3);
+    Matrix H_pos_bias = collect(std::vector<const Matrix*>{&Z3x3, &Z3x3});
 
     Matrix H_vel_vel = numericalDerivative11<Vector3, Vector3>(
         std::bind(&PreIntegrateIMUObservations_delta_vel, msr_gyro_t,
@@ -514,13 +514,18 @@ public:
     Matrix H_angles_pos = Z_3x3;
     Matrix H_angles_vel = Z_3x3;
 
-    Matrix F_angles = collect(4, &H_angles_angles, &H_angles_pos, &H_angles_vel, &H_angles_bias);
-    Matrix F_pos    = collect(4, &H_pos_angles, &H_pos_pos, &H_pos_vel, &H_pos_bias);
-    Matrix F_vel    = collect(4, &H_vel_angles, &H_vel_pos, &H_vel_vel, &H_vel_bias);
-    Matrix F_bias_a = collect(5, &Z3x3, &Z3x3, &Z3x3, &I3x3, &Z3x3);
-    Matrix F_bias_g = collect(5, &Z3x3, &Z3x3, &Z3x3, &Z3x3, &I3x3);
-    Matrix F = stack(5, &F_angles, &F_pos, &F_vel, &F_bias_a, &F_bias_g);
-
+    Matrix F_angles = collect(std::vector<const Matrix*>{
+        &H_angles_angles, &H_angles_pos, &H_angles_vel, &H_angles_bias});
+    Matrix F_pos = collect(std::vector<const Matrix*>{&H_pos_angles, &H_pos_pos,
+                                                      &H_pos_vel, &H_pos_bias});
+    Matrix F_vel = collect(std::vector<const Matrix*>{&H_vel_angles, &H_vel_pos,
+                                                      &H_vel_vel, &H_vel_bias});
+    Matrix F_bias_a =
+        collect(std::vector<const Matrix*>{&Z3x3, &Z3x3, &Z3x3, &I3x3, &Z3x3});
+    Matrix F_bias_g =
+        collect(std::vector<const Matrix*>{&Z3x3, &Z3x3, &Z3x3, &Z3x3, &I3x3});
+    Matrix F =
+        stack(std::vector<Matrix>{F_angles, F_pos, F_vel, F_bias_a, F_bias_g});
 
     noiseModel::Gaussian::shared_ptr model_discrete_curr = calc_descrete_noise_model(model_continuous_overall, msr_dt );
     Matrix Q_d = (model_discrete_curr->R().transpose() * model_discrete_curr->R()).inverse();

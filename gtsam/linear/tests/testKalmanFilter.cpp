@@ -138,7 +138,7 @@ TEST( KalmanFilter, predict ) {
   Matrix B{{1.0, 0.1, 0.2}, {1.1, 1.2, 0.8}};
   Vector u = Vector3(1.0, 0.0, 2.0);
   Matrix R{{1.0, 0.5}, {0.0, 3.0}};
-  Matrix M = trans(R)*R;
+  Matrix M = R.transpose() * R;
   Matrix Q = M.inverse();
 
   // Create a Kalman filter of dimension 2

@@ -15,17 +15,17 @@
  * @author Frank Dellaert, Yong-Dian Jian
  */
 
-#include <gtsam/linear/SubgraphPreconditioner.h>
-
-#include <gtsam/linear/SubgraphBuilder.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/GaussianBayesNet.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/base/types.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/base/types.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/SubgraphBuilder.h>
+#include <gtsam/linear/SubgraphPreconditioner.h>
+#include <gtsam/linear/linearExceptions.h>
 
-#include <stdexcept>
 #include <cassert>
+#include <stdexcept>
 
 using std::cout;
 using std::endl;
@@ -216,8 +216,12 @@ void SubgraphPreconditioner::solve(const Vector &y, Vector &x) const {
     const Vector rhsFrontal = getSubvector(y, keyInfo_, frontalKeys);
 
     /* compute the solution for the current pivot */
-    const Vector solFrontal = cg->R().triangularView<Eigen::Upper>().solve(
-        rhsFrontal - cg->S() * xParent);
+    Vector solFrontal;
+    internal::solveUpperConditional(cg->R(), cg->S(), rhsFrontal, xParent,
+                                    &solFrontal);
+    if (solFrontal.hasNaN()) {
+      throw IndeterminateSystemException(cg->keys().front());
+    }
 
     /* assign subvector of sol to the frontal variables */
     setSubvector(solFrontal, keyInfo_, frontalKeys, x);

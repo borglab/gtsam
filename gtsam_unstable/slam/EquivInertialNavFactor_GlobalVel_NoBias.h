@@ -287,34 +287,34 @@ public:
     if (H1){
       Matrix H1_Pose = numericalDerivative11<POSE, POSE>(std::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluatePoseError, this, _1, Vel1, Pose2, Vel2), Pose1);
       Matrix H1_Vel = numericalDerivative11<VELOCITY, POSE>(std::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluateVelocityError, this, _1, Vel1, Pose2, Vel2), Pose1);
-      *H1 = stack(2, &H1_Pose, &H1_Vel);
+      *H1 = stack(std::vector<Matrix>{H1_Pose, H1_Vel});
     }
 
     // Jacobian w.r.t. Vel1
     if (H2){
       Matrix H2_Pose = numericalDerivative11<POSE, VELOCITY>(std::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluatePoseError, this, Pose1, _1, Pose2, Vel2), Vel1);
       Matrix H2_Vel = numericalDerivative11<VELOCITY, VELOCITY>(std::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluateVelocityError, this, Pose1, _1, Pose2, Vel2), Vel1);
-      *H2 = stack(2, &H2_Pose, &H2_Vel);
+      *H2 = stack(std::vector<Matrix>{H2_Pose, H2_Vel});
     }
 
     // Jacobian w.r.t. Pose2
     if (H3){
       Matrix H3_Pose = numericalDerivative11<POSE, POSE>(std::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluatePoseError, this, Pose1, Vel1, _1, Vel2), Pose2);
       Matrix H3_Vel = numericalDerivative11<VELOCITY, POSE>(std::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluateVelocityError, this, Pose1, Vel1, _1, Vel2), Pose2);
-      *H3 = stack(2, &H3_Pose, &H3_Vel);
+      *H3 = stack(std::vector<Matrix>{H3_Pose, H3_Vel});
     }
 
     // Jacobian w.r.t. Vel2
     if (H4){
       Matrix H4_Pose = numericalDerivative11<POSE, VELOCITY>(std::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluatePoseError, this, Pose1, Vel1, Pose2, _1), Vel2);
       Matrix H4_Vel = numericalDerivative11<VELOCITY, VELOCITY>(std::bind(&EquivInertialNavFactor_GlobalVel_NoBias::evaluateVelocityError, this, Pose1, Vel1, Pose2, _1), Vel2);
-      *H4 = stack(2, &H4_Pose, &H4_Vel);
+      *H4 = stack(std::vector<Matrix>{H4_Pose, H4_Vel});
     }
 
     Vector ErrPoseVector(POSE::Logmap(evaluatePoseError(Pose1, Vel1, Pose2, Vel2)));
     Vector ErrVelVector(VELOCITY::Logmap(evaluateVelocityError(Pose1, Vel1, Pose2, Vel2)));
 
-    return concatVectors(2, &ErrPoseVector, &ErrVelVector);
+    return concatVectors(std::list<Vector>{ErrPoseVector, ErrVelVector});
   }
 
 
@@ -388,10 +388,13 @@ public:
     Matrix H_angles_pos = Z_3x3;
     Matrix H_angles_vel = Z_3x3;
 
-    Matrix F_angles = collect(3, &H_angles_angles, &H_angles_pos, &H_angles_vel);
-    Matrix F_pos    = collect(3, &H_pos_angles, &H_pos_pos, &H_pos_vel);
-    Matrix F_vel    = collect(3, &H_vel_angles, &H_vel_pos, &H_vel_vel);
-    Matrix F = stack(3, &F_angles, &F_pos, &F_vel);
+    Matrix F_angles = collect(std::vector<const Matrix*>{
+        &H_angles_angles, &H_angles_pos, &H_angles_vel});
+    Matrix F_pos = collect(
+        std::vector<const Matrix*>{&H_pos_angles, &H_pos_pos, &H_pos_vel});
+    Matrix F_vel = collect(
+        std::vector<const Matrix*>{&H_vel_angles, &H_vel_pos, &H_vel_vel});
+    Matrix F = stack(std::vector<Matrix>{F_angles, F_pos, F_vel});
 
     noiseModel::Gaussian::shared_ptr model_discrete_curr = calc_descrete_noise_model(model_continuous_overall, msr_dt );
     Matrix Q_d = inverse(model_discrete_curr->R().transpose() * model_discrete_curr->R() );

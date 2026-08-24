@@ -102,7 +102,7 @@ double timeVScaleColumn(size_t m, size_t n, size_t reps) {
     gttic_(elapsed);
 
     for (size_t i=0; i<reps; ++i)
-      Matrix result = vector_scale(M,V);
+      Matrix result = (M.array().rowwise() * V.transpose().array()).matrix();
 
     gttoc_(elapsed);
     tictoc_getNode(elapsedNode, elapsed);
@@ -138,7 +138,7 @@ double timeVScaleRow(size_t m, size_t n, size_t reps) {
     gttic_(elapsed);
 
     for (size_t i=0; i<reps; ++i)
-      result = vector_scale(V,M);
+      result = (M.array().colwise() * V.array()).matrix();
 
     gttoc_(elapsed);
     tictoc_getNode(elapsedNode, elapsed);
@@ -251,7 +251,7 @@ double timeMatrixInsert(size_t reps) {
     for (size_t rep=0; rep<reps; ++rep)
       for (size_t i=0; i<100; i += 5)
         for (size_t j=0; j<100; j += 5)
-          insertSub(big, small, i,j);
+          big.block(i, j, small.rows(), small.cols()) = small;
 
     gttoc_(elapsed);
     tictoc_getNode(elapsedNode, elapsed);
@@ -272,16 +272,18 @@ int main(int argc, char ** argv) {
   cout << "Average Elapsed time for collect (no pass) [" << p << " (" << m << ", " << n << ") matrices] : " << collect_time1 << endl;
   cout << "Average Elapsed time for collect (pass)    [" << p << " (" << m << ", " << n << ") matrices] : " << collect_time2 << endl;
 
-  // Time vector_scale_column
-  cout << "Starting Matrix::vector_scale(column) Timing" << endl;
+  // Time Eigen column scaling
+  cout << "Starting Eigen column-scaling timing" << endl;
   size_t m1 = 400; size_t n1 = 480; size_t reps1 = 1000;
   double vsColumn_time = timeVScaleColumn(m1, n1, reps1);
-  cout << "Elapsed time for vector_scale(column) [(" << m1 << ", " << n1 << ") matrix] : " << vsColumn_time << endl;
+  cout << "Elapsed time for Eigen column scaling [(" << m1 << ", " << n1
+       << ") matrix] : " << vsColumn_time << endl;
 
-  // Time vector_scale_row
-  cout << "Starting Matrix::vector_scale(row)    Timing" << endl;
+  // Time Eigen row scaling
+  cout << "Starting Eigen row-scaling timing" << endl;
   double vsRow_time = timeVScaleRow(m1, n1, reps1);
-  cout << "Elapsed time for vector_scale(row)    [(" << m1 << ", " << n1 << ") matrix] : " << vsRow_time << endl;
+  cout << "Elapsed time for Eigen row scaling    [(" << m1 << ", " << n1
+       << ") matrix] : " << vsRow_time << endl;
 
   // Time column() NOTE: using the ublas version
   cout << "Starting column() Timing" << endl;
@@ -296,10 +298,11 @@ int main(int argc, char ** argv) {
   cout << "Elapsed time for householder_() : " << house_time << " sec" << endl;
 
   // Time matrix insertion
-  cout << "Starting insertSub() Timing" << endl;
+  cout << "Starting Eigen block-assignment timing" << endl;
   size_t reps_insert = 200000;
   double insert_time = timeMatrixInsert(reps_insert);
-  cout << "Elapsed time for insertSub() : " << insert_time << " sec" << endl;
+  cout << "Elapsed time for Eigen block assignment : " << insert_time << " sec"
+       << endl;
 
   return 0;
 }

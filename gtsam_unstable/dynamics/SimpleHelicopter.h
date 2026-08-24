@@ -176,7 +176,7 @@ public:
 
     if (H3) {
       *H3 = Z_6x6;
-      insertSub(*H3, -h_*D_gravityBody_gk, 3, 0);
+      H3->block<3, 3>(3, 0) = -h_ * D_gravityBody_gk;
     }
 
     return hx;

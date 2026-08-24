@@ -63,6 +63,22 @@ double GradShapeSquared(double csquared, double mu) { return csquared / mu; }
 /// @brief Graduate a shape parameter by sqrt(1 / mu).
 /// Requires mu > 0; callers handle mu = 0 with the least-squares endpoint.
 double GradShape(double c, double mu) { return c / std::sqrt(mu); }
+
+template <class ForEachMatrix>
+void reweightImpl(const Base& model, Vector* error,
+                  ForEachMatrix&& forEachMatrix) {
+  if (model.reweightScheme() == Base::Block) {
+    const double weight = model.sqrtWeight(error->norm());
+    forEachMatrix([weight](Matrix& matrix) { matrix *= weight; });
+    *error *= weight;
+  } else {
+    const Vector weights = model.sqrtWeight(*error);
+    forEachMatrix([&weights](Matrix& matrix) {
+      matrix.array().colwise() *= weights.array();
+    });
+    error->array() *= weights.array();
+  }
+}
 }  // namespace
 
 Vector Base::weight(const Vector& error) const {
@@ -81,78 +97,36 @@ Vector Base::sqrtWeight(const Vector &error) const {
 // according to their weight implementation
 
 void Base::reweight(Vector& error) const {
-  if (reweight_ == Block) {
-    const double w = sqrtWeight(error.norm());
-    error *= w;
-  } else {
-    error.array() *= weight(error).cwiseSqrt().array();
-  }
+  reweightImpl(*this, &error, [](const auto&) {});
 }
 
 // Reweight n block matrices with one error vector
-void Base::reweight(vector<Matrix> &A, Vector &error) const {
-  if ( reweight_ == Block ) {
-    const double w = sqrtWeight(error.norm());
-    for(Matrix& Aj: A) {
-      Aj *= w;
-    }
-    error *= w;
-  }
-  else {
-    const Vector W = sqrtWeight(error);
-    for(Matrix& Aj: A) {
-      vector_scale_inplace(W,Aj);
-    }
-    error = W.cwiseProduct(error);
-  }
+void Base::reweight(vector<Matrix>& A, Vector& error) const {
+  reweightImpl(*this, &error, [&A](const auto& apply) {
+    for (Matrix& matrix : A) apply(matrix);
+  });
 }
 
 // Reweight one block matrix with one error vector
-void Base::reweight(Matrix &A, Vector &error) const {
-  if ( reweight_ == Block ) {
-    const double w = sqrtWeight(error.norm());
-    A *= w;
-    error *= w;
-  }
-  else {
-    const Vector W = sqrtWeight(error);
-    vector_scale_inplace(W,A);
-    error = W.cwiseProduct(error);
-  }
+void Base::reweight(Matrix& A, Vector& error) const {
+  reweightImpl(*this, &error, [&A](const auto& apply) { apply(A); });
 }
 
-// Reweight two block matrix with one error vector
-void Base::reweight(Matrix &A1, Matrix &A2, Vector &error) const {
-  if ( reweight_ == Block ) {
-    const double w = sqrtWeight(error.norm());
-    A1 *= w;
-    A2 *= w;
-    error *= w;
-  }
-  else {
-    const Vector W = sqrtWeight(error);
-    vector_scale_inplace(W,A1);
-    vector_scale_inplace(W,A2);
-    error = W.cwiseProduct(error);
-  }
+// Reweight two block matrices with one error vector
+void Base::reweight(Matrix& A1, Matrix& A2, Vector& error) const {
+  reweightImpl(*this, &error, [&A1, &A2](const auto& apply) {
+    apply(A1);
+    apply(A2);
+  });
 }
 
-// Reweight three block matrix with one error vector
-void Base::reweight(Matrix &A1, Matrix &A2, Matrix &A3, Vector &error) const {
-  if ( reweight_ == Block ) {
-    const double w = sqrtWeight(error.norm());
-    A1 *= w;
-    A2 *= w;
-    A3 *= w;
-    error *= w;
-  }
-  else {
-    const Vector W = sqrtWeight(error);
-    vector_scale_inplace(W,A1);
-    vector_scale_inplace(W,A2);
-    vector_scale_inplace(W,A3);
-    error = W.cwiseProduct(error);
-  }
+// Reweight three block matrices with one error vector
+void Base::reweight(Matrix& A1, Matrix& A2, Matrix& A3, Vector& error) const {
+  reweightImpl(*this, &error, [&A1, &A2, &A3](const auto& apply) {
+    apply(A1);
+    apply(A2);
+    apply(A3);
+  });
 }
 
 /* ************************************************************************* */

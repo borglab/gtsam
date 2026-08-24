@@ -765,20 +765,17 @@ void GaussianFactorGraphSystem::axpy(const double alpha, const Vector& x,
 VectorValues buildVectorValues(const Vector& v, const Ordering& ordering,
                                const map<Key, size_t>& dimensions) {
   VectorValues result;
-
   DenseIndex offset = 0;
-  for (size_t i = 0; i < ordering.size(); ++i) {
-    const Key key = ordering[i];
-    map<Key, size_t>::const_iterator it = dimensions.find(key);
-    if (it == dimensions.end()) {
+  for (Key key : ordering) {
+    const auto found = dimensions.find(key);
+    if (found == dimensions.end()) {
       throw invalid_argument(
           "buildVectorValues: inconsistent ordering and dimensions");
     }
-    const size_t dim = it->second;
-    result.emplace(key, v.segment(offset, dim));
-    offset += dim;
+    const size_t dimension = found->second;
+    result.emplace(key, v.segment(offset, dimension));
+    offset += dimension;
   }
-
   return result;
 }
 

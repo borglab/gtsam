@@ -648,8 +648,8 @@ TEST(JacobianFactor, eliminate)
   gfg.add(1, A21, b2, noiseModel::Diagonal::Sigmas(s2, true));
 
   Matrix zero3x3 = Matrix::Zero(3,3);
-  Matrix A0 = gtsam::stack(3, &A10, &zero3x3, &zero3x3);
-  Matrix A1 = gtsam::stack(3, &A11, &A01, &A21);
+  Matrix A0 = gtsam::stack(std::vector<Matrix>{A10, zero3x3, zero3x3});
+  Matrix A1 = gtsam::stack(std::vector<Matrix>{A11, A01, A21});
   Vector9 b; b << b1, b0, b2;
   Vector9 sigmas; sigmas << s1, s0, s2;
 

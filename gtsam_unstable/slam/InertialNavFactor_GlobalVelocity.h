@@ -247,7 +247,7 @@ public:
           std::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError,
                       this, std::placeholders::_1, Vel1, Bias1, Pose2, Vel2),
           Pose1);
-      *H1 = stack(2, &H1_Pose, &H1_Vel);
+      *H1 = stack(std::vector<Matrix>{H1_Pose, H1_Vel});
     }
 
     // Jacobian w.r.t. Vel1
@@ -261,7 +261,7 @@ public:
           std::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError,
                       this, Pose1, std::placeholders::_1, Bias1, Pose2, Vel2),
           Vel1);
-      *H2 = stack(2, &H2_Pose, &H2_Vel);
+      *H2 = stack(std::vector<Matrix>{H2_Pose, H2_Vel});
     }
 
     // Jacobian w.r.t. IMUBias1
@@ -274,7 +274,7 @@ public:
           std::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError,
                       this, Pose1, Vel1, std::placeholders::_1, Pose2, Vel2),
           Bias1);
-      *H3 = stack(2, &H3_Pose, &H3_Vel);
+      *H3 = stack(std::vector<Matrix>{H3_Pose, H3_Vel});
     }
 
     // Jacobian w.r.t. Pose2
@@ -287,7 +287,7 @@ public:
           std::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError,
                       this, Pose1, Vel1, Bias1, std::placeholders::_1, Vel2),
           Pose2);
-      *H4 = stack(2, &H4_Pose, &H4_Vel);
+      *H4 = stack(std::vector<Matrix>{H4_Pose, H4_Vel});
     }
 
     // Jacobian w.r.t. Vel2
@@ -301,13 +301,13 @@ public:
           std::bind(&InertialNavFactor_GlobalVelocity::evaluateVelocityError,
                       this, Pose1, Vel1, Bias1, Pose2, std::placeholders::_1),
           Vel2);
-      *H5 = stack(2, &H5_Pose, &H5_Vel);
+      *H5 = stack(std::vector<Matrix>{H5_Pose, H5_Vel});
     }
 
     Vector ErrPoseVector(POSE::Logmap(evaluatePoseError(Pose1, Vel1, Bias1, Pose2, Vel2)));
     Vector ErrVelVector(evaluateVelocityError(Pose1, Vel1, Bias1, Pose2, Vel2));
 
-    return concatVectors(2, &ErrPoseVector, &ErrVelVector);
+    return concatVectors(std::list<Vector>{ErrPoseVector, ErrVelVector});
   }
 
   static inline noiseModel::Gaussian::shared_ptr CalcEquivalentNoiseCov(const noiseModel::Gaussian::shared_ptr& gaussian_acc, const noiseModel::Gaussian::shared_ptr& gaussian_gyro,
