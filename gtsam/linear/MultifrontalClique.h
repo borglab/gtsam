@@ -365,6 +365,22 @@ class GTSAM_EXPORT MultifrontalClique {
   /// contribution.
   void updateParentInfo(SymmetricBlockMatrix& parentInfo) const;
 
+#ifdef GTSAM_USE_TBB
+  /// Accumulate one ordinary separator block into its owned parent column.
+  void updateParentMaterializedColumn(SymmetricBlockMatrix& parentInfo,
+                                      DenseIndex sourceSeparatorBlock) const;
+
+  /// Accumulate one QR separator block into narrow owned-column scratch.
+  void updateParentQrColumnScratch(DenseIndex sourceSeparatorBlock,
+                                   Matrix* scratch) const;
+
+  /// Return the augmented-RHS diagonal from an ordinary child update.
+  double parentMaterializedRhsDiagonal() const;
+
+  /// Return the augmented-RHS diagonal from a QR child update.
+  double parentQrRhsDiagonal() const;
+#endif
+
   /// Update a separator-local information matrix without parent scattering.
   void updateSeparatorInfo(SymmetricBlockMatrix& separatorInfo) const;
 
@@ -468,6 +484,43 @@ class GTSAM_EXPORT MultifrontalClique {
   std::vector<std::vector<DenseIndex>> sameSeparatorParentScalarOffsets_;
   std::vector<SymmetricBlockMatrix> sameSeparatorInfos_;
   std::vector<uint8_t> childInSameSeparatorGroup_;
+
+#ifdef GTSAM_USE_TBB
+  /**
+   * Lazy TBB gather metadata, built after child solve modes are resolved.
+   * Materialized and QR children are bucketed by disjoint parent columns;
+   * compact children remain in the existing compute-once reduction.
+   */
+  struct ParentGatherPlan {
+    struct ColumnUpdate {
+      size_t childIndex = 0;
+      DenseIndex sourceSeparatorBlock = 0;
+    };
+
+    struct QrColumnChunk {
+      DenseIndex column = 0;
+      size_t begin = 0;
+      size_t end = 0;
+      Matrix scratch;
+    };
+
+    bool built = false;
+    std::vector<size_t> materializedChildIndices;
+    std::vector<size_t> qrChildIndices;
+    std::vector<size_t> computeOnceChildIndices;
+    std::vector<std::vector<ColumnUpdate>> materializedByColumn;
+    std::vector<std::vector<ColumnUpdate>> qrByColumn;
+    std::vector<QrColumnChunk> qrChunks;
+    std::vector<std::vector<size_t>> qrChunkIndicesByColumn;
+
+    /// Classify children using their final numerical representation.
+    void build(const MultifrontalClique& parent);
+
+    /// Execute the independent column-owned and compute-once stages.
+    void gather(MultifrontalClique* parent);
+  };
+  std::unique_ptr<ParentGatherPlan> parentGatherPlan_;
+#endif
 
   // Lazily allocated after load-plan construction. Direct batch factors need
   // no rows; QR additionally reserves frontal damping rows.
