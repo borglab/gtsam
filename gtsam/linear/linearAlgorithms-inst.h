@@ -17,12 +17,12 @@
 
 #pragma once
 
-#include <gtsam/linear/VectorValues.h>
-#include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/base/treeTraversal-inst.h>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/internal/UpperConditionalSolve.h>
 
 #include <memory>
-
 #include <optional>
 
 namespace gtsam
@@ -86,18 +86,9 @@ namespace gtsam
               }
             }
 
-            // NOTE(gareth): We can no longer write: xS = b - S * xS
-            // This is because Eigen (as of 3.3) no longer evaluates S * xS into
-            // a temporary, and the operation trashes valus in xS.
-            // See: http://eigen.tuxfamily.org/index.php?title=3.3
-            const Vector rhs = c.getb() - c.S() * xS;
-
-            // TODO(gareth): Inline instantiation of Eigen::Solve and check flag
-            const Vector solution = c.R().triangularView<Eigen::Upper>().solve(rhs);
-
-            // Check for indeterminate solution
-            if (solution.hasNaN())
-              throw IndeterminateSystemException(c.keys().front());
+            Vector solution;
+            solveUpperConditional(c.R(), c.S(), c.getb(), &xS, c.keys().front(),
+                                  &solution);
 
             // Insert solution into a VectorValues
             DenseIndex vectorPosition = 0;
