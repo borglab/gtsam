@@ -58,7 +58,7 @@ class Pose3Upright {
   Pose3Upright(double x, double y, double z, double theta);
   Pose3Upright(const gtsam::Pose2& pose, double z);
 
-  void print(string s) const;
+  void print(string s = "") const;
   bool equals(const gtsam::Pose3Upright& pose, double tol) const;
 
   double x() const;
@@ -101,7 +101,7 @@ class SimWall2D {
   SimWall2D(const gtsam::Point2& a, const gtsam::Point2& b);
   SimWall2D(double ax, double ay, double bx, double by);
 
-  void print(string s) const;
+  void print(string s = "") const;
   bool equals(const gtsam::SimWall2D& other, double tol) const;
 
   gtsam::Point2 a() const;
@@ -134,7 +134,7 @@ class SimPolygon2D {
    const gtsam::Point2Vector& vertices() const;
 
    bool equals(const gtsam::SimPolygon2D& p, double tol) const;
-   void print(string s) const;
+   void print(string s = "") const;
 
    gtsam::SimWall2DVector walls() const;
    bool contains(const gtsam::Point2& p) const;
@@ -317,12 +317,12 @@ virtual class TOAFactor : gtsam::NoiseModelFactor {
 
 #include <gtsam_unstable/nonlinear/ConcurrentFilteringAndSmoothing.h>
 virtual class ConcurrentFilter {
-  void print(string s) const;
+  void print(string s = "Concurrent Filter:\n") const;
   bool equals(const gtsam::ConcurrentFilter& rhs, double tol) const;
 };
 
 virtual class ConcurrentSmoother {
-  void print(string s) const;
+  void print(string s = "Concurrent Smoother:\n") const;
   bool equals(const gtsam::ConcurrentSmoother& rhs, double tol) const;
 };
 
@@ -494,7 +494,7 @@ virtual class SmartStereoProjectionFactor : gtsam::NonlinearFactor {
       const gtsam::SmartProjectionParams& params);
   SmartStereoProjectionFactor(const gtsam::noiseModel::Base* sharedNoiseModel);
 
-  void print(string s) const;
+  void print(string s = "") const;
 
   gtsam::TriangulationResult point() const;
   gtsam::TriangulationResult point(const gtsam::Values& values) const;

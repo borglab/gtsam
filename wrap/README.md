@@ -46,6 +46,38 @@ pybind_wrap(${PROJECT_NAME}_py # target
 
 For more information, please follow our [tutorial](https://github.com/borglab/gtsam-project-python).
 
+### Pybind module templates
+
+Pybind templates use two generated phases so every Python type is registered
+before pybind11 constructs callable signatures. Custom templates must define
+both phase functions and invoke the generated module initializer:
+
+```cpp
+{submodules}
+
+{declaration_module_def} {{
+// Include declaration-only specializations here.
+{wrapped_declarations}
+}}
+
+{binding_module_def} {{
+// Include methods, functions, and property specializations here.
+{wrapped_bindings}
+}}
+
+{module_def} {{
+{module_init}
+}}
+```
+
+Declaration specializations may create modules, classes, or enums but must not
+bind callables. Binding specializations can recover those objects and add their
+constructors, methods, functions, and properties. See
+`templates/pybind_wrapper.tpl.example` for the complete template. Declaration
+calls follow the interface-file list passed to `pybind_wrap`, so an interface
+which declares a base class must still precede interfaces declaring its derived
+classes.
+
 ## Documentation
 
 Documentation for wrapping C++ code can be found [here](https://github.com/borglab/wrap/blob/master/DOCS.md), including the [pybind callable-adapter annotation](https://github.com/borglab/wrap/blob/master/DOCS.md#pybind-callable-adapters).

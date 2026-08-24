@@ -497,6 +497,24 @@ virtual class HybridNonlinearFactorGraph : gtsam::HybridFactorGraph {
 };
 
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
+template<L, Y>
+class DecisionTree {
+  DecisionTree();
+  DecisionTree(
+      const std::vector<std::pair<gtsam::Key, size_t>>& labelCs,
+      const std::vector<Y>& ys);
+  bool empty() const;
+  size_t nrLeaves() const;
+  const Y& operator()(const gtsam::Assignment<gtsam::Key>& x) const;
+};
+
+typedef gtsam::DecisionTree<
+    gtsam::Key, gtsam::GaussianConditional::shared_ptr>
+    HybridGaussianConditionalConditionals;
+
+typedef gtsam::DecisionTree<gtsam::Key, gtsam::NonlinearFactorValuePair>
+    HybridNonlinearFactorValuePairs;
+
 class HybridNonlinearFactor : gtsam::HybridFactor {
   HybridNonlinearFactor(const gtsam::DiscreteKey& discreteKey,
                         const std::vector<gtsam::NoiseModelFactor*>& factors);

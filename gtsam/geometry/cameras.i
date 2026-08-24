@@ -500,9 +500,14 @@ typedef gtsam::PinholePose<gtsam::Cal3_S2> PinholePoseCal3_S2;
 typedef gtsam::PinholePose<gtsam::Cal3DS2> PinholePoseCal3DS2;
 typedef gtsam::PinholePose<gtsam::Cal3Unified> PinholePoseCal3Unified;
 typedef gtsam::PinholePose<gtsam::Cal3Bundler> PinholePoseCal3Bundler;
+typedef gtsam::PinholePose<gtsam::Cal3f> PinholePoseCal3f;
 typedef gtsam::PinholePose<gtsam::Cal3Fisheye> PinholePoseCal3Fisheye;
 
 #include <gtsam/geometry/SphericalCamera.h>
+class EmptyCal {
+  EmptyCal();
+};
+
 class SphericalCamera {
   // Standard Constructors
   SphericalCamera();
@@ -551,7 +556,10 @@ class SphericalCamera {
   void serialize() const;
 };
 
-template <T = {gtsam::PinholePoseCal3_S2}>
+template <T = {gtsam::PinholePoseCal3_S2, gtsam::PinholePoseCal3DS2,
+               gtsam::PinholePoseCal3Unified,
+               gtsam::PinholePoseCal3Bundler,
+               gtsam::PinholePoseCal3Fisheye, gtsam::StereoCamera}>
 class CameraSet {
   CameraSet();
 

@@ -821,7 +821,7 @@ virtual class UndifferencedCarrierPhaseFactor : gtsam::NoiseModelFactor {
                                double measuredCarrierPhaseMeters,
                                const gtsam::Point3& satellitePosition,
                                double tropoWetMapping, double ionoCoefficient,
-                               double lambda, double satelliteClockBias,
+                               double lambda_, double satelliteClockBias,
                                const gtsam::noiseModel::Base* model);
 
 
@@ -847,7 +847,7 @@ virtual class UndifferencedCarrierPhaseFactorArm : gtsam::NoiseModelFactor {
                                   const gtsam::Point3& satellitePosition,
                                   const gtsam::Point3& leverArm,
                                   double tropoWetMapping, double ionoCoefficient,
-                                  double lambda, double satelliteClockBias,
+                                  double lambda_, double satelliteClockBias,
                                   const gtsam::noiseModel::Base* model);
   UndifferencedCarrierPhaseFactorArm(gtsam::Key poseKey,
                                   gtsam::Key receiverClockBiasKey,
@@ -859,7 +859,7 @@ virtual class UndifferencedCarrierPhaseFactorArm : gtsam::NoiseModelFactor {
                                   const gtsam::Point3& leverArm,
                                   const gtsam::Pose3& ecef_T_nav,
                                   double tropoWetMapping, double ionoCoefficient,
-                                  double lambda, double satelliteClockBias,
+                                  double lambda_, double satelliteClockBias,
                                   const gtsam::noiseModel::Base* model);
 
 

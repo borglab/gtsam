@@ -30,9 +30,14 @@ using namespace std;
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(functions_py, m_) {
-    m_.doc() = "pybind11 wrapper of functions_py";
 
+
+void gtwrap_declare_functions_py(py::module_ &m_) {
+
+}
+
+void gtwrap_bind_functions_py(py::module_ &m_) {
+#include "python/specializations.h"
 
     m_.def("load2D",static_cast<std::pair<std::shared_ptr<gtsam::NonlinearFactorGraph>,std::shared_ptr<gtsam::Values>> (*)(string, std::shared_ptr<Test>, int, bool, bool)>(&::load2D), gtwrap::internal::py_arg<string>("filename"), gtwrap::internal::py_arg<std::shared_ptr<Test>>("model"), gtwrap::internal::py_arg<int>("maxID"), gtwrap::internal::py_arg<bool>("addNoise"), gtwrap::internal::py_arg<bool>("smart"));
     m_.def("load2D",static_cast<std::pair<std::shared_ptr<gtsam::NonlinearFactorGraph>,std::shared_ptr<gtsam::Values>> (*)(string, const std::shared_ptr<gtsam::noiseModel::Diagonal>, int, bool, bool)>(&::load2D), gtwrap::internal::py_arg<string>("filename"), gtwrap::internal::py_arg<const std::shared_ptr<gtsam::noiseModel::Diagonal>>("model"), gtwrap::internal::py_arg<int>("maxID"), gtwrap::internal::py_arg<bool>("addNoise"), gtwrap::internal::py_arg<bool>("smart"));
@@ -55,8 +60,11 @@ PYBIND11_MODULE(functions_py, m_) {
     m_.def("FindKarcherMeanSO4",[](const std::vector<gtsam::SO4>& elements){return ::FindKarcherMean<gtsam::SO4>(elements);}, gtwrap::internal::py_arg<const std::vector<gtsam::SO4>&>("elements"));
     m_.def("FindKarcherMeanPose3",[](const std::vector<gtsam::Pose3>& elements){return ::FindKarcherMean<gtsam::Pose3>(elements);}, gtwrap::internal::py_arg<const std::vector<gtsam::Pose3>&>("elements"));
     m_.def("TemplatedFunctionRot3",[](const gtsam::Rot3& t){ ::TemplatedFunction<gtsam::Rot3>(t);}, gtwrap::internal::py_arg<const gtsam::Rot3&>("t"));
-
-#include "python/specializations.h"
-
 }
 
+PYBIND11_MODULE(functions_py, m_) {
+    m_.doc() = "pybind11 wrapper of functions_py";
+
+gtwrap_declare_functions_py(m_);
+gtwrap_bind_functions_py(m_);
+}

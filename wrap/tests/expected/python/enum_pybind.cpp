@@ -30,26 +30,20 @@ using namespace std;
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(enum_py, m_) {
-    m_.doc() = "pybind11 wrapper of enum_py";
 
+
+void gtwrap_declare_enum_py(py::module_ &m_) {
     py::enum_<Color>(m_, "Color", py::arithmetic())
         .value("Red", Color::Red)
         .value("Green", Color::Green)
         .value("Blue", Color::Blue);
 
 
-    py::class_<Pet, std::shared_ptr<Pet>> pet(m_, "Pet");
-    pet
-        .def(py::init<const string&, Pet::Kind>(), gtwrap::internal::py_arg<const string&>("name"), gtwrap::internal::py_arg<Pet::Kind>("type"))
-        .def("setColor",static_cast<void (Pet::*)(const Color&)>(&Pet::setColor), gtwrap::internal::py_arg<const Color&>("color"))
-        .def("getColor",static_cast<Color (Pet::*)() const>(&Pet::getColor))
-        .def_readwrite("name", &Pet::name)
-        .def_readwrite("type", &Pet::type);
-
-    py::enum_<Pet::Kind>(pet, "Kind", py::arithmetic())
+    py::class_<Pet, std::shared_ptr<Pet>> gtwrap_class_m__Pet(m_, "Pet");
+    py::enum_<Pet::Kind>(gtwrap_class_m__Pet, "Kind", py::arithmetic())
         .value("Dog", Pet::Kind::Dog)
         .value("Cat", Pet::Kind::Cat);
+
 
     pybind11::module m_gtsam = m_.def_submodule("gtsam", "gtsam submodule");
     py::enum_<gtsam::VerbosityLM>(m_gtsam, "VerbosityLM", py::arithmetic())
@@ -63,11 +57,8 @@ PYBIND11_MODULE(enum_py, m_) {
         .value("TRYDELTA", gtsam::VerbosityLM::TRYDELTA);
 
 
-    py::class_<gtsam::MCU, std::shared_ptr<gtsam::MCU>> mcu(m_gtsam, "MCU");
-    mcu
-        .def(py::init<>());
-
-    py::enum_<gtsam::MCU::Avengers>(mcu, "Avengers", py::arithmetic())
+    py::class_<gtsam::MCU, std::shared_ptr<gtsam::MCU>> gtwrap_class_m_gtsam_MCU(m_gtsam, "MCU");
+    py::enum_<gtsam::MCU::Avengers>(gtwrap_class_m_gtsam_MCU, "Avengers", py::arithmetic())
         .value("CaptainAmerica", gtsam::MCU::Avengers::CaptainAmerica)
         .value("IronMan", gtsam::MCU::Avengers::IronMan)
         .value("Hulk", gtsam::MCU::Avengers::Hulk)
@@ -75,7 +66,7 @@ PYBIND11_MODULE(enum_py, m_) {
         .value("Thor", gtsam::MCU::Avengers::Thor);
 
 
-    py::enum_<gtsam::MCU::GotG>(mcu, "GotG", py::arithmetic())
+    py::enum_<gtsam::MCU::GotG>(gtwrap_class_m_gtsam_MCU, "GotG", py::arithmetic())
         .value("Starlord", gtsam::MCU::GotG::Starlord)
         .value("Gamorra", gtsam::MCU::GotG::Gamorra)
         .value("Rocket", gtsam::MCU::GotG::Rocket)
@@ -83,21 +74,44 @@ PYBIND11_MODULE(enum_py, m_) {
         .value("Groot", gtsam::MCU::GotG::Groot);
 
 
-    py::class_<gtsam::Optimizer<gtsam::GaussNewtonParams>, std::shared_ptr<gtsam::Optimizer<gtsam::GaussNewtonParams>>> optimizergaussnewtonparams(m_gtsam, "OptimizerGaussNewtonParams");
-    optimizergaussnewtonparams
-        .def(py::init<const Optimizer<gtsam::GaussNewtonParams>::Verbosity&>(), gtwrap::internal::py_arg<const Optimizer<gtsam::GaussNewtonParams>::Verbosity&>("verbosity"))
-        .def("setVerbosity",static_cast<void (gtsam::Optimizer<gtsam::GaussNewtonParams>::*)(const Optimizer<gtsam::GaussNewtonParams>::Verbosity)>(&gtsam::Optimizer<gtsam::GaussNewtonParams>::setVerbosity), gtwrap::internal::py_arg<const Optimizer<gtsam::GaussNewtonParams>::Verbosity>("value"))
-        .def("getVerbosity",static_cast<gtsam::Optimizer::Verbosity (gtsam::Optimizer<gtsam::GaussNewtonParams>::*)() const>(&gtsam::Optimizer<gtsam::GaussNewtonParams>::getVerbosity))
-        .def("getVerbosity",static_cast<gtsam::VerbosityLM (gtsam::Optimizer<gtsam::GaussNewtonParams>::*)() const>(&gtsam::Optimizer<gtsam::GaussNewtonParams>::getVerbosity));
-
-    py::enum_<gtsam::Optimizer<gtsam::GaussNewtonParams>::Verbosity>(optimizergaussnewtonparams, "Verbosity", py::arithmetic())
+    py::class_<gtsam::Optimizer<gtsam::GaussNewtonParams>, std::shared_ptr<gtsam::Optimizer<gtsam::GaussNewtonParams>>> gtwrap_class_m_gtsam_OptimizerGaussNewtonParams(m_gtsam, "OptimizerGaussNewtonParams");
+    py::enum_<gtsam::Optimizer<gtsam::GaussNewtonParams>::Verbosity>(gtwrap_class_m_gtsam_OptimizerGaussNewtonParams, "Verbosity", py::arithmetic())
         .value("SILENT", gtsam::Optimizer<gtsam::GaussNewtonParams>::Verbosity::SILENT)
         .value("SUMMARY", gtsam::Optimizer<gtsam::GaussNewtonParams>::Verbosity::SUMMARY)
         .value("VERBOSE", gtsam::Optimizer<gtsam::GaussNewtonParams>::Verbosity::VERBOSE);
 
 
+}
 
+void gtwrap_bind_enum_py(py::module_ &m_) {
 #include "python/specializations.h"
+
+    auto gtwrap_class_m__Pet = py::reinterpret_borrow<py::class_<Pet, std::shared_ptr<Pet>>>(m_.attr("Pet"));
+    gtwrap_class_m__Pet
+        .def(py::init<const string&, Pet::Kind>(), gtwrap::internal::py_arg<const string&>("name"), gtwrap::internal::py_arg<Pet::Kind>("type"))
+        .def("setColor",static_cast<void (Pet::*)(const Color&)>(&Pet::setColor), gtwrap::internal::py_arg<const Color&>("color"))
+        .def("getColor",static_cast<Color (Pet::*)() const>(&Pet::getColor))
+        .def_readwrite("name", &Pet::name)
+        .def_readwrite("type", &Pet::type);
+
+    pybind11::module m_gtsam = py::reinterpret_borrow<pybind11::module>(m_.attr("gtsam"));
+
+    auto gtwrap_class_m_gtsam_MCU = py::reinterpret_borrow<py::class_<gtsam::MCU, std::shared_ptr<gtsam::MCU>>>(m_gtsam.attr("MCU"));
+    gtwrap_class_m_gtsam_MCU
+        .def(py::init<>());
+
+    auto gtwrap_class_m_gtsam_OptimizerGaussNewtonParams = py::reinterpret_borrow<py::class_<gtsam::Optimizer<gtsam::GaussNewtonParams>, std::shared_ptr<gtsam::Optimizer<gtsam::GaussNewtonParams>>>>(m_gtsam.attr("OptimizerGaussNewtonParams"));
+    gtwrap_class_m_gtsam_OptimizerGaussNewtonParams
+        .def(py::init<const Optimizer<gtsam::GaussNewtonParams>::Verbosity&>(), gtwrap::internal::py_arg<const Optimizer<gtsam::GaussNewtonParams>::Verbosity&>("verbosity"))
+        .def("setVerbosity",static_cast<void (gtsam::Optimizer<gtsam::GaussNewtonParams>::*)(const Optimizer<gtsam::GaussNewtonParams>::Verbosity)>(&gtsam::Optimizer<gtsam::GaussNewtonParams>::setVerbosity), gtwrap::internal::py_arg<const Optimizer<gtsam::GaussNewtonParams>::Verbosity>("value"))
+        .def("getVerbosity",static_cast<gtsam::Optimizer::Verbosity (gtsam::Optimizer<gtsam::GaussNewtonParams>::*)() const>(&gtsam::Optimizer<gtsam::GaussNewtonParams>::getVerbosity))
+        .def("getVerbosity",static_cast<gtsam::VerbosityLM (gtsam::Optimizer<gtsam::GaussNewtonParams>::*)() const>(&gtsam::Optimizer<gtsam::GaussNewtonParams>::getVerbosity));
 
 }
 
+PYBIND11_MODULE(enum_py, m_) {
+    m_.doc() = "pybind11 wrapper of enum_py";
+
+gtwrap_declare_enum_py(m_);
+gtwrap_bind_enum_py(m_);
+}

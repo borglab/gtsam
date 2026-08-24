@@ -485,6 +485,12 @@ virtual class GaussianFactor : gtsam::Factor {
 };
 
 #include <gtsam/linear/JacobianFactor.h>
+class VariableSlots {
+  VariableSlots(const gtsam::GaussianFactorGraph& factorGraph);
+  void print(string str = "VariableSlots: ") const;
+  bool equals(const gtsam::VariableSlots& rhs, double tol = 0.0) const;
+};
+
 virtual class JacobianFactor : gtsam::GaussianFactor {
   //Constructors
   JacobianFactor();
@@ -763,6 +769,15 @@ class GaussianFactorGraph {
 
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/hybrid/HybridValues.h>
+class VerticalBlockMatrix {
+  VerticalBlockMatrix();
+  VerticalBlockMatrix(const std::vector<size_t>& dimensions, size_t height,
+                      bool appendOneDimension = false);
+  VerticalBlockMatrix(const std::vector<size_t>& dimensions,
+                      const gtsam::Matrix& matrix,
+                      bool appendOneDimension = false);
+};
+
 virtual class GaussianConditional : gtsam::JacobianFactor {
   // Constructors
   GaussianConditional(gtsam::Key key, gtsam::Vector d, gtsam::Matrix R,

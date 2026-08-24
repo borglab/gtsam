@@ -543,6 +543,17 @@ class ISAM2Result {
   const gtsam::KeySet& getMarkedKeys() const;
 };
 
+class ISAM2UpdateParams {
+  ISAM2UpdateParams();
+
+  gtsam::FactorIndices removeFactorIndices;
+  std::optional<gtsam::KeyGroupMap> constrainedKeys;
+  std::optional<gtsam::KeyList> noRelinKeys;
+  std::optional<gtsam::KeyList> extraReelimKeys;
+  bool force_relinearize;
+  bool forceFullSolve;
+};
+
 class ISAM2 {
   ISAM2();
   ISAM2(const gtsam::ISAM2Params& params);

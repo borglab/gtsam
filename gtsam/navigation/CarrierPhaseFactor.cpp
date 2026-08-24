@@ -89,7 +89,7 @@ UndifferencedCarrierPhaseFactor::UndifferencedCarrierPhaseFactor(
     const Key tropoZenithWetKey, const Key slantIonoKey, const Key ambiguityKey,
     const double measuredCarrierPhaseMeters, const Point3& satellitePosition,
     const double tropoWetMapping, const double ionoCoefficient,
-    const double lambda, const double satelliteClockBias,
+    const double lambda_, const double satelliteClockBias,
     const SharedNoiseModel& model)
     : Base(model, receiverPositionKey, receiverClockBiasKey, tropoZenithWetKey,
            slantIonoKey, ambiguityKey),
@@ -97,7 +97,7 @@ UndifferencedCarrierPhaseFactor::UndifferencedCarrierPhaseFactor(
                        satelliteClockBias},
       tropoMap_(tropoWetMapping),
       ionoCoeff_(ionoCoefficient),
-      lambda_(lambda) {}
+      lambda_(lambda_) {}
 
 //***************************************************************************
 void UndifferencedCarrierPhaseFactor::print(
@@ -157,7 +157,7 @@ UndifferencedCarrierPhaseFactorArm::UndifferencedCarrierPhaseFactorArm(
     const Key tropoZenithWetKey, const Key slantIonoKey, const Key ambiguityKey,
     const double measuredCarrierPhaseMeters, const Point3& satellitePosition,
     const Point3& leverArm, const double tropoWetMapping,
-    const double ionoCoefficient, const double lambda,
+    const double ionoCoefficient, const double lambda_,
     const double satelliteClockBias, const SharedNoiseModel& model)
     : Base(model, poseKey, receiverClockBiasKey, tropoZenithWetKey, slantIonoKey,
            ambiguityKey),
@@ -166,7 +166,7 @@ UndifferencedCarrierPhaseFactorArm::UndifferencedCarrierPhaseFactorArm(
       arm_(leverArm),
       tropoMap_(tropoWetMapping),
       ionoCoeff_(ionoCoefficient),
-      lambda_(lambda) {}
+      lambda_(lambda_) {}
 
 //***************************************************************************
 UndifferencedCarrierPhaseFactorArm::UndifferencedCarrierPhaseFactorArm(
@@ -175,7 +175,7 @@ UndifferencedCarrierPhaseFactorArm::UndifferencedCarrierPhaseFactorArm(
     const double measuredCarrierPhaseMeters, const Point3& satellitePosition,
     const Point3& leverArm, const Pose3& ecef_T_nav,
     const double tropoWetMapping, const double ionoCoefficient,
-    const double lambda, const double satelliteClockBias,
+    const double lambda_, const double satelliteClockBias,
     const SharedNoiseModel& model)
     : Base(model, poseKey, receiverClockBiasKey, tropoZenithWetKey, slantIonoKey,
            ambiguityKey),
@@ -184,7 +184,7 @@ UndifferencedCarrierPhaseFactorArm::UndifferencedCarrierPhaseFactorArm(
       arm_(leverArm, ecef_T_nav),
       tropoMap_(tropoWetMapping),
       ionoCoeff_(ionoCoefficient),
-      lambda_(lambda) {}
+      lambda_(lambda_) {}
 
 //***************************************************************************
 void UndifferencedCarrierPhaseFactorArm::print(
