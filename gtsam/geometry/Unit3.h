@@ -20,6 +20,8 @@
 
 #pragma once
 
+#include <vector>
+
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/base/Manifold.h>
@@ -240,7 +242,77 @@ GTSAM_EXPORT Point3 cross(const Point3& p, const Unit3& q,
                           OptionalJacobian<3, 2> H_q = {});
 
 /// Define GTSAM traits
-template<> struct traits<Unit3> : public internal::Manifold<Unit3> {
+/**
+ * QCQP traits for the unit sphere S^2.
+ *
+ * The lift is a relaxation of the sphere: at D = 3 the row is a unit vector in
+ * R^3, and at D > 3 it is in S^{D-1}, which is the lifted sphere the
+ * Burer-Monteiro method searches over.
+ */
+template <>
+struct traits<Unit3> : public internal::Manifold<Unit3> {
+  /// Dimension of the D=1 homogenized QCQP vector: [1; p].
+  inline constexpr static int QcqpVectorDim = 4;
+
+  /// Lift a direction to a 1-by-D row, zero-padded above the ambient dimension.
+  template <int D = 1>
+  static Matrix QcqpValue(const Unit3& value) {
+    if constexpr (D == 1) {
+      Eigen::Matrix<double, 4, 1> X;
+      X(0, 0) = 1.0;
+      X.segment<3>(1) = value.unitVector();
+      return X;
+    } else if constexpr (D >= 3) {
+      Matrix X = Matrix::Zero(1, D);
+      X.block(0, 0, 1, 3) = value.unitVector().transpose();
+      return X;
+    } else {
+      throw std::invalid_argument(
+          "traits<Unit3>::QcqpValue supports D=1 and D>=3.");
+    }
+  }
+
+  /// The single unit-norm constraint, `||X||^2 = 1`.
+  template <int D = 1>
+  static std::vector<std::pair<Matrix, double>> QcqpConstraints() {
+    if constexpr (D == 1) {
+      // Homogenized: pin the leading coordinate and the direction's norm.
+      std::vector<std::pair<Matrix, double>> constraints;
+      Matrix A = Matrix::Zero(4, 4);
+      A(0, 0) = 1.0;
+      constraints.emplace_back(A, 1.0);
+      A.setZero();
+      A(1, 1) = A(2, 2) = A(3, 3) = 1.0;
+      constraints.emplace_back(A, 1.0);
+      return constraints;
+    } else if constexpr (D >= 3) {
+      return {{Matrix::Identity(1, 1), 1.0}};
+    } else {
+      throw std::invalid_argument(
+          "traits<Unit3>::QcqpConstraints supports D=1 and D>=3.");
+    }
+  }
+
+  /// Recover a direction by normalizing the leading three entries.
+  template <int D = 1>
+  static Unit3 FromQcqpValue(const Matrix& X) {
+    if constexpr (D == 1) {
+      if (X.rows() != QcqpVectorDim || X.cols() != 1) {
+        throw std::invalid_argument(
+            "traits<Unit3>::FromQcqpValue requires a 4-by-1 matrix.");
+      }
+      return Unit3(Point3(X.block(1, 0, 3, 1)));
+    } else if constexpr (D >= 3) {
+      if (X.rows() != 1 || X.cols() != D) {
+        throw std::invalid_argument(
+            "traits<Unit3>::FromQcqpValue requires a 1-by-D matrix.");
+      }
+      return Unit3(Point3(X.block(0, 0, 1, 3).transpose()));
+    } else {
+      throw std::invalid_argument(
+          "traits<Unit3>::FromQcqpValue supports D=1 and D>=3.");
+    }
+  }
 };
 
 template<> struct traits<const Unit3> : public internal::Manifold<Unit3> {
