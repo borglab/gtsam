@@ -181,11 +181,11 @@ public:
 
       Matrix H1_inlier = sqrt(p_inlier) * model_inlier_->Whiten(H1);
       Matrix H1_outlier = sqrt(p_outlier) * model_outlier_->Whiten(H1);
-      Matrix H1_aug = stack(2, &H1_inlier, &H1_outlier);
+      Matrix H1_aug = stack(std::vector<Matrix>{H1_inlier, H1_outlier});
 
       Matrix H2_inlier = sqrt(p_inlier) * model_inlier_->Whiten(H2);
       Matrix H2_outlier = sqrt(p_outlier) * model_outlier_->Whiten(H2);
-      Matrix H2_aug = stack(2, &H2_inlier, &H2_outlier);
+      Matrix H2_aug = stack(std::vector<Matrix>{H2_inlier, H2_outlier});
 
       (*H)[0].resize(H1_aug.rows(), H1_aug.cols());
       (*H)[1].resize(H2_aug.rows(), H2_aug.cols());
