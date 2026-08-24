@@ -17,6 +17,7 @@
 #include <gtsam/linear/BatchJacobianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/KeyInfo.h>
 #include <gtsam/linear/SparseEigen.h>
 #include <gtsam/linear/internal/BatchJacobianFactorElimination.h>
 #include <gtsam/linear/internal/CholmodSolver.h>
@@ -26,7 +27,6 @@
 #include <algorithm>
 #include <map>
 #include <stdexcept>
-#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -42,34 +42,8 @@ namespace {
 struct SparseNormalSystem {
   SparseEigen hessian;
   Vector rhs;
-  std::map<Key, size_t> dimensions;
+  KeyInfo keyInfo;
 };
-
-struct VariableLayout {
-  std::map<Key, size_t> dimensions;
-  std::map<Key, DenseIndex> scalarOffsets;
-  DenseIndex dimension = 0;
-};
-
-VariableLayout createVariableLayout(const GaussianFactorGraph& graph,
-                                    const Ordering& ordering) {
-  VariableLayout layout;
-  layout.dimensions = graph.getKeyDimMap();
-  if (ordering.size() != layout.dimensions.size()) {
-    throw std::invalid_argument(
-        "CHOLMOD ordering must contain every Gaussian variable exactly once");
-  }
-  std::unordered_set<Key> seen;
-  for (Key key : ordering) {
-    if (!layout.dimensions.count(key) || !seen.insert(key).second) {
-      throw std::invalid_argument(
-          "CHOLMOD ordering contains an unknown or duplicate key");
-    }
-    layout.scalarOffsets.emplace(key, layout.dimension);
-    layout.dimension += static_cast<DenseIndex>(layout.dimensions.at(key));
-  }
-  return layout;
-}
 
 class TripletNormalAccumulator : public SparseNormalAccumulator {
  public:
@@ -105,19 +79,18 @@ class TripletNormalAccumulator : public SparseNormalAccumulator {
   Vector* rhs_;
 };
 
-void appendHessianFactor(const HessianFactor& factor,
-                         const VariableLayout& layout,
+void appendHessianFactor(const HessianFactor& factor, const KeyInfo& layout,
                          TripletNormalAccumulator* accumulator) {
   for (size_t i = 0; i < factor.size(); ++i) {
     const Key keyI = factor.keys().at(i);
-    const DenseIndex offsetI = layout.scalarOffsets.at(keyI);
+    const DenseIndex offsetI = static_cast<DenseIndex>(layout.at(keyI).start);
     const DenseIndex dimensionI = factor.getDim(factor.begin() + i);
     accumulator->addRhsBlock(offsetI, dimensionI,
                              factor.linearTerm(factor.begin() + i).data());
 
     for (size_t j = i; j < factor.size(); ++j) {
       const Key keyJ = factor.keys().at(j);
-      const DenseIndex offsetJ = layout.scalarOffsets.at(keyJ);
+      const DenseIndex offsetJ = static_cast<DenseIndex>(layout.at(keyJ).start);
       const Matrix block = i == j
                                ? Matrix(factor.info().diagonalBlock(i))
                                : Matrix(factor.info().aboveDiagonalBlock(i, j));
@@ -128,18 +101,18 @@ void appendHessianFactor(const HessianFactor& factor,
 }
 
 void appendBatchFactor(const BatchJacobianFactorBase& factor,
-                       const VariableLayout& layout,
+                       const KeyInfo& layout,
                        TripletNormalAccumulator* accumulator) {
   std::vector<DenseIndex> scalarOffsets;
   scalarOffsets.reserve(factor.size());
   for (Key key : factor.keys()) {
-    scalarOffsets.push_back(layout.scalarOffsets.at(key));
+    scalarOffsets.push_back(static_cast<DenseIndex>(layout.at(key).start));
   }
   BatchJacobianFactorElimination::addSparseNormal(factor, scalarOffsets,
                                                   accumulator);
 }
 
-void appendFactor(const GaussianFactor& factor, const VariableLayout& layout,
+void appendFactor(const GaussianFactor& factor, const KeyInfo& layout,
                   TripletNormalAccumulator* accumulator) {
   if (const auto* hessian = dynamic_cast<const HessianFactor*>(&factor)) {
     appendHessianFactor(*hessian, layout, accumulator);
@@ -174,16 +147,17 @@ SparseNormalSystem buildSparseNormalSystem(const GaussianFactorGraph& graph,
     throw std::invalid_argument(
         "CHOLMOD does not support constrained Gaussian factors");
   }
-  const VariableLayout layout = createVariableLayout(graph, ordering);
+  const KeyInfo layout(graph, ordering);
   std::vector<Eigen::Triplet<double, int>> entries;
-  Vector rhs = Vector::Zero(layout.dimension);
+  Vector rhs = Vector::Zero(layout.numCols());
   TripletNormalAccumulator accumulator(&entries, &rhs);
 
   for (const GaussianFactor::shared_ptr& factor : graph) {
     if (factor) appendFactor(*factor, layout, &accumulator);
   }
-  return {finalizeSparseHessian(layout.dimension, entries), std::move(rhs),
-          layout.dimensions};
+  return {
+      finalizeSparseHessian(static_cast<DenseIndex>(layout.numCols()), entries),
+      std::move(rhs), layout};
 }
 
 }  // namespace
@@ -299,15 +273,7 @@ VectorValues CholmodSolver::solve(const GaussianFactorGraph& graph,
   if (ordering.empty()) return {};
   const Vector solution =
       impl_->solve(&system.hessian, system.rhs, ordering.front());
-  VectorValues result;
-  DenseIndex offset = 0;
-  for (Key key : ordering) {
-    const DenseIndex dimension =
-        static_cast<DenseIndex>(system.dimensions.at(key));
-    result.insert(key, solution.segment(offset, dimension));
-    offset += dimension;
-  }
-  return result;
+  return buildVectorValues(solution, system.keyInfo);
 #else
   (void)graph;
   (void)ordering;
