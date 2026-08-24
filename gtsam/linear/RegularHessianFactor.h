@@ -171,6 +171,31 @@ namespace gtsam {
     // http://stackoverflow.com/questions/11160964/multiple-copies-of-the-same-object-c-thread-safe
     mutable std::vector<VectorD, Eigen::aligned_allocator<VectorD>> y_;
 
+    /// Shared raw Hessian product parameterized by a key-to-scalar offset.
+    template <class OffsetPolicy>
+    void multiplyHessianAddImpl(double alpha, const double* x, double* yvalues,
+                                const OffsetPolicy& offset) const {
+      const size_t n = size();
+      if (y_.size() != n) y_.resize(n);
+      for (VectorD& yi : y_) yi.setZero();
+
+      for (DenseIndex j = 0; j < static_cast<DenseIndex>(n); ++j) {
+        ConstDMap xj(x + offset(keys_[j]));
+        DenseIndex i = 0;
+        for (; i < j; ++i) {
+          y_[i] += info_.aboveDiagonalBlock(i, j) * xj;
+        }
+        y_[i] += info_.diagonalBlock(j) * xj;
+        for (i = j + 1; i < static_cast<DenseIndex>(n); ++i) {
+          y_[i] += info_.aboveDiagonalBlock(j, i).transpose() * xj;
+        }
+      }
+
+      for (DenseIndex i = 0; i < static_cast<DenseIndex>(n); ++i) {
+        DMap(yvalues + offset(keys_[i])) += alpha * y_[i];
+      }
+    }
+
   public:
 
     /**
@@ -200,41 +225,9 @@ namespace gtsam {
      * @param[in,out] yvalues Raw pointer to the output vector data (accumulates).
      */
     void multiplyHessianAdd(double alpha, const double* x,
-      double* yvalues) const {
-      // Ensure scratch space is properly sized
-      const size_t n = size();
-      if (y_.size() != n) {
-        y_.resize(n);
-      }
-      for (VectorD& yi : y_)
-        yi.setZero();
-
-      // Loop over columns (j) of the Hessian H=info_
-      // Accessing x only once per column j
-      // Fill temporary y_ vector corresponding to rows i
-      for (DenseIndex j = 0; j < static_cast<DenseIndex>(n); ++j) {
-        Key key_j = keys_[j];
-        ConstDMap xj(x + key_j * D); // Map to the j-th block of x
-
-        DenseIndex i = 0;
-        // Off-diagonal blocks G_ij * x_j for i < j
-        for (; i < j; ++i) {
-          y_[i] += info_.aboveDiagonalBlock(i, j) * xj;
-        }
-        // Diagonal block G_jj * x_j
-        y_[i] += info_.diagonalBlock(j) * xj;
-        // Off-diagonal blocks G_ij * x_j for i > j (using transpose G_ji^T * x_j)
-        for (i = j + 1; i < static_cast<DenseIndex>(n); ++i) {
-          y_[i] += info_.aboveDiagonalBlock(j, i).transpose() * xj;
-        }
-      }
-
-      // Add accumulated results from y_ to the output yvalues
-      for (DenseIndex i = 0; i < static_cast<DenseIndex>(n); ++i) {
-        Key key_i = keys_[i];
-        DMap map_yi(yvalues + key_i * D); // Map to the i-th block of yvalues
-        map_yi += alpha * y_[i];
-      }
+                            double* yvalues) const {
+      multiplyHessianAddImpl(alpha, x, yvalues,
+                             [](Key key) { return key * D; });
     }
 
     /**
@@ -250,46 +243,17 @@ namespace gtsam {
      * @param offsets Vector mapping variable keys to their starting index in `x` and `yvalues`.
      */
     void multiplyHessianAdd(double alpha, const double* x, double* yvalues,
-      const std::vector<size_t>& offsets) const {
-      // Ensure scratch space is properly sized
-      const size_t n = size();
-      if (y_.size() != n) {
-        y_.resize(n);
-      }
-      for (VectorD& yi : y_)
-        yi.setZero();
-
-      // Loop over columns (j) of the Hessian H=info_
-      for (DenseIndex j = 0; j < static_cast<DenseIndex>(n); ++j) {
-        Key key_j = keys_[j];
-        size_t offset_j = offsets[key_j];
-        // Ensure block size matches D (redundant if checkInvariants worked, but safe)
-        size_t dim_j = offsets[key_j + 1] - offset_j;
-        if (dim_j != D) throw std::runtime_error("RegularHessianFactor::multiplyHessianAdd: Mismatched dimension in offset map.");
-        ConstDMap xj(x + offset_j); // Map to the j-th block of x using offset
-
-        DenseIndex i = 0;
-        // Off-diagonal blocks G_ij * x_j for i < j
-        for (; i < j; ++i) {
-          y_[i] += info_.aboveDiagonalBlock(i, j) * xj;
+                            const std::vector<size_t>& offsets) const {
+      const auto offset = [&offsets](Key key) {
+        if (offsets.size() < 2 || key >= offsets.size() - 1 ||
+            offsets[key + 1] - offsets[key] != D) {
+          throw std::runtime_error(
+              "RegularHessianFactor::multiplyHessianAdd: Mismatched "
+              "dimension in offset map.");
         }
-        // Diagonal block G_jj * x_j
-        y_[i] += info_.diagonalBlock(j) * xj;
-        // Off-diagonal blocks G_ij * x_j for i > j (using transpose G_ji^T * x_j)
-        for (i = j + 1; i < static_cast<DenseIndex>(n); ++i) {
-          y_[i] += info_.aboveDiagonalBlock(j, i).transpose() * xj;
-        }
-      }
-
-      // Add accumulated results from y_ to the output yvalues using offsets
-      for (DenseIndex i = 0; i < static_cast<DenseIndex>(n); ++i) {
-        Key key_i = keys_[i];
-        size_t offset_i = offsets[key_i];
-        size_t dim_i = offsets[key_i + 1] - offset_i;
-        if (dim_i != D) throw std::runtime_error("RegularHessianFactor::multiplyHessianAdd: Mismatched dimension in offset map.");
-        DMap map_yi(yvalues + offset_i); // Map to the i-th block of yvalues using offset
-        map_yi += alpha * y_[i];
-      }
+        return offsets[key];
+      };
+      multiplyHessianAddImpl(alpha, x, yvalues, offset);
     }
 
     /**

@@ -181,6 +181,18 @@ TEST(VectorValues, LinearAlgebra)
 }
 
 /* ************************************************************************* */
+// All binary operations reject a different number of keyed blocks.
+TEST(VectorValues, BinaryStructureMismatch) {
+  const VectorValues one{{0, Vector1(1.0)}};
+  const VectorValues two{{0, Vector1(1.0)}, {1, Vector1(2.0)}};
+  CHECK_EXCEPTION(one.dot(two), invalid_argument);
+  CHECK_EXCEPTION(one + two, invalid_argument);
+  CHECK_EXCEPTION(one - two, invalid_argument);
+  VectorValues accumulated = one;
+  CHECK_EXCEPTION(accumulated += two, invalid_argument);
+}
+
+/* ************************************************************************* */
 TEST(VectorValues, convert)
 {
   Vector x{{1, 2, 3, 4, 5, 6, 7}};

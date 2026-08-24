@@ -118,6 +118,17 @@ TEST(RegularHessianFactor, Constructors)
   factor.multiplyHessianAdd(alpha, xvalues, fast_y.data());
   EXPECT(assert_equal((2 * expected_y).eval(), fast_y));
 
+  // The explicit-offset policy produces the same result and validates blocks.
+  const vector<size_t> offsets{0, 2, 4, 6, 8};
+  Vector offset_y = Vector8::Zero();
+  factor.multiplyHessianAdd(alpha, xvalues, offset_y.data(), offsets);
+  EXPECT(assert_equal(expected_y, offset_y));
+  const vector<size_t> invalidOffsets{0, 1, 4, 6, 8};
+  CHECK_EXCEPTION(
+      factor.multiplyHessianAdd(alpha, xvalues, offset_y.data(),
+                                invalidOffsets),
+      runtime_error);
+
   // check some expressions
   EXPECT(assert_equal(G12,factor.info().aboveDiagonalBlock(i1 - factor.begin(), i2 - factor.begin())));
   EXPECT(assert_equal(G22,factor.info().diagonalBlock(i2 - factor.begin())));
