@@ -22,7 +22,7 @@
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/SubgraphBuilder.h>
 #include <gtsam/linear/SubgraphPreconditioner.h>
-#include <gtsam/linear/internal/UpperConditionalSolve.h>
+#include <gtsam/linear/linearExceptions.h>
 
 #include <cassert>
 #include <stdexcept>
@@ -217,8 +217,11 @@ void SubgraphPreconditioner::solve(const Vector &y, Vector &x) const {
 
     /* compute the solution for the current pivot */
     Vector solFrontal;
-    internal::solveUpperConditional(cg->R(), cg->S(), rhsFrontal, &xParent,
-                                    cg->keys().front(), &solFrontal);
+    internal::solveUpperConditional(cg->R(), cg->S(), rhsFrontal, xParent,
+                                    &solFrontal);
+    if (solFrontal.hasNaN()) {
+      throw IndeterminateSystemException(cg->keys().front());
+    }
 
     /* assign subvector of sol to the frontal variables */
     setSubvector(solFrontal, keyInfo_, frontalKeys, x);

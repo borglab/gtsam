@@ -20,7 +20,6 @@
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/Sampler.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/linear/internal/UpperConditionalSolve.h>
 #include <gtsam/linear/linearExceptions.h>
 
 #include <iomanip>
@@ -222,8 +221,8 @@ namespace gtsam {
     const Vector xS = x.vector(KeyVector(beginParents(), endParents()));
 
     Vector solution;
-    internal::solveUpperConditional(R(), S(), d(), &xS, keys().front(),
-                                    &solution);
+    internal::solveUpperConditional(R(), S(), d(), xS, &solution);
+    if (solution.hasNaN()) throw IndeterminateSystemException(keys().front());
 
     // Insert solution into a VectorValues
     VectorValues result;
@@ -245,8 +244,8 @@ namespace gtsam {
     // Use the supplied frontal right-hand side instead of d().
     const Vector rhsR = rhs.vector(KeyVector(beginFrontals(), endFrontals()));
     Vector solution;
-    internal::solveUpperConditional(R(), S(), rhsR, &xS, keys().front(),
-                                    &solution);
+    internal::solveUpperConditional(R(), S(), rhsR, xS, &solution);
+    if (solution.hasNaN()) throw IndeterminateSystemException(keys().front());
 
     // Scale by sigmas
     if (model_) solution.array() *= model_->sigmasRef().array();

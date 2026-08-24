@@ -190,6 +190,20 @@ TEST(VectorValues, BinaryStructureMismatch) {
   CHECK_EXCEPTION(one - two, invalid_argument);
   VectorValues accumulated = one;
   CHECK_EXCEPTION(accumulated += two, invalid_argument);
+
+  const VectorValues wrongKey{{1, Vector1(1.0)}};
+  CHECK_EXCEPTION(one.dot(wrongKey), invalid_argument);
+  CHECK_EXCEPTION(one + wrongKey, invalid_argument);
+  CHECK_EXCEPTION(one - wrongKey, invalid_argument);
+  accumulated = one;
+  CHECK_EXCEPTION(accumulated += wrongKey, invalid_argument);
+
+  const VectorValues wrongDimension{{0, Vector2(1.0, 2.0)}};
+  CHECK_EXCEPTION(one.dot(wrongDimension), invalid_argument);
+  CHECK_EXCEPTION(one + wrongDimension, invalid_argument);
+  CHECK_EXCEPTION(one - wrongDimension, invalid_argument);
+  accumulated = one;
+  CHECK_EXCEPTION(accumulated += wrongDimension, invalid_argument);
 }
 
 /* ************************************************************************* */

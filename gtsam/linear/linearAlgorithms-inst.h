@@ -20,7 +20,7 @@
 #include <gtsam/base/treeTraversal-inst.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/VectorValues.h>
-#include <gtsam/linear/internal/UpperConditionalSolve.h>
+#include <gtsam/linear/linearExceptions.h>
 
 #include <memory>
 #include <optional>
@@ -87,8 +87,11 @@ namespace gtsam
             }
 
             Vector solution;
-            solveUpperConditional(c.R(), c.S(), c.getb(), &xS, c.keys().front(),
-                                  &solution);
+            internal::solveUpperConditional(c.R(), c.S(), c.getb(), xS,
+                                            &solution);
+            if (solution.hasNaN()) {
+              throw IndeterminateSystemException(c.keys().front());
+            }
 
             // Insert solution into a VectorValues
             DenseIndex vectorPosition = 0;

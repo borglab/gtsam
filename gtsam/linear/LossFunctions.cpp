@@ -65,7 +65,7 @@ double GradShapeSquared(double csquared, double mu) { return csquared / mu; }
 double GradShape(double c, double mu) { return c / std::sqrt(mu); }
 
 template <class ForEachMatrix>
-void ReweightImpl(const Base& model, Vector* error,
+void reweightImpl(const Base& model, Vector* error,
                   ForEachMatrix&& forEachMatrix) {
   if (model.reweightScheme() == Base::Block) {
     const double weight = model.sqrtWeight(error->norm());
@@ -73,8 +73,9 @@ void ReweightImpl(const Base& model, Vector* error,
     *error *= weight;
   } else {
     const Vector weights = model.sqrtWeight(*error);
-    forEachMatrix(
-        [&weights](Matrix& matrix) { vector_scale_inplace(weights, matrix); });
+    forEachMatrix([&weights](Matrix& matrix) {
+      matrix.array().colwise() *= weights.array();
+    });
     error->array() *= weights.array();
   }
 }
@@ -96,24 +97,24 @@ Vector Base::sqrtWeight(const Vector &error) const {
 // according to their weight implementation
 
 void Base::reweight(Vector& error) const {
-  ReweightImpl(*this, &error, [](const auto&) {});
+  reweightImpl(*this, &error, [](const auto&) {});
 }
 
 // Reweight n block matrices with one error vector
 void Base::reweight(vector<Matrix>& A, Vector& error) const {
-  ReweightImpl(*this, &error, [&A](const auto& apply) {
+  reweightImpl(*this, &error, [&A](const auto& apply) {
     for (Matrix& matrix : A) apply(matrix);
   });
 }
 
 // Reweight one block matrix with one error vector
 void Base::reweight(Matrix& A, Vector& error) const {
-  ReweightImpl(*this, &error, [&A](const auto& apply) { apply(A); });
+  reweightImpl(*this, &error, [&A](const auto& apply) { apply(A); });
 }
 
 // Reweight two block matrices with one error vector
 void Base::reweight(Matrix& A1, Matrix& A2, Vector& error) const {
-  ReweightImpl(*this, &error, [&A1, &A2](const auto& apply) {
+  reweightImpl(*this, &error, [&A1, &A2](const auto& apply) {
     apply(A1);
     apply(A2);
   });
@@ -121,7 +122,7 @@ void Base::reweight(Matrix& A1, Matrix& A2, Vector& error) const {
 
 // Reweight three block matrices with one error vector
 void Base::reweight(Matrix& A1, Matrix& A2, Matrix& A3, Vector& error) const {
-  ReweightImpl(*this, &error, [&A1, &A2, &A3](const auto& apply) {
+  reweightImpl(*this, &error, [&A1, &A2, &A3](const auto& apply) {
     apply(A1);
     apply(A2);
     apply(A3);

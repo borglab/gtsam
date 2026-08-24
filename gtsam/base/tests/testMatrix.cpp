@@ -583,6 +583,31 @@ TEST(Matrix, backsubtitution )
 }
 
 /* ************************************************************************* */
+namespace upper_conditional_fixture {
+
+// Solves R*x = d - S*parents for populated and empty parent vectors.
+TEST(Matrix, SolveUpperConditional) {
+  const Matrix R{{2.0, 1.0}, {0.0, 3.0}};
+  const Matrix S{{1.0}, {-2.0}};
+  const Vector expected{{4.0, -1.0}};
+  const Vector parents{{2.5}};
+  const Vector d = R * expected + S * parents;
+
+  Vector actual;
+  internal::solveUpperConditional(R, S, d, parents, &actual);
+  EXPECT(assert_equal(expected, actual, 1e-12));
+
+  const Matrix emptyS(2, 0);
+  const Vector emptyParents;
+  internal::solveUpperConditional(R, emptyS, R * expected, emptyParents,
+                                  &actual);
+  EXPECT(assert_equal(expected, actual, 1e-12));
+}
+
+}  // namespace upper_conditional_fixture
+/* ************************************************************************* */
+
+/* ************************************************************************* */
 TEST(Matrix, householder )
 {
   // check in-place householder, with v vectors below diagonal

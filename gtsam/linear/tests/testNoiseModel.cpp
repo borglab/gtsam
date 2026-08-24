@@ -619,6 +619,7 @@ TEST(NoiseModel, robustFunctionFair)
   DOUBLES_EQUAL(0.441961080151135, fair->loss(error4), 1e-8);
 }
 
+// All robust reweight overloads apply identical block and scalar weights.
 TEST(NoiseModel, RobustReweightOverloadEquivalence) {
   for (const auto scheme : {mEstimator::Base::Block,
                             mEstimator::Base::Scalar}) {

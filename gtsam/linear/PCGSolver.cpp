@@ -764,7 +764,19 @@ void GaussianFactorGraphSystem::axpy(const double alpha, const Vector& x,
 /**********************************************************************************/
 VectorValues buildVectorValues(const Vector& v, const Ordering& ordering,
                                const map<Key, size_t>& dimensions) {
-  return buildVectorValues(v, KeyInfo(dimensions, ordering));
+  VectorValues result;
+  DenseIndex offset = 0;
+  for (Key key : ordering) {
+    const auto found = dimensions.find(key);
+    if (found == dimensions.end()) {
+      throw invalid_argument(
+          "buildVectorValues: inconsistent ordering and dimensions");
+    }
+    const size_t dimension = found->second;
+    result.emplace(key, v.segment(offset, dimension));
+    offset += dimension;
+  }
+  return result;
 }
 
 }  // namespace gtsam

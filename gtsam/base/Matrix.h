@@ -249,6 +249,22 @@ GTSAM_EXPORT Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool u
  */
 GTSAM_EXPORT Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit=false);
 
+namespace internal {
+
+/** Solve the block upper-triangular system R*x = d - S*parents. */
+template <class RDerived, class SDerived, class DDerived, class ParentsDerived>
+void solveUpperConditional(const Eigen::MatrixBase<RDerived>& R,
+                           const Eigen::MatrixBase<SDerived>& S,
+                           const Eigen::MatrixBase<DDerived>& d,
+                           const Eigen::MatrixBase<ParentsDerived>& parents,
+                           Vector* result) {
+  result->resize(d.rows());
+  result->noalias() = d - S * parents;
+  R.derived().template triangularView<Eigen::Upper>().solveInPlace(*result);
+}
+
+}  // namespace internal
+
 /**
  * create a matrix by stacking other matrices
  * Given a set of matrices: A1, A2, A3...
