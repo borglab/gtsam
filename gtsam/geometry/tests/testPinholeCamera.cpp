@@ -115,7 +115,7 @@ TEST( PinholeCamera, lookat)
   Camera camera2 = Camera::Lookat(C2, Point3(0,0,0), Point3(0,0,1));
 
   Matrix R = camera2.pose().rotation().matrix();
-  Matrix I = trans(R)*R;
+  Matrix I = R.transpose() * R;
   EXPECT(assert_equal(I, I_3x3));
 }
 

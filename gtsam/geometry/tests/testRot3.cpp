@@ -715,7 +715,7 @@ Matrix Cayley(const Matrix& A) {
 TEST( Rot3, Cayley ) {
   Matrix A = skewSymmetric(1,2,-3);
   Matrix Q = Cayley(A);
-  EXPECT(assert_equal((Matrix)I_3x3, trans(Q)*Q));
+  EXPECT(assert_equal((Matrix)I_3x3, Q.transpose() * Q));
   EXPECT(assert_equal(A, Cayley(Q)));
 }
 

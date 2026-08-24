@@ -483,7 +483,8 @@ TEST_PIM(ImuFactor, ErrorAndJacobians) {
 
   // Make sure the whitening is done correctly
   Matrix cov = pim.preintMeasCov();
-  Matrix R = RtR(cov.inverse());
+  Eigen::LLT<Matrix> llt(cov.inverse());
+  Matrix R = llt.matrixU();
   Vector whitened = R * expectedError;
   EXPECT(assert_equal(0.5 * whitened.squaredNorm(), factor.error(values), 1e-4));
 
