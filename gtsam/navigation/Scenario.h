@@ -22,11 +22,12 @@
 #include <gtsam/base/Lie.h>
 #include <gtsam/dllexport.h>
 
+#include <algorithm>
+#include <cmath>
+#include <iterator>
 #include <map>
 #include <stdexcept>
 #include <string>
-
-using namespace std;
 
 namespace gtsam {
 
@@ -118,17 +119,17 @@ class GTSAM_EXPORT DiscreteScenario : public Scenario {
    * @param velocities_n Map of timestamps to ground truth linear velocities in nav frame.
    * @param accelerations_n Map of timestamps to ground truth linear accelerations in nav frame.
    */
-  DiscreteScenario(const map<double, Pose3>& poses,
-                   const map<double, Vector3>& angularVelocities_b,
-                   const map<double, Vector3>& velocities_n,
-                   const map<double, Vector3>& accelerations_n)
+  DiscreteScenario(const std::map<double, Pose3>& poses,
+                   const std::map<double, Vector3>& angularVelocities_b,
+                   const std::map<double, Vector3>& velocities_n,
+                   const std::map<double, Vector3>& accelerations_n)
       : poses_(poses),
         angularVelocities_b_(angularVelocities_b),
         velocities_n_(velocities_n),
         accelerations_n_(accelerations_n) {
     if (poses_.empty() || angularVelocities_b_.empty() ||
         velocities_n_.empty() || accelerations_n_.empty()) {
-      throw invalid_argument(
+      throw std::invalid_argument(
           "Input maps for DiscreteScenario cannot be empty.");
     }
 
@@ -138,14 +139,14 @@ class GTSAM_EXPORT DiscreteScenario : public Scenario {
     double min_t = poses_.begin()->first;
     double max_t = poses_.rbegin()->first;
 
-    min_t = min(min_t, angularVelocities_b_.begin()->first);
-    max_t = max(max_t, angularVelocities_b_.rbegin()->first);
+    min_t = std::min(min_t, angularVelocities_b_.begin()->first);
+    max_t = std::max(max_t, angularVelocities_b_.rbegin()->first);
 
-    min_t = min(min_t, velocities_n_.begin()->first);
-    max_t = max(max_t, velocities_n_.rbegin()->first);
+    min_t = std::min(min_t, velocities_n_.begin()->first);
+    max_t = std::max(max_t, velocities_n_.rbegin()->first);
 
-    min_t = min(min_t, accelerations_n_.begin()->first);
-    max_t = max(max_t, accelerations_n_.rbegin()->first);
+    min_t = std::min(min_t, accelerations_n_.begin()->first);
+    max_t = std::max(max_t, accelerations_n_.rbegin()->first);
 
     // Calculate and assign the duration.
     t_ = max_t - min_t;
@@ -166,7 +167,7 @@ class GTSAM_EXPORT DiscreteScenario : public Scenario {
    * @return A constructed DiscreteScenario.
    * @throws runtime_error if file cannot be opened or is malformed.
    */
-  static DiscreteScenario FromCSV(const string& csv_filepath);
+  static DiscreteScenario FromCSV(const std::string& csv_filepath);
 
   /// @name Scenario interface
   /// @{
@@ -181,13 +182,13 @@ class GTSAM_EXPORT DiscreteScenario : public Scenario {
 
  private:
   /// Map from timestamp to pose.
-  map<double, Pose3> poses_;
+  std::map<double, Pose3> poses_;
   /// Map from timestamp to angular velocity in body frame.
-  map<double, Vector3> angularVelocities_b_;
+  std::map<double, Vector3> angularVelocities_b_;
   /// Map from timestamp to velocity in navigation frame.
-  map<double, Vector3> velocities_n_;
+  std::map<double, Vector3> velocities_n_;
   /// Map from timestamp to acceleration in navigation frame.
-  map<double, Vector3> accelerations_n_;
+  std::map<double, Vector3> accelerations_n_;
   /// Duration.
   double t_;
 
@@ -204,7 +205,7 @@ class GTSAM_EXPORT DiscreteScenario : public Scenario {
    * @return The interpolated value.
    */
   template <typename T>
-  T interpolate(const map<double, T>& values, double t) const {
+  T interpolate(const std::map<double, T>& values, double t) const {
     // Find the first element with a timestamp >= t
     auto it2 = values.lower_bound(t);
 
@@ -219,7 +220,7 @@ class GTSAM_EXPORT DiscreteScenario : public Scenario {
     }
 
     // Standard case: t is between it1 and it2.
-    auto it1 = prev(it2);
+    auto it1 = std::prev(it2);
 
     const double t1 = it1->first;
     const T& value1 = it1->second;
@@ -228,7 +229,7 @@ class GTSAM_EXPORT DiscreteScenario : public Scenario {
 
     const double dt = t2 - t1;
     // Avoid division by zero if timestamps are identical
-    if (abs(dt) < 1e-9) {
+    if (std::abs(dt) < 1e-9) {
       return value1;
     }
 
