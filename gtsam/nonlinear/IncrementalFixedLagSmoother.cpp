@@ -57,6 +57,21 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   FastVector<size_t> removedFactors;
   std::optional<FastMap<Key, int> > constrainedKeys = {};
 
+  // ISAM2 requires every new value to occur in a new factor. Treat values
+  // outside that contract as unused instead of leaving them without a
+  // VariableIndex entry, which would make later constrained ordering fail.
+  const KeySet newFactorKeys = newFactors.keys();
+  KeySet unreferencedNewKeys;
+  Values referencedNewTheta;
+  for (const auto& keyValue : newTheta) {
+    if (newFactorKeys.find(keyValue.key) != newFactorKeys.end() ||
+        isam_.valueExists(keyValue.key)) {
+      referencedNewTheta.insert(keyValue.key, keyValue.value);
+    } else {
+      unreferencedNewKeys.insert(keyValue.key);
+    }
+  }
+
   // Update the Timestamps associated with the factor keys
   updateKeyTimestampMap(timestamps);
 
@@ -69,6 +84,26 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   // Find the set of variables to be marginalized out
   KeyVector marginalizableKeys = findKeysBefore(
       current_timestamp - smootherLag_);
+
+  if (not unreferencedNewKeys.empty()) {
+    // The unreferenced values are not forwarded to ISAM2, so remove their
+    // timestamps and keep them out of ordering and marginalization as well.
+    marginalizableKeys.erase(
+        std::remove_if(marginalizableKeys.begin(), marginalizableKeys.end(),
+                       [&](const auto& key) {
+                         return unreferencedNewKeys.find(key) !=
+                                unreferencedNewKeys.end();
+                       }),
+        marginalizableKeys.end());
+
+    KeyVector unreferencedTimestampKeys;
+    for (Key key : unreferencedNewKeys) {
+      if (keyTimestampMap_.find(key) != keyTimestampMap_.end()) {
+        unreferencedTimestampKeys.push_back(key);
+      }
+    }
+    eraseKeyTimestampMap(unreferencedTimestampKeys);
+  }
 
   if (debug) {
     std::cout << "Marginalizable Keys: ";
@@ -99,8 +134,11 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   KeyList additionalMarkedKeys(additionalKeys.begin(), additionalKeys.end());
 
   // Update iSAM2
-  isamResult_ = isam_.update(newFactors, newTheta,
-      factorsToRemove, constrainedKeys, {}, additionalMarkedKeys);
+  isamResult_ = isam_.update(newFactors, referencedNewTheta, factorsToRemove,
+                             constrainedKeys, {}, additionalMarkedKeys);
+  const KeySet isamUnusedKeys = isamResult_.unusedKeys;
+  isamResult_.unusedKeys.insert(unreferencedNewKeys.begin(),
+                                unreferencedNewKeys.end());
 
   if (debug) {
     std::cout << "Unused Keys After Update: ";
@@ -112,11 +150,11 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
     std::cout << std::endl;
   }
 
-  if (not isamResult_.unusedKeys.empty()) {
+  if (not isamUnusedKeys.empty()) {
     // Remove keys that became unused after update from the key-timestamp
     // database
-    eraseKeyTimestampMap(KeyVector{isamResult_.unusedKeys.begin(),
-                                   isamResult_.unusedKeys.end()});
+    eraseKeyTimestampMap(
+        KeyVector{isamUnusedKeys.begin(), isamUnusedKeys.end()});
 
     if (marginalizableKeys.size() > 0) {
       // Remove keys that became unused after update from the marginalizable
@@ -124,8 +162,8 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
       marginalizableKeys.erase(
           std::remove_if(marginalizableKeys.begin(), marginalizableKeys.end(),
                          [&](const auto& key) {
-                           return isamResult_.unusedKeys.find(key) !=
-                                  isamResult_.unusedKeys.end();
+                           return isamUnusedKeys.find(key) !=
+                                  isamUnusedKeys.end();
                          }),
           marginalizableKeys.end());
     }

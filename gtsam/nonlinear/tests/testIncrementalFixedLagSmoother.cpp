@@ -436,6 +436,51 @@ TEST(IncrementalFixedLagSmoother, Example) {
   }
 }
 
+// A value without a referencing factor used to remain in ISAM2 without a
+// VariableIndex entry and caused a bare map::at failure during a later update.
+TEST(IncrementalFixedLagSmoother, UnreferencedValueIsUnused) {
+  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  IncrementalFixedLagSmoother smoother(1.0);
+
+  NonlinearFactorGraph factors;
+  Values values;
+  FixedLagSmoother::KeyTimestampMap timestamps;
+
+  factors.addPrior(X(0), Point2(0.0, 0.0), noise);
+  values.insert(X(0), Point2(0.0, 0.0));
+  timestamps[X(0)] = 0.0;
+  smoother.update(factors, values, timestamps);
+
+  values.clear();
+  timestamps.clear();
+  values.insert(X(1), Point2(1.0, 0.0));
+  timestamps[X(1)] = 1.0;
+  smoother.update({}, values, timestamps);
+
+  EXPECT(!smoother.getLinearizationPoint().exists(X(1)));
+  EXPECT(smoother.timestamps().find(X(1)) == smoother.timestamps().end());
+  EXPECT_LONGS_EQUAL(1, smoother.getISAM2Result().unusedKeys.size());
+  EXPECT(smoother.getISAM2Result().unusedKeys.exists(X(1)));
+
+  factors.resize(0);
+  values.clear();
+  timestamps.clear();
+  factors.emplace_shared<BetweenPoint2>(X(0), X(2), Point2(2.0, 0.0), noise);
+  values.insert(X(2), Point2(2.0, 0.0));
+  timestamps[X(2)] = 2.0;
+  smoother.update(factors, values, timestamps);
+
+  factors.resize(0);
+  values.clear();
+  timestamps.clear();
+  factors.emplace_shared<BetweenPoint2>(X(2), X(3), Point2(1.0, 0.0), noise);
+  values.insert(X(3), Point2(3.0, 0.0));
+  timestamps[X(3)] = 3.0;
+  smoother.update(factors, values, timestamps);
+
+  EXPECT(smoother.getLinearizationPoint().exists(X(3)));
+}
+
 /* ************************************************************************* */
 TEST( IncrementalFixedLagSmoother, ExampleWithFactorRemoval )
 {

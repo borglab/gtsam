@@ -58,7 +58,8 @@ public:
   /**
    * Add new factors, updating the solution and re-linearizing as needed.
    * @param newFactors new factors on old and/or new variables
-   * @param newTheta new values for new variables only
+   * @param newTheta new values for new variables only. Values not referenced
+   * by newFactors are ignored and reported in ISAM2Result::unusedKeys.
    * @param timestamps an (optional) map from keys to real time stamps
    * @param factorsToRemove an (optional) list of factors to remove.
    */
