@@ -158,7 +158,10 @@ Matrix Gaussian::covariance() const {
 
 /* ************************************************************************* */
 Vector Gaussian::sigmas() const {
-  return Vector(covariance().diagonal()).cwiseSqrt();
+  const Matrix& R = this->R();
+  Matrix Rinv = Matrix::Identity(R.rows(), R.cols());
+  R.triangularView<Eigen::Upper>().solveInPlace(Rinv);
+  return Rinv.rowwise().squaredNorm().cwiseSqrt();
 }
 
 /* ************************************************************************* */
