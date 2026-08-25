@@ -1282,8 +1282,7 @@ MultifrontalClique::ParentGatherPlan::ParentGatherPlan(
     for (size_t sourceBlock = 0; sourceBlock + 1 < child->parentIndices_.size();
          ++sourceBlock) {
       const DenseIndex column = child->parentIndices_[sourceBlock];
-      assert(column >= 0 &&
-             column < static_cast<DenseIndex>(parent.blockDims_.size()));
+      assert(column < static_cast<DenseIndex>(parent.blockDims_.size()));
       updatesByColumn[column].push_back(
           {childIndex, static_cast<DenseIndex>(sourceBlock)});
     }
