@@ -285,6 +285,7 @@ MergedClusters buildMergedClusters(const std::vector<LeafBatch>& clusters) {
     for (const auto& leaf : batch.leaves) {
       if (leaf) mergedCluster->merge(leaf);
     }
+    // Cluster::merge prepends frontals, so restore the batch's original order.
     std::reverse(mergedCluster->orderedFrontalKeys.begin(),
                  mergedCluster->orderedFrontalKeys.end());
     merged.clusters[i] = mergedCluster;
@@ -418,6 +419,7 @@ void mergeSmallClusters(const SymbolicJunctionTree::sharedNode& cluster,
     const auto& child = cluster->children[i];
     if (!child) continue;
     const size_t childFrontalDim = frontalDimForSymbolicCluster(child, dims);
+    // The child's separator is already contained in the parent's total size.
     if (childFrontalDim + parentTotalDim < mergeDimCap) {
       merge[i] = true;
       any = true;
@@ -507,6 +509,7 @@ struct CliqueBuilder {
 
     // Finalize children metadata and register clique.
     clique->finalize(std::move(childInfos), *params);
+    // Register after recursion so the flat clique list remains in post-order.
     cliques->push_back(clique);
     return {clique, std::move(separatorKeys)};
   }
@@ -618,6 +621,7 @@ MultifrontalSolver::PrecomputedData MultifrontalSolver::Precompute(
 
   Ordering reducedOrdering;
   reducedOrdering.reserve(ordering.size());
+  // Exact unary constraints remove their keys from symbolic elimination.
   for (Key key : ordering) {
     if (!scratch.fixedKeys.count(key)) {
       reducedOrdering.push_back(key);
@@ -768,6 +772,7 @@ GaussianBayesTree MultifrontalSolver::computeBayesTree() const {
   }
 
   if (!fixedKeys_.empty()) {
+    // Reintroduce fixed variables as independent constrained conditionals.
     for (Key key : fixedKeys_) {
       auto dimIt = dims_.find(key);
       if (dimIt == dims_.end()) {
@@ -832,6 +837,7 @@ const VectorValues& MultifrontalSolver::updateSolution(
         "elimination.");
   }
 
+  // Seed retained variables before back-substituting the eliminated prefix.
   for (size_t i = firstPhaseSize_; i < ordering_.size(); ++i) {
     const Key key = ordering_[i];
     if (fixedKeys_.count(key)) {

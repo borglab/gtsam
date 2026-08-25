@@ -115,13 +115,12 @@ TEST(ForestTraversal, BottomUpLeafAggregation) {
 namespace {
 
 struct AggregationNode {
-  int problemSize_ = 1;
   bool throwOnVisit = false;
   bool visited = false;
   std::thread::id visitThread;
   std::vector<std::shared_ptr<AggregationNode>> children;
 
-  int problemSize() const { return problemSize_; }
+  int problemSize() const { return 1; }
 
   void visit() {
     visited = true;
