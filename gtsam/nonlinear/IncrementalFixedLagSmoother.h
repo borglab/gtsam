@@ -58,8 +58,7 @@ public:
   /**
    * Add new factors, updating the solution and re-linearizing as needed.
    * @param newFactors new factors on old and/or new variables
-   * @param newTheta new values for new variables only. Values not referenced
-   * by newFactors are ignored and reported in ISAM2Result::unusedKeys.
+   * @param newTheta new values for new variables only
    * @param timestamps an (optional) map from keys to real time stamps
    * @param factorsToRemove an (optional) list of factors to remove.
    */
@@ -138,10 +137,11 @@ protected:
   void eraseKeysBefore(double timestamp);
 
   /** Fill in an iSAM2 ConstrainedKeys structure such that the provided keys are eliminated before all others */
-  void createOrderingConstraints(const KeyVector& marginalizableKeys,
+  void createOrderingConstraints(
+      const KeyVector& marginalizableKeys, const KeySet& activeKeys,
       std::optional<FastMap<Key, int> >& constrainedKeys) const;
 
-private:
+ private:
   /** Private methods for printing debug information */
   static void PrintKeySet(const KeySet& keys, const std::string& label =
       "Keys:");

@@ -57,18 +57,14 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   FastVector<size_t> removedFactors;
   std::optional<FastMap<Key, int> > constrainedKeys = {};
 
-  // ISAM2 requires every new value to occur in a new factor. Treat values
-  // outside that contract as unused instead of leaving them without a
-  // VariableIndex entry, which would make later constrained ordering fail.
   const KeySet newFactorKeys = newFactors.keys();
-  KeySet unreferencedNewKeys;
-  Values referencedNewTheta;
-  for (const auto& keyValue : newTheta) {
-    if (newFactorKeys.find(keyValue.key) != newFactorKeys.end() ||
-        isam_.valueExists(keyValue.key)) {
-      referencedNewTheta.insert(keyValue.key, keyValue.value);
-    } else {
-      unreferencedNewKeys.insert(keyValue.key);
+  for (const auto& keyTimestamp : timestamps) {
+    const Key key = keyTimestamp.first;
+    if (!isam_.valueExists(key) && !newTheta.exists(key)) {
+      throw std::invalid_argument(
+          "IncrementalFixedLagSmoother::update: timestamp provided for key " +
+          DefaultKeyFormatter(key) +
+          ", but no value for that key exists in ISAM2 or newTheta");
     }
   }
 
@@ -85,25 +81,18 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   KeyVector marginalizableKeys = findKeysBefore(
       current_timestamp - smootherLag_);
 
-  if (not unreferencedNewKeys.empty()) {
-    // The unreferenced values are not forwarded to ISAM2, so remove their
-    // timestamps and keep them out of ordering and marginalization as well.
-    marginalizableKeys.erase(
-        std::remove_if(marginalizableKeys.begin(), marginalizableKeys.end(),
-                       [&](const auto& key) {
-                         return unreferencedNewKeys.find(key) !=
-                                unreferencedNewKeys.end();
-                       }),
-        marginalizableKeys.end());
-
-    KeyVector unreferencedTimestampKeys;
-    for (Key key : unreferencedNewKeys) {
-      if (keyTimestampMap_.find(key) != keyTimestampMap_.end()) {
-        unreferencedTimestampKeys.push_back(key);
-      }
-    }
-    eraseKeyTimestampMap(unreferencedTimestampKeys);
+  // A value can be added before any factor references it. Keep such pending
+  // values and their timestamps, but do not include them in constrained
+  // ordering or marginalization until a factor connects them.
+  KeySet activeKeys = newFactorKeys;
+  const VariableIndex& variableIndex = isam_.getVariableIndex();
+  for (const auto& keyFactors : variableIndex) {
+    activeKeys.insert(keyFactors.first);
   }
+  marginalizableKeys.erase(
+      std::remove_if(marginalizableKeys.begin(), marginalizableKeys.end(),
+                     [&](Key key) { return !activeKeys.exists(key); }),
+      marginalizableKeys.end());
 
   if (debug) {
     std::cout << "Marginalizable Keys: ";
@@ -114,7 +103,7 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   }
 
   // Force iSAM2 to put the marginalizable variables at the beginning
-  createOrderingConstraints(marginalizableKeys, constrainedKeys);
+  createOrderingConstraints(marginalizableKeys, activeKeys, constrainedKeys);
 
   if (debug) {
     std::cout << "Constrained Keys: ";
@@ -128,17 +117,19 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
     std::cout << std::endl;
   }
 
+  KeyVector existingMarginalizableKeys;
+  std::copy_if(marginalizableKeys.begin(), marginalizableKeys.end(),
+               std::back_inserter(existingMarginalizableKeys), [&](Key key) {
+                 return variableIndex.find(key) != variableIndex.end();
+               });
   std::unordered_set<Key> additionalKeys =
       BayesTreeMarginalizationHelper<ISAM2>::gatherAdditionalKeysToReEliminate(
-          isam_, marginalizableKeys);
+          isam_, existingMarginalizableKeys);
   KeyList additionalMarkedKeys(additionalKeys.begin(), additionalKeys.end());
 
   // Update iSAM2
-  isamResult_ = isam_.update(newFactors, referencedNewTheta, factorsToRemove,
+  isamResult_ = isam_.update(newFactors, newTheta, factorsToRemove,
                              constrainedKeys, {}, additionalMarkedKeys);
-  const KeySet isamUnusedKeys = isamResult_.unusedKeys;
-  isamResult_.unusedKeys.insert(unreferencedNewKeys.begin(),
-                                unreferencedNewKeys.end());
 
   if (debug) {
     std::cout << "Unused Keys After Update: ";
@@ -150,11 +141,11 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
     std::cout << std::endl;
   }
 
-  if (not isamUnusedKeys.empty()) {
+  if (not isamResult_.unusedKeys.empty()) {
     // Remove keys that became unused after update from the key-timestamp
     // database
-    eraseKeyTimestampMap(
-        KeyVector{isamUnusedKeys.begin(), isamUnusedKeys.end()});
+    eraseKeyTimestampMap(KeyVector{isamResult_.unusedKeys.begin(),
+                                   isamResult_.unusedKeys.end()});
 
     if (marginalizableKeys.size() > 0) {
       // Remove keys that became unused after update from the marginalizable
@@ -162,8 +153,8 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
       marginalizableKeys.erase(
           std::remove_if(marginalizableKeys.begin(), marginalizableKeys.end(),
                          [&](const auto& key) {
-                           return isamUnusedKeys.find(key) !=
-                                  isamUnusedKeys.end();
+                           return isamResult_.unusedKeys.find(key) !=
+                                  isamResult_.unusedKeys.end();
                          }),
           marginalizableKeys.end());
     }
@@ -220,14 +211,16 @@ void IncrementalFixedLagSmoother::eraseKeysBefore(double timestamp) {
 
 /* ************************************************************************* */
 void IncrementalFixedLagSmoother::createOrderingConstraints(
-    const KeyVector& marginalizableKeys,
+    const KeyVector& marginalizableKeys, const KeySet& activeKeys,
     std::optional<FastMap<Key, int> >& constrainedKeys) const {
   if (marginalizableKeys.size() > 0) {
     constrainedKeys = FastMap<Key, int>();
     // Generate ordering constraints so that the marginalizable variables will be eliminated first
     // Set all variables to Group1
     for(const TimestampKeyMap::value_type& timestamp_key: timestampKeyMap_) {
-      constrainedKeys->operator[](timestamp_key.second) = 1;
+      if (activeKeys.exists(timestamp_key.second)) {
+        constrainedKeys->operator[](timestamp_key.second) = 1;
+      }
     }
     // Set marginalizable variables to Group0
     for(Key key: marginalizableKeys) {

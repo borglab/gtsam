@@ -75,8 +75,13 @@ void FixedLagSmoother::updateKeyTimestampMap(const KeyTimestampMap& timestamps) 
 /* ************************************************************************* */
 void FixedLagSmoother::eraseKeyTimestampMap(const KeyVector& keys) {
   for(Key key: keys) {
+    const KeyTimestampMap::iterator keyIter = keyTimestampMap_.find(key);
+    if (keyIter == keyTimestampMap_.end()) {
+      continue;
+    }
+
     // Erase the key from the Timestamp->Key map
-    double timestamp = keyTimestampMap_.at(key);
+    double timestamp = keyIter->second;
 
     TimestampKeyMap::iterator iter = timestampKeyMap_.lower_bound(timestamp);
     while(iter != timestampKeyMap_.end() && iter->first == timestamp) {
@@ -87,7 +92,7 @@ void FixedLagSmoother::eraseKeyTimestampMap(const KeyVector& keys) {
       }
     }
     // Erase the key from the Key->Timestamp map
-    keyTimestampMap_.erase(key);
+    keyTimestampMap_.erase(keyIter);
   }
 }
 

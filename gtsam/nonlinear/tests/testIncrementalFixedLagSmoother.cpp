@@ -436,9 +436,9 @@ TEST(IncrementalFixedLagSmoother, Example) {
   }
 }
 
-// A value without a referencing factor used to remain in ISAM2 without a
-// VariableIndex entry and caused a bare map::at failure during a later update.
-TEST(IncrementalFixedLagSmoother, UnreferencedValueIsUnused) {
+// Values may arrive before the factors that reference them. They must remain
+// available and must not enter ordering constraints while they are pending.
+TEST(IncrementalFixedLagSmoother, ConnectsPreviouslyUnreferencedValue) {
   const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
   IncrementalFixedLagSmoother smoother(1.0);
 
@@ -448,19 +448,40 @@ TEST(IncrementalFixedLagSmoother, UnreferencedValueIsUnused) {
 
   factors.addPrior(X(0), Point2(0.0, 0.0), noise);
   values.insert(X(0), Point2(0.0, 0.0));
+  values.insert(X(1), Point2(1.0, 0.0));
   timestamps[X(0)] = 0.0;
+  timestamps[X(1)] = 1.0;
   smoother.update(factors, values, timestamps);
 
+  EXPECT(smoother.getLinearizationPoint().exists(X(1)));
+  EXPECT(smoother.timestamps().find(X(1)) != smoother.timestamps().end());
+
+  factors.resize(0);
   values.clear();
   timestamps.clear();
-  values.insert(X(1), Point2(1.0, 0.0));
-  timestamps[X(1)] = 1.0;
-  smoother.update({}, values, timestamps);
+  factors.emplace_shared<BetweenPoint2>(X(0), X(1), Point2(1.0, 0.0), noise);
+  smoother.update(factors, values, timestamps);
 
-  EXPECT(!smoother.getLinearizationPoint().exists(X(1)));
-  EXPECT(smoother.timestamps().find(X(1)) == smoother.timestamps().end());
-  EXPECT_LONGS_EQUAL(1, smoother.getISAM2Result().unusedKeys.size());
-  EXPECT(smoother.getISAM2Result().unusedKeys.exists(X(1)));
+  EXPECT(smoother.getLinearizationPoint().exists(X(1)));
+  EXPECT(!smoother.getISAM2().getVariableIndex().empty(X(1)));
+}
+
+// An unreferenced value may become older than the lag while other variables
+// are marginalized. It must not enter the Bayes-tree-only cleanup path.
+TEST(IncrementalFixedLagSmoother, DefersUnreferencedValueMarginalization) {
+  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  IncrementalFixedLagSmoother smoother(1.0);
+
+  NonlinearFactorGraph factors;
+  Values values;
+  FixedLagSmoother::KeyTimestampMap timestamps;
+
+  factors.addPrior(X(0), Point2(0.0, 0.0), noise);
+  values.insert(X(0), Point2(0.0, 0.0));
+  values.insert(X(1), Point2(1.0, 0.0));
+  timestamps[X(0)] = 0.0;
+  timestamps[X(1)] = 1.0;
+  smoother.update(factors, values, timestamps);
 
   factors.resize(0);
   values.clear();
@@ -479,6 +500,56 @@ TEST(IncrementalFixedLagSmoother, UnreferencedValueIsUnused) {
   smoother.update(factors, values, timestamps);
 
   EXPECT(smoother.getLinearizationPoint().exists(X(3)));
+  EXPECT(smoother.getLinearizationPoint().exists(X(1)));
+  EXPECT(smoother.timestamps().find(X(1)) != smoother.timestamps().end());
+
+  factors.resize(0);
+  values.clear();
+  timestamps.clear();
+  factors.emplace_shared<BetweenPoint2>(X(3), X(1), Point2(-2.0, 0.0), noise);
+  smoother.update(factors, values, timestamps);
+
+  EXPECT(!smoother.getLinearizationPoint().exists(X(1)));
+  EXPECT(smoother.getLinearizationPoint().exists(X(3)));
+  EXPECT(smoother.timestamps().find(X(1)) == smoother.timestamps().end());
+}
+
+// A timestamp without a corresponding value is rejected at the API boundary
+// with the offending key instead of failing later with a bare map::at.
+TEST(IncrementalFixedLagSmoother, RejectsTimestampWithoutValue) {
+  IncrementalFixedLagSmoother smoother(1.0);
+  FixedLagSmoother::KeyTimestampMap timestamps;
+  timestamps[X(0)] = 0.0;
+
+  bool exceptionNamesKey = false;
+  try {
+    smoother.update({}, {}, timestamps);
+  } catch (const std::invalid_argument& error) {
+    exceptionNamesKey =
+        std::string(error.what()).find(DefaultKeyFormatter(X(0))) !=
+        std::string::npos;
+  }
+  CHECK(exceptionNamesKey);
+}
+
+// Removing an untimestamped variable is valid because timestamps are optional.
+// Timestamp cleanup must therefore be a no-op for that key.
+TEST(IncrementalFixedLagSmoother, RemovesUntimestampedUnusedValue) {
+  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  IncrementalFixedLagSmoother smoother(1.0);
+
+  NonlinearFactorGraph factors;
+  factors.addPrior(X(0), Point2(0.0, 0.0), noise);
+  Values values;
+  values.insert(X(0), Point2(0.0, 0.0));
+  smoother.update(factors, values);
+
+  const FactorIndices factorToRemove =
+      smoother.getISAM2Result().newFactorsIndices;
+  smoother.update({}, {}, {}, factorToRemove);
+
+  EXPECT(!smoother.getLinearizationPoint().exists(X(0)));
+  EXPECT(smoother.timestamps().empty());
 }
 
 /* ************************************************************************* */
