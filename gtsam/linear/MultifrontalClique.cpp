@@ -32,6 +32,9 @@
 #include <tbb/blocked_range.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_for.h>
+#include <tbb/parallel_reduce.h>
+
+#include <functional>
 #endif
 
 #include <algorithm>
@@ -103,6 +106,45 @@ SymmetricBlockMatrix makeZeroLocalInfo(const std::vector<size_t>& blockDims) {
   local.setZero();
   return local;
 }
+
+#ifdef GTSAM_USE_TBB
+void updateMappedInfoOwnedColumn(
+    const SymmetricBlockMatrix& source, DenseIndex sourceBlockStart,
+    DenseIndex ownedSourceBlock, SymmetricBlockMatrix* target,
+    const std::vector<DenseIndex>& targetIndices,
+    const std::vector<DenseIndex>& targetScalarOffsets) {
+  assert(target && ownedSourceBlock >= 0);
+  const DenseIndex retainedBlocks =
+      static_cast<DenseIndex>(targetIndices.size()) - 1;
+  assert(ownedSourceBlock < retainedBlocks);
+  const DenseIndex targetColumn = targetIndices[ownedSourceBlock];
+  const DenseIndex targetOffset = targetScalarOffsets[ownedSourceBlock];
+  target->updateDiagonalBlockAt(
+      targetOffset, source.diagonalBlock(sourceBlockStart + ownedSourceBlock));
+
+  const DenseIndex sourceRhs = sourceBlockStart + retainedBlocks;
+  target->updateOffDiagonalBlockAt(
+      targetOffset, targetScalarOffsets.back(),
+      source.aboveDiagonalBlock(sourceBlockStart + ownedSourceBlock,
+                                sourceRhs));
+  for (DenseIndex other = 0; other < retainedBlocks; ++other) {
+    if (targetIndices[other] >= targetColumn) continue;
+    if (other < ownedSourceBlock) {
+      target->updateOffDiagonalBlockAt(
+          targetScalarOffsets[other], targetOffset,
+          source.aboveDiagonalBlock(sourceBlockStart + other,
+                                    sourceBlockStart + ownedSourceBlock));
+    } else {
+      target->updateOffDiagonalBlockAt(
+          targetScalarOffsets[other], targetOffset,
+          source
+              .aboveDiagonalBlock(sourceBlockStart + ownedSourceBlock,
+                                  sourceBlockStart + other)
+              .transpose());
+    }
+  }
+}
+#endif
 
 }  // namespace
 
@@ -554,12 +596,12 @@ void MultifrontalClique::resolveLeafSolveMode() {
   }
 
   if (solveMode_ == SolveMode::FusedStarCandidate) {
-    const bool supported =
-        kUseDirectBatchHessianUpdate && hasDirectBatchFactors_ &&
-        std::all_of(loadPlans_.begin(), loadPlans_.end(),
-                    [](const FactorLoadPlan& plan) {
-                      return plan.supportsFusedStarLeaf();
-                    });
+    const bool supported = kUseDirectBatchHessianUpdate &&
+                           hasDirectBatchFactors_ &&
+                           std::all_of(loadPlans_.begin(), loadPlans_.end(),
+                                       [](const FactorLoadPlan& plan) {
+                                         return plan.supportsFusedStarLeaf();
+                                       });
     solveMode_ =
         supported ? SolveMode::FusedStarCholeskyLeaf : starFallbackMode_;
   }
@@ -1129,6 +1171,77 @@ void MultifrontalClique::updateParentInfo(
   }
 }
 
+#ifdef GTSAM_USE_TBB
+void MultifrontalClique::updateParentMaterializedColumn(
+    SymmetricBlockMatrix& parentInfo, DenseIndex sourceSeparatorBlock) const {
+  assert(fullyEliminated() && !useQR() && !useCompactCholesky());
+  assert(info_.nBlocks() > 0 && info_.blockStart() == 0);
+  updateMappedInfoOwnedColumn(info_, static_cast<DenseIndex>(numFrontals()),
+                              sourceSeparatorBlock, &parentInfo, parentIndices_,
+                              parentScalarOffsets_);
+}
+
+void MultifrontalClique::updateParentQrColumnScratch(
+    DenseIndex sourceSeparatorBlock, Matrix* scratch) const {
+  assert(scratch && fullyEliminated() && useQR() && RSdReady_);
+  assert(RSd_.firstBlock() == 0);
+  const DenseIndex frontalBlocks = static_cast<DenseIndex>(numFrontals());
+  const DenseIndex retainedBlocks =
+      static_cast<DenseIndex>(parentIndices_.size()) - 1;
+  assert(sourceSeparatorBlock >= 0 && sourceSeparatorBlock < retainedBlocks);
+
+  const DenseIndex residualRow = static_cast<DenseIndex>(frontalDim);
+  const DenseIndex residualRows =
+      static_cast<DenseIndex>(RSd_.matrix().rows()) - residualRow;
+  const DenseIndex sourceColumn = frontalBlocks + sourceSeparatorBlock;
+  const DenseIndex sourceOffset = RSd_.offset(sourceColumn);
+  const DenseIndex sourceDimension =
+      RSd_.offset(sourceColumn + 1) - sourceOffset;
+  const auto owned = RSd_.matrix().block(residualRow, sourceOffset,
+                                         residualRows, sourceDimension);
+
+  const DenseIndex targetColumn = parentIndices_[sourceSeparatorBlock];
+  const DenseIndex targetOffset = parentScalarOffsets_[sourceSeparatorBlock];
+  assert(scratch->cols() == sourceDimension);
+  assert(scratch->rows() == targetOffset + sourceDimension + 1);
+  scratch->block(targetOffset, 0, sourceDimension, sourceDimension).noalias() +=
+      owned.transpose() * owned;
+
+  const DenseIndex rhsOffset = RSd_.offset(frontalBlocks + retainedBlocks);
+  const auto rhs = RSd_.matrix().block(residualRow, rhsOffset, residualRows, 1);
+  scratch->bottomRows(1).noalias() += (owned.transpose() * rhs).transpose();
+
+  for (DenseIndex other = 0; other < retainedBlocks; ++other) {
+    if (parentIndices_[other] >= targetColumn) continue;
+    const DenseIndex otherColumn = frontalBlocks + other;
+    const DenseIndex otherOffset = RSd_.offset(otherColumn);
+    const DenseIndex otherDimension =
+        RSd_.offset(otherColumn + 1) - otherOffset;
+    const auto otherBlock = RSd_.matrix().block(residualRow, otherOffset,
+                                                residualRows, otherDimension);
+    scratch
+        ->block(parentScalarOffsets_[other], 0, otherDimension, sourceDimension)
+        .noalias() += otherBlock.transpose() * owned;
+  }
+}
+
+double MultifrontalClique::parentMaterializedRhsDiagonal() const {
+  assert(fullyEliminated() && !useQR() && !useCompactCholesky());
+  assert(info_.nBlocks() > 0);
+  return info_.diagonalBlock(info_.nBlocks() - 1).coeff(0, 0);
+}
+
+double MultifrontalClique::parentQrRhsDiagonal() const {
+  assert(fullyEliminated() && useQR() && RSdReady_);
+  const DenseIndex residualRow = static_cast<DenseIndex>(frontalDim);
+  const DenseIndex rhsBlock = RSd_.nBlocks() - 1;
+  return RSd_.matrix()
+      .block(residualRow, RSd_.offset(rhsBlock),
+             RSd_.matrix().rows() - residualRow, 1)
+      .squaredNorm();
+}
+#endif
+
 void MultifrontalClique::updateSeparatorInfo(
     SymmetricBlockMatrix& separatorInfo) const {
   assert(fullyEliminated() && !useQR());
@@ -1160,34 +1273,206 @@ void MultifrontalClique::gatherUpdatesSequential() {
     if (child->fullyEliminated()) child->updateParentInfo(info_);
   }
 }
+#ifdef GTSAM_USE_TBB
+void MultifrontalClique::ParentGatherPlan::build(
+    const MultifrontalClique& parent) {
+  assert(!built);
+  materializedByColumn.resize(parent.blockDims_.size());
+  qrByColumn.resize(parent.blockDims_.size());
+
+  for (size_t childIndex = 0; childIndex < parent.children.size();
+       ++childIndex) {
+    if (!parent.childInSameSeparatorGroup_.empty() &&
+        parent.childInSameSeparatorGroup_[childIndex]) {
+      continue;
+    }
+    const auto& child = parent.children[childIndex];
+    if (!child || !child->fullyEliminated()) continue;
+    assert(!child->deferredSingleFactorAutoQr_);
+    assert(child->solveMode_ != SolveMode::FusedStarCandidate);
+
+    if (child->useCompactCholesky()) {
+      computeOnceChildIndices.push_back(childIndex);
+      continue;
+    }
+
+    const bool qr = child->useQR();
+    auto& childIndices = qr ? qrChildIndices : materializedChildIndices;
+    auto& updatesByColumn = qr ? qrByColumn : materializedByColumn;
+    childIndices.push_back(childIndex);
+    for (size_t sourceBlock = 0; sourceBlock + 1 < child->parentIndices_.size();
+         ++sourceBlock) {
+      const DenseIndex column = child->parentIndices_[sourceBlock];
+      assert(column >= 0 &&
+             column < static_cast<DenseIndex>(parent.blockDims_.size()));
+      updatesByColumn[column].push_back(
+          {childIndex, static_cast<DenseIndex>(sourceBlock)});
+    }
+  }
+
+  constexpr size_t kQrChildrenPerChunk = 128;
+  qrChunkIndicesByColumn.resize(parent.blockDims_.size());
+  for (size_t column = 0; column < qrByColumn.size(); ++column) {
+    const auto& columnUpdates = qrByColumn[column];
+    for (size_t begin = 0; begin < columnUpdates.size();
+         begin += kQrChildrenPerChunk) {
+      const size_t end =
+          std::min(begin + kQrChildrenPerChunk, columnUpdates.size());
+      const size_t scratchRows =
+          static_cast<size_t>(parent.info_.blockScalarOffset(column)) +
+          parent.blockDims_[column] + 1;
+      const size_t chunkIndex = qrChunks.size();
+      qrChunkIndicesByColumn[column].push_back(chunkIndex);
+      qrChunks.push_back(
+          {static_cast<DenseIndex>(column), begin, end,
+           Matrix::Zero(static_cast<DenseIndex>(scratchRows),
+                        static_cast<DenseIndex>(parent.blockDims_[column]))});
+    }
+  }
+  built = true;
+}
+
+void MultifrontalClique::ParentGatherPlan::gather(MultifrontalClique* parent) {
+  assert(parent && built);
+
+  if (!computeOnceChildIndices.empty()) {
+    tbb::enumerable_thread_specific<SymmetricBlockMatrix> locals(
+        [parent]() { return makeZeroLocalInfo(parent->blockDims_); });
+    tbb::parallel_for(
+        tbb::blocked_range<size_t>(0, computeOnceChildIndices.size()),
+        [this, parent, &locals](const tbb::blocked_range<size_t>& range) {
+          auto& local = locals.local();
+          for (size_t index = range.begin(); index < range.end(); ++index) {
+            const auto& child =
+                parent->children[computeOnceChildIndices[index]];
+            assert(child && child->fullyEliminated());
+            child->updateParentInfo(local);
+          }
+        });
+    locals.combine_each([parent](const SymmetricBlockMatrix& local) {
+      parent->info_.addUpperTriangular(local);
+    });
+  }
+
+  // A compact-only parent follows exactly the original compute-once path.
+  if (materializedChildIndices.empty() && qrChildIndices.empty()) return;
+
+  if (!materializedChildIndices.empty()) {
+    tbb::parallel_for(
+        tbb::blocked_range<size_t>(0, materializedByColumn.size(), 1),
+        [this, parent](const tbb::blocked_range<size_t>& range) {
+          for (size_t column = range.begin(); column < range.end(); ++column) {
+            for (const ColumnUpdate& update : materializedByColumn[column]) {
+              const auto& child = parent->children[update.childIndex];
+              assert(child && child->fullyEliminated());
+              child->updateParentMaterializedColumn(
+                  parent->info_, update.sourceSeparatorBlock);
+            }
+          }
+        });
+  }
+
+  if (!qrChildIndices.empty()) {
+    tbb::parallel_for(
+        tbb::blocked_range<size_t>(0, qrChunks.size(), 1),
+        [this, parent](const tbb::blocked_range<size_t>& range) {
+          for (size_t chunkIndex = range.begin(); chunkIndex < range.end();
+               ++chunkIndex) {
+            QrColumnChunk& chunk = qrChunks[chunkIndex];
+            chunk.scratch.setZero();
+            const auto& columnUpdates =
+                qrByColumn[static_cast<size_t>(chunk.column)];
+            for (size_t index = chunk.begin; index < chunk.end; ++index) {
+              const ColumnUpdate& update = columnUpdates[index];
+              parent->children[update.childIndex]->updateParentQrColumnScratch(
+                  update.sourceSeparatorBlock, &chunk.scratch);
+            }
+          }
+        });
+
+    tbb::parallel_for(
+        tbb::blocked_range<size_t>(0, qrChunkIndicesByColumn.size(), 1),
+        [this, parent](const tbb::blocked_range<size_t>& range) {
+          for (size_t column = range.begin(); column < range.end(); ++column) {
+            const auto& chunkIndices = qrChunkIndicesByColumn[column];
+            if (chunkIndices.empty()) continue;
+            Matrix& accumulated = qrChunks[chunkIndices.front()].scratch;
+            for (size_t index = 1; index < chunkIndices.size(); ++index) {
+              accumulated += qrChunks[chunkIndices[index]].scratch;
+            }
+
+            const DenseIndex targetOffset =
+                parent->info_.blockScalarOffset(column);
+            const DenseIndex targetDimension =
+                static_cast<DenseIndex>(parent->blockDims_[column]);
+            for (size_t rowBlock = 0; rowBlock < column; ++rowBlock) {
+              const DenseIndex rowOffset =
+                  parent->info_.blockScalarOffset(rowBlock);
+              const DenseIndex rowDimension =
+                  static_cast<DenseIndex>(parent->blockDims_[rowBlock]);
+              parent->info_.updateOffDiagonalBlockAt(
+                  rowOffset, targetOffset,
+                  accumulated.block(rowOffset, 0, rowDimension,
+                                    targetDimension));
+            }
+            parent->info_.updateDiagonalBlockAt(
+                targetOffset,
+                accumulated.block(targetOffset, 0, targetDimension,
+                                  targetDimension));
+            parent->info_.updateOffDiagonalBlock(
+                static_cast<DenseIndex>(column), parent->info_.nBlocks() - 1,
+                accumulated.bottomRows(1).transpose());
+          }
+        });
+  }
+
+  const double materializedRhs =
+      materializedChildIndices.empty()
+          ? 0.0
+          : tbb::parallel_reduce(
+                tbb::blocked_range<size_t>(0, materializedChildIndices.size()),
+                0.0,
+                [this, parent](const tbb::blocked_range<size_t>& range,
+                               double subtotal) {
+                  for (size_t index = range.begin(); index < range.end();
+                       ++index) {
+                    subtotal +=
+                        parent->children[materializedChildIndices[index]]
+                            ->parentMaterializedRhsDiagonal();
+                  }
+                  return subtotal;
+                },
+                std::plus<double>());
+  const double qrRhs =
+      qrChildIndices.empty()
+          ? 0.0
+          : tbb::parallel_reduce(
+                tbb::blocked_range<size_t>(0, qrChildIndices.size()), 0.0,
+                [this, parent](const tbb::blocked_range<size_t>& range,
+                               double subtotal) {
+                  for (size_t index = range.begin(); index < range.end();
+                       ++index) {
+                    subtotal += parent->children[qrChildIndices[index]]
+                                    ->parentQrRhsDiagonal();
+                  }
+                  return subtotal;
+                },
+                std::plus<double>());
+
+  Eigen::Matrix<double, 1, 1> rhsUpdate;
+  rhsUpdate(0, 0) = materializedRhs + qrRhs;
+  parent->info_.updateDiagonalBlock(parent->info_.nBlocks() - 1, rhsUpdate);
+}
+#endif
 
 void MultifrontalClique::gatherUpdatesParallel(size_t numThreads) {
 #ifdef GTSAM_USE_TBB
-  (void)numThreads;  // TBB controls the effective worker count.
-  tbb::enumerable_thread_specific<SymmetricBlockMatrix> locals([this]() {
-    return makeZeroLocalInfo(blockDims_);
-  });  // Per-thread accumulators.
-  tbb::parallel_for(
-      tbb::blocked_range<size_t>(0, children.size()),
-      [&](const tbb::blocked_range<size_t>& range) {
-        auto& local = locals.local();  // Thread-local info matrix.
-        for (size_t i = range.begin(); i < range.end(); ++i) {
-          const auto& child = children[i];
-          if (!childInSameSeparatorGroup_.empty() &&
-              childInSameSeparatorGroup_[i]) {
-            continue;
-          }
-          assert(child);
-          if (child->fullyEliminated()) {
-            child->updateParentInfo(
-                local);  // No locking: each thread writes its own info matrix.
-          }
-        }
-      });
-  locals.combine_each([this](const SymmetricBlockMatrix& local) {
-    info_.addUpperTriangular(
-        local);  // Merge per-thread partial info matrices into this clique.
-  });
+  (void)numThreads;  // TBB is capped by the enclosing traversal arena.
+  if (!parentGatherPlan_) {
+    parentGatherPlan_ = std::make_unique<ParentGatherPlan>();
+    parentGatherPlan_->build(*this);
+  }
+  parentGatherPlan_->gather(this);
 #else
   std::vector<SymmetricBlockMatrix> locals;
   locals.reserve(numThreads);  // Fixed-size per-thread accumulators.
