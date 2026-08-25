@@ -189,6 +189,7 @@ virtual class TableDistribution : gtsam::DiscreteConditional {
 #include <gtsam/discrete/DiscreteBayesNet.h>
 class DiscreteBayesNet {
   DiscreteBayesNet();
+  @pybind_lambda
   void add(const gtsam::DiscreteConditional& s);
   void add(const gtsam::DiscreteKey& key, const string& spec);
   @pybind_lambda
