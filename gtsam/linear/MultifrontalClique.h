@@ -166,7 +166,7 @@ class GTSAM_EXPORT MultifrontalClique {
   /// @name Read-only methods
   /// @{
 
-  /// Get the cached problem size for traversal scheduling.
+  /// Return the clique dimension used for traversal scheduling.
   int problemSize() const {
     return static_cast<int>(frontalDim + separatorDim);
   }
@@ -365,7 +365,6 @@ class GTSAM_EXPORT MultifrontalClique {
   /// contribution.
   void updateParentInfo(SymmetricBlockMatrix& parentInfo) const;
 
-#ifdef GTSAM_USE_TBB
   /// Accumulate one ordinary separator block into its owned parent column.
   void updateParentMaterializedColumn(SymmetricBlockMatrix& parentInfo,
                                       DenseIndex sourceSeparatorBlock) const;
@@ -376,7 +375,6 @@ class GTSAM_EXPORT MultifrontalClique {
 
   /// Return the augmented-RHS diagonal from a column-owned child update.
   double parentRhsDiagonal() const;
-#endif
 
   /// Update a separator-local information matrix without parent scattering.
   void updateSeparatorInfo(SymmetricBlockMatrix& separatorInfo) const;
@@ -490,16 +488,15 @@ class GTSAM_EXPORT MultifrontalClique {
   std::vector<SymmetricBlockMatrix> sameSeparatorInfos_;
   std::vector<uint8_t> childInSameSeparatorGroup_;
 
-#ifdef GTSAM_USE_TBB
   struct ParentGatherPlan;
+  // Built after deferred modes resolve and reused across numerical reloads.
   std::shared_ptr<ParentGatherPlan> parentGatherPlan_;
-#endif
 
   // Lazily allocated after load-plan construction. Direct batch factors need
   // no rows; QR additionally reserves frontal damping rows.
   VerticalBlockMatrix Ab_;
 
-  // mutable as temporarily updateParentInfo
+  // Cached factorization storage reused by parent updates and result exports.
   mutable VerticalBlockMatrix RSd_;  ///< Cached [R S d] from elimination.
   mutable SymmetricBlockMatrix info_;
 

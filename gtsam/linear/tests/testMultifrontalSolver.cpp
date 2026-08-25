@@ -409,7 +409,8 @@ TEST(MultifrontalSolver, ParallelParentOrdinaryReloadAndPartial) {
                       1e-8));
 }
 
-// Forced QR agrees across thread counts for overlapping siblings.
+// Forced QR agrees across thread counts for overlapping siblings, reloads,
+// and partial elimination.
 TEST(MultifrontalSolver, ParallelParentForcedQr) {
   const Problem problem = createProblem(kParallelChildCount);
   auto params = noMergeParams();
@@ -423,6 +424,26 @@ TEST(MultifrontalSolver, ParallelParentForcedQr) {
   parallel.eliminateInPlace(problem.graph);
   EXPECT(
       assert_equal(single.updateSolution(), parallel.updateSolution(), 1e-8));
+
+  const Problem changed = createProblem(kParallelChildCount, false, 0.5);
+  single.eliminateInPlace(changed.graph);
+  parallel.eliminateInPlace(changed.graph);
+  EXPECT(
+      assert_equal(single.updateSolution(), parallel.updateSolution(), 1e-8));
+
+  MultifrontalSolver singlePartial(problem.graph, problem.fullOrdering,
+                                   problem.pointOrdering.size(),
+                                   threadedParams(params, 1));
+  MultifrontalSolver parallelPartial(problem.graph, problem.fullOrdering,
+                                     problem.pointOrdering.size(),
+                                     threadedParams(params, 4));
+  singlePartial.eliminatePartialInPlace(problem.graph);
+  parallelPartial.eliminatePartialInPlace(problem.graph);
+  EXPECT(assert_equal(singlePartial.remainingFactorGraph().augmentedHessian(
+                          problem.cameraOrdering),
+                      parallelPartial.remainingFactorGraph().augmentedHessian(
+                          problem.cameraOrdering),
+                      1e-8));
 }
 
 // Compact Cholesky leaves agree across thread counts.
