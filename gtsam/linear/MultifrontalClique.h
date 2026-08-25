@@ -374,11 +374,8 @@ class GTSAM_EXPORT MultifrontalClique {
   void updateParentQrColumnScratch(DenseIndex sourceSeparatorBlock,
                                    Matrix* scratch) const;
 
-  /// Return the augmented-RHS diagonal from an ordinary child update.
-  double parentMaterializedRhsDiagonal() const;
-
-  /// Return the augmented-RHS diagonal from a QR child update.
-  double parentQrRhsDiagonal() const;
+  /// Return the augmented-RHS diagonal from a column-owned child update.
+  double parentRhsDiagonal() const;
 #endif
 
   /// Update a separator-local information matrix without parent scattering.
@@ -398,6 +395,12 @@ class GTSAM_EXPORT MultifrontalClique {
                            const std::vector<DenseIndex>& targetIndices,
                            const std::vector<DenseIndex>& targetScalarOffsets,
                            bool useParentMappedSlots) const;
+
+  /// Dispatch one Cholesky representation into a mapped destination.
+  void updateCholeskyInfo(SymmetricBlockMatrix& targetInfo,
+                          const std::vector<DenseIndex>& targetIndices,
+                          const std::vector<DenseIndex>& targetBlockOffsets,
+                          bool useParentMappedSlots) const;
 
   /// Add the original separator normal equations directly into the parent.
   void updateDirectFactors(SymmetricBlockMatrix& targetInfo,
@@ -472,6 +475,8 @@ class GTSAM_EXPORT MultifrontalClique {
   std::vector<DenseIndex>
       parentScalarOffsets_;  ///< Cached scalar offsets for parent blocks.
   std::vector<DenseIndex> separatorIndices_;  ///< Identity separator mapping.
+  std::vector<DenseIndex>
+      separatorScalarOffsets_;  ///< Cached separator-local scalar offsets.
   SolveMode solveMode_ = SolveMode::Cholesky;
   SolveMode starFallbackMode_ = SolveMode::Cholesky;
   /// Whether one automatic-QR star awaits inspection of its sole factor.
@@ -486,40 +491,8 @@ class GTSAM_EXPORT MultifrontalClique {
   std::vector<uint8_t> childInSameSeparatorGroup_;
 
 #ifdef GTSAM_USE_TBB
-  /**
-   * Lazy TBB gather metadata, built after child solve modes are resolved.
-   * Materialized and QR children are bucketed by disjoint parent columns;
-   * compact children remain in the existing compute-once reduction.
-   */
-  struct ParentGatherPlan {
-    struct ColumnUpdate {
-      size_t childIndex = 0;
-      DenseIndex sourceSeparatorBlock = 0;
-    };
-
-    struct QrColumnChunk {
-      DenseIndex column = 0;
-      size_t begin = 0;
-      size_t end = 0;
-      Matrix scratch;
-    };
-
-    bool built = false;
-    std::vector<size_t> materializedChildIndices;
-    std::vector<size_t> qrChildIndices;
-    std::vector<size_t> computeOnceChildIndices;
-    std::vector<std::vector<ColumnUpdate>> materializedByColumn;
-    std::vector<std::vector<ColumnUpdate>> qrByColumn;
-    std::vector<QrColumnChunk> qrChunks;
-    std::vector<std::vector<size_t>> qrChunkIndicesByColumn;
-
-    /// Classify children using their final numerical representation.
-    void build(const MultifrontalClique& parent);
-
-    /// Execute the independent column-owned and compute-once stages.
-    void gather(MultifrontalClique* parent);
-  };
-  std::unique_ptr<ParentGatherPlan> parentGatherPlan_;
+  struct ParentGatherPlan;
+  std::shared_ptr<ParentGatherPlan> parentGatherPlan_;
 #endif
 
   // Lazily allocated after load-plan construction. Direct batch factors need

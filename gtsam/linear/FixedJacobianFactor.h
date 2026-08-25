@@ -302,9 +302,7 @@ struct FixedJacobianFactor : JacobianFactor {
 
     const auto factorSlots = slots(infoKeys, std::make_index_sequence<arity>{});
     const DenseIndex slotB = info->nBlocks() - 1;
-    const auto ownsColumn = [beginCol, endCol](DenseIndex column) {
-      return column >= beginCol && column < endCol;
-    };
+    const internal::BlockColumnRange ownsColumn{beginCol, endCol};
     const internal::FixedJacobianBlock<M, 1> b(Ab_.matrix(), 0, offsets[arity]);
     updateOwnedSelfAndRhsHessians(factorSlots, slotB, b, ownsColumn, info,
                                   std::make_index_sequence<arity>{});

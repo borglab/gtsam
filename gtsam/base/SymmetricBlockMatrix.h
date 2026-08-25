@@ -10,11 +10,12 @@
 * -------------------------------------------------------------------------- */
 
 /**
-* @file    SymmetricBlockMatrix.h
-* @brief   Access to matrices via blocks of pre-defined sizes.  Used in GaussianFactor and GaussianConditional.
-* @author  Richard Roberts
-* @date    Sep 18, 2010
-*/
+ * @file    SymmetricBlockMatrix.h
+ * @brief   Access to matrices via blocks of pre-defined sizes.  Used in
+ * GaussianFactor and GaussianConditional.
+ * @author  Richard Roberts
+ * @date    Sep 18, 2010
+ */
 #pragma once
 
 #include <gtsam/base/FastVector.h>
@@ -24,10 +25,11 @@
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
 #endif
+#include <algorithm>
+#include <array>
 #include <cassert>
 #include <cstring>
 #include <stdexcept>
-#include <array>
 #include <vector>
 
 namespace boost {
@@ -39,520 +41,583 @@ class access;
 namespace gtsam {
 
 namespace internal {
-class CompactLeafSchurKernel;
-}
 
-  // Forward declarations
-  class VerticalBlockMatrix;
+class CompactLeafSchurKernel;
+
+/** Half-open range of physical upper-triangular block columns. */
+struct BlockColumnRange {
+  DenseIndex begin;
+  DenseIndex end;
+
+  /// Return whether this range owns a physical block column.
+  bool operator()(DenseIndex column) const {
+    return column >= begin && column < end;
+  }
+
+  /// Return whether this range owns the stored block for logical indices I,J.
+  bool owns(DenseIndex I, DenseIndex J) const {
+    return (*this)(std::max(I, J));
+  }
+};
+}  // namespace internal
+
+// Forward declarations
+class VerticalBlockMatrix;
+
+/**
+ * This class stores a dense matrix and allows it to be accessed as a collection
+ * of blocks.  When constructed, the caller must provide the dimensions of the
+ * blocks.
+ *
+ * The block structure is symmetric, but the underlying matrix does not
+ * necessarily need to be.
+ *
+ * This class also has a parameter that can be changed after construction to
+ * change the apparent matrix view.  firstBlock() determines the block that
+ * appears to have index 0 for all operations (except re-setting firstBlock()).
+ *
+ * @ingroup base */
+class GTSAM_EXPORT SymmetricBlockMatrix {
+ public:
+  typedef SymmetricBlockMatrix This;
+  typedef Eigen::Block<Matrix> Block;
+  typedef Eigen::Block<const Matrix> constBlock;
+
+ protected:
+  Matrix matrix_;  ///< The full matrix
+  FastVector<DenseIndex>
+      variableColOffsets_;  ///< the starting columns of each block (0-based)
+
+  DenseIndex
+      blockStart_;  ///< Changes apparent matrix view, see main class comment.
+
+ public:
+  /// Construct from an empty matrix (asserts that the matrix is empty)
+  SymmetricBlockMatrix();
+
+  /// Construct from a container of the sizes of each block.
+  template <typename CONTAINER>
+  SymmetricBlockMatrix(const CONTAINER& dimensions,
+                       bool appendOneDimension = false)
+      : blockStart_(0) {
+    fillOffsets(dimensions.begin(), dimensions.end(), appendOneDimension);
+    matrix_.resize(variableColOffsets_.back(), variableColOffsets_.back());
+    assertInvariants();
+  }
+
+  /// Construct from iterator over the sizes of each vertical block.
+  template <typename ITERATOR>
+  SymmetricBlockMatrix(ITERATOR firstBlockDim, ITERATOR lastBlockDim,
+                       bool appendOneDimension = false)
+      : blockStart_(0) {
+    fillOffsets(firstBlockDim, lastBlockDim, appendOneDimension);
+    matrix_.resize(variableColOffsets_.back(), variableColOffsets_.back());
+    assertInvariants();
+  }
+
+  /// Construct from a container of the sizes of each vertical block and a
+  /// pre-prepared matrix.
+  template <typename CONTAINER>
+  SymmetricBlockMatrix(const CONTAINER& dimensions, const Matrix& matrix,
+                       bool appendOneDimension = false)
+      : blockStart_(0) {
+    matrix_.resize(matrix.rows(), matrix.cols());
+    matrix_.triangularView<Eigen::Upper>() =
+        matrix.triangularView<Eigen::Upper>();
+    fillOffsets(dimensions.begin(), dimensions.end(), appendOneDimension);
+    if (matrix_.rows() != matrix_.cols())
+      throw std::invalid_argument(
+          "Requested to create a SymmetricBlockMatrix from a non-square "
+          "matrix.");
+    if (variableColOffsets_.back() != matrix_.cols())
+      throw std::invalid_argument(
+          "Requested to create a SymmetricBlockMatrix with dimensions that do "
+          "not sum to the total size of the provided matrix.");
+    assertInvariants();
+  }
+
+  /// Copy the block structure, but do not copy the matrix data.  If
+  /// blockStart() has been modified, this copies the structure of the
+  /// corresponding matrix view. In the destination SymmetricBlockMatrix,
+  /// blockStart() will be 0.
+  static SymmetricBlockMatrix LikeActiveViewOf(
+      const SymmetricBlockMatrix& other);
+
+  /// Copy the block structure, but do not copy the matrix data. If blockStart()
+  /// has been modified, this copies the structure of the corresponding matrix
+  /// view. In the destination SymmetricBlockMatrix, blockStart() will be 0.
+  static SymmetricBlockMatrix LikeActiveViewOf(
+      const VerticalBlockMatrix& other);
+
+  /// Row size
+  DenseIndex rows() const {
+    assertInvariants();
+    return variableColOffsets_.back() - variableColOffsets_[blockStart_];
+  }
+
+  /// Column size
+  DenseIndex cols() const { return rows(); }
+
+  /// Block count
+  DenseIndex nBlocks() const { return nActualBlocks() - blockStart_; }
+
+  /// Number of dimensions for variable on this diagonal block.
+  DenseIndex getDim(DenseIndex block) const {
+    return calcIndices(block, block, 1, 1)[2];
+  }
+
+  /// Return the scalar offset of a block in the underlying matrix.
+  DenseIndex blockScalarOffset(DenseIndex block) const { return offset(block); }
+
+  /// @name Block getter methods.
+  /// @{
+
+  /// Get a copy of a block (anywhere in the matrix).
+  /// This method makes a copy - use the methods below if performance is
+  /// critical.
+  Matrix block(DenseIndex I, DenseIndex J) const;
+
+  /// Get a block view (anywhere in the matrix) without allocating a copy.
+  /// This method returns a const reference to the block for efficient read
+  /// access.
+  /// @param I The row block index.
+  /// @param J The column block index.
+  /// @return A const block view into the matrix.
+  constBlock blockView(DenseIndex I, DenseIndex J) const {
+    return block_(I, J);
+  }
+
+  /// Return the J'th diagonal block as a self adjoint view.
+  Eigen::SelfAdjointView<Block, Eigen::Upper> diagonalBlock(DenseIndex J) {
+    return block_(J, J).selfadjointView<Eigen::Upper>();
+  }
+
+  /// Return the J'th diagonal block as a self adjoint view.
+  Eigen::SelfAdjointView<constBlock, Eigen::Upper> diagonalBlock(
+      DenseIndex J) const {
+    return block_(J, J).selfadjointView<Eigen::Upper>();
+  }
+
+  /// Get the diagonal of the J'th diagonal block.
+  Vector diagonal(DenseIndex J) const { return block_(J, J).diagonal(); }
+
+  /// Get block above the diagonal (I, J).
+  constBlock aboveDiagonalBlock(DenseIndex I, DenseIndex J) const {
+    assert(I < J);
+    return block_(I, J);
+  }
+
+  /// Return the square sub-matrix that contains blocks(i:j, i:j).
+  Eigen::SelfAdjointView<constBlock, Eigen::Upper> selfadjointView(
+      DenseIndex I, DenseIndex J) const {
+    assert(J > I);
+    return block_(I, I, J - I, J - I).selfadjointView<Eigen::Upper>();
+  }
+
+  /// Return the square sub-matrix that contains blocks(i:j, i:j) as a
+  /// triangular view.
+  Eigen::TriangularView<constBlock, Eigen::Upper> triangularView(
+      DenseIndex I, DenseIndex J) const {
+    assert(J > I);
+    return block_(I, I, J - I, J - I).triangularView<Eigen::Upper>();
+  }
+
+  /// Get a range [i,j) from the matrix. Indices are in block units.
+  constBlock aboveDiagonalRange(DenseIndex i_startBlock, DenseIndex i_endBlock,
+                                DenseIndex j_startBlock,
+                                DenseIndex j_endBlock) const {
+    assert(i_startBlock < j_startBlock);
+    assert(i_endBlock <= j_startBlock);
+    return block_(i_startBlock, j_startBlock, i_endBlock - i_startBlock,
+                  j_endBlock - j_startBlock);
+  }
+
+  /// Get a range [i,j) from the matrix. Indices are in block units.
+  Block aboveDiagonalRange(DenseIndex i_startBlock, DenseIndex i_endBlock,
+                           DenseIndex j_startBlock, DenseIndex j_endBlock) {
+    assert(i_startBlock < j_startBlock);
+    assert(i_endBlock <= j_startBlock);
+    return block_(i_startBlock, j_startBlock, i_endBlock - i_startBlock,
+                  j_endBlock - j_startBlock);
+  }
+
+  /// @}
+  /// @name Block setter methods.
+  /// @{
+
+  /// Set a diagonal block. Only the upper triangular portion of `xpr` is
+  /// evaluated.
+  template <typename XprType>
+  void setDiagonalBlock(DenseIndex I, const XprType& xpr) {
+    block_(I, I).triangularView<Eigen::Upper>() =
+        xpr.template triangularView<Eigen::Upper>();
+  }
+
+  /// Set an off-diagonal block. Only the upper triangular portion of `xpr` is
+  /// evaluated.
+  template <typename XprType>
+  void setOffDiagonalBlock(DenseIndex I, DenseIndex J, const XprType& xpr) {
+    assert(I != J);
+    if (I < J) {
+      block_(I, J) = xpr;
+    } else {
+      block_(J, I) = xpr.transpose();
+    }
+  }
+
+  /// Increment the diagonal block by the values in `xpr`. Only reads the upper
+  /// triangular part of `xpr`.
+  template <typename XprType>
+  void updateDiagonalBlock(DenseIndex I, const XprType& xpr) {
+    // TODO(gareth): Eigen won't let us add triangular or self-adjoint views
+    // here, so we do it manually.
+    auto dest = block_(I, I);
+    assert(dest.rows() == xpr.rows());
+    assert(dest.cols() == xpr.cols());
+    for (DenseIndex col = 0; col < dest.cols(); ++col) {
+      for (DenseIndex row = 0; row <= col; ++row) {
+        dest(row, col) += xpr(row, col);
+      }
+    }
+  }
+
+  /// Increment a diagonal block using its cached scalar offset.
+  template <typename XprType>
+  void updateDiagonalBlockAt(DenseIndex scalarOffset, const XprType& xpr) {
+    auto dest =
+        matrix_.block(scalarOffset, scalarOffset, xpr.rows(), xpr.cols());
+    assert(dest.rows() == dest.cols());
+    for (DenseIndex col = 0; col < dest.cols(); ++col) {
+      for (DenseIndex row = 0; row <= col; ++row) {
+        dest(row, col) += xpr(row, col);
+      }
+    }
+  }
+
+  /// Increment a fixed-size diagonal block using its cached scalar offset.
+  template <int Dimension, typename XprType>
+  void updateFixedDiagonalBlockAt(DenseIndex scalarOffset, const XprType& xpr) {
+    auto dest = matrix_.template block<Dimension, Dimension>(scalarOffset,
+                                                             scalarOffset);
+    for (int col = 0; col < Dimension; ++col) {
+      for (int row = 0; row <= col; ++row) {
+        dest(row, col) += xpr(row, col);
+      }
+    }
+  }
+
+  /// Add a vector to the diagonal entries of block I.
+  void addToDiagonalBlock(DenseIndex I, const Vector& deltaDiag) {
+    auto dest = block_(I, I);
+    assert(dest.rows() == deltaDiag.size());
+    dest.diagonal().array() += deltaDiag.array();
+  }
+
+  /// Add lambda * I to the diagonal block I.
+  void addScaledIdentity(DenseIndex I, double lambda) {
+    auto dest = block_(I, I);
+    dest.diagonal().array() += lambda;
+  }
+
+  /// Update an off diagonal block.
+  /// NOTE(emmett): This assumes noalias().
+  template <typename XprType>
+  void updateOffDiagonalBlock(DenseIndex I, DenseIndex J, const XprType& xpr) {
+    assert(I != J);
+    if constexpr (XprType::SizeAtCompileTime == 1) {
+      if (I < J) {
+        auto destination = block_(I, J);
+        assert(destination.rows() == 1 && destination.cols() == 1);
+        destination(0, 0) += xpr.coeff(0, 0);
+      } else {
+        auto destination = block_(J, I);
+        assert(destination.rows() == 1 && destination.cols() == 1);
+        destination(0, 0) += xpr.coeff(0, 0);
+      }
+    } else {
+      if (I < J) {
+        block_(I, J).noalias() += xpr;
+      } else {
+        block_(J, I).noalias() += xpr.transpose();
+      }
+    }
+  }
+
+  /// Increment an upper off-diagonal block using cached scalar offsets.
+  template <typename XprType>
+  void updateOffDiagonalBlockAt(DenseIndex rowOffset, DenseIndex colOffset,
+                                const XprType& xpr) {
+    assert(rowOffset < colOffset);
+    if constexpr (XprType::SizeAtCompileTime == 1) {
+      matrix_(rowOffset, colOffset) += xpr.coeff(0, 0);
+    } else {
+      matrix_.block(rowOffset, colOffset, xpr.rows(), xpr.cols()) += xpr;
+    }
+  }
+
+  /// Increment a fixed-size upper block using cached scalar offsets.
+  template <int Rows, int Cols, typename XprType>
+  void updateFixedOffDiagonalBlockAt(DenseIndex rowOffset, DenseIndex colOffset,
+                                     const XprType& xpr) {
+    assert(rowOffset < colOffset);
+    if constexpr (Rows == 1 && Cols == 1) {
+      assert(xpr.rows() == 1 && xpr.cols() == 1);
+      matrix_(rowOffset, colOffset) += xpr.coeff(0, 0);
+    } else {
+      matrix_.template block<Rows, Cols>(rowOffset, colOffset) += xpr;
+    }
+  }
+
+  /// Update this matrix with blocks from another block matrix using a mapping.
+  /// Entries with index -1 are skipped.
+  void updateFromMappedBlocks(const SymmetricBlockMatrix& other,
+                              const std::vector<DenseIndex>& blockIndices);
+
+  /// Update mapped blocks using cached scalar offsets in this matrix.
+  void updateFromMappedBlocks(const SymmetricBlockMatrix& other,
+                              const std::vector<DenseIndex>& blockIndices,
+                              const std::vector<DenseIndex>& scalarOffsets);
 
   /**
-  * This class stores a dense matrix and allows it to be accessed as a collection of blocks.  When
-  * constructed, the caller must provide the dimensions of the blocks.
-  *
-  * The block structure is symmetric, but the underlying matrix does not necessarily need to be.
-  *
-  * This class also has a parameter that can be changed after construction to change the apparent
-  * matrix view.  firstBlock() determines the block that appears to have index 0 for all operations
-  * (except re-setting firstBlock()).
-  *
-  * @ingroup base */
-  class GTSAM_EXPORT SymmetricBlockMatrix
-  {
-  public:
-    typedef SymmetricBlockMatrix This;
-    typedef Eigen::Block<Matrix> Block;
-    typedef Eigen::Block<const Matrix> constBlock;
+   * Update mapped blocks from an explicit source-block range.
+   *
+   * This overload does not modify either matrix's active view. `blockIndices`
+   * maps source blocks beginning at `sourceBlockStart`; entries with index -1
+   * are skipped. `scalarOffsets` caches their scalar destinations.
+   */
+  void updateFromMappedBlocks(const SymmetricBlockMatrix& other,
+                              DenseIndex sourceBlockStart,
+                              const std::vector<DenseIndex>& blockIndices,
+                              const std::vector<DenseIndex>& scalarOffsets);
 
-  protected:
-    Matrix matrix_; ///< The full matrix
-    FastVector<DenseIndex> variableColOffsets_; ///< the starting columns of each block (0-based)
+  /**
+   * Update one mapped destination column from an explicit source range.
+   *
+   * The source block selected by `ownedSourceBlock` owns all stored blocks in
+   * its mapped physical column. When `ownLastCrossBlock` is true, it also owns
+   * its cross block with the last mapped block; the last diagonal is omitted
+   * so callers can reduce it separately.
+   */
+  void updateFromMappedBlockColumn(const SymmetricBlockMatrix& other,
+                                   DenseIndex sourceBlockStart,
+                                   DenseIndex ownedSourceBlock,
+                                   const std::vector<DenseIndex>& blockIndices,
+                                   const std::vector<DenseIndex>& scalarOffsets,
+                                   bool ownLastCrossBlock = false);
 
-    DenseIndex blockStart_; ///< Changes apparent matrix view, see main class comment.
+  /// Update this matrix with scaled blockwise outer products from a vertical
+  /// block matrix. Adds alpha * S_i^T S_j into block (I,J), using a block
+  /// mapping; entries with index -1 are skipped. The range to use is controlled
+  /// by other.firstBlock().
+  void updateFromOuterProductBlocks(const VerticalBlockMatrix& other,
+                                    const std::vector<DenseIndex>& blockIndices,
+                                    double alpha = 1.0);
 
-  public:
-    /// Construct from an empty matrix (asserts that the matrix is empty)
-    SymmetricBlockMatrix();
+  /**
+   * Update with mapped blockwise outer products from explicit source rows and
+   * blocks, without changing `other`'s active view.
+   */
+  void updateFromOuterProductBlocks(
+      const VerticalBlockMatrix& other, DenseIndex sourceRowBegin,
+      DenseIndex sourceRowEnd, DenseIndex sourceBlockStart,
+      const std::vector<DenseIndex>& blockIndices,
+      const std::vector<DenseIndex>& scalarOffsets, double alpha = 1.0);
 
-    /// Construct from a container of the sizes of each block.
-    template<typename CONTAINER>
-    SymmetricBlockMatrix(const CONTAINER& dimensions, bool appendOneDimension = false) :
-      blockStart_(0)
-    {
-      fillOffsets(dimensions.begin(), dimensions.end(), appendOneDimension);
-      matrix_.resize(variableColOffsets_.back(), variableColOffsets_.back());
-      assertInvariants();
+  /// Add the upper-triangular part of another symmetric block matrix.
+  void addUpperTriangular(const SymmetricBlockMatrix& other) {
+    assert(nBlocks() == other.nBlocks());
+    full().triangularView<Eigen::Upper>() += other.full();
+  }
+
+  /// @}
+  /// @name Accessing the full matrix.
+  /// @{
+
+  /// Get self adjoint view.
+  Eigen::SelfAdjointView<Block, Eigen::Upper> selfadjointView() {
+    return full().selfadjointView<Eigen::Upper>();
+  }
+
+  /// Get self adjoint view.
+  Eigen::SelfAdjointView<constBlock, Eigen::Upper> selfadjointView() const {
+    return full().selfadjointView<Eigen::Upper>();
+  }
+
+  /// Set the entire active matrix. Only reads the upper triangular part of
+  /// `xpr`.
+  template <typename XprType>
+  void setFullMatrix(const XprType& xpr) {
+    full().triangularView<Eigen::Upper>() =
+        xpr.template triangularView<Eigen::Upper>();
+  }
+
+  /// Set the entire *active* matrix zero.
+  void setZero() { full().triangularView<Eigen::Upper>().setZero(); }
+
+  /// Set entire matrix zero.
+  void setAllZero() { matrix_.setZero(); }
+
+  /// Set the block columns between beginCol (inclusive) and endCol (exclusive)
+  /// to zero.
+  void setZeroColumns(DenseIndex beginCol, DenseIndex endCol) {
+    assert(beginCol < endCol);
+    assert(beginCol >= 0);
+    assert(endCol >= 0);
+    assert(beginCol < nBlocks());
+    assert(endCol <= nBlocks());
+    static_assert(Matrix::IsRowMajor == 0,
+                  "setZeroColumns requires column-major storage.");
+
+    const DenseIndex denseBeginCol = offset(beginCol);
+    const DenseIndex denseEndCol = offset(endCol);
+
+    double* begin = matrix_.data() + denseBeginCol * matrix_.rows();
+    double* end = matrix_.data() + denseEndCol * matrix_.rows();
+
+    // Using memset for maximal compiler optimization.
+    memset(begin, 0, (end - begin) * sizeof(*begin));
+  }
+
+  /// Negate the entire active matrix.
+  void negate();
+
+  /// Invert the entire active matrix in place.
+  void invertInPlace();
+
+  /// @}
+
+  /// Retrieve or modify the first logical block, i.e. the block referenced by
+  /// block index 0. Blocks before it will be inaccessible, except by accessing
+  /// the underlying matrix using matrix().
+  DenseIndex& blockStart() { return blockStart_; }
+
+  /// Retrieve the first logical block, i.e. the block referenced by block index
+  /// 0. Blocks before it will be inaccessible, except by accessing the
+  /// underlying matrix using matrix().
+  DenseIndex blockStart() const { return blockStart_; }
+
+  /**
+   * Given the augmented Hessian [A1'A1 A1'A2 A1'b
+   *                              A2'A1 A2'A2 A2'b
+   *                               b'A1  b'A2  b'b]
+   * on x1 and x2, does partial Cholesky in-place to obtain [R Sd;0 L]  such
+   * that R'R  = A1'A1 R'Sd = [A1'A2 A1'b] L'L is the augmented Hessian on the
+   * the separator x2 R and Sd can be interpreted as a GaussianConditional |R*x1
+   * + S*x2 - d]^2
+   */
+  void choleskyPartial(DenseIndex nFrontals);
+
+  /**
+   * After partial Cholesky, we can optionally split off R and Sd, to be
+   * interpreted as a GaussianConditional |R*x1 + S*x2 - d]^2. We leave the
+   * symmetric lower block L in place, and adjust block_start so now *this
+   * refers to it.
+   */
+  VerticalBlockMatrix split(DenseIndex nFrontals);
+
+  /// I n-place version of split.
+  void split(DenseIndex nFrontals, VerticalBlockMatrix* RSd);
+
+ protected:
+  /// Number of offsets in the full matrix.
+  DenseIndex nOffsets() const { return variableColOffsets_.size(); }
+
+  /// Number of actual blocks in the full matrix.
+  DenseIndex nActualBlocks() const { return nOffsets() - 1; }
+
+  /// Get an offset for a block index (in the active view).
+  DenseIndex offset(DenseIndex block) const {
+    assert(block >= 0);
+    const DenseIndex actual_index = block + blockStart();
+    assert(actual_index < nOffsets());
+    return variableColOffsets_[actual_index];
+  }
+
+  /// Get an arbitrary block from the matrix. Indices are in block units.
+  constBlock block_(DenseIndex iBlock, DenseIndex jBlock,
+                    DenseIndex blockRows = 1, DenseIndex blockCols = 1) const {
+    const std::array<DenseIndex, 4> indices =
+        calcIndices(iBlock, jBlock, blockRows, blockCols);
+    return matrix_.block(indices[0], indices[1], indices[2], indices[3]);
+  }
+
+  /// Get an arbitrary block from the matrix. Indices are in block units.
+  Block block_(DenseIndex iBlock, DenseIndex jBlock, DenseIndex blockRows = 1,
+               DenseIndex blockCols = 1) {
+    const std::array<DenseIndex, 4> indices =
+        calcIndices(iBlock, jBlock, blockRows, blockCols);
+    return matrix_.block(indices[0], indices[1], indices[2], indices[3]);
+  }
+
+  /// Get the full matrix as a block.
+  constBlock full() const { return block_(0, 0, nBlocks(), nBlocks()); }
+
+  /// Get the full matrix as a block.
+  Block full() { return block_(0, 0, nBlocks(), nBlocks()); }
+
+  /// Compute the indices into the underlying matrix for a given block.
+  std::array<DenseIndex, 4> calcIndices(DenseIndex iBlock, DenseIndex jBlock,
+                                        DenseIndex blockRows,
+                                        DenseIndex blockCols) const {
+    assert(blockRows >= 0);
+    assert(blockCols >= 0);
+
+    // adjust indices to account for start and size of blocks
+    const DenseIndex denseI = offset(iBlock);
+    const DenseIndex denseJ = offset(jBlock);
+    const DenseIndex denseRows = offset(iBlock + blockRows) - denseI;
+    const DenseIndex denseCols = offset(jBlock + blockCols) - denseJ;
+    return {{denseI, denseJ, denseRows, denseCols}};
+  }
+
+  void assertInvariants() const {
+    assert(matrix_.rows() == matrix_.cols());
+    assert(matrix_.cols() == variableColOffsets_.back());
+    assert(blockStart_ < (DenseIndex)variableColOffsets_.size());
+  }
+
+  template <typename ITERATOR>
+  void fillOffsets(ITERATOR firstBlockDim, ITERATOR lastBlockDim,
+                   bool appendOneDimension) {
+    variableColOffsets_.resize((lastBlockDim - firstBlockDim) + 1 +
+                               (appendOneDimension ? 1 : 0));
+    variableColOffsets_[0] = 0;
+    DenseIndex j = 0;
+    for (ITERATOR dim = firstBlockDim; dim != lastBlockDim; ++dim) {
+      variableColOffsets_[j + 1] = variableColOffsets_[j] + *dim;
+      ++j;
     }
-
-    /// Construct from iterator over the sizes of each vertical block.
-    template<typename ITERATOR>
-    SymmetricBlockMatrix(ITERATOR firstBlockDim, ITERATOR lastBlockDim, bool appendOneDimension = false) :
-      blockStart_(0)
-    {
-      fillOffsets(firstBlockDim, lastBlockDim, appendOneDimension);
-      matrix_.resize(variableColOffsets_.back(), variableColOffsets_.back());
-      assertInvariants();
+    if (appendOneDimension) {
+      variableColOffsets_[j + 1] = variableColOffsets_[j] + 1;
+      ++j;
     }
-
-    /// Construct from a container of the sizes of each vertical block and a pre-prepared matrix.
-    template<typename CONTAINER>
-    SymmetricBlockMatrix(const CONTAINER& dimensions, const Matrix& matrix, bool appendOneDimension = false) :
-      blockStart_(0)
-    {
-      matrix_.resize(matrix.rows(), matrix.cols());
-      matrix_.triangularView<Eigen::Upper>() = matrix.triangularView<Eigen::Upper>();
-      fillOffsets(dimensions.begin(), dimensions.end(), appendOneDimension);
-      if(matrix_.rows() != matrix_.cols())
-        throw std::invalid_argument("Requested to create a SymmetricBlockMatrix from a non-square matrix.");
-      if(variableColOffsets_.back() != matrix_.cols())
-        throw std::invalid_argument("Requested to create a SymmetricBlockMatrix with dimensions that do not sum to the total size of the provided matrix.");
-      assertInvariants();
-    }
-
-    /// Copy the block structure, but do not copy the matrix data.  If blockStart() has been
-    /// modified, this copies the structure of the corresponding matrix view. In the destination
-    /// SymmetricBlockMatrix, blockStart() will be 0.
-    static SymmetricBlockMatrix LikeActiveViewOf(const SymmetricBlockMatrix& other);
-
-    /// Copy the block structure, but do not copy the matrix data. If blockStart() has been
-    /// modified, this copies the structure of the corresponding matrix view. In the destination
-    /// SymmetricBlockMatrix, blockStart() will be 0.
-    static SymmetricBlockMatrix LikeActiveViewOf(const VerticalBlockMatrix& other);
-
-    /// Row size
-    DenseIndex rows() const { assertInvariants(); return variableColOffsets_.back() - variableColOffsets_[blockStart_]; }
-
-    /// Column size
-    DenseIndex cols() const { return rows(); }
-
-    /// Block count
-    DenseIndex nBlocks() const { return nActualBlocks() - blockStart_; }
-
-    /// Number of dimensions for variable on this diagonal block.
-    DenseIndex getDim(DenseIndex block) const {
-      return calcIndices(block, block, 1, 1)[2];
-    }
-
-    /// Return the scalar offset of a block in the underlying matrix.
-    DenseIndex blockScalarOffset(DenseIndex block) const {
-      return offset(block);
-    }
-
-    /// @name Block getter methods.
-    /// @{
-
-    /// Get a copy of a block (anywhere in the matrix).
-    /// This method makes a copy - use the methods below if performance is critical.
-    Matrix block(DenseIndex I, DenseIndex J) const;
-
-    /// Get a block view (anywhere in the matrix) without allocating a copy.
-    /// This method returns a const reference to the block for efficient read access.
-    /// @param I The row block index.
-    /// @param J The column block index.
-    /// @return A const block view into the matrix.
-    constBlock blockView(DenseIndex I, DenseIndex J) const {
-      return block_(I, J);
-    }
-
-    /// Return the J'th diagonal block as a self adjoint view.
-    Eigen::SelfAdjointView<Block, Eigen::Upper> diagonalBlock(DenseIndex J) {
-      return block_(J, J).selfadjointView<Eigen::Upper>();
-    }
-
-    /// Return the J'th diagonal block as a self adjoint view.
-    Eigen::SelfAdjointView<constBlock, Eigen::Upper> diagonalBlock(DenseIndex J) const {
-      return block_(J, J).selfadjointView<Eigen::Upper>();
-    }
-
-    /// Get the diagonal of the J'th diagonal block.
-    Vector diagonal(DenseIndex J) const {
-      return block_(J, J).diagonal();
-    }
-
-    /// Get block above the diagonal (I, J).
-    constBlock aboveDiagonalBlock(DenseIndex I, DenseIndex J) const {
-      assert(I < J);
-      return block_(I, J);
-    }
-
-    /// Return the square sub-matrix that contains blocks(i:j, i:j).
-    Eigen::SelfAdjointView<constBlock, Eigen::Upper> selfadjointView(
-        DenseIndex I, DenseIndex J) const {
-      assert(J > I);
-      return block_(I, I, J - I, J - I).selfadjointView<Eigen::Upper>();
-    }
-
-    /// Return the square sub-matrix that contains blocks(i:j, i:j) as a triangular view.
-    Eigen::TriangularView<constBlock, Eigen::Upper> triangularView(DenseIndex I,
-                                                                   DenseIndex J) const {
-      assert(J > I);
-      return block_(I, I, J - I, J - I).triangularView<Eigen::Upper>();
-    }
-
-    /// Get a range [i,j) from the matrix. Indices are in block units.
-    constBlock aboveDiagonalRange(DenseIndex i_startBlock,
-                                  DenseIndex i_endBlock,
-                                  DenseIndex j_startBlock,
-                                  DenseIndex j_endBlock) const {
-      assert(i_startBlock < j_startBlock);
-      assert(i_endBlock <= j_startBlock);
-      return block_(i_startBlock, j_startBlock, i_endBlock - i_startBlock,
-                   j_endBlock - j_startBlock);
-    }
-
-    /// Get a range [i,j) from the matrix. Indices are in block units.
-    Block aboveDiagonalRange(DenseIndex i_startBlock, DenseIndex i_endBlock,
-                             DenseIndex j_startBlock, DenseIndex j_endBlock) {
-      assert(i_startBlock < j_startBlock);
-      assert(i_endBlock <= j_startBlock);
-      return block_(i_startBlock, j_startBlock, i_endBlock - i_startBlock,
-                   j_endBlock - j_startBlock);
-    }
-
-    /// @}
-    /// @name Block setter methods.
-    /// @{
-
-    /// Set a diagonal block. Only the upper triangular portion of `xpr` is evaluated.
-    template <typename XprType>
-    void setDiagonalBlock(DenseIndex I, const XprType& xpr) {
-      block_(I, I).triangularView<Eigen::Upper>() = xpr.template triangularView<Eigen::Upper>();
-    }
-
-    /// Set an off-diagonal block. Only the upper triangular portion of `xpr` is evaluated.
-    template <typename XprType>
-    void setOffDiagonalBlock(DenseIndex I, DenseIndex J, const XprType& xpr) {
-      assert(I != J);
-      if (I < J) {
-        block_(I, J) = xpr;
-      } else {
-        block_(J, I) = xpr.transpose();
-      }
-    }
-
-    /// Increment the diagonal block by the values in `xpr`. Only reads the upper triangular part of `xpr`.
-    template <typename XprType>
-    void updateDiagonalBlock(DenseIndex I, const XprType& xpr) {
-      // TODO(gareth): Eigen won't let us add triangular or self-adjoint views
-      // here, so we do it manually.
-      auto dest = block_(I, I);
-      assert(dest.rows() == xpr.rows());
-      assert(dest.cols() == xpr.cols());
-      for (DenseIndex col = 0; col < dest.cols(); ++col) {
-        for (DenseIndex row = 0; row <= col; ++row) {
-          dest(row, col) += xpr(row, col);
-        }
-      }
-    }
-
-    /// Increment a diagonal block using its cached scalar offset.
-    template <typename XprType>
-    void updateDiagonalBlockAt(DenseIndex scalarOffset,
-                               const XprType& xpr) {
-      auto dest = matrix_.block(scalarOffset, scalarOffset, xpr.rows(),
-                                xpr.cols());
-      assert(dest.rows() == dest.cols());
-      for (DenseIndex col = 0; col < dest.cols(); ++col) {
-        for (DenseIndex row = 0; row <= col; ++row) {
-          dest(row, col) += xpr(row, col);
-        }
-      }
-    }
-
-    /// Increment a fixed-size diagonal block using its cached scalar offset.
-    template <int Dimension, typename XprType>
-    void updateFixedDiagonalBlockAt(DenseIndex scalarOffset,
-                                    const XprType& xpr) {
-      auto dest = matrix_.template block<Dimension, Dimension>(scalarOffset,
-                                                               scalarOffset);
-      for (int col = 0; col < Dimension; ++col) {
-        for (int row = 0; row <= col; ++row) {
-          dest(row, col) += xpr(row, col);
-        }
-      }
-    }
-
-    /// Add a vector to the diagonal entries of block I.
-    void addToDiagonalBlock(DenseIndex I, const Vector& deltaDiag) {
-      auto dest = block_(I, I);
-      assert(dest.rows() == deltaDiag.size());
-      dest.diagonal().array() += deltaDiag.array();
-    }
-
-    /// Add lambda * I to the diagonal block I.
-    void addScaledIdentity(DenseIndex I, double lambda) {
-      auto dest = block_(I, I);
-      dest.diagonal().array() += lambda;
-    }
-
-    /// Update an off diagonal block.
-    /// NOTE(emmett): This assumes noalias().
-    template <typename XprType>
-    void updateOffDiagonalBlock(DenseIndex I, DenseIndex J, const XprType& xpr) {
-      assert(I != J);
-      if constexpr (XprType::SizeAtCompileTime == 1) {
-        if (I < J) {
-          auto destination = block_(I, J);
-          assert(destination.rows() == 1 && destination.cols() == 1);
-          destination(0, 0) += xpr.coeff(0, 0);
-        } else {
-          auto destination = block_(J, I);
-          assert(destination.rows() == 1 && destination.cols() == 1);
-          destination(0, 0) += xpr.coeff(0, 0);
-        }
-      } else {
-        if (I < J) {
-          block_(I, J).noalias() += xpr;
-        } else {
-          block_(J, I).noalias() += xpr.transpose();
-        }
-      }
-    }
-
-    /// Increment an upper off-diagonal block using cached scalar offsets.
-    template <typename XprType>
-    void updateOffDiagonalBlockAt(DenseIndex rowOffset, DenseIndex colOffset,
-                                  const XprType& xpr) {
-      assert(rowOffset < colOffset);
-      if constexpr (XprType::SizeAtCompileTime == 1) {
-        matrix_(rowOffset, colOffset) += xpr.coeff(0, 0);
-      } else {
-        matrix_.block(rowOffset, colOffset, xpr.rows(), xpr.cols()) += xpr;
-      }
-    }
-
-    /// Increment a fixed-size upper block using cached scalar offsets.
-    template <int Rows, int Cols, typename XprType>
-    void updateFixedOffDiagonalBlockAt(DenseIndex rowOffset,
-                                       DenseIndex colOffset,
-                                       const XprType& xpr) {
-      assert(rowOffset < colOffset);
-      if constexpr (Rows == 1 && Cols == 1) {
-        assert(xpr.rows() == 1 && xpr.cols() == 1);
-        matrix_(rowOffset, colOffset) += xpr.coeff(0, 0);
-      } else {
-        matrix_.template block<Rows, Cols>(rowOffset, colOffset) += xpr;
-      }
-    }
-
-    /// Update this matrix with blocks from another block matrix using a mapping.
-    /// Entries with index -1 are skipped.
-    void updateFromMappedBlocks(const SymmetricBlockMatrix& other,
-                                const std::vector<DenseIndex>& blockIndices);
-
-    /// Update mapped blocks using cached scalar offsets in this matrix.
-    void updateFromMappedBlocks(
-        const SymmetricBlockMatrix& other,
-        const std::vector<DenseIndex>& blockIndices,
-        const std::vector<DenseIndex>& scalarOffsets);
-
-    /// Update this matrix with scaled blockwise outer products from a vertical block matrix.
-    /// Adds alpha * S_i^T S_j into block (I,J), using a block mapping; entries with index -1 are skipped.
-    /// The range to use is controlled by other.firstBlock().
-    void updateFromOuterProductBlocks(const VerticalBlockMatrix& other,
-                                      const std::vector<DenseIndex>& blockIndices,
-                                      double alpha = 1.0);
-
-    /// Add the upper-triangular part of another symmetric block matrix.
-    void addUpperTriangular(const SymmetricBlockMatrix& other) {
-      assert(nBlocks() == other.nBlocks());
-      full().triangularView<Eigen::Upper>() += other.full();
-    }
-
-    /// @}
-    /// @name Accessing the full matrix.
-    /// @{
-
-    /// Get self adjoint view.
-    Eigen::SelfAdjointView<Block, Eigen::Upper> selfadjointView() {
-      return full().selfadjointView<Eigen::Upper>();
-    }
-
-    /// Get self adjoint view.
-    Eigen::SelfAdjointView<constBlock, Eigen::Upper> selfadjointView() const {
-      return full().selfadjointView<Eigen::Upper>();
-    }
-
-    /// Set the entire active matrix. Only reads the upper triangular part of `xpr`.
-    template <typename XprType>
-    void setFullMatrix(const XprType& xpr) {
-      full().triangularView<Eigen::Upper>() = xpr.template triangularView<Eigen::Upper>();
-    }
-
-    /// Set the entire *active* matrix zero.
-    void setZero() {
-      full().triangularView<Eigen::Upper>().setZero();
-    }
-
-    /// Set entire matrix zero.
-    void setAllZero() {
-      matrix_.setZero();
-    }
-
-    /// Set the block columns between beginCol (inclusive) and endCol (exclusive) to zero. 
-    void setZeroColumns(DenseIndex beginCol, DenseIndex endCol) {
-      assert(beginCol < endCol);
-      assert(beginCol >= 0);
-      assert(endCol >= 0);
-      assert(beginCol < nBlocks());
-      assert(endCol <= nBlocks());
-      static_assert(Matrix::IsRowMajor == 0, "setZeroColumns requires column-major storage.");
-
-      const DenseIndex denseBeginCol = offset(beginCol);
-      const DenseIndex denseEndCol = offset(endCol);
-
-      double *begin = matrix_.data() + denseBeginCol * matrix_.rows();
-      double *end = matrix_.data() + denseEndCol * matrix_.rows();
-
-      // Using memset for maximal compiler optimization.
-      memset(begin, 0, (end - begin) * sizeof(*begin));
-    }
-
-    /// Negate the entire active matrix.
-    void negate();
-
-    /// Invert the entire active matrix in place.
-    void invertInPlace();
-
-    /// @}
-
-    /// Retrieve or modify the first logical block, i.e. the block referenced by block index 0.
-    /// Blocks before it will be inaccessible, except by accessing the underlying matrix using
-    /// matrix().
-    DenseIndex& blockStart() { return blockStart_; }
-
-    /// Retrieve the first logical block, i.e. the block referenced by block index 0. Blocks before
-    /// it will be inaccessible, except by accessing the underlying matrix using matrix().
-    DenseIndex blockStart() const { return blockStart_; }
-
-    /**
-     * Given the augmented Hessian [A1'A1 A1'A2 A1'b
-     *                              A2'A1 A2'A2 A2'b
-     *                               b'A1  b'A2  b'b]
-     * on x1 and x2, does partial Cholesky in-place to obtain [R Sd;0 L]  such that
-     *   R'R  = A1'A1
-     *   R'Sd = [A1'A2 A1'b]
-     *   L'L is the augmented Hessian on the the separator x2
-     * R and Sd can be interpreted as a GaussianConditional |R*x1 + S*x2 - d]^2
-     */
-    void choleskyPartial(DenseIndex nFrontals);
-
-    /**
-     * After partial Cholesky, we can optionally split off R and Sd, to be interpreted as
-     * a GaussianConditional |R*x1 + S*x2 - d]^2. We leave the symmetric lower block L in place,
-     * and adjust block_start so now *this refers to it.
-     */
-    VerticalBlockMatrix split(DenseIndex nFrontals);
-
-    /// I n-place version of split.
-    void split(DenseIndex nFrontals, VerticalBlockMatrix* RSd);
-
-  protected:
-
-    /// Number of offsets in the full matrix.
-    DenseIndex nOffsets() const {
-      return variableColOffsets_.size();
-    }
-
-    /// Number of actual blocks in the full matrix.
-    DenseIndex nActualBlocks() const {
-      return nOffsets() - 1;
-    }
-
-    /// Get an offset for a block index (in the active view).
-    DenseIndex offset(DenseIndex block) const {
-      assert(block >= 0);
-      const DenseIndex actual_index = block + blockStart();
-      assert(actual_index < nOffsets());
-      return variableColOffsets_[actual_index];
-    }
-
-    /// Get an arbitrary block from the matrix. Indices are in block units.
-    constBlock block_(DenseIndex iBlock, DenseIndex jBlock,
-                      DenseIndex blockRows = 1, DenseIndex blockCols = 1) const {
-      const std::array<DenseIndex, 4> indices =
-          calcIndices(iBlock, jBlock, blockRows, blockCols);
-      return matrix_.block(indices[0], indices[1], indices[2], indices[3]);
-    }
-
-    /// Get an arbitrary block from the matrix. Indices are in block units.
-    Block block_(DenseIndex iBlock, DenseIndex jBlock, DenseIndex blockRows = 1,
-                 DenseIndex blockCols = 1) {
-      const std::array<DenseIndex, 4> indices =
-          calcIndices(iBlock, jBlock, blockRows, blockCols);
-      return matrix_.block(indices[0], indices[1], indices[2], indices[3]);
-    }
-
-    /// Get the full matrix as a block.
-    constBlock full() const {
-      return block_(0, 0, nBlocks(), nBlocks());
-    }
-
-    /// Get the full matrix as a block.
-    Block full() {
-      return block_(0, 0, nBlocks(), nBlocks());
-    }
-
-    /// Compute the indices into the underlying matrix for a given block.
-    std::array<DenseIndex, 4> calcIndices(DenseIndex iBlock, DenseIndex jBlock,
-                                          DenseIndex blockRows,
-                                          DenseIndex blockCols) const {
-      assert(blockRows >= 0);
-      assert(blockCols >= 0);
-
-      // adjust indices to account for start and size of blocks
-      const DenseIndex denseI = offset(iBlock);
-      const DenseIndex denseJ = offset(jBlock);
-      const DenseIndex denseRows = offset(iBlock + blockRows) - denseI;
-      const DenseIndex denseCols = offset(jBlock + blockCols) - denseJ;
-      return {{denseI, denseJ, denseRows, denseCols}};
-    }
-
-    void assertInvariants() const
-    {
-      assert(matrix_.rows() == matrix_.cols());
-      assert(matrix_.cols() == variableColOffsets_.back());
-      assert(blockStart_ < (DenseIndex)variableColOffsets_.size());
-    }
-
-    template<typename ITERATOR>
-    void fillOffsets(ITERATOR firstBlockDim, ITERATOR lastBlockDim, bool appendOneDimension)
-    {
-      variableColOffsets_.resize((lastBlockDim-firstBlockDim) + 1 + (appendOneDimension ? 1 : 0));
-      variableColOffsets_[0] = 0;
-      DenseIndex j=0;
-      for(ITERATOR dim=firstBlockDim; dim!=lastBlockDim; ++dim) {
-        variableColOffsets_[j+1] = variableColOffsets_[j] + *dim;
-        ++ j;
-      }
-      if(appendOneDimension)
-      {
-        variableColOffsets_[j+1] = variableColOffsets_[j] + 1;
-        ++ j;
-      }
-    }
+  }
 
     friend class VerticalBlockMatrix;
     friend class internal::CompactLeafSchurKernel;
-    template<typename SymmetricBlockMatrixType> friend class SymmetricBlockMatrixBlockExpr;
+  template <typename SymmetricBlockMatrixType>
+  friend class SymmetricBlockMatrixBlockExpr;
 
-  private:
+ private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
-    /** Serialization function */
-    friend class boost::serialization::access;
-    template<class ARCHIVE>
-    void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
-      // Fill in the lower triangle part of the matrix, so boost::serialization won't
-      // complain about uninitialized data with an input_stream_error exception
-      // http://www.boost.org/doc/libs/1_37_0/libs/serialization/doc/exceptions.html#stream_error
-      matrix_.triangularView<Eigen::Lower>() = matrix_.triangularView<Eigen::Upper>().transpose();
-      ar & BOOST_SERIALIZATION_NVP(matrix_);
-      ar & BOOST_SERIALIZATION_NVP(variableColOffsets_);
-      ar & BOOST_SERIALIZATION_NVP(blockStart_);
-    }
+  /** Serialization function */
+  friend class boost::serialization::access;
+  template <class ARCHIVE>
+  void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
+    // Fill in the lower triangle part of the matrix, so boost::serialization
+    // won't complain about uninitialized data with an input_stream_error
+    // exception
+    // http://www.boost.org/doc/libs/1_37_0/libs/serialization/doc/exceptions.html#stream_error
+    matrix_.triangularView<Eigen::Lower>() =
+        matrix_.triangularView<Eigen::Upper>().transpose();
+    ar& BOOST_SERIALIZATION_NVP(matrix_);
+    ar& BOOST_SERIALIZATION_NVP(variableColOffsets_);
+    ar& BOOST_SERIALIZATION_NVP(blockStart_);
+  }
 #endif
-  };
+};
 
-  /// Foward declare exception class
-  class CholeskyFailed;
+/// Foward declare exception class
+class CholeskyFailed;
 
-}
+}  // namespace gtsam
