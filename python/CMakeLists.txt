@@ -246,9 +246,7 @@ set(GTSAM_PYTHON_INSTALL_EXTRA "")
 if(UNIX)
     set(GTSAM_PATH_SEPARATOR ":")
 else()
-    # Escaped: an unescaped ";" is CMake's list separator and would split the
-    # argument, silently dropping any pre-existing PYTHONPATH.
-    set(GTSAM_PATH_SEPARATOR "\\;")
+    set(GTSAM_PATH_SEPARATOR ";")
 endif()
 
 separate_arguments(PYTEST_EXTRA_ARGS_LIST UNIX_COMMAND "${PYTEST_EXTRA_ARGS}")
