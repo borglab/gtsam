@@ -240,6 +240,15 @@ set(GTSAM_PYTHON_DEPENDENCIES ${GTSAM_PYTHON_TARGET})
 
 set(GTSAM_PYTHON_INSTALL_EXTRA "")
 
+# Separator used when prepending the build directory to an existing PYTHONPATH.
+# This is a path-LIST separator, not a directory separator: ":" on UNIX and ";"
+# elsewhere. Mirrors GTWRAP_PATH_SEPARATOR in wrap/cmake/PybindWrap.cmake.
+if(UNIX)
+    set(GTSAM_PATH_SEPARATOR ":")
+else()
+    set(GTSAM_PATH_SEPARATOR ";")
+endif()
+
 separate_arguments(PYTEST_EXTRA_ARGS_LIST UNIX_COMMAND "${PYTEST_EXTRA_ARGS}")
 
 if(GTSAM_UNSTABLE_BUILD_PYTHON)
@@ -338,23 +347,21 @@ if(GTSAM_UNSTABLE_BUILD_PYTHON)
         python-unstable-stubs
         COMMAND
         ${CMAKE_COMMAND} -E env
-        "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
+        "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}${GTSAM_PATH_SEPARATOR}$ENV{PYTHONPATH}"
         ${PYTHON_EXECUTABLE} -m pybind11_stubgen -o . --enum-class-locations \"KernelFunctionType|NoiseFormat:gtsam.gtsam\" --enum-class-locations \"OrderingType:gtsam.gtsam.Ordering\" --numpy-array-use-type-var --ignore-all-errors gtsam_unstable
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES} ${GTSAM_PYTHON_TEST_FILES} ${GTSAM_PYTHON_UNSTABLE_TARGET}
         WORKING_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/"
     )
 
-    if(NOT WIN32)
-        # Add the stubgen target as a dependency to the install target
-        list(APPEND GTSAM_PYTHON_INSTALL_EXTRA python-unstable-stubs)
-    endif()
+    # Add the stubgen target as a dependency to the install target
+    list(APPEND GTSAM_PYTHON_INSTALL_EXTRA python-unstable-stubs)
 
     # Custom make command to run all GTSAM_UNSTABLE Python tests
     add_custom_target(
         python-test-unstable
         COMMAND
           ${CMAKE_COMMAND} -E env # add package to python path so no need to install
-          "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
+          "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}${GTSAM_PATH_SEPARATOR}$ENV{PYTHONPATH}"
         ${PYTHON_EXECUTABLE} -m pytest -v . ${PYTEST_EXTRA_ARGS_LIST}
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES} ${GTSAM_PYTHON_TEST_FILES}
         WORKING_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam_unstable/tests"
@@ -365,16 +372,14 @@ add_custom_target(
         python-stubs
         COMMAND
           ${CMAKE_COMMAND} -E env
-          "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
+          "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}${GTSAM_PATH_SEPARATOR}$ENV{PYTHONPATH}"
         ${PYTHON_EXECUTABLE} -m pybind11_stubgen -o . --enum-class-locations \"KernelFunctionType|NoiseFormat:gtsam.gtsam\" --enum-class-locations \"OrderingType:gtsam.gtsam.Ordering\" --numpy-array-use-type-var --ignore-all-errors gtsam
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES} ${GTSAM_PYTHON_TEST_FILES} ${GTSAM_PYTHON_TARGET}
         WORKING_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/"
 )
 
-if(NOT WIN32)
-    # Add the stubgen target as a dependency to the install target
-    list(APPEND GTSAM_PYTHON_INSTALL_EXTRA python-stubs)
-endif()
+# Add the stubgen target as a dependency to the install target
+list(APPEND GTSAM_PYTHON_INSTALL_EXTRA python-stubs)
 
 # Add custom target so we can install with `make python-install`
 # Note below we make sure to install with --user iff not in a virtualenv
@@ -391,7 +396,7 @@ add_custom_target(
         python-test
         COMMAND
           ${CMAKE_COMMAND} -E env # add package to python path so no need to install
-          "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}/$ENV{PYTHONPATH}"
+          "PYTHONPATH=${GTSAM_PYTHON_BUILD_DIRECTORY}${GTSAM_PATH_SEPARATOR}$ENV{PYTHONPATH}"
           ${PYTHON_EXECUTABLE} -m pytest -v . ${PYTEST_EXTRA_ARGS_LIST}
           DEPENDS ${GTSAM_PYTHON_DEPENDENCIES} ${GTSAM_PYTHON_TEST_FILES}
           WORKING_DIRECTORY "${GTSAM_PYTHON_BUILD_DIRECTORY}/gtsam/tests")
