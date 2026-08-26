@@ -18,8 +18,8 @@
 
 #pragma once
 
-#include <gtsam/inference/Ordering.h>
 #include <gtsam/base/Vector.h>
+#include <gtsam/linear/KeyInfo.h>
 
 #include <memory>
 
@@ -31,8 +31,6 @@
 namespace gtsam {
 
 // Forward declarations
-struct KeyInfoEntry;
-class KeyInfo;
 class GaussianFactorGraph;
 class Values;
 class VectorValues;
@@ -105,69 +103,6 @@ public:
   virtual VectorValues optimize(const GaussianFactorGraph &gfg,
       const KeyInfo &keyInfo, const std::map<Key, Vector> &lambda,
       const VectorValues &initial) = 0;
-
-};
-
-/**
- * Handy data structure for iterative solvers
- * key to (index, dimension, start)
- */
-struct GTSAM_EXPORT KeyInfoEntry {
-  size_t index, dim, start;
-  KeyInfoEntry() {
-  }
-  KeyInfoEntry(size_t idx, size_t d, Key start) :
-      index(idx), dim(d), start(start) {
-  }
-};
-
-/**
- * Handy data structure for iterative solvers
- */
-class GTSAM_EXPORT KeyInfo: public std::map<Key, KeyInfoEntry> {
-
-public:
-
-  typedef std::map<Key, KeyInfoEntry> Base;
-
-protected:
-
-  Ordering ordering_;
-  size_t numCols_;
-
-  void initialize(const GaussianFactorGraph &fg);
-
-public:
-
-  /// Default Constructor
-  KeyInfo() :
-      numCols_(0) {
-  }
-
-  /// Construct from Gaussian factor graph, use "Natural" ordering
-  KeyInfo(const GaussianFactorGraph &fg);
-
-  /// Construct from Gaussian factor graph and a given ordering
-  KeyInfo(const GaussianFactorGraph &fg, const Ordering &ordering);
-
-  /// Return the total number of columns (scalar variables = sum of dimensions)
-  inline size_t numCols() const {
-    return numCols_;
-  }
-
-  /// Return the ordering
-  inline const Ordering & ordering() const {
-    return ordering_;
-  }
-
-  /// Return a vector of dimensions ordered by ordering()
-  std::vector<size_t> colSpec() const;
-
-  /// Return VectorValues with zeros, of correct dimension
-  VectorValues x0() const;
-
-  /// Return zero Vector of correct dimension
-  Vector x0vector() const;
 
 };
 

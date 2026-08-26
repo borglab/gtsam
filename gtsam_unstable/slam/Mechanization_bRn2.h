@@ -7,6 +7,10 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/VectorConstants.h>
 #include <gtsam/geometry/Rot3.h>
@@ -16,6 +20,11 @@
 
 namespace gtsam {
 
+/**
+ * Experimental AHRS mechanization state.
+ * @deprecated Use supported GTSAM navigation preintegration and attitude
+ * estimation facilities.
+ */
 class GTSAM_UNSTABLE_EXPORT Mechanization_bRn2 {
 
 private:
@@ -90,3 +99,5 @@ public:
 };
 
 } // namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

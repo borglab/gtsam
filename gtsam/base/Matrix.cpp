@@ -200,13 +200,14 @@ Matrix diag(const std::vector<Matrix>& Hs) {
   Matrix results = Matrix::Zero(rows,cols);
   size_t r = 0, c = 0;
   for (size_t i = 0; i<Hs.size(); ++i) {
-    insertSub(results, Hs[i], r, c);
+    results.block(r, c, Hs[i].rows(), Hs[i].cols()) = Hs[i];
     r+=Hs[i].rows();
     c+=Hs[i].cols();
   }
   return results;
 }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 /* ************************************************************************* */
 Vector columnNormSquare(const Matrix &A) {
   Vector v (A.cols()) ;
@@ -215,6 +216,7 @@ Vector columnNormSquare(const Matrix &A) {
   }
   return v ;
 }
+#endif
 
 /* ************************************************************************* */
 /** Householder QR factorization, Golub & Van Loan p 224, explicit version    */
@@ -349,6 +351,7 @@ void householder(Matrix& A, size_t k) {
 //  gttoc(householder_zero_fill);
 }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 /* ************************************************************************* */
 Vector backSubstituteLower(const Matrix& L, const Vector& b, bool unit) {
   // @return the solution x of L*x=b
@@ -378,7 +381,9 @@ Vector backSubstituteUpper(const Vector& b, const Matrix& U, bool unit) {
   else
     return U.triangularView<Eigen::Upper>().transpose().solve<Eigen::OnTheLeft>(b);
 }
+#endif
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 /* ************************************************************************* */
 Matrix stack(size_t nrMatrices, ...)
 {
@@ -405,6 +410,7 @@ Matrix stack(size_t nrMatrices, ...)
 
   return A;
 }
+#endif
 
 /* ************************************************************************* */
 Matrix stack(const std::vector<Matrix>& blocks) {
@@ -450,6 +456,7 @@ Matrix collect(const std::vector<const Matrix *>& matrices, size_t m, size_t n)
   return A;
 }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 /* ************************************************************************* */
 Matrix collect(size_t nrMatrices, ...)
 {
@@ -460,9 +467,12 @@ Matrix collect(size_t nrMatrices, ...)
     Matrix *M = va_arg(ap, Matrix *);
     matrices.push_back(M);
   }
+  va_end(ap);
   return collect(matrices);
 }
+#endif
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 /* ************************************************************************* */
 // row scaling, in-place
 void vector_scale_inplace(const Vector& v, Matrix& A, bool inf_mask) {
@@ -529,6 +539,7 @@ Matrix cholesky_inverse(const Matrix &A)
   llt.matrixU().solveInPlace<Eigen::OnTheRight>(inv);
   return inv*inv.transpose();
 }
+#endif
 
 /* ************************************************************************* */
 // Semantics:

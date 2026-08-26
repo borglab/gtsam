@@ -207,6 +207,15 @@ virtual class LinearContainerFactor : gtsam::NonlinearFactor {
 #include <gtsam/nonlinear/NonlinearOptimizerParams.h>
 virtual class NonlinearOptimizerParams {
   enum Verbosity { SILENT, TERMINATION, ERROR, VALUES, DELTA, LINEAR };
+  enum LinearSolverType {
+    MULTIFRONTAL_SOLVER,
+    MULTIFRONTAL_CHOLESKY,
+    MULTIFRONTAL_QR,
+    SEQUENTIAL_CHOLESKY,
+    SEQUENTIAL_QR,
+    Iterative,
+    CHOLMOD
+  };
 
   NonlinearOptimizerParams();
   void print(string str = "") const;
@@ -225,6 +234,9 @@ virtual class NonlinearOptimizerParams {
 
   string getLinearSolverType() const;
   void setLinearSolverType(const string& solver);
+  gtsam::NonlinearOptimizerParams::LinearSolverType getLinearSolver() const;
+  void setLinearSolver(
+      gtsam::NonlinearOptimizerParams::LinearSolverType solver);
 
   void setIterativeParams(gtsam::IterativeOptimizationParameters* params);
   void setOrdering(const gtsam::Ordering& ordering);
@@ -468,7 +480,8 @@ class ISAM2ThresholdMap {
   void clear();
 
   // structure specific methods
-  void insert(const gtsam::ISAM2ThresholdMapValue& value) const;
+  @pybind_lambda
+  void insert(const gtsam::ISAM2ThresholdMapValue& value);
 };
 
 class ISAM2Params {
@@ -523,6 +536,22 @@ class ISAM2Result {
   bool getBatchReorderTriggered() const;
   double getErrorBefore() const;
   double getErrorAfter() const;
+  size_t getFactorsRecalculated() const;
+  const gtsam::KeySet& getUnusedKeys() const;
+  const gtsam::KeyVector& getObservedKeys() const;
+  const gtsam::KeySet& getKeysWithRemovedFactors() const;
+  const gtsam::KeySet& getMarkedKeys() const;
+};
+
+class ISAM2UpdateParams {
+  ISAM2UpdateParams();
+
+  gtsam::FactorIndices removeFactorIndices;
+  std::optional<gtsam::KeyGroupMap> constrainedKeys;
+  std::optional<gtsam::KeyList> noRelinKeys;
+  std::optional<gtsam::KeyList> extraReelimKeys;
+  bool force_relinearize;
+  bool forceFullSolve;
 };
 
 class ISAM2 {
@@ -915,71 +944,10 @@ virtual class VectorNormFactor : gtsam::NoiseModelFactor {
 
   // Standard Interface
   double norm() const;
-  gtsam::Vector evaluateError(const gtsam::Point3& v);
+  gtsam::Vector evaluateError(const gtsam::Vector3& v) const;
 
   // enabling serialization functionality
   void serialize() const;
-};
-
-#include <gtsam/nonlinear/NonlinearEquality.h>
-template <T = {gtsam::Point2,
-               gtsam::StereoPoint2,
-               gtsam::Point3,
-               gtsam::Rot2,
-               gtsam::SO3,
-               gtsam::SO4,
-               gtsam::SOn,
-               gtsam::SL4,
-               gtsam::Rot3,
-               gtsam::Pose2,
-               gtsam::Gal3,
-               gtsam::Pose3,
-               gtsam::Similarity2,
-               gtsam::Similarity3,
-               gtsam::Cal3_S2,
-               gtsam::CalibratedCamera,
-               gtsam::PinholeCamera<gtsam::Cal3_S2>,
-               gtsam::PinholeCamera<gtsam::Cal3Bundler>,
-               gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
-               gtsam::PinholeCamera<gtsam::Cal3Unified>,
-               gtsam::SphericalCamera,
-               gtsam::imuBias::ConstantBias}>
-virtual class NonlinearEquality : gtsam::NoiseModelFactor {
-  // Constructor - forces exact evaluation
-  NonlinearEquality(gtsam::Key j, const T& feasible);
-  // Constructor - allows inexact evaluation
-  NonlinearEquality(gtsam::Key j, const T& feasible, double error_gain);
-
-  // enabling serialization functionality
-  void serialize() const;
-};
-
-template <T = {gtsam::Point2,
-               gtsam::StereoPoint2,
-               gtsam::Point3,
-               gtsam::Rot2,
-               gtsam::Gal3,
-               gtsam::SO3,
-               gtsam::SO4,
-               gtsam::SOn,
-               gtsam::SL4,
-               gtsam::Rot3,
-               gtsam::Pose2,
-               gtsam::Pose3,
-               gtsam::Similarity2,
-               gtsam::Similarity3,
-               gtsam::Cal3_S2,
-               gtsam::CalibratedCamera,
-               gtsam::PinholeCamera<gtsam::Cal3_S2>,
-               gtsam::PinholeCamera<gtsam::Cal3Bundler>,
-               gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
-               gtsam::PinholeCamera<gtsam::Cal3Unified>,
-               gtsam::imuBias::ConstantBias}>
-virtual class NonlinearEquality2 : gtsam::NoiseModelFactor {
-  NonlinearEquality2(gtsam::Key key1, gtsam::Key key2, double mu = 1e4);
-  gtsam::Vector evaluateError(const T& x1, const T& x2,
-                              gtsam::OptionalMatrixType H1 = nullptr,
-                              gtsam::OptionalMatrixType H2 = nullptr) const;
 };
 
 #include <gtsam/nonlinear/FixedLagSmoother.h>
@@ -1007,6 +975,7 @@ class FixedLagSmootherKeyTimestampMap {
 
 class FixedLagSmootherResult {
   size_t getIterations() const;
+  size_t getIntermediateSteps() const;
   size_t getNonlinearVariables() const;
   size_t getLinearVariables() const;
   double getError() const;
@@ -1047,6 +1016,9 @@ virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
   const gtsam::LevenbergMarquardtParams& params() const;
 
   const gtsam::NonlinearFactorGraph& getFactors() const;
+  const gtsam::Values& getLinearizationPoint() const;
+  const gtsam::Ordering& getOrdering() const;
+  const gtsam::VectorValues& getDelta() const;
 
   template <VALUE = {double, gtsam::Point2, gtsam::Rot2, gtsam::Pose2,
                      gtsam::Point3, gtsam::Rot3, gtsam::Pose3,
@@ -1068,6 +1040,8 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
   const gtsam::ISAM2Params& params() const;
 
   const gtsam::NonlinearFactorGraph& getFactors() const;
+  const gtsam::Values& getLinearizationPoint() const;
+  const gtsam::VectorValues& getDelta() const;
   const gtsam::ISAM2& getISAM2() const;
   const gtsam::ISAM2Result& getISAM2Result() const;
 

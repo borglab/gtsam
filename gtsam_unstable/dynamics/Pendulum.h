@@ -20,6 +20,10 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 
@@ -31,6 +35,7 @@ namespace gtsam {
  *    - For explicit Euler method:  q_{k+1} = q_k + h*v_k
  *    - For implicit Euler method:  q_{k+1} = q_k + h*v_{k+1}
  *    - For sympletic Euler method: q_{k+1} = q_k + h*v_{k+1}
+ * @deprecated This experimental dynamics factor has no maintained replacement.
  */
 class PendulumFactor1
     : public NoiseModelFactorT<Vector1, double, double, double> {
@@ -80,6 +85,7 @@ public:
  *    - For explicit Euler method:  v_{k+1} = v_k - h*g/L*sin(q_k)
  *    - For implicit Euler method:  v_{k+1} = v_k - h*g/L*sin(q_{k+1})
  *    - For sympletic Euler method: v_{k+1} = v_k - h*g/L*sin(q_k)
+ * @deprecated This experimental dynamics factor has no maintained replacement.
  */
 class PendulumFactor2
     : public NoiseModelFactorT<Vector1, double, double, double> {
@@ -130,6 +136,7 @@ public:
  * This class implements the first position-momentum update rule
  *  \f$ p_k = -D_1 L_d(q_k,q_{k+1},h) = \frac{1}{h}mr^{2}\left(q_{k+1}-q_{k}\right)+mgrh(1-\alpha)\,\sin\left((1-\alpha)q_{k}+\alpha q_{k+1}\right) \f$
  *  \f$ = (1/h)mr^2 (q_{k+1}-q_k) + mgrh(1-alpha) sin ((1-alpha)q_k+\alpha q_{k+1}) \f$
+ * @deprecated This experimental dynamics factor has no maintained replacement.
  */
 class PendulumFactorPk
     : public NoiseModelFactorT<Vector1, double, double, double> {
@@ -190,6 +197,7 @@ public:
  * This class implements the second position-momentum update rule
  *  \f$ p_k1 = D_2 L_d(q_k,q_{k+1},h) = \frac{1}{h}mr^{2}\left(q_{k+1}-q_{k}\right)-mgrh\alpha\sin\left((1-\alpha)q_{k}+\alpha q_{k+1}\right) \f$
  *  \f$ = (1/h)mr^2 (q_{k+1}-q_k) - mgrh alpha sin ((1-alpha)q_k+\alpha q_{k+1}) \f$
+ * @deprecated This experimental dynamics factor has no maintained replacement.
  */
 class PendulumFactorPk1
     : public NoiseModelFactorT<Vector1, double, double, double> {
@@ -246,3 +254,5 @@ public:
 }; // \PendulumFactorPk1
 
 }
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

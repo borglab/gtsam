@@ -277,11 +277,25 @@ class TestInterfaceParser(unittest.TestCase):
         self.assertEqual("f", ret.name)
         self.assertEqual(0, len(ret.args))
         self.assertTrue(not ret.is_const)
+        self.assertFalse(ret.force_pybind_lambda)
 
-        ret = Method.rule.parse_string("int f() const;")[0]
+        ret = Method.rule.parse_string(
+            "@pybind_lambda int f() const;")[0]
         self.assertEqual("f", ret.name)
         self.assertEqual(0, len(ret.args))
         self.assertTrue(ret.is_const)
+        self.assertTrue(ret.force_pybind_lambda)
+
+        ret = Method.rule.parse_string("""
+            template<T={double}>
+            @pybind_lambda
+            T convert(T value) const;
+        """)[0]
+        self.assertTrue(ret.force_pybind_lambda)
+        self.assertEqual("convert", ret.name)
+        self.assertEqual("<T>", repr(ret.template))
+        self.assertEqual("double",
+                         ret.template.instantiations[0][0].name)
 
         ret = Method.rule.parse_string(
             "int f(const int x, const Class& c, Class* t) const;")[0]
@@ -300,11 +314,13 @@ class TestInterfaceParser(unittest.TestCase):
         ret = StaticMethod.rule.parse_string("static int f();")[0]
         self.assertEqual("f", ret.name)
         self.assertEqual(0, len(ret.args))
+        self.assertFalse(ret.force_pybind_lambda)
 
         ret = StaticMethod.rule.parse_string(
-            "static int f(const int x, const Class& c, Class* t);")[0]
+            "@pybind_lambda static int f(const int x, const Class& c, Class* t);")[0]
         self.assertEqual("f", ret.name)
         self.assertEqual(3, len(ret.args))
+        self.assertTrue(ret.force_pybind_lambda)
 
     def test_constructor(self):
         """Test for class constructor."""
@@ -553,6 +569,15 @@ class TestInterfaceParser(unittest.TestCase):
         self.assertEqual("localToWorld", func.name)
         self.assertEqual("Values", func.return_type.type1.typename.name)
         self.assertEqual(3, len(func.args))
+        self.assertFalse(func.force_pybind_lambda)
+
+        func = GlobalFunction.rule.parse_string("""
+        template<T={int}>
+        @pybind_lambda
+        T adapt(T value);
+        """)[0]
+        self.assertEqual("adapt", func.name)
+        self.assertTrue(func.force_pybind_lambda)
 
     def test_global_variable(self):
         """Test for global variable."""

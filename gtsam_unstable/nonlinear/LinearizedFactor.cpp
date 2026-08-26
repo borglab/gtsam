@@ -15,6 +15,10 @@
  * @author Alex Cunningham
  */
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam_unstable/nonlinear/LinearizedFactor.h>
 #include <iostream>
 #include <cassert>
@@ -245,3 +249,5 @@ LinearizedHessianFactor::linearize(const Values& c) const {
 }
 
 } // \namespace aspn
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

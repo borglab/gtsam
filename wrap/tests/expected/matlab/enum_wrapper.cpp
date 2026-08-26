@@ -109,8 +109,8 @@ void Pet_deconstructor_2(int nargout, mxArray *out[], int nargin, const mxArray 
   item = collector_Pet.find(self);
   if(item != collector_Pet.end()) {
     collector_Pet.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void Pet_getColor_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -187,8 +187,8 @@ void gtsamMCU_deconstructor_11(int nargout, mxArray *out[], int nargin, const mx
   item = collector_gtsamMCU.find(self);
   if(item != collector_gtsamMCU.end()) {
     collector_gtsamMCU.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void gtsamOptimizerGaussNewtonParams_collectorInsertAndMakeBase_12(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -221,8 +221,8 @@ void gtsamOptimizerGaussNewtonParams_deconstructor_14(int nargout, mxArray *out[
   item = collector_gtsamOptimizerGaussNewtonParams.find(self);
   if(item != collector_gtsamOptimizerGaussNewtonParams.end()) {
     collector_gtsamOptimizerGaussNewtonParams.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void gtsamOptimizerGaussNewtonParams_getVerbosity_15(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -315,6 +315,7 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       break;
     }
   } catch(const std::exception& e) {
+    std::cout.rdbuf(outbuf);
     mexErrMsgTxt(("Exception from gtsam:\n" + std::string(e.what()) + "\n").c_str());
   }
 

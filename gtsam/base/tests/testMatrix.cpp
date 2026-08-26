@@ -91,7 +91,7 @@ TEST(Matrix, collect1 )
 {
   Matrix A{{-5.0, 3.0}, {00.0, -5.0}};
   Matrix B{{-0.5, 2.1, 1.1}, {3.4, 2.6, 7.1}};
-  Matrix AB = collect(2, &A, &B);
+  Matrix AB = collect(std::vector<const Matrix*>{&A, &B});
   Matrix C(2, 5);
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
@@ -145,7 +145,7 @@ TEST(Matrix, stack )
 {
   Matrix A{{-5.0, 3.0}, {00.0, -5.0}};
   Matrix B{{-0.5, 2.1}, {1.1, 3.4}, {2.6, 7.1}};
-  Matrix AB = gtsam::stack(2, &A, &B);
+  Matrix AB = gtsam::stack(std::vector<Matrix>{A, B});
   Matrix C(5, 2);
   for (int i = 0; i < 2; i++)
     for (int j = 0; j < 2; j++)
@@ -168,7 +168,7 @@ TEST(Matrix, insert_sub )
 {
   Matrix big = Matrix::Zero(5, 6), small{{1.0, 1.0, 1.0}, {1.0, 1.0, 1.0}};
 
-  insertSub(big, small, 1, 2);
+  big.block(1, 2, small.rows(), small.cols()) = small;
 
   Matrix expected{{0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
                   {0.0, 0.0, 1.0, 1.0, 1.0, 0.0},
@@ -241,7 +241,7 @@ TEST(Matrix, scale_columns )
 
   Vector v{{2., 3., 4., 5.}};
 
-  Matrix actual = vector_scale(A, v);
+  Matrix actual = (A.array().rowwise() * v.transpose().array()).matrix();
 
   Matrix expected(3, 4);
   expected(0, 0) = 2.;
@@ -279,7 +279,7 @@ TEST(Matrix, scale_rows )
 
   Vector v = Vector3(2., 3., 4.);
 
-  Matrix actual = vector_scale(v, A);
+  Matrix actual = (A.array().colwise() * v.array()).matrix();
 
   Matrix expected(3, 4);
   expected(0, 0) = 2.;
@@ -317,7 +317,9 @@ TEST(Matrix, scale_rows_mask )
 
   Vector v{{2., std::numeric_limits<double>::infinity(), 4.}};
 
-  Matrix actual = vector_scale(v, A, true);
+  const Vector finiteScales =
+      v.array().isFinite().select(v.array(), 1.0).matrix();
+  Matrix actual = (A.array().colwise() * finiteScales.array()).matrix();
 
   Matrix expected(3, 4);
   expected(0, 0) = 2.;
@@ -564,23 +566,55 @@ TEST(Matrix, backsubtitution )
   Vector expected1 = Vector2(3.6250, -0.75);
   Matrix U22{{2., 3.}, {0., 4.}};
   Vector b1 = U22 * expected1;
-  EXPECT( assert_equal(expected1 , backSubstituteUpper(U22, b1), 0.000001));
+  EXPECT(assert_equal(expected1, U22.triangularView<Eigen::Upper>().solve(b1),
+                      0.000001));
 
   // TEST TWO  3x3 matrix U2*x=b2
   Vector expected2 = Vector3(5.5, -8.5, 5.);
   Matrix U33{{3., 5., 6.}, {0., 2., 3.}, {0., 0., 1.}};
   Vector b2 = U33 * expected2;
-  EXPECT( assert_equal(expected2 , backSubstituteUpper(U33, b2), 0.000001));
+  EXPECT(assert_equal(expected2, U33.triangularView<Eigen::Upper>().solve(b2),
+                      0.000001));
 
   // TEST THREE  Lower triangular 3x3 matrix L3*x=b3
   Vector expected3 = Vector3(1., 1., 1.);
-  Matrix L3 = trans(U33);
+  Matrix L3 = U33.transpose();
   Vector b3 = L3 * expected3;
-  EXPECT( assert_equal(expected3 , backSubstituteLower(L3, b3), 0.000001));
+  EXPECT(assert_equal(expected3, L3.triangularView<Eigen::Lower>().solve(b3),
+                      0.000001));
 
   // TEST FOUR Try the above with transpose backSubstituteUpper
-  EXPECT( assert_equal(expected3 , backSubstituteUpper(b3,U33), 0.000001));
+  EXPECT(assert_equal(
+      expected3,
+      U33.triangularView<Eigen::Upper>().transpose().solve<Eigen::OnTheLeft>(
+          b3),
+      0.000001));
 }
+
+/* ************************************************************************* */
+namespace upper_conditional_fixture {
+
+// Solves R*x = d - S*parents for populated and empty parent vectors.
+TEST(Matrix, SolveUpperConditional) {
+  const Matrix R{{2.0, 1.0}, {0.0, 3.0}};
+  const Matrix S{{1.0}, {-2.0}};
+  const Vector expected{{4.0, -1.0}};
+  const Vector parents{{2.5}};
+  const Vector d = R * expected + S * parents;
+
+  Vector actual;
+  internal::solveUpperConditional(R, S, d, parents, &actual);
+  EXPECT(assert_equal(expected, actual, 1e-12));
+
+  const Matrix emptyS(2, 0);
+  const Vector emptyParents;
+  internal::solveUpperConditional(R, emptyS, R * expected, emptyParents,
+                                  &actual);
+  EXPECT(assert_equal(expected, actual, 1e-12));
+}
+
+}  // namespace upper_conditional_fixture
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 TEST(Matrix, householder )
@@ -702,7 +736,7 @@ TEST(Matrix, trans )
 {
   Matrix A{{1.0, 3.0}, {2.0, 4.0}};
   Matrix B{{1.0, 2.0}, {3.0, 4.0}};
-  EQUALITY(trans(A),B);
+  EQUALITY(Matrix(A.transpose()), B);
 }
 
 /* ************************************************************************* */
@@ -804,16 +838,18 @@ Matrix expected{{0.295668226226627, 0.000000000000000, 0.000000000000000, 0.0000
 }  // namespace cholesky
 TEST(Matrix, LLt )
 {
-  EQUALITY(cholesky::expected, LLt(cholesky::M));
+  EQUALITY(cholesky::expected, Matrix(cholesky::M.llt().matrixL()));
 }
 TEST(Matrix, RtR )
 {
-  EQUALITY(cholesky::expected.transpose(), RtR(cholesky::M));
+  EQUALITY(cholesky::expected.transpose(), Matrix(cholesky::M.llt().matrixU()));
 }
 
 TEST(Matrix, cholesky_inverse )
 {
-  EQUALITY(cholesky::M.inverse(), cholesky_inverse(cholesky::M));
+  EQUALITY(Matrix(cholesky::M.inverse()),
+           Matrix(cholesky::M.llt().solve(
+               Matrix::Identity(cholesky::M.rows(), cholesky::M.cols()))));
 }
 
 /* ************************************************************************* */
@@ -844,20 +880,20 @@ TEST(Matrix, linear_dependent3 )
 TEST(Matrix, svd1 )
 {
   Vector v = Vector3(2., 1., 0.);
-  Matrix U1 = Matrix::Identity(4, 3), S1 = v.asDiagonal(), V1 = I_3x3, A = (U1 * S1)
-      * Matrix(trans(V1));
+  Matrix U1 = Matrix::Identity(4, 3), S1 = v.asDiagonal(), V1 = I_3x3,
+         A = (U1 * S1) * V1.transpose();
   Matrix U, V;
   Vector s;
   svd(A, U, s, V);
   Matrix S = s.asDiagonal();
-  EXPECT(assert_equal(U*S*Matrix(trans(V)),A));
+  EXPECT(assert_equal(U * S * V.transpose(), A));
   EXPECT(assert_equal(S,S1));
 }
 
 /* ************************************************************************* */
 /// Sample A matrix for SVD
 static Matrix sampleA{{0., -2.}, {0., 0.}, {3., 0.}};
-static Matrix sampleAt = trans(sampleA);
+static Matrix sampleAt = sampleA.transpose();
 
 /* ************************************************************************* */
 TEST(Matrix, svd2 )
@@ -902,7 +938,7 @@ TEST(Matrix, svd3 )
 
   Matrix S = s.asDiagonal();
   Matrix t = U * S;
-  Matrix Vt = trans(V);
+  Matrix Vt = V.transpose();
 
   EXPECT(assert_equal(sampleAt, t * Vt));
   EXPECT(assert_equal(expectedU,U));
@@ -944,7 +980,7 @@ TEST(Matrix, svd4 )
     V.col(1) = -V.col(1);
   }
 
-  Matrix reconstructed = U * s.asDiagonal() * trans(V);
+  Matrix reconstructed = U * s.asDiagonal() * V.transpose();
 
   EXPECT(assert_equal(A, reconstructed, 1e-4));
   EXPECT(assert_equal(expectedU,U, 1e-3));
@@ -1023,6 +1059,59 @@ TEST(Matrix, MatrixRef) {
   EXPECT(assert_equal(A, std::cref(A)));
   EXPECT(!assert_equal(A, std::cref(B)));
 }
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+// Verifies that Matrix helpers deprecated in 4.3 preserve their Eigen
+// replacement semantics while compatibility is enabled.
+TEST(Matrix, DeprecatedEigenWrappers) {
+  const Matrix A{{1.0, 2.0}, {3.0, 4.0}};
+  const Matrix B{{5.0, 6.0}, {7.0, 8.0}};
+  EQUALITY(Matrix(A.transpose()), trans(A));
+
+  Matrix full = Matrix::Zero(3, 3);
+  const Matrix sub{{1.0, 2.0}, {3.0, 4.0}};
+  insertSub(full, sub, 1, 1);
+  Matrix expectedFull = Matrix::Zero(3, 3);
+  expectedFull.block(1, 1, 2, 2) = sub;
+  EQUALITY(expectedFull, full);
+
+  const Matrix U{{2.0, 1.0}, {0.0, 3.0}};
+  const Vector expected{{4.0, -1.0}};
+  const Vector upperRhs = U * expected;
+  const Vector lowerRhs = U.transpose() * expected;
+  EXPECT(assert_equal(expected, backSubstituteUpper(U, upperRhs)));
+  EXPECT(assert_equal(expected, backSubstituteLower(U.transpose(), lowerRhs)));
+  EXPECT(assert_equal(expected, backSubstituteUpper(lowerRhs, U)));
+
+  const Vector scales{{2.0, 3.0}};
+  const Matrix expectedRows = (A.array().colwise() * scales.array()).matrix();
+  const Matrix expectedColumns =
+      (A.array().rowwise() * scales.transpose().array()).matrix();
+  EQUALITY(expectedRows, vector_scale(scales, A));
+  EQUALITY(expectedColumns, vector_scale(A, scales));
+  Matrix inPlace = A;
+  vector_scale_inplace(scales, inPlace);
+  EQUALITY(expectedRows, inPlace);
+
+  const Vector maskedScales{{2.0, std::numeric_limits<double>::infinity()}};
+  Matrix masked = A;
+  vector_scale_inplace(maskedScales, masked, true);
+  Matrix expectedMasked = A;
+  expectedMasked.row(0) *= 2.0;
+  EQUALITY(expectedMasked, masked);
+
+  const Matrix positiveDefinite{{4.0, 1.0}, {1.0, 3.0}};
+  EQUALITY(Matrix(positiveDefinite.llt().matrixL()), LLt(positiveDefinite));
+  EQUALITY(Matrix(positiveDefinite.llt().matrixU()), RtR(positiveDefinite));
+  EQUALITY(Matrix(positiveDefinite.llt().solve(Matrix::Identity(2, 2))),
+           cholesky_inverse(positiveDefinite));
+  EQUALITY(Vector(positiveDefinite.colwise().squaredNorm().transpose()),
+           columnNormSquare(positiveDefinite));
+
+  EQUALITY(gtsam::stack(std::vector<Matrix>{A, B}), gtsam::stack(2, &A, &B));
+  EQUALITY(collect(std::vector<const Matrix*>{&A, &B}), collect(2, &A, &B));
+}
+#endif
 
 /* ************************************************************************* */
 int main() {

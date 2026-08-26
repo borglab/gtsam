@@ -38,6 +38,28 @@ class TestPreintegratedImuMeasurements(GtsamTestCase):
         )
         np.testing.assert_allclose(pim.preintegrated(), expected, atol=1e-12)
 
+    def test_residual_covariance_accessors(self):
+        """Standard and combined PIMs expose residual-chart covariance."""
+        params = gtsam.PreintegrationParams.MakeSharedD(9.81)
+        combined_params = gtsam.PreintegrationCombinedParams.MakeSharedD(9.81)
+        pims = (
+            (gtsam.PreintegratedImuMeasurements(params), (9, 9)),
+            (gtsam.PreintegratedCombinedMeasurements(combined_params),
+             (15, 15)),
+        )
+
+        for pim, expected_shape in pims:
+            for _ in range(10):
+                pim.integrateMeasurement(
+                    np.array([0.3, -0.2, 9.7]),
+                    np.array([0.15, -0.1, 1.0]),
+                    0.02,
+                )
+
+            covariance = pim.residualCovariance()
+            self.assertEqual(expected_shape, covariance.shape)
+            np.testing.assert_allclose(covariance, covariance.T, atol=1e-12)
+
     def _deskew_pims(self):
         """Create standard and combined PIMs with the same yaw trajectory."""
         yaw_rate, duration = 0.4, 2.0

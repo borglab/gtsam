@@ -39,14 +39,20 @@ namespace py = pybind11;
 
 {submodules}
 
-{module_def} {{
-    m_.doc() = "pybind11 wrapper of {module_name}";
+{declaration_module_def} {{
+{wrapped_declarations}
+}}
 
+{binding_module_def} {{
 // Specializations for STL classes
 #include "python/gtsam/specializations/{module_name}.h"
 
-{submodules_init}
+{wrapped_bindings}
+}}
 
-{wrapped_namespace}
+{module_def} {{
+    m_.doc() = "pybind11 wrapper of {module_name}";
+
+{module_init}
 
 }}

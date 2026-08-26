@@ -163,7 +163,6 @@ class ForestTraversal {
   template <typename Fn>
   void runBottomUp(Fn fn, int parallelThreshold = 10,
                    size_t leafAggregationProblemSize = 0) {
-    (void)leafAggregationProblemSize;
     const auto& roots = getRoots();
     if (roots.empty()) return;
     // Create shared traversal state and run from all roots.
@@ -171,7 +170,13 @@ class ForestTraversal {
     state.runTraversal([&]() {
       for (const auto& root : roots) {
         assert(root);
-        Frame<Fn> frame{&scheduler_, *root, 0, fn, parallelThreshold, &state};
+        Frame<Fn> frame{&scheduler_,
+                        *root,
+                        0,
+                        fn,
+                        parallelThreshold,
+                        &state,
+                        leafAggregationProblemSize};
         frame.bottomUpAsync([] {});
       }
     });
@@ -267,6 +272,7 @@ class ForestTraversal {
     const Fn& fn;
     int threshold;
     State* state;
+    size_t leafAggregationProblemSize = 0;
 
     /// Return node children via method or field.
     auto& getChildren() const {
@@ -333,22 +339,123 @@ class ForestTraversal {
       auto&& children = getChildren();
       if (children.empty()) {
         completeBottomUpNode(onDone);
-      } else {
-        auto remaining = std::make_shared<std::atomic<int> >(
-            static_cast<int>(children.size()));
-        std::function<void()> childDone = [frame = *this, remaining,
-                                           onDone]() mutable {
-          if (remaining->fetch_sub(1, std::memory_order_relaxed) == 1) {
-            frame.completeBottomUpNode(onDone);
-          }
-        };
+        return;
+      }
+      if (leafAggregationProblemSize == 0) {
+        bottomUpUnaggregated(children, onDone);
+        return;
+      }
 
-        for (const auto& child : children) {
-          assert(child);
-          Frame childFrame{scheduler, *child, depth + 1, fn, threshold, state};
+      // The sentinel prevents inline child completions from finishing this
+      // node before every sibling unit has been dispatched.
+      auto remaining = std::make_shared<std::atomic<int> >(1);
+      std::function<void()> childDone = [frame = *this, remaining,
+                                         onDone]() mutable {
+        if (remaining->fetch_sub(1, std::memory_order_relaxed) == 1) {
+          frame.completeBottomUpNode(onDone);
+        }
+      };
+
+      for (size_t begin = 0; begin < children.size();) {
+        const auto& child = children[begin];
+        assert(child);
+        Frame childFrame{scheduler,
+                         *child,
+                         depth + 1,
+                         fn,
+                         threshold,
+                         state,
+                         leafAggregationProblemSize};
+        const size_t end = childFrame.getChildren().empty()
+                               ? leafBatchEnd(children, begin)
+                               : begin + 1;
+
+        remaining->fetch_add(1, std::memory_order_relaxed);
+        if (end > begin + 1) {
+          scheduleLeafBatch(begin, end, childDone);
+        } else {
           childFrame.bottomUpAsync(childDone);
         }
+        begin = end;
       }
+
+      childDone();  // Release the dispatch sentinel.
+    }
+
+    /// Preserve one continuation per child when aggregation is disabled.
+    template <typename Children>
+    void bottomUpUnaggregated(Children& children, const DoneFn& onDone) const {
+      auto remaining = std::make_shared<std::atomic<int> >(
+          static_cast<int>(children.size()));
+      std::function<void()> childDone = [frame = *this, remaining,
+                                         onDone]() mutable {
+        if (remaining->fetch_sub(1, std::memory_order_relaxed) == 1) {
+          frame.completeBottomUpNode(onDone);
+        }
+      };
+
+      for (const auto& child : children) {
+        assert(child);
+        Frame childFrame{scheduler, *child, depth + 1, fn, threshold, state, 0};
+        childFrame.bottomUpAsync(childDone);
+      }
+    }
+
+    /// Return the exclusive end of one size-bounded adjacent-leaf batch.
+    template <typename Children>
+    size_t leafBatchEnd(const Children& children, size_t begin) const {
+      size_t end = begin;
+      size_t batchProblemSize = 0;
+      while (end < children.size()) {
+        const auto& child = children[end];
+        assert(child);
+        Frame childFrame{scheduler,
+                         *child,
+                         depth + 1,
+                         fn,
+                         threshold,
+                         state,
+                         leafAggregationProblemSize};
+        if (!childFrame.getChildren().empty()) break;
+
+        const int childProblemSize = child->problemSize();
+        const size_t contribution =
+            childProblemSize > 0 ? static_cast<size_t>(childProblemSize) : 1;
+        if (end > begin &&
+            batchProblemSize + contribution > leafAggregationProblemSize) {
+          break;
+        }
+        batchProblemSize += contribution;
+        ++end;
+      }
+      return end;
+    }
+
+    /// Visit one adjacent range of sibling leaves in a single scheduler task.
+    void scheduleLeafBatch(size_t begin, size_t end,
+                           const DoneFn& onDone) const {
+      auto task = [frame = *this, begin, end, onDone]() mutable {
+        MaybeFinish finish{frame.state};
+        if (!frame.state->hasException.load(std::memory_order_acquire)) {
+          try {
+            auto&& children = frame.getChildren();
+            for (size_t index = begin; index < end; ++index) {
+              if (frame.state->hasException.load(std::memory_order_acquire)) {
+                break;
+              }
+              const auto& child = children[index];
+              assert(child);
+              std::invoke(frame.fn, *child);
+            }
+          } catch (...) {
+            frame.state->recordException(std::current_exception());
+          }
+        }
+        frame.callOnDone(onDone);
+      };
+
+      state->incrementPending();
+      scheduler->enqueueOrRunInline(std::function<void()>(std::move(task)));
     }
 
     /// Execute node work after children; schedule if above threshold.

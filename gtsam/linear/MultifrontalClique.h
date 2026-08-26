@@ -166,7 +166,7 @@ class GTSAM_EXPORT MultifrontalClique {
   /// @name Read-only methods
   /// @{
 
-  /// Get the cached problem size for traversal scheduling.
+  /// Return the clique dimension used for traversal scheduling.
   int problemSize() const {
     return static_cast<int>(frontalDim + separatorDim);
   }
@@ -365,6 +365,17 @@ class GTSAM_EXPORT MultifrontalClique {
   /// contribution.
   void updateParentInfo(SymmetricBlockMatrix& parentInfo) const;
 
+  /// Accumulate one ordinary separator block into its owned parent column.
+  void updateParentMaterializedColumn(SymmetricBlockMatrix& parentInfo,
+                                      DenseIndex sourceSeparatorBlock) const;
+
+  /// Accumulate one QR separator block into narrow owned-column scratch.
+  void updateParentQrColumnScratch(DenseIndex sourceSeparatorBlock,
+                                   Matrix* scratch) const;
+
+  /// Return the augmented-RHS diagonal from a column-owned child update.
+  double parentRhsDiagonal() const;
+
   /// Update a separator-local information matrix without parent scattering.
   void updateSeparatorInfo(SymmetricBlockMatrix& separatorInfo) const;
 
@@ -382,6 +393,12 @@ class GTSAM_EXPORT MultifrontalClique {
                            const std::vector<DenseIndex>& targetIndices,
                            const std::vector<DenseIndex>& targetScalarOffsets,
                            bool useParentMappedSlots) const;
+
+  /// Dispatch one Cholesky representation into a mapped destination.
+  void updateCholeskyInfo(SymmetricBlockMatrix& targetInfo,
+                          const std::vector<DenseIndex>& targetIndices,
+                          const std::vector<DenseIndex>& targetBlockOffsets,
+                          bool useParentMappedSlots) const;
 
   /// Add the original separator normal equations directly into the parent.
   void updateDirectFactors(SymmetricBlockMatrix& targetInfo,
@@ -456,6 +473,8 @@ class GTSAM_EXPORT MultifrontalClique {
   std::vector<DenseIndex>
       parentScalarOffsets_;  ///< Cached scalar offsets for parent blocks.
   std::vector<DenseIndex> separatorIndices_;  ///< Identity separator mapping.
+  std::vector<DenseIndex>
+      separatorScalarOffsets_;  ///< Cached separator-local scalar offsets.
   SolveMode solveMode_ = SolveMode::Cholesky;
   SolveMode starFallbackMode_ = SolveMode::Cholesky;
   /// Whether one automatic-QR star awaits inspection of its sole factor.
@@ -469,11 +488,15 @@ class GTSAM_EXPORT MultifrontalClique {
   std::vector<SymmetricBlockMatrix> sameSeparatorInfos_;
   std::vector<uint8_t> childInSameSeparatorGroup_;
 
+  struct ParentGatherPlan;
+  // Built after deferred modes resolve and reused across numerical reloads.
+  std::shared_ptr<ParentGatherPlan> parentGatherPlan_;
+
   // Lazily allocated after load-plan construction. Direct batch factors need
   // no rows; QR additionally reserves frontal damping rows.
   VerticalBlockMatrix Ab_;
 
-  // mutable as temporarily updateParentInfo
+  // Cached factorization storage reused by parent updates and result exports.
   mutable VerticalBlockMatrix RSd_;  ///< Cached [R S d] from elimination.
   mutable SymmetricBlockMatrix info_;
 

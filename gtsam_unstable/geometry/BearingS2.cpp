@@ -5,6 +5,10 @@
  * @author Alex Cunningham
  */
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/base/Vector.h>
 #include <gtsam_unstable/geometry/BearingS2.h>
 
@@ -73,3 +77,5 @@ Vector BearingS2::localCoordinates(const BearingS2& x) const {
 }
 
 } // \namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

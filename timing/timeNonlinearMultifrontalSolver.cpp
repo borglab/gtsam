@@ -16,7 +16,7 @@
  * @date    January 2026
  */
 
-#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearMultifrontalSolver.h>
 
 #include <iomanip>

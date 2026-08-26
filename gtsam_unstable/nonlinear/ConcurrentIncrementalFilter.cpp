@@ -45,6 +45,19 @@ bool ConcurrentIncrementalFilter::equals(const ConcurrentFilter& rhs, double tol
 ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const NonlinearFactorGraph& newFactors, const Values& newTheta,
     const std::optional<FastList<Key> >& keysToMove, const std::optional< FactorIndices >& removeFactorIndices) {
 
+  ISAM2UpdateParams updateParams;
+  if(removeFactorIndices) {
+    updateParams.removeFactorIndices = *removeFactorIndices;
+  }
+  return update(newFactors, newTheta, updateParams, keysToMove);
+}
+
+/* ************************************************************************* */
+ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(
+    const NonlinearFactorGraph& newFactors, const Values& newTheta,
+    const ISAM2UpdateParams& updateParams,
+    const std::optional<FastList<Key> >& keysToMove) {
+
   gttic(update);
 
 //  const bool debug = ISDEBUG("ConcurrentIncrementalFilter update");
@@ -55,12 +68,8 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
   // Create the return result meta-data
   Result result;
 
-  // We do not need to remove any factors at this time
-  FactorIndices removedFactors;
-
-  if(removeFactorIndices){
-    removedFactors.insert(removedFactors.end(), removeFactorIndices->begin(), removeFactorIndices->end());
-  }
+  // Copy the caller's parameters so filter-specific update controls can be merged in.
+  ISAM2UpdateParams mergedUpdateParams = updateParams;
 
   // Generate ordering constraints that force the 'keys to move' to the end
   std::optional<FastMap<Key,int> > orderingConstraints = {};
@@ -82,11 +91,15 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
     for(Key key: *keysToMove){
       orderingConstraints->operator[](key) = 0;
     }
-  }
 
-  // Create the set of linear keys that iSAM2 should hold constant
-  // iSAM2 takes care of this for us; no need to specify additional noRelin keys
-  std::optional<FastList<Key> > noRelinKeys = {};
+    if(!mergedUpdateParams.constrainedKeys) {
+      mergedUpdateParams.constrainedKeys = orderingConstraints;
+    } else {
+      for(const auto& keyAndGroup: *orderingConstraints) {
+        mergedUpdateParams.constrainedKeys->operator[](keyAndGroup.first) = keyAndGroup.second;
+      }
+    }
+  }
 
   // Mark additional keys between the 'keys to move' and the leaves
   std::optional<FastList<Key> > additionalKeys = {};
@@ -106,11 +119,18 @@ ConcurrentIncrementalFilter::Result ConcurrentIncrementalFilter::update(const No
       }
     }
     additionalKeys = FastList<Key>(markedKeys.begin(), markedKeys.end());
+
+    if(!mergedUpdateParams.extraReelimKeys) {
+      mergedUpdateParams.extraReelimKeys = additionalKeys;
+    } else {
+      mergedUpdateParams.extraReelimKeys->insert(
+          mergedUpdateParams.extraReelimKeys->end(), additionalKeys->begin(), additionalKeys->end());
+    }
   }
 
   // Update the system using iSAM2
   gttic(isam2);
-  ISAM2Result isam2Result = isam2_.update(newFactors, newTheta, removedFactors, orderingConstraints, noRelinKeys, additionalKeys);
+  ISAM2Result isam2Result = isam2_.update(newFactors, newTheta, mergedUpdateParams);
   gttoc(isam2);
 
   if(keysToMove && keysToMove->size() > 0) {

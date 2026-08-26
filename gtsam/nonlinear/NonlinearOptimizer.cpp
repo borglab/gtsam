@@ -26,6 +26,7 @@
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/linear/internal/CholmodSolver.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/symbolic/IndexedJunctionTree.h>
 
@@ -180,6 +181,14 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
       throw std::runtime_error(
           "NonlinearOptimizer::solve: special cg parameter type is not handled in LM solver ...");
     }
+  } else if (params.isCholmod()) {
+    if (!params.ordering) {
+      throw std::runtime_error("CHOLMOD requires a variable ordering");
+    }
+    if (!cholmodSolver_) {
+      cholmodSolver_ = std::make_unique<internal::CholmodSolver>();
+    }
+    delta = cholmodSolver_->solve(gfg, *params.ordering);
   } else {
     throw std::runtime_error("NonlinearOptimizer::solve: Optimization parameter is invalid");
   }

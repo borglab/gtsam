@@ -5,23 +5,31 @@
  * @author Chris Beall
  */
 
+#include <gtsam/config.h>
+#include <CppUnitLite/TestHarness.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include "../AHRS.h"
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/Testable.h>
-#include <CppUnitLite/TestHarness.h>
 #include <list>
 
 using namespace std;
 using namespace gtsam;
 
 // stationary interval of gyro U and acc F
-Matrix stationaryU = trans(Matrix{{-0.0004, -0.0002, -0.0014},
-                                  {0.0006, -0.0003, 0.0007},
-                                  {0.0006, -0.0002, -0.0003}});
-Matrix stationaryF = trans(Matrix{{0.1152, -0.0188, 9.7419},
-                                  {-0.0163, 0.0146, 9.7753},
-                                  {-0.0283, -0.0428, 9.9021}});
+Matrix stationaryU = Matrix{
+    {-0.0004, -0.0002, -0.0014},
+    {0.0006, -0.0003, 0.0007},
+    {0.0006, -0.0002,
+     -0.0003}}.transpose();
+Matrix stationaryF = Matrix{
+    {0.1152, -0.0188, 9.7419},
+    {-0.0163, 0.0146, 9.7753},
+    {-0.0283, -0.0428,
+     9.9021}}.transpose();
 double g_e = 9.7963; // Atlanta
 
 /* ************************************************************************* */
@@ -34,7 +42,7 @@ TEST (AHRS, cov) {
            {9.0, 4.0, 7.0},
            {6.0, 3.0, 2.0}};
 
-  Matrix actual = AHRS::Cov(trans(A));
+  Matrix actual = AHRS::Cov(A.transpose());
   Matrix expected{{10.9167, 2.3333, 5.0000},
                   {2.3333, 4.6667, -2.6667},
                   {5.0000, -2.6667, 8.6667}};
@@ -90,9 +98,10 @@ TEST (AHRS, init) {
 }
 */
 /* ************************************************************************* */
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

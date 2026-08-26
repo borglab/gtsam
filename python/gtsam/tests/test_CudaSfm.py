@@ -129,9 +129,21 @@ class TestSfm(unittest.TestCase):
     def test_cuda_sfm_params_are_wrapped(self):
         params = cuda.SfmLevenbergMarquardtParams.ceresDefaults()
         params.setLinearSolver(cuda.LinearSolverType.DenseCholesky)
+        params.setEliminationMode(gtsam.SfmEliminationMode.Schur)
 
         self.assertEqual(cuda.LinearSolverType.DenseCholesky,
                          params.getLinearSolver())
+        self.assertEqual(gtsam.SfmEliminationMode.Schur,
+                         params.getEliminationMode())
+
+    def test_cuda_full_mode_is_exposed_but_reserved(self):
+        data = _make_zero_error_sfm_data()
+        params = cuda.SfmLevenbergMarquardtParams()
+        params.setEliminationMode(gtsam.SfmEliminationMode.Full)
+        with self.assertRaisesRegex(
+                (ValueError, RuntimeError),
+                "Full elimination mode is not implemented"):
+            cuda.optimizeSfm(data, params)
 
     def test_optimize_cuda_sfm_runs_from_python(self):
         data = _make_zero_error_sfm_data()

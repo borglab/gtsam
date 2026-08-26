@@ -14,6 +14,7 @@ It includes classes for representing constraints, building constrained problems,
 ## Equality Constraints
 
 - [`NonlinearEqualityConstraint`](doc/NonlinearEqualityConstraint.ipynb): Base class for constraints of the form `h(x) = 0`.
+- [`NonlinearEquality`](doc/NonlinearEquality.ipynb): Pins a variable to a constant value or enforces equality between two variables.
 - [`ExpressionEqualityConstraint<T>`](doc/NonlinearEqualityConstraint.ipynb): Equality constraint from an expression and right-hand side.
 - [`ZeroCostConstraint`](doc/NonlinearEqualityConstraint.ipynb): Equality constraint that enforces zero residual on a cost factor.
 - [`NonlinearEqualityConstraints`](doc/NonlinearEqualityConstraint.ipynb): Container graph for equality constraints.
@@ -21,6 +22,7 @@ It includes classes for representing constraints, building constrained problems,
 ## Inequality Constraints
 
 - [`NonlinearInequalityConstraint`](doc/NonlinearInequalityConstraint.ipynb): Base class for constraints of the form `g(x) <= 0`.
+- [`BoundingConstraint`](https://github.com/borglab/gtsam/blob/develop/gtsam/constrained/BoundingConstraint.h): Base classes for unary and binary scalar bound constraints.
 - [`ScalarExpressionInequalityConstraint`](doc/NonlinearInequalityConstraint.ipynb): Scalar expression-based inequality constraint.
 - [`NonlinearInequalityConstraints`](doc/NonlinearInequalityConstraint.ipynb): Container graph for inequality constraints.
 - [`InequalityPenaltyFunction`](doc/InequalityPenaltyFunction.ipynb): Interface for ramp-like penalty mappings used with inequality constraints.

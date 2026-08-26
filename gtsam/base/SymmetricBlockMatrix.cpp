@@ -11,7 +11,8 @@
 
 /**
  * @file    SymmetricBlockMatrix.cpp
- * @brief   Access to matrices via blocks of pre-defined sizes.  Used in GaussianFactor and GaussianConditional.
+ * @brief   Access to matrices via blocks of pre-defined sizes.  Used in
+ * GaussianFactor and GaussianConditional.
  * @author  Richard Roberts
  * @date    Sep 18, 2010
  */
@@ -38,8 +39,9 @@ SymmetricBlockMatrix SymmetricBlockMatrix::LikeActiveViewOf(
   SymmetricBlockMatrix result;
   result.variableColOffsets_.resize(other.nBlocks() + 1);
   for (size_t i = 0; i < result.variableColOffsets_.size(); ++i)
-    result.variableColOffsets_[i] = other.variableColOffsets_[other.blockStart_
-        + i] - other.variableColOffsets_[other.blockStart_];
+    result.variableColOffsets_[i] =
+        other.variableColOffsets_[other.blockStart_ + i] -
+        other.variableColOffsets_[other.blockStart_];
   result.matrix_.resize(other.cols(), other.cols());
   result.assertInvariants();
   return result;
@@ -51,8 +53,9 @@ SymmetricBlockMatrix SymmetricBlockMatrix::LikeActiveViewOf(
   SymmetricBlockMatrix result;
   result.variableColOffsets_.resize(other.nBlocks() + 1);
   for (size_t i = 0; i < result.variableColOffsets_.size(); ++i)
-    result.variableColOffsets_[i] = other.variableColOffsets_[other.blockStart_
-        + i] - other.variableColOffsets_[other.blockStart_];
+    result.variableColOffsets_[i] =
+        other.variableColOffsets_[other.blockStart_ + i] -
+        other.variableColOffsets_[other.blockStart_];
   result.matrix_.resize(other.cols(), other.cols());
   result.assertInvariants();
   return result;
@@ -143,16 +146,26 @@ void SymmetricBlockMatrix::updateFromMappedBlocks(
     const SymmetricBlockMatrix& other,
     const std::vector<DenseIndex>& blockIndices,
     const std::vector<DenseIndex>& scalarOffsets) {
-  assert(static_cast<DenseIndex>(blockIndices.size()) == other.nBlocks());
+  updateFromMappedBlocks(other, 0, blockIndices, scalarOffsets);
+}
+
+/* ************************************************************************* */
+void SymmetricBlockMatrix::updateFromMappedBlocks(
+    const SymmetricBlockMatrix& other, DenseIndex sourceBlockStart,
+    const std::vector<DenseIndex>& blockIndices,
+    const std::vector<DenseIndex>& scalarOffsets) {
+  assert(sourceBlockStart >= 0);
+  assert(sourceBlockStart + static_cast<DenseIndex>(blockIndices.size()) <=
+         other.nBlocks());
   assert(scalarOffsets.size() == blockIndices.size());
-  const DenseIndex otherBlocks = other.nBlocks();
+  const DenseIndex otherBlocks = static_cast<DenseIndex>(blockIndices.size());
   for (DenseIndex i = 0; i < otherBlocks; ++i) {
     const DenseIndex I = blockIndices[i];
     if (I < 0) continue;
     assert(I < nBlocks());
     const DenseIndex offsetI = scalarOffsets[i];
     assert(offsetI == blockScalarOffset(I));
-    updateDiagonalBlockAt(offsetI, other.diagonalBlock(i));
+    updateDiagonalBlockAt(offsetI, other.diagonalBlock(sourceBlockStart + i));
     for (DenseIndex j = i + 1; j < otherBlocks; ++j) {
       const DenseIndex J = blockIndices[j];
       if (J < 0) continue;
@@ -160,11 +173,71 @@ void SymmetricBlockMatrix::updateFromMappedBlocks(
       const DenseIndex offsetJ = scalarOffsets[j];
       assert(offsetJ == blockScalarOffset(J));
       if (I < J) {
-        updateOffDiagonalBlockAt(offsetI, offsetJ,
-                                 other.aboveDiagonalBlock(i, j));
+        updateOffDiagonalBlockAt(
+            offsetI, offsetJ,
+            other.aboveDiagonalBlock(sourceBlockStart + i,
+                                     sourceBlockStart + j));
       } else {
-        updateOffDiagonalBlockAt(offsetJ, offsetI,
-                                 other.aboveDiagonalBlock(i, j).transpose());
+        updateOffDiagonalBlockAt(
+            offsetJ, offsetI,
+            other.aboveDiagonalBlock(sourceBlockStart + i, sourceBlockStart + j)
+                .transpose());
+      }
+    }
+  }
+}
+
+/* ************************************************************************* */
+void SymmetricBlockMatrix::updateFromMappedBlockColumn(
+    const SymmetricBlockMatrix& other, DenseIndex sourceBlockStart,
+    DenseIndex ownedSourceBlock, const std::vector<DenseIndex>& blockIndices,
+    const std::vector<DenseIndex>& scalarOffsets, bool ownLastCrossBlock) {
+  assert(sourceBlockStart >= 0 && ownedSourceBlock >= 0);
+  assert(sourceBlockStart + static_cast<DenseIndex>(blockIndices.size()) <=
+         other.nBlocks());
+  assert(scalarOffsets.size() == blockIndices.size());
+  const DenseIndex mappedBlocks = static_cast<DenseIndex>(blockIndices.size());
+  assert(ownedSourceBlock < mappedBlocks);
+  const DenseIndex ownedTarget = blockIndices[ownedSourceBlock];
+  assert(ownedTarget >= 0 && ownedTarget < nBlocks());
+  const DenseIndex ownedOffset = scalarOffsets[ownedSourceBlock];
+  assert(ownedOffset == blockScalarOffset(ownedTarget));
+
+  updateDiagonalBlockAt(
+      ownedOffset, other.diagonalBlock(sourceBlockStart + ownedSourceBlock));
+  const internal::BlockColumnRange ownsColumn{ownedTarget, ownedTarget + 1};
+  for (DenseIndex otherSourceBlock = 0; otherSourceBlock < mappedBlocks;
+       ++otherSourceBlock) {
+    if (otherSourceBlock == ownedSourceBlock) continue;
+    const DenseIndex otherTarget = blockIndices[otherSourceBlock];
+    if (otherTarget < 0) continue;
+    assert(otherTarget < nBlocks());
+    const bool isLastCrossBlock =
+        ownLastCrossBlock && otherSourceBlock == mappedBlocks - 1;
+    if (!isLastCrossBlock && !ownsColumn.owns(ownedTarget, otherTarget)) {
+      continue;
+    }
+    const DenseIndex otherOffset = scalarOffsets[otherSourceBlock];
+    assert(otherOffset == blockScalarOffset(otherTarget));
+    if (otherSourceBlock < ownedSourceBlock) {
+      const auto sourceBlock =
+          other.aboveDiagonalBlock(sourceBlockStart + otherSourceBlock,
+                                   sourceBlockStart + ownedSourceBlock);
+      if (otherTarget < ownedTarget) {
+        updateOffDiagonalBlockAt(otherOffset, ownedOffset, sourceBlock);
+      } else {
+        updateOffDiagonalBlockAt(ownedOffset, otherOffset,
+                                 sourceBlock.transpose());
+      }
+    } else {
+      const auto sourceBlock =
+          other.aboveDiagonalBlock(sourceBlockStart + ownedSourceBlock,
+                                   sourceBlockStart + otherSourceBlock);
+      if (ownedTarget < otherTarget) {
+        updateOffDiagonalBlockAt(ownedOffset, otherOffset, sourceBlock);
+      } else {
+        updateOffDiagonalBlockAt(otherOffset, ownedOffset,
+                                 sourceBlock.transpose());
       }
     }
   }
@@ -193,5 +266,44 @@ void SymmetricBlockMatrix::updateFromOuterProductBlocks(
 }
 
 /* ************************************************************************* */
+void SymmetricBlockMatrix::updateFromOuterProductBlocks(
+    const VerticalBlockMatrix& other, DenseIndex sourceRowBegin,
+    DenseIndex sourceRowEnd, DenseIndex sourceBlockStart,
+    const std::vector<DenseIndex>& blockIndices,
+    const std::vector<DenseIndex>& scalarOffsets, double alpha) {
+  assert(sourceRowBegin >= 0 && sourceRowBegin <= sourceRowEnd);
+  assert(sourceRowEnd <= other.matrix().rows());
+  assert(sourceBlockStart >= 0);
+  assert(sourceBlockStart + static_cast<DenseIndex>(blockIndices.size()) <=
+         other.nBlocks());
+  assert(scalarOffsets.size() == blockIndices.size());
+  const DenseIndex otherBlocks = static_cast<DenseIndex>(blockIndices.size());
+  for (DenseIndex i = 0; i < otherBlocks; ++i) {
+    const DenseIndex I = blockIndices[i];
+    if (I < 0) continue;
+    assert(I < nBlocks());
+    const DenseIndex offsetI = scalarOffsets[i];
+    assert(offsetI == blockScalarOffset(I));
+    const auto Si =
+        other.blockRows(sourceBlockStart + i, sourceRowBegin, sourceRowEnd);
+    updateDiagonalBlockAt(offsetI, alpha * Si.transpose() * Si);
+    for (DenseIndex j = i + 1; j < otherBlocks; ++j) {
+      const DenseIndex J = blockIndices[j];
+      if (J < 0) continue;
+      assert(J < nBlocks());
+      const DenseIndex offsetJ = scalarOffsets[j];
+      assert(offsetJ == blockScalarOffset(J));
+      const auto Sj =
+          other.blockRows(sourceBlockStart + j, sourceRowBegin, sourceRowEnd);
+      if (I < J) {
+        updateOffDiagonalBlockAt(offsetI, offsetJ, alpha * Si.transpose() * Sj);
+      } else {
+        updateOffDiagonalBlockAt(offsetJ, offsetI, alpha * Sj.transpose() * Si);
+      }
+    }
+  }
+}
 
-} //\ namespace gtsam
+/* ************************************************************************* */
+
+}  // namespace gtsam

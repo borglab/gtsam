@@ -50,6 +50,19 @@ class TestUnwhitenedError(GtsamTestCase):
         np.testing.assert_allclose(error, factor.unwhitenedError(values),
                                    atol=1e-12)
 
+    def test_H_is_populated(self):
+        """A pre-sized JacobianVector receives the output Jacobian."""
+        factor, values = self.prior_problem()
+        jacobians = gtsam.JacobianVector([np.empty((0, 0))])
+
+        error = factor.unwhitenedError(values, jacobians)
+
+        np.testing.assert_allclose(error, factor.unwhitenedError(values),
+                                   atol=1e-12)
+        self.assertEqual(len(jacobians), 1)
+        self.assertEqual(jacobians[0].shape, (6, 6))
+        self.assertTrue(np.all(np.isfinite(jacobians[0])))
+
     def test_agrees_with_whitened_error(self):
         """Unit noise, so whitened and unwhitened coincide."""
         factor, values = self.prior_problem()

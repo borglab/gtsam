@@ -47,12 +47,19 @@ classdef CustomFactor < gtsam.MatlabCustomFactor
 
     function delete(obj)
       for i = 1:numel(obj)
-        if obj(i).callbackId ~= 0
-          % Remove the MATLAB-side registry entry before the native handle is
-          % torn down so repeated test runs do not leave stale callbacks behind.
-          gtsam.customFactorRegistry('remove', obj(i).callbackId);
-          obj(i).callbackId = uint64(0);
-        end
+        cleanupCallback(obj(i));
+      end
+    end
+  end
+
+  methods(Access = private)
+    function cleanupCallback(obj)
+      callbackId = obj.callbackId;
+      if callbackId ~= 0
+        % Remove the MATLAB-side registry entry before the native handle is
+        % torn down so repeated test runs do not leave stale callbacks behind.
+        gtsam.customFactorRegistry('remove', callbackId);
+        obj.callbackId = uint64(0);
       end
     end
   end

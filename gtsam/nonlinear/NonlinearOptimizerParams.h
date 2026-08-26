@@ -171,9 +171,15 @@ public:
     return linearSolverTranslator(linearSolverType);
   }
 
+  /// Return the selected linear solver as a strongly typed value.
+  LinearSolverType getLinearSolver() const { return linearSolverType; }
+
   void setLinearSolverType(const std::string& solver) {
     linearSolverType = linearSolverTranslator(solver);
   }
+
+  /// Select the linear solver using the public enum.
+  void setLinearSolver(LinearSolverType solver) { linearSolverType = solver; }
 
   void setIterativeParams(const std::shared_ptr<IterativeOptimizationParameters> params);
 

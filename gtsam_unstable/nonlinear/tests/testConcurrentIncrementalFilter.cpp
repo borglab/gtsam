@@ -24,6 +24,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/slam/SmartProjectionPoseFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/JunctionTree.h>
@@ -384,6 +385,67 @@ TEST( ConcurrentIncrementalFilter, update_multiple )
   Values actual3 = filter.calculateEstimate();
   // Check
   CHECK(assert_equal(expected3, actual3, 1e-6));
+}
+
+/* ************************************************************************* */
+// Verify that structured iSAM2 update parameters reach the underlying filter.
+TEST( ConcurrentIncrementalFilter, update_smart_factor_with_new_affected_keys )
+{
+  using SmartFactor = SmartProjectionPoseFactor<Cal3_S2>;
+  using Camera = PinholePose<Cal3_S2>;
+
+  ISAM2Params parameters;
+  parameters.cacheLinearizedFactors = false;
+  parameters.relinearizeSkip = 1;
+  parameters.relinearizeThreshold = 0.01;
+  ConcurrentIncrementalFilter filter(parameters);
+
+  auto calibration = std::make_shared<Cal3_S2>(50.0, 50.0, 0.0, 50.0, 50.0);
+  auto measurementNoise = noiseModel::Isotropic::Sigma(2, 1.0);
+  const auto posePriorNoise = noiseModel::Constrained::All(6);
+  const std::vector<Point3> landmarks{
+      Point3(0.0, 0.0, 5.0), Point3(1.0, 1.0, 6.0), Point3(-1.0, 0.5, 4.0)};
+  const std::vector<Pose3> poses{
+      Pose3::Identity(),
+      Pose3(Rot3::Identity(), Point3(1.0, 0.0, 0.0)),
+      Pose3(Rot3::Identity(), Point3(2.0, 0.0, 0.0))};
+
+  std::vector<SmartFactor::shared_ptr> smartFactors;
+  NonlinearFactorGraph initialFactors;
+  for(const Point3& landmark: landmarks) {
+    auto smartFactor = std::make_shared<SmartFactor>(measurementNoise, calibration);
+    for(Key key: {Key(0), Key(1)}) {
+      smartFactor->add(Camera(poses.at(key), calibration).project(landmark), key);
+    }
+    smartFactors.push_back(smartFactor);
+    initialFactors.push_back(smartFactor);
+  }
+
+  initialFactors.emplace_shared<PriorFactor<Pose3>>(0, poses.at(0), posePriorNoise);
+  initialFactors.emplace_shared<PriorFactor<Pose3>>(1, poses.at(1), posePriorNoise);
+  Values initialValues;
+  initialValues.insert(0, poses.at(0));
+  initialValues.insert(1, poses.at(1));
+  const auto initialResult = filter.update(initialFactors, initialValues);
+
+  for(size_t index = 0; index < smartFactors.size(); ++index) {
+    smartFactors.at(index)->add(
+        Camera(poses.at(2), calibration).project(landmarks.at(index)), 2);
+  }
+  ISAM2UpdateParams updateParams;
+  updateParams.newAffectedKeys = FastMap<FactorIndex, KeySet>();
+  for(size_t index = 0; index < smartFactors.size(); ++index) {
+    (*updateParams.newAffectedKeys)[initialResult.newFactorsIndices.at(index)].insert(2);
+  }
+  Values newValues;
+  newValues.insert(2, poses.at(2));
+  filter.update(NonlinearFactorGraph(), newValues, updateParams);
+
+  const auto& affectedFactorSlots = filter.getISAM2().getVariableIndex().at(2);
+  for(size_t index = 0; index < smartFactors.size(); ++index) {
+    CHECK(std::find(affectedFactorSlots.begin(), affectedFactorSlots.end(),
+                    initialResult.newFactorsIndices.at(index)) != affectedFactorSlots.end());
+  }
 }
 
 /* ************************************************************************* */

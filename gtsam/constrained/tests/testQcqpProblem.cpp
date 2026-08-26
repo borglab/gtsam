@@ -1528,14 +1528,6 @@ TEST(QcqpProblem, D1QcqpValueRecoveryRejectsInvalidVectors) {
                   std::invalid_argument);
 }
 
-// Pose recovery is implemented only for the D=1 homogenized representation.
-TEST(QcqpProblem, PoseQcqpValueRecoveryRejectsUnsupportedD) {
-  CHECK_EXCEPTION(traits<Pose2>::template FromQcqpValue<2>(Matrix::Zero(3, 2)),
-                  std::invalid_argument);
-  CHECK_EXCEPTION(traits<Pose3>::template FromQcqpValue<2>(Matrix::Zero(4, 2)),
-                  std::invalid_argument);
-}
-
 // D=1 extraction selects each group's exact homogenized vector dimension.
 TEST(QcqpProblem, ExtractD1QcqpValues) {
   Values values;

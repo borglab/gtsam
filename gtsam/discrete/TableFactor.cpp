@@ -29,6 +29,91 @@ using namespace std;
 
 namespace gtsam {
 
+namespace {
+
+/// Keys in one portion of a factor scope and their joint cardinality.
+struct Scope {
+  DiscreteKeys keys;
+  uint64_t cardinality = 1;
+
+  Scope& operator+=(const DiscreteKey& key) {
+    keys.push_back(key);
+    cardinality *= key.second;
+    return *this;
+  }
+};
+
+/// Scope partition needed to combine two table factors.
+struct ScopePartition {
+  Scope contractScope;
+  Scope thisFreeScope;
+  Scope factorFreeScope;
+  Scope unionScope;
+
+  /// Partition two sorted scopes and compute their cardinalities in one pass.
+  ScopePartition(const DiscreteKeys& thisKeys, const DiscreteKeys& factorKeys) {
+    contractScope.keys.reserve(std::min(thisKeys.size(), factorKeys.size()));
+    thisFreeScope.keys.reserve(thisKeys.size());
+    factorFreeScope.keys.reserve(factorKeys.size());
+    unionScope.keys.reserve(thisKeys.size() + factorKeys.size());
+
+    auto thisIterator = thisKeys.begin();
+    auto factorIterator = factorKeys.begin();
+    while (thisIterator != thisKeys.end() ||
+           factorIterator != factorKeys.end()) {
+      if (factorIterator == factorKeys.end() ||
+          (thisIterator != thisKeys.end() && *thisIterator < *factorIterator)) {
+        thisFreeScope += *thisIterator;
+        unionScope += *thisIterator;
+        ++thisIterator;
+      } else if (thisIterator == thisKeys.end() ||
+                 *factorIterator < *thisIterator) {
+        factorFreeScope += *factorIterator;
+        unionScope += *factorIterator;
+        ++factorIterator;
+      } else {
+        contractScope += *thisIterator;
+        unionScope += *thisIterator;
+        ++thisIterator;
+        ++factorIterator;
+      }
+    }
+  }
+
+  /// Upper bound on result nonzeros for the given sparse factor sizes.
+  uint64_t reserveSize(uint64_t thisNonzeroCount,
+                       uint64_t factorNonzeroCount) const {
+    if (thisFreeScope.keys.empty() && factorFreeScope.keys.empty()) {
+      // The scopes are identical, so multiplication can only remove entries.
+      return std::min(thisNonzeroCount, factorNonzeroCount);
+    } else if (factorFreeScope.keys.empty()) {
+      // The other scope is contained in this and can only mask this table.
+      return thisNonzeroCount;
+    } else if (thisFreeScope.keys.empty()) {
+      // This scope is contained in the other and can only mask its table.
+      return factorNonzeroCount;
+    }
+
+    // Both factors add dimensions. Bound each possible sparse expansion and
+    // return the smaller bound instead of the full dense cardinality.
+    const auto boundedProduct = [unionCardinality = unionScope.cardinality](
+                                    uint64_t nonzeroCount,
+                                    uint64_t expansionCardinality) {
+      if (nonzeroCount > unionCardinality / expansionCardinality) {
+        return unionCardinality;
+      }
+      return nonzeroCount * expansionCardinality;
+    };
+    const uint64_t thisExpansion =
+        boundedProduct(thisNonzeroCount, factorFreeScope.cardinality);
+    const uint64_t factorExpansion =
+        boundedProduct(factorNonzeroCount, thisFreeScope.cardinality);
+    return std::min(thisExpansion, factorExpansion);
+  }
+};
+
+}  // namespace
+
 /* ************************************************************************ */
 TableFactor::TableFactor() {}
 
@@ -266,19 +351,15 @@ DiscreteFactor::shared_ptr TableFactor::multiply(
     result = std::make_shared<TableFactor>(this->operator*(*tf));
 
   } else if (auto dtf = std::dynamic_pointer_cast<DecisionTreeFactor>(f)) {
-    // If `f` is a DecisionTreeFactor, we convert to a TableFactor which is
-    // cheaper than converting `this` to a DecisionTreeFactor.
-    result = std::make_shared<TableFactor>(this->operator*(TableFactor(*dtf)));
+    // Use the virtual conversion so derived decision tree factors can provide
+    // their actual sparse representation.
+    result =
+        std::make_shared<TableFactor>(this->operator*(dtf->toTableFactor()));
 
   } else {
-    // Simulate double dispatch in C++
-    // Useful for other classes which inherit from DiscreteFactor and have
-    // only `operator*(DecisionTreeFactor)` defined. Thus, other classes don't
-    // need to be updated to know about TableFactor.
-    // Those classes can be specialized to use TableFactor
-    // if efficiency is a problem.
-    result = std::make_shared<DecisionTreeFactor>(
-        f->operator*(this->toDecisionTreeFactor()));
+    // Let the other factor choose its most efficient table representation,
+    // then multiply it without copying this potentially large sparse table.
+    result = std::make_shared<TableFactor>(this->operator*(f->toTableFactor()));
   }
   return result;
 }
@@ -466,62 +547,52 @@ TableFactor TableFactor::apply(const TableFactor& f, Binary op) const {
     return f;
   else if (f.keys_.empty() && f.sparse_table_.nonZeros() == 0)
     return *this;
-  // 1. Identify keys for contract and free modes.
-  DiscreteKeys contract_dkeys = contractDkeys(f);
-  DiscreteKeys f_free_dkeys = f.freeDkeys(*this);
-  DiscreteKeys union_dkeys = unionDkeys(f);
+  // 1. Partition both scopes and compute their cardinalities in one pass.
+  const ScopePartition scopes(sorted_dkeys_, f.sorted_dkeys_);
   // 2. Create hash table for input factor f
-  unordered_map<uint64_t, AssignValList> map_f =
-      f.createMap(contract_dkeys, f_free_dkeys);
-  // 3. Initialize multiplied factor.
-  uint64_t card = 1;
-  for (auto u_dkey : union_dkeys) card *= u_dkey.second;
-  Eigen::SparseVector<double> mult_sparse_table(card);
-  mult_sparse_table.reserve(card);
-  // 3. Multiply.
+  unordered_map<uint64_t, AssignValList> factorMap =
+      f.createMap(scopes.contractScope.keys, scopes.factorFreeScope.keys);
+  // 3. Initialize the multiplied factor with a scope-aware upper bound on its
+  // number of nonzeros.
+  Eigen::SparseVector<double> multipliedSparseTable(
+      scopes.unionScope.cardinality);
+  multipliedSparseTable.reserve(
+      scopes.reserveSize(sparse_table_.nonZeros(), f.sparse_table_.nonZeros()));
+  // 4. Multiply.
   for (SparseIt it(sparse_table_); it; ++it) {
-    uint64_t contract_unique = uniqueRep(contract_dkeys, it.index());
-    if (map_f.find(contract_unique) == map_f.end()) continue;
-    for (auto assignVal : map_f[contract_unique]) {
-      uint64_t union_idx = unionRep(union_dkeys, assignVal.first, it.index());
-      mult_sparse_table.insert(union_idx) = op(it.value(), assignVal.second);
+    uint64_t contractIndex = uniqueRep(scopes.contractScope.keys, it.index());
+    const auto mapIt = factorMap.find(contractIndex);
+    if (mapIt == factorMap.end()) continue;
+    for (const auto& assignmentValue : mapIt->second) {
+      uint64_t unionIndex =
+          unionRep(scopes.unionScope.keys, assignmentValue.first, it.index());
+      multipliedSparseTable.insert(unionIndex) =
+          op(it.value(), assignmentValue.second);
     }
   }
-  // 4. Free unused memory.
-  mult_sparse_table.pruned();
-  mult_sparse_table.data().squeeze();
-  // 5. Create union keys and return.
-  return TableFactor(union_dkeys, mult_sparse_table);
+  // 5. Free unused memory.
+  multipliedSparseTable.pruned();
+  multipliedSparseTable.data().squeeze();
+  // 6. Create union keys and return.
+  return TableFactor(scopes.unionScope.keys, multipliedSparseTable);
 }
 
 /* ************************************************************************ */
-DiscreteKeys TableFactor::contractDkeys(const TableFactor& f) const {
-  // Find contract modes.
-  DiscreteKeys contract;
-  set_intersection(sorted_dkeys_.begin(), sorted_dkeys_.end(),
-                   f.sorted_dkeys_.begin(), f.sorted_dkeys_.end(),
-                   back_inserter(contract));
-  return contract;
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+DiscreteKeys TableFactor::contractDkeys(const TableFactor& factor) const {
+  return ScopePartition(sorted_dkeys_, factor.sorted_dkeys_).contractScope.keys;
 }
 
 /* ************************************************************************ */
-DiscreteKeys TableFactor::freeDkeys(const TableFactor& f) const {
-  // Find free modes.
-  DiscreteKeys free;
-  set_difference(sorted_dkeys_.begin(), sorted_dkeys_.end(),
-                 f.sorted_dkeys_.begin(), f.sorted_dkeys_.end(),
-                 back_inserter(free));
-  return free;
+DiscreteKeys TableFactor::freeDkeys(const TableFactor& factor) const {
+  return ScopePartition(sorted_dkeys_, factor.sorted_dkeys_).thisFreeScope.keys;
 }
 
 /* ************************************************************************ */
-DiscreteKeys TableFactor::unionDkeys(const TableFactor& f) const {
-  // Find union modes.
-  DiscreteKeys union_dkeys;
-  set_union(sorted_dkeys_.begin(), sorted_dkeys_.end(), f.sorted_dkeys_.begin(),
-            f.sorted_dkeys_.end(), back_inserter(union_dkeys));
-  return union_dkeys;
+DiscreteKeys TableFactor::unionDkeys(const TableFactor& factor) const {
+  return ScopePartition(sorted_dkeys_, factor.sorted_dkeys_).unionScope.keys;
 }
+#endif
 
 /* ************************************************************************ */
 uint64_t TableFactor::unionRep(const DiscreteKeys& union_keys,

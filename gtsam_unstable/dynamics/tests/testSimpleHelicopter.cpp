@@ -14,7 +14,11 @@
  * @author Duy-Nguyen Ta
  */
 
+#include <gtsam/config.h>
 #include <CppUnitLite/TestHarness.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
@@ -154,5 +158,7 @@ TEST( DiscreteEulerPoincareHelicopter, evaluateError) {
 }
 
 /* ************************************************************************* */
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */

@@ -11,702 +11,255 @@
 
 /**
  * @file timeSfmPartialElimination.cpp
- * @brief Compare compact SFM Schur assembly with partial multifrontal
- * elimination.
+ * @brief Compare the public CPU SFM elimination-mode and solver matrix.
  */
 
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/HessianFactor.h>
-#include <gtsam/linear/JacobianFactor.h>
-#include <gtsam/linear/MultifrontalSolver.h>
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/Preconditioner.h>
+#include <gtsam/linear/SubgraphSolver.h>
+#include <gtsam/sfm/SfmLevenbergMarquardt.h>
 
-#include <Eigen/Cholesky>
-#include <algorithm>
-#include <cmath>
-#include <functional>
+#include <filesystem>
 #include <iomanip>
 #include <iostream>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include "internal/SfmBalBenchmark.h"
-#include "internal/SfmCholmodBenchmark.h"
-#include "internal/SfmPointBatchSchur.h"
 #include "internal/TimingUtils.h"
 
-using namespace gtsam;
-using namespace gtsam::timing;
-using namespace gtsam::timing::bal;
-using symbol_shorthand::C;
-using symbol_shorthand::P;
-
 namespace {
+using namespace gtsam;
+namespace bal = gtsam::timing::bal;
 
-std::string usage() {
-  return R"(Usage: timeSfmPartialElimination [options]
+enum class IterativeBackend { None, PCG, Subgraph };
 
-Options:
-  --dataset PATH  BAL dataset (default: dubrovnik-16-22106-pre)
-  --warmup N      Untimed paired warmups (default: 1)
-  --repeats N     Measured paired repetitions (default: 7)
-  --lambda VALUE  Global identity damping (default: 0.4)
-  --leaf-merge N      Algebraic leaf-merge dimension cap (default: 256)
-  --leaf-aggregate N  Total sibling-leaf problem size per task (default: 2048)
-  --leaf-mode MODE    bounded or separator (default: bounded)
-  --merge N       Multifrontal general merge dimension cap (default: 32)
-  --threads N     Workers used by both pipelines (default: 1)
-  --report        Print multifrontal structure statistics
-  --help          Show this message
-)";
-}
+struct SolverChoice {
+  const char* name;
+  SfmEliminationMode mode;
+  NonlinearOptimizerParams::LinearSolverType type;
+  IterativeBackend iterativeBackend = IterativeBackend::None;
+};
 
-GaussianFactorGraph createDampedPointBatchSystem(const SfmData& data,
-                                                 double lambda) {
-  const BalBenchmarkConfig config;
-  const NonlinearFactorGraph nonlinear =
-      buildBatchSfmGraph(data, config, false, 0);
-  const Values initial = buildGeneralSfmInitial(data);
-  GaussianFactorGraph damped = *nonlinear.linearize(initial);
-
-  const double sqrtLambda = std::sqrt(lambda);
-  const Matrix99 cameraDamping = sqrtLambda * Matrix99::Identity();
-  const Matrix3 pointDamping = sqrtLambda * Matrix3::Identity();
-  for (size_t camera = 0; camera < data.numberCameras(); ++camera) {
-    damped.emplace_shared<JacobianFactor>(C(camera), cameraDamping,
-                                          Vector9::Zero());
-  }
-  for (size_t point = 0; point < data.numberTracks(); ++point) {
-    damped.emplace_shared<JacobianFactor>(P(point), pointDamping,
-                                          Vector3::Zero());
-  }
-  return damped;
-}
-
-Matrix denseCameraMatrix(const CompactCameraSystem& system) {
-  Matrix result = Matrix::Zero(9 * system.cameraCount, 9 * system.cameraCount);
-  for (size_t row = 0; row < system.cameraCount; ++row) {
-    for (size_t column = row; column < system.cameraCount; ++column) {
-      const size_t slot =
-          upperCameraBlockIndex(row, column, system.cameraCount);
-      if (!system.usedBlocks[slot]) continue;
-      result.block<9, 9>(9 * row, 9 * column) = system.blocks[slot];
-      if (row != column) {
-        result.block<9, 9>(9 * column, 9 * row) =
-            system.blocks[slot].transpose();
-      }
-    }
-  }
-  return result;
-}
-
-double maximumAbsoluteDifference(const Matrix& first, const Matrix& second) {
-  if (first.rows() != second.rows() || first.cols() != second.cols()) {
-    throw std::invalid_argument("Cannot compare matrices of different sizes");
-  }
-  return first.size() == 0 ? 0.0 : (first - second).cwiseAbs().maxCoeff();
-}
-
-void printSummary(const std::string& label, const TimingSummary& summary) {
-  std::cout << "| " << label << " | " << summary.median << " | " << summary.mean
-            << " | " << summary.minimum << " | " << summary.maximum << " |\n";
-}
-
-struct ReducedSolveTiming {
+struct Result {
   std::string solver;
-  TimingSummary timing;
-  Vector solution;
-  double relativeResidual = 0.0;
+  std::vector<double> samples;
+  double medianSeconds = 0.0;
+  double minimumSeconds = 0.0;
+  double maximumSeconds = 0.0;
+  double initialError = 0.0;
+  double finalError = 0.0;
   size_t iterations = 0;
-  double symbolicSetupMilliseconds = 0.0;
-  bool succeeded = false;
+  size_t innerIterations = 0;
+  bool exceededTimeCap = false;
   std::string failure;
 };
 
-Vector flattenCameraSolution(const VectorValues& solution, size_t cameraCount) {
-  Vector result(9 * cameraCount);
-  for (size_t camera = 0; camera < cameraCount; ++camera) {
-    result.segment<9>(9 * camera) = solution.at(C(camera));
+Result run(const SolverChoice& choice, const NonlinearFactorGraph& graph,
+           const Values& initial,
+           const bal::BalBenchmarkConfig& benchmarkConfig,
+           const Ordering& schurOrdering, const Ordering& reducedOrdering,
+           size_t repetitions, double maximumSeconds) {
+  SfmLevenbergMarquardtParams params;
+  static_cast<LevenbergMarquardtParams&>(params) =
+      bal::makeLevenbergMarquardtParams(benchmarkConfig, nullptr, "SILENT");
+  params.setEliminationMode(choice.mode);
+  params.setLinearSolver(choice.type);
+  params.setOrdering(choice.mode == SfmEliminationMode::Full ? schurOrdering
+                                                             : reducedOrdering);
+  if (choice.type == NonlinearOptimizerParams::MULTIFRONTAL_SOLVER) {
+    params.multifrontalParams.qrMode = MultifrontalParameters::QRMode::Allow;
+  } else if (choice.iterativeBackend == IterativeBackend::PCG) {
+    auto pcg = std::make_shared<PCGSolverParameters>(
+        std::make_shared<BlockJacobiPreconditionerParameters>());
+    pcg->minIterations = 0;
+    pcg->maxIterations = 500;
+    pcg->reset = 501;
+    pcg->epsilon_abs = 0.0;
+    pcg->epsilon_rel = 1e-3;
+    pcg->parallel = true;
+    pcg->numThreads = 0;
+    params.iterativeParams = pcg;
+  } else if (choice.iterativeBackend == IterativeBackend::Subgraph) {
+    auto subgraph = std::make_shared<SubgraphSolverParameters>();
+    subgraph->minIterations = 0;
+    subgraph->maxIterations = 500;
+    subgraph->reset = 501;
+    subgraph->epsilon_abs = 0.0;
+    subgraph->epsilon_rel = 1e-3;
+    params.iterativeParams = subgraph;
   }
-  return result;
-}
 
-std::vector<size_t> cameraPermutation(const Ordering& ordering,
-                                      size_t cameraCount) {
-  if (ordering.size() != cameraCount) {
-    throw std::invalid_argument("Camera ordering has the wrong size");
-  }
-  std::vector<size_t> permutation;
-  std::vector<uint8_t> seen(cameraCount, 0);
-  permutation.reserve(cameraCount);
-  for (Key key : ordering) {
-    const Symbol symbol(key);
-    const size_t camera = symbol.index();
-    if (symbol.chr() != 'c' || camera >= cameraCount || seen[camera]) {
-      throw std::invalid_argument("Invalid camera ordering");
-    }
-    seen[camera] = 1;
-    permutation.push_back(camera);
-  }
-  return permutation;
-}
-
-std::pair<Matrix, Vector> permuteCameraSystem(
-    const Matrix& hessian, const Vector& rhs,
-    const std::vector<size_t>& permutation) {
-  const size_t cameraCount = permutation.size();
-  Matrix permutedHessian(9 * cameraCount, 9 * cameraCount);
-  Vector permutedRhs(9 * cameraCount);
-  for (size_t orderedRow = 0; orderedRow < cameraCount; ++orderedRow) {
-    const size_t naturalRow = permutation[orderedRow];
-    permutedRhs.segment<9>(9 * orderedRow) = rhs.segment<9>(9 * naturalRow);
-    for (size_t orderedColumn = 0; orderedColumn < cameraCount;
-         ++orderedColumn) {
-      const size_t naturalColumn = permutation[orderedColumn];
-      permutedHessian.block<9, 9>(9 * orderedRow, 9 * orderedColumn) =
-          hessian.block<9, 9>(9 * naturalRow, 9 * naturalColumn);
-    }
-  }
-  return {std::move(permutedHessian), std::move(permutedRhs)};
-}
-
-Vector unpermuteCameraVector(const Vector& permuted,
-                             const std::vector<size_t>& permutation) {
-  Vector natural(permuted.size());
-  for (size_t orderedCamera = 0; orderedCamera < permutation.size();
-       ++orderedCamera) {
-    natural.segment<9>(9 * permutation[orderedCamera]) =
-        permuted.segment<9>(9 * orderedCamera);
-  }
-  return natural;
-}
-
-GaussianFactorGraph sparseCameraJacobianGraph(const Matrix& permutedHessian,
-                                              const Vector& permutedRhs,
-                                              const Ordering& cameraOrdering) {
-  const Eigen::LLT<Matrix> factorization(permutedHessian);
-  if (factorization.info() != Eigen::Success) {
-    throw std::runtime_error("Reduced camera Hessian Cholesky failed");
-  }
-  const Matrix squareRoot = factorization.matrixU();
-  const Vector jacobianRhs = factorization.matrixL().solve(permutedRhs);
-  const size_t cameraCount = cameraOrdering.size();
-  const double nonzeroThreshold =
-      1e-14 * std::max(1.0, squareRoot.cwiseAbs().maxCoeff());
-  GaussianFactorGraph graph;
-  graph.reserve(cameraCount);
-  for (size_t blockRow = 0; blockRow < cameraCount; ++blockRow) {
-    std::vector<std::pair<Key, Matrix>> terms;
-    for (size_t blockColumn = blockRow; blockColumn < cameraCount;
-         ++blockColumn) {
-      const Matrix99 block =
-          squareRoot.block<9, 9>(9 * blockRow, 9 * blockColumn);
-      if (blockColumn == blockRow ||
-          block.cwiseAbs().maxCoeff() > nonzeroThreshold) {
-        terms.emplace_back(cameraOrdering[blockColumn], block);
+  Result result;
+  result.solver = choice.name;
+  result.initialError = graph.error(initial);
+  try {
+    result.samples.reserve(repetitions);
+    for (size_t repetition = 0; repetition < repetitions; ++repetition) {
+      SfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
+      result.samples.push_back(
+          gtsam::timing::measureSeconds([&] { optimizer.optimize(); }));
+      result.finalError = optimizer.error();
+      result.iterations = optimizer.iterations();
+      result.innerIterations = optimizer.getInnerIterations();
+      if (result.samples.back() >= maximumSeconds) {
+        result.exceededTimeCap = true;
+        break;
       }
     }
-    graph.emplace_shared<JacobianFactor>(terms,
-                                         jacobianRhs.segment<9>(9 * blockRow));
-  }
-  return graph;
-}
-
-CompactCameraSystem compactSystemFromDense(const Matrix& hessian,
-                                           const Vector& rhs,
-                                           size_t cameraCount) {
-  CompactCameraSystem system;
-  system.cameraCount = cameraCount;
-  const size_t blockCount = cameraCount * (cameraCount + 1) / 2;
-  system.blocks.resize(blockCount);
-  system.usedBlocks.assign(blockCount, 0);
-  system.rhs = rhs;
-  for (size_t row = 0; row < cameraCount; ++row) {
-    for (size_t column = row; column < cameraCount; ++column) {
-      const size_t slot = upperCameraBlockIndex(row, column, cameraCount);
-      system.blocks[slot] = hessian.block<9, 9>(9 * row, 9 * column);
-      system.usedBlocks[slot] = system.blocks[slot].cwiseAbs().maxCoeff() > 0.0;
+    if (!result.exceededTimeCap) {
+      const gtsam::timing::TimingSummary summary =
+          gtsam::timing::summarizeSamples(
+              result.samples, gtsam::timing::MedianPolicy::kAverageMiddle);
+      result.medianSeconds = summary.median;
+      result.minimumSeconds = summary.minimum;
+      result.maximumSeconds = summary.maximum;
     }
-  }
-  return system;
-}
-
-GaussianFactorGraph compactCameraFactorGraph(
-    const CompactCameraSystem& system) {
-  GaussianFactorGraph graph;
-  const Matrix99 zeroMatrix = Matrix99::Zero();
-  const Vector9 zeroVector = Vector9::Zero();
-  for (size_t row = 0; row < system.cameraCount; ++row) {
-    const size_t diagonal = upperCameraBlockIndex(row, row, system.cameraCount);
-    graph.emplace_shared<HessianFactor>(C(row), system.blocks[diagonal],
-                                        system.rhs.segment<9>(9 * row), 0.0);
-    for (size_t column = row + 1; column < system.cameraCount; ++column) {
-      const size_t slot =
-          upperCameraBlockIndex(row, column, system.cameraCount);
-      if (!system.usedBlocks[slot]) continue;
-      graph.emplace_shared<HessianFactor>(C(row), C(column), zeroMatrix,
-                                          system.blocks[slot], zeroVector,
-                                          zeroMatrix, zeroVector, 0.0);
-    }
-  }
-  return graph;
-}
-
-ReducedSolveTiming measureReducedSolve(const std::string& label, size_t warmups,
-                                       size_t repetitions,
-                                       const Matrix& hessian, const Vector& rhs,
-                                       const std::function<Vector()>& solve) {
-  ReducedSolveTiming result;
-  result.solver = label;
-  try {
-    for (size_t repetition = 0; repetition < warmups; ++repetition) {
-      result.solution = solve();
-    }
-    std::vector<double> samples;
-    samples.reserve(repetitions);
-    for (size_t repetition = 0; repetition < repetitions; ++repetition) {
-      samples.push_back(1000.0 *
-                        measureSeconds([&] { result.solution = solve(); }));
-    }
-    result.timing = summarizeSamples(samples, MedianPolicy::kAverageMiddle);
-    result.relativeResidual =
-        (hessian * result.solution - rhs).norm() / std::max(1.0, rhs.norm());
-    result.succeeded = true;
-  } catch (const std::exception& exception) {
-    result.failure = exception.what();
+  } catch (const std::exception& error) {
+    result.failure = error.what();
   }
   return result;
-}
-
-std::vector<ReducedSolveTiming> benchmarkReducedSolvers(
-    const Matrix& hessian, const Vector& rhs,
-    const GaussianFactorGraph& regularFactorGraph, size_t cameraCount,
-    const Ordering& cameraOrdering,
-    const MultifrontalSolver::Parameters& solverParameters, size_t warmups,
-    size_t repetitions) {
-  const std::vector<size_t> permutation =
-      cameraPermutation(cameraOrdering, cameraCount);
-  const auto permutedSystem = permuteCameraSystem(hessian, rhs, permutation);
-  const Matrix& permutedHessian = permutedSystem.first;
-  const Vector& permutedRhs = permutedSystem.second;
-  GaussianFactorGraph jacobianGraph =
-      sparseCameraJacobianGraph(permutedHessian, permutedRhs, cameraOrdering);
-  std::unique_ptr<MultifrontalSolver> reducedMultifrontal;
-  const double multifrontalSetupMilliseconds =
-      1000.0 * measureSeconds([&] {
-        reducedMultifrontal = std::make_unique<MultifrontalSolver>(
-            jacobianGraph, cameraOrdering, solverParameters);
-      });
-
-  PCGSolverParameters pcgParameters(
-      std::make_shared<BlockJacobiPreconditionerParameters>());
-  pcgParameters.minIterations = 0;
-  pcgParameters.maxIterations = 500;
-  pcgParameters.reset = 501;
-  pcgParameters.epsilon_abs = 0.0;
-  pcgParameters.epsilon_rel = 1e-8;
-  pcgParameters.parallel = solverParameters.numThreads != 1;
-  pcgParameters.numThreads = solverParameters.numThreads;
-
-  const CompactCameraSystem cholmodSystem =
-      compactSystemFromDense(hessian, rhs, cameraCount);
-  CholmodCameraSystemSolver cholmodSolver;
-  size_t pcgIterations = 0;
-
-  std::vector<ReducedSolveTiming> results;
-  results.push_back(measureReducedSolve(
-      "Dense Cholesky", warmups, repetitions, hessian, rhs, [&] {
-        return unpermuteCameraVector(permutedHessian.llt().solve(permutedRhs),
-                                     permutation);
-      }));
-  results.push_back(measureReducedSolve(
-      "Factor Cholesky", warmups, repetitions, hessian, rhs, [&] {
-        return flattenCameraSolution(
-            regularFactorGraph.optimize(cameraOrdering, EliminateCholesky),
-            cameraCount);
-      }));
-  results.push_back(measureReducedSolve(
-      "MultifrontalSolver", warmups, repetitions, hessian, rhs, [&] {
-        reducedMultifrontal->eliminateInPlace(jacobianGraph);
-        return flattenCameraSolution(reducedMultifrontal->updateSolution(),
-                                     cameraCount);
-      }));
-  results.back().symbolicSetupMilliseconds = multifrontalSetupMilliseconds;
-  results.push_back(measureReducedSolve(
-      "PCG(BlockJacobi)", warmups, repetitions, hessian, rhs, [&] {
-        const PCGSolverResult pcg =
-            PCGSolver(pcgParameters)
-                .optimizeDetailed(regularFactorGraph, false);
-        pcgIterations = pcg.stats.iterations;
-        return flattenCameraSolution(pcg.solution, cameraCount);
-      }));
-  results.back().iterations = pcgIterations;
-  if (cholmodBackendAvailable()) {
-    results.push_back(measureReducedSolve(
-        "CHOLMOD", warmups, repetitions, hessian, rhs,
-        [&] { return cholmodSolver.solve(cholmodSystem, permutation); }));
-  }
-  return results;
-}
-
-void printSolverMatrixRow(const std::string& producer,
-                          const TimingSummary& producerTiming,
-                          const std::vector<ReducedSolveTiming>& solvers) {
-  std::cout << "| " << producer;
-  for (const ReducedSolveTiming& solver : solvers) {
-    if (solver.succeeded) {
-      std::cout << " | " << producerTiming.median + solver.timing.median;
-    } else {
-      std::cout << " | FAILED";
-    }
-  }
-  std::cout << " |\n";
-}
-
-std::string firstFailureLine(const std::string& failure) {
-  const size_t begin = failure.find_first_not_of(" \t\r\n");
-  if (begin == std::string::npos) return "unknown failure";
-  const size_t end = failure.find_first_of("\r\n", begin);
-  return failure.substr(begin, end - begin);
 }
 
 }  // namespace
 
 int main(int argc, char* argv[]) {
   try {
-    Arguments arguments(argc, argv);
-    const bool help = arguments.helpRequested();
-    const std::optional<std::string> dataset =
-        arguments.optionalString("--dataset");
-    const size_t warmups = arguments.sizeValue("--warmup", 1);
-    const size_t repetitions = arguments.sizeValue("--repeats", 7);
-    const double lambda = arguments.doubleValue("--lambda", 0.4);
-    const size_t leafMergeDimCap = arguments.sizeValue("--leaf-merge", 256);
-    const size_t leafAggregationProblemSize =
-        arguments.sizeValue("--leaf-aggregate", 2048);
-    const std::string leafMode =
-        arguments.optionalString("--leaf-mode").value_or("bounded");
-    const size_t mergeCap = arguments.sizeValue("--merge", 32);
-    const size_t numThreads = arguments.sizeValue("--threads", 1);
-    const bool reportStructure = arguments.flag("--report");
-    arguments.validateAllConsumed();
-
-    if (help) {
-      std::cout << usage();
+    gtsam::timing::Arguments arguments(argc, argv);
+    if (arguments.helpRequested()) {
+      std::cout << "Usage: timeSfmPartialElimination [--repetitions N] "
+                   "[--max-seconds S] [--subgraph-only|--cholmod-only] "
+                   "[--configuration NAME] [BALfile]\n";
       return 0;
     }
-    const std::string filename = dataset ? *dataset : defaultDataset();
+    const size_t repetitions = arguments.sizeValue("--repetitions", 1);
+    const double maximumSeconds = arguments.doubleValue("--max-seconds", 300.0);
+    const bool subgraphOnly = arguments.flag("--subgraph-only");
+    const std::optional<std::string> configuration =
+        arguments.optionalString("--configuration");
+    const bool cholmodOnly = arguments.flag("--cholmod-only");
     if (repetitions == 0) {
-      throw std::invalid_argument("--repeats must be positive");
+      throw std::invalid_argument("--repetitions must be at least one");
     }
-    if (lambda <= 0.0) {
-      throw std::invalid_argument("--lambda must be positive");
+    if (maximumSeconds <= 0.0) {
+      throw std::invalid_argument("--max-seconds must be positive");
     }
-    if (numThreads == 0) {
-      throw std::invalid_argument("--threads must be positive");
+    if (subgraphOnly && cholmodOnly) {
+      throw std::invalid_argument(
+          "--subgraph-only and --cholmod-only are mutually exclusive");
     }
-
-    const SfmData data = loadDataset(filename);
-    const GaussianFactorGraph damped =
-        createDampedPointBatchSystem(data, lambda);
-    const CompactCameraSystem compactReference =
-        buildPointBatchCameraSystemParallel(damped, numThreads);
-    const GaussianFactorGraph compactReducedFactors =
-        compactCameraFactorGraph(compactReference);
-    const Ordering cameraOrdering = Ordering::Metis(compactReducedFactors);
-    Ordering pointFirstOrdering;
-    for (size_t point = 0; point < data.numberTracks(); ++point) {
-      pointFirstOrdering.push_back(P(point));
+    if (configuration && (subgraphOnly || cholmodOnly)) {
+      throw std::invalid_argument(
+          "--configuration cannot be combined with a solver-only flag");
     }
-    pointFirstOrdering.insert(pointFirstOrdering.end(), cameraOrdering.begin(),
-                              cameraOrdering.end());
-
-    MultifrontalSolver::Parameters solverParameters;
-    solverParameters.leafMergeDimCap = leafMergeDimCap;
-    solverParameters.leafAggregationProblemSize = leafAggregationProblemSize;
-    if (leafMode == "bounded") {
-      solverParameters.leafMode = MultifrontalParameters::LeafMode::Bounded;
-    } else if (leafMode == "separator") {
-      solverParameters.leafMode =
-          MultifrontalParameters::LeafMode::SameSeparator;
-    } else {
-      throw std::invalid_argument("--leaf-mode must be bounded or separator");
-    }
-    solverParameters.mergeDimCap = mergeCap;
-    solverParameters.qrMode = MultifrontalParameters::QRMode::Off;
-    solverParameters.numThreads = numThreads;
-    if (reportStructure) solverParameters.reportStream = &std::cout;
-    std::unique_ptr<MultifrontalSolver> solver;
-    const double symbolicSetupMilliseconds =
-        1000.0 * measureSeconds([&] {
-          solver = std::make_unique<MultifrontalSolver>(
-              damped, pointFirstOrdering, data.numberTracks(),
-              solverParameters);
-        });
-
-    solver->eliminatePartialInPlace(damped);
-    const GaussianFactorGraph remainingReference =
-        solver->remainingFactorGraph();
-
-    Ordering naturalCameraOrdering;
-    for (size_t camera = 0; camera < data.numberCameras(); ++camera) {
-      naturalCameraOrdering.push_back(C(camera));
-    }
-    const auto [partialHessian, partialRhs] =
-        remainingReference.hessian(naturalCameraOrdering);
-    const Matrix compactHessian = denseCameraMatrix(compactReference);
-    const double maximumHessianDifference =
-        maximumAbsoluteDifference(compactHessian, partialHessian);
-    const double maximumRhsDifference =
-        maximumAbsoluteDifference(compactReference.rhs, partialRhs);
-    const double hessianScale =
-        std::max(1.0, compactHessian.cwiseAbs().maxCoeff());
-    const double rhsScale =
-        std::max(1.0, compactReference.rhs.cwiseAbs().maxCoeff());
-    const double relativeHessianDifference =
-        maximumHessianDifference / hessianScale;
-    const double relativeRhsDifference = maximumRhsDifference / rhsScale;
-    if (relativeHessianDifference > 1e-8 || relativeRhsDifference > 1e-8) {
-      throw std::runtime_error(
-          "Partial multifrontal and compact camera systems disagree");
+    const std::vector<std::string> positionals = arguments.positionals();
+    arguments.validateAllConsumed();
+    if (positionals.size() > 1) {
+      throw std::invalid_argument(
+          "timeSfmPartialElimination accepts at most one BAL file");
     }
 
-    size_t benchmarkSink = 0;
-    const auto assembleCompact = [&] {
-      const CompactCameraSystem system =
-          buildPointBatchCameraSystemParallel(damped, numThreads);
-      benchmarkSink += system.blocks.size() + system.landmarks.size();
+    const std::string filename =
+        positionals.empty() ? bal::defaultDataset() : positionals.front();
+    bal::BalBenchmarkConfig config;
+    config.useSchur = true;
+    const SfmData data = bal::loadDataset(filename);
+    const NonlinearFactorGraph graph =
+        bal::buildBatchSfmGraph(data, config, false, 0);
+    const Values initial = bal::buildGeneralSfmInitial(data);
+    const Ordering reducedOrdering =
+        SfmLevenbergMarquardtOptimizer::CreateReducedOrdering(graph, initial);
+    const Ordering schurOrdering =
+        SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(graph,
+                                                            reducedOrdering);
+
+    const std::vector<SolverChoice> choices{
+        {"Full/MultifrontalSolver", SfmEliminationMode::Full,
+         NonlinearOptimizerParams::MULTIFRONTAL_SOLVER},
+        {"Full/MultifrontalCholesky", SfmEliminationMode::Full,
+         NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY},
+        {"Full/MultifrontalQR", SfmEliminationMode::Full,
+         NonlinearOptimizerParams::MULTIFRONTAL_QR},
+        {"Full/SequentialCholesky", SfmEliminationMode::Full,
+         NonlinearOptimizerParams::SEQUENTIAL_CHOLESKY},
+        {"Full/SequentialQR", SfmEliminationMode::Full,
+         NonlinearOptimizerParams::SEQUENTIAL_QR},
+        {"Full/PCG", SfmEliminationMode::Full,
+         NonlinearOptimizerParams::Iterative, IterativeBackend::PCG},
+        {"Full/SubgraphSolver", SfmEliminationMode::Full,
+         NonlinearOptimizerParams::Iterative, IterativeBackend::Subgraph},
+        {"Full/CHOLMOD", SfmEliminationMode::Full,
+         NonlinearOptimizerParams::CHOLMOD},
+        {"Schur/MultifrontalSolver", SfmEliminationMode::Schur,
+         NonlinearOptimizerParams::MULTIFRONTAL_SOLVER},
+        {"Schur/MultifrontalCholesky", SfmEliminationMode::Schur,
+         NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY},
+        {"Schur/MultifrontalQR", SfmEliminationMode::Schur,
+         NonlinearOptimizerParams::MULTIFRONTAL_QR},
+        {"Schur/SequentialCholesky", SfmEliminationMode::Schur,
+         NonlinearOptimizerParams::SEQUENTIAL_CHOLESKY},
+        {"Schur/SequentialQR", SfmEliminationMode::Schur,
+         NonlinearOptimizerParams::SEQUENTIAL_QR},
+        {"Schur/PCG", SfmEliminationMode::Schur,
+         NonlinearOptimizerParams::Iterative, IterativeBackend::PCG},
+        {"Schur/SubgraphSolver", SfmEliminationMode::Schur,
+         NonlinearOptimizerParams::Iterative, IterativeBackend::Subgraph},
+        {"Schur/CHOLMOD", SfmEliminationMode::Schur,
+         NonlinearOptimizerParams::CHOLMOD},
     };
-    const auto loadPartial = [&] { solver->load(damped); };
-    const auto eliminatePartial = [&] {
-      solver->eliminatePartialInPlace();
-      benchmarkSink += solver->roots().size();
-    };
-    const auto exportRemaining = [&] {
-      const GaussianFactorGraph remaining = solver->remainingFactorGraph();
-      benchmarkSink += remaining.size();
-      if (!remaining.empty() && remaining.front()) {
-        benchmarkSink += remaining.front()->size();
+
+    std::vector<Result> results;
+    for (const SolverChoice& choice : choices) {
+      if (subgraphOnly &&
+          choice.iterativeBackend != IterativeBackend::Subgraph) {
+        continue;
       }
-    };
-    const auto runPartial = [&] {
-      loadPartial();
-      eliminatePartial();
-    };
-    const auto runPartialFused = [&] {
-      solver->eliminatePartialInPlace(damped);
-      benchmarkSink += solver->roots().size();
-      exportRemaining();
-    };
-    for (size_t repetition = 0; repetition < warmups; ++repetition) {
-      if (repetition % 2 == 0) {
-        assembleCompact();
-        runPartialFused();
-        runPartial();
+      if (cholmodOnly && choice.type != NonlinearOptimizerParams::CHOLMOD) {
+        continue;
+      }
+      if (configuration && choice.name != *configuration) continue;
+      results.push_back(run(choice, graph, initial, config, schurOrdering,
+                            reducedOrdering, repetitions, maximumSeconds));
+    }
+    if (results.empty()) {
+      throw std::invalid_argument("No timing configuration matched");
+    }
+
+    std::cout << std::fixed << std::setprecision(6) << "Public CPU SFM timing: "
+              << std::filesystem::path(filename).filename().string() << "\n\n"
+              << "Repetitions: " << repetitions
+              << " (optimizer construction and ordering excluded)\n"
+              << "Per-run reporting cap: " << maximumSeconds << " s\n"
+              << "Shared ordering: natural points, then METIS cameras\n\n"
+              << "| Configuration | Median s | Min s | Max s | Initial error | "
+                 "Final error | LM iterations | Inner iterations | Status |\n"
+              << "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | "
+                 "--- |\n";
+    for (const Result& result : results) {
+      std::cout << "| " << result.solver << " | ";
+      if (result.exceededTimeCap || !result.failure.empty()) {
+        std::cout << "- | - | - | ";
       } else {
-        runPartial();
-        runPartialFused();
-        assembleCompact();
+        std::cout << result.medianSeconds << " | " << result.minimumSeconds
+                  << " | " << result.maximumSeconds << " | ";
       }
-    }
-
-    std::vector<double> compactSamples;
-    std::vector<double> fusedEndToEndSamples;
-    std::vector<double> fusedEliminationSamples;
-    std::vector<double> exportSamples;
-    std::vector<double> partialSamples;
-    std::vector<double> loadSamples;
-    std::vector<double> eliminationSamples;
-    compactSamples.reserve(repetitions);
-    fusedEndToEndSamples.reserve(repetitions);
-    fusedEliminationSamples.reserve(repetitions);
-    exportSamples.reserve(repetitions);
-    partialSamples.reserve(repetitions);
-    loadSamples.reserve(repetitions);
-    eliminationSamples.reserve(repetitions);
-    for (size_t repetition = 0; repetition < repetitions; ++repetition) {
-      const auto timeCompact = [&] {
-        compactSamples.push_back(1000.0 * measureSeconds(assembleCompact));
-      };
-      const auto timePartial = [&] {
-        const double loadMilliseconds = 1000.0 * measureSeconds(loadPartial);
-        const double eliminationMilliseconds =
-            1000.0 * measureSeconds(eliminatePartial);
-        loadSamples.push_back(loadMilliseconds);
-        eliminationSamples.push_back(eliminationMilliseconds);
-        partialSamples.push_back(loadMilliseconds + eliminationMilliseconds);
-      };
-      const auto timeFusedPartial = [&] {
-        const double eliminationMilliseconds =
-            1000.0 * measureSeconds([&] {
-              solver->eliminatePartialInPlace(damped);
-              benchmarkSink += solver->roots().size();
-            });
-        // Export must immediately follow its elimination: the returned factors
-        // own compact information that may outlive the solver's clique views.
-        const double exportMilliseconds =
-            1000.0 * measureSeconds(exportRemaining);
-        fusedEliminationSamples.push_back(eliminationMilliseconds);
-        exportSamples.push_back(exportMilliseconds);
-        fusedEndToEndSamples.push_back(eliminationMilliseconds +
-                                       exportMilliseconds);
-      };
-      if (repetition % 2 == 0) {
-        timeCompact();
-        timeFusedPartial();
-        timePartial();
+      std::cout << result.initialError << " | " << result.finalError << " | "
+                << result.iterations << " | " << result.innerIterations
+                << " | ";
+      if (result.exceededTimeCap) {
+        std::cout << "exceeded " << maximumSeconds << " s cap";
       } else {
-        timePartial();
-        timeFusedPartial();
-        timeCompact();
+        std::cout << (result.failure.empty() ? "ok" : result.failure);
       }
+      std::cout << " |\n";
     }
-
-    const TimingSummary compactSummary =
-        summarizeSamples(compactSamples, MedianPolicy::kAverageMiddle);
-    const TimingSummary partialSummary =
-        summarizeSamples(partialSamples, MedianPolicy::kAverageMiddle);
-    const TimingSummary fusedEndToEndSummary =
-        summarizeSamples(fusedEndToEndSamples, MedianPolicy::kAverageMiddle);
-    const TimingSummary fusedEliminationSummary =
-        summarizeSamples(fusedEliminationSamples, MedianPolicy::kAverageMiddle);
-    const TimingSummary exportSummary =
-        summarizeSamples(exportSamples, MedianPolicy::kAverageMiddle);
-    const TimingSummary loadSummary =
-        summarizeSamples(loadSamples, MedianPolicy::kAverageMiddle);
-    const TimingSummary eliminationSummary =
-        summarizeSamples(eliminationSamples, MedianPolicy::kAverageMiddle);
-
-    std::cout << "\nSFM reduced-camera assembly benchmark\n"
-              << "Dataset: " << filename << "\n"
-              << "Cameras: " << data.numberCameras()
-              << ", points: " << data.numberTracks() << "\n"
-              << std::fixed << std::setprecision(3)
-              << "Global damping lambda: " << lambda << "\n"
-              << "Algebraic leaf merge dimension cap: " << leafMergeDimCap
-              << "\n"
-              << "Leaf aggregation problem size: " << leafAggregationProblemSize
-              << "\n"
-              << "Leaf mode: " << leafMode << "\n"
-              << "General merge cap: " << mergeCap << "\n"
-              << "Reduced-system ordering: METIS (shared camera blocks)\n"
-              << "Threads per pipeline: " << numThreads << "\n"
-              << "Warmups: " << warmups << ", repetitions: " << repetitions
-              << "\n"
-              << "Partial multifrontal symbolic setup: "
-              << symbolicSetupMilliseconds << " ms\n"
-              << std::scientific << "Maximum relative Hessian difference: "
-              << relativeHessianDifference << "\n"
-              << "Maximum relative RHS difference: " << relativeRhsDifference
-              << "\n\n"
-              << std::fixed
-              << "| Pipeline | Median ms | Mean ms | Min ms | Max ms |\n"
-              << "| --- | ---: | ---: | ---: | ---: |\n";
-    printSummary("Compact complete assembly", compactSummary);
-    printSummary("Partial fused end-to-end", fusedEndToEndSummary);
-    printSummary("  partial elimination only", fusedEliminationSummary);
-    printSummary("  retained-factor export only", exportSummary);
-    printSummary("Partial separate load+eliminate (diagnostic)",
-                 partialSummary);
-    printSummary("  separate load", loadSummary);
-    printSummary("  separate eliminate", eliminationSummary);
-    std::cout << "\nPartial end-to-end/compact median ratio: "
-              << fusedEndToEndSummary.median / compactSummary.median << "x\n"
-              << "Partial elimination-only/compact median ratio (diagnostic): "
-              << fusedEliminationSummary.median / compactSummary.median
-              << "x\n";
-
-    const std::vector<ReducedSolveTiming> compactSolvers =
-        benchmarkReducedSolvers(compactHessian, compactReference.rhs,
-                                compactReducedFactors, data.numberCameras(),
-                                cameraOrdering, solverParameters, warmups,
-                                repetitions);
-    const std::vector<ReducedSolveTiming> partialSolvers =
-        benchmarkReducedSolvers(partialHessian, partialRhs, remainingReference,
-                                data.numberCameras(), cameraOrdering,
-                                solverParameters, warmups, repetitions);
-    if (compactSolvers.size() != partialSolvers.size()) {
-      throw std::runtime_error("Reduced solver matrix is incomplete");
-    }
-    for (size_t solverIndex = 0; solverIndex < compactSolvers.size();
-         ++solverIndex) {
-      if ((compactSolvers[solverIndex].succeeded &&
-           compactSolvers[solverIndex].relativeResidual > 1e-7) ||
-          (partialSolvers[solverIndex].succeeded &&
-           partialSolvers[solverIndex].relativeResidual > 1e-7)) {
-        throw std::runtime_error("Reduced camera solve failed residual check");
-      }
-    }
-
-    std::cout << "\nReduced-camera solve details\n"
-              << "The MultifrontalSolver Hessian-to-Jacobian adapter and "
-                 "symbolic setup are outside the timed solve.\n"
-              << "CHOLMOD reuses symbolic analysis after warmup; its numeric "
-                 "triplet assembly is included.\n"
-              << "| Point elimination | Reduced solver | Elimination median "
-                 "ms | Solve median ms | Total median ms | Relative residual "
-                 "| Solver setup ms | Iterations |\n"
-              << "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |\n"
-              << std::fixed << std::setprecision(3);
-    const auto printDetails = [&](const std::string& producer,
-                                  const TimingSummary& producerTiming,
-                                  const std::vector<ReducedSolveTiming>& rows) {
-      for (const ReducedSolveTiming& row : rows) {
-        std::cout << "| " << producer << " | " << row.solver << " | "
-                  << producerTiming.median << " | ";
-        if (row.succeeded) {
-          std::cout << row.timing.median << " | "
-                    << producerTiming.median + row.timing.median << " | "
-                    << std::scientific << row.relativeResidual << std::fixed;
-        } else {
-          std::cout << "FAILED | FAILED | --";
-        }
-        std::cout << " | " << row.symbolicSetupMilliseconds << " | "
-                  << row.iterations << " |\n";
-      }
-    };
-    printDetails("Compact", compactSummary, compactSolvers);
-    printDetails("Partial MultifrontalSolver", fusedEndToEndSummary,
-                 partialSolvers);
-
-    std::cout << "\nEnd-to-end median matrix (point elimination + reduced "
-                 "solve), ms\n| Point elimination";
-    for (const ReducedSolveTiming& solverTiming : compactSolvers) {
-      std::cout << " | " << solverTiming.solver;
-    }
-    std::cout << " |\n| ---";
-    for (size_t solverIndex = 0; solverIndex < compactSolvers.size();
-         ++solverIndex) {
-      std::cout << " | ---:";
-    }
-    std::cout << " |\n";
-    printSolverMatrixRow("Compact", compactSummary, compactSolvers);
-    printSolverMatrixRow("Partial MultifrontalSolver", fusedEndToEndSummary,
-                         partialSolvers);
-    for (size_t solverIndex = 0; solverIndex < compactSolvers.size();
-         ++solverIndex) {
-      if (!compactSolvers[solverIndex].succeeded) {
-        std::cout << "FAILED Compact/" << compactSolvers[solverIndex].solver
-                  << ": "
-                  << firstFailureLine(compactSolvers[solverIndex].failure)
-                  << "\n";
-      }
-      if (!partialSolvers[solverIndex].succeeded) {
-        std::cout << "FAILED Partial MultifrontalSolver/"
-                  << partialSolvers[solverIndex].solver << ": "
-                  << firstFailureLine(partialSolvers[solverIndex].failure)
-                  << "\n";
-      }
-    }
-
-    if (benchmarkSink == 0) std::cerr << "Unexpected empty benchmark result\n";
     return 0;
-  } catch (const std::exception& exception) {
-    std::cerr << exception.what() << '\n';
+  } catch (const std::exception& error) {
+    std::cerr << error.what() << '\n';
     return 1;
   }
 }

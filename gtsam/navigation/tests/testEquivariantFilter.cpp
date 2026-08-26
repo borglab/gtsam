@@ -517,7 +517,64 @@ TEST(EquivariantFilter_Attitude, CheckMatrices) {
   EXPECT(C_computed.rows() == 3 && C_computed.cols() == 2);
 }
 
-//==============================================================================
+/* ************************************************************************* */
+namespace left_action_guard {
+
+using M = Rot3;
+using G = Rot3;
+
+struct Symmetry : public GroupAction<Symmetry, G, M> {
+  static constexpr ActionType type = ActionType::Left;
+
+  M operator()(const G& group, const M& state,
+               OptionalJacobian<3, 3> H_group = {},
+               OptionalJacobian<3, 3> H_state = {}) const {
+    return group.compose(state, H_group, H_state);
+  }
+};
+
+struct Lift {
+  explicit Lift(const Vector3& omega) : omega_(omega) {}
+
+  Vector3 operator()(const M&, OptionalJacobian<3, 3> H = {}) const {
+    if (H) *H = Z_3x3;
+    return omega_;
+  }
+
+ private:
+  Vector3 omega_;
+};
+
+struct InputAction : public GroupAction<InputAction, G, Vector3> {
+  static constexpr ActionType type = ActionType::Left;
+
+  Vector3 operator()(const G&, const Vector3& input) const { return input; }
+};
+
+using InputOrbit = InputAction::Orbit;
+
+// Verifies that left actions require an explicit continuous-time A matrix.
+TEST(EquivariantFilter_LeftAction, AutomaticPredictionRequiresExplicitA) {
+  const Matrix3 covariance = I_3x3;
+  EquivariantFilter<M, Symmetry> filter(M::Identity(), covariance);
+
+  const Vector3 omega{0.1, -0.2, 0.3};
+  const Lift lift(omega);
+  const InputOrbit inputOrbit(omega);
+  const Matrix3 processNoise = Z_3x3;
+  const double dt = 0.01;
+
+  CHECK_EXCEPTION(filter.predict(lift, inputOrbit, processNoise, dt),
+                  std::invalid_argument);
+  EXPECT(assert_equal(M::Identity(), filter.state()));
+
+  const Matrix3 continuousA = -Rot3::Hat(omega);
+  filter.predictWithJacobian<2>(lift, continuousA, processNoise, dt);
+  EXPECT(assert_equal(Rot3::Expmap(omega * dt), filter.state(), 1e-9));
+}
+
+}  // namespace left_action_guard
+/* ************************************************************************* */
 
 int main() {
   TestResult tr;

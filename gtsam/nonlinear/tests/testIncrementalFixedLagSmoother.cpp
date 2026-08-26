@@ -436,6 +436,64 @@ TEST(IncrementalFixedLagSmoother, Example) {
   }
 }
 
+// A pending value remains available for a factor that arrives within the lag.
+TEST(IncrementalFixedLagSmoother, ConnectsPendingValueBeforeItAgesOut) {
+  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  IncrementalFixedLagSmoother smoother(1.0);
+
+  NonlinearFactorGraph factors;
+  Values values;
+  FixedLagSmoother::KeyTimestampMap timestamps;
+
+  factors.addPrior(X(0), Point2(0.0, 0.0), noise);
+  values.insert(X(0), Point2(0.0, 0.0));
+  values.insert(X(1), Point2(1.0, 0.0));
+  timestamps[X(0)] = 0.0;
+  timestamps[X(1)] = 1.0;
+  smoother.update(factors, values, timestamps);
+
+  EXPECT(smoother.getLinearizationPoint().exists(X(1)));
+  EXPECT(smoother.timestamps().find(X(1)) != smoother.timestamps().end());
+
+  factors.resize(0);
+  values.clear();
+  timestamps.clear();
+  factors.emplace_shared<BetweenPoint2>(X(0), X(1), Point2(1.0, 0.0), noise);
+  smoother.update(factors, values, timestamps);
+
+  EXPECT(smoother.getLinearizationPoint().exists(X(1)));
+  EXPECT(!smoother.getISAM2().getVariableIndex().empty(X(1)));
+}
+
+// A pending value with no factor is removed once it leaves the lag window.
+TEST(IncrementalFixedLagSmoother, ReapsPendingValueAfterLag) {
+  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  IncrementalFixedLagSmoother smoother(1.0);
+
+  NonlinearFactorGraph factors;
+  Values values;
+  FixedLagSmoother::KeyTimestampMap timestamps;
+
+  factors.addPrior(X(0), Point2(0.0, 0.0), noise);
+  values.insert(X(0), Point2(0.0, 0.0));
+  values.insert(X(1), Point2(1.0, 0.0));
+  timestamps[X(0)] = 0.0;
+  timestamps[X(1)] = 1.0;
+  smoother.update(factors, values, timestamps);
+
+  factors.resize(0);
+  values.clear();
+  timestamps.clear();
+  factors.addPrior(X(2), Point2(2.0, 0.0), noise);
+  values.insert(X(2), Point2(2.0, 0.0));
+  timestamps[X(2)] = 3.0;
+  smoother.update(factors, values, timestamps);
+
+  EXPECT(!smoother.getLinearizationPoint().exists(X(1)));
+  EXPECT(smoother.getLinearizationPoint().exists(X(2)));
+  EXPECT(smoother.timestamps().find(X(1)) == smoother.timestamps().end());
+}
+
 /* ************************************************************************* */
 TEST( IncrementalFixedLagSmoother, ExampleWithFactorRemoval )
 {

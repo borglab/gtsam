@@ -17,6 +17,8 @@
 #include <gtsam/base/ForestTraversal.h>
 
 #include <memory>
+#include <stdexcept>
+#include <thread>
 #include <vector>
 
 using namespace gtsam;
@@ -108,6 +110,75 @@ TEST(ForestTraversal, BottomUpLeafAggregation) {
 
   EXPECT_LONGS_EQUAL(7, root->subtreeCount);
 }
+
+#ifndef GTSAM_USE_TBB
+namespace {
+
+struct AggregationNode {
+  bool throwOnVisit = false;
+  bool visited = false;
+  std::thread::id visitThread;
+  std::vector<std::shared_ptr<AggregationNode>> children;
+
+  int problemSize() const { return 1; }
+
+  void visit() {
+    visited = true;
+    visitThread = std::this_thread::get_id();
+    if (throwOnVisit) throw std::runtime_error("leaf visit failed");
+  }
+};
+
+struct AggregationForest
+    : public ForestTraversal<AggregationForest, AggregationNode> {
+  using Node = AggregationNode;
+  std::vector<std::shared_ptr<AggregationNode>> roots_;
+
+  AggregationForest() : ForestTraversal(2) {}
+
+  const std::vector<std::shared_ptr<AggregationNode>>& roots() const {
+    return roots_;
+  }
+};
+
+std::shared_ptr<AggregationNode> createLeafStar(size_t leafCount) {
+  auto root = std::make_shared<AggregationNode>();
+  for (size_t i = 0; i < leafCount; ++i) {
+    root->children.push_back(std::make_shared<AggregationNode>());
+  }
+  return root;
+}
+
+}  // namespace
+
+// Leaves below the ordinary scheduling threshold still run on scheduler
+// workers when adjacent siblings form a size-bounded batch.
+TEST(ForestTraversal, BottomUpLeafAggregationSchedulesBatches) {
+  const std::thread::id caller = std::this_thread::get_id();
+  auto root = createLeafStar(8);
+  AggregationForest forest;
+  forest.roots_.push_back(root);
+
+  forest.runBottomUp(&AggregationNode::visit, 1000, 4);
+
+  CHECK(root->visited);
+  for (const auto& leaf : root->children) {
+    CHECK(leaf->visited);
+    CHECK(leaf->visitThread != caller);
+  }
+}
+
+// Exceptions raised inside an aggregated leaf task propagate to the caller.
+TEST(ForestTraversal, BottomUpLeafAggregationPropagatesExceptions) {
+  auto root = createLeafStar(4);
+  root->children[1]->throwOnVisit = true;
+  AggregationForest forest;
+  forest.roots_.push_back(root);
+
+  CHECK_EXCEPTION(forest.runBottomUp(&AggregationNode::visit, 1000, 4),
+                  std::runtime_error);
+}
+#endif
 
 /* ************************************************************************* */
 // Test 2: Top-down traversal

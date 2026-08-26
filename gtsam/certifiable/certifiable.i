@@ -12,6 +12,8 @@ class RiemannianStaircaseParams {
   size_t pMin;
   size_t pMax;
   double alpha;
+  bool useSaddleLineSearch;
+  double saddleStepTolerance;
   gtsam::RiemannianStaircaseParams::VerificationMethod verificationMethod;
   double eta;
   int maxSpectraIters;
@@ -35,6 +37,7 @@ class RiemannianStaircaseResult {
   gtsam::Vector getRanksVisited() const;
   gtsam::Vector getCostPerLevel() const;
   gtsam::Vector getMinEigenvaluePerLevel() const;
+  gtsam::Vector getStationarityPerLevel() const;
   gtsam::Vector getQcqpBuildTimePerLevel() const;
   gtsam::Vector getNlpTimePerLevel() const;
   gtsam::Vector getVerifyTimePerLevel() const;

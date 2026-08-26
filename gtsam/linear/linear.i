@@ -241,16 +241,15 @@ virtual class GemanMcClure: gtsam::noiseModel::mEstimator::Base {
       gtsam::noiseModel::mEstimator::GemanMcClure::GradScheme graduation,
       gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
 
-  static gtsam::noiseModel::mEstimator::GemanMcClure* Create(double c);
-  static gtsam::noiseModel::mEstimator::GemanMcClure* Create(
-      double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
   static gtsam::noiseModel::mEstimator::GemanMcClure* Create(
       double c,
-      gtsam::noiseModel::mEstimator::GemanMcClure::GradScheme graduation);
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block);
   static gtsam::noiseModel::mEstimator::GemanMcClure* Create(
       double c,
       gtsam::noiseModel::mEstimator::GemanMcClure::GradScheme graduation,
-      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block);
 
   // enabling serialization functionality
   void serializable() const;
@@ -273,16 +272,15 @@ virtual class TruncatedLeastSquares: gtsam::noiseModel::mEstimator::Base {
       double c,
       gtsam::noiseModel::mEstimator::TruncatedLeastSquares::GradScheme graduation,
       gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
-  static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(double c);
-  static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(
-      double c, gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
   static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(
       double c,
-      gtsam::noiseModel::mEstimator::TruncatedLeastSquares::GradScheme graduation);
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block);
   static gtsam::noiseModel::mEstimator::TruncatedLeastSquares* Create(
       double c,
       gtsam::noiseModel::mEstimator::TruncatedLeastSquares::GradScheme graduation,
-      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight);
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block);
 
   // enabling serialization functionality
   void serializable() const;
@@ -377,19 +375,14 @@ virtual class Custom: gtsam::noiseModel::mEstimator::Base {
          std::string name);
   static gtsam::noiseModel::mEstimator::Custom* Create(
       gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
-      gtsam::noiseModel::mEstimator::CustomLossFunction loss);
-  static gtsam::noiseModel::mEstimator::Custom* Create(
-      gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
       gtsam::noiseModel::mEstimator::CustomLossFunction loss,
-      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
-      std::string name);
-  static gtsam::noiseModel::mEstimator::Custom* Create(
-      gtsam::noiseModel::mEstimator::CustomWeightFunction weight,
-      gtsam::noiseModel::mEstimator::CustomLossFunction loss,
-      gtsam::noiseModel::mEstimator::CustomGraduatedWeightFunction gradWeight,
-      gtsam::noiseModel::mEstimator::CustomGraduatedLossFunction gradLoss,
-      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight,
-      const std::string& name);
+      gtsam::noiseModel::mEstimator::CustomGraduatedWeightFunction gradWeight =
+          std::nullopt,
+      gtsam::noiseModel::mEstimator::CustomGraduatedLossFunction gradLoss =
+          std::nullopt,
+      gtsam::noiseModel::mEstimator::Base::ReweightScheme reweight =
+          gtsam::noiseModel::mEstimator::Base::Block,
+      const std::string& name = "Custom");
 
   // enabling serialization functionality
   void serializable() const;
@@ -450,6 +443,7 @@ class VectorValues {
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
   bool equals(const gtsam::VectorValues& x, double tol) const;
+  @pybind_lambda
   void insert(gtsam::Key j, const gtsam::Vector& value);
   gtsam::Vector vector() const;
   gtsam::Vector vector(const gtsam::KeyVector& keys) const;
@@ -491,6 +485,12 @@ virtual class GaussianFactor : gtsam::Factor {
 };
 
 #include <gtsam/linear/JacobianFactor.h>
+class VariableSlots {
+  VariableSlots(const gtsam::GaussianFactorGraph& factorGraph);
+  void print(string str = "VariableSlots: ") const;
+  bool equals(const gtsam::VariableSlots& rhs, double tol = 0.0) const;
+};
+
 virtual class JacobianFactor : gtsam::GaussianFactor {
   //Constructors
   JacobianFactor();
@@ -518,7 +518,9 @@ virtual class JacobianFactor : gtsam::GaussianFactor {
   // Standard Interface
   // These are dense wrapper results. The C++ methods return Eigen views, and
   // the wrapper materializes them at the language boundary.
+  @pybind_lambda
   gtsam::Matrix getA() const;
+  @pybind_lambda
   gtsam::Vector getb() const;
   size_t rows() const;
   size_t cols() const;
@@ -562,6 +564,7 @@ virtual class HessianFactor : gtsam::GaussianFactor {
   //Standard Interface
   size_t rows() const;
   double constantTerm() const;
+  @pybind_lambda
   gtsam::Vector linearTerm() const;
 
   // enabling serialization functionality
@@ -584,14 +587,14 @@ class GaussianFactorGraph {
               gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  std::shared_ptr<gtsam::GaussianBayesTree> eliminateMultifrontal(
+  gtsam::GaussianBayesTree* eliminateMultifrontal(
       gtsam::GaussianFactorGraph::OptionalOrderingType orderingType = std::nullopt,
       const gtsam::GaussianFactorGraph::Eliminate& function =
           gtsam::GaussianFactorGraph::Eliminate(
               gtsam::GaussianFactorGraph::EliminationTraitsType::DefaultEliminate),
       gtsam::GaussianFactorGraph::OptionalVariableIndex variableIndex = std::nullopt)
       const;
-  std::shared_ptr<gtsam::GaussianBayesTree> eliminateMultifrontal(
+  gtsam::GaussianBayesTree* eliminateMultifrontal(
       const gtsam::Ordering& ordering,
       const gtsam::GaussianFactorGraph::Eliminate& function =
           gtsam::GaussianFactorGraph::Eliminate(
@@ -690,6 +693,7 @@ class GaussianFactorGraph {
   void push_back(const gtsam::GaussianConditional* conditional);
   void push_back(const gtsam::GaussianFactorGraph& graph);
   void push_back(const gtsam::GaussianBayesNet& bayesNet);
+  @pybind_lambda
   void push_back(const gtsam::GaussianBayesTree& bayesTree);
   void add(const gtsam::GaussianFactor& factor);
   void add(const gtsam::Vector& b);
@@ -765,6 +769,15 @@ class GaussianFactorGraph {
 
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/hybrid/HybridValues.h>
+class VerticalBlockMatrix {
+  VerticalBlockMatrix();
+  VerticalBlockMatrix(const std::vector<size_t>& dimensions, size_t height,
+                      bool appendOneDimension = false);
+  VerticalBlockMatrix(const std::vector<size_t>& dimensions,
+                      const gtsam::Matrix& matrix,
+                      bool appendOneDimension = false);
+};
+
 virtual class GaussianConditional : gtsam::JacobianFactor {
   // Constructors
   GaussianConditional(gtsam::Key key, gtsam::Vector d, gtsam::Matrix R,
@@ -824,6 +837,7 @@ virtual class GaussianConditional : gtsam::JacobianFactor {
   void solveTransposeInPlace(gtsam::VectorValues& gy) const;
   gtsam::GaussianConditional::constABlock R() const;
   gtsam::GaussianConditional::constABlock S() const;
+  @pybind_lambda
   gtsam::Vector d() const;
 
   // enabling serialization functionality
@@ -899,7 +913,7 @@ virtual class GaussianBayesNet {
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
   void saveGraph(
-      const string& s,
+      const std::string& s,
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       const gtsam::DotWriter& writer = gtsam::DotWriter()) const;
 };
@@ -1080,24 +1094,30 @@ class KalmanFilter {
   gtsam::GaussianDensity* init(
       const gtsam::Vector& x0, const gtsam::Matrix& P0) const;
   void print(string s = "") const;
+  @pybind_lambda
   static gtsam::Key step(gtsam::GaussianDensity* p);
+  @pybind_lambda
   gtsam::GaussianDensity* predict(
       gtsam::GaussianDensity* p,
       const gtsam::Matrix& F, const gtsam::Matrix& B, const gtsam::Vector& u,
       const gtsam::noiseModel::Diagonal* modelQ) const;
+  @pybind_lambda
   gtsam::GaussianDensity* predictQ(
       gtsam::GaussianDensity* p, const gtsam::Matrix& F,
       const gtsam::Matrix& B, const gtsam::Vector& u,
       const gtsam::Matrix& Q) const;
+  @pybind_lambda
   gtsam::GaussianDensity* predict2(
       gtsam::GaussianDensity* p,
       const gtsam::Matrix& A0, const gtsam::Matrix& A1,
       const gtsam::Vector& b,
       const gtsam::noiseModel::Diagonal* model = nullptr) const;
+  @pybind_lambda
   gtsam::GaussianDensity* update(
       gtsam::GaussianDensity* p,
       const gtsam::Matrix& H, const gtsam::Vector& z,
       const gtsam::noiseModel::Diagonal* model) const;
+  @pybind_lambda
   gtsam::GaussianDensity* updateQ(
       gtsam::GaussianDensity* p,
       const gtsam::Matrix& H, const gtsam::Vector& z,

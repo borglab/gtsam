@@ -85,6 +85,13 @@ class BatchJacobianFactorElimination {
     return factor.scatterInto(target, rowOffset, targetBlockIndices);
   }
 
+  /** Add compact rows directly to a sparse normal-equation accumulator. */
+  static void addSparseNormal(const BatchJacobianFactorBase& factor,
+                              const std::vector<DenseIndex>& scalarOffsets,
+                              SparseNormalAccumulator* accumulator) {
+    factor.updateSparseNormal(scalarOffsets, accumulator);
+  }
+
   /** Add the augmented Hessian using factor-key block destinations. */
   static void addHessian(const BatchJacobianFactorBase& factor,
                          const std::vector<DenseIndex>& factorBlockSlots,

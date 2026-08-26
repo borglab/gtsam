@@ -156,8 +156,8 @@ void MyBase_deconstructor_2(int nargout, mxArray *out[], int nargin, const mxArr
   item = collector_MyBase.find(self);
   if(item != collector_MyBase.end()) {
     collector_MyBase.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void MyTemplatePoint2_collectorInsertAndMakeBase_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -206,8 +206,8 @@ void MyTemplatePoint2_deconstructor_6(int nargout, mxArray *out[], int nargin, c
   item = collector_MyTemplatePoint2.find(self);
   if(item != collector_MyTemplatePoint2.end()) {
     collector_MyTemplatePoint2.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void MyTemplatePoint2_accept_T_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -374,8 +374,8 @@ void MyTemplateMatrix_deconstructor_22(int nargout, mxArray *out[], int nargin, 
   item = collector_MyTemplateMatrix.find(self);
   if(item != collector_MyTemplateMatrix.end()) {
     collector_MyTemplateMatrix.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void MyTemplateMatrix_accept_T_23(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -542,8 +542,8 @@ void MyTemplateA_deconstructor_38(int nargout, mxArray *out[], int nargin, const
   item = collector_MyTemplateA.find(self);
   if(item != collector_MyTemplateA.end()) {
     collector_MyTemplateA.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void MyTemplateA_accept_T_39(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -677,8 +677,8 @@ void ForwardKinematicsFactor_deconstructor_53(int nargout, mxArray *out[], int n
   item = collector_ForwardKinematicsFactor.find(self);
   if(item != collector_ForwardKinematicsFactor.end()) {
     collector_ForwardKinematicsFactor.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void ParentHasTemplateDouble_collectorInsertAndMakeBase_54(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -712,8 +712,8 @@ void ParentHasTemplateDouble_deconstructor_56(int nargout, mxArray *out[], int n
   item = collector_ParentHasTemplateDouble.find(self);
   if(item != collector_ParentHasTemplateDouble.end()) {
     collector_ParentHasTemplateDouble.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void Base_collectorInsertAndMakeBase_57(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -743,8 +743,8 @@ void Base_deconstructor_59(int nargout, mxArray *out[], int nargin, const mxArra
   item = collector_Base.find(self);
   if(item != collector_Base.end()) {
     collector_Base.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void Base_Create_60(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -785,8 +785,8 @@ void Derived_deconstructor_63(int nargout, mxArray *out[], int nargin, const mxA
   item = collector_Derived.find(self);
   if(item != collector_Derived.end()) {
     collector_Derived.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 
@@ -995,6 +995,7 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       break;
     }
   } catch(const std::exception& e) {
+    std::cout.rdbuf(outbuf);
     mexErrMsgTxt(("Exception from gtsam:\n" + std::string(e.what()) + "\n").c_str());
   }
 

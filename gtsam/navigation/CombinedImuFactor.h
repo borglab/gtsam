@@ -27,6 +27,8 @@
 #include <gtsam/navigation/PreintegrationCombinedParams.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 
+#include <type_traits>
+
 namespace gtsam {
 
 #ifdef GTSAM_LIEGROUP_PREINTEGRATION
@@ -137,6 +139,46 @@ class GTSAM_EXPORT PreintegratedCombinedMeasurementsT : public PreintegrationTyp
   /// @{
   /// Return pre-integrated measurement covariance
   Matrix preintMeasCov() const { return preintMeasCov_; }
+
+  /**
+   * Express the propagated covariance in the combined IMU factor residual
+   * chart.
+   *
+   * The first nine rows use the same NavState residual chart as ImuFactor.
+   * TangentPreintegration propagates them in additive
+   * \f$(\theta,p,v)\f$ coordinates, whose differential into that chart is
+   * \f[
+   * J_9 = \operatorname{diag}
+   *       \left(J_r(\theta),\Delta R^T,\Delta R^T\right).
+   * \f]
+   * ManifoldPreintegration and LieGroupPreintegration already propagate these
+   * rows in the residual chart, so their \f$J_9\f$ is identity.
+   *
+   * The final six propagated coordinates follow the bias change
+   * \f$b_j-b_i\f$, whereas the factor residual is
+   * \f$b_i-b_j\f$. Consequently the complete conversion is
+   * \f[
+   * J_{15}=\operatorname{diag}(J_9,-I_6), \qquad
+   * P_{\mathrm{res}}=J_{15}P_{\mathrm{native}}J_{15}^T.
+   * \f]
+   * The bias sign leaves its marginal covariance unchanged but reverses the
+   * state--bias cross-covariances. This method changes neither the nonlinear
+   * residual nor the raw covariance returned by preintMeasCov().
+   */
+  Matrix residualCovariance() const {
+    Eigen::Matrix<double, 15, 15> chartJacobian =
+        Eigen::Matrix<double, 15, 15>::Identity();
+    chartJacobian.bottomRightCorner<6, 6>() = -I_6x6;
+
+    if constexpr (std::is_same_v<PreintegrationType, TangentPreintegration>) {
+      Matrix9 preintegrationChartJacobian;
+      NavState().retract(this->preintegrated_, {},
+                         &preintegrationChartJacobian);
+      chartJacobian.topLeftCorner<9, 9>() = preintegrationChartJacobian;
+    }
+
+    return chartJacobian * preintMeasCov_ * chartJacobian.transpose();
+  }
   /// @}
 
   /// @name Testable
@@ -244,10 +286,10 @@ class GTSAM_EXPORT CombinedImuFactorT
    * @param bias_j Current bias key
    * @param PreintegratedCombinedMeasurements Combined IMU measurements
    */
-  CombinedImuFactorT(
-      Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
-      const PIM& preintegratedMeasurements)
-      : Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov()),
+  CombinedImuFactorT(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i,
+                     Key bias_j, const PIM& preintegratedMeasurements)
+      : Base(noiseModel::Gaussian::Covariance(
+                 preintegratedMeasurements.residualCovariance()),
              pose_i, vel_i, pose_j, vel_j, bias_i, bias_j),
         pim_(preintegratedMeasurements) {}
 

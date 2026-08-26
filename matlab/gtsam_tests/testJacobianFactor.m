@@ -1,8 +1,6 @@
 %-----------------------------------------------------------------------
 % eliminate
 
-import gtsam.*
-
 % the combined linear factor
 Ax2 = [
 -5., 0.
@@ -32,21 +30,21 @@ x1 = 3;
 % the RHS
 b2=[-1;1.5;2;-1];
 sigmas = [1;1;1;1];
-model4 = noiseModel.Diagonal.Sigmas(sigmas);
-combined = JacobianFactor(x2, Ax2,  l1, Al1, x1, Ax1, b2, model4);
+model4 = gtsam.noiseModel.Diagonal.Sigmas(sigmas);
+combined = gtsam.JacobianFactor(x2, Ax2, l1, Al1, x1, Ax1, b2, model4);
 
 % getA/getb return dense MATLAB arrays while the native C++ accessors remain views.
 A = combined.getA();
 b = combined.getb();
-CHECK('getA returns double', isa(A, 'double'));
-CHECK('getb returns double', isa(b, 'double'));
-CHECK('getA shape', isequal(size(A), [4, 6]));
-CHECK('getb shape', isequal(size(b), [4, 1]));
-CHECK('getA values', norm(A - [Ax2, Al1, Ax1]) < 1e-12);
-CHECK('getb values', norm(b - b2) < 1e-12);
+gtsam.CHECK('getA returns double', isa(A, 'double'));
+gtsam.CHECK('getb returns double', isa(b, 'double'));
+gtsam.CHECK('getA shape', isequal(size(A), [4, 6]));
+gtsam.CHECK('getb shape', isequal(size(b), [4, 1]));
+gtsam.CHECK('getA values', norm(A - [Ax2, Al1, Ax1]) < 1e-12);
+gtsam.CHECK('getb values', norm(b - b2) < 1e-12);
 
 % eliminate the first variable (x2) in the combined factor, destructive !
-ord=Ordering;
+ord = gtsam.Ordering;
 ord.push_back(x2);
 actualCG = combined.eliminate(ord);
 
@@ -64,10 +62,10 @@ S13 = [
 +0.00,-8.94427
 ];
 d=[2.23607;-1.56525];
-unit2 = noiseModel.Unit.Create(2);
-expectedCG = GaussianConditional(x2,d,R11,l1,S12,x1,S13,unit2);
+unit2 = gtsam.noiseModel.Unit.Create(2);
+expectedCG = gtsam.GaussianConditional(x2,d,R11,l1,S12,x1,S13,unit2);
 % check if the result matches
-CHECK('actualCG.equals(expectedCG,1e-5)',actualCG.equals(expectedCG,1e-4));
+gtsam.CHECK('actualCG.equals(expectedCG,1e-5)',actualCG.equals(expectedCG,1e-4));
 
 % the expected linear factor
 Bl1 = [
@@ -84,9 +82,9 @@ Bx1 = [
 % the RHS
 b1= [0.0;0.894427];
 
-model2 = noiseModel.Diagonal.Sigmas([1;1]);
-expectedLF = JacobianFactor(l1, Bl1, x1, Bx1, b1, model2);
+model2 = gtsam.noiseModel.Diagonal.Sigmas([1;1]);
+expectedLF = gtsam.JacobianFactor(l1, Bl1, x1, Bx1, b1, model2);
 
 % check if the result matches the combined (reduced) factor
 % FIXME: JacobianFactor/GaussianFactor mismatch
-%CHECK('combined.equals(expectedLF,1e-5)',combined.equals(expectedLF,1e-4));
+%gtsam.CHECK('combined.equals(expectedLF,1e-5)',combined.equals(expectedLF,1e-4));

@@ -75,6 +75,23 @@ TEST(PCGSolver, llt) {
 /* ************************************************************************* */
 
 /* ************************************************************************* */
+namespace vector_layout_fixture {
+
+// The legacy converter accepts a partial ordering and ignores trailing values.
+TEST(PCGSolver, LegacyBuildVectorValuesCompatibility) {
+  const map<Key, size_t> dimensions{{0, 1}, {1, 2}, {2, 1}};
+  const Ordering ordering{2, 0};
+  const Vector flat{{4.0, 5.0, 99.0}};
+
+  const VectorValues actual = buildVectorValues(flat, ordering, dimensions);
+  const VectorValues expected{{2, Vector1(4.0)}, {0, Vector1(5.0)}};
+  EXPECT(assert_equal(expected, actual));
+}
+
+}  // namespace vector_layout_fixture
+/* ************************************************************************* */
+
+/* ************************************************************************* */
 namespace graph_system_fixture {
 
 // Tests GaussianFactorGraphSystem::multiply and getb.

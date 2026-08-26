@@ -132,6 +132,11 @@ TEST(RiemannianStaircase, ReusesCachedPMinQcqp) {
   EXPECT_LONGS_EQUAL(result.ranksVisited.size(), result.nlpTimePerLevel.size());
   EXPECT_LONGS_EQUAL(result.ranksVisited.size(),
                      result.verifyTimePerLevel.size());
+  EXPECT_LONGS_EQUAL(result.ranksVisited.size(), result.costPerLevel.size());
+  EXPECT_LONGS_EQUAL(result.ranksVisited.size(),
+                     result.minEigenvaluePerLevel.size());
+  EXPECT_LONGS_EQUAL(result.ranksVisited.size(),
+                     result.stationarityPerLevel.size());
 
   double accountedTime = 0.0;
   for (size_t i = 0; i < result.ranksVisited.size(); ++i) {
@@ -198,7 +203,7 @@ TEST(RiemannianStaircase, FastSyncRot3QcqpInitialization) {
 }  // namespace FastSyncRot3Fixture
 
 /* ************************************************************************* */
-// At an ALM-converged Ystar, S = Q + sum_m lambda_m * A_m is PSD and S * Y ≈ 0
+// At an ALM-converged Ystar, the certificate S is PSD and S * Y ≈ 0
 // (1st-order KKT for the BM problem at eq. (16)).
 TEST(RiemannianStaircase, CertificateMatchesKKT) {
   using namespace RingFixture;
@@ -249,9 +254,9 @@ TEST(RiemannianStaircase, CertificateMatchesKKT) {
 }
 
 /* ************************************************************************* */
-// escapeSaddleAndLift widens each value by one column, leaving the first
+// liftWithDescent widens each value by one column, leaving the first
 // p columns unchanged and writing alpha * v into the new column.
-TEST(RiemannianStaircase, EscapeSaddleAndLiftShape) {
+TEST(RiemannianStaircase, LiftWithDescentShape) {
   using namespace RingFixture;
   constexpr size_t N = 5;
   constexpr double delta = 2.0 * kPi / static_cast<double>(N);
@@ -266,7 +271,7 @@ TEST(RiemannianStaircase, EscapeSaddleAndLiftShape) {
 
   const double alpha = 1e-2;
   const Values Ynext =
-      RiemannianStaircaseOptimizer::escapeSaddleAndLift(Ystar, v, layout, alpha);
+      RiemannianStaircaseOptimizer::liftWithDescent(Ystar, v, layout, alpha);
 
   EXPECT_LONGS_EQUAL(static_cast<long>(Ystar.size()),
                      static_cast<long>(Ynext.size()));
@@ -286,7 +291,7 @@ TEST(RiemannianStaircase, EscapeSaddleAndLiftShape) {
 // Constraint violation at the lifted point grows like O(alpha^2):
 // feasible Ystar at rank p + h(Y) = trace(Y' A Y) - b = 0,
 // lifting to [Ystar | alpha v] gives h = alpha^2 v' A v.
-TEST(RiemannianStaircase, EscapeSaddleViolationIsQuadratic) {
+TEST(RiemannianStaircase, LiftWithDescentViolationIsQuadratic) {
   using namespace RingFixture;
   constexpr size_t N = 5;
   constexpr double delta = 2.0 * kPi / static_cast<double>(N);
@@ -306,9 +311,9 @@ TEST(RiemannianStaircase, EscapeSaddleViolationIsQuadratic) {
   const QcqpProblem qcqpLifted(graph, 3);
   const double alphaSmall = 1e-3;
   const double alphaLarge = 2e-3;
-  const Values Yh = RiemannianStaircaseOptimizer::escapeSaddleAndLift(
+  const Values Yh = RiemannianStaircaseOptimizer::liftWithDescent(
       Ystar, v, layout, alphaSmall);
-  const Values YH = RiemannianStaircaseOptimizer::escapeSaddleAndLift(
+  const Values YH = RiemannianStaircaseOptimizer::liftWithDescent(
       Ystar, v, layout, alphaLarge);
 
   const double vioSmall = qcqpLifted.eConstraints().violationNorm(Yh);
@@ -354,9 +359,11 @@ TEST(RiemannianStaircase, BothVerifyMethodsCertifyEasyRing) {
   EXPECT(resultS.certified == resultD.certified);
   EXPECT_LONGS_EQUAL(static_cast<long>(resultS.finalRank),
                      static_cast<long>(resultD.finalRank));
-  // Spectra takes the Cholesky shortcut and reports lambda_min = -eta as a
-  // bound; both methods land in the cert-passing region.
-  EXPECT(resultS.minEigenvalue >= -paramsS.eta);
+  EXPECT(resultS.certified);
+  // Spectra certifies through Cholesky, which proves only lambda_min >= -eta,
+  // so it reports exactly that bound rather than an estimate. DenseEigen has
+  // the actual eigenvalue and reports it.
+  EXPECT_DOUBLES_EQUAL(-paramsS.eta, resultS.minEigenvalue, 1e-15);
   EXPECT(resultD.minEigenvalue >= -paramsD.eta);
 }
 
@@ -778,8 +785,8 @@ TEST(Layout, UnstackRowMismatchThrows) {
 }
 
 /* ************************************************************************* */
-// escapeSaddleAndLift error paths: short vMin and non-conforming layout.
-TEST(RiemannianStaircase, EscapeSaddleErrorPaths) {
+// liftWithDescent error paths: short vMin and non-conforming layout.
+TEST(RiemannianStaircase, LiftWithDescentErrorPaths) {
   using namespace RingFixture;
   constexpr size_t N = 5;
   constexpr double delta = 2.0 * kPi / static_cast<double>(N);
@@ -788,7 +795,7 @@ TEST(RiemannianStaircase, EscapeSaddleErrorPaths) {
 
   const Vector shortV = Vector::Zero(layout.totalDim - 1);
   CHECK_EXCEPTION(
-      RiemannianStaircaseOptimizer::escapeSaddleAndLift(
+      RiemannianStaircaseOptimizer::liftWithDescent(
           Ystar, shortV, layout, 1e-2),
       std::invalid_argument);
 
@@ -796,7 +803,7 @@ TEST(RiemannianStaircase, EscapeSaddleErrorPaths) {
   nonConforming.insert(Symbol('z', 0), Matrix(Matrix::Zero(3, 2)));
   const Vector v = Vector::Zero(layout.totalDim);
   CHECK_EXCEPTION(
-      RiemannianStaircaseOptimizer::escapeSaddleAndLift(
+      RiemannianStaircaseOptimizer::liftWithDescent(
           nonConforming, v, layout, 1e-2),
       std::invalid_argument);
 }
@@ -837,3 +844,591 @@ int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
+
+/* ************************************************************************* */
+namespace least_squares_multipliers {
+using namespace RingFixture;
+
+// A QCQP over one variable whose constraints span the symmetric 2x2 matrices,
+// so the closed form below applies.
+QcqpProblem OneVariableProblem(const Matrix2& Q, double sigma) {
+  const Key key = 0;
+  QcqpProblem qcqp;
+  qcqp.addCost(QpCost(KeyVector{key},
+                      SymmetricBlockMatrix(std::vector<DenseIndex>{2},
+                                           Matrix(Q)),
+                      3));
+  for (const auto& [A, b] : traits<Rot2>::QcqpConstraints<2>()) {
+    qcqp.addConstraint(QuadraticConstraint::Equal(key, A, b, sigma));
+  }
+  return qcqp;
+}
+
+// The defining property: lambda minimizes ||S(lambda) Y||, so the
+// residual it leaves is orthogonal to every direction the multipliers can move
+// in. Checked away from a stationary point, where the residual is nonzero and
+// the condition has content.
+TEST(RiemannianStaircase, LeastSquaresMultipliersSolveTheNormalEquations) {
+  constexpr size_t N = 5;
+  constexpr double delta = 2.0 * kPi / static_cast<double>(N);
+  const Values Y = RingQcqpValuesD2(N, delta, 0.35);
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(Y);
+  const QcqpProblem qcqp(RingGraph(N, delta), 2);
+
+  const auto ls = RiemannianStaircaseOptimizer::leastSquaresMultipliers(
+      qcqp, layout, Y);
+  const auto S = RiemannianStaircaseOptimizer::buildCertificate(qcqp, layout,
+                                                                ls.lambdaEq);
+  EXPECT(ls.totalResidual > 1e-6);
+
+  // d/d lambda_m of ||S Y||^2 vanishes: <A_m Y_n, (S Y)_n> = 0 for every m.
+  const Matrix SY = Matrix(S) * layout.stack(Y);
+  for (const auto& factor : qcqp.eConstraints()) {
+    const auto quadratic =
+        std::dynamic_pointer_cast<const QuadraticEqualityConstraintFactor>(
+            factor);
+    const auto& constraint = quadratic->quadraticConstraint();
+    const auto& slice = layout.sliceOf(constraint.key());
+    const Matrix Yn = layout.stack(Y).middleRows(slice.offset, slice.rowDim);
+    const Matrix Gn = SY.middleRows(slice.offset, slice.rowDim);
+    EXPECT_DOUBLES_EQUAL(0.0, (constraint.A() * Yn).cwiseProduct(Gn).sum(),
+                         1e-8);
+  }
+}
+
+// The recovered multipliers are the ones that annihilate Y, which is the
+// property the certificate depends on.
+TEST(RiemannianStaircase, LeastSquaresMultipliersAnnihilateY) {
+  constexpr size_t N = 5;
+  constexpr double delta = 2.0 * kPi / static_cast<double>(N);
+  const Values Y = RingQcqpValuesD2(N, delta, 0.0);
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(Y);
+  const QcqpProblem qcqp(RingGraph(N, delta), 2);
+
+  const auto ls = RiemannianStaircaseOptimizer::leastSquaresMultipliers(
+      qcqp, layout, Y);
+  const auto S = RiemannianStaircaseOptimizer::buildCertificate(qcqp, layout,
+                                                                ls.lambdaEq);
+  EXPECT_DOUBLES_EQUAL(0.0, (Matrix(S) * layout.stack(Y)).norm(), 1e-8);
+  EXPECT_DOUBLES_EQUAL(0.0, ls.totalResidual, 1e-8);
+}
+
+// Away from a stationary point the residual is large, which is what lets it
+// serve as a gate. A zero-multiplier certificate cannot express this: S would
+// collapse to the positive semidefinite data matrix Q.
+TEST(RiemannianStaircase, LeastSquaresMultipliersFlagNonStationaryPoint) {
+  constexpr size_t N = 4;
+  constexpr double delta = 2.0 * kPi / static_cast<double>(N);
+  const Values Y = RingQcqpValuesD2(N, delta, 0.6);
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(Y);
+  const QcqpProblem qcqp(RingGraph(N, delta), 2);
+
+  const auto ls = RiemannianStaircaseOptimizer::leastSquaresMultipliers(
+      qcqp, layout, Y);
+  EXPECT(ls.totalResidual > 1e-3);
+
+  // Zero multipliers leave S = Q, which is positive semidefinite by
+  // construction and so certifies regardless of the point.
+  const std::vector<Vector> zeros(qcqp.eConstraints().size(), Vector1(0.0));
+  const auto Sz = RiemannianStaircaseOptimizer::buildCertificate(qcqp, layout,
+                                                                 zeros);
+  RiemannianStaircaseParams params;
+  const auto [certified, lambdaMin, vMin] =
+      RiemannianStaircaseOptimizer::verify(Sz, params);
+  EXPECT(certified);
+}
+
+// Every variable gets a residual entry, including unconstrained ones, whose
+// entry is ||(QY)_n|| since no multiplier can reduce it.
+TEST(RiemannianStaircase, LeastSquaresMultipliersCoverEveryVariable) {
+  constexpr size_t N = 4;
+  constexpr double delta = 2.0 * kPi / static_cast<double>(N);
+  const Values Y = RingQcqpValuesD2(N, delta, 0.25);
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(Y);
+  const QcqpProblem qcqp(RingGraph(N, delta), 2);
+
+  const auto ls = RiemannianStaircaseOptimizer::leastSquaresMultipliers(
+      qcqp, layout, Y);
+  LONGS_EQUAL(layout.slices.size(), ls.residual.size());
+  for (const auto& [key, slice] : layout.slices) {
+    EXPECT(ls.residual.count(key) == 1);
+  }
+  LONGS_EQUAL(qcqp.eConstraints().size(), ls.lambdaEq.size());
+}
+
+// A case with a closed-form answer. For a single variable whose constraints
+// span the symmetric matrices, KKT stationarity (Q + 2*Lambda) X = 0 with
+// X X' = I forces Lambda = -Q/2, hence S = 0 and zero residual, whatever Q is.
+TEST(RiemannianStaircase, LeastSquaresMultipliersMatchClosedFormOnOneVariable) {
+  const Matrix2 Q{{2.0, -0.7}, {-0.7, 1.5}};
+  const QcqpProblem qcqp = OneVariableProblem(Q, 1.0);
+
+  Values Y;
+  Y.insert(Key(0), Matrix(traits<Rot2>::QcqpValue<3>(Rot2(0.4))));
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(Y);
+
+  const auto ls = RiemannianStaircaseOptimizer::leastSquaresMultipliers(
+      qcqp, layout, Y);
+  const auto S = RiemannianStaircaseOptimizer::buildCertificate(qcqp, layout,
+                                                                ls.lambdaEq);
+  EXPECT_DOUBLES_EQUAL(0.0, Matrix(S).norm(), 1e-9);
+  EXPECT_DOUBLES_EQUAL(0.0, ls.totalResidual, 1e-9);
+}
+
+// At a converged point the least-squares multipliers reproduce what the
+// augmented-Lagrangian solver reports, since both satisfy the same
+// stationarity conditions.
+TEST(RiemannianStaircase, LeastSquaresMultipliersMatchConvergedAlm) {
+  constexpr size_t N = 5;
+  constexpr double delta = 2.0 * kPi / static_cast<double>(N);
+  const NonlinearFactorGraph graph = RingGraph(N, delta);
+  const Values initial = RingQcqpValuesD2(N, delta, 0.15);
+
+  RiemannianStaircaseParams params;
+  params.pMin = 2;
+  params.pMax = 2;
+  params.almParams = DefaultAlmParams();
+  const auto result =
+      RiemannianStaircaseOptimizer(graph, initial, params).optimize();
+
+  const QcqpProblem qcqp(graph, 2);
+  const auto ls = RiemannianStaircaseOptimizer::leastSquaresMultipliers(
+      qcqp, result.layout, result.values);
+
+  // A converged point is stationary, so the residual the multipliers leave is
+  // essentially zero.
+  EXPECT(ls.totalResidual < 1e-4);
+}
+
+// Cross-check against a reference computed a completely different way. S is
+// affine in lambda, so probing buildCertificate with the zero vector and each
+// basis vector recovers the whole least-squares system, which is then solved
+// as one dense problem. That route shares no code with the block-wise
+// grouping, the per-variable QR, or the whitening conversion inside the
+// implementation, so agreement pins all three.
+TEST(RiemannianStaircase, LeastSquaresMultipliersMatchDenseReference) {
+  constexpr size_t N = 4;
+  constexpr double delta = 2.0 * kPi / static_cast<double>(N);
+  const Values Y = RingQcqpValuesD2(N, delta, 0.3);
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(Y);
+  const QcqpProblem qcqp(RingGraph(N, delta), 2);
+  const size_t M = qcqp.eConstraints().size();
+  const Matrix Ystack = layout.stack(Y);
+
+  const std::vector<Vector> zeros(M, Vector1(0.0));
+  const Matrix G0 =
+      Matrix(RiemannianStaircaseOptimizer::buildCertificate(qcqp, layout,
+                                                            zeros)) *
+      Ystack;
+
+  Matrix W(G0.size(), static_cast<DenseIndex>(M));
+  for (size_t m = 0; m < M; ++m) {
+    std::vector<Vector> basis(M, Vector1(0.0));
+    basis[m] = Vector1(1.0);
+    const Matrix column =
+        Matrix(RiemannianStaircaseOptimizer::buildCertificate(qcqp, layout,
+                                                              basis)) *
+            Ystack -
+        G0;
+    W.col(static_cast<DenseIndex>(m)) =
+        Eigen::Map<const Vector>(column.data(), column.size());
+  }
+  const Eigen::Map<const Vector> g(G0.data(), G0.size());
+  const Vector reference = W.colPivHouseholderQr().solve(-g);
+
+  const auto ls = RiemannianStaircaseOptimizer::leastSquaresMultipliers(
+      qcqp, layout, Y);
+  for (size_t m = 0; m < M; ++m) {
+    EXPECT_DOUBLES_EQUAL(reference(static_cast<DenseIndex>(m)),
+                         ls.lambdaEq[m](0), 1e-7);
+  }
+}
+
+// The two conventions the implementation has to get right, neither of which
+// the rotation fixtures exercise: every constraint there has sigma = 1 and an
+// already symmetric A.
+//
+// sigma is whitening bookkeeping, so the unwhitened multiplier lambda/sigma is
+// what pairs with A and must not move; lambda itself scales with sigma. And
+// trace(X' A X) sees only the symmetric part of A, so a constraint stated with
+// a non-symmetric A must behave exactly like its symmetrized form.
+TEST(RiemannianStaircase, LeastSquaresMultipliersRespectSigmaAndAsymmetry) {
+  const Key key = 0;
+  const Matrix2 Q{{2.0, -0.7}, {-0.7, 1.5}};
+  const Matrix symmetric(Matrix2{{0.0, 0.5}, {0.5, 0.0}});
+  const Matrix skewed(Matrix2{{0.0, 1.3}, {-0.3, 0.0}});  // same symmetric part
+
+  Matrix X(2, 3);
+  X << 0.8, 0.1, -0.2, 0.3, 0.9, 0.4;  // deliberately infeasible
+  Values Y;
+  Y.insert(key, X);
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(Y);
+
+  const auto solve = [&](const Matrix& A, double sigma) {
+    QcqpProblem qcqp;
+    qcqp.addCost(QpCost(KeyVector{key},
+                        SymmetricBlockMatrix(std::vector<DenseIndex>{2},
+                                             Matrix(Q)),
+                        3));
+    qcqp.addConstraint(QuadraticConstraint::Equal(
+        key, Matrix(Matrix2{{1.0, 0.0}, {0.0, 0.0}}), 1.0, sigma));
+    qcqp.addConstraint(QuadraticConstraint::Equal(key, A, 0.0, sigma));
+    return RiemannianStaircaseOptimizer::leastSquaresMultipliers(qcqp, layout,
+                                                                 Y);
+  };
+
+  const auto unit = solve(symmetric, 1.0);
+  const auto scaled = solve(symmetric, 4.0);
+  const auto asymmetric = solve(skewed, 1.0);
+
+  // Scaling sigma leaves the fit alone and scales lambda by exactly sigma.
+  EXPECT_DOUBLES_EQUAL(unit.totalResidual, scaled.totalResidual, 1e-9);
+  for (size_t m = 0; m < unit.lambdaEq.size(); ++m) {
+    EXPECT_DOUBLES_EQUAL(4.0 * unit.lambdaEq[m](0), scaled.lambdaEq[m](0),
+                         1e-9);
+  }
+
+  // Only the symmetric part of A is visible to the constraint.
+  EXPECT_DOUBLES_EQUAL(unit.totalResidual, asymmetric.totalResidual, 1e-9);
+  for (size_t m = 0; m < unit.lambdaEq.size(); ++m) {
+    EXPECT_DOUBLES_EQUAL(unit.lambdaEq[m](0), asymmetric.lambdaEq[m](0), 1e-9);
+  }
+}
+
+}  // namespace least_squares_multipliers
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace inner_solver_state {
+using namespace RingFixture;
+
+constexpr size_t kNumPoses = 5;
+const double kDelta = 2.0 * kPi / static_cast<double>(kNumPoses);
+
+// BCL raises the penalty during the solve, so the value the saddle merit needs
+// is the one the solver finished on, not `bclInitialPenalty`.
+TEST(RiemannianStaircase, InnerSolveReportsFinalPenalty) {
+  const QcqpProblem qcqp(RingGraph(kNumPoses, kDelta), 2);
+  const Values initial = RingQcqpValuesD2(kNumPoses, kDelta, 0.3);
+
+  auto almParams = DefaultAlmParams();
+  almParams->bclInitialPenalty = 7.0;
+  const auto inner =
+      RiemannianStaircaseOptimizer::runLocalSolver(qcqp, initial, almParams);
+  EXPECT(inner.penalty > 0.0);
+  EXPECT(inner.penalty >= almParams->bclInitialPenalty);
+}
+
+// A null almParams means "use the defaults" to runLocalSolver, so it must mean
+// the same to the staircase. It used to be dereferenced unchecked on the lift
+// path, which crashed as soon as a level failed to certify.
+TEST(RiemannianStaircase, NullAlmParamsIsNormalized) {
+  RiemannianStaircaseParams params;
+  params.pMin = 2;
+  params.pMax = 3;
+  params.eta = -1.0;  // Reject every level, so the lift path is exercised.
+  params.almParams = nullptr;
+
+  const RiemannianStaircaseOptimizer optimizer(
+      RingGraph(kNumPoses, kDelta), RingQcqpValuesD2(kNumPoses, kDelta, 0.3),
+      params);
+  EXPECT(optimizer.params().almParams != nullptr);
+
+  const auto result = optimizer.optimize();
+  EXPECT(!result.certified);
+  LONGS_EQUAL(2, result.ranksVisited.size());
+}
+
+}  // namespace inner_solver_state
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace cached_data_matrix {
+using namespace RingFixture;
+
+constexpr size_t kNumPoses = 6;
+const double kDelta = 2.0 * kPi / static_cast<double>(kNumPoses);
+
+// Caching Q for the whole climb is only sound because Q does not depend on the
+// rank: the layout is indexed by row dimension, and lifting adds columns only.
+TEST(RiemannianStaircase, DataMatrixIsRankIndependent) {
+  const NonlinearFactorGraph graph = RingGraph(kNumPoses, kDelta);
+  Matrix reference;
+  for (int p = 2; p <= 5; ++p) {
+    const QcqpProblem qcqp(graph, p);
+    Values Y;
+    for (size_t i = 0; i < kNumPoses; ++i)
+      Y.insert(Symbol('x', i), Matrix(Matrix::Zero(2, p)));
+    const auto layout = RiemannianStaircaseOptimizer::Layout::From(Y);
+    const Matrix Q =
+        Matrix(RiemannianStaircaseOptimizer::buildDataMatrix(qcqp, layout));
+    if (p == 2) {
+      reference = Q;
+    } else {
+      EXPECT(assert_equal(reference, Q, 1e-12));
+    }
+  }
+}
+
+// The optimizer caches Q at construction; it must equal a freshly built one.
+TEST(RiemannianStaircase, CachedDataMatrixMatchesFreshBuild) {
+  const NonlinearFactorGraph graph = RingGraph(kNumPoses, kDelta);
+  const Values initial = RingQcqpValuesD2(kNumPoses, kDelta, 0.01);
+  RiemannianStaircaseParams params;
+  params.pMin = 2;
+  params.pMax = 3;
+  params.almParams = DefaultAlmParams();
+
+  const RiemannianStaircaseOptimizer optimizer(graph, initial, params);
+  const QcqpProblem qcqp(graph, 2);
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(initial);
+  EXPECT(assert_equal(
+      Matrix(RiemannianStaircaseOptimizer::buildDataMatrix(qcqp, layout)),
+      Matrix(optimizer.dataMatrix()), 1e-12));
+}
+
+// Passing Q explicitly must give exactly what rebuilding it internally gives,
+// for both routines that consume it.
+TEST(RiemannianStaircase, ReusingDataMatrixMatchesRebuilding) {
+  const NonlinearFactorGraph graph = RingGraph(kNumPoses, kDelta);
+  const Values Y = RingQcqpValuesD2(kNumPoses, kDelta, 0.3);
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(Y);
+  const QcqpProblem qcqp(graph, 2);
+  const auto Q = RiemannianStaircaseOptimizer::buildDataMatrix(qcqp, layout);
+
+  const auto rebuilt =
+      RiemannianStaircaseOptimizer::leastSquaresMultipliers(qcqp, layout, Y);
+  const auto reused = RiemannianStaircaseOptimizer::leastSquaresMultipliers(
+      qcqp, layout, Y, Q);
+  EXPECT_DOUBLES_EQUAL(rebuilt.totalResidual, reused.totalResidual, 1e-12);
+  LONGS_EQUAL(rebuilt.lambdaEq.size(), reused.lambdaEq.size());
+  for (size_t m = 0; m < rebuilt.lambdaEq.size(); ++m) {
+    EXPECT(assert_equal(rebuilt.lambdaEq[m], reused.lambdaEq[m], 1e-12));
+  }
+
+  EXPECT(assert_equal(
+      Matrix(RiemannianStaircaseOptimizer::buildCertificate(qcqp, layout,
+                                                            reused.lambdaEq)),
+      Matrix(RiemannianStaircaseOptimizer::buildCertificate(
+          qcqp, layout, reused.lambdaEq, Q)),
+      1e-12));
+}
+
+}  // namespace cached_data_matrix
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace stage_two_is_not_authoritative {
+
+// Reaching Stage 2 means the Cholesky test already failed, so Stage 2 must
+// never report a pass no matter what its estimate says. Soundness then rests
+// only on the direct factorization, not on Lanczos accuracy.
+TEST(RiemannianStaircase, SpectraStageTwoNeverCertifies) {
+  constexpr int n = 40;
+  // Indefinite, but the negative eigenvalue is buried in a cluster spanning
+  // 16 orders of magnitude. Lanczos reports a positive lambda_min here, so a
+  // stage that graded itself on that estimate would certify an indefinite S.
+  Eigen::SparseMatrix<double> S(n, n);
+  std::vector<Eigen::Triplet<double>> triplets;
+  triplets.emplace_back(0, 0, -1e-9);
+  for (int i = 1; i < n - 1; ++i) triplets.emplace_back(i, i, 1e-9 * i);
+  triplets.emplace_back(n - 1, n - 1, 1e7);
+  S.setFromTriplets(triplets.begin(), triplets.end());
+  S.makeCompressed();
+
+  RiemannianStaircaseParams params;
+  params.eta = 1e-10;
+  const auto [passed, lambdaMin, vMin] =
+      RiemannianStaircaseOptimizer::verify(S, params);
+
+  // Cholesky on S + eta*I fails, so the verdict is settled before Stage 2
+  // reports anything; what it estimates cannot flip that. The estimate itself
+  // is not asserted: whether Lanczos resolves a cluster this tight varies with
+  // the BLAS in use, and the point of the test is that the verdict does not.
+  EXPECT(!passed);
+  EXPECT_LONGS_EQUAL(n, static_cast<long>(vMin.size()));
+}
+
+}  // namespace stage_two_is_not_authoritative
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace saddle_line_search {
+using namespace RingFixture;
+
+// The search only chooses the step; the lift itself must be untouched, so the
+// first p columns still carry Y* and only a column is appended.
+TEST(RiemannianStaircase, LineSearchPreservesLiftShape) {
+  constexpr size_t N = 4;
+  constexpr double delta = 2.0 * kPi / static_cast<double>(N);
+  const NonlinearFactorGraph graph = RingGraph(N, delta);
+  const Values Ystar = RingQcqpValuesD2(N, delta, 0.2);
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(Ystar);
+
+  const QcqpProblem lifted(graph, 3);
+  const Vector vMin = Vector::Ones(layout.totalDim).normalized();
+  std::vector<Vector> lambdaEq(lifted.eConstraints().size(), Vector1(0.1));
+
+  RiemannianStaircaseParams params;
+  params.almParams = DefaultAlmParams();
+  params.useSaddleLineSearch = true;  // off by default
+  const auto escape = RiemannianStaircaseOptimizer::saddleEscapeWithLineSearch(
+      lifted, layout, Ystar, vMin, lambdaEq, 10.0, -0.5, params);
+
+  for (const auto& [key, X] : escape.lifted.extract<Matrix>()) {
+    const Matrix before = Ystar.at<Matrix>(key);
+    LONGS_EQUAL(before.cols() + 1, X.cols());
+    EXPECT(assert_equal(before, Matrix(X.leftCols(before.cols())), 1e-12));
+  }
+}
+
+// With the search disabled the fixed step is used verbatim, so the two paths
+// can be compared on the same problem.
+TEST(RiemannianStaircase, LineSearchTogglesOff) {
+  constexpr size_t N = 4;
+  constexpr double delta = 2.0 * kPi / static_cast<double>(N);
+  const NonlinearFactorGraph graph = RingGraph(N, delta);
+  const Values Ystar = RingQcqpValuesD2(N, delta, 0.2);
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(Ystar);
+
+  const QcqpProblem lifted(graph, 3);
+  const Vector vMin = Vector::Ones(layout.totalDim).normalized();
+  std::vector<Vector> lambdaEq(lifted.eConstraints().size(), Vector1(0.1));
+
+  RiemannianStaircaseParams params;
+  params.almParams = DefaultAlmParams();
+  params.alpha = 3e-2;
+  params.useSaddleLineSearch = false;
+
+  const auto escape = RiemannianStaircaseOptimizer::saddleEscapeWithLineSearch(
+      lifted, layout, Ystar, vMin, lambdaEq, 10.0, -0.5, params);
+  EXPECT_DOUBLES_EQUAL(params.alpha, escape.alpha, 1e-12);
+  EXPECT(!escape.descentFound);
+  EXPECT(assert_equal(RiemannianStaircaseOptimizer::liftWithDescent(
+                          Ystar, vMin, layout, params.alpha),
+                      escape.lifted, 1e-12));
+}
+
+// Along the certificate's own minimum eigenvector the merit does decrease, so
+// this covers the accepting branch. An arbitrary direction does not: the lift
+// adds constraint violation the merit charges for, and the search declines.
+TEST(RiemannianStaircase, LineSearchFindsDescentAlongMinEigenvector) {
+  constexpr size_t N = 4;
+  constexpr double delta = 2.0 * kPi / static_cast<double>(N);
+  const NonlinearFactorGraph graph = RingGraph(N, delta);
+  const Values Ystar = RingQcqpValuesD2(N, delta, 0.2);
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(Ystar);
+
+  const QcqpProblem atRank(graph, 2);
+  const auto ls = RiemannianStaircaseOptimizer::leastSquaresMultipliers(
+      atRank, layout, Ystar);
+  const auto S = RiemannianStaircaseOptimizer::buildCertificate(atRank, layout,
+                                                                ls.lambdaEq);
+  RiemannianStaircaseParams verifyParams;
+  verifyParams.eta = 1e-9;
+  const auto [certified, lambdaMin, vMin] =
+      RiemannianStaircaseOptimizer::verify(S, verifyParams);
+  EXPECT(!certified);
+  EXPECT(lambdaMin < 0.0);
+
+  const QcqpProblem lifted(graph, 3);
+  RiemannianStaircaseParams params;
+  params.almParams = DefaultAlmParams();
+  params.useSaddleLineSearch = true;
+  const auto escape = RiemannianStaircaseOptimizer::saddleEscapeWithLineSearch(
+      lifted, layout, Ystar, vMin, ls.lambdaEq, 10.0, lambdaMin, params);
+
+  EXPECT(escape.descentFound);
+  EXPECT(escape.meritDecrease > 0.0);
+  EXPECT(escape.alpha > params.alpha);
+}
+
+// lambda_min of exactly zero divides to an infinite starting step, which
+// halving never brings back under alphaMin.
+TEST(RiemannianStaircase, LineSearchTerminatesAtZeroEigenvalue) {
+  constexpr size_t N = 4;
+  constexpr double delta = 2.0 * kPi / static_cast<double>(N);
+  const NonlinearFactorGraph graph = RingGraph(N, delta);
+  const Values Ystar = RingQcqpValuesD2(N, delta, 0.2);
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(Ystar);
+
+  const QcqpProblem lifted(graph, 3);
+  const Vector vMin = Vector::Ones(layout.totalDim).normalized();
+  std::vector<Vector> lambdaEq(lifted.eConstraints().size(), Vector1(0.1));
+
+  RiemannianStaircaseParams params;
+  params.almParams = DefaultAlmParams();
+  params.useSaddleLineSearch = true;
+
+  const auto escape = RiemannianStaircaseOptimizer::saddleEscapeWithLineSearch(
+      lifted, layout, Ystar, vMin, lambdaEq, 10.0, 0.0, params);
+  EXPECT(std::isfinite(escape.alpha));
+  for (const auto& [key, X] : escape.lifted.extract<Matrix>()) {
+    EXPECT(X.allFinite());
+  }
+}
+
+}  // namespace saddle_line_search
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace certificate_fixes {
+
+using RingFixture::DefaultAlmParams;
+using RingFixture::RingGraph;
+using RingFixture::RingQcqpValuesD2;
+
+constexpr size_t kNumPoses = 5;
+constexpr double kDelta = 2.0 * kPi / kNumPoses;
+
+// buildDataMatrix and QpCost::error read the same HessianFactor through
+// different views: the certificate takes the natural top-left corner of each
+// expanded block, while the solver uses the whole expansion. Nothing in the
+// type system ties those views together, so check the assembled Q against the
+// cost it is supposed to represent. QpCost evaluates 0.5 * tr(Y' Q Y), hence
+// the factor of 2.
+TEST(RiemannianStaircase, DataMatrixAgreesWithQcqpCost) {
+  const NonlinearFactorGraph graph = RingGraph(kNumPoses, kDelta);
+  const QcqpProblem qcqp(graph, 2);
+  const Values values = RingQcqpValuesD2(kNumPoses, kDelta, 0.05);
+  const auto layout = RiemannianStaircaseOptimizer::Layout::From(values);
+
+  const auto Q = RiemannianStaircaseOptimizer::buildDataMatrix(qcqp, layout);
+  const Matrix Y = layout.stack(values);
+  const double fromDataMatrix = (Y.transpose() * (Q * Y)).trace();
+
+  EXPECT_DOUBLES_EQUAL(2.0 * qcqp.costs().error(values), fromDataMatrix, 1e-9);
+}
+
+// lambda_min comes out of a shift trick as the difference lambda_max -
+// shiftedMax, so an unscaled relative tolerance leaves an absolute error of
+// tol * lambda_max. On a spectrum with a wide dynamic range that error can
+// exceed the eigenvalue itself and flip its sign, which is what produced false
+// certificates. Build a matrix whose spectrum is known exactly and check both
+// the sign and the value.
+TEST(RiemannianStaircase, SpectraResolvesTinyNegativeEigenvalueOnWideSpectrum) {
+  constexpr int n = 60;
+  const double trueMin = -2.4e-02;
+  Eigen::SparseMatrix<double> S(n, n);
+  std::vector<Eigen::Triplet<double>> triplets;
+  triplets.emplace_back(0, 0, trueMin);
+  // Remaining eigenvalues span up to ~5.9e+03, the ratio seen on intel.
+  for (int i = 1; i < n; ++i) {
+    triplets.emplace_back(i, i, 1.0 + 100.0 * static_cast<double>(i));
+  }
+  S.setFromTriplets(triplets.begin(), triplets.end());
+  S.makeCompressed();
+
+  RiemannianStaircaseParams params;
+  params.eta = 1e-4;  // far tighter than tol * lambda_max would allow
+  // verify() dispatches to the Spectra path, which is the default.
+  const auto [passed, lambdaMin, vMin] =
+      RiemannianStaircaseOptimizer::verify(S, params);
+
+  EXPECT(!passed);
+  EXPECT_DOUBLES_EQUAL(trueMin, lambdaMin, 1e-6);
+  EXPECT(lambdaMin < 0.0);
+}
+
+}  // namespace certificate_fixes
+/* ************************************************************************* */

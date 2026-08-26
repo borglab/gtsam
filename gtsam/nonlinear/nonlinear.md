@@ -27,7 +27,7 @@ The `nonlinear` module in GTSAM includes a comprehensive set of tools for nonlin
     - [DoglegParams](https://github.com/borglab/gtsam/blob/develop/gtsam/nonlinear/DoglegParams.h): Parameters for Dogleg optimization.
 
 - [GncOptimizer](doc/GncOptimizer.ipynb): Implements robust optimization using Graduated Non-Convexity.
-    - For GPU-accelerated GNC on bundle adjustment problems, see [GNC with the CUDA SFM optimizer](../slam/doc/CudaSfmGncOptimizer.ipynb).
+    - For GPU-accelerated GNC on bundle adjustment problems, see [GNC with the CUDA SFM optimizer](../sfm/doc/CudaSfmGncOptimizer.ipynb).
     - [GncParams](https://github.com/borglab/gtsam/blob/develop/gtsam/nonlinear/GncParams.h): Parameters for Graduated Non-Convexity optimization.
 
 ## Incremental Optimizers
@@ -40,7 +40,7 @@ The `nonlinear` module in GTSAM includes a comprehensive set of tools for nonlin
 ## Specialized Factors
 
 - [PriorFactor](doc/PriorFactor.ipynb): Imposes a prior constraint on a variable.
-- [NonlinearEquality](doc/NonlinearEquality.ipynb): Enforces equality constraints between variables.
+- [AntiFactor](https://github.com/borglab/gtsam/blob/develop/gtsam/nonlinear/AntiFactor.h): Negates an arbitrary nonlinear factor so it can be removed through a graph update.
 - [LinearContainerFactor](doc/LinearContainerFactor.ipynb): Wraps linear factors for inclusion in nonlinear factor graphs.
 - [WhiteNoiseFactor](doc/WhiteNoiseFactor.ipynb): Binary factor to estimate parameters of zero-mean Gaussian white noise.
 

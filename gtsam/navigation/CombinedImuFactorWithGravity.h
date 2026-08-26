@@ -76,16 +76,18 @@ class GTSAM_EXPORT CombinedImuFactorWithGravityT
    * parametrization, where the magnitude is part of the optimized variable;
    * to constrain it, add a VectorNormFactor<3> on the gravity variable.
    */
-  CombinedImuFactorWithGravityT(
-      Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias_i, Key bias_j,
-      Key gravity, const PIM& preintegratedMeasurements,
-      std::optional<double> gravityMagnitude = {})
-      : Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov()),
+  CombinedImuFactorWithGravityT(Key pose_i, Key vel_i, Key pose_j, Key vel_j,
+                                Key bias_i, Key bias_j, Key gravity,
+                                const PIM& preintegratedMeasurements,
+                                std::optional<double> gravityMagnitude = {})
+      : Base(noiseModel::Gaussian::Covariance(
+                 preintegratedMeasurements.residualCovariance()),
              pose_i, vel_i, pose_j, vel_j, bias_i, bias_j, gravity),
         pim_(preintegratedMeasurements),
-        gravityMagnitude_(gravityMagnitude
-                              ? *gravityMagnitude
-                              : preintegratedMeasurements.params()->n_gravity.norm()) {
+        gravityMagnitude_(
+            gravityMagnitude
+                ? *gravityMagnitude
+                : preintegratedMeasurements.params()->n_gravity.norm()) {
     if (internal::GravityParametrization<GRAVITY>::usesMagnitude) {
       if (!(gravityMagnitude_ > 0.0))
         throw std::invalid_argument(

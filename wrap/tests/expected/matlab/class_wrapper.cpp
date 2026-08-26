@@ -203,8 +203,8 @@ void FunRange_deconstructor_2(int nargout, mxArray *out[], int nargin, const mxA
   item = collector_FunRange.find(self);
   if(item != collector_FunRange.end()) {
     collector_FunRange.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void FunRange_range_3(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -239,8 +239,8 @@ void FunDouble_deconstructor_6(int nargout, mxArray *out[], int nargin, const mx
   item = collector_FunDouble.find(self);
   if(item != collector_FunDouble.end()) {
     collector_FunDouble.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void FunDouble_multiTemplatedMethod_7(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -324,8 +324,8 @@ void Test_deconstructor_15(int nargout, mxArray *out[], int nargin, const mxArra
   item = collector_Test.find(self);
   if(item != collector_Test.end()) {
     collector_Test.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void Test_arg_EigenConstRef_16(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -651,8 +651,8 @@ void PrimitiveRefDouble_deconstructor_54(int nargout, mxArray *out[], int nargin
   item = collector_PrimitiveRefDouble.find(self);
   if(item != collector_PrimitiveRefDouble.end()) {
     collector_PrimitiveRefDouble.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void PrimitiveRefDouble_Brutal_55(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -691,8 +691,8 @@ void MyVector3_deconstructor_58(int nargout, mxArray *out[], int nargin, const m
   item = collector_MyVector3.find(self);
   if(item != collector_MyVector3.end()) {
     collector_MyVector3.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void MyVector12_collectorInsertAndMakeBase_59(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -724,8 +724,8 @@ void MyVector12_deconstructor_61(int nargout, mxArray *out[], int nargin, const 
   item = collector_MyVector12.find(self);
   if(item != collector_MyVector12.end()) {
     collector_MyVector12.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void MultipleTemplatesIntDouble_collectorInsertAndMakeBase_62(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -746,8 +746,8 @@ void MultipleTemplatesIntDouble_deconstructor_63(int nargout, mxArray *out[], in
   item = collector_MultipleTemplatesIntDouble.find(self);
   if(item != collector_MultipleTemplatesIntDouble.end()) {
     collector_MultipleTemplatesIntDouble.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void MultipleTemplatesIntFloat_collectorInsertAndMakeBase_64(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -768,8 +768,8 @@ void MultipleTemplatesIntFloat_deconstructor_65(int nargout, mxArray *out[], int
   item = collector_MultipleTemplatesIntFloat.find(self);
   if(item != collector_MultipleTemplatesIntFloat.end()) {
     collector_MultipleTemplatesIntFloat.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void ForwardKinematics_collectorInsertAndMakeBase_66(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -821,8 +821,8 @@ void ForwardKinematics_deconstructor_69(int nargout, mxArray *out[], int nargin,
   item = collector_ForwardKinematics.find(self);
   if(item != collector_ForwardKinematics.end()) {
     collector_ForwardKinematics.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void TemplatedConstructor_collectorInsertAndMakeBase_70(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -890,8 +890,8 @@ void TemplatedConstructor_deconstructor_75(int nargout, mxArray *out[], int narg
   item = collector_TemplatedConstructor.find(self);
   if(item != collector_TemplatedConstructor.end()) {
     collector_TemplatedConstructor.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void FastSet_collectorInsertAndMakeBase_76(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -923,8 +923,8 @@ void FastSet_deconstructor_78(int nargout, mxArray *out[], int nargin, const mxA
   item = collector_FastSet.find(self);
   if(item != collector_FastSet.end()) {
     collector_FastSet.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void HessianFactor_collectorInsertAndMakeBase_79(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -977,8 +977,8 @@ void HessianFactor_deconstructor_82(int nargout, mxArray *out[], int nargin, con
   item = collector_HessianFactor.find(self);
   if(item != collector_HessianFactor.end()) {
     collector_HessianFactor.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void SmartProjectionRigFactorPinholeCameraCal3_S2_collectorInsertAndMakeBase_83(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -1003,8 +1003,8 @@ void SmartProjectionRigFactorPinholeCameraCal3_S2_deconstructor_84(int nargout, 
   item = collector_SmartProjectionRigFactorPinholeCameraCal3_S2.find(self);
   if(item != collector_SmartProjectionRigFactorPinholeCameraCal3_S2.end()) {
     collector_SmartProjectionRigFactorPinholeCameraCal3_S2.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void SmartProjectionRigFactorPinholeCameraCal3_S2_add_85(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -1059,8 +1059,8 @@ void MyFactorPosePoint2_deconstructor_89(int nargout, mxArray *out[], int nargin
   item = collector_MyFactorPosePoint2.find(self);
   if(item != collector_MyFactorPosePoint2.end()) {
     collector_MyFactorPosePoint2.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void MyFactorPosePoint2_print_90(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -1380,6 +1380,7 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       break;
     }
   } catch(const std::exception& e) {
+    std::cout.rdbuf(outbuf);
     mexErrMsgTxt(("Exception from gtsam:\n" + std::string(e.what()) + "\n").c_str());
   }
 

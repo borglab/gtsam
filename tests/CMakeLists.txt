@@ -18,6 +18,10 @@ endif()
 # Build the Ceres-dependent test separately when system Ceres is available.
 list(APPEND excluded_tests "testAdaptAutoDiff.cpp")
 
+if(NOT GTSAM_ALLOW_DEPRECATED_SINCE_V43)
+  list(APPEND excluded_tests "testHeaderMoveCompatibility.cpp")
+endif()
+
 # Build tests
 gtsamAddTestsGlob(tests "test*.cpp" "${excluded_tests}" "gtsam")
 

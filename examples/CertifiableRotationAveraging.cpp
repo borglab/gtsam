@@ -181,7 +181,7 @@ int RunCertifiableRA(const std::string& dataPath,
   if (skipped > 0) std::cout << "  (" << skipped << " non-Between skipped)";
   std::cout << "\n\n";
 
-  // Use the generic QCQP/Burer--Monteiro path with the default BCL policy.
+  // Use the generic QCQP/Burer-Monteiro path with the default BCL policy.
   // Initialization remains application-level policy rather than a BM solver
   // backend.
   RiemannianStaircaseParams params;
@@ -218,6 +218,7 @@ int RunCertifiableRA(const std::string& dataPath,
                                   std::chrono::steady_clock::now() - solveStart)
                                   .count();
 
+  const auto roundingStart = std::chrono::steady_clock::now();
   Values rounded;
   if (result.rounded) {
     // unstack → gauge-align → per-block project to RotT.
@@ -228,6 +229,10 @@ int RunCertifiableRA(const std::string& dataPath,
       rounded.insert(key, R);
     }
   }
+  const double roundingSeconds =
+      std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                    roundingStart).count();
+
   // graph.error is GTSAM's 0.5-NLL form; multiply by 2 for SE-Sync's paper F.
   std::cout << "\n========== Result ==========\n"
             << "Certified:         " << (result.certified ? "yes" : "no") << "\n"
@@ -250,6 +255,7 @@ int RunCertifiableRA(const std::string& dataPath,
             << "QCQP build time:    " << buildSeconds << " s\n"
             << "Local solve time:  " << nlpSeconds << " s\n"
             << "Certificate time:  " << verifySeconds << " s\n"
+            << "Rounding time:     " << roundingSeconds << " s\n"
             << "Total BM time:     " << result.totalTime << " s\n"
             << "Solve wall time:   " << solveSeconds << " s\n"
             << "End-to-end time:   " << initializationSeconds + solveSeconds

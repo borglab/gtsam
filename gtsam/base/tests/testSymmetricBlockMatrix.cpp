@@ -10,10 +10,10 @@
 * -------------------------------------------------------------------------- */
 
 /**
-* @file   testSymmetricBlockMatrix.cpp
-* @brief  Unit tests for SymmetricBlockMatrix class
-* @author Richard Roberts
-**/
+ * @file   testSymmetricBlockMatrix.cpp
+ * @brief  Unit tests for SymmetricBlockMatrix class
+ * @author Richard Roberts
+ **/
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/SymmetricBlockMatrix.h>
@@ -32,8 +32,7 @@ static SymmetricBlockMatrix testBlockMatrix(std::vector<size_t>{3, 2, 1},
 
 /* ************************************************************************* */
 // Read block accessors.
-TEST(SymmetricBlockMatrix, ReadBlocks)
-{
+TEST(SymmetricBlockMatrix, ReadBlocks) {
   // On the diagonal
   Matrix expected1 = Matrix{{22, 23}, {23, 29}};
   Matrix actual1 = testBlockMatrix.diagonalBlock(1);
@@ -47,11 +46,11 @@ TEST(SymmetricBlockMatrix, ReadBlocks)
 
 /* ************************************************************************* */
 // Write block setters.
-TEST(SymmetricBlockMatrix, WriteBlocks)
-{
+TEST(SymmetricBlockMatrix, WriteBlocks) {
   // On the diagonal
   Matrix expected1 = testBlockMatrix.diagonalBlock(1);
-  SymmetricBlockMatrix bm1 = SymmetricBlockMatrix::LikeActiveViewOf(testBlockMatrix);
+  SymmetricBlockMatrix bm1 =
+      SymmetricBlockMatrix::LikeActiveViewOf(testBlockMatrix);
 
   bm1.setDiagonalBlock(1, expected1);
   Matrix actual1 = bm1.diagonalBlock(1);
@@ -59,14 +58,16 @@ TEST(SymmetricBlockMatrix, WriteBlocks)
 
   // Above the diagonal
   Matrix expected2 = testBlockMatrix.aboveDiagonalBlock(0, 1);
-  SymmetricBlockMatrix bm2 = SymmetricBlockMatrix::LikeActiveViewOf(testBlockMatrix);
+  SymmetricBlockMatrix bm2 =
+      SymmetricBlockMatrix::LikeActiveViewOf(testBlockMatrix);
   bm2.setOffDiagonalBlock(0, 1, expected2);
   Matrix actual2 = bm2.aboveDiagonalBlock(0, 1);
   EXPECT(assert_equal(expected2, actual2));
 
   // Below the diagonal
   Matrix expected3 = testBlockMatrix.aboveDiagonalBlock(0, 1).transpose();
-  SymmetricBlockMatrix bm3 = SymmetricBlockMatrix::LikeActiveViewOf(testBlockMatrix);
+  SymmetricBlockMatrix bm3 =
+      SymmetricBlockMatrix::LikeActiveViewOf(testBlockMatrix);
   bm3.setOffDiagonalBlock(1, 0, expected3);
   Matrix actual3 = bm3.aboveDiagonalBlock(0, 1).transpose();
   EXPECT(assert_equal(expected3, actual3));
@@ -96,8 +97,7 @@ TEST(SymmetricBlockMatrix, setZeroColumns) {
 
 /* ************************************************************************* */
 // Verify block range access.
-TEST(SymmetricBlockMatrix, Ranges)
-{
+TEST(SymmetricBlockMatrix, Ranges) {
   // On the diagonal
   Matrix expected1 = Matrix{//
                             {22, 23, 24},
@@ -117,8 +117,7 @@ TEST(SymmetricBlockMatrix, Ranges)
 
 /* ************************************************************************* */
 // Exercise block expression helpers.
-TEST(SymmetricBlockMatrix, expressions)
-{
+TEST(SymmetricBlockMatrix, expressions) {
   const std::vector<size_t> dimensions{2, 3, 1};
   SymmetricBlockMatrix expected1(dimensions, Matrix{{0, 0, 0, 0, 0, 0},
                                                     {0, 0, 0, 0, 0, 0},
@@ -140,32 +139,39 @@ TEST(SymmetricBlockMatrix, expressions)
   SymmetricBlockMatrix bm1(dimensions);
   bm1.setZero();
   bm1.diagonalBlock(1).rankUpdate(a.transpose());
-  EXPECT(assert_equal(Matrix(expected1.selfadjointView()), bm1.selfadjointView()));
+  EXPECT(
+      assert_equal(Matrix(expected1.selfadjointView()), bm1.selfadjointView()));
 
   SymmetricBlockMatrix bm2(dimensions);
   bm2.setZero();
   bm2.updateOffDiagonalBlock(0, 1, b.transpose() * a);
-  EXPECT(assert_equal(Matrix(expected2.selfadjointView()), bm2.selfadjointView()));
+  EXPECT(
+      assert_equal(Matrix(expected2.selfadjointView()), bm2.selfadjointView()));
 
   SymmetricBlockMatrix bm3(dimensions);
   bm3.setZero();
   bm3.updateOffDiagonalBlock(1, 0, a.transpose() * b);
-  EXPECT(assert_equal(Matrix(expected2.selfadjointView()), bm3.selfadjointView()));
+  EXPECT(
+      assert_equal(Matrix(expected2.selfadjointView()), bm3.selfadjointView()));
 
   SymmetricBlockMatrix bm4(dimensions);
   bm4.setZero();
   bm4.updateDiagonalBlock(1, expected1.diagonalBlock(1));
-  EXPECT(assert_equal(Matrix(expected1.selfadjointView()), bm4.selfadjointView()));
+  EXPECT(
+      assert_equal(Matrix(expected1.selfadjointView()), bm4.selfadjointView()));
 
   SymmetricBlockMatrix bm5(dimensions);
   bm5.setZero();
   bm5.updateOffDiagonalBlock(0, 1, expected2.aboveDiagonalBlock(0, 1));
-  EXPECT(assert_equal(Matrix(expected2.selfadjointView()), bm5.selfadjointView()));
+  EXPECT(
+      assert_equal(Matrix(expected2.selfadjointView()), bm5.selfadjointView()));
 
   SymmetricBlockMatrix bm6(dimensions);
   bm6.setZero();
-  bm6.updateOffDiagonalBlock(1, 0, expected2.aboveDiagonalBlock(0, 1).transpose());
-  EXPECT(assert_equal(Matrix(expected2.selfadjointView()), bm6.selfadjointView()));
+  bm6.updateOffDiagonalBlock(1, 0,
+                             expected2.aboveDiagonalBlock(0, 1).transpose());
+  EXPECT(
+      assert_equal(Matrix(expected2.selfadjointView()), bm6.selfadjointView()));
 }
 
 /* ************************************************************************* */
@@ -194,8 +200,7 @@ TEST(SymmetricBlockMatrix, AddDiagonal) {
 
 /* ************************************************************************* */
 // Update via block mapping.
-TEST(SymmetricBlockMatrix, UpdateFromMappedBlocks)
-{
+TEST(SymmetricBlockMatrix, UpdateFromMappedBlocks) {
   const std::vector<size_t> destDims{1, 3, 2};
   const std::vector<DenseIndex> mapping{1, 2, 0};
 
@@ -233,9 +238,65 @@ TEST(SymmetricBlockMatrix, UpdateFromMappedBlocks)
 }
 
 /* ************************************************************************* */
+// Explicit source ranges and disjoint columns reconstruct a permuted update.
+TEST(SymmetricBlockMatrix, UpdateFromMappedBlockColumns) {
+  const std::vector<size_t> destinationDims{1, 2};
+  const std::vector<DenseIndex> mapping{1, 0};
+  const std::vector<DenseIndex> scalarOffsets{1, 0};
+
+  SymmetricBlockMatrix expected(destinationDims);
+  expected.setZero();
+  expected.updateFromMappedBlocks(testBlockMatrix, 1, mapping, scalarOffsets);
+
+  SymmetricBlockMatrix actual(destinationDims);
+  actual.setZero();
+  actual.updateFromMappedBlockColumn(testBlockMatrix, 1, 0, mapping,
+                                     scalarOffsets);
+  actual.updateFromMappedBlockColumn(testBlockMatrix, 1, 1, mapping,
+                                     scalarOffsets);
+  EXPECT(assert_equal(Matrix(expected.selfadjointView()),
+                      Matrix(actual.selfadjointView())));
+
+  const std::vector<DenseIndex> skippedMapping{1, -1};
+  const std::vector<DenseIndex> skippedOffsets{1, -1};
+  expected.setZero();
+  expected.updateFromMappedBlocks(testBlockMatrix, 1, skippedMapping,
+                                  skippedOffsets);
+  actual.setZero();
+  actual.updateFromMappedBlockColumn(testBlockMatrix, 1, 0, skippedMapping,
+                                     skippedOffsets);
+  EXPECT(assert_equal(Matrix(expected.selfadjointView()),
+                      Matrix(actual.selfadjointView())));
+}
+
+/* ************************************************************************* */
+// Variable-owned RHS cross blocks plus one RHS reduction reconstruct the
+// update.
+TEST(SymmetricBlockMatrix, UpdateFromMappedBlockColumnsVariableOwnsRhs) {
+  const std::vector<DenseIndex> mapping{1, 0, 2};
+  const std::vector<DenseIndex> scalarOffsets{2, 0, 5};
+  const std::vector<size_t> destinationDims{2, 3};
+
+  SymmetricBlockMatrix expected(destinationDims, true);
+  expected.setZero();
+  expected.updateFromMappedBlocks(testBlockMatrix, 0, mapping, scalarOffsets);
+
+  SymmetricBlockMatrix actual(destinationDims, true);
+  actual.setZero();
+  actual.updateFromMappedBlockColumn(testBlockMatrix, 0, 0, mapping,
+                                     scalarOffsets, true);
+  actual.updateFromMappedBlockColumn(testBlockMatrix, 0, 1, mapping,
+                                     scalarOffsets, true);
+  actual.updateDiagonalBlockAt(
+      scalarOffsets.back(),
+      testBlockMatrix.diagonalBlock(testBlockMatrix.nBlocks() - 1));
+  EXPECT(assert_equal(Matrix(expected.selfadjointView()),
+                      Matrix(actual.selfadjointView())));
+}
+
+/* ************************************************************************* */
 // Update via blockwise outer products from a VerticalBlockMatrix view.
-TEST(SymmetricBlockMatrix, UpdateFromOuterProductBlocks)
-{
+TEST(SymmetricBlockMatrix, UpdateFromOuterProductBlocks) {
   const std::vector<size_t> vbmDims{2, 1};
   VerticalBlockMatrix vbm(vbmDims, 4, true);
   vbm.matrix() = Matrix{//
@@ -253,6 +314,33 @@ TEST(SymmetricBlockMatrix, UpdateFromOuterProductBlocks)
   vbm.firstBlock() = 1;
   actual.updateFromOuterProductBlocks(vbm, mapping);
   EXPECT(assert_equal(expected, Matrix(actual.selfadjointView())));
+}
+
+/* ************************************************************************* */
+// Explicit outer-product ranges do not mutate the source active view.
+TEST(SymmetricBlockMatrix, UpdateFromExplicitOuterProductBlocks) {
+  const std::vector<size_t> vbmDims{2, 1};
+  VerticalBlockMatrix vbm(vbmDims, 4, true);
+  vbm.matrix() = Matrix{//
+                        {1, 2, 3, 4},
+                        {5, 6, 7, 8},
+                        {9, 10, 11, 12},
+                        {13, 14, 15, 16}};
+
+  const std::vector<size_t> destinationDims{1};
+  const std::vector<DenseIndex> mapping{0, 1};
+  const std::vector<DenseIndex> scalarOffsets{0, 1};
+  SymmetricBlockMatrix actual(destinationDims, true);
+  actual.setZero();
+  const Matrix S = vbm.matrix().block(1, 2, 3, 2);
+  const Matrix expected = -2.0 * S.transpose() * S;
+
+  actual.updateFromOuterProductBlocks(vbm, 1, 4, 1, mapping, scalarOffsets,
+                                      -2.0);
+  EXPECT(assert_equal(expected, Matrix(actual.selfadjointView())));
+  LONGS_EQUAL(0, vbm.rowStart());
+  LONGS_EQUAL(4, vbm.rowEnd());
+  LONGS_EQUAL(0, vbm.firstBlock());
 }
 
 /* ************************************************************************* */
@@ -275,5 +363,8 @@ TEST(SymmetricBlockMatrix, inverseInPlace) {
 }
 
 /* ************************************************************************* */
-int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
 /* ************************************************************************* */

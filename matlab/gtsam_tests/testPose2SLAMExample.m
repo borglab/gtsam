@@ -12,8 +12,6 @@
 % @author Chris Beall
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-import gtsam.*
-
 %% Assumptions
 %  - All values are axis aligned
 %  - Robot poses are facing along the X axis (horizontal, to the right in images)
@@ -21,42 +19,41 @@ import gtsam.*
 %  - The robot is on a grid, moving 2 meters each step
 
 %% Create graph container and add factors to it
-graph = NonlinearFactorGraph;
+graph = gtsam.NonlinearFactorGraph;
 
 %% Add prior
 % gaussian for prior
-priorMean = Pose2(0.0, 0.0, 0.0); % prior at origin
-priorNoise = noiseModel.Diagonal.Sigmas([0.3; 0.3; 0.1]);
-graph.add(PriorFactorPose2(1, priorMean, priorNoise)); % add directly to graph
+priorMean = gtsam.Pose2(0.0, 0.0, 0.0); % prior at origin
+priorNoise = gtsam.noiseModel.Diagonal.Sigmas([0.3; 0.3; 0.1]);
+graph.add(gtsam.PriorFactorPose2(1, priorMean, priorNoise)); % add directly to graph
 
 %% Add odometry
 % general noisemodel for odometry
-odometryNoise = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1]);
-graph.add(BetweenFactorPose2(1, 2, Pose2(2.0, 0.0, 0.0 ), odometryNoise));
-graph.add(BetweenFactorPose2(2, 3, Pose2(2.0, 0.0, pi/2), odometryNoise));
-graph.add(BetweenFactorPose2(3, 4, Pose2(2.0, 0.0, pi/2), odometryNoise));
-graph.add(BetweenFactorPose2(4, 5, Pose2(2.0, 0.0, pi/2), odometryNoise));
+odometryNoise = gtsam.noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1]);
+graph.add(gtsam.BetweenFactorPose2(1, 2, gtsam.Pose2(2.0, 0.0, 0.0), odometryNoise));
+graph.add(gtsam.BetweenFactorPose2(2, 3, gtsam.Pose2(2.0, 0.0, pi/2), odometryNoise));
+graph.add(gtsam.BetweenFactorPose2(3, 4, gtsam.Pose2(2.0, 0.0, pi/2), odometryNoise));
+graph.add(gtsam.BetweenFactorPose2(4, 5, gtsam.Pose2(2.0, 0.0, pi/2), odometryNoise));
 
 %% Add pose constraint
-model = noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1]);
-graph.add(BetweenFactorPose2(5, 2, Pose2(2.0, 0.0, pi/2), model));
+model = gtsam.noiseModel.Diagonal.Sigmas([0.2; 0.2; 0.1]);
+graph.add(gtsam.BetweenFactorPose2(5, 2, gtsam.Pose2(2.0, 0.0, pi/2), model));
 
 %% Initialize to noisy points
-initialEstimate = Values;
-initialEstimate.insert(1, Pose2(0.5, 0.0, 0.2 ));
-initialEstimate.insert(2, Pose2(2.3, 0.1,-0.2 ));
-initialEstimate.insert(3, Pose2(4.1, 0.1, pi/2));
-initialEstimate.insert(4, Pose2(4.0, 2.0, pi  ));
-initialEstimate.insert(5, Pose2(2.1, 2.1,-pi/2));
+initialEstimate = gtsam.Values;
+initialEstimate.insert(1, gtsam.Pose2(0.5, 0.0, 0.2));
+initialEstimate.insert(2, gtsam.Pose2(2.3, 0.1,-0.2));
+initialEstimate.insert(3, gtsam.Pose2(4.1, 0.1, pi/2));
+initialEstimate.insert(4, gtsam.Pose2(4.0, 2.0, pi));
+initialEstimate.insert(5, gtsam.Pose2(2.1, 2.1,-pi/2));
 
 %% Optimize using Levenberg-Marquardt optimization with an ordering from colamd
-optimizer = LevenbergMarquardtOptimizer(graph, initialEstimate);
+optimizer = gtsam.LevenbergMarquardtOptimizer(graph, initialEstimate);
 result = optimizer.optimizeSafely();
 
 %% Plot Covariance Ellipses
-marginals = Marginals(graph, result);
+marginals = gtsam.Marginals(graph, result);
 P = marginals.marginalCovariance(1);
 
 pose_1 = result.atPose2(1);
-CHECK('pose_1.equals(Pose2,1e-4)',pose_1.equals(Pose2,1e-4));
-
+gtsam.CHECK('pose_1.equals(Pose2,1e-4)',pose_1.equals(gtsam.Pose2,1e-4));

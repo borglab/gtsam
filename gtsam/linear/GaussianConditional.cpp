@@ -220,16 +220,9 @@ namespace gtsam {
     // Concatenate all vector values that correspond to parent variables
     const Vector xS = x.vector(KeyVector(beginParents(), endParents()));
 
-    // Update right-hand-side
-    const Vector rhs = d() - S() * xS;
-
-    // Solve matrix
-    const Vector solution = R().triangularView<Eigen::Upper>().solve(rhs);
-
-    // Check for indeterminate solution
-    if (solution.hasNaN()) {
-      throw IndeterminateSystemException(keys().front());
-    }
+    Vector solution;
+    internal::solveUpperConditional(R(), S(), d(), xS, &solution);
+    if (solution.hasNaN()) throw IndeterminateSystemException(keys().front());
 
     // Insert solution into a VectorValues
     VectorValues result;
@@ -248,12 +241,11 @@ namespace gtsam {
     // Concatenate all vector values that correspond to parent variables
     Vector xS = parents.vector(KeyVector(beginParents(), endParents()));
 
-    // Instead of updating getb(), update the right-hand-side from the given rhs
+    // Use the supplied frontal right-hand side instead of d().
     const Vector rhsR = rhs.vector(KeyVector(beginFrontals(), endFrontals()));
-    xS = rhsR - S() * xS;
-
-    // Solve Matrix
-    Vector solution = R().triangularView<Eigen::Upper>().solve(xS);
+    Vector solution;
+    internal::solveUpperConditional(R(), S(), rhsR, xS, &solution);
+    if (solution.hasNaN()) throw IndeterminateSystemException(keys().front());
 
     // Scale by sigmas
     if (model_) solution.array() *= model_->sigmasRef().array();

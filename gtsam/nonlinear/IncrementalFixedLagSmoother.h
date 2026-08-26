@@ -137,7 +137,8 @@ protected:
   void eraseKeysBefore(double timestamp);
 
   /** Fill in an iSAM2 ConstrainedKeys structure such that the provided keys are eliminated before all others */
-  void createOrderingConstraints(const KeyVector& marginalizableKeys,
+  void createOrderingConstraints(
+      const KeyVector& marginalizableKeys, const KeySet& activeKeys,
       std::optional<FastMap<Key, int> >& constrainedKeys) const;
 
 private:

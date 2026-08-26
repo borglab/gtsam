@@ -24,6 +24,7 @@
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/nonlinear/BatchFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/sfm/SfmLevenbergMarquardt.h>
 #include <gtsam/symbolic/IndexedJunctionTree.h>
 
 #include <cmath>
@@ -34,7 +35,6 @@
 #include <optional>
 
 #include "internal/SfmPcgBenchmark.h"
-#include "internal/SfmCholmodBenchmark.h"
 #include "internal/TimingUtils.h"
 
 namespace {
@@ -230,20 +230,13 @@ RunOptions parseBalFiles(int argc, char* argv[]) {
         "--colamd or a BAL file.");
   }
   if (options.pointBatchSchurCholmodOnly &&
-      (options.profile || options.endToEndPcg ||
-       options.benchmarkActionJson || options.cameraBatch ||
-       options.choleskyOnly || options.profilePointCholesky ||
-       options.batchChunkSize != 0)) {
+      (options.profile || options.endToEndPcg || options.benchmarkActionJson ||
+       options.cameraBatch || options.choleskyOnly ||
+       options.profilePointCholesky || options.batchChunkSize != 0)) {
     throw std::runtime_error(
         "--point-batch-schur-cholmod-only is a standalone comparison; "
         "combine it only with --colamd or a BAL file.");
   }
-  if (options.pointBatchSchurCholmodOnly &&
-      !bal::cholmodBackendAvailable()) {
-    throw std::runtime_error(
-        "--point-batch-schur-cholmod-only requires a build with CHOLMOD");
-  }
-
   if (hasFilename) return options;
   if (options.profile) {
     options.filenames = {bal::profileDataset()};
@@ -260,13 +253,19 @@ double runSolver(const NonlinearFactorGraph& graph, const Values& initial,
                  NonlinearOptimizerParams::LinearSolverType solverType,
                  const std::string& label,
                  const bal::BalBenchmarkConfig& config) {
-  LevenbergMarquardtParams params =
-      bal::makeLevenbergMarquardtParams(config, &ordering);
-  params.linearSolverType = solverType;
+  SfmLevenbergMarquardtParams params;
+  static_cast<LevenbergMarquardtParams&>(params) =
+      bal::makeLevenbergMarquardtParams(config, nullptr);
+  // Preserve this benchmark's historical semantics: the point-first full
+  // ordering is consumed directly by one linear solver. The public SFM matrix
+  // in timeSfmPartialElimination exercises Full and Schur modes explicitly.
+  params.setEliminationMode(SfmEliminationMode::Full);
+  if (!ordering.empty()) params.setOrdering(ordering);
+  params.setLinearSolver(solverType);
   if (solverType == NonlinearOptimizerParams::MULTIFRONTAL_SOLVER) {
     params.multifrontalParams.qrMode = MultifrontalParameters::QRMode::Allow;
   }
-  LevenbergMarquardtOptimizer lm(graph, initial, params);
+  SfmLevenbergMarquardtOptimizer lm(graph, initial, params);
   const double elapsed = gtsam::timing::measureSeconds([&] { lm.optimize(); });
   std::cout << "  " << label << ": " << elapsed << " s\n";
   return elapsed;
@@ -457,18 +456,23 @@ std::vector<PointCholeskyProfileRow> profilePointFirstCholesky(
             << std::endl;
   const SfmData db = bal::loadDataset(filename);
   const Values initial = bal::buildGeneralSfmInitial(db);
-  const Ordering ordering = bal::createSchurOrdering(db, false);
 
   const NonlinearFactorGraph regularGraph =
       bal::buildGeneralSfmGraph(db, config);
   const NonlinearFactorGraph batchGraph =
       bal::buildBatchSfmGraph(db, config, false, batchChunkSize);
+  const Ordering reducedOrdering =
+      SfmLevenbergMarquardtOptimizer::CreateReducedOrdering(regularGraph,
+                                                            initial);
+  const Ordering schurOrdering =
+      SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(regularGraph,
+                                                          reducedOrdering);
 
   std::vector<PointCholeskyProfileRow> rows;
   rows.push_back(profilePointFirstCholeskyVariant(
-      dataset, "Regular", regularGraph, initial, ordering, config));
+      dataset, "Regular", regularGraph, initial, schurOrdering, config));
   rows.push_back(profilePointFirstCholeskyVariant(
-      dataset, "PointBatch", batchGraph, initial, ordering, config));
+      dataset, "PointBatch", batchGraph, initial, schurOrdering, config));
 
   std::cout
       << "\n| Dataset | Variant | Nonlinear factors | Linear factors | "
@@ -531,29 +535,25 @@ int main(int argc, char* argv[]) {
         graph = bal::buildBatchSfmGraph(data, options.config, false, 0);
       });
       const Values initial = bal::buildGeneralSfmInitial(data);
-      const Ordering ordering = bal::createSchurOrdering(data, false);
-      LevenbergMarquardtParams parameters =
-          bal::makeLevenbergMarquardtParams(options.config, &ordering,
-                                            "SILENT");
-      const bal::SparseSchurOptimizationResult result =
-          bal::runPointBatchSchurCholmodOptimization(graph, initial,
-                                                      parameters);
+      SfmLevenbergMarquardtParams parameters;
+      static_cast<LevenbergMarquardtParams&>(parameters) =
+          bal::makeLevenbergMarquardtParams(options.config, nullptr, "SILENT");
+      parameters.setEliminationMode(SfmEliminationMode::Schur);
+      parameters.setLinearSolver(NonlinearOptimizerParams::CHOLMOD);
+      SfmLevenbergMarquardtOptimizer optimizer(graph, initial, parameters);
+      const double initialError = optimizer.error();
+      const double optimizeSeconds =
+          gtsam::timing::measureSeconds([&] { optimizer.optimize(); });
       std::cout << std::fixed << std::setprecision(6)
                 << "\n| Dataset | Solver | Graph build s | Optimize s | "
                    "Initial error | Final error | LM iterations | "
-                   "LM inner iterations | Linear solves | Assembly s | "
-                   "Factor + solve s | Back-substitute s |\n"
-                << "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | "
-                   "---: | ---: | ---: | ---: |\n"
+                   "LM inner iterations |\n"
+                << "| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: |\n"
                 << "| " << std::filesystem::path(filename).filename().string()
-                << " | PointBatch/SparseSchur/CHOLMOD | "
-                << graphBuildSeconds << " | " << result.elapsedSeconds << " | "
-                << result.initialError << " | " << result.finalError << " | "
-                << result.lmIterations << " | " << result.lmInnerIterations
-                << " | " << result.linearSolves << " | "
-                << result.assemblySeconds << " | "
-                << result.factorAndSolveSeconds << " | "
-                << result.backSubstituteSeconds << " |\n";
+                << " | PublicSfm/Schur/CHOLMOD | " << graphBuildSeconds << " | "
+                << optimizeSeconds << " | " << initialError << " | "
+                << optimizer.error() << " | " << optimizer.iterations() << " | "
+                << optimizer.getInnerIterations() << " |\n";
     }
     return 0;
   }
@@ -588,7 +588,10 @@ int main(int argc, char* argv[]) {
     Ordering ordering;
     Ordering cameraFirstOrdering;
     if (options.config.useSchur) {
-      ordering = bal::createSchurOrdering(db, false);
+      const Ordering reducedOrdering =
+          SfmLevenbergMarquardtOptimizer::CreateReducedOrdering(graph, initial);
+      ordering = SfmLevenbergMarquardtOptimizer::CreateSchurOrdering(
+          graph, reducedOrdering);
       if (options.cameraBatch) {
         cameraFirstOrdering = bal::createCameraFirstOrdering(db);
       }

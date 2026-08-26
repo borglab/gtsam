@@ -6,7 +6,7 @@
  */
 
 #include <gtsam_unstable/discrete/CSP.h>
-#include <gtsam_unstable/discrete/Domain.h>
+#include <gtsam/discrete/Domain.h>
 
 #include <CppUnitLite/TestHarness.h>
 

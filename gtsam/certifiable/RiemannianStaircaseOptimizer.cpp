@@ -16,6 +16,7 @@
 
 #include <gtsam/certifiable/RiemannianStaircaseOptimizer.h>
 
+#include <gtsam/constrained/AugmentedLagrangianOptimizer.h>
 #include <gtsam/constrained/QpCost.h>
 #include <gtsam/constrained/QuadraticConstraint.h>
 #include <gtsam/linear/HessianFactor.h>
@@ -24,7 +25,7 @@
 #include <Eigen/SVD>
 #include <Eigen/SparseCholesky>
 
-// Work around a GCC 16 false positive in Spectra's SortEigenvalue comparator.
+/// Work around a GCC 16 false positive in Spectra's SortEigenvalue comparator.
 #if defined(__GNUC__) && __GNUC__ == 16
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wmaybe-uninitialized"
@@ -32,6 +33,7 @@
 
 #include <Spectra/MatOp/SparseSymMatProd.h>
 #include <Spectra/SymEigsSolver.h>
+#include <Spectra/Util/SimpleRandom.h>
 
 #if defined(__GNUC__) && __GNUC__ == 16
 #pragma GCC diagnostic pop
@@ -61,6 +63,9 @@ RiemannianStaircaseOptimizer::RiemannianStaircaseOptimizer(
     const RiemannianStaircaseParams& params)
     : graph_(graph), initialValues_(initialValues), params_(params) {
   validateParams(params_);
+  if (!params_.almParams) {
+    params_.almParams = std::make_shared<AugmentedLagrangianParams>();
+  }
   const auto buildStart = Clock::now();
   try {
     pMinQcqp_ = std::make_shared<QcqpProblem>(graph_, params_.pMin);
@@ -71,6 +76,9 @@ RiemannianStaircaseOptimizer::RiemannianStaircaseOptimizer(
                     "Underlying error: ") +
         e.what());
   }
+  // Q is the same matrix at every staircase level, so assemble it here and
+  // let each level reuse it.
+  dataMatrix_ = buildDataMatrix(*pMinQcqp_, Layout::From(initialValues_));
   pMinQcqpBuildTime_ = ElapsedSeconds(buildStart);
 }
 
@@ -260,7 +268,8 @@ RiemannianStaircaseOptimizer::runLocalSolver(
         "RiemannianStaircaseOptimizer::runLocalSolver: ALM produced no "
         "progress.");
   }
-  return {Y, alm.progress().back().lambdaEq};
+  const auto& last = alm.progress().back();
+  return {Y, last.lambdaEq, last.augmentedLagrangianStationarity, last.muEq};
 }
 
 /* ************************************************************************* */
@@ -324,7 +333,6 @@ Eigen::SparseMatrix<double> RiemannianStaircaseOptimizer::buildMultiplierMatrix(
   // A*(lambda) = sum_m (lambda_m / sigma_m) * A_m. ALM tracks lambdas paired
   // with the whitened residual h_m / sigma_m, so divide by sigma_m to get the
   // multiplier on A_m.
-  //
   // lambdaEq is indexed in eConstraints() order (ALM convention).
   size_t m = 0;
   for (const auto& factor : qcqp.eConstraints()) {
@@ -370,27 +378,233 @@ Eigen::SparseMatrix<double> RiemannianStaircaseOptimizer::buildMultiplierMatrix(
 }
 
 /* ************************************************************************* */
+RiemannianStaircaseOptimizer::LeastSquaresMultipliers
+RiemannianStaircaseOptimizer::leastSquaresMultipliers(const QcqpProblem& qcqp,
+                                                     const Layout& layout,
+                                                     const Values& Y) {
+  return leastSquaresMultipliers(qcqp, layout, Y,
+                                 buildDataMatrix(qcqp, layout));
+}
+
+/* ************************************************************************* */
+RiemannianStaircaseOptimizer::LeastSquaresMultipliers
+RiemannianStaircaseOptimizer::leastSquaresMultipliers(
+    const QcqpProblem& qcqp, const Layout& layout, const Values& Y,
+    const Eigen::SparseMatrix<double>& dataMatrix) {
+  const size_t M = qcqp.eConstraints().size();
+  LeastSquaresMultipliers result;
+  result.lambdaEq.assign(M, Vector1(0.0));
+
+  // Constraints are unary, so grouping by key partitions them and the
+  // least-squares problem below separates over variables.
+  struct Entry {
+    size_t index;  ///< position in eConstraints(), keeps lambdaEq aligned
+    Matrix A;      ///< symmetrized
+    double sigma;
+  };
+  std::map<Key, std::vector<Entry>> groups;
+  size_t m = 0;
+
+  // Collect the constraints acting on each variable.
+  for (const auto& factor : qcqp.eConstraints()) {
+    const auto quadratic =
+        std::dynamic_pointer_cast<const QuadraticEqualityConstraintFactor>(
+            factor);
+    if (!quadratic) {
+      throw std::runtime_error(
+          "leastSquaresMultipliers: every equality constraint must be a "
+          "QuadraticEqualityConstraintFactor.");
+    }
+    const QuadraticConstraint& constraint = quadratic->quadraticConstraint();
+    const Key key = constraint.key();
+    const size_t rowDim = layout.rowDimOf(key);
+    const Matrix& A = constraint.A();
+    if (static_cast<size_t>(A.rows()) != rowDim ||
+        static_cast<size_t>(A.cols()) != rowDim) {
+      throw std::runtime_error(
+          "leastSquaresMultipliers: constraint A size does not match key "
+          "rowDim.");
+    }
+    groups[key].push_back({m, 0.5 * (A + A.transpose()), constraint.sigma()});
+    ++m;
+  }
+
+  const Matrix Ystack = layout.stack(Y);
+  const Matrix G = dataMatrix * Ystack;
+
+  // Solve for each variable's multipliers separately, which the separability
+  // above allows: variable n only sees its own block (QY)_n and its own A_k.
+  for (const auto& [key, slice] : layout.slices) {
+    const Matrix Yn = Ystack.middleRows(slice.offset, slice.rowDim);
+    const Matrix Gn = G.middleRows(slice.offset, slice.rowDim);
+
+    const auto group = groups.find(key);
+    if (group == groups.end()) {
+      // No multiplier can move this block, so the residual is (QY)_n itself.
+      result.residual[key] = Gn.norm();
+      continue;
+    }
+
+    // Columns of W are vec(A_k Y_n); solve min_lambda ||W lambda + vec(G_n)||.
+    const auto& entries = group->second;
+    const DenseIndex rows = Yn.size();
+    Matrix W(rows, static_cast<DenseIndex>(entries.size()));
+    for (size_t k = 0; k < entries.size(); ++k) {
+      const Matrix column = entries[k].A * Yn;
+      W.col(static_cast<DenseIndex>(k)) =
+          Eigen::Map<const Vector>(column.data(), column.size());
+    }
+    const Eigen::Map<const Vector> g(Gn.data(), Gn.size());
+
+    const Vector coefficients = W.colPivHouseholderQr().solve(-g);
+    result.residual[key] = (W * coefficients + g).norm();
+
+    // coefficients enter S = Q + sum_m c_m A_m directly; buildCertificate
+    // forms S = Q + 2 sum_m (lambda_m / sigma_m) A_m, so convert.
+    for (size_t k = 0; k < entries.size(); ++k) {
+      result.lambdaEq[entries[k].index] =
+          Vector1(0.5 * coefficients(static_cast<DenseIndex>(k)) *
+                  entries[k].sigma);
+    }
+  }
+
+  // Summed over the ordered residual map.
+  double squaredTotal = 0.0;
+  for (const auto& [key, residual] : result.residual)
+    squaredTotal += residual * residual;
+  result.totalResidual = std::sqrt(squaredTotal);
+  return result;
+}
+
+/* ************************************************************************* */
 Eigen::SparseMatrix<double> RiemannianStaircaseOptimizer::buildCertificate(
     const QcqpProblem& qcqp, const Layout& layout,
     const std::vector<Vector>& lambdaEq) {
-  Eigen::SparseMatrix<double> S = buildDataMatrix(qcqp, layout);
-  S += buildMultiplierMatrix(qcqp, layout, lambdaEq);
+  return buildCertificate(qcqp, layout, lambdaEq,
+                          buildDataMatrix(qcqp, layout));
+}
+
+/* ************************************************************************* */
+Eigen::SparseMatrix<double> RiemannianStaircaseOptimizer::buildCertificate(
+    const QcqpProblem& qcqp, const Layout& layout,
+    const std::vector<Vector>& lambdaEq,
+    const Eigen::SparseMatrix<double>& dataMatrix) {
+  Eigen::SparseMatrix<double> S = dataMatrix;
+  // The factor of two reconciles the cost and constraint conventions:
+  // QpCost is 0.5 * tr(X' Q X) so its gradient is Q Y, while a
+  // QuadraticConstraint h = tr(X' A X) - b has gradient 2 A X. Stationarity of
+  // L = cost + sum_m lambda_m h_m is therefore (Q + 2 A*(lambda)) Y = 0.
+  // So a factor of 2 is added.
+  S += 2.0 * buildMultiplierMatrix(qcqp, layout, lambdaEq);
   S.makeCompressed();
   return S;
 }
 
 /* ************************************************************************* */
-Values RiemannianStaircaseOptimizer::escapeSaddleAndLift(
+RiemannianStaircaseOptimizer::SaddleEscape
+RiemannianStaircaseOptimizer::saddleEscapeWithLineSearch(
+    const QcqpProblem& liftedQcqp, const Layout& layout, const Values& Ystar,
+    const Vector& vMin, const std::vector<Vector>& lambdaEq, double penalty,
+    double minEigenvalue, const RiemannianStaircaseParams& params) {
+  const auto lift = [&](double alpha) {
+    return liftWithDescent(Ystar, vMin, layout, alpha);
+  };
+
+  SaddleEscape result;
+  result.alpha = params.alpha;
+  result.lifted = lift(params.alpha);
+  if (!params.useSaddleLineSearch) return result;
+
+  // The merit is ALM's own augmented Lagrangian.
+  AugmentedLagrangianState state;
+  state.lambdaEq = lambdaEq;
+  state.lambdaIneq.assign(liftedQcqp.iConstraints().size(), 0.0);
+  state.muEq = penalty;
+  state.muIneq = penalty;
+
+  const Values atZeroStep = lift(0.0);
+  NonlinearFactorGraph merit;
+  try {
+    AugmentedLagrangianOptimizer alm(
+        liftedQcqp, atZeroStep,
+        std::make_shared<AugmentedLagrangianParams>(*params.almParams));
+    merit = alm.augmentedLagrangianFunction(state, 0.0);
+  } catch (const std::exception&) {
+    return result;  /// merit unavailable; fall back to the fixed step
+  }
+
+  // Accept the first step that decreases the merit.
+  const auto accepts = [&](const Values& lifted, double meritZero,
+                           double* decrease) {
+    *decrease = meritZero - merit.error(lifted);
+    return *decrease > 0.0;
+  };
+
+  // Shonan's heuristic schedule: start large, then halve. A lambda_min of
+  // exactly zero would divide to infinity, which halving never brings back
+  // below alphaMin, so fall back to the fixed start there.
+  const double alphaMin = params.alpha;
+  const double curvature = std::abs(minEigenvalue);
+  double step = 1024.0 * alphaMin;
+  if (curvature > 0.0) {
+    step = std::max(step, 10.0 * params.saddleStepTolerance / curvature);
+  }
+
+  const double meritZero = merit.error(atZeroStep);
+  double decrease = 0.0;
+  double bestStep = 0.0, bestDecrease = 0.0;
+  Values candidate;
+  bool accepted = false;
+  while (step >= alphaMin) {
+    candidate = lift(step);
+    if (accepts(candidate, meritZero, &decrease)) {
+      accepted = true;
+      break;
+    }
+    if (decrease > bestDecrease) {
+      bestDecrease = decrease;
+      bestStep = step;
+    }
+    step *= 0.5;
+  }
+
+  // Nothing was accepted; keep the best merit decrease seen, if any.
+  if (!accepted) {
+    if (!(bestDecrease > 0.0)) {
+      if (params.verbose) {
+        std::cout << "  [escape] no accepted step; keeping alpha="
+                  << params.alpha << std::endl;
+      }
+      return result;
+    }
+    step = bestStep;
+    decrease = bestDecrease;
+    candidate = lift(step);
+  }
+
+  result.alpha = step;
+  result.lifted = candidate;
+  result.meritDecrease = decrease;
+  result.descentFound = true;
+  if (params.verbose) {
+    std::cout << "  [escape] alpha=" << step << " (fixed would be "
+              << params.alpha << ") merit decrease=" << decrease << std::endl;
+  }
+  return result;
+}
+
+/* ************************************************************************* */
+Values RiemannianStaircaseOptimizer::liftWithDescent(
     const Values& Ystar, const Vector& vMin, const Layout& layout,
     double alpha) {
   if (!layout.conformsTo(Ystar)) {
     throw std::invalid_argument(
-        "RiemannianStaircaseOptimizer::escapeSaddleAndLift: layout does not "
+        "RiemannianStaircaseOptimizer::liftWithDescent: layout does not "
         "match values.");
   }
   if (static_cast<size_t>(vMin.size()) != layout.totalDim) {
     throw std::invalid_argument(
-        "RiemannianStaircaseOptimizer::escapeSaddleAndLift: vMin size does not "
+        "RiemannianStaircaseOptimizer::liftWithDescent: vMin size does not "
         "match layout.totalDim.");
   }
   Values lifted;
@@ -430,13 +644,13 @@ RiemannianStaircaseOptimizer::truncateToRankD(const Values& Y,
 /* ************************************************************************* */
 std::tuple<bool, double, Vector> RiemannianStaircaseOptimizer::verify(
     const Eigen::SparseMatrix<double>& S,
-    const RiemannianStaircaseParams& params) {
+    const RiemannianStaircaseParams& params, const Vector& warmStart) {
   switch (params.verificationMethod) {
     case RiemannianStaircaseParams::VerificationMethod::DenseEigen:
       return verifyDenseEigen(S, params);
     case RiemannianStaircaseParams::VerificationMethod::Spectra:
     default:
-      return verifySpectra(S, params);
+      return verifySpectra(S, params, warmStart);
   }
 }
 
@@ -463,77 +677,156 @@ std::tuple<bool, double, Vector> RiemannianStaircaseOptimizer::verifyDenseEigen(
 }
 
 /* ************************************************************************* */
-std::tuple<bool, double, Vector> RiemannianStaircaseOptimizer::verifySpectra(
+namespace {
+
+/// PSD check by sparse Cholesky on M = S + eta*I. Success proves
+/// lambda_min(S) >= -eta, and is much cheaper than an eigenvalue computation.
+bool choleskyCertifies(const Eigen::SparseMatrix<double>& S,
+                       const RiemannianStaircaseParams& params) {
+  Eigen::SparseMatrix<double> M = S;
+  for (int k = 0; k < S.rows(); ++k) M.coeffRef(k, k) += params.eta;
+  M.makeCompressed();
+  Eigen::SimplicialLLT<Eigen::SparseMatrix<double>> chol;
+  chol.compute(M);
+  if (chol.info() != Eigen::Success) return false;
+  if (params.verbose) {
+    std::cout << "  [Chol] verified=1 dim=" << S.rows() << std::endl;
+  }
+  return true;
+}
+
+/// Applies `y = (A + sigma * I) x` without materializing the shifted matrix.
+/// Adapted from Shonan rotation averaging.
+struct ShiftedMatrixProduct {
+  using Scalar = double;
+
+  const Eigen::SparseMatrix<double>& A;
+  double sigma;
+
+  ShiftedMatrixProduct(const Eigen::SparseMatrix<double>& A, double sigma)
+      : A(A), sigma(sigma) {}
+
+  int rows() const { return static_cast<int>(A.rows()); }
+  int cols() const { return static_cast<int>(A.cols()); }
+
+  void perform_op(const double* x, double* y) const {
+    Eigen::Map<const Vector> X(x, rows());
+    Eigen::Map<Vector> Y(y, rows());
+    Y = A * X + sigma * X;
+  }
+};
+
+}  // namespace
+
+/* ************************************************************************* */
+std::tuple<bool, double, Vector>
+RiemannianStaircaseOptimizer::verifySpectra(
     const Eigen::SparseMatrix<double>& S,
-    const RiemannianStaircaseParams& params) {
+    const RiemannianStaircaseParams& params, const Vector& warmStart) {
   const int n = static_cast<int>(S.rows());
 
-  // Stage 1: Cholesky on M = S + eta*I. Success => lambda_min(S) >= -eta;
-  // return -eta as a conservative bound (v_min unused on the pass path).
-  {
-    Eigen::SparseMatrix<double> M = S;
-    for (int k = 0; k < n; ++k) M.coeffRef(k, k) += params.eta;
-    M.makeCompressed();
-    Eigen::SimplicialLLT<Eigen::SparseMatrix<double>> chol;
-    chol.compute(M);
-    if (chol.info() == Eigen::Success) {
-      if (params.verbose) {
-        std::cout << "  [Chol] verified=1 dim=" << n << std::endl;
-      }
-      return {true, -params.eta, Vector::Zero(n)};
-    }
+  // Stage 1, fast PSD check by Cholesky factorization.
+  if (choleskyCertifies(S, params)) {
+    return {true, -params.eta, Vector::Zero(n)};
   }
 
-  // Stage 2: two-pass Lanczos to recover precise (lambda_min, v_min).
+  // Stage 2 computes the minimal eigenpair by a spectral shift.
+  // Most of the code is from Shonan rotation averaging's
+  // SparseMinimumEigenValue.
   const int nev = 1;
-  // Spectra needs 2*nev+1 <= ncv <= n; tiny n falls back to dense.
+  // Spectra needs 2*nev+1 <= ncv <= n. Below that Lanczos cannot run, and
+  // silently switching methods would hide that, so report it instead.
   if (n < 2 * nev + 1) {
-    return verifyDenseEigen(S, params);
+    throw std::invalid_argument(
+        "RiemannianStaircaseOptimizer::verifySpectra: S has fewer than 3 rows, "
+        "which is too small for Lanczos. Use VerificationMethod::DenseEigen.");
   }
   const int ncv = std::clamp(static_cast<int>(params.numLanczosVectors),
                              2 * nev + 1, n);
   const int maxIters = static_cast<int>(params.maxSpectraIters);
-  const double tol = params.spectraTol;
 
-  // Pass 1: lambda_max of S.
-  Spectra::SparseSymMatProd<double> op(S);
-  Spectra::SymEigsSolver<Spectra::SparseSymMatProd<double>> eigs(op, nev, ncv);
-  eigs.init();
-  eigs.compute(Spectra::SortRule::LargestAlge, maxIters, tol);
-  if (eigs.info() != Spectra::CompInfo::Successful) {
+  // Pass 1: coarse estimate of the largest-magnitude eigenvalue.
+  ShiftedMatrixProduct unshifted(S, 0.0);
+  Spectra::SymEigsSolver<ShiftedMatrixProduct> largest(unshifted, nev, ncv);
+  largest.init();
+  largest.compute(Spectra::SortRule::LargestMagn, maxIters, 1e-4,
+                  Spectra::SortRule::LargestMagn);
+  if (largest.info() != Spectra::CompInfo::Successful) {
     throw std::runtime_error(
-        "RiemannianStaircaseOptimizer::verifySpectra: Spectra Lanczos failed "
-        "on the first pass (lambda_max).");
+        "RiemannianStaircaseOptimizer::verifySpectra: Spectra Lanczos "
+        "failed on the first pass (largest-magnitude eigenvalue).");
   }
-  const double lambdaMax = eigs.eigenvalues()(0);
+  const double lambdaMaxMagnitude = largest.eigenvalues()(0);
 
-  // Pass 2 (shift trick): largest eigenvalue of (lambdaMax * I - S) equals
-  // lambdaMax - lambda_min, and Lanczos converges fastest at the extremal end.
-  Eigen::SparseMatrix<double> shifted = -S;
-  for (int k = 0; k < n; ++k) shifted.coeffRef(k, k) += lambdaMax;
-  shifted.makeCompressed();
-  Spectra::SparseSymMatProd<double> opShift(shifted);
-  Spectra::SymEigsSolver<Spectra::SparseSymMatProd<double>> eigsShift(
-      opShift, nev, ncv);
-  eigsShift.init();
-  eigsShift.compute(Spectra::SortRule::LargestAlge, maxIters, tol);
-  if (eigsShift.info() != Spectra::CompInfo::Successful) {
-    throw std::runtime_error(
-        "RiemannianStaircaseOptimizer::verifySpectra: Spectra Lanczos failed "
-        "on the second pass (shifted).");
+  // If the largest-magnitude eigenvalue is negative it is also lambda_min, and
+  // its eigenvector is the descent direction, so no second pass is needed.
+  if (lambdaMaxMagnitude < 0.0) {
+    Vector vMin = largest.eigenvectors().col(0);
+    vMin.normalize();
+    if (params.verbose) {
+      std::cout << "  [Spectra] lambda_min=" << lambdaMaxMagnitude
+                << " (negative extremal, one pass) dim=" << n << std::endl;
+    }
+    return {false, lambdaMaxMagnitude, vMin};
   }
-  const double shiftedMaxEig = eigsShift.eigenvalues()(0);
-  const double lambdaMin = lambdaMax - shiftedMaxEig;
-  Vector vMin = eigsShift.eigenvectors().col(0);
-  vMin.normalize();
 
-  const bool passed = (lambdaMin >= -params.eta);
-  if (params.verbose) {
-    std::cout << "  [Spectra] verified=" << (passed ? 1 : 0)
-              << " lambda_min=" << lambdaMin << " lambda_max=" << lambdaMax
-              << " dim=" << n << std::endl;
+  // Pass 2: shifting by -2*lambda_max puts the spectrum in
+  // [lambda_min - 2*lambda_max, -lambda_max], so the largest-magnitude
+  // eigenvalue of S - 2*lambda_max*I is lambda_min - 2*lambda_max.
+  ShiftedMatrixProduct shifted(S, -2.0 * lambdaMaxMagnitude);
+
+  // Spectra's tolerance is relative to the eigenvalue being computed, whose
+  // magnitude here is about 2*lambda_max.
+  constexpr double kMinRelativeTol = 1e-8;
+  double relativeTol =
+      std::max(params.spectraTol / lambdaMaxMagnitude, kMinRelativeTol);
+
+  Vector start;
+  if (warmStart.size() == n) {
+    Spectra::SimpleRandom<double> rng(0);
+    Vector perturbation = rng.random_vec(n);
+    perturbation.normalize();
+    start = warmStart + (0.03 * warmStart.norm()) * perturbation;
   }
-  return {passed, lambdaMin, vMin};
+
+  constexpr int kMaxAttempts = 3;
+  int attemptNcv = ncv;
+  for (int attempt = 0; attempt < kMaxAttempts; ++attempt) {
+    Spectra::SymEigsSolver<ShiftedMatrixProduct> smallest(shifted, nev,
+                                                          attemptNcv);
+    if (start.size() == n) {
+      smallest.init(start.data());
+    } else {
+      smallest.init();
+    }
+    smallest.compute(Spectra::SortRule::LargestMagn, maxIters, relativeTol,
+                     Spectra::SortRule::LargestMagn);
+
+    if (smallest.info() == Spectra::CompInfo::Successful) {
+      const double lambdaMin =
+          smallest.eigenvalues()(0) + 2.0 * lambdaMaxMagnitude;
+      Vector vMin = smallest.eigenvectors().col(0);
+      vMin.normalize();
+      if (params.verbose) {
+        std::cout << "  [Spectra] lambda_min=" << lambdaMin
+                  << " lambda_max=" << lambdaMaxMagnitude << " dim=" << n
+                  << " iters=" << smallest.num_iterations();
+        if (attempt > 0) {
+          std::cout << " (retry " << attempt << ", tol=" << relativeTol
+                    << ", ncv=" << attemptNcv << ")";
+        }
+        std::cout << std::endl;
+      }
+      return {false, lambdaMin, vMin};
+    }
+
+    relativeTol *= 100.0;
+    attemptNcv = std::min(n, 2 * attemptNcv);
+  }
+
+  throw std::runtime_error(
+      "RiemannianStaircaseOptimizer::verifySpectra: Spectra Lanczos failed "
+      "on the second pass (shifted) at every tolerance tried.");
 }
 
 /* ************************************************************************* */
@@ -545,6 +838,11 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
 
   // Algorithm 1, lines 2-13. See header for the full chain; per iteration:
   // local solve -> build S -> verify -> return on pass, else lift to p+1.
+  // Carried from one level's saddle escape to the next level's solve, so
+  // the problem the merit needed is not rebuilt.
+  std::shared_ptr<const QcqpProblem> carriedQcqp;
+  double carriedQcqpBuildTime = 0.0;
+
   for (size_t p = params_.pMin; p <= params_.pMax; ++p) {
     result.ranksVisited.push_back(p);
     if (params_.verbose) {
@@ -555,6 +853,11 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
     if (p == params_.pMin) {
       qcqp = pMinQcqp_;
       result.qcqpBuildTimePerLevel.push_back(pMinQcqpBuildTime_);
+    } else if (carriedQcqp) {
+      // The escape below already built this level's problem for its merit.
+      qcqp = carriedQcqp;
+      result.qcqpBuildTimePerLevel.push_back(carriedQcqpBuildTime);
+      carriedQcqp.reset();
     } else {
       const auto buildStart = Clock::now();
       qcqp = std::make_shared<QcqpProblem>(graph_, p);
@@ -569,6 +872,7 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
     Y = inner.Y;
 
     result.costPerLevel.push_back(qcqp->costs().error(Y));
+    result.stationarityPerLevel.push_back(inner.stationarity);
 
     // Certificate + verify (Alg. 1 lines 4-9). Pass => global SDP optimum.
     const auto verifyStart = Clock::now();
@@ -580,9 +884,31 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
           "RiemannianStaircaseOptimizer::optimize: local solver returned no "
           "multipliers and the closed-form extractor is not implemented.");
     }
+    // An ALM run that stops before its first dual update returns lambda = 0.
+    // Then S = Q + A*(0) = Q, which is positive semidefinite by construction
+    // and would certify any point, so recover the multipliers from Y instead.
+    std::vector<Vector> lambdaEq = inner.lambdaEq;
+    double maxAbsLambda = 0.0;
+    for (const auto& value : lambdaEq) {
+      maxAbsLambda = std::max(maxAbsLambda, value.cwiseAbs().maxCoeff());
+    }
+    if (maxAbsLambda == 0.0) {
+      const LeastSquaresMultipliers ls =
+          leastSquaresMultipliers(*qcqp, layout, Y, dataMatrix_);
+      lambdaEq = ls.lambdaEq;
+      if (params_.verbose) {
+        std::cout << "  [multipliers] ALM returned lambda = 0; using "
+                     "least-squares multipliers (stationarity residual "
+                  << ls.totalResidual << ")" << std::endl;
+      }
+    }
+
     const Eigen::SparseMatrix<double> S =
-        buildCertificate(*qcqp, layout, inner.lambdaEq);
-    auto [passed, lambdaMin, vMin] = verify(S, params_);
+        buildCertificate(*qcqp, layout, lambdaEq, dataMatrix_);
+    // S*Y = 0 at a critical point, so any column of Y is a null-space vector
+    // and a good starting point for the Lanczos pass.
+    auto [passed, lambdaMin, vMin] =
+        verify(S, params_, layout.stack(Y).col(0));
     result.verifyTimePerLevel.push_back(ElapsedSeconds(verifyStart));
     result.minEigenvaluePerLevel.push_back(lambdaMin);
 
@@ -609,7 +935,12 @@ RiemannianStaircaseResult RiemannianStaircaseOptimizer::optimize() const {
     // Alg. 1 lines 10-12: S not PSD, lift to rank p+1 along v_min. The
     // O(alpha^2) violation is absorbed by the next inner solve.
     if (p < params_.pMax) {
-      Y = escapeSaddleAndLift(Y, vMin, layout, params_.alpha);
+      const auto buildStart = Clock::now();
+      carriedQcqp = std::make_shared<QcqpProblem>(graph_, p + 1);
+      carriedQcqpBuildTime = ElapsedSeconds(buildStart);
+      Y = saddleEscapeWithLineSearch(*carriedQcqp, layout, Y, vMin, lambdaEq,
+                                     inner.penalty, lambdaMin, params_)
+              .lifted;
     } else {
       result.minEigenvalue = lambdaMin;
     }
@@ -657,6 +988,10 @@ Vector RiemannianStaircaseResult::getCostPerLevel() const {
 
 Vector RiemannianStaircaseResult::getMinEigenvaluePerLevel() const {
   return ToVector(minEigenvaluePerLevel);
+}
+
+Vector RiemannianStaircaseResult::getStationarityPerLevel() const {
+  return ToVector(stationarityPerLevel);
 }
 
 Vector RiemannianStaircaseResult::getQcqpBuildTimePerLevel() const {

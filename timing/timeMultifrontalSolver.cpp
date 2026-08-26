@@ -21,7 +21,12 @@
 #include <gtsam/linear/MultifrontalSolver.h>
 #include <tests/smallExample.h>
 
+#include <algorithm>
+#include <cstdlib>
 #include <iostream>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 #include "internal/TimingUtils.h"
 #include "timeSFMBAL.h"
@@ -40,6 +45,65 @@ MultifrontalSolver::Parameters makeDefaultParams() {
   params.mergeDimCap = 32;
   // params.reportStream = &std::cout;
   return params;
+}
+
+struct Options {
+  bool bal135Only = false;
+  size_t balDataset = 0;
+  size_t samples = 1;
+  size_t iterations = 2;
+  size_t threads = 0;
+};
+
+size_t parsePositiveSize(const char* option, const char* value) {
+  size_t consumed = 0;
+  const std::string text(value);
+  const unsigned long long parsed = std::stoull(text, &consumed);
+  if (consumed != text.size() || parsed == 0) {
+    throw std::invalid_argument(std::string(option) +
+                                " requires a positive integer");
+  }
+  return static_cast<size_t>(parsed);
+}
+
+Options parseOptions(int argc, char** argv) {
+  Options options;
+  for (int i = 1; i < argc; ++i) {
+    const std::string option(argv[i]);
+    if (option == "--bal135-only") {
+      options.bal135Only = true;
+    } else if (option == "--bal-dataset" || option == "--samples" ||
+               option == "--iterations" || option == "--threads") {
+      if (++i >= argc) {
+        throw std::invalid_argument(option + " requires a value");
+      }
+      const size_t value = parsePositiveSize(option.c_str(), argv[i]);
+      if (option == "--bal-dataset") {
+        if (value != 16 && value != 88 && value != 135) {
+          throw std::invalid_argument(
+              "--bal-dataset requires one of 16, 88, or 135");
+        }
+        options.balDataset = value;
+      } else if (option == "--samples")
+        options.samples = value;
+      else if (option == "--iterations")
+        options.iterations = value;
+      else
+        options.threads = value;
+    } else if (option == "--help") {
+      cout << "Usage: timeMultifrontalSolver [--bal135-only] "
+              "[--bal-dataset 16|88|135] "
+              "[--samples N] [--iterations N] [--threads N]\n";
+      std::exit(0);
+    } else {
+      throw std::invalid_argument("unknown option: " + option);
+    }
+  }
+  if (options.bal135Only && options.balDataset != 0 &&
+      options.balDataset != 135) {
+    throw std::invalid_argument("--bal135-only conflicts with --bal-dataset");
+  }
+  return options;
 }
 
 }  // namespace
@@ -72,12 +136,28 @@ const string& bal88 = balDatasets[1];
 const string& bal135 = balDatasets[2];
 }  // namespace
 
-void runBAL135Benchmark(MultifrontalSolver::Parameters params) {
-  const size_t iterations = 1;
-  cout << "\nSingle MFS test: " << bal135 << " (iterations=" << iterations
-       << ")" << std::endl;
+const string& sampledBalDataset(size_t cameraCount) {
+  switch (cameraCount) {
+    case 16:
+      return bal16;
+    case 88:
+      return bal88;
+    case 135:
+      return bal135;
+    default:
+      throw std::invalid_argument("unsupported BAL camera count");
+  }
+}
 
-  const SfmData db = bal::loadDataset(bal135);
+void runSampledBALBenchmark(MultifrontalSolver::Parameters params,
+                            size_t cameraCount, size_t samples,
+                            size_t iterations) {
+  const string& filename = sampledBalDataset(cameraCount);
+  cout << "\nBAL-" << cameraCount << " sampled benchmark: " << filename
+       << " (samples=" << samples << ", iterations=" << iterations
+       << ", threads=" << params.numThreads << ")" << std::endl;
+
+  const SfmData db = bal::loadDataset(filename);
   const bal::BalBenchmarkConfig config;
   const NonlinearFactorGraph graph = bal::buildGeneralSfmGraph(db, config, 0.1);
   const Values initial = bal::buildGeneralSfmInitial(db);
@@ -85,10 +165,21 @@ void runBAL135Benchmark(MultifrontalSolver::Parameters params) {
   const Ordering ordering = bal::createSchurOrdering(db, false);
 
   MultifrontalSolver solver(linear, ordering, params);
-  const double imperativeSeconds = gtsam::timing::measureSeconds(
-      [&] { runMultifrontalSolver(solver, linear, iterations); });
-  cout << "  MultifrontalSolver: " << imperativeSeconds << " s" << std::endl;
-  tictoc_print();
+  runMultifrontalSolver(solver, linear, 1);  // Untimed warmup.
+  std::vector<double> timings;
+  timings.reserve(samples);
+  for (size_t sample = 0; sample < samples; ++sample) {
+    const double seconds = gtsam::timing::measureSeconds(
+        [&] { runMultifrontalSolver(solver, linear, iterations); });
+    timings.push_back(seconds);
+    cout << "  Sample " << sample + 1 << ": " << seconds << " s" << std::endl;
+  }
+  std::sort(timings.begin(), timings.end());
+  const size_t middle = timings.size() / 2;
+  const double median = timings.size() % 2 == 0
+                            ? 0.5 * (timings[middle - 1] + timings[middle])
+                            : timings[middle];
+  cout << "  Median: " << median << " s" << std::endl;
 }
 
 void runBALBenchmark(MultifrontalSolver::Parameters params) {
@@ -169,8 +260,7 @@ void tuneMergingBAL(MultifrontalSolver::Parameters params) {
   const size_t iterations = 2;
   const std::vector<std::string> balFiles = {bal16, bal88, bal135};
   cout << "\nTune leaf scheduling aggregation (BAL, iterations=" << iterations
-       << ")"
-       << std::endl;
+       << ")" << std::endl;
 
   const std::vector<size_t> sweep = {0, 64, 128, 256, 512, 1024, 2048};
   std::vector<std::vector<double>> results(
@@ -244,11 +334,18 @@ void tuneMergeChain(MultifrontalSolver::Parameters params) {
   }
 }
 
-int main() {
+int main(int argc, char** argv) {
+  const Options options = parseOptions(argc, argv);
   auto params = makeDefaultParams();
+  if (options.threads > 0) params.numThreads = options.threads;
   cout << "Merging dim parameter " << params.mergeDimCap << std::endl;
 
-  // runBAL135Benchmark(params);
+  const size_t sampledDataset = options.bal135Only ? 135 : options.balDataset;
+  if (sampledDataset != 0) {
+    runSampledBALBenchmark(params, sampledDataset, options.samples,
+                           options.iterations);
+    return 0;
+  }
   runBALBenchmark(params);
   runChainBenchmark(params);
   // runChain5000(params);

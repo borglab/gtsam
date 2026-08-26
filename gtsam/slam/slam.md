@@ -12,11 +12,9 @@ These are fundamental factor types often used as building blocks in SLAM.
 
 Factors specifically designed for visual data (camera measurements).
 
--   [GenericProjectionFactor](doc/GenericProjectionFactor.ipynb) : Standard monocular projection factor relating a 3D landmark, camera pose, and fixed calibration to a 2D measurement.
+-   [GenericProjectionFactor](doc/ProjectionFactor.ipynb) : Standard monocular projection factor relating a 3D landmark, camera pose, and fixed calibration to a 2D measurement.
 -   [GeneralSFMFactor](doc/GeneralSFMFactor.ipynb) : Projection factors used when camera calibration is unknown or optimized alongside poses and landmarks.
 -   [StereoFactor](doc/StereoFactor.ipynb) : Standard stereo projection factor relating a 3D landmark, camera pose, and fixed stereo calibration to a `StereoPoint2` measurement.
--   [EssentialMatrixFactor](doc/EssentialMatrixFactor.ipynb) : Factors constraining poses or calibration based on the Essential matrix derived from calibrated cameras.
--   [EssentialMatrixConstraint](doc/EssentialMatrixConstraint.ipynb) : Factor constraining the relative pose between two cameras based on a measured Essential matrix.
 -   [TriangulationFactor](doc/TriangulationFactor.ipynb) : Factor constraining a 3D point based on a measurement from a single known camera view, useful for triangulation.
 -   [PlanarProjectionFactor](doc/PlanarProjectionFactor.ipynb) : Projection factors specialized for robots moving on a 2D plane.
 
@@ -24,7 +22,7 @@ Factors specifically designed for visual data (camera measurements).
 
 Factors that implicitly manage landmark variables, marginalizing them out during optimization.
 
--   [SmartFactorParams](doc/SmartFactorParams.ipynb) : Configuration parameters controlling the behavior of smart factors (linearization, degeneracy handling, etc.).
+-   [SmartFactorParams](doc/SmartProjectionParams.ipynb) : Configuration parameters controlling the behavior of smart factors (linearization, degeneracy handling, etc.).
 -   [SmartProjectionFactor](doc/SmartProjectionFactor.ipynb) : Smart factor for monocular measurements where both camera pose and calibration are optimized.
 -   [SmartProjectionPoseFactor](doc/SmartProjectionPoseFactor.ipynb) : Smart factor for monocular measurements where camera calibration is fixed, optimizing only poses.
 -   [SmartProjectionRigFactor](doc/SmartProjectionRigFactor.ipynb) : Smart factor for calibrated multi-camera rigs, optimizing only the rig's body pose.
@@ -41,8 +39,6 @@ Factors representing various geometric relationships or constraints.
 -   [KarcherMeanFactor](doc/KarcherMeanFactor.ipynb) : Factor for constraining the Karcher mean (geometric average) of a set of rotations or other manifold values.
 -   [FrobeniusFactor](doc/FrobeniusFactor.ipynb) : Factors operating directly on rotation matrix entries using the Frobenius norm, an alternative to Lie algebra-based factors.
 -   [ReferenceFrameFactor](doc/ReferenceFrameFactor.ipynb) : Factor relating the same landmark observed in two different coordinate frames via an unknown transformation, useful for map merging.
--   [BoundingConstraint](doc/BoundingConstraint.ipynb) : Abstract base class for creating inequality constraints (e.g., keeping a variable within certain bounds). Requires C++ derivation.
--   [AntiFactor](doc/AntiFactor.ipynb) : A factor designed to negate the effect of another factor, useful for dynamically removing constraints.
 
 ## Initialization & Utilities
 
@@ -59,10 +55,3 @@ Helper functions and classes for SLAM tasks.
 `fastSync<T>` reads matching `BetweenFactor<T>` measurements and accepts only finite, positive, isotropic Gaussian noise. Anisotropic, constrained, and robust between-factor models are rejected. The measurement graph must be non-empty and connected; disconnected graphs are detected during QR elimination and raise `IndeterminateSystemException`. The graph may contain at most one matching `PriorFactor<T>`.
 
 The relaxed problem uses fixed-size `N`-by-`N` matrices for measurements, reduced-system blocks, back-substitution, and projection, where `N` is obtained from the matrix representation returned by `T::matrix()`. The complete Gaussian graph retains dynamic sparse storage because its topology is only known at runtime. FAST-Sync defaults to a METIS nested-dissection ordering, accepts another supported `OrderingType` such as COLAMD or a caller-supplied complete `Ordering`, and uses an exact identity gauge at the ordering's final key. Projection to the target group occurs only after the complete ambient-space solve. If a matching prior is present, the rounded solution is subsequently left-aligned to that prior; without a prior, the selected ordering's gauge is retained. Selecting METIS in a build without METIS support reports the nested-dissection error. New fixed-size matrix Lie groups can opt in by specializing `FastSyncProjection<T>`.
-
-## CUDA Acceleration
-
-GPU-accelerated optimization for bundle adjustment (requires a CUDA build; see `gtsam/slam/cuda/`).
-
--   [SfmLevenbergMarquardtOptimizer](doc/SfmLevenbergMarquardtOptimizer.ipynb) : Fully GPU-resident Levenberg-Marquardt for BAL-style bundle adjustment (`GeneralSFMFactor<PinholeCamera<Cal3Bundler>, Point3>` graphs); dense-Schur, cuDSS, or PCG linear solvers.
--   [GNC with the CUDA SFM optimizer](doc/CudaSfmGncOptimizer.ipynb) : Robust bundle adjustment, using the optimizer above as the GNC inner solver.

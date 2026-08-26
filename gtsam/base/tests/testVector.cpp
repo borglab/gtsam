@@ -146,8 +146,6 @@ TEST(Vector, concatVectors)
   Vector AB1 = concatVectors(vs);
   EXPECT(AB1 == C);
 
-  Vector AB2 = concatVectors(2, &A, &B);
-  EXPECT(AB2 == C);
 }
 
 /* ************************************************************************* */
@@ -246,8 +244,8 @@ TEST(Vector, greater_than )
 {
   Vector v1 = Vector3(1.0, 2.0, 3.0),
        v2 = Z_3x1;
-  EXPECT(greaterThanOrEqual(v1, v1)); // test basic greater than
-  EXPECT(greaterThanOrEqual(v1, v2)); // test equals
+  EXPECT((v1.array() >= v1.array()).all());  // test basic greater than
+  EXPECT((v1.array() >= v2.array()).all());  // test equals
 }
 
 /* ************************************************************************* */
@@ -286,6 +284,21 @@ TEST(Vector, RowVectorIsVectorSpace) {
   GTSAM_CONCEPT_ASSERT(IsVectorSpace<RowVector>);
 #endif
 }
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+// Verifies that Vector helpers deprecated in 4.3 preserve their Eigen and
+// typed-container replacement semantics while compatibility is enabled.
+TEST(Vector, DeprecatedEigenWrappers) {
+  Vector a{{1.0, 2.0}};
+  Vector b{{1.0, 2.0}};
+  EXPECT(gtsam::operator==(a, b));
+  EXPECT(greaterThanOrEqual(a, Vector::Zero(2)));
+  DOUBLES_EQUAL(a.dot(b), inner_prod(a, b), 1e-9);
+
+  const Vector expected{{1.0, 2.0, 1.0, 2.0}};
+  EXPECT(assert_equal(expected, concatVectors(2, &a, &b)));
+}
+#endif
 
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }

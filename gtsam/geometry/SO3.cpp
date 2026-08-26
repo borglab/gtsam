@@ -335,75 +335,68 @@ Vector3 SO3::Logmap(const SO3& Q) {
 template <>
 GTSAM_EXPORT
 Vector3 SO3::Logmap(const SO3& Q, ChartJacobian H) {
-  using std::sin;
+  using std::atan;
   using std::sqrt;
 
-  // note switch to base 1
   const Matrix3& R = Q.matrix();
-  const double &R11 = R(0, 0), R12 = R(0, 1), R13 = R(0, 2);
-  const double &R21 = R(1, 0), R22 = R(1, 1), R23 = R(1, 2);
-  const double &R31 = R(2, 0), R32 = R(2, 1), R33 = R(2, 2);
-
   const double tr = R.trace();
-  Vector3 omega;
 
-  // when trace == -1, i.e., when theta = +-pi, +-3pi, +-5pi, etc.
-  // we do something special
-  if (tr + 1.0 < 1e-3) {
-    if (R33 > R22 && R33 > R11) {
-      // R33 is the largest diagonal, a=3, b=1, c=2
-      const double W = R21 - R12;
-      const double Q1 = 2.0 + 2.0 * R33;
-      const double Q2 = R31 + R13;
-      const double Q3 = R23 + R32;
-      const double r = sqrt(Q1);
-      const double one_over_r = 1 / r;
-      const double norm = sqrt(Q1*Q1 + Q2*Q2 + Q3*Q3 + W*W);
-      const double sgn_w = W < 0 ? -1.0 : 1.0;
-      const double mag = M_PI - (2 * sgn_w * W) / norm;
-      const double scale = 0.5 * one_over_r * mag;
-      omega = sgn_w * scale * Vector3(Q2, Q3, Q1);
-    } else if (R22 > R11) {
-      // R22 is the largest diagonal, a=2, b=3, c=1
-      const double W = R13 - R31;
-      const double Q1 = 2.0 + 2.0 * R22;
-      const double Q2 = R23 + R32;
-      const double Q3 = R12 + R21;
-      const double r = sqrt(Q1);
-      const double one_over_r = 1 / r;
-      const double norm = sqrt(Q1*Q1 + Q2*Q2 + Q3*Q3 + W*W);
-      const double sgn_w = W < 0 ? -1.0 : 1.0;
-      const double mag = M_PI - (2 * sgn_w * W) / norm;
-      const double scale = 0.5 * one_over_r * mag;
-      omega = sgn_w * scale * Vector3(Q3, Q1, Q2);
-    } else {
-      // R11 is the largest diagonal, a=1, b=2, c=3
-      const double W = R32 - R23;
-      const double Q1 = 2.0 + 2.0 * R11;
-      const double Q2 = R12 + R21;
-      const double Q3 = R31 + R13;
-      const double r = sqrt(Q1);
-      const double one_over_r = 1 / r;
-      const double norm = sqrt(Q1*Q1 + Q2*Q2 + Q3*Q3 + W*W);
-      const double sgn_w = W < 0 ? -1.0 : 1.0;
-      const double mag = M_PI - (2 * sgn_w * W) / norm;
-      const double scale = 0.5 * one_over_r * mag;
-      omega = sgn_w * scale * Vector3(Q1, Q2, Q3);
-    }
+  // Convert R to a quaternion (w, v) with Shepperd's method, pivoting on
+  // whichever of {tr, R00, R11, R22} is largest so the square root is never
+  // taken of a near-zero quantity, then use the atan-based quaternion Logmap
+  //
+  //     theta = 2 * atan2(|v|, w),   omega = theta * v / |v|
+  //
+  // (C. Hertzberg et al., Information Fusion, 2011). Both theta and v/|v| are
+  // invariant to a positive rescaling of (w, v), so the quaternion is left
+  // un-normalized: no cancellation, and one fewer sqrt.
+  double w;
+  Vector3 v;
+  if (tr > 0.0) {
+    // theta < 2*pi/3, so the anti-symmetric part is well conditioned:
+    //     (1 + tr, vee(R - R')) == 4 * cos(theta/2) * (w, v)
+    // No small-angle series is needed here (cf. #746): w = 1 + tr >= 1 is
+    // bounded away from zero, and 2*atan(n/w)/n tends smoothly to 2/w as
+    // n -> 0. The n == 0 case (R == I exactly) is handled below.
+    w = 1.0 + tr;
+    v << R(2, 1) - R(1, 2), R(0, 2) - R(2, 0), R(1, 0) - R(0, 1);
   } else {
-    double magnitude;
-    const double tr_3 = tr - 3.0; // could be non-negative if the matrix is off orthogonal
-    if (tr_3 < -so3::kNearZeroThresholdSq) {
-      // this is the normal case -1 < trace < 3
-      double theta = acos((tr - 1.0) / 2.0);
-      magnitude = theta / (2.0 * sin(theta));
+    // theta > 2*pi/3: pivot on the largest diagonal entry instead. The three
+    // cases are written out rather than indexed by a runtime i/j/k, so that
+    // the compiler can keep v in registers.
+    //
+    // NOTE(#1233): r^2 = 1 + 2*R(i,i) - tr equals 4*v_i^2 for *every* theta.
+    // Using 2 + 2*R(i,i) instead differs from it by exactly 1 + tr, and is
+    // correct only at theta == pi; that produced the error plateau in #1233.
+    if (R(2, 2) > R(1, 1) && R(2, 2) > R(0, 0)) {
+      const double r = sqrt(1.0 + 2.0 * R(2, 2) - tr), invr = 1.0 / r;
+      v << (R(0, 2) + R(2, 0)) * invr, (R(1, 2) + R(2, 1)) * invr, r;
+      w = (R(1, 0) - R(0, 1)) * invr;
+    } else if (R(1, 1) > R(0, 0)) {
+      const double r = sqrt(1.0 + 2.0 * R(1, 1) - tr), invr = 1.0 / r;
+      v << (R(0, 1) + R(1, 0)) * invr, r, (R(2, 1) + R(1, 2)) * invr;
+      w = (R(0, 2) - R(2, 0)) * invr;
     } else {
-      // when theta near 0, +-2pi, +-4pi, etc. (trace near 3.0)
-      // use Taylor expansion: theta \approx 1/2-(t-3)/12 + O((t-3)^2)
-      // see https://github.com/borglab/gtsam/issues/746 for details
-      magnitude = 0.5 - tr_3 * (1.0 / 12.0) + tr_3 * tr_3 * (1.0 / 60.0);
+      const double r = sqrt(1.0 + 2.0 * R(0, 0) - tr), invr = 1.0 / r;
+      v << r, (R(1, 0) + R(0, 1)) * invr, (R(2, 0) + R(0, 2)) * invr;
+      w = (R(2, 1) - R(1, 2)) * invr;
     }
-    omega = magnitude * Vector3(R32 - R23, R13 - R31, R21 - R12);
+    if (w < 0.0) {  // canonicalize so that theta lands in [0, pi]
+      w = -w;
+      v = -v;
+    }
+  }
+
+  const double n = v.norm();
+  Vector3 omega;
+  if (n == 0.0) {
+    omega = Vector3::Zero();  // R == I
+  } else {
+    // theta = 2 * atan2(n, w), split by hand into the two well-conditioned
+    // halves so that atan() can be used: atan is measurably cheaper than
+    // atan2, and w >= 0 is guaranteed above, so the quadrant logic is free.
+    const double theta = (w > n) ? 2.0 * atan(n / w) : M_PI - 2.0 * atan(w / n);
+    omega = (theta / n) * v;
   }
 
   if (H) *H = LogmapDerivative(omega);
