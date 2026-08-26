@@ -22,6 +22,7 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <CppUnitLite/TestHarness.h>
 
+
 using namespace std;
 using namespace gtsam;
 
@@ -305,6 +306,70 @@ TEST(Ordering, MetisEdgelessGraph) {
   EXPECT_LONGS_EQUAL(2, metis.size());
   EXPECT(metis.contains(0));
   EXPECT(metis.contains(1));
+}
+
+/* ************************************************************************* */
+namespace {
+// 3x5 grid from the METIS manual (same graph as the csr_format test).
+SymbolicFactorGraph metisManualExampleGraph() {
+  SymbolicFactorGraph symbolicGraph;
+  symbolicGraph.push_factor(0, 1);
+  symbolicGraph.push_factor(1, 2);
+  symbolicGraph.push_factor(2, 3);
+  symbolicGraph.push_factor(3, 4);
+  symbolicGraph.push_factor(5, 6);
+  symbolicGraph.push_factor(6, 7);
+  symbolicGraph.push_factor(7, 8);
+  symbolicGraph.push_factor(8, 9);
+  symbolicGraph.push_factor(10, 11);
+  symbolicGraph.push_factor(11, 12);
+  symbolicGraph.push_factor(12, 13);
+  symbolicGraph.push_factor(13, 14);
+  symbolicGraph.push_factor(0, 5);
+  symbolicGraph.push_factor(5, 10);
+  symbolicGraph.push_factor(1, 6);
+  symbolicGraph.push_factor(6, 11);
+  symbolicGraph.push_factor(2, 7);
+  symbolicGraph.push_factor(7, 12);
+  symbolicGraph.push_factor(3, 8);
+  symbolicGraph.push_factor(8, 13);
+  symbolicGraph.push_factor(4, 9);
+  symbolicGraph.push_factor(9, 14);
+  return symbolicGraph;
+}
+}  // namespace
+
+/* ************************************************************************* */
+// The default path must stay bit-identical: METIS falls back to seed 4321
+// when given no options, so the default argument reproduces it.
+TEST(Ordering, MetisSeedDefaultUnchanged) {
+  const SymbolicFactorGraph symbolicGraph = metisManualExampleGraph();
+
+  const Ordering ordering = Ordering::Metis(symbolicGraph);
+  EXPECT(assert_equal(ordering, Ordering::Metis(symbolicGraph, 4321)));
+
+#if !defined(__APPLE__) && !defined(__QNX__) && !defined(_WIN32)
+  // Golden permutation captured from an unpatched develop build (Linux METIS
+  // draw; platform-dependent like the MetisLoop expectations below).
+  Ordering expected{ 12, 0, 10, 6, 11, 5, 14, 2, 8, 4, 9, 3, 1, 7, 13 };
+  EXPECT(assert_equal(expected, ordering));
+#endif
+}
+
+/* ************************************************************************* */
+// Every seed yields a valid permutation of all keys and is deterministic per
+// seed. (Different seeds MAY coincide on small graphs.)
+TEST(Ordering, MetisSeedValidAndDeterministic) {
+  const SymbolicFactorGraph symbolicGraph = metisManualExampleGraph();
+
+  for (const int seed : {0, 1, 7, 42}) {
+    const Ordering ordering = Ordering::Metis(symbolicGraph, seed);
+    EXPECT(assert_equal(ordering, Ordering::Metis(symbolicGraph, seed)));
+    EXPECT_LONGS_EQUAL(15, ordering.size());
+    for (Key key = 0; key < 15; ++key) {
+      EXPECT(ordering.contains(key));
+    }
+  }
 }
 
 /* ************************************************************************* */

@@ -156,7 +156,7 @@ class Ordering {
   template <
       FACTOR_GRAPH = {gtsam::NonlinearFactorGraph, gtsam::DiscreteFactorGraph,
                       gtsam::SymbolicFactorGraph, gtsam::GaussianFactorGraph, gtsam::HybridGaussianFactorGraph}>
-  static gtsam::Ordering Metis(const FACTOR_GRAPH& graph);
+  static gtsam::Ordering Metis(const FACTOR_GRAPH& graph, int seed = 4321);
 
   template <
       FACTOR_GRAPH = {gtsam::NonlinearFactorGraph, gtsam::DiscreteFactorGraph,
