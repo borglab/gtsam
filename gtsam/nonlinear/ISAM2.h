@@ -374,6 +374,8 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    */
   void removeVariables(const KeySet& unusedKeys);
 
+  friend class IncrementalFixedLagSmoother;
+
   void updateDelta(bool forceFullSolve = false) const;
 
  private:
