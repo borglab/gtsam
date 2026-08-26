@@ -235,19 +235,20 @@ class GTSAM_EXPORT PreintegratedRotation {
   Rot3 biascorrectedDeltaRij(const Vector3& biasOmegaIncr,
                              OptionalJacobian<3, 3> H = {}) const;
 
-  /// Legacy first-order Coriolis correction in body frame Ri.
-  [[deprecated("Use exact prediction with omegaCoriolis instead")]]
-  Vector3 integrateCoriolis(const Rot3& Ri,
-                            OptionalJacobian<3, 3> H = {}) const;
-
   /// @}
 
   /// @name Deprecated API
   /// @{
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
-  /// @deprecated: use IncrementalRotation functor with sane Jacobian
-  [[deprecated]]
+  /**
+   * @param wRi Rotation from frame i into the world frame.
+   * @deprecated Use exact prediction configured through omegaCoriolis instead.
+   */
+  Vector3 integrateCoriolis(const Rot3& wRi,
+                            OptionalJacobian<3, 3> H = {}) const;
+
+  /// @deprecated Use IncrementalRotation functor with a conventional Jacobian.
   inline Rot3 incrementalRotation(
       const Vector3& measuredOmega, const Vector3& bias, double deltaT,
       OptionalJacobian<3, 3> D_incrR_integratedOmega) const {
@@ -258,9 +259,8 @@ class GTSAM_EXPORT PreintegratedRotation {
     return incrR;
   }
 
-  /// @deprecated: use integrateGyroMeasurement from now on
+  /// @deprecated Use integrateGyroMeasurement instead.
   /// @note this returned hard-to-understand Jacobian D_incrR_integratedOmega.
-  [[deprecated]]
   void integrateMeasurement(const Vector3& measuredOmega,
                             const Vector3& biasHat, double deltaT,
                             OptionalJacobian<3, 3> D_incrR_integratedOmega,

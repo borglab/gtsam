@@ -65,18 +65,22 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
 
   void setAccelerometerCovariance(const Matrix3& cov) { accelerometerCovariance = cov; }
   void setIntegrationCovariance(const Matrix3& cov)   { integrationCovariance = cov; }
-  [[deprecated("Exact rotating-Earth dynamics ignore this compatibility flag")]]
-  void setUse2ndOrderCoriolis(bool flag) {
-    use2ndOrderCoriolis = flag;
-  }
 
   const Matrix3& getAccelerometerCovariance() const { return accelerometerCovariance; }
   const Matrix3& getIntegrationCovariance()   const { return integrationCovariance; }
   const Vector3& getGravity()   const { return n_gravity; }
-  [[deprecated("Exact rotating-Earth dynamics ignore this compatibility flag")]]
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  /// @deprecated Exact rotating-Earth dynamics ignore this compatibility flag.
+  void setUse2ndOrderCoriolis(bool flag) {
+    use2ndOrderCoriolis = flag;
+  }
+
+  /// @deprecated Exact rotating-Earth dynamics ignore this compatibility flag.
   bool getUse2ndOrderCoriolis() const {
     return use2ndOrderCoriolis;
   }
+#endif
 
 protected:
 
