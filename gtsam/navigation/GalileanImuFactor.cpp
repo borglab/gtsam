@@ -34,6 +34,15 @@ PreintegratedImuMeasurementsG::NavStateProjector() {
 }
 
 //------------------------------------------------------------------------------
+PreintegratedImuMeasurementsG::Matrix106
+PreintegratedImuMeasurementsG::LiftJacobian() {
+  Matrix106 E = Matrix106::Zero();
+  E.block<3, 3>(0, 3) = I_3x3;
+  E.block<3, 3>(3, 0) = I_3x3;
+  return E;
+}
+
+//------------------------------------------------------------------------------
 PreintegratedImuMeasurementsG::PreintegratedImuMeasurementsG(
     const std::shared_ptr<Params>& p, const imuBias::ConstantBias& biasHat)
     : Base(p, biasHat) {
@@ -52,7 +61,7 @@ void PreintegratedImuMeasurementsG::resetIntegration() {
 void PreintegratedImuMeasurementsG::updateGal3(const Vector3& measuredAcc,
                                                const Vector3& measuredOmega,
                                                double dt, Matrix10* A,
-                                               Matrix103* B, Matrix103* C) {
+                                               Matrix106* B) {
   Vector3 acc = biasHat_.correctAccelerometer(measuredAcc);
   Vector3 omega = biasHat_.correctGyroscope(measuredOmega);
 
@@ -74,22 +83,20 @@ void PreintegratedImuMeasurementsG::updateGal3(const Vector3& measuredAcc,
   const Gal3 increment = Gal3::Expmap(integratedInput, rightJacobian);
   const Matrix10 transition = increment.inverse().AdjointMap();
 
-  Matrix103 accelerationJacobian = rightJacobian.block<10, 3>(0, 3) * dt;
-  Matrix103 omegaJacobian = rightJacobian.block<10, 3>(0, 0) * dt;
-  omegaJacobian = accelerationJacobian * correctedAcc_H_omega +
-                  omegaJacobian * correctedOmega_H_omega;
-  accelerationJacobian *= correctedAcc_H_acc;
+  Matrix6 correctedInput_H_input = Matrix6::Zero();
+  correctedInput_H_input.block<3, 3>(0, 0) = correctedAcc_H_acc;
+  correctedInput_H_input.block<3, 3>(0, 3) = correctedAcc_H_omega;
+  correctedInput_H_input.block<3, 3>(3, 3) = correctedOmega_H_omega;
+  const Matrix106 inputJacobian =
+      rightJacobian * LiftJacobian() * correctedInput_H_input * dt;
 
   preintMatrix_ = preintMatrix_.compose(increment);
   deltaTij_ += dt;
 
-  Matrix106 inputJacobian;
-  inputJacobian << accelerationJacobian, omegaJacobian;
   biasJacobian_ = transition * biasJacobian_ - inputJacobian;
 
   if (A) *A = transition;
-  if (B) *B = accelerationJacobian;
-  if (C) *C = omegaJacobian;
+  if (B) *B = inputJacobian;
 }
 
 //------------------------------------------------------------------------------
@@ -98,14 +105,13 @@ void PreintegratedImuMeasurementsG::update(const Vector3& measuredAcc,
                                            double dt, Matrix9* A, Matrix93* B,
                                            Matrix93* C) {
   Matrix10 galTransition;
-  Matrix103 galAcceleration, galOmega;
-  updateGal3(measuredAcc, measuredOmega, dt, &galTransition, &galAcceleration,
-             &galOmega);
+  Matrix106 galInput;
+  updateGal3(measuredAcc, measuredOmega, dt, &galTransition, &galInput);
 
   const Matrix910 P = NavStateProjector();
   if (A) *A = P * galTransition * P.transpose();
-  if (B) *B = P * galAcceleration;
-  if (C) *C = P * galOmega;
+  if (B) *B = P * galInput.leftCols<3>();
+  if (C) *C = P * galInput.rightCols<3>();
 }
 
 //------------------------------------------------------------------------------
@@ -117,16 +123,16 @@ void PreintegratedImuMeasurementsG::integrateMeasurement(
   }
 
   Matrix10 transition;
-  Matrix103 accelerationJacobian, omegaJacobian;
-  updateGal3(measuredAcc, measuredOmega, dt, &transition, &accelerationJacobian,
-             &omegaJacobian);
+  Matrix106 inputJacobian;
+  updateGal3(measuredAcc, measuredOmega, dt, &transition, &inputJacobian);
+
+  Matrix6 measurementCovariance = Matrix6::Zero();
+  measurementCovariance.block<3, 3>(0, 0) = p().accelerometerCovariance;
+  measurementCovariance.block<3, 3>(3, 3) = p().gyroscopeCovariance;
 
   preintMeasCov_ = transition * preintMeasCov_ * transition.transpose();
-  preintMeasCov_.noalias() += accelerationJacobian *
-                              (p().accelerometerCovariance / dt) *
-                              accelerationJacobian.transpose();
-  preintMeasCov_.noalias() += omegaJacobian * (p().gyroscopeCovariance / dt) *
-                              omegaJacobian.transpose();
+  preintMeasCov_.noalias() +=
+      inputJacobian * (measurementCovariance / dt) * inputJacobian.transpose();
   preintMeasCov_.block<3, 3>(6, 6).noalias() += p().integrationCovariance * dt;
 }
 

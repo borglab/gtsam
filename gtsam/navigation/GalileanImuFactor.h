@@ -48,7 +48,6 @@ class GTSAM_EXPORT PreintegratedImuMeasurementsG : public PreintegrationBase {
   using Base = PreintegrationBase;
   using Params = PreintegrationBase::Params;
   using Matrix10 = Eigen::Matrix<double, 10, 10>;
-  using Matrix103 = Eigen::Matrix<double, 10, 3>;
   using Matrix106 = Eigen::Matrix<double, 10, 6>;
   using Matrix910 = Eigen::Matrix<double, 9, 10>;
 
@@ -60,9 +59,12 @@ class GTSAM_EXPORT PreintegratedImuMeasurementsG : public PreintegrationBase {
   /** Project Gal(3) tangent order to NavState tangent order. */
   static Matrix910 NavStateProjector();
 
-  /** Update the Gal(3) mean and return full-dimensional local Jacobians. */
+  /** Lift GTSAM input order `(acceleration, angular rate)` into Gal(3). */
+  static Matrix106 LiftJacobian();
+
+  /** Update the Gal(3) mean and return its transition and input Jacobian. */
   void updateGal3(const Vector3& measuredAcc, const Vector3& measuredOmega,
-                  double dt, Matrix10* A, Matrix103* B, Matrix103* C);
+                  double dt, Matrix10* A, Matrix106* B);
 
  public:
   /** Construct and reset a Galilean preintegrated measurement. */

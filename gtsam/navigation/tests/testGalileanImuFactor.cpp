@@ -30,6 +30,7 @@ using Bias = imuBias::ConstantBias;
 
 class TestPIM : public PIM {
  public:
+  using PIM::LiftJacobian;
   using PIM::NavStateProjector;
   using PIM::PIM;
 
@@ -54,6 +55,18 @@ Vector10 Input(const Vector3& acc, const Vector3& omega, double dt) {
   return input;
 }
 
+// The physical input lift maps GTSAM (acceleration, angular rate) order into
+// Gal3 (angular rate, acceleration, position rate, clock rate) order.
+TEST(GalileanImuFactor, PhysicalInputLift) {
+  const Vector3 acc(0.3, -0.2, 0.5), omega(0.2, 0.1, -0.3);
+  const Vector6 input = (Vector6() << acc, omega).finished();
+  Vector10 expected = Vector10::Zero();
+  expected.head<3>() = omega;
+  expected.segment<3>(3) = acc;
+  const Vector10 actual = TestPIM::LiftJacobian() * input;
+  EXPECT(assert_equal(expected, actual, 1e-12));
+}
+
 // The mean uses right composition, including Galilean time-position coupling.
 TEST(GalileanImuFactor, MeanUsesRightComposition) {
   const auto params = PreintegrationParams::MakeSharedU(9.81);
@@ -71,7 +84,24 @@ TEST(GalileanImuFactor, MeanUsesRightComposition) {
   DOUBLES_EQUAL(dt1 + dt2, pim.deltaTij(), 1e-12);
 }
 
-// update() returns the projected LI transition and raw sensor Jacobians.
+// A single step initializes the right-applied bias sensitivity as -J_R h E,
+// with columns in GTSAM (accelerometer, gyroscope) order.
+TEST(GalileanImuFactor, PhysicalBiasJacobian) {
+  const auto params = PreintegrationParams::MakeSharedU(9.81);
+  const Vector3 acc(0.3, -0.2, 0.5), omega(0.2, 0.1, -0.3);
+  const double dt = 0.08;
+
+  TestPIM pim(params);
+  pim.integrateMeasurement(acc, omega, dt);
+
+  PIM::Matrix10 Jr;
+  Gal3::Expmap(Input(acc, omega, dt), Jr);
+  const PIM::Matrix106 expected = -Jr * TestPIM::LiftJacobian() * dt;
+  EXPECT(assert_equal(expected, pim.biasJacobian(), 1e-12));
+}
+
+// update() returns the projected LI transition and the two blocks of the
+// physical six-dimensional input Jacobian.
 TEST(GalileanImuFactor, UpdateJacobiansWithSensorPose) {
   const auto params = PreintegrationParams::MakeSharedU(9.81);
   params->body_P_sensor =
@@ -128,11 +158,11 @@ TEST(GalileanImuFactor, CovarianceProjection) {
 
   PIM::Matrix10 Jr;
   Gal3::Expmap(Input(acc, omega, dt), Jr);
-  const PIM::Matrix103 Ga = Jr.block<10, 3>(0, 3) * dt;
-  const PIM::Matrix103 Gg = Jr.block<10, 3>(0, 0) * dt;
-  PIM::Matrix10 expectedGal =
-      Ga * (params->accelerometerCovariance / dt) * Ga.transpose() +
-      Gg * (params->gyroscopeCovariance / dt) * Gg.transpose();
+  const PIM::Matrix106 C = Jr * TestPIM::LiftJacobian() * dt;
+  Matrix6 inputCovariance = Matrix6::Zero();
+  inputCovariance.block<3, 3>(0, 0) = params->accelerometerCovariance;
+  inputCovariance.block<3, 3>(3, 3) = params->gyroscopeCovariance;
+  PIM::Matrix10 expectedGal = C * (inputCovariance / dt) * C.transpose();
   expectedGal.block<3, 3>(6, 6) += params->integrationCovariance * dt;
 
   EXPECT(assert_equal(expectedGal, pim.gal3Covariance(), 1e-12));
