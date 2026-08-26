@@ -216,9 +216,11 @@ TEST(KnownLandmarkFactor, MatrixWeightedLocalizationQcqpError) {
   const auto odometryNoiseModel =
       noiseModel::Isotropic::Sigma(Pose3::dimension, kOdometrySigma);
   for (size_t i = 0; i + 1 < groundTruth.size(); ++i) {
-    graph.emplace_shared<FrobeniusBetweenFactor<Pose3>>(
-        i, i + 1, groundTruth[i].between(groundTruth[i + 1]),
-        odometryNoiseModel);
+    const size_t j = i + 1;
+    const Pose3 relativeMeasurement =
+        groundTruth[i].compose(groundTruth[j].inverse());
+    graph.emplace_shared<FrobeniusLeftBetweenFactor<Pose3>>(
+        i, j, relativeMeasurement, odometryNoiseModel);
   }
 
   Values values;

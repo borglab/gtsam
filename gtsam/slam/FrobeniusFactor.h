@@ -555,4 +555,163 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   }
 };
 
+/**
+ * FrobeniusLeftBetweenFactor uses ||T1 - T12_*T2||_F. For sensor-from-world
+ * states, T_i0 = T_ij*T_j0 and the measured T_ij maps sensor frame j into
+ * sensor frame i.
+ */
+template <class T>
+class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
+  inline constexpr static auto N = T::LieAlgebra::RowsAtCompileTime;
+  inline constexpr static auto Dim = N * N;
+  using Base = FrobeniusBetweenFactorNL<T>;
+  using VectorD = FrobeniusErrorVector<T>;
+
+ public:
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
+  /// Construct from two keys and a measured left-composed transformation.
+  FrobeniusLeftBetweenFactor(Key j1, Key j2, const T& T12,
+                             const SharedNoiseModel& model = nullptr)
+      : Base(j1, j2, T12, model) {}
+
+  /// Print the factor and its measured transformation.
+  void print(const std::string& s, const KeyFormatter& keyFormatter =
+                                       DefaultKeyFormatter) const override {
+    std::cout << s << "FrobeniusLeftBetweenFactor<"
+              << demangle(typeid(T).name()) << ">("
+              << keyFormatter(this->key1()) << ","
+              << keyFormatter(this->key2()) << ")\n";
+    traits<T>::Print(this->T12_, "  T12: ");
+    this->noiseModel_->print("  noise model: ");
+  }
+
+  /// Check equality with another left-composed factor.
+  bool equals(const NonlinearFactor& expected,
+              double tol = 1e-9) const override {
+    const auto* e =
+        dynamic_cast<const FrobeniusLeftBetweenFactor*>(&expected);
+    return e != nullptr && Base::equals(*e, tol);
+  }
+
+  /// Error is the vectorized difference between T1 and T12_*T2.
+  VectorD evaluateError(const T& T1, const T& T2, OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
+    typename T::Jacobian predicted_H_T2;
+    const T predictedT1 = traits<T>::Compose(
+        this->T12_, T2, {}, H2 ? &predicted_H_T2 : nullptr);
+
+    Eigen::Matrix<double, Dim, T::dimension> vec_H_predicted;
+    VectorD error =
+        traits<T>::Vec(T1, H1) -
+        traits<T>::Vec(predictedT1, H2 ? &vec_H_predicted : nullptr);
+    if (H2) *H2 = -vec_H_predicted * predicted_H_T2;
+    return error;
+  }
+
+  /**
+   * Add the exact D=1 homogeneous left-composed between cost to a QCQP.
+   */
+  void qcqpFactors(NonlinearFactorGraph* costs,
+                   NonlinearEqualityConstraints* constraints,
+                   size_t columnDimension = 1) const override {
+    if (columnDimension != 1) {
+      throw std::invalid_argument(
+          "FrobeniusLeftBetweenFactor::qcqpFactors only supports column "
+          "dimension 1");
+    }
+    qcqpFactorsForVec(costs, constraints);
+  }
+
+ private:
+  /// Compute a Kronecker product without unsupported Eigen modules.
+  static Matrix internalKroneckerProduct(const Matrix& left,
+                                         const Matrix& right) {
+    const DenseIndex resultRows = left.rows() * right.rows();
+    const DenseIndex resultColumns = left.cols() * right.cols();
+    Matrix result = Matrix::Zero(resultRows, resultColumns);
+
+    for (DenseIndex row = 0; row < left.rows(); ++row) {
+      for (DenseIndex column = 0; column < left.cols(); ++column) {
+        result.block(row * right.rows(), column * right.cols(), right.rows(),
+                     right.cols()) = left(row, column) * right;
+      }
+    }
+    return result;
+  }
+
+  /// Build the exact retained-row D=1 homogeneous QCQP cost.
+  void qcqpFactorsForVec(NonlinearFactorGraph* costs,
+                         NonlinearEqualityConstraints* constraints) const {
+    if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
+      (void)costs;
+      (void)constraints;
+      throw std::runtime_error(
+          "FrobeniusLeftBetweenFactor::qcqpFactors requires QCQP variable "
+          "traits for this type and column dimension 1.");
+    } else if constexpr (!(std::is_same_v<T, Rot2> ||
+                           std::is_same_v<T, Rot3> ||
+                           std::is_same_v<T, Pose2> ||
+                           std::is_same_v<T, Pose3>)) {
+      (void)costs;
+      (void)constraints;
+      throw std::runtime_error(
+          "FrobeniusLeftBetweenFactor::qcqpFactors D=1 is implemented only "
+          "for Rot2, Rot3, Pose2, and Pose3.");
+    } else {
+      if (!costs) {
+        throw std::invalid_argument(
+            "FrobeniusLeftBetweenFactor::qcqpFactors costs is null");
+      }
+      if (std::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_) ||
+          this->noiseModel_->isConstrained()) {
+        throw std::runtime_error(
+            "FrobeniusLeftBetweenFactor::qcqpFactors requires a "
+            "non-robust/non-hard quadratic noise model");
+      }
+
+      constexpr int LiftedDim = traits<T>::QcqpVectorDim;
+      constexpr int MN = LiftedDim - 1;
+      static_assert(MN % N == 0);
+      constexpr int M = MN / N;
+
+      const Matrix measurement = this->T12_.matrix();
+      const Matrix linearPart = measurement.topLeftCorner(M, M);
+      const Matrix leftAction = internalKroneckerProduct(
+          Matrix::Identity(N, N), linearPart);
+
+      Vector offset = Vector::Zero(MN);
+      if constexpr (M < N) {
+        offset.segment((N - 1) * M, M) =
+            measurement.block(0, N - 1, M, 1);
+      }
+
+      // With x = [h; vec(T1); h; vec(T2)], the retained-row residual is
+      // vec(T1) - (I kron measurement) vec(T2) - h*offset.
+      Matrix retainedB = Matrix::Zero(MN, 2 * LiftedDim);
+      retainedB.block(0, 1, MN, MN).setIdentity();
+      retainedB.col(LiftedDim) = -offset;
+      retainedB.block(0, LiftedDim + 1, MN, MN) = -leftAction;
+
+      Matrix fullB = Matrix::Zero(Dim, 2 * LiftedDim);
+      for (int column = 0; column < N; ++column) {
+        fullB.block(column * N, 0, M, 2 * LiftedDim) =
+            retainedB.block(column * M, 0, M, 2 * LiftedDim);
+      }
+
+      const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
+      const Matrix Q = whitenedB.transpose() * whitenedB;
+
+      InsertQcqpConstraints<T, 1>(this->key1(), constraints);
+      InsertQcqpConstraints<T, 1>(this->key2(), constraints);
+
+      const SymmetricBlockMatrix blockQ(
+          std::vector<DenseIndex>{LiftedDim, LiftedDim}, Q);
+      costs->push_back(std::make_shared<QpCost>(
+          KeyVector{this->key1(), this->key2()}, blockQ));
+    }
+  }
+};
+
 }  // namespace gtsam

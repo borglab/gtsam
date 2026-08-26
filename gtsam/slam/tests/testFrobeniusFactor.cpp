@@ -22,6 +22,7 @@
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/base/testLie.h>
+#include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/geometry/Gal3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
@@ -264,6 +265,61 @@ TEST(FrobeniusBetweenFactorPose3, EvaluateError) {
   values.insert(2, P2);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
 }
+
+/* ************************************************************************* */
+namespace frobenius_left_pose3_fixture {
+
+const Key kFirstKey = 11;
+const Key kSecondKey = 12;
+const Pose3 kFirstPose(Rot3::RzRyRx(0.2, -0.3, 0.1),
+                       Point3(0.4, -0.5, 0.7));
+const Pose3 kSecondPose(Rot3::RzRyRx(-0.1, 0.25, 0.35),
+                        Point3(-0.2, 0.6, 0.3));
+const Pose3 kMeasured = kFirstPose.compose(kSecondPose.inverse());
+
+// Verifies the left-composed residual and both analytic Jacobians.
+TEST(FrobeniusLeftBetweenFactorPose3, EvaluateError) {
+  const FrobeniusLeftBetweenFactor<Pose3> factor(kFirstKey, kSecondKey,
+                                                  kMeasured);
+  const Vector actual = factor.evaluateError(kFirstPose, kSecondPose);
+  EXPECT(assert_equal(FrobeniusErrorVector<Pose3>::Zero(), actual, 1e-9));
+
+  Values values;
+  values.insert(kFirstKey, kFirstPose);
+  values.insert(kSecondKey, kSecondPose);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+
+  const Pose3 rightMeasurement = kFirstPose.between(kSecondPose);
+  EXPECT(!kMeasured.equals(rightMeasurement, 1e-6));
+}
+
+// Verifies exact nonlinear-to-QCQP cost parity away from zero residual.
+TEST(FrobeniusLeftBetweenFactorPose3, QcqpError) {
+  const auto model = noiseModel::Isotropic::Sigma(Pose3::dimension, 0.2);
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusLeftBetweenFactor<Pose3>>(
+      kFirstKey, kSecondKey, kMeasured, model);
+
+  const Vector6 firstPerturbation{0.02, -0.01, 0.03, 0.1, -0.04, 0.05};
+  const Vector6 secondPerturbation{-0.03, 0.02, 0.01, -0.06, 0.07, -0.02};
+  Values values;
+  values.insert(kFirstKey, kFirstPose.retract(firstPerturbation));
+  values.insert(kSecondKey, kSecondPose.retract(secondPerturbation));
+
+  const QcqpProblem qcqp(graph, 1);
+  Values qcqpValues;
+  InsertQcqpValue<Pose3, 1>(kFirstKey, values.at<Pose3>(kFirstKey),
+                            &qcqpValues);
+  InsertQcqpValue<Pose3, 1>(kSecondKey, values.at<Pose3>(kSecondKey),
+                            &qcqpValues);
+
+  EXPECT(graph.error(values) > 0.0);
+  EXPECT_DOUBLES_EQUAL(graph.error(values),
+                       qcqp.costs().error(qcqpValues), 1e-9);
+}
+
+}  // namespace frobenius_left_pose3_fixture
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 namespace sim2 {

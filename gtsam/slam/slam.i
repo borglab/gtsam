@@ -648,6 +648,15 @@ virtual class FrobeniusBetweenFactor : gtsam::NoiseModelFactor {
   gtsam::Vector evaluateError(const T& T1, const T& T2) const;
 };
 
+template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
+virtual class FrobeniusLeftBetweenFactor : gtsam::NoiseModelFactor {
+  FrobeniusLeftBetweenFactor(gtsam::Key j1, gtsam::Key j2, const T& T12);
+  FrobeniusLeftBetweenFactor(gtsam::Key j1, gtsam::Key j2, const T& T12,
+                             gtsam::noiseModel::Base* model);
+
+  gtsam::Vector evaluateError(const T& T1, const T& T2) const;
+};
+
 #include <gtsam/slam/KnownLandmarkFactor.h>
 template <T = {gtsam::Pose3}>
 virtual class KnownLandmarkFactor : gtsam::NoiseModelFactor {

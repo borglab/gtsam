@@ -95,14 +95,16 @@ int main() {
   const auto odometryNoiseModel =
       noiseModel::Isotropic::Sigma(Pose3::dimension, kOdometrySigma);
   Sampler odometrySampler(odometryNoiseModel, kOdometryNoiseSeed);
+  // Poses are sensor-from-world, so T_ij = T_i0*T_j0^{-1} composes on the left.
   for (size_t i = 0; i + 1 < groundTruth.size(); ++i) {
     const size_t j = i + 1;
-    const Pose3 exactRelative = groundTruth[i].between(groundTruth[j]);
+    const Pose3 exactRelative =
+        groundTruth[i].compose(groundTruth[j].inverse());
     // Relative measurements are sampled in tangent space, while optimization
     // retains the isotropically weighted Frobenius residual.
     const Pose3 relativeMeasurement =
         exactRelative.retract(odometrySampler.sample());
-    graph.emplace_shared<FrobeniusBetweenFactor<Pose3>>(
+    graph.emplace_shared<FrobeniusLeftBetweenFactor<Pose3>>(
         i, j, relativeMeasurement, odometryNoiseModel);
   }
 
