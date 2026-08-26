@@ -26,8 +26,8 @@
 #include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/linear/Sampler.h>
 #include <gtsam/linear/FixedJacobianFactor.h>
+#include <gtsam/linear/Sampler.h>
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/ScenarioRunner.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -331,6 +331,7 @@ TEST_PIM(ImuFactor2, TernaryLinearizationIsBitwiseIdentical) {
 /* ************************************************************************* */
 
 /* ************************************************************************* */
+// Checks the common prediction and bias-correction interface and Jacobians.
 TEST_PIM(ImuFactor, PreintegrationBaseMethods) {
   // Select the overload without the gravity parameter:
   using PredictNoGravity = NavState (PreintegrationBase::*)(
@@ -349,23 +350,29 @@ TEST_PIM(ImuFactor, PreintegrationBaseMethods) {
   pim.biasCorrectedDelta(kZeroBias, actualH);
   Matrix expectedH = numericalDerivative11<Vector9, Bias>(
       std::bind(&PreintegrationBase::biasCorrectedDelta, pim,
-          std::placeholders::_1, nullptr), kZeroBias);
-  EXPECT(assert_equal(expectedH, actualH));
+                std::placeholders::_1, nullptr),
+      kZeroBias);
+  constexpr double derivativeTolerance =
+      std::is_same_v<PIM, PreintegratedImuMeasurementsG> ? 1e-8 : 1e-9;
+  EXPECT(assert_equal(expectedH, actualH, derivativeTolerance));
 
   Matrix9 aH1;
   Matrix96 aH2;
   NavState predictedState = pim.predict(state1, kZeroBias, aH1, aH2);
   Matrix eH1 = numericalDerivative11<NavState, NavState>(
-      std::bind(static_cast<PredictNoGravity>(&PreintegrationBase::predict), pim, std::placeholders::_1,
-          kZeroBias, nullptr, nullptr), state1);
+      std::bind(static_cast<PredictNoGravity>(&PreintegrationBase::predict),
+                pim, std::placeholders::_1, kZeroBias, nullptr, nullptr),
+      state1);
   EXPECT(assert_equal(eH1, aH1));
   Matrix eH2 = numericalDerivative11<NavState, Bias>(
-      std::bind(static_cast<PredictNoGravity>(&PreintegrationBase::predict), pim, state1,
-          std::placeholders::_1, nullptr, nullptr), kZeroBias);
-  EXPECT(assert_equal(eH2, aH2));
+      std::bind(static_cast<PredictNoGravity>(&PreintegrationBase::predict),
+                pim, state1, std::placeholders::_1, nullptr, nullptr),
+      kZeroBias);
+  EXPECT(assert_equal(eH2, aH2, derivativeTolerance));
 }
 
 /* ************************************************************************* */
+// Checks prediction with explicit gravity and all of its Jacobians.
 TEST_PIM(ImuFactor, PredictWithGravityVector) {
   using namespace common;
   PIM pim(testing::Params(), kZeroBiasHat);
@@ -377,30 +384,32 @@ TEST_PIM(ImuFactor, PredictWithGravityVector) {
   const Vector3 tilted_gravity = Vector3(0.5, -0.3, 9.7);
 
   // The gravity overload with the params' gravity must match the legacy one:
-  EXPECT(assert_equal(pim.predict(state1, kZeroBias),
-                      pim.predict(state1, kZeroBias, testing::Params()->n_gravity)));
+  EXPECT(assert_equal(
+      pim.predict(state1, kZeroBias),
+      pim.predict(state1, kZeroBias, testing::Params()->n_gravity)));
 
   // Check all three Jacobians of the gravity overload:
   Matrix9 aH1;
   Matrix96 aH2;
   Matrix93 aH3;
   pim.predict(state1, kZeroBias, tilted_gravity, aH1, aH2, aH3);
-  EXPECT(assert_equal(
-      numericalDerivative11<NavState, NavState>(
-          [&](const NavState& s) { return pim.predict(s, kZeroBias, tilted_gravity); },
-          state1),
-      Matrix(aH1)));
+  EXPECT(assert_equal(numericalDerivative11<NavState, NavState>(
+                          [&](const NavState& s) {
+                            return pim.predict(s, kZeroBias, tilted_gravity);
+                          },
+                          state1),
+                      Matrix(aH1)));
   EXPECT(assert_equal(
       numericalDerivative11<NavState, Bias>(
           [&](const Bias& b) { return pim.predict(state1, b, tilted_gravity); },
           kZeroBias),
-      Matrix(aH2)));
+      Matrix(aH2),
+      std::is_same_v<PIM, PreintegratedImuMeasurementsG> ? 1e-8 : 1e-9));
   EXPECT(assert_equal(
       numericalDerivative11<NavState, Vector3>(
           [&](const Vector3& g) { return pim.predict(state1, kZeroBias, g); },
           tilted_gravity),
       Matrix(aH3)));
-
 }
 
 /* ************************************************************************* */
@@ -419,31 +428,53 @@ TEST_PIM(ImuFactor, MultipleMeasurements) {
   PIM actual(testing::Params(), kZeroBiasHat);
   actual.integrateMeasurements(acc,gyro,dts);
 
-  EXPECT(assert_equal(expected,actual));
+  EXPECT(assert_equal(expected, actual));
 }
 
 /* ************************************************************************* */
+// Checks the factor residual and Jacobians at predicted and perturbed states.
 TEST_PIM(ImuFactor, ErrorAndJacobians) {
   using namespace common;
-  PIM pim(testing::Params());
+  const auto params = testing::Params();
+  PIM pim(params);
 
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
-  EXPECT(assert_equal(state2, pim.predict(state1, kZeroBias)));
+
+  NavState expectedState = state2;
+  if constexpr (std::is_same_v<PIM, PreintegratedImuMeasurementsG>) {
+    Vector10 input = Vector10::Zero();
+    input.head<3>() = measuredOmega * deltaT;
+    input.segment<3>(3) = measuredAcc * deltaT;
+    input(9) = deltaT;
+    const Gal3 delta = Gal3::Expmap(input);
+    const Rot3 expectedRotation = x1.rotation().compose(delta.rotation());
+    const Point3 expectedPosition = x1.translation() + v1 * deltaT +
+                                    0.5 * params->n_gravity * deltaT * deltaT +
+                                    x1.rotation().rotate(delta.translation());
+    const Vector3 expectedVelocity = v1 + params->n_gravity * deltaT +
+                                     x1.rotation().rotate(delta.velocity());
+    expectedState =
+        NavState(expectedRotation, expectedPosition, expectedVelocity);
+  }
+  EXPECT(assert_equal(expectedState, pim.predict(state1, kZeroBias)));
+
+  const Pose3 expectedPose = expectedState.pose();
+  const Vector3 expectedVelocity = expectedState.velocity();
 
   // Create factor
   ImuFactorT<PIM> factor(X(1), V(1), X(2), V(2), B(1), pim);
 
   // Expected error
   Vector expectedError{{0, 0, 0, 0, 0, 0, 0, 0, 0}};
-  EXPECT(
-      assert_equal(expectedError,
-          factor.evaluateError(x1, v1, x2, v2, kZeroBias)));
+  EXPECT(assert_equal(
+      expectedError,
+      factor.evaluateError(x1, v1, expectedPose, expectedVelocity, kZeroBias)));
 
   Values values;
   values.insert(X(1), x1);
   values.insert(V(1), v1);
-  values.insert(X(2), x2);
-  values.insert(V(2), v2);
+  values.insert(X(2), expectedPose);
+  values.insert(V(2), expectedVelocity);
   values.insert(B(1), kZeroBias);
   EXPECT(assert_equal(expectedError, factor.unwhitenedError(values)));
 
@@ -453,32 +484,37 @@ TEST_PIM(ImuFactor, ErrorAndJacobians) {
 
   // Actual Jacobians
   Matrix H1a, H2a, H3a, H4a, H5a;
-  (void) factor.evaluateError(x1, v1, x2, v2, kZeroBias, H1a, H2a, H3a, H4a,
-      H5a);
+  (void)factor.evaluateError(x1, v1, expectedPose, expectedVelocity, kZeroBias,
+                             H1a, H2a, H3a, H4a, H5a);
 
   // Make sure rotation part is correct when error is interpreted as axis-angle
   // Jacobians are around zero, so the rotation part is the same as:
   Matrix H1Rot3 = numericalDerivative11<Rot3, Pose3>(
-    [&](const Pose3& pose_i) {
-      return Rot3::Expmap(factor.evaluateError(pose_i, v1, x2, v2, kZeroBias).head(3));
-    },
-    x1);
+      [&](const Pose3& pose_i) {
+        return Rot3::Expmap(factor
+                                .evaluateError(pose_i, v1, expectedPose,
+                                               expectedVelocity, kZeroBias)
+                                .head(3));
+      },
+      x1);
   EXPECT(assert_equal(H1Rot3, H1a.topRows(3)));
 
   Matrix H3Rot3 = numericalDerivative11<Rot3, Pose3>(
-    [&](const Pose3& pose_j) {
-      return Rot3::Expmap(factor.evaluateError(x1, v1, pose_j, v2, kZeroBias).head(3));
-    },
-    x2);
+      [&](const Pose3& pose_j) {
+        return Rot3::Expmap(
+            factor.evaluateError(x1, v1, pose_j, expectedVelocity, kZeroBias)
+                .head(3));
+      },
+      expectedPose);
   EXPECT(assert_equal(H3Rot3, H3a.topRows(3)));
 
   // Evaluate error with wrong values
-  Vector3 v2_wrong = v2 + Vector3(0.1, 0.1, 0.1);
+  Vector3 v2_wrong = expectedVelocity + Vector3(0.1, 0.1, 0.1);
   values.update(V(2), v2_wrong);
   expectedError << 0, 0, 0, 0, 0, 0, -0.0724744871, -0.040715657, -0.151952901;
-  EXPECT(
-      assert_equal(expectedError,
-          factor.evaluateError(x1, v1, x2, v2_wrong, kZeroBias), 1e-2));
+  EXPECT(assert_equal(
+      expectedError,
+      factor.evaluateError(x1, v1, expectedPose, v2_wrong, kZeroBias), 1e-2));
   EXPECT(assert_equal(expectedError, factor.unwhitenedError(values), 1e-2));
 
   // Make sure the whitening is done correctly
@@ -486,7 +522,8 @@ TEST_PIM(ImuFactor, ErrorAndJacobians) {
   Eigen::LLT<Matrix> llt(cov.inverse());
   Matrix R = llt.matrixU();
   Vector whitened = R * expectedError;
-  EXPECT(assert_equal(0.5 * whitened.squaredNorm(), factor.error(values), 1e-4));
+  EXPECT(
+      assert_equal(0.5 * whitened.squaredNorm(), factor.error(values), 1e-4));
 
   // Make sure linearization is correct
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, diffDelta, 1e-3);
@@ -794,15 +831,17 @@ TEST_PIM(ImuFactor, PredictRotation) {
 }
 
 /* ************************************************************************* */
+// Checks a rotating, accelerating prediction against backend regressions.
 TEST_PIM(ImuFactor, PredictArbitrary) {
   gttic(PredictArbitrary);
   Pose3 x1;
   const Vector3 v1(0, 0, 0);
 
   const AcceleratingScenario scenario(x1.rotation(), x1.translation(), v1,
-      Vector3(0.1, 0.2, 0), Vector3(M_PI / 10, M_PI / 10, M_PI / 10));
+                                      Vector3(0.1, 0.2, 0),
+                                      Vector3(M_PI / 10, M_PI / 10, M_PI / 10));
 
-  const double T = 3.0; // seconds
+  const double T = 3.0;  // seconds
   ScenarioRunner runner(scenario, testing::Params(), T / 10);
   //
   //  PIM pim = runner.integrate(T);
@@ -819,11 +858,14 @@ TEST_PIM(ImuFactor, PredictArbitrary) {
   Vector3 measuredAcc = runner.actualSpecificForce(0);
 
   auto p = testing::Params();
-  p->integrationCovariance = Z_3x3; // MonteCarlo does not sample integration noise
+  p->integrationCovariance =
+      Z_3x3;  // MonteCarlo does not sample integration noise
   PIM pim(p, biasHat);
   Bias bias(Vector3(0, 0, 0), Vector3(0, 0, 0));
-//  EXPECT(MonteCarlo(pim, NavState(x1, v1), bias, 0.1, {}, measuredAcc, measuredOmega,
-//                    Vector3::Constant(accNoiseVar), Vector3::Constant(omegaNoiseVar), 100000));
+  //  EXPECT(MonteCarlo(pim, NavState(x1, v1), bias, 0.1, {}, measuredAcc,
+  //  measuredOmega,
+  //                    Vector3::Constant(accNoiseVar),
+  //                    Vector3::Constant(omegaNoiseVar), 100000));
 
   double dt = 0.001;
   for (int i = 0; i < 1000; ++i)
@@ -836,12 +878,19 @@ TEST_PIM(ImuFactor, PredictArbitrary) {
   NavState actual = pim.predict(NavState(x1, v1), bias);
 
   // Regression test for Imu Refactor
-  Rot3 expectedR( //
-      +0.903715275, -0.250741668, 0.347026393, //
-      +0.347026393, 0.903715275, -0.250741668, //
+  Rot3 expectedR(                               //
+      +0.903715275, -0.250741668, 0.347026393,  //
+      +0.347026393, 0.903715275, -0.250741668,  //
       -0.250741668, 0.347026393, 0.903715275);
   Point3 expectedT(-0.516077031, 0.57842919, 0.0876478403);
   Vector3 expectedV(-1.62337767, 1.57954409, 0.343833571);
+  if constexpr (std::is_same_v<PIM, PreintegratedImuMeasurementsG>) {
+    // Gal3 uses the exact group exponential for each simultaneous constant
+    // angular-rate/specific-force sample and a right-applied bias correction,
+    // rather than the legacy Euler update and additive correction.
+    expectedT = Point3(-0.516939281, 0.579119437, 0.0878198436);
+    expectedV = Vector3(-1.62514265, 1.58080564, 0.344337002);
+  }
   NavState expected(expectedR, expectedT, expectedV);
   EXPECT(assert_equal(expected, actual, 1e-7));
 }

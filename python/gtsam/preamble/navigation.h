@@ -18,3 +18,54 @@ using gtsam::operator<<;
 }
 
 #include "python/gtsam/preamble/arg_policies.h"
+
+#include <gtsam/navigation/ImuFactor.h>
+
+namespace gtsam {
+
+/** Python-visible ManifoldPreintegration PIM with an unambiguous predict. */
+class PreintegratedImuMeasurementsManifold
+    : public PreintegratedImuMeasurementsT<ManifoldPreintegration> {
+ public:
+  using Base = PreintegratedImuMeasurementsT<ManifoldPreintegration>;
+  using Base::Base;
+
+  NavState predict(const NavState& state_i,
+                   const imuBias::ConstantBias& bias_i,
+                   OptionalJacobian<9, 9> H1 = {},
+                   OptionalJacobian<9, 6> H2 = {}) const {
+    return Base::predict(state_i, bias_i, H1, H2);
+  }
+};
+
+/** Python-visible TangentPreintegration PIM with an unambiguous predict. */
+class PreintegratedImuMeasurementsTangent
+    : public PreintegratedImuMeasurementsT<TangentPreintegration> {
+ public:
+  using Base = PreintegratedImuMeasurementsT<TangentPreintegration>;
+  using Base::Base;
+
+  NavState predict(const NavState& state_i,
+                   const imuBias::ConstantBias& bias_i,
+                   OptionalJacobian<9, 9> H1 = {},
+                   OptionalJacobian<9, 6> H2 = {}) const {
+    return Base::predict(state_i, bias_i, H1, H2);
+  }
+};
+
+/** Python-visible LieGroupPreintegration PIM with an unambiguous predict. */
+class PreintegratedImuMeasurementsLieGroup
+    : public PreintegratedImuMeasurementsT<LieGroupPreintegration> {
+ public:
+  using Base = PreintegratedImuMeasurementsT<LieGroupPreintegration>;
+  using Base::Base;
+
+  NavState predict(const NavState& state_i,
+                   const imuBias::ConstantBias& bias_i,
+                   OptionalJacobian<9, 9> H1 = {},
+                   OptionalJacobian<9, 6> H2 = {}) const {
+    return Base::predict(state_i, bias_i, H1, H2);
+  }
+};
+
+}  // namespace gtsam

@@ -19,6 +19,7 @@
  *  @author Frank Dellaert
  **/
 
+#include <gtsam/navigation/GalileanImuFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/LieGroupPreintegration.h>
 #include <gtsam/navigation/ManifoldPreintegration.h>
@@ -89,22 +90,6 @@ void PreintegratedImuMeasurementsT<PreintegrationType>::integrateMeasurement(
 
   // NOTE(frank): (Gi*dt)*(C/dt)*(Gi'*dt), with Gi << Z_3x3, I_3x3, Z_3x3 (9x3 matrix)
   preintMeasCov_.block<3, 3>(3, 3).noalias() += iCov * dt;
-}
-
-//------------------------------------------------------------------------------
-template <class PreintegrationType>
-void PreintegratedImuMeasurementsT<PreintegrationType>::integrateMeasurements(
-    const Matrix& measuredAccs, const Matrix& measuredOmegas,
-    const Matrix& dts) {
-  assert(
-      measuredAccs.rows() == 3 && measuredOmegas.rows() == 3 && dts.rows() == 1);
-  assert(dts.cols() >= 1);
-  assert(measuredAccs.cols() == dts.cols());
-  assert(measuredOmegas.cols() == dts.cols());
-  size_t n = static_cast<size_t>(dts.cols());
-  for (size_t j = 0; j < n; j++) {
-    integrateMeasurement(measuredAccs.col(j), measuredOmegas.col(j), dts(0, j));
-  }
 }
 
 //------------------------------------------------------------------------------
@@ -200,12 +185,14 @@ template class GTSAM_EXPORT ImuFactorT<PreintegratedImuMeasurementsT<ManifoldPre
 template class GTSAM_EXPORT ImuFactorT<PreintegratedImuMeasurementsT<TangentPreintegration>>;
 template class GTSAM_EXPORT
     ImuFactorT<PreintegratedImuMeasurementsT<LieGroupPreintegration>>;
+template class GTSAM_EXPORT ImuFactorT<PreintegratedImuMeasurementsG>;
 
 // ImuFactor2T instantiations
 template class GTSAM_EXPORT ImuFactor2T<PreintegratedImuMeasurementsT<ManifoldPreintegration>>;
 template class GTSAM_EXPORT ImuFactor2T<PreintegratedImuMeasurementsT<TangentPreintegration>>;
 template class GTSAM_EXPORT
     ImuFactor2T<PreintegratedImuMeasurementsT<LieGroupPreintegration>>;
+template class GTSAM_EXPORT ImuFactor2T<PreintegratedImuMeasurementsG>;
 
 // operator<< instantiations
 template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsT<ManifoldPreintegration>>(
@@ -216,6 +203,9 @@ template GTSAM_EXPORT std::ostream&
 operator<< <PreintegratedImuMeasurementsT<LieGroupPreintegration>>(
     std::ostream& os,
     const ImuFactorT<PreintegratedImuMeasurementsT<LieGroupPreintegration>>& f);
+template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsG>(
+    std::ostream& os,
+    const ImuFactorT<PreintegratedImuMeasurementsG>& f);
 
 template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsT<ManifoldPreintegration>>(
     std::ostream& os, const ImuFactor2T<PreintegratedImuMeasurementsT<ManifoldPreintegration>>& f);
@@ -226,5 +216,8 @@ operator<< <PreintegratedImuMeasurementsT<LieGroupPreintegration>>(
     std::ostream& os,
     const ImuFactor2T<PreintegratedImuMeasurementsT<LieGroupPreintegration>>&
         f);
+template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsG>(
+    std::ostream& os,
+    const ImuFactor2T<PreintegratedImuMeasurementsG>& f);
 }
 // namespace gtsam

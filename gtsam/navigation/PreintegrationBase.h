@@ -164,6 +164,10 @@ class GTSAM_EXPORT PreintegrationBase {
   virtual void integrateMeasurement(const Vector3& measuredAcc,
       const Vector3& measuredOmega, const double dt);
 
+  /// Add multiple measurements, in matrix columns
+  void integrateMeasurements(const Matrix& measuredAccs,
+                             const Matrix& measuredOmegas, const Matrix& dts);
+
   /// Given the estimate of the bias, return a NavState tangent vector
   /// summarizing the preintegrated IMU measurements so far
   virtual Vector9 biasCorrectedDelta(const imuBias::ConstantBias& bias_i,

@@ -11,10 +11,13 @@
 
 #pragma once
 
+#include <gtsam/base/GroupAction.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/navigation/ManifoldEKF.h>
 #include <gtsam/nonlinear/Values.h>
+
+#include <stdexcept>
 
 namespace gtsam {
 
@@ -178,18 +181,28 @@ class EquivariantFilter : public ManifoldEKF<M> {
    * @tparam InputOrbit Functor for the input orbit ψ_u.
    * @param psi_u Input Orbit instance.
    * @return MatrixM The calculated error dynamics matrix A.
+   * @throws std::invalid_argument if the symmetry uses a left action. Automatic
+   * left-action error dynamics are not yet supported; use
+   * predictWithJacobian() with an explicit continuous-time A.
    */
   template <typename Lift, typename InputOrbit>
   MatrixM computeErrorDynamicsMatrix(const InputOrbit& psi_u) const {
-    MatrixGM D_lift;
-    // Map current input to origin: u_origin = psi_u(X^-1)
-    auto u_origin = psi_u(g_.inverse());
+    if constexpr (Symmetry::type == ActionType::Left) {
+      throw std::invalid_argument(
+          "EquivariantFilter automatic prediction does not support left "
+          "group actions; call predictWithJacobian() with an explicit "
+          "continuous-time A");
+    } else {
+      MatrixGM D_lift;
+      // Map current input to origin: u_origin = psi_u(X^-1)
+      auto u_origin = psi_u(g_.inverse());
 
-    // Lift at origin: D_lift = d(Lambda(xi_ref, u_origin))/dxi
-    Lift lift_u_origin(u_origin);
-    lift_u_origin(xi_ref_, &D_lift);
+      // Lift at origin: D_lift = d(Lambda(xi_ref, u_origin))/dxi
+      Lift lift_u_origin(u_origin);
+      lift_u_origin(xi_ref_, &D_lift);
 
-    return Dphi0_ * D_lift;
+      return Dphi0_ * D_lift;
+    }
   }
 
   /**
@@ -225,9 +238,10 @@ class EquivariantFilter : public ManifoldEKF<M> {
    * @tparam InputOrbit Functor for the input orbit ψ_u.
    * @param lift_u Lift functor for the current input.
    * @param psi_u Input Orbit for the current input.
-   * @param A Error dynamics matrix (DimM x DimM).
    * @param Qc Process noise covariance on the manifold (continuous-time).
    * @param dt Time step.
+   * @throws std::invalid_argument if the symmetry uses a left action. Use
+   * predictWithJacobian() and provide the continuous-time A explicitly.
    */
   template <size_t K = 1, typename Lift, typename InputOrbit>
   void predict(const Lift& lift_u, const InputOrbit& psi_u, const MatrixM& Qc,
