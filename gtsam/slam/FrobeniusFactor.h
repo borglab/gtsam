@@ -87,8 +87,7 @@ inline SharedNoiseModel ConvertModel(const SharedNoiseModel& model) {
 
 template <class T>
 using FrobeniusErrorVector = Eigen::Matrix<
-    double, T::LieAlgebra::RowsAtCompileTime *
-                T::LieAlgebra::RowsAtCompileTime,
+    double, T::LieAlgebra::RowsAtCompileTime * T::LieAlgebra::RowsAtCompileTime,
     1>;
 
 /**
@@ -102,7 +101,7 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
   inline constexpr static auto Dim = N * N;
 
  public:
-  using MatrixNN = Eigen::Matrix<double, N, N>;
+  using MatrixN = Eigen::Matrix<double, N, N>;
 
  private:
   Eigen::Matrix<double, Dim, 1> vecM_;  ///< vectorized matrix to approximate
@@ -112,15 +111,15 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
   using NoiseModelFactor1<T>::evaluateError;
 
   /// Constructor
-  FrobeniusPrior(Key j, const MatrixNN& M,
+  FrobeniusPrior(Key j, const MatrixN& M,
                  const SharedNoiseModel& model = nullptr)
       : NoiseModelFactorN<T>(ConvertModel<T, Dim>(model), j) {
     vecM_ << Eigen::Map<const Matrix>(M.data(), Dim, 1);
   }
 
   /// Return the fixed ambient matrix targeted by this prior.
-  MatrixNN priorMatrix() const {
-    return Eigen::Map<const MatrixNN>(vecM_.data());
+  MatrixN priorMatrix() const {
+    return Eigen::Map<const MatrixN>(vecM_.data());
   }
 
   /// Error is just Frobenius norm between T element and vectorized matrix M.
@@ -285,8 +284,7 @@ class FrobeniusBetweenFactorNL
   /// Construct from two keys and a measured transformation.
   FrobeniusBetweenFactorNL(Key j1, Key j2, const T& T12,
                            const SharedNoiseModel& model = nullptr)
-      : Base(ConvertModel<T, Dim>(model), j1, j2),
-        T12_(T12) {}
+      : Base(ConvertModel<T, Dim>(model), j1, j2), T12_(T12) {}
 
   /// Return the measured transformation from the first key to the second.
   const T& measured() const { return T12_; }
@@ -363,6 +361,7 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   inline constexpr static auto N = T::LieAlgebra::RowsAtCompileTime;
   inline constexpr static auto Dim = N * N;
   using Base = FrobeniusBetweenFactorNL<T>;
+  using MatrixN = typename Base::MatrixN;
   using VectorD = FrobeniusErrorVector<T>;
 
   typename T::Jacobian T2hat_H_T1_;  ///< fixed derivative of T2hat wrpt T1
@@ -461,9 +460,10 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       constexpr int MN = LiftedDim - 1;  // The lifted vector has a leading 1
       static_assert(MN % N == 0);
       constexpr int M = MN / N;
+      using MatrixM = Eigen::Matrix<double, M, M>;
 
-      const Matrix measurement = this->T12_.matrix();
-      const Matrix I_M = Matrix::Identity(M, M);
+      const MatrixN measurement = this->T12_.matrix();
+      const MatrixM I_M = MatrixM::Identity();
       // Column-major vec(XM) = (M.transpose() kron I) vec(X).
       const Matrix A = internalKroneckerProduct(measurement.transpose(), I_M);
 
@@ -538,8 +538,8 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       InsertQcqpConstraints<T, N>(this->key1(), constraints);
       InsertQcqpConstraints<T, N>(this->key2(), constraints);
 
-      const Matrix measurement = this->T12_.matrix();
-      const Matrix I = Matrix::Identity(N, N);
+      const MatrixN measurement = this->T12_.matrix();
+      const MatrixN I = MatrixN::Identity();
       const double weight = 1.0 / (isotropic->sigma() * isotropic->sigma());
 
       // Build B = [-M' I] and its isotropically weighted Hessian.
@@ -556,57 +556,63 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
 };
 
 /**
- * FrobeniusLeftBetweenFactor uses ||T1 - T12_*T2||_F. For sensor-from-world
- * states, T_i0 = T_ij*T_j0 and the measured T_ij maps sensor frame j into
- * sensor frame i.
+ * FrobeniusLeftBetweenFactor uses ||iTw - iTj*jTw||_F, where measured iTj
+ * maps frame j into frame i.
  */
 template <class T>
 class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   inline constexpr static auto N = T::LieAlgebra::RowsAtCompileTime;
   inline constexpr static auto Dim = N * N;
   using Base = FrobeniusBetweenFactorNL<T>;
+  using MatrixN = typename Base::MatrixN;
   using VectorD = FrobeniusErrorVector<T>;
 
  public:
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
 
-  /// Construct from two keys and a measured left-composed transformation.
-  FrobeniusLeftBetweenFactor(Key j1, Key j2, const T& T12,
+  /**
+   * Construct from two keys and a measured left-composed transformation.
+   * @param iTj Measured transform from frame j to frame i.
+   */
+  FrobeniusLeftBetweenFactor(Key j1, Key j2, const T& iTj,
                              const SharedNoiseModel& model = nullptr)
-      : Base(j1, j2, T12, model) {}
+      : Base(j1, j2, iTj, model) {}
 
   /// Print the factor and its measured transformation.
   void print(const std::string& s, const KeyFormatter& keyFormatter =
                                        DefaultKeyFormatter) const override {
     std::cout << s << "FrobeniusLeftBetweenFactor<"
               << demangle(typeid(T).name()) << ">("
-              << keyFormatter(this->key1()) << ","
-              << keyFormatter(this->key2()) << ")\n";
-    traits<T>::Print(this->T12_, "  T12: ");
+              << keyFormatter(this->key1()) << "," << keyFormatter(this->key2())
+              << ")\n";
+    traits<T>::Print(this->T12_, "  measured iTj: ");
     this->noiseModel_->print("  noise model: ");
   }
 
   /// Check equality with another left-composed factor.
   bool equals(const NonlinearFactor& expected,
               double tol = 1e-9) const override {
-    const auto* e =
-        dynamic_cast<const FrobeniusLeftBetweenFactor*>(&expected);
+    const auto* e = dynamic_cast<const FrobeniusLeftBetweenFactor*>(&expected);
     return e != nullptr && Base::equals(*e, tol);
   }
 
-  /// Error is the vectorized difference between T1 and T12_*T2.
-  VectorD evaluateError(const T& T1, const T& T2, OptionalMatrixType H1,
+  /**
+   * Evaluate iTw - iTj*jTw.
+   * @param iTw Transform from the world frame to frame i.
+   * @param jTw Transform from the world frame to frame j.
+   */
+  VectorD evaluateError(const T& iTw, const T& jTw, OptionalMatrixType H1,
                         OptionalMatrixType H2) const override {
-    typename T::Jacobian predicted_H_T2;
-    const T predictedT1 = traits<T>::Compose(
-        this->T12_, T2, {}, H2 ? &predicted_H_T2 : nullptr);
+    typename T::Jacobian predicted_H_jTw;
+    const T predicted_iTw = traits<T>::Compose(this->T12_, jTw, {},
+                                               H2 ? &predicted_H_jTw : nullptr);
 
     Eigen::Matrix<double, Dim, T::dimension> vec_H_predicted;
     VectorD error =
-        traits<T>::Vec(T1, H1) -
-        traits<T>::Vec(predictedT1, H2 ? &vec_H_predicted : nullptr);
-    if (H2) *H2 = -vec_H_predicted * predicted_H_T2;
+        traits<T>::Vec(iTw, H1) -
+        traits<T>::Vec(predicted_iTw, H2 ? &vec_H_predicted : nullptr);
+    if (H2) *H2 = -vec_H_predicted * predicted_H_jTw;
     return error;
   }
 
@@ -650,8 +656,7 @@ class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       throw std::runtime_error(
           "FrobeniusLeftBetweenFactor::qcqpFactors requires QCQP variable "
           "traits for this type and column dimension 1.");
-    } else if constexpr (!(std::is_same_v<T, Rot2> ||
-                           std::is_same_v<T, Rot3> ||
+    } else if constexpr (!(std::is_same_v<T, Rot2> || std::is_same_v<T, Rot3> ||
                            std::is_same_v<T, Pose2> ||
                            std::is_same_v<T, Pose3>)) {
       (void)costs;
@@ -675,20 +680,20 @@ class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       constexpr int MN = LiftedDim - 1;
       static_assert(MN % N == 0);
       constexpr int M = MN / N;
+      using MatrixM = Eigen::Matrix<double, M, M>;
 
-      const Matrix measurement = this->T12_.matrix();
-      const Matrix linearPart = measurement.topLeftCorner(M, M);
-      const Matrix leftAction = internalKroneckerProduct(
-          Matrix::Identity(N, N), linearPart);
+      const MatrixN iTj = this->T12_.matrix();
+      const MatrixM linearPart = iTj.template topLeftCorner<M, M>();
+      const Matrix leftAction =
+          internalKroneckerProduct(MatrixN::Identity(), linearPart);
 
       Vector offset = Vector::Zero(MN);
       if constexpr (M < N) {
-        offset.segment((N - 1) * M, M) =
-            measurement.block(0, N - 1, M, 1);
+        offset.segment((N - 1) * M, M) = iTj.block(0, N - 1, M, 1);
       }
 
-      // With x = [h; vec(T1); h; vec(T2)], the retained-row residual is
-      // vec(T1) - (I kron measurement) vec(T2) - h*offset.
+      // With x = [h; vec(iTw); h; vec(jTw)], the retained-row residual is
+      // vec(iTw) - (I kron iTj) vec(jTw) - h*offset.
       Matrix retainedB = Matrix::Zero(MN, 2 * LiftedDim);
       retainedB.block(0, 1, MN, MN).setIdentity();
       retainedB.col(LiftedDim) = -offset;

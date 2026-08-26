@@ -36,51 +36,47 @@ namespace internal {
 template <class T>
 struct TransformPoint;
 
-/** Transforms a Point2 by a Rot2. */
+/** Rotates a world-frame Point2 into frame k. */
 template <>
 struct TransformPoint<Rot2> {
   using Point = Point2;
 
   /// Apply the rotation and optionally compute its Jacobian.
-  static Point apply(const Rot2& transform, const Point& point,
-                     OptionalMatrixType H) {
-    return transform.rotate(point, H);
+  static Point apply(const Rot2& kRw, const Point& wP, OptionalMatrixType H) {
+    return kRw.rotate(wP, H);
   }
 };
 
-/** Transforms a Point3 by a Rot3. */
+/** Rotates a world-frame Point3 into frame k. */
 template <>
 struct TransformPoint<Rot3> {
   using Point = Point3;
 
   /// Apply the rotation and optionally compute its Jacobian.
-  static Point apply(const Rot3& transform, const Point& point,
-                     OptionalMatrixType H) {
-    return transform.rotate(point, H);
+  static Point apply(const Rot3& kRw, const Point& wP, OptionalMatrixType H) {
+    return kRw.rotate(wP, H);
   }
 };
 
-/** Transforms a Point2 by a Pose2. */
+/** Transforms a world-frame Point2 into frame k. */
 template <>
 struct TransformPoint<Pose2> {
   using Point = Point2;
 
   /// Apply the pose and optionally compute its Jacobian.
-  static Point apply(const Pose2& transform, const Point& point,
-                     OptionalMatrixType H) {
-    return transform.transformFrom(point, H);
+  static Point apply(const Pose2& kTw, const Point& wP, OptionalMatrixType H) {
+    return kTw.transformFrom(wP, H);
   }
 };
 
-/** Transforms a Point3 by a Pose3. */
+/** Transforms a world-frame Point3 into frame k. */
 template <>
 struct TransformPoint<Pose3> {
   using Point = Point3;
 
   /// Apply the pose and optionally compute its Jacobian.
-  static Point apply(const Pose3& transform, const Point& point,
-                     OptionalMatrixType H) {
-    return transform.transformFrom(point, H);
+  static Point apply(const Pose3& kTw, const Point& wP, OptionalMatrixType H) {
+    return kTw.transformFrom(wP, H);
   }
 };
 
@@ -90,7 +86,13 @@ struct TransformPoint<Pose3> {
  * A unary factor for observing a known landmark under an unknown transform.
  * The unwhitened residual is
  *
- *   e(T) = T * sourcePoint - measuredPoint.
+ * For a pose kTw that maps world coordinates into frame k, the residual is
+ *
+ *   e(kTw) = kTw * wP - measured_kP.
+ *
+ * For a rotation-only state, the corresponding convention is
+ *
+ *   e(kRw) = kRw * wP - measured_kP.
  *
  * For rotation groups, this is a vector correspondence term in the standard
  * or matrix-weighted Wahba problem.
@@ -105,27 +107,25 @@ class KnownLandmarkFactor : public NoiseModelFactorN<T> {
   using Point = typename internal::TransformPoint<T>::Point;
 
  private:
-  Point sourcePoint_;    ///< Known point before transformation.
-  Point measuredPoint_;  ///< Corresponding point after transformation.
+  Point wP_;           ///< Known point expressed in the world frame.
+  Point measured_kP_;  ///< Corresponding point measured in frame k.
 
  public:
   // Provide access to the Matrix& version of evaluateError.
   using Base::evaluateError;
 
-  /// Construct from a key, source point, measured point, and noise model.
-  KnownLandmarkFactor(Key key, const Point& sourcePoint,
-                      const Point& measuredPoint,
+  /// Construct from a key, world-frame point, frame-k measurement, and model.
+  KnownLandmarkFactor(Key key, const Point& wP, const Point& measured_kP,
                       const SharedNoiseModel& model)
-      : Base(model, key),
-        sourcePoint_(sourcePoint),
-        measuredPoint_(measuredPoint) {}
+      : Base(model, key), wP_(wP), measured_kP_(measured_kP) {}
 
-  /// Evaluate T * sourcePoint - measuredPoint and its optional Jacobian.
-  Vector evaluateError(const T& transform,
-                       OptionalMatrixType H) const override {
-    const Point predictedPoint =
-        internal::TransformPoint<T>::apply(transform, sourcePoint_, H);
-    return predictedPoint - measuredPoint_;
+  /**
+   * Evaluate the world-to-k prediction minus measured_kP.
+   * @param kTw Transform from the world frame to frame k.
+   */
+  Vector evaluateError(const T& kTw, OptionalMatrixType H) const override {
+    const Point predicted_kP = internal::TransformPoint<T>::apply(kTw, wP_, H);
+    return predicted_kP - measured_kP_;
   }
 
   /** Add the exact D=1 homogeneous known-landmark cost to a QCQP. */
@@ -156,10 +156,9 @@ class KnownLandmarkFactor : public NoiseModelFactorN<T> {
                   "Unsupported transform and point dimensions");
 
     Matrix B = Matrix::Zero(PointDim, LiftedDim);
-    B.col(0) = -measuredPoint_;
+    B.col(0) = -measured_kP_;
     for (int column = 0; column < N; ++column) {
-      const double coefficient =
-          column < PointDim ? sourcePoint_(column) : 1.0;
+      const double coefficient = column < PointDim ? wP_(column) : 1.0;
       B.block(0, 1 + column * PointDim, PointDim, PointDim)
           .diagonal()
           .setConstant(coefficient);
@@ -170,8 +169,7 @@ class KnownLandmarkFactor : public NoiseModelFactorN<T> {
 
     InsertQcqpConstraints<T, 1>(this->key(), constraints);
     const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{LiftedDim}, Q);
-    costs->push_back(
-        std::make_shared<QpCost>(KeyVector{this->key()}, blockQ));
+    costs->push_back(std::make_shared<QpCost>(KeyVector{this->key()}, blockQ));
   }
 };
 

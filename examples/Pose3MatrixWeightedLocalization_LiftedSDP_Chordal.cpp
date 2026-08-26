@@ -45,20 +45,18 @@ int main() {
   constexpr double kRankOneEigenRatioThreshold = 1e5;
   constexpr double kMaxOptimizerTimeSeconds = 600.0;
 
-  const Pose3 step(Rot3::RzRyRx(0.03, -0.05, 0.08),
-                   Point3(0.3, -0.1, 0.2));
-  std::vector<Pose3> groundTruth{Pose3()};
-  groundTruth.reserve(kNumPoses);
+  const Pose3 kTkp1(Rot3::RzRyRx(0.03, -0.05, 0.08), Point3(0.3, -0.1, 0.2));
+  std::vector<Pose3> kTws{Pose3()};
+  kTws.reserve(kNumPoses);
   for (size_t i = 1; i < kNumPoses; ++i) {
-    groundTruth.push_back(groundTruth.back().compose(step));
+    kTws.push_back(kTws.back().compose(kTkp1));
   }
 
-  const std::vector<Point3> landmarks{
-      Point3(4.0, 1.0, 2.0), Point3(-1.0, 3.0, 5.0),
-      Point3(2.0, -4.0, 3.0), Point3(5.0, 2.0, -1.0)};
+  const std::vector<Point3> wLs{Point3(4.0, 1.0, 2.0), Point3(-1.0, 3.0, 5.0),
+                                Point3(2.0, -4.0, 3.0), Point3(5.0, 2.0, -1.0)};
 
   NonlinearFactorGraph graph;
-  Values groundTruthValues;
+  Values groundTruth;
 
   const double radialSigma = kAnisotropicity * kLateralSigma;
   const double lateralPrecision = 1.0 / (kLateralSigma * kLateralSigma);
@@ -66,54 +64,50 @@ int main() {
   std::mt19937 pointNoiseGenerator(kPointNoiseSeed);
   std::normal_distribution<double> standardNormal(0.0, 1.0);
 
-  for (size_t k = 0; k < groundTruth.size(); ++k) {
-    groundTruthValues.insert(k, groundTruth[k]);
-    for (const Point3& landmark : landmarks) {
-      const Point3 exactMeasurement = groundTruth[k].transformFrom(landmark);
-      const Vector3 ray = exactMeasurement.normalized();
+  for (size_t k = 0; k < kTws.size(); ++k) {
+    groundTruth.insert(k, kTws[k]);
+    for (const Point3& wL : wLs) {
+      const Point3 exact_kP = kTws[k].transformFrom(wL);
+      const Vector3 kRay = exact_kP.normalized();
       const Matrix3 information =
           lateralPrecision * Matrix3::Identity() +
-          (radialPrecision - lateralPrecision) * ray * ray.transpose();
+          (radialPrecision - lateralPrecision) * kRay * kRay.transpose();
 
-      Vector3 standardSample;
-      standardSample << standardNormal(pointNoiseGenerator),
+      Vector3 z;
+      z << standardNormal(pointNoiseGenerator),
           standardNormal(pointNoiseGenerator),
           standardNormal(pointNoiseGenerator);
       // This square root samples the same ray-aligned covariance whose inverse
       // is supplied to the known-landmark factor.
-      const Vector3 pointNoise =
-          kLateralSigma * standardSample +
-          (radialSigma - kLateralSigma) * ray * ray.dot(standardSample);
-      const Point3 measurement = exactMeasurement + pointNoise;
+      const Vector3 kNoise = kLateralSigma * z +
+                             (radialSigma - kLateralSigma) * kRay * kRay.dot(z);
+      const Point3 measured_kP = exact_kP + kNoise;
 
       graph.emplace_shared<KnownLandmarkFactor<Pose3>>(
-          k, landmark, measurement,
-          noiseModel::Gaussian::Information(information));
+          k, wL, measured_kP, noiseModel::Gaussian::Information(information));
     }
   }
 
   const auto odometryNoiseModel =
       noiseModel::Isotropic::Sigma(Pose3::dimension, kOdometrySigma);
   Sampler odometrySampler(odometryNoiseModel, kOdometryNoiseSeed);
-  // Poses are sensor-from-world, so T_ij = T_i0*T_j0^{-1} composes on the left.
-  for (size_t i = 0; i + 1 < groundTruth.size(); ++i) {
+  // Poses are sensor-from-world, so iTj = iTw*jTw^{-1} composes on the left.
+  for (size_t i = 0; i + 1 < kTws.size(); ++i) {
     const size_t j = i + 1;
-    const Pose3 exactRelative =
-        groundTruth[i].compose(groundTruth[j].inverse());
+    const Pose3 exact_iTj = kTws[i].compose(kTws[j].inverse());
     // Relative measurements are sampled in tangent space, while optimization
     // retains the isotropically weighted Frobenius residual.
-    const Pose3 relativeMeasurement =
-        exactRelative.retract(odometrySampler.sample());
-    graph.emplace_shared<FrobeniusLeftBetweenFactor<Pose3>>(
-        i, j, relativeMeasurement, odometryNoiseModel);
+    const Pose3 measured_iTj = exact_iTj.retract(odometrySampler.sample());
+    graph.emplace_shared<FrobeniusLeftBetweenFactor<Pose3>>(i, j, measured_iTj,
+                                                            odometryNoiseModel);
   }
 
   Values initial;
   Vector6 perturbation;
   perturbation << 0.02, -0.015, 0.01, 0.08, -0.05, 0.06;
-  for (size_t k = 0; k < groundTruth.size(); ++k) {
-    initial.insert(
-        k, groundTruth[k].retract(static_cast<double>(k + 1) * perturbation));
+  for (size_t k = 0; k < kTws.size(); ++k) {
+    initial.insert(k,
+                   kTws[k].retract(static_cast<double>(k + 1) * perturbation));
   }
 
   GaussNewtonParams parameters;
@@ -138,21 +132,21 @@ int main() {
   }
 
   chordalSdp.recoverLiftedVectors();
-  const std::vector<Pose3> recoveredPoses =
+  const std::vector<Pose3> recovered_kTws =
       chordalSdp.getRecoveredPoses<Pose3>();
   const std::vector<double>& recoveredPoseEVRs =
       chordalSdp.getRecoveredVariableEVRs();
 
   const KeyVector& orderedKeys = chordalSdp.orderedKeys();
-  Values recoveredValues;
-  std::vector<Pose3> orderedGroundTruth;
-  orderedGroundTruth.reserve(orderedKeys.size());
+  Values recovered;
+  std::vector<Pose3> ordered_kTws;
+  ordered_kTws.reserve(orderedKeys.size());
   for (size_t index = 0; index < orderedKeys.size(); ++index) {
-    recoveredValues.insert(orderedKeys[index], recoveredPoses[index]);
-    orderedGroundTruth.push_back(groundTruth.at(orderedKeys[index]));
+    recovered.insert(orderedKeys[index], recovered_kTws[index]);
+    ordered_kTws.push_back(kTws.at(orderedKeys[index]));
   }
   const std::vector<double> recoveredPoseErrorNorms =
-      chordalSdp.getRecoveredPoseErrorNorms(orderedGroundTruth);
+      chordalSdp.getRecoveredPoseErrorNorms(ordered_kTws);
 
   double totalPoseError = 0.0;
   double maximumPoseError = 0.0;
@@ -161,23 +155,22 @@ int main() {
     totalPoseError += recoveredPoseErrorNorms[index];
     maximumPoseError =
         std::max(maximumPoseError, recoveredPoseErrorNorms[index]);
-    allRankOne = allRankOne &&
-                 recoveredPoseEVRs[index] >= kRankOneEigenRatioThreshold;
+    allRankOne =
+        allRankOne && recoveredPoseEVRs[index] >= kRankOneEigenRatioThreshold;
   }
   const double meanPoseError =
       totalPoseError / static_cast<double>(recoveredPoseErrorNorms.size());
 
-  std::cout << "Ground-truth graph error: " << graph.error(groundTruthValues)
-            << '\n'
+  std::cout << "Ground-truth graph error: " << graph.error(groundTruth) << '\n'
             << "Initial graph error: " << graph.error(initial) << '\n'
             << "Gauss-Newton graph error: " << graph.error(localResult) << '\n'
             << "Chordal SDP objective: " << chordalSdp.objectiveValue() << '\n'
-            << "Recovered feasible graph error: "
-            << graph.error(recoveredValues) << '\n'
+            << "Recovered feasible graph error: " << graph.error(recovered)
+            << '\n'
             << "Recovered mean pose error: " << meanPoseError << '\n'
             << "Recovered maximum pose error: " << maximumPoseError << '\n'
-            << "All recovered blocks rank one: "
-            << (allRankOne ? "yes" : "no") << std::endl;
+            << "All recovered blocks rank one: " << (allRankOne ? "yes" : "no")
+            << std::endl;
 #else
   std::cerr << "This example requires GTSAM_USE_MOSEK." << std::endl;
   return 1;

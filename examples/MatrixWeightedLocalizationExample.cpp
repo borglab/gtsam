@@ -33,59 +33,55 @@ int main() {
   constexpr double kAnisotropicity = 10.0;
   constexpr double kOdometrySigma = 0.1;
 
-  const Pose3 initialPose;
-  const Pose3 step(Rot3::RzRyRx(0.03, -0.05, 0.08),
-                   Point3(0.3, -0.1, 0.2));
-  std::vector<Pose3> groundTruth{initialPose};
-  groundTruth.reserve(kNumPoses);
+  const Pose3 iTw;
+  const Pose3 kTkp1(Rot3::RzRyRx(0.03, -0.05, 0.08), Point3(0.3, -0.1, 0.2));
+  std::vector<Pose3> kTws{iTw};
+  kTws.reserve(kNumPoses);
   for (size_t i = 1; i < kNumPoses; ++i) {
-    groundTruth.push_back(groundTruth.back().compose(step));
+    kTws.push_back(kTws.back().compose(kTkp1));
   }
 
-  const std::vector<Point3> landmarks{
-      Point3(4.0, 1.0, 2.0), Point3(-1.0, 3.0, 5.0),
-      Point3(2.0, -4.0, 3.0), Point3(5.0, 2.0, -1.0)};
+  const std::vector<Point3> wLs{Point3(4.0, 1.0, 2.0), Point3(-1.0, 3.0, 5.0),
+                                Point3(2.0, -4.0, 3.0), Point3(5.0, 2.0, -1.0)};
 
   NonlinearFactorGraph graph;
-  Values groundTruthValues;
+  Values groundTruth;
 
   const double lateralPrecision = 1.0 / (kLateralSigma * kLateralSigma);
   const double radialPrecision =
       lateralPrecision / (kAnisotropicity * kAnisotropicity);
 
-  // T_k0 is interpreted as sensor-from-world, so transformFrom predicts a
-  // landmark measurement expressed in sensor frame k.
-  for (size_t k = 0; k < groundTruth.size(); ++k) {
-    groundTruthValues.insert(k, groundTruth[k]);
-    for (const Point3& landmark : landmarks) {
-      const Point3 measurement = groundTruth[k].transformFrom(landmark);
+  // kTw maps world coordinates into sensor frame k, so transformFrom predicts
+  // the sensor-frame point kP corresponding to world landmark wL.
+  for (size_t k = 0; k < kTws.size(); ++k) {
+    groundTruth.insert(k, kTws[k]);
+    for (const Point3& wL : wLs) {
+      const Point3 measured_kP = kTws[k].transformFrom(wL);
       // This simplified stereo-like model aligns the largest covariance axis
       // with the observation ray and sets sqrt(cond(Sigma)) to anisotropicity.
-      const Vector3 ray = measurement.normalized();
+      const Vector3 kRay = measured_kP.normalized();
       const Matrix3 information =
           lateralPrecision * Matrix3::Identity() +
-          (radialPrecision - lateralPrecision) * ray * ray.transpose();
+          (radialPrecision - lateralPrecision) * kRay * kRay.transpose();
       graph.emplace_shared<KnownLandmarkFactor<Pose3>>(
-          k, landmark, measurement,
-          noiseModel::Gaussian::Information(information));
+          k, wL, measured_kP, noiseModel::Gaussian::Information(information));
     }
   }
 
   const auto odometryNoiseModel =
       noiseModel::Isotropic::Sigma(Pose3::dimension, kOdometrySigma);
-  for (size_t i = 0; i + 1 < groundTruth.size(); ++i) {
+  for (size_t i = 0; i + 1 < kTws.size(); ++i) {
     const size_t j = i + 1;
-    const Pose3 relativeMeasurement =
-        groundTruth[i].compose(groundTruth[j].inverse());
-    graph.emplace_shared<FrobeniusLeftBetweenFactor<Pose3>>(
-        i, j, relativeMeasurement, odometryNoiseModel);
+    const Pose3 iTj = kTws[i].compose(kTws[j].inverse());
+    graph.emplace_shared<FrobeniusLeftBetweenFactor<Pose3>>(i, j, iTj,
+                                                            odometryNoiseModel);
   }
 
   Values initial;
   Vector6 perturbation;
   perturbation << 0.02, -0.015, 0.01, 0.08, -0.05, 0.06;
-  for (size_t i = 0; i < groundTruth.size(); ++i) {
-    initial.insert(i, groundTruth[i].retract((i + 1) * perturbation));
+  for (size_t i = 0; i < kTws.size(); ++i) {
+    initial.insert(i, kTws[i].retract((i + 1) * perturbation));
   }
 
   GaussNewtonParams parameters;
@@ -94,19 +90,19 @@ int main() {
   const Values result =
       GaussNewtonOptimizer(graph, initial, parameters).optimize();
 
-  const double groundTruthError = graph.error(groundTruthValues);
+  const double groundTruthError = graph.error(groundTruth);
   const double initialError = graph.error(initial);
   const double finalError = graph.error(result);
   double maximumPoseError = 0.0;
   double totalPoseError = 0.0;
-  for (size_t i = 0; i < groundTruth.size(); ++i) {
+  for (size_t i = 0; i < kTws.size(); ++i) {
     const double poseError =
-        groundTruth[i].localCoordinates(result.at<Pose3>(i)).norm();
+        kTws[i].localCoordinates(result.at<Pose3>(i)).norm();
     totalPoseError += poseError;
     if (poseError > maximumPoseError) maximumPoseError = poseError;
   }
   const double meanPoseError =
-      totalPoseError / static_cast<double>(groundTruth.size());
+      totalPoseError / static_cast<double>(kTws.size());
 
   std::cout << "Ground-truth error: " << groundTruthError << '\n'
             << "Initial error: " << initialError << '\n'
