@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <gtsam/base/GroupAction.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/navigation/ManifoldEKF.h>

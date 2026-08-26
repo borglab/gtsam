@@ -1,0 +1,68 @@
+"""
+GTSAM Copyright 2010, Georgia Tech Research Corporation,
+Atlanta, Georgia 30332-0415
+All Rights Reserved
+
+See LICENSE for the license information
+
+Tests for the Python wrapper of the Galilean IMU factor.
+"""
+
+import unittest
+
+import numpy as np
+
+import gtsam
+from gtsam.utils.test_case import GtsamTestCase
+
+
+class TestGalileanImuFactor(GtsamTestCase):
+    """Exercise Galilean preintegration and factor construction from Python."""
+
+    def test_preintegrate_predict_and_factor(self):
+        """A predicted endpoint has zero Galilean IMU factor error."""
+        params = gtsam.PreintegrationParams.MakeSharedD(9.81)
+        params.setAccelerometerCovariance(1e-4 * np.eye(3))
+        params.setGyroscopeCovariance(1e-6 * np.eye(3))
+        params.setIntegrationCovariance(1e-8 * np.eye(3))
+
+        bias_hat = gtsam.imuBias.ConstantBias(
+            np.array([0.01, -0.02, 0.03]),
+            np.array([-0.01, 0.02, 0.01]),
+        )
+        pim = gtsam.PreintegratedImuMeasurementsG(params, bias_hat)
+        measurements = (
+            (np.array([0.2, -0.1, 9.7]),
+             np.array([0.03, -0.02, 0.01]), 0.01),
+            (np.array([0.1, 0.2, 9.8]),
+             np.array([-0.01, 0.04, 0.02]), 0.02),
+        )
+        for measured_acc, measured_omega, delta_t in measurements:
+            pim.integrateMeasurement(measured_acc, measured_omega, delta_t)
+
+        self.assertAlmostEqual(0.03, pim.deltaTij())
+        self.assertEqual((9, 9), pim.preintMeasCov().shape)
+        np.testing.assert_allclose(
+            pim.preintMeasCov(), pim.residualCovariance(), atol=1e-12)
+
+        state_i = gtsam.NavState(
+            gtsam.Rot3.RzRyRx(0.1, -0.2, 0.3),
+            np.array([1.0, -2.0, 0.5]),
+            np.array([0.4, -0.1, 0.2]),
+        )
+        state_j = pim.predict(state_i, bias_hat)
+        factor = gtsam.GalileanImuFactor(
+            gtsam.symbol("x", 0), gtsam.symbol("v", 0),
+            gtsam.symbol("x", 1), gtsam.symbol("v", 1),
+            gtsam.symbol("b", 0), pim)
+
+        error = factor.evaluateError(
+            state_i.pose(), state_i.velocity(),
+            state_j.pose(), state_j.velocity(), bias_hat)
+        np.testing.assert_allclose(error, np.zeros(9), atol=1e-9)
+        self.assertTrue(
+            factor.preintegratedMeasurements().equals(pim, 1e-12))
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -306,6 +306,58 @@ virtual class ImuFactor2: gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
+#include <gtsam/navigation/GalileanImuFactor.h>
+class PreintegratedImuMeasurementsG {
+  // Constructors
+  PreintegratedImuMeasurementsG(const gtsam::PreintegrationParams* params);
+  PreintegratedImuMeasurementsG(
+      const gtsam::PreintegrationParams* params,
+      const gtsam::imuBias::ConstantBias& bias);
+
+  // Testable
+  void print(string s = "PreintegratedImuMeasurementsG") const;
+  bool equals(const gtsam::PreintegratedImuMeasurementsG& expected,
+              double tol) const;
+
+  // Standard Interface
+  void integrateMeasurement(
+      const gtsam::Vector3& measuredAcc,
+      const gtsam::Vector3& measuredOmega, double deltaT);
+  void resetIntegration();
+  void resetIntegrationAndSetBias(
+      const gtsam::imuBias::ConstantBias& biasHat);
+
+  gtsam::Matrix9 preintMeasCov() const;
+  gtsam::Matrix9 residualCovariance() const;
+  double deltaTij() const;
+  gtsam::Rot3 deltaRij() const;
+  gtsam::Vector3 deltaPij() const;
+  gtsam::Vector3 deltaVij() const;
+  gtsam::NavState deltaXij() const;
+  const gtsam::imuBias::ConstantBias& biasHat() const;
+  gtsam::Vector6 biasHatVector() const;
+  gtsam::NavState predict(
+      const gtsam::NavState& state_i,
+      const gtsam::imuBias::ConstantBias& bias,
+      gtsam::OptionalJacobian<9, 9> H1 = nullptr,
+      gtsam::OptionalJacobian<9, 6> H2 = nullptr) const;
+};
+
+virtual class GalileanImuFactor: gtsam::NoiseModelFactor {
+  GalileanImuFactor(
+      gtsam::Key pose_i, gtsam::Key vel_i, gtsam::Key pose_j,
+      gtsam::Key vel_j, gtsam::Key bias,
+      const gtsam::PreintegratedImuMeasurementsG& preintegratedMeasurements);
+
+  // Standard Interface
+  const gtsam::PreintegratedImuMeasurementsG&
+  preintegratedMeasurements() const;
+  gtsam::Vector evaluateError(
+      const gtsam::Pose3& pose_i, const gtsam::Vector3& vel_i,
+      const gtsam::Pose3& pose_j, const gtsam::Vector3& vel_j,
+      const gtsam::imuBias::ConstantBias& bias) const;
+};
+
 #include <gtsam/navigation/ImuFactorWithGravity.h>
 template <PIM, GRAVITY>
 virtual class ImuFactorWithGravityT : gtsam::NoiseModelFactor {

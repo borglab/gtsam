@@ -53,7 +53,7 @@ static std::shared_ptr<PreintegratedCombinedMeasurements::Params> Params(
 }  // namespace combined
 
 /* ************************************************************************* */
-TEST_PIM(CombinedImuFactor, PreintegratedMeasurements) {
+TEST_PIM_WITH_COMBINED_BACKEND(CombinedImuFactor, PreintegratedMeasurements) {
   // Linearization point
   Bias bias(
       Vector3(0, 0, 0),
@@ -260,7 +260,7 @@ TEST_PIM(CombinedImuFactor, CheckCovariance) {
 /* ************************************************************************* */
 // Test that the covariance values for the ImuFactor and the CombinedImuFactor
 // (top-left 9x9) are the same
-TEST_PIM(CombinedImuFactor, SameCovariance) {
+TEST_PIM_WITH_COMBINED_BACKEND(CombinedImuFactor, SameCovariance) {
   // IMU measurements and time delta
   Vector3 accMeas(0.1577, -0.8251, 9.6111);
   Vector3 omegaMeas(-0.0210, 0.0311, 0.0145);
