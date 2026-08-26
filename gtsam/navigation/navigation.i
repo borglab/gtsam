@@ -271,6 +271,66 @@ class PreintegratedImuMeasurements {
   void serialize() const;
 };
 
+class PreintegratedImuMeasurementsManifold {
+  PreintegratedImuMeasurementsManifold(
+      const gtsam::PreintegrationParams* params);
+  PreintegratedImuMeasurementsManifold(
+      const gtsam::PreintegrationParams* params,
+      const gtsam::imuBias::ConstantBias& bias);
+
+  void integrateMeasurement(
+      const gtsam::Vector3& measuredAcc,
+      const gtsam::Vector3& measuredOmega, double deltaT);
+  void resetIntegration();
+  gtsam::Matrix9 residualCovariance() const;
+  double deltaTij() const;
+  gtsam::NavState predict(
+      const gtsam::NavState& state_i,
+      const gtsam::imuBias::ConstantBias& bias,
+      gtsam::OptionalJacobian<9, 9> H1 = nullptr,
+      gtsam::OptionalJacobian<9, 6> H2 = nullptr) const;
+};
+
+class PreintegratedImuMeasurementsTangent {
+  PreintegratedImuMeasurementsTangent(
+      const gtsam::PreintegrationParams* params);
+  PreintegratedImuMeasurementsTangent(
+      const gtsam::PreintegrationParams* params,
+      const gtsam::imuBias::ConstantBias& bias);
+
+  void integrateMeasurement(
+      const gtsam::Vector3& measuredAcc,
+      const gtsam::Vector3& measuredOmega, double deltaT);
+  void resetIntegration();
+  gtsam::Matrix9 residualCovariance() const;
+  double deltaTij() const;
+  gtsam::NavState predict(
+      const gtsam::NavState& state_i,
+      const gtsam::imuBias::ConstantBias& bias,
+      gtsam::OptionalJacobian<9, 9> H1 = nullptr,
+      gtsam::OptionalJacobian<9, 6> H2 = nullptr) const;
+};
+
+class PreintegratedImuMeasurementsLieGroup {
+  PreintegratedImuMeasurementsLieGroup(
+      const gtsam::PreintegrationParams* params);
+  PreintegratedImuMeasurementsLieGroup(
+      const gtsam::PreintegrationParams* params,
+      const gtsam::imuBias::ConstantBias& bias);
+
+  void integrateMeasurement(
+      const gtsam::Vector3& measuredAcc,
+      const gtsam::Vector3& measuredOmega, double deltaT);
+  void resetIntegration();
+  gtsam::Matrix9 residualCovariance() const;
+  double deltaTij() const;
+  gtsam::NavState predict(
+      const gtsam::NavState& state_i,
+      const gtsam::imuBias::ConstantBias& bias,
+      gtsam::OptionalJacobian<9, 9> H1 = nullptr,
+      gtsam::OptionalJacobian<9, 6> H2 = nullptr) const;
+};
+
 virtual class ImuFactor: gtsam::NoiseModelFactor {
   ImuFactor(gtsam::Key pose_i, gtsam::Key vel_i, gtsam::Key pose_j, gtsam::Key vel_j,
       gtsam::Key bias,

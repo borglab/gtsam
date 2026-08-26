@@ -19,6 +19,22 @@ from gtsam.utils.test_case import GtsamTestCase
 class TestGalileanImuFactor(GtsamTestCase):
     """Exercise Galilean preintegration and factor construction from Python."""
 
+    def test_named_preintegration_backends(self):
+        """All named PIM backends are independently constructible."""
+        params = gtsam.PreintegrationParams.MakeSharedD(9.81)
+        bias = gtsam.imuBias.ConstantBias()
+        backend_types = (
+            gtsam.PreintegratedImuMeasurementsManifold,
+            gtsam.PreintegratedImuMeasurementsTangent,
+            gtsam.PreintegratedImuMeasurementsLieGroup,
+            gtsam.PreintegratedImuMeasurementsG,
+        )
+        for backend_type in backend_types:
+            pim = backend_type(params, bias)
+            pim.integrateMeasurement(np.zeros(3), np.zeros(3), 0.01)
+            self.assertAlmostEqual(0.01, pim.deltaTij())
+            self.assertEqual((9, 9), pim.residualCovariance().shape)
+
     def test_preintegrate_predict_and_factor(self):
         """A predicted endpoint has zero Galilean IMU factor error."""
         params = gtsam.PreintegrationParams.MakeSharedD(9.81)
