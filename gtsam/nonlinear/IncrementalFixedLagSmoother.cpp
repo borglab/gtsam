@@ -58,15 +58,6 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   std::optional<FastMap<Key, int> > constrainedKeys = {};
 
   const KeySet newFactorKeys = newFactors.keys();
-  for (const auto& keyTimestamp : timestamps) {
-    const Key key = keyTimestamp.first;
-    if (!isam_.valueExists(key) && !newTheta.exists(key)) {
-      throw std::invalid_argument(
-          "IncrementalFixedLagSmoother::update: timestamp provided for key " +
-          DefaultKeyFormatter(key) +
-          ", but no value for that key exists in ISAM2 or newTheta");
-    }
-  }
 
   // Update the Timestamps associated with the factor keys
   updateKeyTimestampMap(timestamps);
@@ -81,17 +72,24 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   KeyVector marginalizableKeys = findKeysBefore(
       current_timestamp - smootherLag_);
 
-  // A value can be added before any factor references it. Keep such pending
-  // values and their timestamps, but do not include them in constrained
-  // ordering or marginalization until a factor connects them.
+  // Values may arrive before the factors that reference them. Reap pending
+  // values when they age out, without passing them to Bayes-tree
+  // marginalization where they have no clique.
   KeySet activeKeys = newFactorKeys;
   const VariableIndex& variableIndex = isam_.getVariableIndex();
   for (const auto& keyFactors : variableIndex) {
     activeKeys.insert(keyFactors.first);
   }
+  KeyVector expiredPendingKeys;
   marginalizableKeys.erase(
       std::remove_if(marginalizableKeys.begin(), marginalizableKeys.end(),
-                     [&](Key key) { return !activeKeys.exists(key); }),
+                     [&](Key key) {
+                       const bool isPending =
+                           !activeKeys.exists(key) &&
+                           (isam_.valueExists(key) || newTheta.exists(key));
+                       if (isPending) expiredPendingKeys.push_back(key);
+                       return isPending;
+                     }),
       marginalizableKeys.end());
 
   if (debug) {
@@ -160,6 +158,11 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
     }
   }
 
+  if (!expiredPendingKeys.empty()) {
+    isam_.removeVariables(
+        KeySet(expiredPendingKeys.begin(), expiredPendingKeys.end()));
+  }
+
   if (debug) {
     PrintSymbolicTree(isam_,
         "Bayes Tree After Update, Before Marginalization:");
@@ -177,6 +180,7 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
 
   // Remove marginalized keys from the KeyTimestampMap
   eraseKeyTimestampMap(marginalizableKeys);
+  eraseKeyTimestampMap(expiredPendingKeys);
 
   if (debug) {
     PrintSymbolicTree(isam_, "Final Bayes Tree:");

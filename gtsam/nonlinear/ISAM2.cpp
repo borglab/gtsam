@@ -413,7 +413,16 @@ void ISAM2::addVariables(const Values& newTheta,
 void ISAM2::removeVariables(const KeySet& unusedKeys) {
   gttic(removeVariables);
 
-  variableIndex_.removeUnusedVariables(unusedKeys.begin(), unusedKeys.end());
+  // Values added before any factor references them have no VariableIndex
+  // entry, but still need the remaining ISAM2 state removed.
+  KeySet indexedUnusedKeys;
+  for (Key key : unusedKeys) {
+    if (variableIndex_.find(key) != variableIndex_.end()) {
+      indexedUnusedKeys.insert(key);
+    }
+  }
+  variableIndex_.removeUnusedVariables(indexedUnusedKeys.begin(),
+                                       indexedUnusedKeys.end());
   for (Key key : unusedKeys) {
     delta_.erase(key);
     deltaNewton_.erase(key);

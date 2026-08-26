@@ -141,7 +141,7 @@ protected:
       const KeyVector& marginalizableKeys, const KeySet& activeKeys,
       std::optional<FastMap<Key, int> >& constrainedKeys) const;
 
- private:
+private:
   /** Private methods for printing debug information */
   static void PrintKeySet(const KeySet& keys, const std::string& label =
       "Keys:");
