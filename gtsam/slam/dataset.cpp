@@ -37,8 +37,11 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/dataset.h>
 
+#include <Eigen/Cholesky>
+#include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <iomanip>
 #include <iostream>
 #include <locale>
 #include <optional>
@@ -582,6 +585,35 @@ GraphAndValues load2D_robust(const std::string &filename,
 }
 
 /* ************************************************************************* */
+using BearingRange3D = BearingRange<Pose3, Point3>;
+
+// Jacobian of kP = range * bearing with respect to Unit3 tangent coordinates
+// followed by range.
+static Matrix3 bearingRangeToPointJacobian(const Unit3 &bearing,
+                                           double range) {
+  Matrix32 DkP_dbearing;
+  Matrix31 DkP_drange;
+  bearing.scaled(range, DkP_dbearing, DkP_drange);
+
+  Matrix3 J;
+  J.leftCols<2>() = DkP_dbearing;
+  J.rightCols<1>() = DkP_drange;
+  return J;
+}
+
+/* ************************************************************************* */
+static void validatePoint3Information(const Matrix3 &information) {
+  if (!information.allFinite()) {
+    throw std::invalid_argument(
+        "EDGE_SE3_TRACKXYZ information matrix contains non-finite values");
+  }
+  if (Eigen::LLT<Matrix3>(information).info() != Eigen::Success) {
+    throw std::invalid_argument(
+        "EDGE_SE3_TRACKXYZ information matrix must be positive definite");
+  }
+}
+
+/* ************************************************************************* */
 void save2D(const NonlinearFactorGraph &graph, const Values &config,
             const noiseModel::Diagonal::shared_ptr model,
             const std::string &filename) {
@@ -668,6 +700,18 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
            << " " << point.y() << " " << point.z() << endl;
   }
 
+  const bool hasTrackMeasurement = std::any_of(
+      graph.begin(), graph.end(), [](const NonlinearFactor::shared_ptr &factor) {
+        return static_cast<bool>(
+            std::dynamic_pointer_cast<BearingRangeFactor<Pose3, Point3>>(
+                factor));
+      });
+  if (hasTrackMeasurement) {
+    // g2o requires an SE3 sensor offset parameter. BearingRangeFactor has no
+    // offset, so serialize its measurements with an identity offset.
+    stream << "PARAMS_SE3OFFSET 0 0 0 0 0 0 0 1" << endl;
+  }
+
   // save edges (2D or 3D)
   for (const auto &factor_ : graph) {
     auto factor = std::dynamic_pointer_cast<BetweenFactor<Pose2>>(factor_);
@@ -726,6 +770,60 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
       }
       stream << endl;
     }
+
+    auto trackMeasurement =
+        std::dynamic_pointer_cast<BearingRangeFactor<Pose3, Point3>>(factor_);
+    if (trackMeasurement) {
+      const Key poseKey = trackMeasurement->key<1>();
+      const Key landmarkKey = trackMeasurement->key<2>();
+      if (!estimate.exists(poseKey) || !estimate.exists(landmarkKey)) {
+        throw std::invalid_argument(
+            "writeG2o: EDGE_SE3_TRACKXYZ references a missing vertex");
+      }
+      try {
+        estimate.at<Pose3>(poseKey);
+        estimate.at<Point3>(landmarkKey);
+      } catch (const ValuesIncorrectType &) {
+        throw std::invalid_argument(
+            "writeG2o: EDGE_SE3_TRACKXYZ requires Pose3 and Point3 vertices");
+      }
+
+      auto gaussianModel = std::dynamic_pointer_cast<noiseModel::Gaussian>(
+          trackMeasurement->noiseModel());
+      if (!gaussianModel) {
+        throw std::invalid_argument(
+            "writeG2o: EDGE_SE3_TRACKXYZ requires a Gaussian noise model");
+      }
+
+      const auto &measured = trackMeasurement->measured();
+      const Unit3 &bearing = measured.bearing();
+      const double range = measured.range();
+      if (!std::isfinite(range) || range <= 0.0) {
+        throw std::invalid_argument(
+            "writeG2o: EDGE_SE3_TRACKXYZ must have positive finite range");
+      }
+
+      const Point3 kP = bearing.scaled(range);
+      const Matrix3 J = bearingRangeToPointJacobian(bearing, range);
+      const Matrix3 Jinv = J.inverse();
+      const Matrix3 pointInformation =
+          Jinv.transpose() * gaussianModel->information() * Jinv;
+      validatePoint3Information(pointInformation);
+
+      const std::streamsize previousPrecision = stream.precision();
+      // Twelve significant digits retain ample round-trip precision while
+      // suppressing platform-dependent last-bit differences from Eigen.
+      stream << std::setprecision(12) << "EDGE_SE3_TRACKXYZ "
+             << index(poseKey) << " " << index(landmarkKey) << " 0 " << kP.x()
+             << " " << kP.y() << " " << kP.z();
+      for (size_t i = 0; i < 3; ++i) {
+        for (size_t j = i; j < 3; ++j) {
+          stream << " " << pointInformation(i, j);
+        }
+      }
+      stream << endl;
+      stream.precision(previousPrecision);
+    }
   }
   stream.close();
 }
@@ -738,6 +836,21 @@ std::istream &operator>>(std::istream &is, Quaternion &q) {
   const double norm = sqrt(w * w + x * x + y * y + z * z), f = 1.0 / norm;
   q = Quaternion(f * w, f * x, f * y, f * z);
   return is;
+}
+
+/* ************************************************************************* */
+std::optional<std::pair<size_t, Pose3>> parseParameterSE3Offset(
+    std::istream &is, const std::string &tag) {
+  if (tag != "PARAMS_SE3OFFSET") return std::nullopt;
+
+  size_t id;
+  Point3 translation;
+  Quaternion rotation;
+  if (!(is >> id >> translation.x() >> translation.y() >> translation.z() >>
+        rotation)) {
+    throw std::invalid_argument("PARAMS_SE3OFFSET record is malformed");
+  }
+  return std::make_pair(id, Pose3(rotation, translation));
 }
 
 /* ************************************************************************* */
@@ -802,6 +915,62 @@ std::istream &operator>>(std::istream &is, Matrix6 &m) {
     }
   return is;
 }
+
+/* ************************************************************************* */
+template <> struct ParseMeasurement<BearingRange3D> {
+  const std::map<size_t, Pose3> *offsets;
+
+  std::optional<BinaryMeasurement<BearingRange3D>> operator()(
+      std::istream &is, const std::string &tag) {
+    if (tag != "EDGE_SE3_TRACKXYZ") return std::nullopt;
+
+    size_t poseId, landmarkId, offsetId;
+    Point3 kP;
+    double i11, i12, i13, i22, i23, i33;
+    if (!(is >> poseId >> landmarkId >> offsetId >> kP.x() >> kP.y() >>
+          kP.z() >> i11 >> i12 >> i13 >> i22 >> i23 >> i33)) {
+      throw std::invalid_argument("EDGE_SE3_TRACKXYZ record is malformed");
+    }
+    if (!offsets) {
+      throw std::invalid_argument(
+          "EDGE_SE3_TRACKXYZ references a missing PARAMS_SE3OFFSET");
+    }
+    const auto offset = offsets->find(offsetId);
+    if (offset == offsets->end()) {
+      throw std::invalid_argument(
+          "EDGE_SE3_TRACKXYZ references a missing PARAMS_SE3OFFSET");
+    }
+    if (!offset->second.equals(Pose3(), 1e-9)) {
+      throw std::invalid_argument(
+          "EDGE_SE3_TRACKXYZ requires an identity PARAMS_SE3OFFSET");
+    }
+    if (!kP.allFinite()) {
+      throw std::invalid_argument(
+          "EDGE_SE3_TRACKXYZ measurement contains non-finite values");
+    }
+
+    const double range = kP.norm();
+    if (!std::isfinite(range) || range <= 0.0) {
+      throw std::invalid_argument(
+          "EDGE_SE3_TRACKXYZ measurement must have positive finite range");
+    }
+
+    const Matrix3 pointInformation{{i11, i12, i13},
+                                   {i12, i22, i23},
+                                   {i13, i23, i33}};
+    validatePoint3Information(pointInformation);
+
+    const Unit3 bearing = Unit3::FromPoint3(kP);
+    const Matrix3 J = bearingRangeToPointJacobian(bearing, range);
+    const Matrix3 bearingRangeInformation =
+        J.transpose() * pointInformation * J;
+    validatePoint3Information(bearingRangeInformation);
+
+    return BinaryMeasurement<BearingRange3D>(
+        poseId, L(landmarkId), BearingRange3D(bearing, range),
+        noiseModel::Gaussian::Information(bearingRangeInformation));
+  }
+};
 
 /* ************************************************************************* */
 // Pose3 measurement parser
@@ -919,23 +1088,48 @@ parseFactors<Pose3>(const std::string &filename,
 GraphAndValues load3D(const std::string &filename) {
   auto graph = std::make_shared<NonlinearFactorGraph>();
   auto initial = std::make_shared<Values>();
+  std::map<size_t, Pose3> offsets;
 
-  // Instantiate factor parser. maxIndex is always zero for load3D.
-  ParseFactor<Pose3> parseFactor({nullptr, 0});
-
-  // Single pass for variables and factors. Unlike 2D version, does *not* insert
-  // variables into `initial` if referenced but not present.
-  Parser<int> parse = [&](std::istream &is, const std::string &tag) {
+  // Parse all vertices and parameters first so edges may precede them.
+  Parser<int> parseVertex = [&](std::istream &is, const std::string &tag) {
     if (auto indexedPose = parseVertexPose3(is, tag)) {
       initial->insert(indexedPose->first, indexedPose->second);
     } else if (auto indexedLandmark = parseVertexPoint3(is, tag)) {
       initial->insert(L(indexedLandmark->first), indexedLandmark->second);
-    } else if (auto factor = parseFactor(is, tag)) {
-      graph->push_back(*factor);
+    } else if (auto indexedOffset = parseParameterSE3Offset(is, tag)) {
+      offsets.emplace(indexedOffset->first, indexedOffset->second);
     }
     return 0;
   };
-  parseLines(filename, parse);
+  parseLines(filename, parseVertex);
+
+  // Parse factors without synthesizing any missing vertices.
+  ParseFactor<Pose3> parseFactor({nullptr, 0});
+  ParseMeasurement<BearingRange3D> parseTrackMeasurement{&offsets};
+  Parser<int> parseFactorLine = [&](std::istream &is, const std::string &tag) {
+    if (auto factor = parseFactor(is, tag)) {
+      graph->push_back(*factor);
+    } else if (auto measurement = parseTrackMeasurement(is, tag)) {
+      const Key poseKey = measurement->key1();
+      const Key landmarkKey = measurement->key2();
+      if (!initial->exists(poseKey) || !initial->exists(landmarkKey)) {
+        throw std::invalid_argument(
+            "EDGE_SE3_TRACKXYZ references a missing pose or landmark vertex");
+      }
+      try {
+        initial->at<Pose3>(poseKey);
+        initial->at<Point3>(landmarkKey);
+      } catch (const ValuesIncorrectType &) {
+        throw std::invalid_argument(
+            "EDGE_SE3_TRACKXYZ requires Pose3 and Point3 vertices");
+      }
+      graph->emplace_shared<BearingRangeFactor<Pose3, Point3>>(
+          poseKey, landmarkKey, measurement->measured(),
+          measurement->noiseModel());
+    }
+    return 0;
+  };
+  parseLines(filename, parseFactorLine);
 
   return {graph, initial};
 }
