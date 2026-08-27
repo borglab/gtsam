@@ -15,6 +15,8 @@
  * @file   testFrobeniusFactor.cpp
  * @date   March 2019
  * @author Frank Dellaert
+ * @author Avinash Subramanian
+ * @author Frederike Dümbgen
  * @brief  Check evaluateError for various Frobenius norms
  */
 

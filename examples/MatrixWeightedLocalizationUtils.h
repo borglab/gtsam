@@ -12,6 +12,9 @@
 /**
  * @file MatrixWeightedLocalizationUtils.h
  * @brief Shared data preparation for matrix-weighted localization examples.
+ * @author Avinash Subramanian
+ * @author Frederike Dümbgen
+ * @author Frank Dellaert
  */
 
 #pragma once
@@ -95,7 +98,7 @@ inline MatrixWeightedLocalizationProblem loadMatrixWeightedLocalization(
       const Point3& wL = wTkAndwLValues->at<Point3>(l);
       const auto [measured_kP, kPCovariance] =
           bearingRangeToCartesian(*bearingRangeFactor);
-      problem.graph.emplace_shared<KnownLandmarkFactor<Pose3>>(
+      problem.graph.emplace_shared<KnownLandmarkFactor2<Pose3>>(
           k, wL, measured_kP, noiseModel::Gaussian::Covariance(kPCovariance));
       continue;
     }

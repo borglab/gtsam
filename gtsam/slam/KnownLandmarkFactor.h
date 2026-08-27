@@ -11,7 +11,10 @@
 
 /**
  * @file KnownLandmarkFactor.h
- * @brief Factor for observing a known landmark under an unknown transform.
+ * @brief Factors for observing a known landmark under an unknown transform.
+ * @author Avinash Subramanian
+ * @author Frederike Dümbgen
+ * @author Frank Dellaert
  */
 
 #pragma once
@@ -32,99 +35,161 @@ namespace gtsam {
 
 namespace internal {
 
-/** Dispatches the transformation of a point by a supported group type. */
+/** Predict a frame-k point from a conventional world-from-k state. */
 template <class T>
-struct TransformPoint;
+struct KnownLandmarkPrediction;
 
-/** Rotates a world-frame Point2 into frame k. */
 template <>
-struct TransformPoint<Rot2> {
+struct KnownLandmarkPrediction<Rot2> {
   using Point = Point2;
 
-  /// Apply the rotation and optionally compute its Jacobian.
-  static Point apply(const Rot2& kRw, const Point& wP, OptionalMatrixType H) {
-    return kRw.rotate(wP, H);
+  static Point apply(const Rot2& wRk, const Point& wP, OptionalMatrixType H) {
+    return wRk.unrotate(wP, H);
   }
 };
 
-/** Rotates a world-frame Point3 into frame k. */
 template <>
-struct TransformPoint<Rot3> {
+struct KnownLandmarkPrediction<Rot3> {
   using Point = Point3;
 
-  /// Apply the rotation and optionally compute its Jacobian.
-  static Point apply(const Rot3& kRw, const Point& wP, OptionalMatrixType H) {
-    return kRw.rotate(wP, H);
+  static Point apply(const Rot3& wRk, const Point& wP, OptionalMatrixType H) {
+    return wRk.unrotate(wP, H);
   }
 };
 
-/** Transforms a world-frame Point2 into frame k. */
 template <>
-struct TransformPoint<Pose2> {
+struct KnownLandmarkPrediction<Pose2> {
   using Point = Point2;
 
-  /// Apply the pose and optionally compute its Jacobian.
-  static Point apply(const Pose2& kTw, const Point& wP, OptionalMatrixType H) {
-    return kTw.transformFrom(wP, H);
+  static Point apply(const Pose2& wTk, const Point& wL, OptionalMatrixType H) {
+    return wTk.transformTo(wL, H);
   }
 };
 
-/** Transforms a world-frame Point3 into frame k. */
 template <>
-struct TransformPoint<Pose3> {
+struct KnownLandmarkPrediction<Pose3> {
   using Point = Point3;
 
-  /// Apply the pose and optionally compute its Jacobian.
-  static Point apply(const Pose3& kTw, const Point& wP, OptionalMatrixType H) {
-    return kTw.transformFrom(wP, H);
+  static Point apply(const Pose3& wTk, const Point& wL, OptionalMatrixType H) {
+    return wTk.transformTo(wL, H);
   }
 };
 
 }  // namespace internal
 
 /**
- * A unary factor for observing a known landmark under an unknown transform.
- * The unwhitened residual is
+ * A unary known-landmark factor using the conventional GTSAM state direction.
  *
- * For a pose kTw that maps world coordinates into frame k, the residual is
+ * For a pose wTk that maps frame k into the world frame, the residual is
  *
- *   e(kTw) = kTw * wP - measured_kP.
+ *   e(wTk) = wTk.transformTo(wL) - measured_kP.
  *
- * For a rotation-only state, the corresponding convention is
- *
- *   e(kRw) = kRw * wP - measured_kP.
- *
- * For rotation groups, this is a vector correspondence term in the standard
- * or matrix-weighted Wahba problem.
- *
- * The source point is fixed data rather than a variable. Full anisotropic
- * measurement weights are represented by the supplied noise model.
+ * The rotation-only equivalent uses wRk.unrotate(wP). The known world point is
+ * fixed data, and the supplied noise model represents the measurement weight.
+ * This conventional formulation does not provide an exact QCQP conversion.
  */
 template <class T>
 class KnownLandmarkFactor : public NoiseModelFactorN<T> {
  public:
   using Base = NoiseModelFactorN<T>;
-  using Point = typename internal::TransformPoint<T>::Point;
+  using Point = typename internal::KnownLandmarkPrediction<T>::Point;
 
  private:
   Point wP_;           ///< Known point expressed in the world frame.
   Point measured_kP_;  ///< Corresponding point measured in frame k.
 
  public:
-  // Provide access to the Matrix& version of evaluateError.
   using Base::evaluateError;
 
-  /// Construct from a key, world-frame point, frame-k measurement, and model.
+  /// Construct from a key, world point, frame-k measurement, and noise model.
   KnownLandmarkFactor(Key key, const Point& wP, const Point& measured_kP,
                       const SharedNoiseModel& model)
       : Base(model, key), wP_(wP), measured_kP_(measured_kP) {}
 
-  /**
-   * Evaluate the world-to-k prediction minus measured_kP.
-   * @param kTw Transform from the world frame to frame k.
-   */
+  /** Evaluate the conventional world-from-k prediction minus measured_kP. */
+  Vector evaluateError(const T& wTk, OptionalMatrixType H) const override {
+    const Point predicted_kP =
+        internal::KnownLandmarkPrediction<T>::apply(wTk, wP_, H);
+    return predicted_kP - measured_kP_;
+  }
+};
+
+namespace internal {
+
+/** Predict a frame-k point from a k-from-world state. */
+template <class T>
+struct KnownLandmarkPrediction2;
+
+template <>
+struct KnownLandmarkPrediction2<Rot2> {
+  using Point = Point2;
+
+  static Point apply(const Rot2& kRw, const Point& wP, OptionalMatrixType H) {
+    return kRw.rotate(wP, H);
+  }
+};
+
+template <>
+struct KnownLandmarkPrediction2<Rot3> {
+  using Point = Point3;
+
+  static Point apply(const Rot3& kRw, const Point& wP, OptionalMatrixType H) {
+    return kRw.rotate(wP, H);
+  }
+};
+
+template <>
+struct KnownLandmarkPrediction2<Pose2> {
+  using Point = Point2;
+
+  static Point apply(const Pose2& kTw, const Point& wL, OptionalMatrixType H) {
+    return kTw.transformFrom(wL, H);
+  }
+};
+
+template <>
+struct KnownLandmarkPrediction2<Pose3> {
+  using Point = Point3;
+
+  static Point apply(const Pose3& kTw, const Point& wL, OptionalMatrixType H) {
+    return kTw.transformFrom(wL, H);
+  }
+};
+
+}  // namespace internal
+
+/**
+ * A unary known-landmark factor using a k-from-world state direction.
+ *
+ * For a pose kTw that maps world coordinates into frame k, the residual is
+ *
+ *   e(kTw) = kTw * wL - measured_kP.
+ *
+ * This direction makes the residual affine in homogeneous matrix entries and
+ * supports the exact D=1 QCQP conversion used by matrix-weighted localization.
+ */
+template <class T>
+class KnownLandmarkFactor2 : public NoiseModelFactorN<T> {
+ public:
+  using Base = NoiseModelFactorN<T>;
+  using Point = typename internal::KnownLandmarkPrediction2<T>::Point;
+
+ private:
+  Point wP_;           ///< Known point expressed in the world frame.
+  Point measured_kP_;  ///< Corresponding point measured in frame k.
+
+ public:
+  using Base::evaluateError;
+
+  /// Construct from a key, world point, frame-k measurement, and noise model.
+  KnownLandmarkFactor2(Key key, const Point& wP, const Point& measured_kP,
+                       const SharedNoiseModel& model)
+      : Base(model, key), wP_(wP), measured_kP_(measured_kP) {}
+
+  /** Evaluate the k-from-world prediction minus measured_kP. */
   Vector evaluateError(const T& kTw, OptionalMatrixType H) const override {
-    const Point predicted_kP = internal::TransformPoint<T>::apply(kTw, wP_, H);
+    const Point predicted_kP =
+        internal::KnownLandmarkPrediction2<T>::apply(kTw, wP_, H);
     return predicted_kP - measured_kP_;
   }
 
@@ -134,18 +199,18 @@ class KnownLandmarkFactor : public NoiseModelFactorN<T> {
                    size_t columnDimension = 1) const override {
     if (columnDimension != 1) {
       throw std::invalid_argument(
-          "KnownLandmarkFactor::qcqpFactors only supports column "
-          "dimension 1");
+          "KnownLandmarkFactor2::qcqpFactors only supports column dimension "
+          "1");
     }
     if (!costs) {
       throw std::invalid_argument(
-          "KnownLandmarkFactor::qcqpFactors costs is null");
+          "KnownLandmarkFactor2::qcqpFactors costs is null");
     }
     if (!this->noiseModel_ ||
         std::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_) ||
         this->noiseModel_->isConstrained()) {
       throw std::runtime_error(
-          "KnownLandmarkFactor::qcqpFactors requires a non-null, "
+          "KnownLandmarkFactor2::qcqpFactors requires a non-null, "
           "non-robust/non-hard quadratic noise model");
     }
 

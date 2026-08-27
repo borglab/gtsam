@@ -13,6 +13,8 @@
  * @file   FrobeniusFactor.h
  * @date   March 2019
  * @author Frank Dellaert
+ * @author Avinash Subramanian
+ * @author Frederike Dümbgen
  * @brief  Various factors that minimize some Frobenius norm
  */
 

@@ -13,6 +13,8 @@
  * @file MatrixWeightedLocalizationExample.cpp
  * @brief Locally solve a noisy matrix-weighted localization problem.
  * @author Avinash Subramanian
+ * @author Frederike Dümbgen
+ * @author Frank Dellaert
  */
 
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>

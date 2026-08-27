@@ -13,6 +13,8 @@
  * @file Pose3MatrixWeightedLocalization_LiftedSDP_Chordal.cpp
  * @brief Matrix-weighted Pose3 localization solved with the chordal SDP.
  * @author Avinash Subramanian
+ * @author Frederike Dümbgen
+ * @author Frank Dellaert
  */
 
 #include <gtsam/certifiable/LiftedSDPProblem.h>
