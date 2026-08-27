@@ -13,6 +13,7 @@ from typing import NamedTuple, Optional, Tuple
 
 import gtsam
 import numpy as np
+from gtsam.symbol_shorthand import L
 
 # Each point measurement has a ray-aligned covariance ellipsoid. Its two equal
 # lateral standard deviations are sigma_l, and its radial standard deviation is
@@ -38,6 +39,7 @@ class LandmarkMeasurement(NamedTuple):
     """A known wL observed as kP with a full information matrix."""
 
     k: int
+    l: int
     wL: np.ndarray
     kP: np.ndarray
     information: np.ndarray
@@ -125,7 +127,49 @@ class MatrixWeightedLocalization:
     def _perturbed_kP(kP: np.ndarray, information: np.ndarray, seed: int) -> np.ndarray:
         """Perturb kP with a sample from its ray-aligned covariance."""
         model = gtsam.noiseModel.Gaussian.Information(information)
-        return kP + gtsam.Sampler(model, seed).sample()
+        # Sampler draws z ~ N(0,I); unwhiten maps it through the full
+        # covariance without repeating the ray geometry here.
+        z = gtsam.Sampler(np.ones(3), seed).sample()
+        return kP + model.unwhiten(z)
+
+    def write_g2o(self, filename: str, measurements: Measurements) -> None:
+        """Write conventional wTk, wL, odometry, and landmark observations."""
+        graph = gtsam.NonlinearFactorGraph()
+        values = gtsam.Values()
+
+        for k, wTk in enumerate(self.wTks):
+            values.insert(k, wTk)
+        for l, wL in enumerate(self.wLs):
+            values.insertPoint3(L(l), wL)
+
+        for measurement in measurements.landmarks:
+            kP = measurement.kP
+            range_ = np.linalg.norm(kP)
+            bearing = gtsam.Unit3(kP)
+            J = np.column_stack((range_ * bearing.basis(), bearing.unitVector()))
+            bearing_range_information = J.T @ measurement.information @ J
+            graph.add(
+                gtsam.BearingRangeFactor3D(
+                    measurement.k,
+                    L(measurement.l),
+                    bearing,
+                    range_,
+                    gtsam.noiseModel.Gaussian.Information(bearing_range_information),
+                )
+            )
+
+        odometry_model = gtsam.noiseModel.Isotropic.Sigma(6, ODOMETRY_SIGMA)
+        for measurement in measurements.odometry:
+            graph.add(
+                gtsam.BetweenFactorPose3(
+                    measurement.i,
+                    measurement.j,
+                    measurement.iTj,
+                    odometry_model,
+                )
+            )
+
+        gtsam.writeG2o(graph, values, filename)
 
     def _measurements(
         self,
@@ -134,14 +178,14 @@ class MatrixWeightedLocalization:
     ) -> Measurements:
         landmarks = []
         for k, wTk in enumerate(self.wTks):
-            for wL in self.wLs:
+            for l, wL in enumerate(self.wLs):
                 kP = wTk.transformTo(wL)
                 information = self._information(kP)
                 if point_seed is not None:
                     kP = self._perturbed_kP(
                         kP, information, point_seed + len(landmarks)
                     )
-                landmarks.append(LandmarkMeasurement(k, wL, kP, information))
+                landmarks.append(LandmarkMeasurement(k, l, wL, kP, information))
 
         odometry = []
         odometry_sampler = None
