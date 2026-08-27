@@ -499,6 +499,7 @@ gtsam::BetweenFactorPose3s parse3DFactors(
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> load3D(
     const string& filename);
 
+// In 3D, EDGE_SE3_TRACKXYZ records are exposed as BearingRangeFactor3D.
 pair<gtsam::NonlinearFactorGraph*, gtsam::Values*> readG2o(
     const string& g2oFile, const bool is3D = false,
     gtsam::KernelFunctionType kernelFunctionType =
