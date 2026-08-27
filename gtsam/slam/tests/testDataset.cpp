@@ -314,7 +314,8 @@ Matrix3 bearingRangeJacobian() {
   return J;
 }
 
-// Verifies edge parsing, frame conventions, and information conversion.
+// Verifies edge parsing, frame conventions, information conversion, and that
+// an unreferenced nonidentity offset is accepted.
 TEST(dataSet, load3DEdgeSE3TrackXYZ) {
   const string filename = findExampleDataFile("edge_se3_trackxyz_example");
   const auto [graph, initial] = load3D(filename);
@@ -365,6 +366,13 @@ TEST(dataSet, load3DEdgeSE3TrackXYZMissingVertex) {
 TEST(dataSet, load3DEdgeSE3TrackXYZZeroRange) {
   const string filename =
       findExampleDataFile("edge_se3_trackxyz_zero_range");
+  CHECK_EXCEPTION(load3D(filename), std::invalid_argument);
+}
+
+// Verifies that only offsets referenced by track measurements must be identity.
+TEST(dataSet, load3DEdgeSE3TrackXYZNonidentityOffset) {
+  const string filename =
+      findExampleDataFile("edge_se3_trackxyz_nonidentity_offset");
   CHECK_EXCEPTION(load3D(filename), std::invalid_argument);
 }
 

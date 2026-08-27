@@ -53,6 +53,7 @@ class KnownLandmarkFactor : public NoiseModelFactorN<T> {
                 "KnownLandmarkFactor supports only Pose2 and Pose3");
 
   using Base = NoiseModelFactorN<T>;
+  using This = KnownLandmarkFactor<T>;
   using Point = typename T::Translation;
 
  private:
@@ -66,6 +67,18 @@ class KnownLandmarkFactor : public NoiseModelFactorN<T> {
   KnownLandmarkFactor(Key key, const Point& wL, const Point& measured_kP,
                       const SharedNoiseModel& model)
       : Base(model, key), wL_(wL), measured_kP_(measured_kP) {}
+
+  NonlinearFactor::shared_ptr clone() const override {
+    return std::make_shared<This>(*this);
+  }
+
+  bool equals(const NonlinearFactor& expected,
+              double tol = 1e-9) const override {
+    const auto* e = dynamic_cast<const This*>(&expected);
+    return e != nullptr && Base::equals(*e, tol) &&
+           traits<Point>::Equals(wL_, e->wL_, tol) &&
+           traits<Point>::Equals(measured_kP_, e->measured_kP_, tol);
+  }
 
   /** Evaluate the conventional world-from-k prediction minus measured_kP. */
   Vector evaluateError(const T& wTk, OptionalMatrixType H) const override {
@@ -94,6 +107,7 @@ class KnownLandmarkFactor2 : public NoiseModelFactorN<T> {
                 "KnownLandmarkFactor2 supports only Pose2 and Pose3");
 
   using Base = NoiseModelFactorN<T>;
+  using This = KnownLandmarkFactor2<T>;
   using Point = typename T::Translation;
 
  private:
@@ -107,6 +121,18 @@ class KnownLandmarkFactor2 : public NoiseModelFactorN<T> {
   KnownLandmarkFactor2(Key key, const Point& wL, const Point& measured_kP,
                        const SharedNoiseModel& model)
       : Base(model, key), wL_(wL), measured_kP_(measured_kP) {}
+
+  NonlinearFactor::shared_ptr clone() const override {
+    return std::make_shared<This>(*this);
+  }
+
+  bool equals(const NonlinearFactor& expected,
+              double tol = 1e-9) const override {
+    const auto* e = dynamic_cast<const This*>(&expected);
+    return e != nullptr && Base::equals(*e, tol) &&
+           traits<Point>::Equals(wL_, e->wL_, tol) &&
+           traits<Point>::Equals(measured_kP_, e->measured_kP_, tol);
+  }
 
   /** Evaluate the k-from-world prediction minus measured_kP. */
   Vector evaluateError(const T& kTw, OptionalMatrixType H) const override {
@@ -158,8 +184,5 @@ class KnownLandmarkFactor2 : public NoiseModelFactorN<T> {
     costs->push_back(std::make_shared<QpCost>(KeyVector{this->key()}, blockQ));
   }
 };
-
-// TODO: Add clone, print, equals, accessors, and serialization if future
-// examples require the fuller factor interface.
 
 }  // namespace gtsam

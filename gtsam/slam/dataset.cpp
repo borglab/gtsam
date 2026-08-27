@@ -848,12 +848,7 @@ std::optional<std::pair<size_t, Pose3>> parseParameterSE3Offset(
         rotation)) {
     throw std::invalid_argument("PARAMS_SE3OFFSET record is malformed");
   }
-  const Pose3 offset(rotation, translation);
-  if (!offset.equals(Pose3(), 1e-9)) {
-    throw std::invalid_argument(
-        "load3D supports only identity PARAMS_SE3OFFSET values");
-  }
-  return std::make_pair(id, offset);
+  return std::make_pair(id, Pose3(rotation, translation));
 }
 
 /* ************************************************************************* */
@@ -934,9 +929,18 @@ template <> struct ParseMeasurement<BearingRange3D> {
           kP.z() >> i11 >> i12 >> i13 >> i22 >> i23 >> i33)) {
       throw std::invalid_argument("EDGE_SE3_TRACKXYZ record is malformed");
     }
-    if (!offsets || offsets->find(offsetId) == offsets->end()) {
+    if (!offsets) {
       throw std::invalid_argument(
           "EDGE_SE3_TRACKXYZ references a missing PARAMS_SE3OFFSET");
+    }
+    const auto offset = offsets->find(offsetId);
+    if (offset == offsets->end()) {
+      throw std::invalid_argument(
+          "EDGE_SE3_TRACKXYZ references a missing PARAMS_SE3OFFSET");
+    }
+    if (!offset->second.equals(Pose3(), 1e-9)) {
+      throw std::invalid_argument(
+          "EDGE_SE3_TRACKXYZ requires an identity PARAMS_SE3OFFSET");
     }
     if (!kP.allFinite()) {
       throw std::invalid_argument(

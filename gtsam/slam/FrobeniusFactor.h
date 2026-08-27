@@ -569,6 +569,7 @@ class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   inline constexpr static auto N = T::LieAlgebra::RowsAtCompileTime;
   inline constexpr static auto Dim = N * N;
   using Base = FrobeniusBetweenFactorNL<T>;
+  using This = FrobeniusLeftBetweenFactor<T>;
   using MatrixN = typename Base::MatrixN;
   using VectorD = FrobeniusErrorVector<T>;
 
@@ -582,7 +583,11 @@ class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
    */
   FrobeniusLeftBetweenFactor(Key j1, Key j2, const T& iTj,
                              const SharedNoiseModel& model = nullptr)
-      : Base(j1, j2, iTj, model) {}
+      : Base(j1, j2, iTj, ConvertLeftModel(model)) {}
+
+  NonlinearFactor::shared_ptr clone() const override {
+    return std::make_shared<This>(*this);
+  }
 
   /// Print the factor and its measured transformation.
   void print(const std::string& s, const KeyFormatter& keyFormatter =
@@ -636,6 +641,18 @@ class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   }
 
  private:
+  static SharedNoiseModel ConvertLeftModel(const SharedNoiseModel& model) {
+    if (!model || model->dim() != T::dimension) return model;
+
+    try {
+      return ConvertNoiseModel(model, Dim, false);
+    } catch (const std::runtime_error&) {
+      throw std::invalid_argument(
+          "FrobeniusLeftBetweenFactor cannot convert an anisotropic "
+          "manifold-dimensional noise model to the ambient residual");
+    }
+  }
+
   /// Compute a Kronecker product without unsupported Eigen modules.
   static Matrix internalKroneckerProduct(const Matrix& left,
                                          const Matrix& right) {

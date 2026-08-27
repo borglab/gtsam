@@ -315,6 +315,26 @@ TEST(FrobeniusLeftBetweenFactorPose3, QcqpError) {
                        1e-9);
 }
 
+// Verifies polymorphic cloning and rejects a lossy covariance conversion.
+TEST(FrobeniusLeftBetweenFactorPose3, CloneAndNoiseValidation) {
+  const auto isotropic =
+      noiseModel::Isotropic::Sigma(Pose3::dimension, 0.2);
+  const FrobeniusLeftBetweenFactor<Pose3> factor(i, j, iTj, isotropic);
+  EXPECT(factor.equals(*factor.clone()));
+
+  Vector6 sigmas;
+  sigmas << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6;
+  const auto anisotropic = noiseModel::Diagonal::Sigmas(sigmas);
+  CHECK_EXCEPTION((FrobeniusLeftBetweenFactor<Pose3>(
+                      i, j, iTj, anisotropic)),
+                  std::invalid_argument);
+
+  const auto ambient =
+      noiseModel::Diagonal::Sigmas(Vector::LinSpaced(16, 0.1, 1.6));
+  const FrobeniusLeftBetweenFactor<Pose3> ambientFactor(i, j, iTj, ambient);
+  EXPECT(ambient == ambientFactor.noiseModel());
+}
+
 }  // namespace frobenius_left_pose3_fixture
 /* ************************************************************************* */
 

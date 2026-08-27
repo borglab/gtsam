@@ -101,6 +101,24 @@ TEST(KnownLandmarkFactor, FullInformationMatrix) {
   EXPECT_DOUBLES_EQUAL(expected, factor.error(values), 1e-9);
 }
 
+// Verifies polymorphic cloning and measurement-aware equality.
+TEST(KnownLandmarkFactor, CloneAndEquals) {
+  const auto model = noiseModel::Unit::Create(3);
+  const KnownLandmarkFactor<Pose3> factor(kKey, wL, measured_kP, model);
+  const auto clone = factor.clone();
+  EXPECT(factor.equals(*clone));
+  EXPECT(!factor.equals(KnownLandmarkFactor<Pose3>(
+      kKey, wL + Point3(0.1, 0.0, 0.0), measured_kP, model)));
+  EXPECT(!factor.equals(KnownLandmarkFactor<Pose3>(
+      kKey, wL, measured_kP + Point3(0.0, 0.1, 0.0), model)));
+
+  NonlinearFactorGraph graph;
+  graph.push_back(clone);
+  const NonlinearFactorGraph graphClone = graph.clone();
+  EXPECT(std::dynamic_pointer_cast<KnownLandmarkFactor<Pose3>>(
+      graphClone.at(0)));
+}
+
 }  // namespace pose3_fixture
 /* ************************************************************************* */
 
@@ -170,6 +188,20 @@ TEST(KnownLandmarkFactor2, FullInformationMatrix) {
   const Vector error = factor.evaluateError(kTw);
   const double expected = 0.5 * error.dot(information * error);
   EXPECT_DOUBLES_EQUAL(expected, factor.error(kTws), 1e-9);
+}
+
+// Verifies polymorphic cloning and measurement-aware equality.
+TEST(KnownLandmarkFactor2, CloneAndEquals) {
+  const Key k = 15;
+  const Point3 wL(1.2, -0.7, 0.5), measured_kP(0.3, 0.8, -0.4);
+  const auto model = noiseModel::Unit::Create(3);
+  const KnownLandmarkFactor2<Pose3> factor(k, wL, measured_kP, model);
+  const auto clone = factor.clone();
+  EXPECT(factor.equals(*clone));
+  EXPECT(!factor.equals(KnownLandmarkFactor2<Pose3>(
+      k, wL + Point3(0.1, 0.0, 0.0), measured_kP, model)));
+  EXPECT(!factor.equals(KnownLandmarkFactor2<Pose3>(
+      k, wL, measured_kP + Point3(0.0, 0.1, 0.0), model)));
 }
 
 }  // namespace factor2_fixture

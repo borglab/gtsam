@@ -591,7 +591,10 @@ TEST_PIM(ImuFactor, ExactCoriolisIgnoresLegacySecondOrderFlag) {
 
   auto p = testing::Params();
   p->omegaCoriolis = kNonZeroOmegaCoriolis;
-  p->use2ndOrderCoriolis = true;
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  // The legacy flag is deliberately ignored by the exact Coriolis model.
+  p->setUse2ndOrderCoriolis(true);
+#endif
 
   PIM pim(p, Bias(Vector3(0.2, 0.0, 0.0), Vector3(0.0, 0.0, 0.1)));
   pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);

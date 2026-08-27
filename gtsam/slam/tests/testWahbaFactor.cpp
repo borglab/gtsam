@@ -118,6 +118,23 @@ TEST(WahbaFactor, QcqpValidation) {
                   std::runtime_error);
 }
 
+// Verifies polymorphic cloning and measurement-aware equality.
+TEST(WahbaFactor, CloneAndEquals) {
+  const auto model = noiseModel::Unit::Create(3);
+  const WahbaFactor factor(kKey, bDirection, measured_aDirection, model);
+  const auto clone = factor.clone();
+  EXPECT(factor.equals(*clone));
+  EXPECT(!factor.equals(WahbaFactor(
+      kKey, Unit3(Point3(0.9, -0.4, 0.2)), measured_aDirection, model)));
+  EXPECT(!factor.equals(WahbaFactor(
+      kKey, bDirection, Unit3(Point3(-0.2, 0.5, 0.9)), model)));
+
+  NonlinearFactorGraph graph;
+  graph.push_back(clone);
+  const NonlinearFactorGraph graphClone = graph.clone();
+  EXPECT(std::dynamic_pointer_cast<WahbaFactor>(graphClone.at(0)));
+}
+
 }  // namespace wahba_fixture
 /* ************************************************************************* */
 

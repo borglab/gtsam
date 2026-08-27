@@ -51,6 +51,7 @@ namespace gtsam {
 class WahbaFactor : public NoiseModelFactorN<Rot3> {
  public:
   using Base = NoiseModelFactorN<Rot3>;
+  using This = WahbaFactor;
 
  private:
   Unit3 bDirection_;           ///< Known direction expressed in frame b.
@@ -65,6 +66,18 @@ class WahbaFactor : public NoiseModelFactorN<Rot3> {
       : Base(model, key),
         bDirection_(bDirection),
         measured_aDirection_(measured_aDirection) {}
+
+  NonlinearFactor::shared_ptr clone() const override {
+    return std::make_shared<This>(*this);
+  }
+
+  bool equals(const NonlinearFactor& expected,
+              double tol = 1e-9) const override {
+    const auto* e = dynamic_cast<const This*>(&expected);
+    return e != nullptr && Base::equals(*e, tol) &&
+           bDirection_.equals(e->bDirection_, tol) &&
+           measured_aDirection_.equals(e->measured_aDirection_, tol);
+  }
 
   /// Evaluate the rotated frame-b direction minus measured_aDirection.
   Vector evaluateError(const Rot3& aRb, OptionalMatrixType H) const override {

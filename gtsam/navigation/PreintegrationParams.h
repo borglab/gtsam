@@ -28,9 +28,15 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
   /// The units for stddev are σ = m/s²/√Hz
   Matrix3 accelerometerCovariance;
   Matrix3 integrationCovariance; ///< continuous-time "Covariance" describing integration uncertainty
+
+ protected:
+  friend class PreintegrationBase;
+
   /// Retained only for source and archive compatibility. Exact rotating-Earth
   /// dynamics are used whenever omegaCoriolis is set, regardless of this flag.
   bool use2ndOrderCoriolis;
+
+ public:
   Vector3 n_gravity; ///< Gravity vector in nav frame
 
   /// Default constructor for serialization only
