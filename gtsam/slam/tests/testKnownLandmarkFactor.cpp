@@ -15,13 +15,11 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <examples/MatrixWeightedLocalizationUtils.h>
 #include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/factorTesting.h>
-#include <gtsam/slam/FrobeniusFactor.h>
 #include <gtsam/slam/KnownLandmarkFactor.h>
-
-#include <vector>
 
 using namespace gtsam;
 
@@ -171,59 +169,18 @@ namespace matrix_weighted_localization_fixture {
 // Verifies that the complete localization graph and its D=1 QCQP have the
 // same nonzero objective at a common Pose3 assignment.
 TEST(KnownLandmarkFactor, MatrixWeightedLocalizationQcqpError) {
-  constexpr size_t kNumPoses = 3;
-  constexpr double kRadialSigma = 0.1;
-  constexpr double kLateralSigma = 0.01;
-  constexpr double kOdometrySigma = 0.1;
+  const auto matrixWeightedProblem = examples::loadMatrixWeightedLocalization(
+      findExampleDataFile("matrix_weighted_localization.g2o"));
 
-  const Pose3 kTkp1(Rot3::RzRyRx(0.03, -0.05, 0.08), Point3(0.3, -0.1, 0.2));
-  std::vector<Pose3> kTws{Pose3()};
-  for (size_t i = 1; i < kNumPoses; ++i) {
-    kTws.push_back(kTws.back().compose(kTkp1));
-  }
-
-  const std::vector<Point3> wLs{Point3(4.0, 1.0, 2.0), Point3(-1.0, 3.0, 5.0),
-                                Point3(2.0, -4.0, 3.0), Point3(5.0, 2.0, -1.0)};
-
-  NonlinearFactorGraph graph;
-  const double radialPrecision = 1.0 / (kRadialSigma * kRadialSigma);
-  const double lateralPrecision = 1.0 / (kLateralSigma * kLateralSigma);
-  for (size_t k = 0; k < kTws.size(); ++k) {
-    for (const Point3& wL : wLs) {
-      const Point3 measured_kP = kTws[k].transformFrom(wL);
-      const Vector3 kRay = measured_kP.normalized();
-      const Matrix3 information =
-          lateralPrecision * Matrix3::Identity() +
-          (radialPrecision - lateralPrecision) * kRay * kRay.transpose();
-      graph.emplace_shared<KnownLandmarkFactor<Pose3>>(
-          k, wL, measured_kP, noiseModel::Gaussian::Information(information));
-    }
-  }
-
-  const auto odometryNoiseModel =
-      noiseModel::Isotropic::Sigma(Pose3::dimension, kOdometrySigma);
-  for (size_t i = 0; i + 1 < kTws.size(); ++i) {
-    const size_t j = i + 1;
-    const Pose3 iTj = kTws[i].compose(kTws[j].inverse());
-    graph.emplace_shared<FrobeniusLeftBetweenFactor<Pose3>>(i, j, iTj,
-                                                            odometryNoiseModel);
-  }
-
-  Values values;
-  Vector6 perturbation;
-  perturbation << 0.02, -0.015, 0.01, 0.08, -0.05, 0.06;
-  for (size_t k = 0; k < kTws.size(); ++k) {
-    values.insert(k,
-                  kTws[k].retract(static_cast<double>(k + 1) * perturbation));
-  }
-
-  const QcqpProblem qcqp(graph, 1);
+  const QcqpProblem qcqp(matrixWeightedProblem.graph, 1);
   Values qcqpValues;
-  for (size_t k = 0; k < kTws.size(); ++k) {
-    InsertQcqpValue<Pose3, 1>(k, values.at<Pose3>(k), &qcqpValues);
+  for (const Key k : matrixWeightedProblem.poseKeys) {
+    InsertQcqpValue<Pose3, 1>(
+        k, matrixWeightedProblem.initial_kTws.at<Pose3>(k), &qcqpValues);
   }
 
-  const double nonlinearError = graph.error(values);
+  const double nonlinearError =
+      matrixWeightedProblem.graph.error(matrixWeightedProblem.initial_kTws);
   EXPECT(nonlinearError > 0.0);
   EXPECT_DOUBLES_EQUAL(nonlinearError, qcqp.costs().error(qcqpValues), 1e-9);
 }
