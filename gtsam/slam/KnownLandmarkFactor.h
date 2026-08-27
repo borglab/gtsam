@@ -23,59 +23,14 @@
 #include <gtsam/constrained/QpCost.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/geometry/Rot2.h>
-#include <gtsam/geometry/Rot3.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 #include <memory>
 #include <stdexcept>
+#include <type_traits>
 #include <vector>
 
 namespace gtsam {
-
-namespace internal {
-
-/** Predict a frame-k point from a conventional world-from-k state. */
-template <class T>
-struct KnownLandmarkPrediction;
-
-template <>
-struct KnownLandmarkPrediction<Rot2> {
-  using Point = Point2;
-
-  static Point apply(const Rot2& wRk, const Point& wP, OptionalMatrixType H) {
-    return wRk.unrotate(wP, H);
-  }
-};
-
-template <>
-struct KnownLandmarkPrediction<Rot3> {
-  using Point = Point3;
-
-  static Point apply(const Rot3& wRk, const Point& wP, OptionalMatrixType H) {
-    return wRk.unrotate(wP, H);
-  }
-};
-
-template <>
-struct KnownLandmarkPrediction<Pose2> {
-  using Point = Point2;
-
-  static Point apply(const Pose2& wTk, const Point& wL, OptionalMatrixType H) {
-    return wTk.transformTo(wL, H);
-  }
-};
-
-template <>
-struct KnownLandmarkPrediction<Pose3> {
-  using Point = Point3;
-
-  static Point apply(const Pose3& wTk, const Point& wL, OptionalMatrixType H) {
-    return wTk.transformTo(wL, H);
-  }
-};
-
-}  // namespace internal
 
 /**
  * A unary known-landmark factor using the conventional GTSAM state direction.
@@ -84,79 +39,37 @@ struct KnownLandmarkPrediction<Pose3> {
  *
  *   e(wTk) = wTk.transformTo(wL) - measured_kP.
  *
- * The rotation-only equivalent uses wRk.unrotate(wP). The known world point is
- * fixed data, and the supplied noise model represents the measurement weight.
- * This conventional formulation does not provide an exact QCQP conversion.
+ * The known world landmark is fixed data, and the supplied noise model
+ * represents the measurement weight. This conventional formulation does not
+ * provide an exact QCQP conversion.
  */
 template <class T>
 class KnownLandmarkFactor : public NoiseModelFactorN<T> {
  public:
+  static_assert(std::is_same_v<T, Pose2> || std::is_same_v<T, Pose3>,
+                "KnownLandmarkFactor supports only Pose2 and Pose3");
+
   using Base = NoiseModelFactorN<T>;
-  using Point = typename internal::KnownLandmarkPrediction<T>::Point;
+  using Point = typename T::Translation;
 
  private:
-  Point wP_;           ///< Known point expressed in the world frame.
+  Point wL_;           ///< Known landmark expressed in the world frame.
   Point measured_kP_;  ///< Corresponding point measured in frame k.
 
  public:
   using Base::evaluateError;
 
-  /// Construct from a key, world point, frame-k measurement, and noise model.
-  KnownLandmarkFactor(Key key, const Point& wP, const Point& measured_kP,
+  /// Construct from a key, world landmark, frame-k measurement, and noise model.
+  KnownLandmarkFactor(Key key, const Point& wL, const Point& measured_kP,
                       const SharedNoiseModel& model)
-      : Base(model, key), wP_(wP), measured_kP_(measured_kP) {}
+      : Base(model, key), wL_(wL), measured_kP_(measured_kP) {}
 
   /** Evaluate the conventional world-from-k prediction minus measured_kP. */
   Vector evaluateError(const T& wTk, OptionalMatrixType H) const override {
-    const Point predicted_kP =
-        internal::KnownLandmarkPrediction<T>::apply(wTk, wP_, H);
+    const Point predicted_kP = wTk.transformTo(wL_, H);
     return predicted_kP - measured_kP_;
   }
 };
-
-namespace internal {
-
-/** Predict a frame-k point from a k-from-world state. */
-template <class T>
-struct KnownLandmarkPrediction2;
-
-template <>
-struct KnownLandmarkPrediction2<Rot2> {
-  using Point = Point2;
-
-  static Point apply(const Rot2& kRw, const Point& wP, OptionalMatrixType H) {
-    return kRw.rotate(wP, H);
-  }
-};
-
-template <>
-struct KnownLandmarkPrediction2<Rot3> {
-  using Point = Point3;
-
-  static Point apply(const Rot3& kRw, const Point& wP, OptionalMatrixType H) {
-    return kRw.rotate(wP, H);
-  }
-};
-
-template <>
-struct KnownLandmarkPrediction2<Pose2> {
-  using Point = Point2;
-
-  static Point apply(const Pose2& kTw, const Point& wL, OptionalMatrixType H) {
-    return kTw.transformFrom(wL, H);
-  }
-};
-
-template <>
-struct KnownLandmarkPrediction2<Pose3> {
-  using Point = Point3;
-
-  static Point apply(const Pose3& kTw, const Point& wL, OptionalMatrixType H) {
-    return kTw.transformFrom(wL, H);
-  }
-};
-
-}  // namespace internal
 
 /**
  * A unary known-landmark factor using a k-from-world state direction.
@@ -171,25 +84,27 @@ struct KnownLandmarkPrediction2<Pose3> {
 template <class T>
 class KnownLandmarkFactor2 : public NoiseModelFactorN<T> {
  public:
+  static_assert(std::is_same_v<T, Pose2> || std::is_same_v<T, Pose3>,
+                "KnownLandmarkFactor2 supports only Pose2 and Pose3");
+
   using Base = NoiseModelFactorN<T>;
-  using Point = typename internal::KnownLandmarkPrediction2<T>::Point;
+  using Point = typename T::Translation;
 
  private:
-  Point wP_;           ///< Known point expressed in the world frame.
+  Point wL_;           ///< Known landmark expressed in the world frame.
   Point measured_kP_;  ///< Corresponding point measured in frame k.
 
  public:
   using Base::evaluateError;
 
-  /// Construct from a key, world point, frame-k measurement, and noise model.
-  KnownLandmarkFactor2(Key key, const Point& wP, const Point& measured_kP,
+  /// Construct from a key, world landmark, frame-k measurement, and noise model.
+  KnownLandmarkFactor2(Key key, const Point& wL, const Point& measured_kP,
                        const SharedNoiseModel& model)
-      : Base(model, key), wP_(wP), measured_kP_(measured_kP) {}
+      : Base(model, key), wL_(wL), measured_kP_(measured_kP) {}
 
   /** Evaluate the k-from-world prediction minus measured_kP. */
   Vector evaluateError(const T& kTw, OptionalMatrixType H) const override {
-    const Point predicted_kP =
-        internal::KnownLandmarkPrediction2<T>::apply(kTw, wP_, H);
+    const Point predicted_kP = kTw.transformFrom(wL_, H);
     return predicted_kP - measured_kP_;
   }
 
@@ -223,7 +138,7 @@ class KnownLandmarkFactor2 : public NoiseModelFactorN<T> {
     Matrix B = Matrix::Zero(PointDim, LiftedDim);
     B.col(0) = -measured_kP_;
     for (int column = 0; column < N; ++column) {
-      const double coefficient = column < PointDim ? wP_(column) : 1.0;
+      const double coefficient = column < PointDim ? wL_(column) : 1.0;
       B.block(0, 1 + column * PointDim, PointDim, PointDim)
           .diagonal()
           .setConstant(coefficient);

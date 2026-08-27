@@ -610,22 +610,31 @@ virtual class FrobeniusLeftBetweenFactor : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/slam/KnownLandmarkFactor.h>
-template <T = {gtsam::Pose3}>
+template <POSE = {gtsam::Pose2, gtsam::Pose3}>
 virtual class KnownLandmarkFactor : gtsam::NoiseModelFactor {
-  KnownLandmarkFactor(gtsam::Key key, const gtsam::Point3& wL,
-                      const gtsam::Point3& measured_kP,
+  KnownLandmarkFactor(gtsam::Key key, const POSE::Translation& wL,
+                      const POSE::Translation& measured_kP,
                       const gtsam::noiseModel::Base* model);
 
-  gtsam::Vector evaluateError(const T& wTk) const;
+  gtsam::Vector evaluateError(const POSE& wTk) const;
 };
 
-template <T = {gtsam::Pose3}>
+template <POSE = {gtsam::Pose2, gtsam::Pose3}>
 virtual class KnownLandmarkFactor2 : gtsam::NoiseModelFactor {
-  KnownLandmarkFactor2(gtsam::Key key, const gtsam::Point3& wL,
-                       const gtsam::Point3& measured_kP,
+  KnownLandmarkFactor2(gtsam::Key key, const POSE::Translation& wL,
+                       const POSE::Translation& measured_kP,
                        const gtsam::noiseModel::Base* model);
 
-  gtsam::Vector evaluateError(const T& kTw) const;
+  gtsam::Vector evaluateError(const POSE& kTw) const;
+};
+
+#include <gtsam/slam/WahbaFactor.h>
+class WahbaFactor : gtsam::NoiseModelFactor {
+  WahbaFactor(gtsam::Key key, const gtsam::Unit3& bDirection,
+              const gtsam::Unit3& measured_aDirection,
+              const gtsam::noiseModel::Base* model);
+
+  gtsam::Vector evaluateError(const gtsam::Rot3& aRb) const;
 };
 
 #include <gtsam/slam/RelativeTranslationFactor.h>
