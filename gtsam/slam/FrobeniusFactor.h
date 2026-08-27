@@ -560,6 +560,9 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
 /**
  * FrobeniusLeftBetweenFactor uses ||iTw - iTj*jTw||_F, where measured iTj
  * maps frame j into frame i.
+ *
+ * See `gtsam/slam/doc/FrobeniusFactor.ipynb` for the factor family and its use
+ * with inverse-state certifiable localization.
  */
 template <class T>
 class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {

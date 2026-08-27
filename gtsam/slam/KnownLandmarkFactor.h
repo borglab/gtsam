@@ -42,6 +42,9 @@ namespace gtsam {
  * The known world landmark is fixed data, and the supplied noise model
  * represents the measurement weight. This conventional formulation does not
  * provide an exact QCQP conversion.
+ *
+ * See `gtsam/slam/doc/KnownLandmarkFactor.ipynb` for frame conventions,
+ * wrapper names, and comparison with KnownLandmarkFactor2.
  */
 template <class T>
 class KnownLandmarkFactor : public NoiseModelFactorN<T> {
@@ -80,6 +83,9 @@ class KnownLandmarkFactor : public NoiseModelFactorN<T> {
  *
  * This direction makes the residual affine in homogeneous matrix entries and
  * supports the exact D=1 QCQP conversion used by certifiable localization.
+ *
+ * See `gtsam/slam/doc/KnownLandmarkFactor.ipynb` for the exact QCQP mapping and
+ * its relationship to the conventional factor.
  */
 template <class T>
 class KnownLandmarkFactor2 : public NoiseModelFactorN<T> {

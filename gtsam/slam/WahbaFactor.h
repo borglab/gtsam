@@ -44,6 +44,9 @@ namespace gtsam {
  * classical chordal Wahba objective and is affine in the entries of aRb, so it
  * supports an exact D=1 QCQP conversion. RotateDirectionsFactor instead uses a
  * two-dimensional Unit3 tangent-space error and a different nonlinear model.
+ *
+ * See `gtsam/slam/doc/WahbaFactor.ipynb` for a comparison of the two residuals
+ * and a runnable QCQP objective check.
  */
 class WahbaFactor : public NoiseModelFactorN<Rot3> {
  public:
