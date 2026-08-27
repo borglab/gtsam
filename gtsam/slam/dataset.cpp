@@ -811,7 +811,9 @@ void writeG2o(const NonlinearFactorGraph &graph, const Values &estimate,
       validatePoint3Information(pointInformation);
 
       const std::streamsize previousPrecision = stream.precision();
-      stream << std::setprecision(17) << "EDGE_SE3_TRACKXYZ "
+      // Twelve significant digits retain ample round-trip precision while
+      // suppressing platform-dependent last-bit differences from Eigen.
+      stream << std::setprecision(12) << "EDGE_SE3_TRACKXYZ "
              << index(poseKey) << " " << index(landmarkKey) << " 0 " << kP.x()
              << " " << kP.y() << " " << kP.z();
       for (size_t i = 0; i < 3; ++i) {

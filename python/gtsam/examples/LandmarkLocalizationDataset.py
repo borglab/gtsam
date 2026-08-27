@@ -124,13 +124,16 @@ class LandmarkLocalizationDataset:
         return self._measurements(point_seed, odometry_seed)
 
     @staticmethod
-    def _perturbed_kP(kP: np.ndarray, information: np.ndarray, seed: int) -> np.ndarray:
+    def _perturbed_kP(kP: np.ndarray, seed: int) -> np.ndarray:
         """Perturb kP with a sample from its ray-aligned covariance."""
-        model = gtsam.noiseModel.Gaussian.Information(information)
-        # Sampler draws z ~ N(0,I); unwhiten maps it through the full
-        # covariance without repeating the ray geometry here.
-        z = gtsam.Sampler(np.ones(3), seed).sample()
-        return kP + model.unwhiten(z)
+        # Use NumPy's explicitly seeded MT19937 stream instead of the wrapped
+        # C++ sampler, whose generated sequence differs between toolchains.
+        z = np.random.RandomState(seed).standard_normal(3)
+        kRay = kP / np.linalg.norm(kP)
+        radial = np.dot(z, kRay) * kRay
+        lateral = z - radial
+        radial_sigma = ANISOTROPICITY * LATERAL_SIGMA
+        return kP + LATERAL_SIGMA * lateral + radial_sigma * radial
 
     def write_g2o(self, filename: str, measurements: Measurements) -> None:
         """Write conventional wTk, wL, odometry, and landmark observations."""
@@ -182,21 +185,19 @@ class LandmarkLocalizationDataset:
                 kP = wTk.transformTo(wL)
                 information = self._information(kP)
                 if point_seed is not None:
-                    kP = self._perturbed_kP(
-                        kP, information, point_seed + len(landmarks)
-                    )
+                    kP = self._perturbed_kP(kP, point_seed + len(landmarks))
                 landmarks.append(LandmarkMeasurement(k, l, wL, kP, information))
 
         odometry = []
-        odometry_sampler = None
+        odometry_rng = None
         if odometry_seed is not None:
-            model = gtsam.noiseModel.Isotropic.Sigma(6, ODOMETRY_SIGMA)
-            odometry_sampler = gtsam.Sampler(model, odometry_seed)
+            odometry_rng = np.random.RandomState(odometry_seed)
         for i in range(self.num_poses - 1):
             j = i + 1
             iTj = self.wTks[i].between(self.wTks[j])
-            if odometry_sampler is not None:
-                iTj = iTj.retract(odometry_sampler.sample())
+            if odometry_rng is not None:
+                tangent_noise = ODOMETRY_SIGMA * odometry_rng.standard_normal(6)
+                iTj = iTj.retract(tangent_noise)
             odometry.append(OdometryMeasurement(i, j, iTj))
 
         return Measurements(tuple(landmarks), tuple(odometry))
