@@ -166,7 +166,7 @@ struct KnownLandmarkPrediction2<Pose3> {
  *   e(kTw) = kTw * wL - measured_kP.
  *
  * This direction makes the residual affine in homogeneous matrix entries and
- * supports the exact D=1 QCQP conversion used by matrix-weighted localization.
+ * supports the exact D=1 QCQP conversion used by certifiable localization.
  */
 template <class T>
 class KnownLandmarkFactor2 : public NoiseModelFactorN<T> {

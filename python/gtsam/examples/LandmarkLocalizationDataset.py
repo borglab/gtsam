@@ -6,7 +6,7 @@ Authors: Frank Dellaert, et al. (see THANKS for the full author list)
 
 See LICENSE for the license information
 
-Synthetic data for the matrix-weighted localization example.
+Synthetic data for the known-landmark localization examples.
 """
 
 from typing import NamedTuple, Optional, Tuple
@@ -60,7 +60,7 @@ class Measurements(NamedTuple):
     odometry: Tuple[OdometryMeasurement, ...]
 
 
-class MatrixWeightedLocalization:
+class LandmarkLocalizationDataset:
     """Create conventional wTk ground truth and corresponding measurements."""
 
     def __init__(self, num_poses: int):

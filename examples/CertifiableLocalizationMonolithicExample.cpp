@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Pose3MatrixWeightedLocalization_LiftedSDP_Monolithic.cpp
- * @brief Matrix-weighted Pose3 localization solved with the monolithic SDP.
+ * @file CertifiableLocalizationMonolithicExample.cpp
+ * @brief Certifiable Pose3 localization solved with the monolithic SDP.
  * @author Avinash Subramanian
  * @author Frederike Dümbgen
  * @author Frank Dellaert
@@ -27,7 +27,7 @@
 #include <string>
 #include <vector>
 
-#include "MatrixWeightedLocalizationUtils.h"
+#include "CertifiableLocalizationUtils.h"
 
 using namespace gtsam;
 using namespace gtsam::examples;
@@ -36,8 +36,8 @@ int main() {
   constexpr double kRankOneEigenRatioThreshold = 1e5;
   constexpr double kMaxOptimizerTimeSeconds = 600.0;
 
-  const auto problem = loadMatrixWeightedLocalization(
-      findExampleDataFile("matrix_weighted_localization_20.g2o"));
+  const auto problem = loadCertifiableLocalization(
+      findExampleDataFile("known_landmark_localization_20.g2o"));
 
   GaussNewtonParams parameters;
   parameters.setMaxIterations(100);

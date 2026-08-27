@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file MatrixWeightedLocalizationExample.cpp
- * @brief Locally solve a noisy matrix-weighted localization problem.
+ * @file CertifiableLocalizationExample.cpp
+ * @brief Locally solve a noisy certifiable localization problem.
  * @author Avinash Subramanian
  * @author Frederike Dümbgen
  * @author Frank Dellaert
@@ -21,14 +21,14 @@
 
 #include <iostream>
 
-#include "MatrixWeightedLocalizationUtils.h"
+#include "CertifiableLocalizationUtils.h"
 
 using namespace gtsam;
 using namespace gtsam::examples;
 
 int main() {
-  const auto problem = loadMatrixWeightedLocalization(
-      findExampleDataFile("matrix_weighted_localization.g2o"));
+  const auto problem = loadCertifiableLocalization(
+      findExampleDataFile("known_landmark_localization_3.g2o"));
 
   GaussNewtonParams parameters;
   parameters.setMaxIterations(100);
@@ -53,7 +53,7 @@ int main() {
   constexpr double kMaximumPoseError = 0.05;
   if (finalError >= initialError || finalError >= groundTruthError ||
       poseErrors.maximumPoseError >= kMaximumPoseError) {
-    std::cerr << "Matrix-weighted localization did not improve the noisy "
+    std::cerr << "Certifiable localization did not improve the noisy "
                  "problem as expected."
               << std::endl;
     return 1;

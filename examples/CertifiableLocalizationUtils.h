@@ -10,8 +10,8 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file MatrixWeightedLocalizationUtils.h
- * @brief Shared data preparation for matrix-weighted localization examples.
+ * @file CertifiableLocalizationUtils.h
+ * @brief Shared data preparation for certifiable localization examples.
  * @author Avinash Subramanian
  * @author Frederike Dümbgen
  * @author Frank Dellaert
@@ -75,20 +75,20 @@ inline CartesianLandmarkMeasurement bearingRangeToCartesian(
   return {measured_kP, kPCovariance};
 }
 
-/** Common graph and kTw values used by the matrix-weighted examples. */
-struct MatrixWeightedLocalizationProblem {
+/** Common graph and kTw values used by the certifiable examples. */
+struct CertifiableLocalizationProblem {
   NonlinearFactorGraph graph;
   Values groundTruth_kTws;
   Values initial_kTws;
   KeyVector poseKeys;
 };
 
-/** Read conventional wTk/wL data and construct the matrix-weighted problem. */
-inline MatrixWeightedLocalizationProblem loadMatrixWeightedLocalization(
+/** Read conventional wTk/wL data and construct the certifiable problem. */
+inline CertifiableLocalizationProblem loadCertifiableLocalization(
     const std::string& filename) {
   const auto [g2oGraph, wTkAndwLValues] = readG2o(filename, true);
 
-  MatrixWeightedLocalizationProblem problem;
+  CertifiableLocalizationProblem problem;
   for (const auto& sourceFactor : *g2oGraph) {
     const auto bearingRangeFactor =
         std::dynamic_pointer_cast<BearingRangeFactor3D>(sourceFactor);
@@ -115,7 +115,7 @@ inline MatrixWeightedLocalizationProblem loadMatrixWeightedLocalization(
     }
 
     throw std::invalid_argument(
-        "loadMatrixWeightedLocalization encountered an unexpected factor");
+        "loadCertifiableLocalization encountered an unexpected factor");
   }
 
   const Vector6 perturbation{0.02, -0.015, 0.01, 0.08, -0.05, 0.06};

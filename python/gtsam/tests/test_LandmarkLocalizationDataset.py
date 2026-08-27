@@ -6,7 +6,7 @@ Authors: Frank Dellaert, et al. (see THANKS for the full author list)
 
 See LICENSE for the license information
 
-Tests for the matrix-weighted localization dataset generator.
+Tests for the landmark localization dataset generator.
 """
 
 from pathlib import Path
@@ -15,20 +15,20 @@ import unittest
 
 import gtsam
 import numpy as np
-from gtsam.examples.MatrixWeightedLocalizationExample import (
-    MatrixWeightedLocalization,
+from gtsam.examples.LandmarkLocalizationDataset import (
+    LandmarkLocalizationDataset,
 )
 from gtsam.symbol_shorthand import L
 
 
-class TestMatrixWeightedLocalizationExample(unittest.TestCase):
+class TestLandmarkLocalizationDataset(unittest.TestCase):
     """Tests deterministic generation and g2o round-tripping."""
 
     def test_perturbed_measurements_are_deterministic(self):
         """Repeated seeded sampling produces identical measurements."""
-        example = MatrixWeightedLocalization(3)
-        first = example.perturbed_measurements()
-        second = example.perturbed_measurements()
+        dataset = LandmarkLocalizationDataset(3)
+        first = dataset.perturbed_measurements()
+        second = dataset.perturbed_measurements()
 
         self.assertEqual(len(first.landmarks), 12)
         self.assertEqual(len(first.odometry), 2)
@@ -40,8 +40,8 @@ class TestMatrixWeightedLocalizationExample(unittest.TestCase):
 
     def check_g2o_round_trip(self, num_poses):
         """Check graph structure and Cartesian noise for one pose count."""
-        example = MatrixWeightedLocalization(num_poses)
-        measurements = example.perturbed_measurements()
+        dataset = LandmarkLocalizationDataset(num_poses)
+        measurements = dataset.perturbed_measurements()
         expected_landmarks = {
             (landmark_measurement.k, L(landmark_measurement.l)): landmark_measurement
             for landmark_measurement in measurements.landmarks
@@ -52,15 +52,15 @@ class TestMatrixWeightedLocalizationExample(unittest.TestCase):
         }
 
         with TemporaryDirectory() as directory:
-            filename = str(Path(directory) / "matrix_weighted.g2o")
-            example.write_g2o(filename, measurements)
+            filename = str(Path(directory) / "known_landmark_localization.g2o")
+            dataset.write_g2o(filename, measurements)
             graph, values = gtsam.readG2o(filename, is3D=True)
 
         self.assertEqual(graph.size(), 5 * num_poses - 1)
         self.assertEqual(values.size(), num_poses + 4)
-        for k, wTk in enumerate(example.wTks):
+        for k, wTk in enumerate(dataset.wTks):
             self.assertTrue(values.atPose3(k).equals(wTk, 1e-5))
-        for l, wL in enumerate(example.wLs):
+        for l, wL in enumerate(dataset.wLs):
             np.testing.assert_allclose(values.atPoint3(L(l)), wL)
 
         landmark_count = 0
@@ -113,14 +113,16 @@ class TestMatrixWeightedLocalizationExample(unittest.TestCase):
     def test_committed_datasets_are_reproducible(self):
         """Committed g2o files match deterministic generator output."""
         datasets = (
-            (3, "matrix_weighted_localization.g2o"),
-            (20, "matrix_weighted_localization_20.g2o"),
+            (3, "known_landmark_localization_3.g2o"),
+            (20, "known_landmark_localization_20.g2o"),
         )
         with TemporaryDirectory() as directory:
             for num_poses, name in datasets:
-                example = MatrixWeightedLocalization(num_poses)
+                dataset = LandmarkLocalizationDataset(num_poses)
                 generated = Path(directory) / name
-                example.write_g2o(str(generated), example.perturbed_measurements())
+                dataset.write_g2o(
+                    str(generated), dataset.perturbed_measurements()
+                )
                 committed = (
                     Path(__file__).resolve().parents[3] / "examples" / "Data" / name
                 )

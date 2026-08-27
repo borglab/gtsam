@@ -18,7 +18,7 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-#include <examples/MatrixWeightedLocalizationUtils.h>
+#include <examples/CertifiableLocalizationUtils.h>
 #include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/factorTesting.h>
@@ -252,28 +252,28 @@ TEST(KnownLandmarkFactor2, Pose3) {
 /* ************************************************************************* */
 
 /* ************************************************************************* */
-namespace matrix_weighted_localization_fixture {
+namespace certifiable_localization_fixture {
 
 // Verifies that the complete localization graph and its D=1 QCQP have the
 // same nonzero objective at a common Pose3 assignment.
-TEST(KnownLandmarkFactor2, MatrixWeightedLocalizationQcqpError) {
-  const auto matrixWeightedProblem = examples::loadMatrixWeightedLocalization(
-      findExampleDataFile("matrix_weighted_localization.g2o"));
+TEST(KnownLandmarkFactor2, CertifiableLocalizationQcqpError) {
+  const auto certifiableProblem = examples::loadCertifiableLocalization(
+      findExampleDataFile("known_landmark_localization_3.g2o"));
 
-  const QcqpProblem qcqp(matrixWeightedProblem.graph, 1);
+  const QcqpProblem qcqp(certifiableProblem.graph, 1);
   Values qcqpValues;
-  for (const Key k : matrixWeightedProblem.poseKeys) {
+  for (const Key k : certifiableProblem.poseKeys) {
     InsertQcqpValue<Pose3, 1>(
-        k, matrixWeightedProblem.initial_kTws.at<Pose3>(k), &qcqpValues);
+        k, certifiableProblem.initial_kTws.at<Pose3>(k), &qcqpValues);
   }
 
   const double nonlinearError =
-      matrixWeightedProblem.graph.error(matrixWeightedProblem.initial_kTws);
+      certifiableProblem.graph.error(certifiableProblem.initial_kTws);
   EXPECT(nonlinearError > 0.0);
   EXPECT_DOUBLES_EQUAL(nonlinearError, qcqp.costs().error(qcqpValues), 1e-9);
 }
 
-}  // namespace matrix_weighted_localization_fixture
+}  // namespace certifiable_localization_fixture
 /* ************************************************************************* */
 
 /* ************************************************************************* */
