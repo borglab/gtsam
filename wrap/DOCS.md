@@ -168,6 +168,19 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
       template<T, U> class Class2 { ... };
       typedef Class2<Type1, Type2> MyInstantiatedClass;
       ```
+    - Serialization can be enabled for one typedef without marking every
+      specialization of the template serializable:
+
+      ```cpp
+      template<T> class Class3 { ... };
+      @serializable
+      typedef Class3<Type1> SerializableClass3;
+      typedef Class3<Type2> PlainClass3;
+      ```
+
+      `@serializable` is wrapper metadata. It generates the same Python pickle
+      and MATLAB save/load support as a `void serialize() const;` marker on a
+      concrete wrapper class, but applies only to the annotated typedef.
     - Templates can also be defined for constructors, methods, properties and static methods.
     - In the class definition, appearances of the template argument(s) will be replaced with their
       instantiated types, e.g. `void setValue(const T& value);`.

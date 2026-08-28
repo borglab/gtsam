@@ -12,11 +12,14 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 
 from typing import List
 
-from pyparsing import Optional, ParseResults, DelimitedList  # type: ignore
+from pyparsing import DelimitedList, Optional, ParseResults, Regex  # type: ignore
 
 from .tokens import (EQUAL, IDENT, LBRACE, LOPBRACK, RBRACE, ROPBRACK,
                      SEMI_COLON, TEMPLATE, TYPEDEF)
 from .type import TemplatedType, Typename
+
+
+SERIALIZABLE = Regex(r"@serializable(?![A-Za-z0-9_])")
 
 
 class Template:
@@ -83,17 +86,20 @@ class TypedefTemplateInstantiation:
     typedef SuperComplexName<Arg1, Arg2, Arg3> EasierName;
     ```
     """
-    rule = (TYPEDEF + TemplatedType.rule("templated_type") +
+    rule = (Optional(SERIALIZABLE("serializable")) +
+            TYPEDEF + TemplatedType.rule("templated_type") +
             IDENT("new_name") +
             SEMI_COLON).set_parse_action(lambda t: TypedefTemplateInstantiation(
-                t.templated_type[0], t.new_name))
+                t.templated_type[0], t.new_name, bool(t.serializable)))
 
     def __init__(self,
                  templated_type: TemplatedType,
                  new_name: str,
+                 serializable: bool = False,
                  parent: str = ''):
         self.typename = templated_type.typename
         self.new_name = new_name
+        self.serializable = serializable
         self.parent = parent
 
     def __repr__(self):

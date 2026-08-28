@@ -408,6 +408,14 @@ class TestInterfaceParser(unittest.TestCase):
         self.assertEqual("BearingFactor", typedef.typename.name)
         self.assertEqual(["gtsam"], typedef.typename.namespaces)
         self.assertEqual(3, len(typedef.typename.instantiations))
+        self.assertFalse(typedef.serializable)
+
+        serializable = TypedefTemplateInstantiation.rule.parse_string("""
+        @serializable
+        typedef gtsam::BearingFactor<gtsam::Pose2, gtsam::Point2,
+                                     gtsam::Rot2> SerializableBearingFactor2D;
+        """)[0]
+        self.assertTrue(serializable.serializable)
 
     def test_base_class(self):
         """Test a base class."""

@@ -17,13 +17,18 @@ class InstantiatedClass(parser.Class):
     Instantiate the class defined in the interface file.
     """
 
-    def __init__(self, original: parser.Class, instantiations=(), new_name=''):
+    def __init__(self,
+                 original: parser.Class,
+                 instantiations=(),
+                 new_name='',
+                 serializable=False):
         """
         Template <T, U>
         Instantiations: [T1, U1]
         """
         self.original = original
         self.instantiations = instantiations
+        self.serializable = serializable
 
         self.template = None
         self.is_virtual = original.is_virtual
@@ -58,6 +63,12 @@ class InstantiatedClass(parser.Class):
 
         # Instantiate all instance methods
         self.methods = self.instantiate_methods(typenames)
+        if serializable and not any(
+                method.name in ('serialize', 'serializable')
+                for method in self.methods):
+            self.methods.append(
+                parser.Method.rule.parse_string(
+                    "void serialize() const;")[0])
 
         self.dunder_methods = original.dunder_methods
 

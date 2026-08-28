@@ -82,6 +82,36 @@ class TestWrap(unittest.TestCase):
             actual = osp.join(self.MATLAB_ACTUAL_DIR, file)
             self.compare_and_diff(file, actual)
 
+    def test_serializable_template_typedef(self):
+        """Serialization metadata applies to one MATLAB typedef only."""
+        source = osp.join(self.INTERFACE_DIR, 'serializable_typedef.i')
+        wrapper = MatlabWrapper(module_name='serializable_typedef',
+                                top_module_namespace=['gtsam'],
+                                ignore_classes=[''],
+                                use_boost_serialization=True)
+        wrapper.wrap([source], path=self.MATLAB_ACTUAL_DIR)
+
+        with open(osp.join(self.MATLAB_ACTUAL_DIR, '+gtsam',
+                           'SerializableFixture.m'),
+                  'r', encoding='UTF-8') as generated:
+            serializable = generated.read()
+        with open(osp.join(self.MATLAB_ACTUAL_DIR, '+gtsam', 'PlainFixture.m'),
+                  'r', encoding='UTF-8') as generated:
+            plain = generated.read()
+        with open(osp.join(self.MATLAB_ACTUAL_DIR,
+                           'serializable_typedef_wrapper.cpp'),
+                  'r', encoding='UTF-8') as generated:
+            cpp = generated.read()
+
+        self.assertIn('string_serialize', serializable)
+        self.assertIn('string_deserialize', serializable)
+        self.assertNotIn('string_serialize', plain)
+        self.assertNotIn('string_deserialize', plain)
+        self.assertIn(
+            'BOOST_CLASS_EXPORT_GUID(SerializableFixture, '
+            '"gtsamSerializableFixture")', cpp)
+        self.assertNotIn('BOOST_CLASS_EXPORT_GUID(PlainFixture', cpp)
+
     def test_matrix_view_arguments(self):
         """Test that matrix view arguments use MATLAB double arrays directly."""
         file = osp.join(self.INTERFACE_DIR, 'matrix_views.i')
