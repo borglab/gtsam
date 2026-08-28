@@ -22,23 +22,6 @@
 namespace gtsam {
 
 //------------------------------------------------------------------------------
-GalileanPreintegration::Matrix910 GalileanPreintegration::NavStateProjector() {
-  Matrix910 P = Matrix910::Zero();
-  P.block<3, 3>(0, 0) = I_3x3;
-  P.block<3, 3>(3, 6) = I_3x3;
-  P.block<3, 3>(6, 3) = I_3x3;
-  return P;
-}
-
-//------------------------------------------------------------------------------
-GalileanPreintegration::Matrix106 GalileanPreintegration::LiftJacobian() {
-  Matrix106 E = Matrix106::Zero();
-  E.block<3, 3>(0, 3) = I_3x3;
-  E.block<3, 3>(3, 0) = I_3x3;
-  return E;
-}
-
-//------------------------------------------------------------------------------
 GalileanPreintegration::GalileanPreintegration(
     const std::shared_ptr<Params>& p, const imuBias::ConstantBias& biasHat)
     : Base(p, biasHat) {
@@ -59,13 +42,16 @@ void GalileanPreintegration::updateGal3(const Vector3& measuredAcc,
   Vector3 acc = biasHat_.correctAccelerometer(measuredAcc);
   Vector3 omega = biasHat_.correctGyroscope(measuredOmega);
 
-  Matrix3 correctedAcc_H_acc = I_3x3;
-  Matrix3 correctedAcc_H_omega = Z_3x3;
-  Matrix3 correctedOmega_H_omega = I_3x3;
+  Matrix6 correctedInput_H_input;
   if (p().body_P_sensor) {
+    Matrix3 correctedAcc_H_acc, correctedAcc_H_omega, correctedOmega_H_omega;
     std::tie(acc, omega) = correctMeasurementsBySensorPose(
         acc, omega, correctedAcc_H_acc, correctedAcc_H_omega,
         correctedOmega_H_omega);
+    correctedInput_H_input.setZero();
+    correctedInput_H_input.block<3, 3>(0, 0) = correctedAcc_H_acc;
+    correctedInput_H_input.block<3, 3>(0, 3) = correctedAcc_H_omega;
+    correctedInput_H_input.block<3, 3>(3, 3) = correctedOmega_H_omega;
   }
 
   Vector10 integratedInput = Vector10::Zero();
@@ -77,12 +63,15 @@ void GalileanPreintegration::updateGal3(const Vector3& measuredAcc,
   const Gal3 increment = Gal3::Expmap(integratedInput, rightJacobian);
   const Matrix10 transition = increment.inverse().AdjointMap();
 
-  Matrix6 correctedInput_H_input = Matrix6::Zero();
-  correctedInput_H_input.block<3, 3>(0, 0) = correctedAcc_H_acc;
-  correctedInput_H_input.block<3, 3>(0, 3) = correctedAcc_H_omega;
-  correctedInput_H_input.block<3, 3>(3, 3) = correctedOmega_H_omega;
-  const Matrix106 inputJacobian =
-      rightJacobian * LiftJacobian() * correctedInput_H_input * dt;
+  Matrix106 liftedInputJacobian;
+  liftedInputJacobian.leftCols<3>() = rightJacobian.middleCols<3>(3);
+  liftedInputJacobian.rightCols<3>() = rightJacobian.leftCols<3>();
+  Matrix106 inputJacobian;
+  if (p().body_P_sensor) {
+    inputJacobian.noalias() = liftedInputJacobian * correctedInput_H_input * dt;
+  } else {
+    inputJacobian = liftedInputJacobian * dt;
+  }
 
   preintMatrix_ = preintMatrix_.compose(increment);
   deltaTij_ += dt;
@@ -101,16 +90,61 @@ void GalileanPreintegration::update(const Vector3& measuredAcc,
   Matrix106 galInput;
   updateGal3(measuredAcc, measuredOmega, dt, &galTransition, &galInput);
 
-  const Matrix910 P = NavStateProjector();
-  if (A) *A = P * galTransition * P.transpose();
-  if (B) *B = P * galInput.leftCols<3>();
-  if (C) *C = P * galInput.rightCols<3>();
+  constexpr int kGal3BlockForNavState[3] = {0, 6, 3};
+  for (int row = 0; row < 3; ++row) {
+    const int galRow = kGal3BlockForNavState[row];
+    if (B) {
+      B->block<3, 3>(3 * row, 0) = galInput.block<3, 3>(galRow, 0);
+    }
+    if (C) {
+      C->block<3, 3>(3 * row, 0) = galInput.block<3, 3>(galRow, 3);
+    }
+    if (A) {
+      for (int column = 0; column < 3; ++column) {
+        const int galColumn = kGal3BlockForNavState[column];
+        A->block<3, 3>(3 * row, 3 * column) =
+            galTransition.block<3, 3>(galRow, galColumn);
+      }
+    }
+  }
+}
+
+//------------------------------------------------------------------------------
+Vector9 GalileanPreintegration::NavStateTangent(const Gal3& galilean,
+                                                OptionalJacobian<9, 10> H) {
+  Matrix3 logRotation_H_rotation;
+  Eigen::Matrix<double, 3, 10> rotation_H_galilean, position_H_galilean,
+      velocity_H_galilean;
+
+  Vector9 result;
+  NavState::dR(result) =
+      Rot3::Logmap(galilean.rotation(H ? &rotation_H_galilean : nullptr),
+                   H ? &logRotation_H_rotation : nullptr);
+  NavState::dP(result) =
+      galilean.translation(H ? &position_H_galilean : nullptr);
+  NavState::dV(result) = galilean.velocity(H ? &velocity_H_galilean : nullptr);
+
+  if (H) {
+    H->setZero();
+    H->block<3, 10>(0, 0) = logRotation_H_rotation * rotation_H_galilean;
+    H->block<3, 10>(3, 0) = position_H_galilean;
+    H->block<3, 10>(6, 0) = velocity_H_galilean;
+  }
+  return result;
 }
 
 //------------------------------------------------------------------------------
 Vector9 GalileanPreintegration::biasCorrectedDelta(
     const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 6> H) const {
   const Vector6 biasIncrement = (bias_i - biasHat_).vector();
+  if (biasIncrement.isZero(0.0)) {
+    Matrix910 result_H_preintegrated;
+    const Vector9 result =
+        NavStateTangent(preintMatrix_, H ? &result_H_preintegrated : nullptr);
+    if (H) *H = result_H_preintegrated * biasJacobian_;
+    return result;
+  }
+
   const Vector10 correction = biasJacobian_ * biasIncrement;
 
   Matrix10 correction_H_vector;
@@ -120,27 +154,15 @@ Vector9 GalileanPreintegration::biasCorrectedDelta(
   const Gal3 corrected = preintMatrix_.compose(
       correctionGroup, {}, H ? &corrected_H_correctionGroup : nullptr);
 
-  Matrix3 logRotation_H_rotation;
-  Eigen::Matrix<double, 3, 10> rotation_H_corrected, position_H_corrected,
-      velocity_H_corrected;
-
-  Vector9 result;
-  NavState::dR(result) =
-      Rot3::Logmap(corrected.rotation(H ? &rotation_H_corrected : nullptr),
-                   H ? &logRotation_H_rotation : nullptr);
-  NavState::dP(result) =
-      corrected.translation(H ? &position_H_corrected : nullptr);
-  NavState::dV(result) =
-      corrected.velocity(H ? &velocity_H_corrected : nullptr);
+  Matrix910 result_H_corrected;
+  const Vector9 result =
+      NavStateTangent(corrected, H ? &result_H_corrected : nullptr);
 
   if (H) {
-    Matrix910 result_H_corrected = Matrix910::Zero();
-    result_H_corrected.block<3, 10>(0, 0) =
-        logRotation_H_rotation * rotation_H_corrected;
-    result_H_corrected.block<3, 10>(3, 0) = position_H_corrected;
-    result_H_corrected.block<3, 10>(6, 0) = velocity_H_corrected;
-    *H = result_H_corrected * corrected_H_correctionGroup *
-         correction_H_vector * biasJacobian_;
+    const Matrix106 correction_H_bias = correction_H_vector * biasJacobian_;
+    const Matrix106 corrected_H_bias =
+        corrected_H_correctionGroup * correction_H_bias;
+    *H = result_H_corrected * corrected_H_bias;
   }
   return result;
 }

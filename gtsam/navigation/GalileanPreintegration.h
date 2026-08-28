@@ -54,11 +54,9 @@ class GTSAM_EXPORT GalileanPreintegration : public PreintegrationBase {
   Gal3 preintMatrix_;       ///< Mean increment in Gal(3).
   Matrix106 biasJacobian_;  ///< Right correction wrt (accel, gyro) bias.
 
-  /** Project Gal(3) tangent order to NavState tangent order. */
-  static Matrix910 NavStateProjector();
-
-  /** Lift GTSAM input order `(acceleration, angular rate)` into Gal(3). */
-  static Matrix106 LiftJacobian();
+  /** Extract the factor tangent and its Jacobian from a Gal(3) element. */
+  static Vector9 NavStateTangent(const Gal3& galilean,
+                                 OptionalJacobian<9, 10> H = {});
 
   /** Update the Gal(3) mean and return its transition and input Jacobian. */
   void updateGal3(const Vector3& measuredAcc, const Vector3& measuredOmega,
