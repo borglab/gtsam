@@ -90,6 +90,20 @@ set(ignore
     gtsam::gtsfm::KeypointsVector
     gtsam::gtsfm::SfmTrack2dVector)
 
+# PreintegratedImuMeasurements is already the configured backend specialization.
+# Skip registering that specialization a second time under its explicit name;
+# gtsam.tpl adds the explicit Python name as an alias after binding completes.
+if(GTSAM_LIEGROUP_PREINTEGRATION)
+    list(APPEND ignore
+        "gtsam::PreintegratedImuMeasurementsT<gtsam::LieGroupPreintegration>")
+elseif(GTSAM_TANGENT_PREINTEGRATION)
+    list(APPEND ignore
+        "gtsam::PreintegratedImuMeasurementsT<gtsam::TangentPreintegration>")
+else()
+    list(APPEND ignore
+        "gtsam::PreintegratedImuMeasurementsT<gtsam::ManifoldPreintegration>")
+endif()
+
 set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/gtsam.i
     ${PROJECT_SOURCE_DIR}/gtsam/base/base.i

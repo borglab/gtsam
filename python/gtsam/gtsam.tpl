@@ -55,4 +55,19 @@ namespace py = pybind11;
 
 {module_init}
 
+    // Give the configured PIM backend its explicit Python name without
+    // registering the same native C++ type twice with pybind11.
+    if (py::hasattr(m_, "PreintegratedImuMeasurements")) {{
+#if defined(GTSAM_LIEGROUP_PREINTEGRATION)
+        m_.attr("PreintegratedImuMeasurementsLieGroup") =
+            m_.attr("PreintegratedImuMeasurements");
+#elif defined(GTSAM_TANGENT_PREINTEGRATION)
+        m_.attr("PreintegratedImuMeasurementsTangent") =
+            m_.attr("PreintegratedImuMeasurements");
+#else
+        m_.attr("PreintegratedImuMeasurementsManifold") =
+            m_.attr("PreintegratedImuMeasurements");
+#endif
+    }}
+
 }}

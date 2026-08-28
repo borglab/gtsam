@@ -23,17 +23,27 @@ class TestGalileanImuFactor(GtsamTestCase):
         """All named PIM backends are independently constructible."""
         params = gtsam.PreintegrationParams.MakeSharedD(9.81)
         bias = gtsam.imuBias.ConstantBias()
-        backend_types = (
+        named_backend_types = (
             gtsam.PreintegratedImuMeasurementsManifold,
             gtsam.PreintegratedImuMeasurementsTangent,
             gtsam.PreintegratedImuMeasurementsLieGroup,
-            gtsam.PreintegratedImuMeasurementsG,
         )
-        for backend_type in backend_types:
+
+        aliases_of_default = [
+            backend_type is gtsam.PreintegratedImuMeasurements
+            for backend_type in named_backend_types
+        ]
+        self.assertEqual(1, sum(aliases_of_default))
+
+        for backend_type in named_backend_types:
             pim = backend_type(params, bias)
             pim.integrateMeasurement(np.zeros(3), np.zeros(3), 0.01)
+            self.assertTrue(pim.equals(pim, 1e-9))
             self.assertAlmostEqual(0.01, pim.deltaTij())
+            self.assertEqual((9,), pim.preintegrated().shape)
+            self.assertEqual((9, 9), pim.preintMeasCov().shape)
             self.assertEqual((9, 9), pim.residualCovariance().shape)
+            self.assertEqual((6,), pim.biasHatVector().shape)
 
     def test_preintegrate_predict_and_factor(self):
         """A predicted endpoint has zero Galilean IMU factor error."""
