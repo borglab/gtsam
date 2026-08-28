@@ -36,6 +36,8 @@ Factors representing various geometric relationships or constraints.
 -   [PoseTranslationPrior](doc/PoseTranslationPrior.ipynb) : A prior factor acting only on the translation component of a pose variable.
 -   [OrientedPlane3Factor](doc/OrientedPlane3Factor.ipynb) : Factors for estimating and constraining 3D planar landmarks (`OrientedPlane3`).
 -   [RotateFactor](doc/RotateFactor.ipynb) : Factors constraining an unknown rotation based on how it transforms measured rotations or directions.
+-   [WahbaFactor](doc/WahbaFactor.ipynb) : A `Rot3` direction-correspondence factor with a three-dimensional chordal residual and exact D=1 QCQP conversion.
+-   [KnownLandmarkFactor](doc/KnownLandmarkFactor.ipynb) : Conventional `wTk` and certifiable inverse-state `kTw` factors for observations of fixed Pose2/Pose3 landmarks.
 -   [KarcherMeanFactor](doc/KarcherMeanFactor.ipynb) : Factor for constraining the Karcher mean (geometric average) of a set of rotations or other manifold values.
 -   [FrobeniusFactor](doc/FrobeniusFactor.ipynb) : Factors operating directly on rotation matrix entries using the Frobenius norm, an alternative to Lie algebra-based factors.
 -   [ReferenceFrameFactor](doc/ReferenceFrameFactor.ipynb) : Factor relating the same landmark observed in two different coordinate frames via an unknown transformation, useful for map merging.

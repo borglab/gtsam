@@ -123,8 +123,12 @@ class TestLandmarkLocalizationDataset(unittest.TestCase):
                 dataset.write_g2o(
                     str(generated), dataset.perturbed_measurements()
                 )
+                test_file = Path(__file__).resolve()
+                package_data = test_file.parents[1] / "Data" / name
                 committed = (
-                    Path(__file__).resolve().parents[3] / "examples" / "Data" / name
+                    package_data
+                    if package_data.is_file()
+                    else test_file.parents[3] / "examples" / "Data" / name
                 )
                 self.assertEqual(generated.read_text(), committed.read_text())
 

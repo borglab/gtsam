@@ -13,6 +13,7 @@
  * @file    testDataset.cpp
  * @brief   Unit test for dataset.cpp
  * @author  Richard Roberts, Luca Carlone
+ * @author  Frank Dellaert
  */
 
 

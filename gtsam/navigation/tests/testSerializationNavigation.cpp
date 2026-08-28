@@ -55,19 +55,23 @@ BOOST_CLASS_EXPORT_GUID(PreintegratedCombinedMeasurements,
                         "gtsam_PreintegratedCombinedMeasurements")
 
 /* ************************************************************************* */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+// Legacy archives keep the ignored flag even though it no longer affects
+// equality or prediction.
 TEST(PreintegrationParams, LegacySecondOrderFlagSerialization) {
   PreintegrationParams input(Vector3(0.1, -0.2, -9.8));
   input.omegaCoriolis = Vector3(1e-5, -2e-5, 7e-5);
-  input.use2ndOrderCoriolis = true;
+  input.setUse2ndOrderCoriolis(true);
 
   PreintegrationParams output;
   roundtrip(input, output);
-  EXPECT(output.use2ndOrderCoriolis);
+  EXPECT(output.getUse2ndOrderCoriolis());
 
   PreintegrationParams semanticallyEquivalent = input;
-  semanticallyEquivalent.use2ndOrderCoriolis = false;
+  semanticallyEquivalent.setUse2ndOrderCoriolis(false);
   EXPECT(input.equals(semanticallyEquivalent, 1e-9));
 }
+#endif
 
 /* ************************************************************************* */
 TEST(AHRSFactor, Serialization) {

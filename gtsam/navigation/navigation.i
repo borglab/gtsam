@@ -178,9 +178,6 @@ class PreintegratedRotation {
   gtsam::Rot3 biascorrectedDeltaRij(
       const gtsam::Vector3& biasOmegaIncr,
       gtsam::OptionalJacobian<3, 3> H = nullptr) const;
-  gtsam::Vector3 integrateCoriolis(
-      const gtsam::Rot3& rot_i,
-      gtsam::OptionalJacobian<3, 3> H = nullptr) const;
 
   // Access instance variables
   const double& deltaTij() const;
@@ -216,11 +213,9 @@ virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
 
   void setAccelerometerCovariance(const gtsam::Matrix3& cov);
   void setIntegrationCovariance(const gtsam::Matrix3& cov);
-  void setUse2ndOrderCoriolis(bool flag);
 
   const gtsam::Matrix3& getAccelerometerCovariance() const;
   const gtsam::Matrix3& getIntegrationCovariance() const;
-  bool   getUse2ndOrderCoriolis()     const;
 
   // enabling serialization functionality
   void serialize() const;

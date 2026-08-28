@@ -15,6 +15,7 @@
  * @author Ni Kai
  * @author Luca Carlone
  * @author Varun Agrawal
+ * @author Frank Dellaert
  * @brief utility functions for loading datasets
  */
 

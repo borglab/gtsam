@@ -211,10 +211,12 @@ Rot3 PreintegratedRotation::biascorrectedDeltaRij(const Vector3& biasOmegaIncr,
   return deltaRij_biascorrected;
 }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 Vector3 PreintegratedRotation::integrateCoriolis(
-    const Rot3& Ri, OptionalJacobian<3, 3> H) const {
+    const Rot3& wRi, OptionalJacobian<3, 3> H) const {
   if (!p_->omegaCoriolis) return Vector3::Zero();
-  return Ri.unrotate(*p_->omegaCoriolis * deltaTij_, H);
+  return wRi.unrotate(*p_->omegaCoriolis * deltaTij_, H);
 }
+#endif
 
 }  // namespace gtsam
