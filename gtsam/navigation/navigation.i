@@ -271,65 +271,33 @@ class PreintegratedImuMeasurements {
   void serialize() const;
 };
 
-class PreintegratedImuMeasurementsManifold {
-  PreintegratedImuMeasurementsManifold(
-      const gtsam::PreintegrationParams* params);
-  PreintegratedImuMeasurementsManifold(
-      const gtsam::PreintegrationParams* params,
-      const gtsam::imuBias::ConstantBias& bias);
+template<PREINTEGRATION>
+class PreintegratedImuMeasurementsT {
+  PreintegratedImuMeasurementsT(
+      const gtsam::PreintegrationParams* p);
+  PreintegratedImuMeasurementsT(
+      const gtsam::PreintegrationParams* p,
+      const gtsam::imuBias::ConstantBias& biasHat);
 
   void integrateMeasurement(
       const gtsam::Vector3& measuredAcc,
-      const gtsam::Vector3& measuredOmega, double deltaT);
+      const gtsam::Vector3& measuredOmega, double dt);
   void resetIntegration();
   gtsam::Matrix9 residualCovariance() const;
   double deltaTij() const;
   gtsam::NavState predict(
       const gtsam::NavState& state_i,
-      const gtsam::imuBias::ConstantBias& bias,
+      const gtsam::imuBias::ConstantBias& bias_i,
       gtsam::OptionalJacobian<9, 9> H1 = nullptr,
       gtsam::OptionalJacobian<9, 6> H2 = nullptr) const;
 };
 
-class PreintegratedImuMeasurementsTangent {
-  PreintegratedImuMeasurementsTangent(
-      const gtsam::PreintegrationParams* params);
-  PreintegratedImuMeasurementsTangent(
-      const gtsam::PreintegrationParams* params,
-      const gtsam::imuBias::ConstantBias& bias);
-
-  void integrateMeasurement(
-      const gtsam::Vector3& measuredAcc,
-      const gtsam::Vector3& measuredOmega, double deltaT);
-  void resetIntegration();
-  gtsam::Matrix9 residualCovariance() const;
-  double deltaTij() const;
-  gtsam::NavState predict(
-      const gtsam::NavState& state_i,
-      const gtsam::imuBias::ConstantBias& bias,
-      gtsam::OptionalJacobian<9, 9> H1 = nullptr,
-      gtsam::OptionalJacobian<9, 6> H2 = nullptr) const;
-};
-
-class PreintegratedImuMeasurementsLieGroup {
-  PreintegratedImuMeasurementsLieGroup(
-      const gtsam::PreintegrationParams* params);
-  PreintegratedImuMeasurementsLieGroup(
-      const gtsam::PreintegrationParams* params,
-      const gtsam::imuBias::ConstantBias& bias);
-
-  void integrateMeasurement(
-      const gtsam::Vector3& measuredAcc,
-      const gtsam::Vector3& measuredOmega, double deltaT);
-  void resetIntegration();
-  gtsam::Matrix9 residualCovariance() const;
-  double deltaTij() const;
-  gtsam::NavState predict(
-      const gtsam::NavState& state_i,
-      const gtsam::imuBias::ConstantBias& bias,
-      gtsam::OptionalJacobian<9, 9> H1 = nullptr,
-      gtsam::OptionalJacobian<9, 6> H2 = nullptr) const;
-};
+typedef gtsam::PreintegratedImuMeasurementsT<
+    gtsam::ManifoldPreintegration> PreintegratedImuMeasurementsManifold;
+typedef gtsam::PreintegratedImuMeasurementsT<
+    gtsam::TangentPreintegration> PreintegratedImuMeasurementsTangent;
+typedef gtsam::PreintegratedImuMeasurementsT<
+    gtsam::LieGroupPreintegration> PreintegratedImuMeasurementsLieGroup;
 
 virtual class ImuFactor: gtsam::NoiseModelFactor {
   ImuFactor(gtsam::Key pose_i, gtsam::Key vel_i, gtsam::Key pose_j, gtsam::Key vel_j,

@@ -23,10 +23,19 @@ class TestGalileanImuFactor(GtsamTestCase):
         """All named PIM backends are independently constructible."""
         params = gtsam.PreintegrationParams.MakeSharedD(9.81)
         bias = gtsam.imuBias.ConstantBias()
-        backend_types = (
+        named_backend_types = (
             gtsam.PreintegratedImuMeasurementsManifold,
             gtsam.PreintegratedImuMeasurementsTangent,
             gtsam.PreintegratedImuMeasurementsLieGroup,
+        )
+
+        aliases_of_default = [
+            backend_type is gtsam.PreintegratedImuMeasurements
+            for backend_type in named_backend_types
+        ]
+        self.assertEqual(1, sum(aliases_of_default))
+
+        backend_types = named_backend_types + (
             gtsam.PreintegratedImuMeasurementsG,
         )
         for backend_type in backend_types:
