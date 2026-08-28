@@ -30,6 +30,7 @@
 #include <gtsam/navigation/CombinedImuFactorWithGravity.h>
 #include <gtsam/navigation/DopplerFactor.h>
 #include <gtsam/navigation/GPSFactor.h>
+#include <gtsam/navigation/GalileanImuFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/ImuFactorWithGravity.h>
 #include <gtsam/navigation/PseudorangeFactor.h>
@@ -53,6 +54,9 @@ BOOST_CLASS_EXPORT_GUID(PreintegrationCombinedParams,
                         "gtsam_PreintegrationCombinedParams")
 BOOST_CLASS_EXPORT_GUID(PreintegratedCombinedMeasurements,
                         "gtsam_PreintegratedCombinedMeasurements")
+BOOST_CLASS_EXPORT_GUID(PreintegratedImuMeasurementsG,
+                        "gtsam_PreintegratedImuMeasurementsG")
+BOOST_CLASS_EXPORT_GUID(GalileanImuFactor, "gtsam_GalileanImuFactor")
 
 /* ************************************************************************* */
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
@@ -254,6 +258,27 @@ TEST(LieGroupPreintegration, Serialization) {
 }
 
 }  // namespace lie_group_serialization
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace galilean_serialization {
+
+// Verifies the Galilean PIM and its public factor round-trip through every
+// supported archive format.
+TEST(GalileanPreintegration, Serialization) {
+  const PreintegratedImuMeasurementsG pim =
+      getPreintegratedMeasurements<PreintegratedImuMeasurementsG>();
+  EXPECT(equalsObj(pim));
+  EXPECT(equalsXML(pim));
+  EXPECT(equalsBinary(pim));
+
+  const GalileanImuFactor factor(1, 2, 3, 4, 5, pim);
+  EXPECT(equalsObj(factor));
+  EXPECT(equalsXML(factor));
+  EXPECT(equalsBinary(factor));
+}
+
+}  // namespace galilean_serialization
 /* ************************************************************************* */
 
 /* ************************************************************************* */

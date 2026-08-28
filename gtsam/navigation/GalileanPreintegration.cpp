@@ -10,22 +10,19 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file    GalileanImuFactor.cpp
+ * @file    GalileanPreintegration.cpp
  * @brief   Left-invariant Galilean IMU preintegration
  * @author  Frank Dellaert
  * @author  Giulio Delama
  */
 
 #include <gtsam/base/MatrixConstants.h>
-#include <gtsam/navigation/GalileanImuFactor.h>
-
-#include <stdexcept>
+#include <gtsam/navigation/GalileanPreintegration.h>
 
 namespace gtsam {
 
 //------------------------------------------------------------------------------
-PreintegratedImuMeasurementsG::Matrix910
-PreintegratedImuMeasurementsG::NavStateProjector() {
+GalileanPreintegration::Matrix910 GalileanPreintegration::NavStateProjector() {
   Matrix910 P = Matrix910::Zero();
   P.block<3, 3>(0, 0) = I_3x3;
   P.block<3, 3>(3, 6) = I_3x3;
@@ -34,8 +31,7 @@ PreintegratedImuMeasurementsG::NavStateProjector() {
 }
 
 //------------------------------------------------------------------------------
-PreintegratedImuMeasurementsG::Matrix106
-PreintegratedImuMeasurementsG::LiftJacobian() {
+GalileanPreintegration::Matrix106 GalileanPreintegration::LiftJacobian() {
   Matrix106 E = Matrix106::Zero();
   E.block<3, 3>(0, 3) = I_3x3;
   E.block<3, 3>(3, 0) = I_3x3;
@@ -43,25 +39,23 @@ PreintegratedImuMeasurementsG::LiftJacobian() {
 }
 
 //------------------------------------------------------------------------------
-PreintegratedImuMeasurementsG::PreintegratedImuMeasurementsG(
+GalileanPreintegration::GalileanPreintegration(
     const std::shared_ptr<Params>& p, const imuBias::ConstantBias& biasHat)
     : Base(p, biasHat) {
   resetIntegration();
 }
 
 //------------------------------------------------------------------------------
-void PreintegratedImuMeasurementsG::resetIntegration() {
+void GalileanPreintegration::resetIntegration() {
   deltaTij_ = 0.0;
   preintMatrix_ = Gal3::Identity();
-  preintMeasCov_.setZero();
   biasJacobian_.setZero();
 }
 
 //------------------------------------------------------------------------------
-void PreintegratedImuMeasurementsG::updateGal3(const Vector3& measuredAcc,
-                                               const Vector3& measuredOmega,
-                                               double dt, Matrix10* A,
-                                               Matrix106* B) {
+void GalileanPreintegration::updateGal3(const Vector3& measuredAcc,
+                                        const Vector3& measuredOmega, double dt,
+                                        Matrix10* A, Matrix106* B) {
   Vector3 acc = biasHat_.correctAccelerometer(measuredAcc);
   Vector3 omega = biasHat_.correctGyroscope(measuredOmega);
 
@@ -100,10 +94,9 @@ void PreintegratedImuMeasurementsG::updateGal3(const Vector3& measuredAcc,
 }
 
 //------------------------------------------------------------------------------
-void PreintegratedImuMeasurementsG::update(const Vector3& measuredAcc,
-                                           const Vector3& measuredOmega,
-                                           double dt, Matrix9* A, Matrix93* B,
-                                           Matrix93* C) {
+void GalileanPreintegration::update(const Vector3& measuredAcc,
+                                    const Vector3& measuredOmega, double dt,
+                                    Matrix9* A, Matrix93* B, Matrix93* C) {
   Matrix10 galTransition;
   Matrix106 galInput;
   updateGal3(measuredAcc, measuredOmega, dt, &galTransition, &galInput);
@@ -115,35 +108,7 @@ void PreintegratedImuMeasurementsG::update(const Vector3& measuredAcc,
 }
 
 //------------------------------------------------------------------------------
-void PreintegratedImuMeasurementsG::integrateMeasurement(
-    const Vector3& measuredAcc, const Vector3& measuredOmega, double dt) {
-  if (dt <= 0) {
-    throw std::runtime_error(
-        "PreintegratedImuMeasurementsG::integrateMeasurement: dt <=0");
-  }
-
-  Matrix10 transition;
-  Matrix106 inputJacobian;
-  updateGal3(measuredAcc, measuredOmega, dt, &transition, &inputJacobian);
-
-  Matrix6 measurementCovariance = Matrix6::Zero();
-  measurementCovariance.block<3, 3>(0, 0) = p().accelerometerCovariance;
-  measurementCovariance.block<3, 3>(3, 3) = p().gyroscopeCovariance;
-
-  preintMeasCov_ = transition * preintMeasCov_ * transition.transpose();
-  preintMeasCov_.noalias() +=
-      inputJacobian * (measurementCovariance / dt) * inputJacobian.transpose();
-  preintMeasCov_.block<3, 3>(6, 6).noalias() += p().integrationCovariance * dt;
-}
-
-//------------------------------------------------------------------------------
-Matrix9 PreintegratedImuMeasurementsG::preintMeasCov() const {
-  const Matrix910 P = NavStateProjector();
-  return P * preintMeasCov_ * P.transpose();
-}
-
-//------------------------------------------------------------------------------
-Vector9 PreintegratedImuMeasurementsG::biasCorrectedDelta(
+Vector9 GalileanPreintegration::biasCorrectedDelta(
     const imuBias::ConstantBias& bias_i, OptionalJacobian<9, 6> H) const {
   const Vector6 biasIncrement = (bias_i - biasHat_).vector();
   const Vector10 correction = biasJacobian_ * biasIncrement;
@@ -181,20 +146,18 @@ Vector9 PreintegratedImuMeasurementsG::biasCorrectedDelta(
 }
 
 //------------------------------------------------------------------------------
-void PreintegratedImuMeasurementsG::print(const std::string& s) const {
+void GalileanPreintegration::print(const std::string& s) const {
   Base::print(s);
   std::cout << "    preintMatrix = " << preintMatrix_ << '\n'
-            << "    preintMeasCov (Gal3) =\n[" << preintMeasCov_ << "]\n"
             << "    biasJacobian =\n[" << biasJacobian_ << "]" << std::endl;
 }
 
 //------------------------------------------------------------------------------
-bool PreintegratedImuMeasurementsG::equals(
-    const PreintegratedImuMeasurementsG& other, double tol) const {
+bool GalileanPreintegration::equals(const GalileanPreintegration& other,
+                                    double tol) const {
   return p().equals(other.p(), tol) && biasHat_.equals(other.biasHat_, tol) &&
          std::abs(deltaTij_ - other.deltaTij_) <= tol &&
          preintMatrix_.equals(other.preintMatrix_, tol) &&
-         equal_with_abs_tol(preintMeasCov_, other.preintMeasCov_, tol) &&
          equal_with_abs_tol(biasJacobian_, other.biasJacobian_, tol);
 }
 
