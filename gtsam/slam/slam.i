@@ -638,16 +638,26 @@ class WahbaFactor : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/slam/RelativeTranslationFactor.h>
-// Relative translation measurement for certifiable SE(d) synchronization,
-// with d = 2 or 3. `measured` is the d-vector translation offset expressed in
-// the body frame of pose i, and `weight` is the translational precision tau.
-template <d = {2, 3}>
-virtual class RelativeTranslationFactor : gtsam::NoiseModelFactor {
-  RelativeTranslationFactor(gtsam::Key rotationKey, gtsam::Key translationKey1,
-                            gtsam::Key translationKey2,
-                            const gtsam::Vector& measured, double weight);
+// Relative translation measurements for certifiable SE(d) synchronization.
+// Concrete declarations let the wrappers use their supported fixed-size Eigen
+// aliases while preserving the templated C++ implementation.
+virtual class RelativeTranslationFactor2 : gtsam::NoiseModelFactor {
+  RelativeTranslationFactor2(gtsam::Key rotationKey,
+                             gtsam::Key translationKey1,
+                             gtsam::Key translationKey2,
+                             const gtsam::Vector2& measured, double weight);
 
-  const Eigen::Matrix<double, d, 1>& measured() const;
+  const gtsam::Vector2& measured() const;
+  double weight() const;
+};
+
+virtual class RelativeTranslationFactor3 : gtsam::NoiseModelFactor {
+  RelativeTranslationFactor3(gtsam::Key rotationKey,
+                             gtsam::Key translationKey1,
+                             gtsam::Key translationKey2,
+                             const gtsam::Vector3& measured, double weight);
+
+  const gtsam::Vector3& measured() const;
   double weight() const;
 };
 

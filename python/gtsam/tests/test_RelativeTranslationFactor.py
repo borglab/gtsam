@@ -91,6 +91,9 @@ class TestRelativeTranslationFactor2(GtsamTestCase):
         tj = np.array([0.25, 0.75])
 
         factor = gtsam.RelativeTranslationFactor2(R(0), T(0), T(1), measured, weight)
+        np.testing.assert_allclose(factor.measured(), measured)
+        self.assertAlmostEqual(factor.weight(), weight)
+
         values = gtsam.Values()
         values.insert(R(0), rotation)
         values.insert(T(0), gtsam.Point2(ti))
