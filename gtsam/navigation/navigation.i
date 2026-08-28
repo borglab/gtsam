@@ -326,10 +326,15 @@ virtual class ImuFactor: gtsam::NoiseModelFactor {
 
   // Standard Interface
   const gtsam::PreintegratedImuMeasurements& preintegratedMeasurements() const;
-  gtsam::Vector evaluateError(const gtsam::Pose3& pose_i,
+  gtsam::Vector9 evaluateError(const gtsam::Pose3& pose_i,
       const gtsam::Vector3& vel_i,
       const gtsam::Pose3& pose_j, const gtsam::Vector3& vel_j,
-      const gtsam::imuBias::ConstantBias& bias) const;
+      const gtsam::imuBias::ConstantBias& bias_i,
+      gtsam::OptionalMatrixType H1 = nullptr,
+      gtsam::OptionalMatrixType H2 = nullptr,
+      gtsam::OptionalMatrixType H3 = nullptr,
+      gtsam::OptionalMatrixType H4 = nullptr,
+      gtsam::OptionalMatrixType H5 = nullptr) const;
 
   // enable serialization functionality
   void serialize() const;

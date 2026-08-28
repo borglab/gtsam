@@ -210,25 +210,11 @@ NavState PreintegrationBase::predict(const NavState& state_i,
   Vector9 biasCorrected = biasCorrectedDelta(bias_i,
                                              H2 ? &D_biasCorrected_bias : nullptr);
 
-  // Correct for initial velocity and gravity
-  Matrix9 D_delta_state, D_delta_biasCorrected;
-  Matrix93 D_delta_gravity;
-  Vector9 xi = state_i.correctPIM(biasCorrected, deltaTij_, n_gravity,
-                                  p().omegaCoriolis, p().use2ndOrderCoriolis, H1 ? &D_delta_state : nullptr,
-                                  H2 ? &D_delta_biasCorrected : nullptr,
-                                  H3 ? &D_delta_gravity : nullptr);
-
-  // Use retract to get back to NavState manifold
-  Matrix9 D_predict_state, D_predict_delta;
-  NavState state_j = state_i.retract(xi,
-                                     H1 ? &D_predict_state : nullptr,
-                                     H1 || H2 || H3 ? &D_predict_delta : nullptr);
-  if (H1)
-    *H1 = D_predict_state + D_predict_delta * D_delta_state;
-  if (H2)
-    *H2 = D_predict_delta * D_delta_biasCorrected * D_biasCorrected_bias;
-  if (H3)
-    *H3 = D_predict_delta * D_delta_gravity;
+  Matrix9 D_predict_biasCorrected;
+  NavState state_j =
+      state_i.predictPIM(biasCorrected, deltaTij_, n_gravity, p().omegaCoriolis,
+                         H1, H2 ? &D_predict_biasCorrected : nullptr, H3);
+  if (H2) *H2 = D_predict_biasCorrected * D_biasCorrected_bias;
   return state_j;
 }
 

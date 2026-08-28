@@ -296,13 +296,12 @@ Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
 }
 
 //------------------------------------------------------------------------------
-Vector9 NavState::correctPIM(const Vector9& pim, double dt,
-                             const Vector3& n_gravity,
-                             const std::optional<Vector3>& omegaCoriolis,
-                             bool /*use2ndOrderCoriolis*/,
-                             OptionalJacobian<9, 9> H1,
-                             OptionalJacobian<9, 9> H2,
-                             OptionalJacobian<9, 3> H3) const {
+NavState NavState::predictPIM(const Vector9& pim, double dt,
+                              const Vector3& n_gravity,
+                              const std::optional<Vector3>& omegaCoriolis,
+                              OptionalJacobian<9, 9> H1,
+                              OptionalJacobian<9, 9> H2,
+                              OptionalJacobian<9, 3> H3) const {
   if (omegaCoriolis && !omegaCoriolis->isZero(0.0)) {
     const Vector3& omega = *omegaCoriolis;
     const Vector3 earthRotationTangent = -omega * dt;
@@ -336,14 +335,7 @@ Vector9 NavState::correctPIM(const Vector9& pim, double dt,
     const NavState predicted(predictedRotation, predictedPosition,
                              predictedVelocity);
 
-    Matrix9 predicted_H_state, predicted_H_pim;
-    Matrix93 predicted_H_gravity;
-    const bool computeJacobians = H1 || H2 || H3;
-    if (computeJacobians) {
-      predicted_H_state.setZero();
-      predicted_H_pim.setZero();
-      predicted_H_gravity.setZero();
-
+    if (H1 || H2 || H3) {
       const Matrix3 finalRotationTranspose = predictedRotation.transpose();
       const Matrix3 initialToFinal =
           finalRotationTranspose * gammaRotation * initialRotation;
@@ -351,39 +343,106 @@ Vector9 NavState::correctPIM(const Vector9& pim, double dt,
       const Vector3 pimPositionNav = initialRotation * dP(pim);
       const Vector3 pimVelocityNav = initialRotation * dV(pim);
 
-      D_R_R(&predicted_H_state) = deltaRotation.transpose();
-      D_t_R(&predicted_H_state) =
-          finalRotationTranspose * gammaRotation *
-          (-skewSymmetric(pimPositionNav) * initialRotation);
-      D_t_t(&predicted_H_state) =
-          navToFinal * (I_3x3 + omegaCross * dt) * initialRotation;
-      D_t_v(&predicted_H_state) = navToFinal * initialRotation * dt;
-      D_v_R(&predicted_H_state) =
-          finalRotationTranspose *
-          (gammaRotation * (-skewSymmetric(pimVelocityNav) * initialRotation) -
-           omegaCross * gammaRotation *
-               (-skewSymmetric(pimPositionNav) * initialRotation));
-      D_v_t(&predicted_H_state) =
-          finalRotationTranspose *
-          ((gammaRotation * omegaCross -
-            omegaCross * gammaRotation * (I_3x3 + omegaCross * dt)) *
-           initialRotation);
-      D_v_v(&predicted_H_state) =
-          finalRotationTranspose *
-          ((gammaRotation - omegaCross * gammaRotation * dt) * initialRotation);
-
-      D_R_R(&predicted_H_pim) = deltaRotation_H_pimRotation;
-      D_t_t(&predicted_H_pim) = initialToFinal;
-      D_v_v(&predicted_H_pim) = initialToFinal;
-      D_v_t(&predicted_H_pim) = -finalRotationTranspose * omegaCross *
-                                gammaRotation * initialRotation;
-
-      predicted_H_gravity.block<3, 3>(3, 0) =
-          finalRotationTranspose * gammaPosition * (dt * dt);
-      predicted_H_gravity.block<3, 3>(6, 0) =
-          finalRotationTranspose *
-          (gammaVelocity * dt - omegaCross * gammaPosition * (dt * dt));
+      if (H1) {
+        H1->setZero();
+        D_R_R(H1) = deltaRotation.transpose();
+        D_t_R(H1) = finalRotationTranspose * gammaRotation *
+                    (-skewSymmetric(pimPositionNav) * initialRotation);
+        D_t_t(H1) = navToFinal * (I_3x3 + omegaCross * dt) * initialRotation;
+        D_t_v(H1) = navToFinal * initialRotation * dt;
+        D_v_R(H1) = finalRotationTranspose *
+                    (gammaRotation *
+                         (-skewSymmetric(pimVelocityNav) * initialRotation) -
+                     omegaCross * gammaRotation *
+                         (-skewSymmetric(pimPositionNav) * initialRotation));
+        D_v_t(H1) = finalRotationTranspose *
+                    ((gammaRotation * omegaCross -
+                      omegaCross * gammaRotation * (I_3x3 + omegaCross * dt)) *
+                     initialRotation);
+        D_v_v(H1) = finalRotationTranspose *
+                    ((gammaRotation - omegaCross * gammaRotation * dt) *
+                     initialRotation);
+      }
+      if (H2) {
+        H2->setZero();
+        D_R_R(H2) = deltaRotation_H_pimRotation;
+        D_t_t(H2) = initialToFinal;
+        D_v_v(H2) = initialToFinal;
+        D_v_t(H2) = -finalRotationTranspose * omegaCross * gammaRotation *
+                    initialRotation;
+      }
+      if (H3) {
+        H3->setZero();
+        H3->block<3, 3>(3, 0) =
+            finalRotationTranspose * gammaPosition * (dt * dt);
+        H3->block<3, 3>(6, 0) =
+            finalRotationTranspose *
+            (gammaVelocity * dt - omegaCross * gammaPosition * (dt * dt));
+      }
     }
+    return predicted;
+  }
+
+  const Matrix3 initialRotation = R_.matrix();
+  Matrix3 deltaRotation_H_pimRotation;
+  const Rot3 deltaRotation =
+      Rot3::Expmap(dR(pim), H2 ? &deltaRotation_H_pimRotation : nullptr);
+  const Rot3 predictedRotation = R_.compose(deltaRotation);
+  const Point3 predictedPosition = position() + velocity() * dt +
+                                   0.5 * n_gravity * (dt * dt) +
+                                   initialRotation * dP(pim);
+  const Velocity3 predictedVelocity =
+      velocity() + n_gravity * dt + initialRotation * dV(pim);
+  const NavState predicted(predictedRotation, predictedPosition,
+                           predictedVelocity);
+
+  if (H1 || H2 || H3) {
+    const Matrix3 finalRotationTranspose = predictedRotation.transpose();
+    const Matrix3 initialToFinal = deltaRotation.transpose();
+
+    if (H1) {
+      const Vector3 pimPositionNav = initialRotation * dP(pim);
+      const Vector3 pimVelocityNav = initialRotation * dV(pim);
+      H1->setZero();
+      D_R_R(H1) = initialToFinal;
+      D_t_R(H1) = finalRotationTranspose *
+                  (-skewSymmetric(pimPositionNav) * initialRotation);
+      D_t_t(H1) = initialToFinal;
+      D_t_v(H1) = initialToFinal * dt;
+      D_v_R(H1) = finalRotationTranspose *
+                  (-skewSymmetric(pimVelocityNav) * initialRotation);
+      D_v_v(H1) = initialToFinal;
+    }
+    if (H2) {
+      H2->setZero();
+      D_R_R(H2) = deltaRotation_H_pimRotation;
+      D_t_t(H2) = initialToFinal;
+      D_v_v(H2) = initialToFinal;
+    }
+    if (H3) {
+      H3->setZero();
+      H3->block<3, 3>(3, 0) = finalRotationTranspose * (0.5 * dt * dt);
+      H3->block<3, 3>(6, 0) = finalRotationTranspose * dt;
+    }
+  }
+  return predicted;
+}
+
+//------------------------------------------------------------------------------
+Vector9 NavState::correctPIM(const Vector9& pim, double dt,
+                             const Vector3& n_gravity,
+                             const std::optional<Vector3>& omegaCoriolis,
+                             bool /*use2ndOrderCoriolis*/,
+                             OptionalJacobian<9, 9> H1,
+                             OptionalJacobian<9, 9> H2,
+                             OptionalJacobian<9, 3> H3) const {
+  if (omegaCoriolis && !omegaCoriolis->isZero(0.0)) {
+    Matrix9 predicted_H_state, predicted_H_pim;
+    Matrix93 predicted_H_gravity;
+    const bool computeJacobians = H1 || H2 || H3;
+    const NavState predicted = predictPIM(
+        pim, dt, n_gravity, omegaCoriolis, H1 ? &predicted_H_state : nullptr,
+        H2 ? &predicted_H_pim : nullptr, H3 ? &predicted_H_gravity : nullptr);
 
     Matrix9 chart_H_initial, chart_H_predicted;
     const Vector9 result =
