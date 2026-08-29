@@ -116,9 +116,8 @@ namespace {
 
 #define RUN_GALILEAN_PIM_BACKEND(testGroup, testName, name) \
   using PG = PreintegratedImuMeasurementsG;                 \
-  using L = LieGroupPreintegration;                         \
-  using CL = PreintegratedCombinedMeasurementsT<L>;         \
-  testGroup##testName##Helper<PG, CL>(result_, name)
+  using CG = PreintegratedCombinedMeasurementsG;            \
+  testGroup##testName##Helper<PG, CG>(result_, name)
 
 #define TEST_PIM(testGroup, testName)                           \
   TEST_PIM_HELPER_DECLARATION(testGroup, testName);             \
@@ -128,13 +127,12 @@ namespace {
   }                                                             \
   TEST_PIM_HELPER_DECLARATION(testGroup, testName)
 
-// Use for comparisons that require a matching CombinedPIM backend. The
-// three-way Galilean factor deliberately keeps bias evolution separate and
-// therefore has no Galilean CombinedPIM counterpart.
-#define TEST_PIM_WITH_COMBINED_BACKEND(testGroup, testName) \
-  TEST_PIM_HELPER_DECLARATION(testGroup, testName);         \
-  TEST(testGroup, testName) {                               \
-    RUN_ESTABLISHED_PIM_BACKENDS(testGroup, testName);      \
-  }                                                         \
+// Use for comparisons that require a matching CombinedPIM backend.
+#define TEST_PIM_WITH_COMBINED_BACKEND(testGroup, testName)     \
+  TEST_PIM_HELPER_DECLARATION(testGroup, testName);             \
+  TEST(testGroup, testName) {                                   \
+    RUN_ESTABLISHED_PIM_BACKENDS(testGroup, testName);          \
+    RUN_GALILEAN_PIM_BACKEND(testGroup, testName, this->name_); \
+  }                                                             \
   TEST_PIM_HELPER_DECLARATION(testGroup, testName)
 }  // namespace

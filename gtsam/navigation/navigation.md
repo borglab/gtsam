@@ -144,12 +144,19 @@ classDiagram
     }
     LieGroupPreintegration --|> ManifoldPreintegration : specializes
 
+    class GalileanPreintegration {
+        +Gal3 deltaXij_
+        +update()
+    }
+    GalileanPreintegration --|> PreintegrationBase : implements
+
     class PreintegratedImuMeasurements {
         +Matrix9 preintMeasCov_
     }
     PreintegratedImuMeasurements --|> ManifoldPreintegration : inherits
     PreintegratedImuMeasurements --|> TangentPreintegration : inherits
     PreintegratedImuMeasurements --|> LieGroupPreintegration : inherits
+    PreintegratedImuMeasurements --|> GalileanPreintegration : inherits
 
     class PreintegratedCombinedMeasurements {
        +Matrix preintMeasCov_ (15x15)
@@ -157,6 +164,7 @@ classDiagram
     PreintegratedCombinedMeasurements --|> ManifoldPreintegration : inherits
     PreintegratedCombinedMeasurements --|> TangentPreintegration : inherits
     PreintegratedCombinedMeasurements --|> LieGroupPreintegration : inherits
+    PreintegratedCombinedMeasurements --|> GalileanPreintegration : inherits
 
     class ImuFactor {
         Pose3, Vector3, Pose3, Vector3, ConstantBias
@@ -171,7 +179,7 @@ classDiagram
 
 
     class CombinedImuFactor {
-        Pose3, Vector3, Pose3, Vector3, ConstantBias
+        Pose3, Vector3, Pose3, Vector3, ConstantBias, ConstantBias
          +evaluateError(...) Vector (15)
     }
     CombinedImuFactor ..> PreintegratedCombinedMeasurements : uses
@@ -217,15 +225,18 @@ The key components are:
         applying increments with the `NavState` $SE_2(3)$ exponential and by
         using the corresponding nonlinear group bias correction. It stores the
         result as a `NavState`.
+    *   `GalileanPreintegration`: Integrates the IMU mean on `Gal3` and uses a
+        left-invariant Galilean error. The deterministic clock coordinate is
+        projected out when forming the public `(R,p,v)` covariance.
 
 4.  **Preintegrated Measurements Containers**:
-    *   `PreintegratedImuMeasurements`: Stores the result of standard IMU preintegration along with its 9x9 covariance (`preintMeasCov_`).
-    *   `PreintegratedCombinedMeasurements`: Similar, but designed for the `CombinedImuFactor`. Stores the larger 15x15 covariance matrix (`preintMeasCov_`) that includes correlations with the bias terms.
+    *   `PreintegratedImuMeasurements`: Stores the result of standard IMU preintegration along with its 9x9 covariance (`preintMeasCov_`). The named Galilean specialization is `PreintegratedImuMeasurementsG`.
+    *   `PreintegratedCombinedMeasurements`: Similar, but designed for the `CombinedImuFactor`. Stores the larger 15x15 covariance matrix (`preintMeasCov_`) that includes correlations with the bias terms. The named Galilean specialization is `PreintegratedCombinedMeasurementsG`.
 
 5.  **IMU Factors (`...Factor`)**:
     * [ImuFactor](doc/ImuFactor.ipynb): A 5-way factor connecting previous pose/velocity, current pose/velocity, and a single (constant during the interval) bias estimate. Does *not* model bias evolution between factors.
     * [ImuFactor2](doc/ImuFactor.ipynb): A 3-way factor connecting previous `NavState`, current `NavState`, and a single bias estimate. Functionally similar to `ImuFactor` but uses the combined `NavState` type.
-    * [CombinedImuFactor](doc/CombinedImuFactor.ipynb): A 6-way factor connecting previous pose/velocity, current pose/velocity, previous bias, and current bias. *Includes* a model for bias random walk evolution between the two bias states.
+    * [CombinedImuFactor](doc/CombinedImuFactor.ipynb): A 6-way factor connecting previous pose/velocity, current pose/velocity, previous bias, and current bias. *Includes* a model for bias random walk evolution between the two bias states. `GalileanCombinedImuFactor` provides the same model with Galilean preintegration.
 
 ### Important notes
 - The compiled `DefaultPreintegrationType` used by `ImuFactor`s and
@@ -237,9 +248,13 @@ The key components are:
     - With both options disabled, `ManifoldPreintegration` is used. Select this
       backend for the implementation from
       {cite:t}`https://doi.org/10.1109/TRO.2016.2597321`.
-- If you wish to use any preintegration type other than the default, you must template your PIMs and factors on the desired preintegration type using the template-supporting classes `PreintegratedImuMeasurementsT`, `ImuFactorT`, `ImuFactor2T`, `PreintegratedCombinedMeasurementsT`, or `CombinedImuFactorT`.
-- Named backend selection is a C++ template API. Python and MATLAB expose only
-  the aliases selected when GTSAM is compiled.
+- If you wish to use any preintegration type other than the default, you can
+  template your PIMs and factors on the desired preintegration type using the
+  template-supporting classes `PreintegratedImuMeasurementsT`, `ImuFactorT`,
+  `ImuFactor2T`, `PreintegratedCombinedMeasurementsT`, or
+  `CombinedImuFactorT`. Public named specializations are available for the
+  standard PIM backends, and the Galilean standard and Combined types are
+  available in C++, Python, and MATLAB.
 - `NavState` stores tangent blocks in `(R,p,v)` order, whereas Brossard et al.
   write the $SE_2(3)$ matrix in `(R,v,p)` order. Translate the position and
   velocity blocks when comparing equations.

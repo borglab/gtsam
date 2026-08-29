@@ -176,34 +176,19 @@ bool matchesDenseCombinedPropagation(bool displacedSensor) {
 
     Matrix15 F = Matrix15::Zero();
     F.block<9, 9>(0, 0) = A;
-    F.block<3, 3>(0, 12) = C.topRows<3>();
-    F.block<3, 3>(3, 9) = B.middleRows<3>(3);
-    F.block<3, 3>(6, 9) = B.bottomRows<3>();
+    F.block<9, 3>(0, 9) = B;
+    F.block<9, 3>(0, 12) = C;
     F.block<6, 6>(9, 9) = I_6x6;
     expected = F * expected * F.transpose();
 
-    const Matrix3 position_H_acceleration = B.middleRows<3>(3);
-    const Matrix3 velocity_H_acceleration = B.bottomRows<3>();
-    const Matrix3 rotation_H_omega = C.topRows<3>();
     const Matrix3 scaledAccelerometerCovariance =
         params->accelerometerCovariance / kDt;
     const Matrix3 scaledGyroscopeCovariance = params->gyroscopeCovariance / kDt;
-    expected.block<3, 3>(0, 0).noalias() += rotation_H_omega *
-                                            scaledGyroscopeCovariance *
-                                            rotation_H_omega.transpose();
-    expected.block<3, 3>(3, 3).noalias() +=
-        position_H_acceleration * scaledAccelerometerCovariance *
-            position_H_acceleration.transpose() +
-        kDt * params->integrationCovariance;
-    expected.block<3, 3>(3, 6).noalias() += position_H_acceleration *
-                                            scaledAccelerometerCovariance *
-                                            velocity_H_acceleration.transpose();
-    expected.block<3, 3>(6, 3).noalias() += velocity_H_acceleration *
-                                            scaledAccelerometerCovariance *
-                                            position_H_acceleration.transpose();
-    expected.block<3, 3>(6, 6).noalias() += velocity_H_acceleration *
-                                            scaledAccelerometerCovariance *
-                                            velocity_H_acceleration.transpose();
+    expected.topLeftCorner<9, 9>().noalias() +=
+        B * scaledAccelerometerCovariance * B.transpose();
+    expected.topLeftCorner<9, 9>().noalias() +=
+        C * scaledGyroscopeCovariance * C.transpose();
+    expected.block<3, 3>(3, 3).noalias() += kDt * params->integrationCovariance;
     expected.block<3, 3>(9, 9).noalias() += kDt * params->biasAccCovariance;
     expected.block<3, 3>(12, 12).noalias() += kDt * params->biasOmegaCovariance;
     pim.integrateMeasurement(acceleration, angularVelocity, kDt);
@@ -224,10 +209,12 @@ PIM integrateIdealMeasurements(
 
 template <template <class> class PimTemplate, class PreintegrationType>
 Matrix9 residualChartJacobian(const PimTemplate<PreintegrationType>& pim) {
-  static_assert(std::is_same_v<PreintegrationType, ManifoldPreintegration> ||
-                    std::is_same_v<PreintegrationType, TangentPreintegration> ||
-                    std::is_same_v<PreintegrationType, LieGroupPreintegration>,
-                "Unsupported IMU preintegration backend");
+  static_assert(
+      std::is_same_v<PreintegrationType, ManifoldPreintegration> ||
+          std::is_same_v<PreintegrationType, TangentPreintegration> ||
+          std::is_same_v<PreintegrationType, LieGroupPreintegration> ||
+          std::is_same_v<PreintegrationType, GalileanPreintegration>,
+      "Unsupported IMU preintegration backend");
   if constexpr (std::is_same_v<PreintegrationType, TangentPreintegration>) {
     // Map additive [theta, position, velocity] perturbations into the
     // component-wise NavState chart used by the factor residual.

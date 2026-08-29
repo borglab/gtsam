@@ -22,6 +22,7 @@
 
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
+#include <gtsam/navigation/GalileanImuFactor.h>
 #include <gtsam/navigation/LieGroupPreintegration.h>
 #include <gtsam/navigation/ManifoldPreintegration.h>
 #include <gtsam/navigation/TangentPreintegration.h>
@@ -84,18 +85,20 @@ namespace {
 using Matrix15 = Eigen::Matrix<double, 15, 15>;
 
 /** Propagate Combined PIM covariance using its sparse 5-by-5 block form. */
-template <bool kTangentStructure>
+template <bool kTangentStructure, bool kFullGyroscopeStructure>
 void propagateCombinedCovariance(Matrix15* covariance, const Matrix9& A,
                                  const Matrix93& B, const Matrix93& C,
                                  const PreintegrationCombinedParams& params,
-                                 double dt) {
+                                 double dt, bool hasSensorPose) {
   // State blocks are ordered R,p,v,b_a,b_g. The Combined transition is
   //
   //       [ A00   0    0    0   C0 ]
-  //       [ A10  A11  A12  B1    0 ]
-  //   F = [ A20   0   A22  B2    0 ] .
+  //       [ A10  A11  A12  B1   C1 ]
+  //   F = [ A20   0   A22  B2   C2 ] .
   //       [  0    0    0    I    0 ]
   //       [  0    0    0    0    I ]
+  // C1 and C2 are nonzero for Galilean preintegration and when a displaced
+  // sensor couples angular velocity into corrected acceleration.
   const auto A00 = A.block<3, 3>(0, 0);
   const auto A10 = A.block<3, 3>(3, 0);
   const auto A11 = A.block<3, 3>(3, 3);
@@ -105,6 +108,9 @@ void propagateCombinedCovariance(Matrix15* covariance, const Matrix9& A,
   const auto B1 = B.middleRows<3>(3);
   const auto B2 = B.bottomRows<3>();
   const auto C0 = C.topRows<3>();
+  const auto C1 = C.middleRows<3>(3);
+  const auto C2 = C.bottomRows<3>();
+  const bool useFullGyroscope = kFullGyroscopeStructure || hasSensorPose;
 
   const Matrix15 oldCovariance = *covariance;
   Matrix15 FP;
@@ -134,6 +140,12 @@ void propagateCombinedCovariance(Matrix15* covariance, const Matrix9& A,
           A22 * oldCovariance.block<3, 3>(6, offset) +
           B2 * oldCovariance.block<3, 3>(9, offset);
     }
+    if (useFullGyroscope) {
+      FP.block<3, 3>(3, offset).noalias() +=
+          C1 * oldCovariance.block<3, 3>(12, offset);
+      FP.block<3, 3>(6, offset).noalias() +=
+          C2 * oldCovariance.block<3, 3>(12, offset);
+    }
     FP.block<3, 3>(9, offset) = oldCovariance.block<3, 3>(9, offset);
     FP.block<3, 3>(12, offset) = oldCovariance.block<3, 3>(12, offset);
   }
@@ -160,6 +172,10 @@ void propagateCombinedCovariance(Matrix15* covariance, const Matrix9& A,
           FP.block<3, 3>(offset, 6) * A12.transpose() +
           FP.block<3, 3>(offset, 9) * B1.transpose();
     }
+    if (useFullGyroscope) {
+      covariance->block<3, 3>(offset, 3).noalias() +=
+          FP.block<3, 3>(offset, 12) * C1.transpose();
+    }
   }
   for (int row = 2; row < 5; ++row) {
     const int offset = 3 * row;
@@ -173,6 +189,10 @@ void propagateCombinedCovariance(Matrix15* covariance, const Matrix9& A,
           FP.block<3, 3>(offset, 0) * A20.transpose() +
           FP.block<3, 3>(offset, 6) * A22.transpose() +
           FP.block<3, 3>(offset, 9) * B2.transpose();
+    }
+    if (useFullGyroscope) {
+      covariance->block<3, 3>(offset, 6).noalias() +=
+          FP.block<3, 3>(offset, 12) * C2.transpose();
     }
   }
   covariance->block<3, 3>(9, 9) = FP.block<3, 3>(9, 9);
@@ -191,6 +211,16 @@ void propagateCombinedCovariance(Matrix15* covariance, const Matrix9& A,
       B1Covariance * B1.transpose() + dt * params.integrationCovariance;
   covariance->block<3, 3>(6, 3).noalias() += B2Covariance * B1.transpose();
   covariance->block<3, 3>(6, 6).noalias() += B2Covariance * B2.transpose();
+  if (useFullGyroscope) {
+    const Matrix3 C0Covariance = C0 * scaledGyroscopeCovariance;
+    const Matrix3 C1Covariance = C1 * scaledGyroscopeCovariance;
+    const Matrix3 C2Covariance = C2 * scaledGyroscopeCovariance;
+    covariance->block<3, 3>(3, 0).noalias() += C1Covariance * C0.transpose();
+    covariance->block<3, 3>(3, 3).noalias() += C1Covariance * C1.transpose();
+    covariance->block<3, 3>(6, 0).noalias() += C2Covariance * C0.transpose();
+    covariance->block<3, 3>(6, 3).noalias() += C2Covariance * C1.transpose();
+    covariance->block<3, 3>(6, 6).noalias() += C2Covariance * C2.transpose();
+  }
   covariance->block<3, 3>(9, 9).noalias() += dt * params.biasAccCovariance;
   covariance->block<3, 3>(12, 12).noalias() += dt * params.biasOmegaCovariance;
 
@@ -222,8 +252,11 @@ void PreintegratedCombinedMeasurementsT<
 
   constexpr bool kTangentStructure =
       std::is_same_v<PreintegrationType, TangentPreintegration>;
-  propagateCombinedCovariance<kTangentStructure>(&preintMeasCov_, A, B, C,
-                                                 this->p(), dt);
+  constexpr bool kFullGyroscopeStructure =
+      std::is_same_v<PreintegrationType, GalileanPreintegration>;
+  propagateCombinedCovariance<kTangentStructure, kFullGyroscopeStructure>(
+      &preintMeasCov_, A, B, C, this->p(), dt,
+      static_cast<bool>(this->p().body_P_sensor));
 }
 
 //------------------------------------------------------------------------------
@@ -276,11 +309,15 @@ template class GTSAM_EXPORT PreintegratedCombinedMeasurementsT<ManifoldPreintegr
 template class GTSAM_EXPORT PreintegratedCombinedMeasurementsT<TangentPreintegration>;
 template class GTSAM_EXPORT
     PreintegratedCombinedMeasurementsT<LieGroupPreintegration>;
+template class GTSAM_EXPORT
+    PreintegratedCombinedMeasurementsT<GalileanPreintegration>;
 
 template class GTSAM_EXPORT CombinedImuFactorT<PreintegratedCombinedMeasurementsT<ManifoldPreintegration>>;
 template class GTSAM_EXPORT CombinedImuFactorT<PreintegratedCombinedMeasurementsT<TangentPreintegration>>;
 template class GTSAM_EXPORT CombinedImuFactorT<
     PreintegratedCombinedMeasurementsT<LieGroupPreintegration>>;
+template class GTSAM_EXPORT
+    CombinedImuFactorT<PreintegratedCombinedMeasurementsG>;
 
 // Instantiate operator<<
 template GTSAM_EXPORT std::ostream& operator<<<PreintegratedCombinedMeasurementsT<ManifoldPreintegration>>(
@@ -292,5 +329,9 @@ operator<< <PreintegratedCombinedMeasurementsT<LieGroupPreintegration>>(
     std::ostream& os,
     const CombinedImuFactorT<
         PreintegratedCombinedMeasurementsT<LieGroupPreintegration>>& f);
+template GTSAM_EXPORT std::ostream&
+operator<< <PreintegratedCombinedMeasurementsG>(
+    std::ostream& os,
+    const CombinedImuFactorT<PreintegratedCombinedMeasurementsG>& f);
 
 }  // namespace gtsam

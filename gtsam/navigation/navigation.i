@@ -470,6 +470,49 @@ class PreintegratedCombinedMeasurements {
   void serialize() const;
 };
 
+template<PREINTEGRATION>
+class PreintegratedCombinedMeasurementsT {
+  PreintegratedCombinedMeasurementsT(
+      const gtsam::PreintegrationCombinedParams* p);
+  PreintegratedCombinedMeasurementsT(
+      const gtsam::PreintegrationCombinedParams* p,
+      const gtsam::imuBias::ConstantBias& biasHat);
+
+  void print(string s = "Preintegrated Measurements:") const;
+  bool equals(
+      const gtsam::PreintegratedCombinedMeasurementsT<PREINTEGRATION>& expected,
+      double tol) const;
+
+  @pybind_lambda
+  void integrateMeasurement(
+      const gtsam::Vector3& measuredAcc,
+      const gtsam::Vector3& measuredOmega, double dt);
+  void resetIntegration();
+  void resetIntegrationAndSetBias(
+      const gtsam::imuBias::ConstantBias& biasHat);
+
+  gtsam::Matrix preintMeasCov() const;
+  gtsam::Matrix residualCovariance() const;
+  @pybind_lambda
+  gtsam::Vector9 preintegrated() const;
+  double deltaTij() const;
+  gtsam::Rot3 deltaRij() const;
+  gtsam::Vector3 deltaPij() const;
+  gtsam::Vector3 deltaVij() const;
+  gtsam::Vector3 so3TangentAt(double t) const;
+  gtsam::Matrix deskewPoints(gtsam::ConstMatrixView points,
+      const gtsam::Vector3& velocity_i = gtsam::Vector3::Zero()) const;
+  gtsam::Matrix deskewPointsAtTimes(gtsam::ConstMatrixView points,
+      const gtsam::Vector& times,
+      const gtsam::Vector3& velocity_i = gtsam::Vector3::Zero()) const;
+  const gtsam::imuBias::ConstantBias& biasHat() const;
+  gtsam::Vector6 biasHatVector() const;
+  gtsam::NavState predict(const gtsam::NavState& state_i,
+      const gtsam::imuBias::ConstantBias& bias_i,
+      gtsam::OptionalJacobian<9, 9> H1 = nullptr,
+      gtsam::OptionalJacobian<9, 6> H2 = nullptr) const;
+};
+
 virtual class CombinedImuFactor: gtsam::NoiseModelFactor {
   CombinedImuFactor(gtsam::Key pose_i, gtsam::Key vel_i, gtsam::Key pose_j, gtsam::Key vel_j,
       gtsam::Key bias_i, gtsam::Key bias_j,
@@ -493,6 +536,34 @@ virtual class CombinedImuFactor: gtsam::NoiseModelFactor {
   // enable serialization functionality
   void serialize() const;
 };
+
+template<PIM>
+virtual class CombinedImuFactorT: gtsam::NoiseModelFactor {
+  CombinedImuFactorT(gtsam::Key pose_i, gtsam::Key vel_i,
+      gtsam::Key pose_j, gtsam::Key vel_j, gtsam::Key bias_i,
+      gtsam::Key bias_j, const PIM& preintegratedMeasurements);
+
+  const PIM& preintegratedMeasurements() const;
+  gtsam::Vector evaluateError(const gtsam::Pose3& pose_i,
+      const gtsam::Vector3& vel_i,
+      const gtsam::Pose3& pose_j, const gtsam::Vector3& vel_j,
+      const gtsam::imuBias::ConstantBias& bias_i,
+      const gtsam::imuBias::ConstantBias& bias_j,
+      gtsam::OptionalMatrixType H1 = nullptr,
+      gtsam::OptionalMatrixType H2 = nullptr,
+      gtsam::OptionalMatrixType H3 = nullptr,
+      gtsam::OptionalMatrixType H4 = nullptr,
+      gtsam::OptionalMatrixType H5 = nullptr,
+      gtsam::OptionalMatrixType H6 = nullptr) const;
+
+  void serialize() const;
+};
+
+@serializable
+typedef gtsam::PreintegratedCombinedMeasurementsT<
+    gtsam::GalileanPreintegration> PreintegratedCombinedMeasurementsG;
+typedef gtsam::CombinedImuFactorT<
+    gtsam::PreintegratedCombinedMeasurementsG> GalileanCombinedImuFactor;
 
 #include <gtsam/navigation/CombinedImuFactorWithGravity.h>
 template <PIM, GRAVITY>
