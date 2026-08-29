@@ -134,6 +134,8 @@ endif()
 
 if(GTSAM_ENABLE_CUDA)
     list(APPEND interface_headers
+        ${PROJECT_SOURCE_DIR}/gtsam/linear/cuda/cuda_linear.i
+        ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/cuda/cuda_nonlinear.i
         ${PROJECT_SOURCE_DIR}/gtsam/sfm/cuda/cuda_sfm.i
     )
 endif()
