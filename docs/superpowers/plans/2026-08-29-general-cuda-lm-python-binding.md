@@ -206,6 +206,10 @@ git commit -m "test: specify general CUDA LM Python API"
 **Files:**
 - Create: `gtsam/linear/cuda/cuda_linear.i`
 - Create: `gtsam/nonlinear/cuda/cuda_nonlinear.i`
+- Create: `python/gtsam/preamble/cuda_linear.h`
+- Create: `python/gtsam/preamble/cuda_nonlinear.h`
+- Create: `python/gtsam/specializations/cuda_linear.h`
+- Create: `python/gtsam/specializations/cuda_nonlinear.h`
 - Modify: `gtsam/sfm/cuda/cuda_sfm.i:12-20`
 - Modify: `python/CMakeLists.txt:136-142`
 
@@ -233,7 +237,27 @@ class PcgOptions {
 }  // namespace gtsam
 ```
 
-- [ ] **Step 2: Declare the practical general CUDA LM API**
+- [ ] **Step 2: Add required empty gtwrap support headers**
+
+Create the four dependency files with these exact contents:
+
+```cpp
+/* No cuda_linear-module preamble customizations are required. */
+```
+
+```cpp
+/* No cuda_nonlinear-module preamble customizations are required. */
+```
+
+```cpp
+/* No cuda_linear-module specializations are required. */
+```
+
+```cpp
+/* No cuda_nonlinear-module specializations are required. */
+```
+
+- [ ] **Step 3: Declare the practical general CUDA LM API**
 
 Create `gtsam/nonlinear/cuda/cuda_nonlinear.i`:
 
@@ -308,7 +332,7 @@ class SparseLevenbergMarquardtOptimizer {
 }  // namespace gtsam
 ```
 
-- [ ] **Step 3: Share the enum and wire interfaces**
+- [ ] **Step 4: Share the enum and wire interfaces**
 
 Delete the `LinearSolverType` block from `cuda_sfm.i`. Change the CUDA CMake
 list to:
@@ -323,7 +347,7 @@ if(GTSAM_ENABLE_CUDA)
 endif()
 ```
 
-- [ ] **Step 4: Build and verify GREEN**
+- [ ] **Step 5: Build and verify GREEN**
 
 Run:
 
@@ -337,12 +361,15 @@ PYTHONPATH=build/python /home/ubuntu/miniconda3/bin/python3 -m pytest -q \
 Expected: wrapper generation and compilation succeed; both focused test files
 pass, with only runtime-dependent skips.
 
-- [ ] **Step 5: Commit the implementation**
+- [ ] **Step 6: Commit the implementation**
 
 ```bash
 git add gtsam/linear/cuda/cuda_linear.i \
   gtsam/nonlinear/cuda/cuda_nonlinear.i gtsam/sfm/cuda/cuda_sfm.i \
-  python/CMakeLists.txt
+  python/gtsam/preamble/cuda_linear.h \
+  python/gtsam/preamble/cuda_nonlinear.h \
+  python/gtsam/specializations/cuda_linear.h \
+  python/gtsam/specializations/cuda_nonlinear.h python/CMakeLists.txt
 git commit -m "feat: bind general CUDA LM to Python"
 ```
 

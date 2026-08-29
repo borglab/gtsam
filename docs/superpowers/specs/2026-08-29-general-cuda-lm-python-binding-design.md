@@ -28,6 +28,10 @@ CUDA wrapper declarations will follow the C++ ownership boundaries:
   the enum.
 - `python/CMakeLists.txt` will append the three CUDA interface files in shared,
   general, then SFM order under `GTSAM_ENABLE_CUDA`.
+- Matching `python/gtsam/preamble/*.h` and
+  `python/gtsam/specializations/*.h` files will be added for each new interface
+  because gtwrap declares those files as wrapper-generation dependencies; no
+  custom preamble or specialization code is needed.
 
 All declarations will land in the existing `gtsam::cuda` namespace and will
 therefore appear under `gtsam.cuda` in Python.
