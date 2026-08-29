@@ -19,8 +19,8 @@ installed as public headers.
 Walkthrough notebooks for each optimizer:
 
 - [SparseLevenbergMarquardtOptimizer](../gtsam/nonlinear/doc/SparseLevenbergMarquardtOptimizer.ipynb)
-- [SfmLevenbergMarquardtOptimizer](../gtsam/slam/doc/SfmLevenbergMarquardtOptimizer.ipynb)
-- [CudaSfmGncOptimizer](../gtsam/slam/doc/CudaSfmGncOptimizer.ipynb)
+- [CudaSfmLevenbergMarquardtOptimizer](../gtsam/sfm/doc/CudaSfmLevenbergMarquardtOptimizer.ipynb)
+- [CudaSfmGncOptimizer](../gtsam/sfm/doc/CudaSfmGncOptimizer.ipynb)
 
 ## Backends
 
@@ -108,6 +108,61 @@ gtsam::cuda::SfmLevenbergMarquardtParams sfmParams;
 sfmParams.setLinearSolver(gtsam::cuda::LinearSolverType::Cudss);
 sfmParams.ordering = cameraOrdering;
 ```
+
+## Python bindings
+
+CUDA-enabled Python builds expose both optimizers under `gtsam.cuda`. The
+namespace is intentionally absent when GTSAM is built without
+`GTSAM_ENABLE_CUDA=ON`; see the [Python wrapper README](../python/README.md) for
+source-build instructions.
+
+The general optimizer accepts ordinary `gtsam.NonlinearFactorGraph` and
+`gtsam.Values` objects as `graph` and `initial`:
+
+```python
+import gtsam
+
+cuda = gtsam.cuda
+
+linear = cuda.LinearSolverOptions()
+linear.backend = cuda.LinearSolverType.Pcg
+
+pcg = cuda.PcgOptions()
+pcg.maxIterations = 250
+pcg.relativeTolerance = 1e-6
+
+params = cuda.SparseLevenbergMarquardtParams()
+params.linear = linear
+params.pcg = pcg
+params.fallbackOnUnsupported = False
+
+optimizer = cuda.SparseLevenbergMarquardtOptimizer(graph, initial, params)
+values = optimizer.optimize()
+diagnostics = optimizer.result()
+print(diagnostics.backend, diagnostics.finalError)
+```
+
+Setting `fallbackOnUnsupported = False` is useful when execution must stay on
+the GPU. The default permits the optimizer to continue with CPU LM when the
+runtime or graph is unsupported; `diagnostics.fallbackReason` and
+`diagnostics.fallbackDetail` report why. The
+[General CUDA LM notebook](../gtsam/nonlinear/doc/SparseLevenbergMarquardtOptimizer.ipynb)
+contains a complete runnable graph.
+
+For CUDA SFM, pass a `gtsam.SfmData` as `data`:
+
+```python
+params = cuda.SfmLevenbergMarquardtParams.ceresDefaults()
+params.setLinearSolver(cuda.LinearSolverType.DenseCholesky)
+
+result = cuda.optimizeSfm(data, params)
+print(result.finalError, result.iterations)
+values = result.optimizedValues
+```
+
+`DenseCholesky` is available only to CUDA SFM. General CUDA LM accepts `Pcg`
+or `Cudss`; selecting `Cudss` requires a build with
+`GTSAM_ENABLE_CUDSS=ON` and a separate cuDSS installation.
 
 ## Build and test
 
