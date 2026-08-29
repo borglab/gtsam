@@ -45,6 +45,7 @@ class TestGalileanImuFactor(GtsamTestCase):
             self.assertEqual((9, 9), pim.preintMeasCov().shape)
             self.assertEqual((9, 9), pim.residualCovariance().shape)
             self.assertEqual((6,), pim.biasHatVector().shape)
+            self.assertIsInstance(pim.deltaXij(), gtsam.NavState)
 
     def test_combined_preintegration(self):
         """The named Combined Galilean PIM exposes its complete 15D state."""
@@ -108,7 +109,8 @@ class TestGalileanImuFactor(GtsamTestCase):
             np.array([0.01, -0.02, 0.03]),
             np.array([-0.01, 0.02, 0.01]),
         )
-        pim = gtsam.PreintegratedImuMeasurementsG(params, bias_hat)
+        pim = gtsam.PreintegratedImuMeasurementsG(p=params,
+                                                   biasHat=bias_hat)
         measurements = (
             (np.array([0.2, -0.1, 9.7]),
              np.array([0.03, -0.02, 0.01]), 0.01),
@@ -116,7 +118,9 @@ class TestGalileanImuFactor(GtsamTestCase):
              np.array([-0.01, 0.04, 0.02]), 0.02),
         )
         for measured_acc, measured_omega, delta_t in measurements:
-            pim.integrateMeasurement(measured_acc, measured_omega, delta_t)
+            pim.integrateMeasurement(measuredAcc=measured_acc,
+                                     measuredOmega=measured_omega,
+                                     dt=delta_t)
 
         self.assertAlmostEqual(0.03, pim.deltaTij())
         self.assertEqual((9, 9), pim.preintMeasCov().shape)

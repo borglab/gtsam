@@ -86,10 +86,10 @@ protected:
 
 public:
 
-  /// Default constructor for serialization and wrappers
-  PreintegratedImuMeasurementsT() {
-    this->resetIntegration();
-  }
+  /// Default constructor with default preintegration parameters.
+  PreintegratedImuMeasurementsT()
+      : PreintegratedImuMeasurementsT(
+            std::make_shared<PreintegrationParams>()) {}
 
  /**
    *  Constructor, initializes the class with no measurements

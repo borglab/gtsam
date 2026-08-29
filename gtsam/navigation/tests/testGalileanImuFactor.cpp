@@ -95,6 +95,14 @@ Vector10 Input(const Vector3& acc, const Vector3& omega, double dt) {
   return input;
 }
 
+// The historical zero-argument constructor owns usable default parameters.
+TEST(GalileanImuFactor, DefaultConstruction) {
+  PIM pim;
+  EXPECT(pim.params() != nullptr);
+  pim.integrateMeasurement(Vector3::Zero(), Vector3::Zero(), 0.01);
+  DOUBLES_EQUAL(0.01, pim.deltaTij(), 1e-12);
+}
+
 // The physical input lift maps GTSAM (acceleration, angular rate) order into
 // Gal3 (angular rate, acceleration, position rate, clock rate) order.
 TEST(GalileanImuFactor, PhysicalInputLift) {

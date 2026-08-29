@@ -249,6 +249,7 @@ class PreintegratedImuMeasurements {
   gtsam::Rot3 deltaRij() const;
   gtsam::Vector3 deltaPij() const;
   gtsam::Vector3 deltaVij() const;
+  gtsam::NavState deltaXij() const;
   gtsam::Vector3 so3TangentAt(double t) const;
   gtsam::Matrix deskewPoints(gtsam::ConstMatrixView points,
       const gtsam::Vector3& velocity_i = gtsam::Vector3::Zero()) const;
@@ -283,7 +284,7 @@ class PreintegratedImuMeasurementsT {
   @pybind_lambda
   void integrateMeasurement(
       const gtsam::Vector3& measuredAcc,
-      const gtsam::Vector3& measuredOmega, double deltaT);
+      const gtsam::Vector3& measuredOmega, double dt);
   void resetIntegration();
   void resetIntegrationAndSetBias(const gtsam::imuBias::ConstantBias& biasHat);
 
@@ -295,6 +296,7 @@ class PreintegratedImuMeasurementsT {
   gtsam::Rot3 deltaRij() const;
   gtsam::Vector3 deltaPij() const;
   gtsam::Vector3 deltaVij() const;
+  gtsam::NavState deltaXij() const;
   gtsam::Vector3 so3TangentAt(double t) const;
   gtsam::Matrix deskewPoints(gtsam::ConstMatrixView points,
       const gtsam::Vector3& velocity_i = gtsam::Vector3::Zero()) const;
