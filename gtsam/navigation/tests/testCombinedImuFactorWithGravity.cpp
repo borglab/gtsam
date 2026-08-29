@@ -129,6 +129,18 @@ TEST(CombinedImuFactorWithGravity, ConstructorValidation) {
   CHECK_EXCEPTION(CombinedImuFactorWithGravityVector(
                       X(1), V(1), X(2), V(2), B(1), B(2), G(0), pim, 9.81),
                   std::invalid_argument);
+  // Without params there is no default magnitude for the Unit3 parametrization
+  // to fall back on; an explicit one still works, and Point3 needs none:
+  const PreintegratedCombinedMeasurements noParams;
+  CHECK_EXCEPTION(CombinedImuFactorWithGravityDirection(
+                      X(1), V(1), X(2), V(2), B(1), B(2), G(0), noParams),
+                  std::invalid_argument);
+  const CombinedImuFactorWithGravityDirection explicitMagnitude(
+      X(1), V(1), X(2), V(2), B(1), B(2), G(0), noParams, 9.81);
+  DOUBLES_EQUAL(9.81, explicitMagnitude.gravityMagnitude(), 1e-9);
+  const CombinedImuFactorWithGravityVector vectorNoParams(
+      X(1), V(1), X(2), V(2), B(1), B(2), G(0), noParams);
+  EXPECT_LONGS_EQUAL(7, vectorNoParams.size());
 }
 
 /* ************************************************************************* */
