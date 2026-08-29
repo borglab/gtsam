@@ -78,7 +78,6 @@ void LieGroupPreintegration::updateFactor(const Vector3& bodyAcceleration,
                                           OptionalJacobian<9, 9> F,
                                           OptionalJacobian<9, 3> G1,
                                           OptionalJacobian<9, 3> G2) {
-  const bool computeJacobians = F || G1 || G2;
   Matrix39 bodyVelocity_H_state;
   const Vector3 bodyVelocity =
       deltaXij_.bodyVelocity(F ? &bodyVelocity_H_state : nullptr);
@@ -90,29 +89,27 @@ void LieGroupPreintegration::updateFactor(const Vector3& bodyAcceleration,
   Matrix93 increment_H_rotation, increment_H_position, increment_H_velocity;
   const NavState incrementState = NavState::Create(
       incrementRotation, dt * bodyVelocity + halfDtSquared * bodyAcceleration,
-      dt * bodyAcceleration, computeJacobians ? &increment_H_rotation : nullptr,
-      computeJacobians ? &increment_H_position : nullptr,
-      computeJacobians ? &increment_H_velocity : nullptr);
+      dt * bodyAcceleration, G2 ? &increment_H_rotation : nullptr,
+      (F || G1) ? &increment_H_position : nullptr,
+      G1 ? &increment_H_velocity : nullptr);
 
-  Matrix9 tangent_H_increment;
-  const Vector9 increment = NavState::Logmap(
-      incrementState, computeJacobians ? &tangent_H_increment : nullptr);
-
-  Matrix9 newState_H_increment;
-  deltaXij_ = deltaXij_.expmap(
-      increment, F, computeJacobians ? &newState_H_increment : nullptr);
+  // Applying this increment through the Lie exponential would compute
+  //
+  //   deltaXij_ * Expmap(Logmap(incrementState)),
+  //
+  // which is exactly this composition. Its Jacobian with respect to the
+  // increment is the identity in right-local coordinates, so direct
+  // composition also cancels the corresponding Expmap and Logmap Jacobians.
+  deltaXij_ = deltaXij_.compose(incrementState, F);
 
   if (F) {
-    *F += newState_H_increment * tangent_H_increment * increment_H_position *
-          dt * bodyVelocity_H_state;
+    *F += increment_H_position * dt * bodyVelocity_H_state;
   }
   if (G1) {
-    *G1 = newState_H_increment * tangent_H_increment *
-          (increment_H_position * halfDtSquared + increment_H_velocity * dt);
+    *G1 = increment_H_position * halfDtSquared + increment_H_velocity * dt;
   }
   if (G2) {
-    *G2 = newState_H_increment * tangent_H_increment * increment_H_rotation *
-          incrementRotation_H_integratedOmega * dt;
+    *G2 = increment_H_rotation * incrementRotation_H_integratedOmega * dt;
   }
 }
 
