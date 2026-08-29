@@ -240,12 +240,16 @@ NavState NavState::update(const Vector3& b_acceleration, const Vector3& b_omega,
 
 //------------------------------------------------------------------------------
 
-// Because our navigation frames are placed on a spinning Earth, we experience two apparent forces on our inertials
-// Let Omega be the Earth's rotation rate in the navigation frame
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+// Because our navigation frames are placed on a spinning Earth, we experience
+// two apparent forces on our inertials. Let Omega be the Earth's rotation rate
+// in the navigation frame.
 // Coriolis acceleration = -2 * (omega X n_v)
 // Centrifugal acceleration (secondOrder) = -omega X (omega X n_t)
-// We would also experience a rotation of (omega*dt) over time - so, counteract by compensating rotation by (-omega * dt)
-// Integrate centrifugal & coriolis accelerations to yield position, velocity perturbations
+// We would also experience a rotation of (omega*dt) over time - so, counteract
+// by compensating rotation by (-omega * dt).
+// Integrate centrifugal & coriolis accelerations to yield position and velocity
+// perturbations.
 Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
     OptionalJacobian<9, 9> H) const {
   Rot3 nRb = R_;
@@ -294,6 +298,7 @@ Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
   }
   return xi;
 }
+#endif
 
 namespace {
 
@@ -465,6 +470,7 @@ NavState NavState::predictPIM(const Vector9& pim, double dt,
 }
 
 //------------------------------------------------------------------------------
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 Vector9 NavState::correctPIM(const Vector9& pim, double dt,
                              const Vector3& n_gravity,
                              const std::optional<Vector3>& omegaCoriolis,
@@ -527,6 +533,7 @@ Vector9 NavState::correctPIM(const Vector9& pim, double dt,
 
   return xi;
 }
+#endif
 //------------------------------------------------------------------------------
 
 }/// namespace gtsam

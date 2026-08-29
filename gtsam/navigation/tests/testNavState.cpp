@@ -25,6 +25,7 @@
 #include <gtsam/base/testLie.h>
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/navigation/NavState.h>
+#include <gtsam/navigation/TangentPreintegration.h>
 
 #include <cmath>
 
@@ -351,14 +352,8 @@ TEST(NavState, interpolate) {
 }
 
 /* ************************************************************************* */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 static const double dt = 2.0;
-#if defined(_MSC_VER)
-#pragma warning(push)
-#pragma warning(disable : 4996)
-#elif defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
-#endif
 
 auto coriolis = std::bind(&NavState::coriolis, std::placeholders::_1, dt, kOmegaCoriolis,
               std::placeholders::_2, nullptr);
@@ -479,15 +474,33 @@ TEST(NavState, CorrectPIM) {
       numericalDerivative11<Vector9, Vector3>(correctPIMNoCoriolis, kGravity),
       Matrix(aH3NoCoriolis)));
 }
+#endif
 
 /* ************************************************************************* */
 namespace rotating_earth_fixture {
 
+/** Test adapter that supplies a chosen bias-corrected tangent PIM. */
+class RawTangentPIM : public TangentPreintegration {
+ public:
+  RawTangentPIM(const std::shared_ptr<Params>& params, const Vector9& pim,
+                double dt)
+      : TangentPreintegration(params) {
+    preintegrated_ = pim;
+    deltaTij_ = dt;
+  }
+};
+
 NavState predict(const NavState& initial, const Vector9& pim, double dt,
-                 const Vector3& gravity, const Vector3& omega,
+                 const Vector3& gravity, const std::optional<Vector3>& omega,
                  bool useSecondOrder = false) {
-  return initial.retract(
-      initial.correctPIM(pim, dt, gravity, omega, useSecondOrder));
+  auto params = std::make_shared<PreintegrationParams>(gravity);
+  params->omegaCoriolis = omega;
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  params->setUse2ndOrderCoriolis(useSecondOrder);
+#else
+  (void)useSecondOrder;
+#endif
+  return RawTangentPIM(params, pim, dt).predict(initial, {});
 }
 
 NavState exactEquation(const NavState& initial, const Vector9& pim, double dt,
@@ -566,18 +579,19 @@ TEST(NavState, ExactRotatingEarthEquation) {
 }
 
 // Verifies the legacy second-order flag no longer changes rotating prediction.
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 TEST(NavState, ExactRotatingEarthIgnoresSecondOrderFlag) {
   const Vector9 pim{0.08, -0.04, 0.03, 1.2, -0.7, 0.4, 0.5, -0.2, 0.1};
   EXPECT(assert_equal(
       predict(kState1, pim, 2.5, kGravity, kOmegaCoriolis),
       predict(kState1, pim, 2.5, kGravity, kOmegaCoriolis, true), 1e-12));
 }
+#endif
 
 // Verifies absent and exactly zero Earth rates recover the fast inertial path.
 TEST(NavState, ExactRotatingEarthZeroLimit) {
   const Vector9 pim{0.08, -0.04, 0.03, 1.2, -0.7, 0.4, 0.5, -0.2, 0.1};
-  const NavState noRotation =
-      kState1.retract(kState1.correctPIM(pim, 2.5, kGravity, {}));
+  const NavState noRotation = predict(kState1, pim, 2.5, kGravity, {});
   EXPECT(assert_equal(noRotation,
                       predict(kState1, pim, 2.5, kGravity, Vector3::Zero()),
                       1e-12));
@@ -594,30 +608,27 @@ TEST(NavState, ExactRotatingEarthLongDurationReference) {
       integrateReference(initial, kDuration, gravity, omega);
   const NavState exact =
       predict(initial, Vector9::Zero(), kDuration, gravity, omega);
+  const double exactError = (exact.position() - reference.position()).norm() +
+                            (exact.velocity() - reference.velocity()).norm();
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
   const Vector9 inertial =
       initial.correctPIM(Vector9::Zero(), kDuration, gravity, {});
   const NavState approximate =
       initial.retract(inertial + initial.coriolis(kDuration, omega, true));
-  const double exactError = (exact.position() - reference.position()).norm() +
-                            (exact.velocity() - reference.velocity()).norm();
   const double approximateError =
       (approximate.position() - reference.position()).norm() +
       (approximate.velocity() - reference.velocity()).norm();
+#endif
   EXPECT(exactError < 1e-8);
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
   EXPECT(approximateError > 1e-2);
+#endif
 }
 
 }  // namespace rotating_earth_fixture
 /* ************************************************************************* */
 
-#if defined(_MSC_VER)
-#pragma warning(pop)
-#elif defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
-
-/* ************************************************************************* */
 TEST(NavState, Stream)
 {
   NavState state;
