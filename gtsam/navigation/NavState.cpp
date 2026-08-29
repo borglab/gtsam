@@ -343,11 +343,8 @@ struct PIMPrediction {
 /** PIM prediction in the ordinary inertial navigation frame. */
 struct PIMPredictionInertial : PIMPrediction {
   /** Make the world increment W, which contains only gravity. */
-  NavState makeW(OptionalJacobian<9, 3> D_W = {}) const {
+  NavState makeW() const {
     const double dt2 = dt * dt;
-    if (D_W) {
-      *D_W << Z_3x3, 0.5 * dt2 * I_3x3, dt * I_3x3;
-    }
     return {Rot3(), 0.5 * gravity * dt2, gravity * dt};
   }
 
@@ -359,17 +356,31 @@ struct PIMPredictionInertial : PIMPrediction {
     //                 X_j = W * phi_dt(X_i) * U.
     //
     // W carries world-frame gravity, while U carries the body-frame PIM.
-    Matrix9 D_U, D_Y_W, D_Y_X, D_Y_U;
-    Matrix93 D_W;
-    const NavState W = makeW(H3 ? &D_W : nullptr);
-    const NavState U = makeU(H2 ? &D_U : nullptr);
-    const NavState Y = propagate(W, X, U, H3 ? &D_Y_W : nullptr,
-                                 H1 ? &D_Y_X : nullptr, H2 ? &D_Y_U : nullptr);
+    const NavState W = makeW();
+    const NavState U = makeU(H2);
+    const Point3 X_p = X.position(), U_p = U.position();
+    const Velocity3 X_v = X.velocity(), U_v = U.velocity();
+    const Rot3 Y_R = X.attitude().compose(U.attitude());
+    const Matrix3 X_R = X.R();
+    const NavState Y{Y_R, W.position() + X_p + X_v * dt + X_R * U_p,
+                     W.velocity() + X_v + X_R * U_v};
 
-    // Each line below is the chain rule for one public argument.
-    if (H1) *H1 = D_Y_X;
-    if (H2) *H2 = D_Y_U * D_U;
-    if (H3) *H3 = D_Y_W * D_W;
+    if (H1) {
+      const Matrix3 deltaRt = U.attitude().transpose();
+      H1->setZero();
+      H1->block<3, 3>(0, 0) = deltaRt;
+      H1->block<3, 3>(3, 0) = -deltaRt * skewSymmetric(U_p);
+      H1->block<3, 3>(3, 3) = deltaRt;
+      H1->block<3, 3>(3, 6) = dt * deltaRt;
+      H1->block<3, 3>(6, 0) = -deltaRt * skewSymmetric(U_v);
+      H1->block<3, 3>(6, 6) = deltaRt;
+    }
+    // makeU has already written its own Jacobian directly into H2.
+    if (H3) {
+      const double dt2 = dt * dt;
+      const Matrix3 Y_Rt = Y_R.transpose();
+      *H3 << Z_3x3, 0.5 * dt2 * Y_Rt, dt * Y_Rt;
+    }
     return Y;
   }
 };

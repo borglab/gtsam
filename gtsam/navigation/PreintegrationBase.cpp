@@ -211,10 +211,27 @@ NavState PreintegrationBase::predict(const NavState& state_i,
                                              H2 ? &D_biasCorrected_bias : nullptr);
 
   Matrix9 D_predict_biasCorrected;
+  const auto& omegaCoriolis = p().omegaCoriolis;
   NavState state_j =
-      state_i.predictPIM(biasCorrected, deltaTij_, n_gravity, p().omegaCoriolis,
+      state_i.predictPIM(biasCorrected, deltaTij_, n_gravity, omegaCoriolis,
                          H1, H2 ? &D_predict_biasCorrected : nullptr, H3);
-  if (H2) *H2 = D_predict_biasCorrected * D_biasCorrected_bias;
+  if (H2) {
+    if (!omegaCoriolis || omegaCoriolis->isZero(0.0)) {
+      // In the inertial path D_predict_biasCorrected is block diagonal. Apply
+      // its three 3x3 blocks without forming a dense 9x9 by 9x6 product.
+      H2->topRows<3>().noalias() =
+          D_predict_biasCorrected.block<3, 3>(0, 0) *
+          D_biasCorrected_bias.topRows<3>();
+      H2->middleRows<3>(3).noalias() =
+          D_predict_biasCorrected.block<3, 3>(3, 3) *
+          D_biasCorrected_bias.middleRows<3>(3);
+      H2->bottomRows<3>().noalias() =
+          D_predict_biasCorrected.block<3, 3>(6, 6) *
+          D_biasCorrected_bias.bottomRows<3>();
+    } else {
+      *H2 = D_predict_biasCorrected * D_biasCorrected_bias;
+    }
+  }
   return state_j;
 }
 
