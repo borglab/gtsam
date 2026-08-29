@@ -337,39 +337,33 @@ NavState NavState::predictPIM(const Vector9& pim, double dt,
 
     if (H1 || H2 || H3) {
       const Matrix3 finalRotationTranspose = predictedRotation.transpose();
-      const Matrix3 initialToFinal =
-          finalRotationTranspose * gammaRotation * initialRotation;
-      const Matrix3 navToFinal = finalRotationTranspose * gammaRotation;
-      const Vector3 pimPositionNav = initialRotation * dP(pim);
-      const Vector3 pimVelocityNav = initialRotation * dV(pim);
+      if (H1 || H2) {
+        // gammaRotation is a function of omegaCross, so they commute. Reuse
+        // the direct initial-to-final and omega-weighted transformations.
+        const Matrix3 gammaInitial = gammaRotation * initialRotation;
+        const Matrix3 initialToFinal = finalRotationTranspose * gammaInitial;
+        const Matrix3 omegaInitialToFinal =
+            finalRotationTranspose * omegaCross * gammaInitial;
 
-      if (H1) {
-        H1->setZero();
-        D_R_R(H1) = deltaRotation.transpose();
-        D_t_R(H1) = finalRotationTranspose * gammaRotation *
-                    (-skewSymmetric(pimPositionNav) * initialRotation);
-        D_t_t(H1) = navToFinal * (I_3x3 + omegaCross * dt) * initialRotation;
-        D_t_v(H1) = navToFinal * initialRotation * dt;
-        D_v_R(H1) = finalRotationTranspose *
-                    (gammaRotation *
-                         (-skewSymmetric(pimVelocityNav) * initialRotation) -
-                     omegaCross * gammaRotation *
-                         (-skewSymmetric(pimPositionNav) * initialRotation));
-        D_v_t(H1) = finalRotationTranspose *
-                    ((gammaRotation * omegaCross -
-                      omegaCross * gammaRotation * (I_3x3 + omegaCross * dt)) *
-                     initialRotation);
-        D_v_v(H1) = finalRotationTranspose *
-                    ((gammaRotation - omegaCross * gammaRotation * dt) *
-                     initialRotation);
-      }
-      if (H2) {
-        H2->setZero();
-        D_R_R(H2) = deltaRotation_H_pimRotation;
-        D_t_t(H2) = initialToFinal;
-        D_v_v(H2) = initialToFinal;
-        D_v_t(H2) = -finalRotationTranspose * omegaCross * gammaRotation *
-                    initialRotation;
+        if (H1) {
+          H1->setZero();
+          D_R_R(H1) = deltaRotation.transpose();
+          D_t_R(H1) = -initialToFinal * skewSymmetric(dP(pim));
+          D_t_t(H1) = initialToFinal + omegaInitialToFinal * dt;
+          D_t_v(H1) = initialToFinal * dt;
+          D_v_R(H1) = -initialToFinal * skewSymmetric(dV(pim)) +
+                      omegaInitialToFinal * skewSymmetric(dP(pim));
+          D_v_t(H1) = -finalRotationTranspose * omegaCross * omegaCross *
+                      gammaInitial * dt;
+          D_v_v(H1) = initialToFinal - omegaInitialToFinal * dt;
+        }
+        if (H2) {
+          H2->setZero();
+          D_R_R(H2) = deltaRotation_H_pimRotation;
+          D_t_t(H2) = initialToFinal;
+          D_v_v(H2) = initialToFinal;
+          D_v_t(H2) = -omegaInitialToFinal;
+        }
       }
       if (H3) {
         H3->setZero();
