@@ -29,6 +29,8 @@
 #include <gtsam/linear/NoiseModel.h>
 
 #include <iosfwd>
+#include <optional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -314,6 +316,40 @@ struct GravityParametrization<Point3> {
     return gravity;
   }
 };
+
+/**
+ * Resolve the gravity magnitude stored by the gravity-aware IMU factors at
+ * construction. For a parametrization with a fixed magnitude (Unit3) this is
+ * the given value, or by default the norm of the gravity vector in the
+ * preintegration params, and it must be positive. For the free-vector
+ * parametrization (Point3) the magnitude is part of the optimized variable,
+ * so none may be given and the stored value is unused. Throws
+ * std::invalid_argument on misuse, including preintegrated measurements
+ * without params when the default is needed.
+ */
+template <class GRAVITY, class PIM>
+double resolveGravityMagnitude(const std::string& factorName, const PIM& pim,
+                               const std::optional<double>& gravityMagnitude) {
+  if (!GravityParametrization<GRAVITY>::usesMagnitude) {
+    if (gravityMagnitude)
+      throw std::invalid_argument(
+          factorName + ": gravityMagnitude is only used by the Unit3 "
+          "parametrization; the Point3 parametrization optimizes the magnitude "
+          "as part of the gravity variable - to constrain it, add a "
+          "VectorNormFactor<3> on the gravity variable instead");
+    return 0.0;
+  }
+  if (!gravityMagnitude && !pim.params())
+    throw std::invalid_argument(
+        factorName + ": the preintegrated measurements have no params to take "
+        "the default gravityMagnitude from");
+  const double magnitude =
+      gravityMagnitude ? *gravityMagnitude : pim.params()->n_gravity.norm();
+  if (!(magnitude > 0.0))
+    throw std::invalid_argument(factorName +
+                                ": gravityMagnitude must be positive");
+  return magnitude;
+}
 
 }  // namespace internal
 

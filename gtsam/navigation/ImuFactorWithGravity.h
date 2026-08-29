@@ -85,21 +85,9 @@ public:
                  preintegratedMeasurements.residualCovariance()),
              pose_i, vel_i, pose_j, vel_j, bias, gravity),
         pim_(preintegratedMeasurements),
-        gravityMagnitude_(gravityMagnitude
-                              ? *gravityMagnitude
-                              : preintegratedMeasurements.params()->n_gravity.norm()) {
-    if (internal::GravityParametrization<GRAVITY>::usesMagnitude) {
-      if (!(gravityMagnitude_ > 0.0))
-        throw std::invalid_argument(
-            "ImuFactorWithGravityT: gravityMagnitude must be positive");
-    } else if (gravityMagnitude) {
-      throw std::invalid_argument(
-          "ImuFactorWithGravityT: gravityMagnitude is only used by the Unit3 "
-          "parametrization; the Point3 parametrization optimizes the magnitude "
-          "as part of the gravity variable - to constrain it, add a "
-          "VectorNormFactor<3> on the gravity variable instead");
-    }
-  }
+        gravityMagnitude_(internal::resolveGravityMagnitude<GRAVITY>(
+            "ImuFactorWithGravityT", preintegratedMeasurements,
+            gravityMagnitude)) {}
 
   ~ImuFactorWithGravityT() override {
   }
