@@ -26,7 +26,6 @@ endif()
 gtsamAddTestsGlob(tests "test*.cpp" "${excluded_tests}" "gtsam")
 
 if(GTSAM_BUILD_TESTS)
-  find_package(Ceres CONFIG QUIET)
   if(Ceres_FOUND)
     message(STATUS "Found Ceres ${CERES_VERSION}; enabling testAdaptAutoDiff")
     gtsamAddTestsGlob(ceres_autodiff "testAdaptAutoDiff.cpp" ""

@@ -1,4 +1,3 @@
-find_package(Ceres CONFIG QUIET)
 if(Ceres_FOUND)
   message(STATUS "Found Ceres ${CERES_VERSION}")
 else()
