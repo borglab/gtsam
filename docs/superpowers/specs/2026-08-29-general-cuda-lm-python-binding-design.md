@@ -101,3 +101,32 @@ Non-CUDA builds are unchanged because all new interface and test wiring is
 inside `GTSAM_ENABLE_CUDA`. Existing Python names under `gtsam.cuda` remain
 unchanged. Moving the shared enum declaration between interface files changes
 only wrapper organization, not its Python-qualified name or C++ definition.
+
+## User Documentation
+
+The binding will be documented through the repository's existing public
+documentation rather than a standalone binding-specific page:
+
+- `python/README.md` will gain a short CUDA bindings section explaining that
+  `gtsam.cuda` is available only in CUDA-enabled source builds, showing the
+  required CMake options, and linking to the CUDA solver guide.
+- `docs/CUDA_LINEAR_SOLVERS.md` will gain the complete Python quick start for
+  both general CUDA LM and CUDA SFM. It will show backend selection, optimizer
+  construction, result access, and the relationship between
+  `GTSAM_ENABLE_CUDA` and optional cuDSS support.
+- `gtsam/nonlinear/doc/SparseLevenbergMarquardtOptimizer.ipynb` will gain a
+  runnable Python PCG example using a small `Pose2` graph. Its cells will be
+  reordered and tagged to follow the repository notebook preamble convention:
+  introduction, removable copyright, Colab badge, removable Colab install,
+  then imports and setup.
+
+The CUDA guide is the canonical feature-level reference. The Python README is
+only the discovery and build entry point, and the notebook is the executable
+tutorial; duplicated backend tables or long API inventories will be avoided.
+The Python examples will use only names exercised by the wrapper tests and
+will state that `DenseCholesky` is SFM-only while cuDSS requires
+`GTSAM_ENABLE_CUDSS=ON`.
+
+Documentation validation will parse the notebook as JSON, verify its required
+cell order and metadata, check local Markdown links, run the notebook's Python
+example against the CUDA-enabled module, and run `git diff --check`.
