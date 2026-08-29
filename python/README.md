@@ -48,6 +48,26 @@ For instructions on updating the version of the [wrap library](https://github.co
 
 - You can also directly run `make python-install` without running `make`, and it will compile all the dependencies accordingly.
 
+## CUDA Bindings
+
+The optional CUDA optimizers are exposed under `gtsam.cuda` only when the
+Python wrapper is built from source with CUDA enabled. Configure and build the
+module with:
+
+```bash
+cmake -S . -B build-cuda -DGTSAM_BUILD_PYTHON=ON \
+  -DGTSAM_ENABLE_CUDA=ON
+cmake --build build-cuda --target gtsam_py -j6
+```
+
+This is sufficient for the matrix-free PCG backend and CUDA SFM dense
+Cholesky. Add `-DGTSAM_ENABLE_CUDSS=ON` to enable the cuDSS sparse direct
+backend; cuDSS must be installed separately.
+
+When CUDA is disabled, `gtsam.cuda` is intentionally absent. See the
+[CUDA linear solver guide](../docs/CUDA_LINEAR_SOLVERS.md) for the General LM
+and SFM Python APIs, backend selection, and examples.
+
 ## Windows Installation
 
 See Windows Installation in INSTALL.md in the root directory.

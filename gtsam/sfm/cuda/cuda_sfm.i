@@ -13,12 +13,6 @@ namespace cuda {
 
 #include <gtsam/sfm/cuda/SfmLevenbergMarquardt.h>
 
-enum class LinearSolverType {
-  DenseCholesky,
-  Cudss,
-  Pcg
-};
-
 class SfmLevenbergMarquardtParams
     : gtsam::LevenbergMarquardtParams {
   SfmLevenbergMarquardtParams();
