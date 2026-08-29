@@ -295,6 +295,161 @@ Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
   return xi;
 }
 
+namespace {
+
+/** Common data and operations for inertial and rotating PIM prediction. */
+struct PIMPrediction {
+  const Vector9& pim;
+  const double dt;
+  const Vector3& gravity;
+
+  /** Make the body-frame PIM increment U = (Delta R, Delta p, Delta v). */
+  NavState makeU(OptionalJacobian<9, 9> D_U = {}) const {
+    Matrix3 D_R;
+    const Rot3 deltaR = Rot3::Expmap(NavState::dR(pim), D_U ? &D_R : nullptr);
+    if (D_U) {
+      const Matrix3 deltaRt = deltaR.transpose();
+      *D_U << D_R, Z_3x3, Z_3x3,  //
+          Z_3x3, deltaRt, Z_3x3,  //
+          Z_3x3, Z_3x3, deltaRt;
+    }
+    return {deltaR, NavState::dP(pim), NavState::dV(pim)};
+  }
+
+  /** Evaluate W * phi_dt(X) * U and differentiate with respect to W, X, U. */
+  NavState propagate(const NavState& W, const NavState& X, const NavState& U,
+                     OptionalJacobian<9, 9> D_Y_W = {},
+                     OptionalJacobian<9, 9> D_Y_X = {},
+                     OptionalJacobian<9, 9> D_Y_U = {}) const {
+    Matrix9 D_F_X, D_Z_F, D_Z_U, D_Y_Z;
+    const NavState::AutonomousFlow phi{dt};
+    if (D_Y_X) D_F_X = phi.dIdentity();
+    const NavState F = phi(X);
+    const NavState Z =
+        F.compose(U, D_Y_X ? &D_Z_F : nullptr, D_Y_U ? &D_Z_U : nullptr);
+    const NavState Y = W.compose(Z, D_Y_W, (D_Y_X || D_Y_U) ? &D_Y_Z : nullptr);
+
+    if (D_Y_X) *D_Y_X = D_Y_Z * D_Z_F * D_F_X;
+    if (D_Y_U) *D_Y_U = D_Y_Z * D_Z_U;
+    return Y;
+  }
+};
+
+/** PIM prediction in the ordinary inertial navigation frame. */
+struct PIMPredictionInertial : PIMPrediction {
+  /** Make the world increment W, which contains only gravity. */
+  NavState makeW(OptionalJacobian<9, 3> D_W = {}) const {
+    const double dt2 = dt * dt;
+    if (D_W) {
+      *D_W << Z_3x3, 0.5 * dt2 * I_3x3, dt * I_3x3;
+    }
+    return {Rot3(), 0.5 * gravity * dt2, gravity * dt};
+  }
+
+  NavState predict(const NavState& X, OptionalJacobian<9, 9> H1 = {},
+                   OptionalJacobian<9, 9> H2 = {},
+                   OptionalJacobian<9, 3> H3 = {}) const {
+    // The ordinary path is deliberately a literal reading of
+    //
+    //                 X_j = W * phi_dt(X_i) * U.
+    //
+    // W carries world-frame gravity, while U carries the body-frame PIM.
+    Matrix9 D_U, D_Y_W, D_Y_X, D_Y_U;
+    Matrix93 D_W;
+    const NavState W = makeW(H3 ? &D_W : nullptr);
+    const NavState U = makeU(H2 ? &D_U : nullptr);
+    const NavState Y = propagate(W, X, U, H3 ? &D_Y_W : nullptr,
+                                 H1 ? &D_Y_X : nullptr, H2 ? &D_Y_U : nullptr);
+
+    // Each line below is the chain rule for one public argument.
+    if (H1) *H1 = D_Y_X;
+    if (H2) *H2 = D_Y_U * D_U;
+    if (H3) *H3 = D_Y_W * D_W;
+    return Y;
+  }
+};
+
+/** PIM prediction in a rotating navigation frame. */
+struct PIMPredictionRotating : PIMPrediction {
+  /** Make the rotating-frame world increment W, including gravity. */
+  NavState makeW(const Vector3& omega, OptionalJacobian<9, 3> D_W = {}) const {
+    const so3::DexpFunctor earthRotation(-omega * dt);
+    const Rot3 A(earthRotation.Rodrigues().left());
+    const Matrix3 gammaVelocity = earthRotation.Jacobian().left();
+
+    // Brossard's Gamma^p is J_l(w) - Gamma_2,l(w) in GTSAM's kernel
+    // convention. Its limit as omega approaches zero is 1/2 I.
+    const Matrix3 gammaPosition = gammaVelocity - earthRotation.Gamma().left();
+
+    const double dt2 = dt * dt;
+    if (D_W) {
+      // NavState uses right-local position and velocity coordinates, hence
+      // the A^T factors in the differential of W.
+      *D_W << Z_3x3,  // rotation does not depend on gravity
+          A.transpose() * gammaPosition * dt2,
+          A.transpose() * gammaVelocity * dt;
+    }
+    return {A, gammaPosition * gravity * dt2, gammaVelocity * gravity * dt};
+  }
+
+  /** Lift physical velocity v to transported velocity v_bar = v + Omega*p. */
+  NavState lift(const NavState& X, const Matrix3& omegaCross,
+                OptionalJacobian<9, 9> D_L_X = {}) const {
+    const Point3 p = X.position();
+    if (D_L_X) {
+      const Matrix3 R = X.attitude().matrix();
+      const Matrix3 omegaBody = R.transpose() * omegaCross * R;
+      *D_L_X << I_3x3, Z_3x3, Z_3x3,  //
+          Z_3x3, I_3x3, Z_3x3,        //
+          Z_3x3, omegaBody, I_3x3;
+    }
+    return {X.attitude(), p, X.velocity() + omegaCross * p};
+  }
+
+  /** Project transported velocity back to physical velocity v. */
+  NavState project(const NavState& Y, const Matrix3& omegaCross,
+                   OptionalJacobian<9, 9> D_P_Y = {}) const {
+    const Point3 p = Y.position();
+    if (D_P_Y) {
+      const Matrix3 R = Y.attitude().matrix();
+      const Matrix3 omegaBody = R.transpose() * omegaCross * R;
+      *D_P_Y << I_3x3, Z_3x3, Z_3x3,  //
+          Z_3x3, I_3x3, Z_3x3,        //
+          Z_3x3, -omegaBody, I_3x3;
+    }
+    return {Y.attitude(), p, Y.velocity() - omegaCross * p};
+  }
+
+  NavState predict(const NavState& X, const Vector3& omega,
+                   OptionalJacobian<9, 9> H1 = {},
+                   OptionalJacobian<9, 9> H2 = {},
+                   OptionalJacobian<9, 3> H3 = {}) const {
+    // The same W * phi(L) * U equation applies after lifting the initial state
+    // to transported velocity. Projection is the only extra operation:
+    //
+    //             X_j = P(W * phi_dt(L(X_i)) * U).
+    Matrix9 D_U, D_L_X, D_Y_W, D_Y_L, D_Y_U, D_P_Y;
+    Matrix93 D_W;
+    const Matrix3 omegaCross = skewSymmetric(omega);
+    const NavState W = makeW(omega, H3 ? &D_W : nullptr);
+    const NavState U = makeU(H2 ? &D_U : nullptr);
+    const NavState L = lift(X, omegaCross, H1 ? &D_L_X : nullptr);
+    const NavState Y = propagate(W, L, U, H3 ? &D_Y_W : nullptr,
+                                 H1 ? &D_Y_L : nullptr, H2 ? &D_Y_U : nullptr);
+    const NavState P =
+        project(Y, omegaCross, (H1 || H2 || H3) ? &D_P_Y : nullptr);
+
+    // The short D_* names keep the complete chain rule visible next to the
+    // equally visible value computation above.
+    if (H1) *H1 = D_P_Y * D_Y_L * D_L_X;
+    if (H2) *H2 = D_P_Y * D_Y_U * D_U;
+    if (H3) *H3 = D_P_Y * D_Y_W * D_W;
+    return P;
+  }
+};
+
+}  // namespace
+
 //------------------------------------------------------------------------------
 NavState NavState::predictPIM(const Vector9& pim, double dt,
                               const Vector3& n_gravity,
@@ -303,123 +458,10 @@ NavState NavState::predictPIM(const Vector9& pim, double dt,
                               OptionalJacobian<9, 9> H2,
                               OptionalJacobian<9, 3> H3) const {
   if (omegaCoriolis && !omegaCoriolis->isZero(0.0)) {
-    const Vector3& omega = *omegaCoriolis;
-    const Vector3 earthRotationTangent = -omega * dt;
-    const so3::DexpFunctor earthRotation(earthRotationTangent);
-    const Matrix3 gammaRotation = earthRotation.Rodrigues().left();
-    const Matrix3 gammaVelocity = earthRotation.Jacobian().left();
-    // Brossard's Gamma^p integrates Gamma^v - Omega x Gamma^p. In
-    // GTSAM's kernel convention this is J_l(w) - Gamma_2,l(w), not
-    // Gamma_2,l(w) alone.
-    const Matrix3 gammaPosition = gammaVelocity - earthRotation.Gamma().left();
-    const Matrix3 initialRotation = R_.matrix();
-    const Point3 initialPosition = position();
-    const Velocity3 initialVelocity = velocity();
-    Matrix3 deltaRotation_H_pimRotation;
-    const Rot3 deltaRotation =
-        Rot3::Expmap(dR(pim), H2 ? &deltaRotation_H_pimRotation : nullptr);
-    const Matrix3 omegaCross = skewSymmetric(omega);
-
-    const Rot3 predictedRotation(gammaRotation * initialRotation *
-                                 deltaRotation.matrix());
-    const Point3 predictedPosition =
-        gammaPosition * n_gravity * (dt * dt) +
-        gammaRotation * (initialPosition +
-                         (initialVelocity + omegaCross * initialPosition) * dt +
-                         initialRotation * dP(pim));
-    const Velocity3 predictedVelocity =
-        gammaVelocity * n_gravity * dt +
-        gammaRotation * (initialVelocity + omegaCross * initialPosition +
-                         initialRotation * dV(pim)) -
-        omegaCross * predictedPosition;
-    const NavState predicted(predictedRotation, predictedPosition,
-                             predictedVelocity);
-
-    if (H1 || H2 || H3) {
-      const Matrix3 finalRotationTranspose = predictedRotation.transpose();
-      if (H1 || H2) {
-        // gammaRotation is a function of omegaCross, so they commute. Reuse
-        // the direct initial-to-final and omega-weighted transformations.
-        const Matrix3 gammaInitial = gammaRotation * initialRotation;
-        const Matrix3 initialToFinal = finalRotationTranspose * gammaInitial;
-        const Matrix3 omegaInitialToFinal =
-            finalRotationTranspose * omegaCross * gammaInitial;
-
-        if (H1) {
-          H1->setZero();
-          D_R_R(H1) = deltaRotation.transpose();
-          D_t_R(H1) = -initialToFinal * skewSymmetric(dP(pim));
-          D_t_t(H1) = initialToFinal + omegaInitialToFinal * dt;
-          D_t_v(H1) = initialToFinal * dt;
-          D_v_R(H1) = -initialToFinal * skewSymmetric(dV(pim)) +
-                      omegaInitialToFinal * skewSymmetric(dP(pim));
-          D_v_t(H1) = -finalRotationTranspose * omegaCross * omegaCross *
-                      gammaInitial * dt;
-          D_v_v(H1) = initialToFinal - omegaInitialToFinal * dt;
-        }
-        if (H2) {
-          H2->setZero();
-          D_R_R(H2) = deltaRotation_H_pimRotation;
-          D_t_t(H2) = initialToFinal;
-          D_v_v(H2) = initialToFinal;
-          D_v_t(H2) = -omegaInitialToFinal;
-        }
-      }
-      if (H3) {
-        H3->setZero();
-        H3->block<3, 3>(3, 0) =
-            finalRotationTranspose * gammaPosition * (dt * dt);
-        H3->block<3, 3>(6, 0) =
-            finalRotationTranspose *
-            (gammaVelocity * dt - omegaCross * gammaPosition * (dt * dt));
-      }
-    }
-    return predicted;
+    return PIMPredictionRotating{{pim, dt, n_gravity}}.predict(
+        *this, *omegaCoriolis, H1, H2, H3);
   }
-
-  const Matrix3 initialRotation = R_.matrix();
-  Matrix3 deltaRotation_H_pimRotation;
-  const Rot3 deltaRotation =
-      Rot3::Expmap(dR(pim), H2 ? &deltaRotation_H_pimRotation : nullptr);
-  const Rot3 predictedRotation = R_.compose(deltaRotation);
-  const Point3 predictedPosition = position() + velocity() * dt +
-                                   0.5 * n_gravity * (dt * dt) +
-                                   initialRotation * dP(pim);
-  const Velocity3 predictedVelocity =
-      velocity() + n_gravity * dt + initialRotation * dV(pim);
-  const NavState predicted(predictedRotation, predictedPosition,
-                           predictedVelocity);
-
-  if (H1 || H2 || H3) {
-    const Matrix3 finalRotationTranspose = predictedRotation.transpose();
-    const Matrix3 initialToFinal = deltaRotation.transpose();
-
-    if (H1) {
-      const Vector3 pimPositionNav = initialRotation * dP(pim);
-      const Vector3 pimVelocityNav = initialRotation * dV(pim);
-      H1->setZero();
-      D_R_R(H1) = initialToFinal;
-      D_t_R(H1) = finalRotationTranspose *
-                  (-skewSymmetric(pimPositionNav) * initialRotation);
-      D_t_t(H1) = initialToFinal;
-      D_t_v(H1) = initialToFinal * dt;
-      D_v_R(H1) = finalRotationTranspose *
-                  (-skewSymmetric(pimVelocityNav) * initialRotation);
-      D_v_v(H1) = initialToFinal;
-    }
-    if (H2) {
-      H2->setZero();
-      D_R_R(H2) = deltaRotation_H_pimRotation;
-      D_t_t(H2) = initialToFinal;
-      D_v_v(H2) = initialToFinal;
-    }
-    if (H3) {
-      H3->setZero();
-      H3->block<3, 3>(3, 0) = finalRotationTranspose * (0.5 * dt * dt);
-      H3->block<3, 3>(6, 0) = finalRotationTranspose * dt;
-    }
-  }
-  return predicted;
+  return PIMPredictionInertial{{pim, dt, n_gravity}}.predict(*this, H1, H2, H3);
 }
 
 //------------------------------------------------------------------------------
