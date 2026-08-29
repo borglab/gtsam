@@ -212,7 +212,6 @@ void propagateCombinedCovariance(Matrix15* covariance, const Matrix9& A,
   covariance->block<3, 3>(6, 3).noalias() += B2Covariance * B1.transpose();
   covariance->block<3, 3>(6, 6).noalias() += B2Covariance * B2.transpose();
   if (useFullGyroscope) {
-    const Matrix3 C0Covariance = C0 * scaledGyroscopeCovariance;
     const Matrix3 C1Covariance = C1 * scaledGyroscopeCovariance;
     const Matrix3 C2Covariance = C2 * scaledGyroscopeCovariance;
     covariance->block<3, 3>(3, 0).noalias() += C1Covariance * C0.transpose();
