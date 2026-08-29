@@ -81,6 +81,9 @@ class TestGalileanImuFactor(GtsamTestCase):
         factor = gtsam.GalileanImuFactor(0, 1, 2, 3, 4, pim)
         self.assertEqualityOnPickleRoundtrip(factor)
 
+        navstate_factor = gtsam.GalileanImuFactor2(0, 1, 2, pim)
+        self.assertEqualityOnPickleRoundtrip(navstate_factor)
+
         combined_params = gtsam.PreintegrationCombinedParams.MakeSharedD(9.81)
         combined_params.setAccelerometerCovariance(1e-4 * np.eye(3))
         combined_params.setGyroscopeCovariance(1e-6 * np.eye(3))
@@ -144,6 +147,15 @@ class TestGalileanImuFactor(GtsamTestCase):
         np.testing.assert_allclose(error, np.zeros(9), atol=1e-9)
         self.assertTrue(
             factor.preintegratedMeasurements().equals(pim, 1e-12))
+
+        navstate_factor = gtsam.GalileanImuFactor2(
+            gtsam.symbol("x", 0), gtsam.symbol("x", 1),
+            gtsam.symbol("b", 0), pim)
+        navstate_error = navstate_factor.evaluateError(
+            state_i, state_j, bias_hat)
+        np.testing.assert_allclose(navstate_error, np.zeros(9), atol=1e-9)
+        self.assertTrue(
+            navstate_factor.preintegratedMeasurements().equals(pim, 1e-12))
 
     def test_combined_factor(self):
         """A predicted endpoint has zero Combined Galilean navigation error."""

@@ -380,6 +380,26 @@ virtual class GalileanImuFactor: gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
+virtual class GalileanImuFactor2: gtsam::NoiseModelFactor {
+  GalileanImuFactor2();
+  GalileanImuFactor2(
+      gtsam::Key state_i, gtsam::Key state_j, gtsam::Key bias,
+      const gtsam::PreintegratedImuMeasurementsG& preintegratedMeasurements);
+
+  // Standard Interface
+  const gtsam::PreintegratedImuMeasurementsG&
+  preintegratedMeasurements() const;
+  gtsam::Vector9 evaluateError(
+      const gtsam::NavState& state_i, const gtsam::NavState& state_j,
+      const gtsam::imuBias::ConstantBias& bias_i,
+      gtsam::OptionalMatrixType H1 = nullptr,
+      gtsam::OptionalMatrixType H2 = nullptr,
+      gtsam::OptionalMatrixType H3 = nullptr) const;
+
+  // enable serialization functionality
+  void serialize() const;
+};
+
 #include <gtsam/navigation/ImuFactorWithGravity.h>
 template <PIM, GRAVITY>
 virtual class ImuFactorWithGravityT : gtsam::NoiseModelFactor {
