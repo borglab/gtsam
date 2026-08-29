@@ -27,6 +27,7 @@ class TestGalileanImuFactor(GtsamTestCase):
             gtsam.PreintegratedImuMeasurementsManifold,
             gtsam.PreintegratedImuMeasurementsTangent,
             gtsam.PreintegratedImuMeasurementsLieGroup,
+            gtsam.PreintegratedImuMeasurementsG,
         )
 
         aliases_of_default = [
@@ -44,6 +45,23 @@ class TestGalileanImuFactor(GtsamTestCase):
             self.assertEqual((9, 9), pim.preintMeasCov().shape)
             self.assertEqual((9, 9), pim.residualCovariance().shape)
             self.assertEqual((6,), pim.biasHatVector().shape)
+
+    @unittest.skipUnless(
+        hasattr(gtsam.PreintegratedImuMeasurementsG, "serialize"),
+        "Serialization not enabled")
+    def test_serialization(self):
+        """The Galilean PIM and factor survive Python pickle round trips."""
+        params = gtsam.PreintegrationParams.MakeSharedD(9.81)
+        params.setAccelerometerCovariance(1e-4 * np.eye(3))
+        params.setGyroscopeCovariance(1e-6 * np.eye(3))
+        params.setIntegrationCovariance(1e-8 * np.eye(3))
+        pim = gtsam.PreintegratedImuMeasurementsG(params)
+        pim.integrateMeasurement(np.array([0.2, -0.1, 9.7]),
+                                 np.array([0.03, -0.02, 0.01]), 0.01)
+        self.assertEqualityOnPickleRoundtrip(pim)
+
+        factor = gtsam.GalileanImuFactor(0, 1, 2, 3, 4, pim)
+        self.assertEqualityOnPickleRoundtrip(factor)
 
     def test_preintegrate_predict_and_factor(self):
         """A predicted endpoint has zero Galilean IMU factor error."""

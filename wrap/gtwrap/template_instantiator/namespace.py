@@ -64,7 +64,8 @@ def instantiate_namespace(namespace):
                 typedef_content.append(
                     InstantiatedClass(original_element,
                                       typedef_inst.typename.instantiations,
-                                      typedef_inst.new_name))
+                                      typedef_inst.new_name,
+                                      typedef_inst.serializable))
             elif isinstance(original_element, parser.GlobalFunction):
                 typedef_content.append(
                     InstantiatedGlobalFunction(

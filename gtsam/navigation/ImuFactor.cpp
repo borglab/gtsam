@@ -179,6 +179,8 @@ template class GTSAM_EXPORT PreintegratedImuMeasurementsT<ManifoldPreintegration
 template class GTSAM_EXPORT PreintegratedImuMeasurementsT<TangentPreintegration>;
 template class GTSAM_EXPORT
     PreintegratedImuMeasurementsT<LieGroupPreintegration>;
+template class GTSAM_EXPORT
+    PreintegratedImuMeasurementsT<GalileanPreintegration>;
 
 // ImuFactorT instantiations
 template class GTSAM_EXPORT ImuFactorT<PreintegratedImuMeasurementsT<ManifoldPreintegration>>;

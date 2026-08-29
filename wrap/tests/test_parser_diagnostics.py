@@ -124,6 +124,20 @@ class Foo {
         )
         self.assertIn("immediately before the callable", error.hint)
 
+    def test_misplaced_serializable_annotation(self):
+        """The serialization annotation applies only to template typedefs."""
+        error = self.assert_parse_error(
+            "@serializable class Foo {};",
+            line=1,
+            column=1,
+            context="typedef annotation",
+            expected=(
+                "annotation '@serializable' can only be applied to a template "
+                "typedef"
+            ),
+        )
+        self.assertIn("immediately before the typedef", error.hint)
+
     def test_misplaced_annotation_after_template(self):
         self.assert_parse_error(
             "class Foo { template<T> @pybind_lambda Foo(T value); };",

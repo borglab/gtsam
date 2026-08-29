@@ -155,10 +155,10 @@ public:
    * \qquad \Delta R=\operatorname{Exp}(\theta),
    * \f]
    * where \f$J_r\f$ is the SO(3) right Jacobian. Therefore its covariance is
-   * converted as \f$J P J^T\f$. ManifoldPreintegration and
-   * LieGroupPreintegration already propagate covariance in the residual chart
-   * and return it unchanged. This conversion does not redefine the nonlinear
-   * residual or alter the raw covariance returned by preintMeasCov().
+   * converted as \f$J P J^T\f$. Other backends already propagate covariance
+   * in the residual chart and return it unchanged. This conversion does not
+   * redefine the nonlinear residual or alter the raw covariance returned by
+   * preintMeasCov().
    */
   Matrix9 residualCovariance() const {
     if constexpr (std::is_same_v<PreintegrationType,

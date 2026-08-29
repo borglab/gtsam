@@ -114,6 +114,26 @@ namespace py = pybind11;
 
         self.compare_and_diff('geometry_pybind.cpp', output)
 
+    def test_serializable_template_typedef(self):
+        """Serialization metadata applies to one template typedef only."""
+        source = osp.join(self.INTERFACE_DIR, 'serializable_typedef.i')
+        output = self.wrap_content([source],
+                                   'serializable_typedef_py',
+                                   self.PYTHON_ACTUAL_DIR,
+                                   use_boost_serialization=True)
+        with open(output, 'r', encoding='UTF-8') as generated:
+            content = generated.read()
+
+        self.assertEqual(1, content.count('.def("serialize"'))
+        self.assertEqual(1, content.count('.def("deserialize"'))
+        self.assertEqual(1, content.count('.def(py::pickle('))
+        self.assertIn(
+            'BOOST_CLASS_EXPORT(gtsam::SerializableTypedefFixture<int>)',
+            content)
+        self.assertNotIn(
+            'BOOST_CLASS_EXPORT(gtsam::SerializableTypedefFixture<double>)',
+            content)
+
     def test_functions(self):
         """Test interface file with function info."""
         source = osp.join(self.INTERFACE_DIR, 'functions.i')

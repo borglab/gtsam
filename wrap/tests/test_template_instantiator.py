@@ -645,6 +645,35 @@ class TestTemplateInstantiator(unittest.TestCase):
             if isinstance(item, Class) and item.name == "IntAdapter")
         self.assertTrue(typedef_class.methods[0].force_pybind_lambda)
 
+    def test_serializable_typedef_adds_only_alias_marker(self):
+        """Serialization metadata applies only to the annotated typedef."""
+        module = Module.parse_string("""
+            namespace adapters {
+                template<T>
+                class Adapter {
+                    Adapter();
+                };
+                @serializable
+                typedef adapters::Adapter<int> SerializableAdapter;
+                typedef adapters::Adapter<double> PlainAdapter;
+            }
+        """)
+
+        instantiated = instantiate_namespace(module)
+        namespace = instantiated.content[0]
+        serializable = next(
+            item for item in namespace.content
+            if isinstance(item, Class) and item.name == "SerializableAdapter")
+        plain = next(
+            item for item in namespace.content
+            if isinstance(item, Class) and item.name == "PlainAdapter")
+
+        self.assertTrue(serializable.serializable)
+        self.assertEqual(["serialize"],
+                         [method.name for method in serializable.methods])
+        self.assertFalse(plain.serializable)
+        self.assertEqual([], plain.methods)
+
 
 if __name__ == '__main__':
     unittest.main()

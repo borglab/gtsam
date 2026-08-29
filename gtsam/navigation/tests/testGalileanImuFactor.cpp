@@ -28,16 +28,32 @@ namespace galilean_imu_factor {
 using PIM = PreintegratedImuMeasurementsG;
 using Bias = imuBias::ConstantBias;
 
+static_assert(
+    std::is_same_v<PIM,
+                   PreintegratedImuMeasurementsT<GalileanPreintegration>>);
+
 class TestPIM : public PIM {
  public:
-  using PIM::LiftJacobian;
-  using PIM::NavStateProjector;
   using PIM::PIM;
 
   const Gal3& preintegratedGal3() const { return preintMatrix_; }
   const Matrix106& biasJacobian() const { return biasJacobian_; }
-  const Matrix10& gal3Covariance() const { return preintMeasCov_; }
 };
+
+PIM::Matrix106 LiftJacobian() {
+  PIM::Matrix106 lift = PIM::Matrix106::Zero();
+  lift.block<3, 3>(0, 3) = I_3x3;
+  lift.block<3, 3>(3, 0) = I_3x3;
+  return lift;
+}
+
+PIM::Matrix910 NavStateProjector() {
+  PIM::Matrix910 projector = PIM::Matrix910::Zero();
+  projector.block<3, 3>(0, 0) = I_3x3;
+  projector.block<3, 3>(3, 6) = I_3x3;
+  projector.block<3, 3>(6, 3) = I_3x3;
+  return projector;
+}
 
 Vector9 Components(const Gal3& g) {
   Vector9 result;
@@ -63,7 +79,7 @@ TEST(GalileanImuFactor, PhysicalInputLift) {
   Vector10 expected = Vector10::Zero();
   expected.head<3>() = omega;
   expected.segment<3>(3) = acc;
-  const Vector10 actual = TestPIM::LiftJacobian() * input;
+  const Vector10 actual = LiftJacobian() * input;
   EXPECT(assert_equal(expected, actual, 1e-12));
 }
 
@@ -81,6 +97,7 @@ TEST(GalileanImuFactor, MeanUsesRightComposition) {
   const Gal3 expected = Gal3::Expmap(Input(acc1, omega1, dt1))
                             .compose(Gal3::Expmap(Input(acc2, omega2, dt2)));
   EXPECT(assert_equal(expected, pim.preintegratedGal3(), 1e-12));
+  EXPECT(assert_equal(Components(expected), pim.preintegrated(), 1e-12));
   DOUBLES_EQUAL(dt1 + dt2, pim.deltaTij(), 1e-12);
 }
 
@@ -96,7 +113,7 @@ TEST(GalileanImuFactor, PhysicalBiasJacobian) {
 
   PIM::Matrix10 Jr;
   Gal3::Expmap(Input(acc, omega, dt), Jr);
-  const PIM::Matrix106 expected = -Jr * TestPIM::LiftJacobian() * dt;
+  const PIM::Matrix106 expected = -Jr * LiftJacobian() * dt;
   EXPECT(assert_equal(expected, pim.biasJacobian(), 1e-12));
 }
 
@@ -122,7 +139,7 @@ TEST(GalileanImuFactor, UpdateJacobiansWithSensorPose) {
       correctedOmega_H_omega);
   const Gal3 increment =
       Gal3::Expmap(Input(correctedAcc, correctedOmega, dt), Jr);
-  const auto P = TestPIM::NavStateProjector();
+  const auto P = NavStateProjector();
   const Matrix9 expectedA =
       P * increment.inverse().AdjointMap() * P.transpose();
   EXPECT(assert_equal(expectedA, A, 1e-12));
@@ -144,29 +161,37 @@ TEST(GalileanImuFactor, UpdateJacobiansWithSensorPose) {
       1e-7));
 }
 
-// Covariance is propagated in Gal3 order and projected to NavState order.
+// Generic 9D covariance propagation equals full Gal3 propagation followed by
+// removal of deterministic time, including across multiple measurements.
 TEST(GalileanImuFactor, CovarianceProjection) {
   const auto params = PreintegrationParams::MakeSharedU(9.81);
   params->accelerometerCovariance = (Vector3(1e-3, 2e-3, 3e-3)).asDiagonal();
   params->gyroscopeCovariance = (Vector3(4e-4, 5e-4, 6e-4)).asDiagonal();
   params->integrationCovariance = (Vector3(7e-5, 8e-5, 9e-5)).asDiagonal();
-  const Vector3 acc(0.2, -0.1, 0.4), omega(0.1, 0.3, -0.2);
-  const double dt = 0.04;
-
   TestPIM pim(params);
-  pim.integrateMeasurement(acc, omega, dt);
-
-  PIM::Matrix10 Jr;
-  Gal3::Expmap(Input(acc, omega, dt), Jr);
-  const PIM::Matrix106 C = Jr * TestPIM::LiftJacobian() * dt;
   Matrix6 inputCovariance = Matrix6::Zero();
   inputCovariance.block<3, 3>(0, 0) = params->accelerometerCovariance;
   inputCovariance.block<3, 3>(3, 3) = params->gyroscopeCovariance;
-  PIM::Matrix10 expectedGal = C * (inputCovariance / dt) * C.transpose();
-  expectedGal.block<3, 3>(6, 6) += params->integrationCovariance * dt;
+  PIM::Matrix10 expectedGal = PIM::Matrix10::Zero();
 
-  EXPECT(assert_equal(expectedGal, pim.gal3Covariance(), 1e-12));
-  const auto P = TestPIM::NavStateProjector();
+  const auto integrate = [&](const Vector3& acc, const Vector3& omega,
+                             double dt) {
+    PIM::Matrix10 rightJacobian;
+    const Gal3 increment =
+        Gal3::Expmap(Input(acc, omega, dt), rightJacobian);
+    const PIM::Matrix10 transition = increment.inverse().AdjointMap();
+    const PIM::Matrix106 inputJacobian = rightJacobian * LiftJacobian() * dt;
+    expectedGal = transition * expectedGal * transition.transpose();
+    expectedGal.noalias() += inputJacobian * (inputCovariance / dt) *
+                             inputJacobian.transpose();
+    expectedGal.block<3, 3>(6, 6) += params->integrationCovariance * dt;
+    pim.integrateMeasurement(acc, omega, dt);
+  };
+
+  integrate(Vector3(0.2, -0.1, 0.4), Vector3(0.1, 0.3, -0.2), 0.04);
+  integrate(Vector3(-0.3, 0.5, 0.1), Vector3(-0.2, 0.1, 0.4), 0.07);
+
+  const auto P = NavStateProjector();
   const Matrix9 expectedNav = P * expectedGal * P.transpose();
   EXPECT(assert_equal(expectedNav, pim.preintMeasCov(), 1e-12));
   EXPECT(assert_equal(pim.preintMeasCov(), pim.residualCovariance(), 1e-12));
@@ -181,6 +206,14 @@ TEST(GalileanImuFactor, RightAppliedBiasCorrection) {
                            0.03);
   pim.integrateMeasurement(Vector3(-0.1, 0.5, 9.6), Vector3(-0.2, 0.1, 0.3),
                            0.06);
+
+  Matrix96 zeroH;
+  const Vector9 zeroCorrected = pim.biasCorrectedDelta(biasHat, zeroH);
+  EXPECT(
+      assert_equal(Components(pim.preintegratedGal3()), zeroCorrected, 1e-12));
+  const Matrix numericalZeroH = numericalDerivative11<Vector9, Bias>(
+      [&](const Bias& b) { return pim.biasCorrectedDelta(b); }, biasHat, 1e-6);
+  EXPECT(assert_equal(numericalZeroH, zeroH, 2e-8));
 
   const Vector6 db =
       (Vector6() << 1e-4, -2e-4, 1.5e-4, -1e-4, 0.5e-4, 2e-4).finished();
