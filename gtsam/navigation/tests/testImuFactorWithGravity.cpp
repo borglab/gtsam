@@ -140,7 +140,8 @@ TEST(ImuFactorWithGravity, ConstructorValidation) {
                   std::invalid_argument);
   // Without params there is no default magnitude for the Unit3 parametrization
   // to fall back on; an explicit one still works, and Point3 needs none:
-  const PreintegratedImuMeasurements noParams;
+  const PreintegratedImuMeasurements noParams(
+      std::shared_ptr<PreintegrationParams>{});
   CHECK_EXCEPTION(ImuFactorWithGravityDirection(X(1), V(1), X(2), V(2), B(1),
                                                 G(0), noParams),
                   std::invalid_argument);
