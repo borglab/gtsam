@@ -215,13 +215,15 @@ using PreintegratedImuMeasurements = PreintegratedImuMeasurementsT<DefaultPreint
  * @ingroup navigation
  */
 template <class PIM = PreintegratedImuMeasurements>
-class GTSAM_EXPORT ImuFactorT: public NoiseModelFactorN<Pose3, Vector3, Pose3, Vector3,
-    imuBias::ConstantBias> {
+class GTSAM_EXPORT ImuFactorT
+    : public NoiseModelFactorT<Vector9, Pose3, Vector3, Pose3, Vector3,
+                               imuBias::ConstantBias> {
 private:
 
   typedef ImuFactorT<PIM> This;
-  typedef NoiseModelFactorN<Pose3, Vector3, Pose3, Vector3,
-      imuBias::ConstantBias> Base;
+  typedef NoiseModelFactorT<Vector9, Pose3, Vector3, Pose3, Vector3,
+                            imuBias::ConstantBias>
+      Base;
 
   PIM pim_;
 
@@ -278,10 +280,12 @@ public:
   /** implement functions needed to derive from Factor */
 
   /// vector of errors
-  Vector evaluateError(const Pose3& pose_i, const Vector3& vel_i,
-      const Pose3& pose_j, const Vector3& vel_j,
-      const imuBias::ConstantBias& bias_i, OptionalMatrixType H1, OptionalMatrixType H2,
-      OptionalMatrixType H3, OptionalMatrixType H4, OptionalMatrixType H5) const override;
+  Vector9 evaluateError(const Pose3& pose_i, const Vector3& vel_i,
+                        const Pose3& pose_j, const Vector3& vel_j,
+                        const imuBias::ConstantBias& bias_i,
+                        OptionalMatrixType H1, OptionalMatrixType H2,
+                        OptionalMatrixType H3, OptionalMatrixType H4,
+                        OptionalMatrixType H5) const override;
 
   /// Merge two pre-integrated measurement classes
   template <typename MethodPIMArg = PIM,

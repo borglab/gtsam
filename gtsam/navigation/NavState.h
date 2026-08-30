@@ -230,24 +230,41 @@ public:
                   OptionalJacobian<9, 3> G1 = {},
                   OptionalJacobian<9, 3> G2 = {}) const;
 
-  /// Compute the legacy approximate tangent-space Coriolis contribution.
-  [[deprecated("Use correctPIM with omegaCoriolis for exact prediction")]]
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  /**
+   * Compute the legacy approximate tangent-space Coriolis contribution.
+   * @deprecated Configure omegaCoriolis and use a concrete PIM's predict()
+   * method for exact rotating-frame dynamics.
+   */
   Vector9 coriolis(double dt, const Vector3& omega, bool secondOrder = false,
                    OptionalJacobian<9, 9> H = {}) const;
 
-  /// Correct a preintegrated tangent vector using the initial state and
-  /// gravity. If omegaCoriolis is present and nonzero, uses the exact
-  /// rotating-frame transition of Brossard et al.; otherwise preserves the
-  /// inertial fast path.
+  /**
+   * Correct a preintegrated tangent vector using the initial state and gravity.
+   * @deprecated Use a concrete PIM's predict() method, which returns the
+   * predicted NavState directly and supports exact rotating-frame dynamics.
+   */
   Vector9 correctPIM(const Vector9& pim, double dt, const Vector3& n_gravity,
-      const std::optional<Vector3>& omegaCoriolis, bool use2ndOrderCoriolis =
-          false, OptionalJacobian<9, 9> H1 = {},
-      OptionalJacobian<9, 9> H2 = {},
-      OptionalJacobian<9, 3> H3 = {}) const;
+                     const std::optional<Vector3>& omegaCoriolis,
+                     bool use2ndOrderCoriolis = false,
+                     OptionalJacobian<9, 9> H1 = {},
+                     OptionalJacobian<9, 9> H2 = {},
+                     OptionalJacobian<9, 3> H3 = {}) const;
+#endif
 
   /// @}
 
 private:
+  friend class PreintegrationBase;
+
+  // Return the predicted state directly, avoiding a local/retract round-trip.
+  NavState predictPIM(const Vector9& pim, double dt,
+                      const Vector3& n_gravity,
+                      const std::optional<Vector3>& omegaCoriolis,
+                      OptionalJacobian<9, 9> H1 = {},
+                      OptionalJacobian<9, 9> H2 = {},
+                      OptionalJacobian<9, 3> H3 = {}) const;
+
   /// @{
   /// serialization
 #if GTSAM_ENABLE_BOOST_SERIALIZATION  ///

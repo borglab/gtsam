@@ -210,25 +210,28 @@ NavState PreintegrationBase::predict(const NavState& state_i,
   Vector9 biasCorrected = biasCorrectedDelta(bias_i,
                                              H2 ? &D_biasCorrected_bias : nullptr);
 
-  // Correct for initial velocity and gravity
-  Matrix9 D_delta_state, D_delta_biasCorrected;
-  Matrix93 D_delta_gravity;
-  Vector9 xi = state_i.correctPIM(biasCorrected, deltaTij_, n_gravity,
-                                  p().omegaCoriolis, p().use2ndOrderCoriolis, H1 ? &D_delta_state : nullptr,
-                                  H2 ? &D_delta_biasCorrected : nullptr,
-                                  H3 ? &D_delta_gravity : nullptr);
-
-  // Use retract to get back to NavState manifold
-  Matrix9 D_predict_state, D_predict_delta;
-  NavState state_j = state_i.retract(xi,
-                                     H1 ? &D_predict_state : nullptr,
-                                     H1 || H2 || H3 ? &D_predict_delta : nullptr);
-  if (H1)
-    *H1 = D_predict_state + D_predict_delta * D_delta_state;
-  if (H2)
-    *H2 = D_predict_delta * D_delta_biasCorrected * D_biasCorrected_bias;
-  if (H3)
-    *H3 = D_predict_delta * D_delta_gravity;
+  Matrix9 D_predict_biasCorrected;
+  const auto& omegaCoriolis = p().omegaCoriolis;
+  NavState state_j =
+      state_i.predictPIM(biasCorrected, deltaTij_, n_gravity, omegaCoriolis,
+                         H1, H2 ? &D_predict_biasCorrected : nullptr, H3);
+  if (H2) {
+    if (!omegaCoriolis || omegaCoriolis->isZero(0.0)) {
+      // In the inertial path D_predict_biasCorrected is block diagonal. Apply
+      // its three 3x3 blocks without forming a dense 9x9 by 9x6 product.
+      H2->topRows<3>().noalias() =
+          D_predict_biasCorrected.block<3, 3>(0, 0) *
+          D_biasCorrected_bias.topRows<3>();
+      H2->middleRows<3>(3).noalias() =
+          D_predict_biasCorrected.block<3, 3>(3, 3) *
+          D_biasCorrected_bias.middleRows<3>(3);
+      H2->bottomRows<3>().noalias() =
+          D_predict_biasCorrected.block<3, 3>(6, 6) *
+          D_biasCorrected_bias.bottomRows<3>();
+    } else {
+      *H2 = D_predict_biasCorrected * D_biasCorrected_bias;
+    }
+  }
   return state_j;
 }
 

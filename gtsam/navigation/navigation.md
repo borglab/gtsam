@@ -262,9 +262,10 @@ The key components are:
   $R_j=\operatorname{Exp}(w)R_i\Delta R_{ij}$.
 - `use2ndOrderCoriolis` remains in `PreintegrationParams` and its serialized
   layout for compatibility, but it is ignored: the exact model is used for
-  every nonzero `omegaCoriolis`. `NavState::coriolis` and
-  `PreintegratedRotation::integrateCoriolis` are retained as deprecated legacy
-  helpers and are no longer used internally.
+  every nonzero `omegaCoriolis`. `NavState::coriolis`, `NavState::correctPIM`,
+  and `PreintegratedRotation::integrateCoriolis` are retained behind the GTSAM
+  4.3 deprecation guard and are no longer used internally. Use a concrete
+  PIM's `predict` method instead.
 - `n_gravity` must be the gravity vector consistent with the chosen
   navigation-frame origin. If a local frame is translated, absorb the constant
   centrifugal contribution associated with that origin shift into

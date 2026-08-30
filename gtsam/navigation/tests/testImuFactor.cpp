@@ -292,7 +292,45 @@ static const NavState state2(x2, v2);
 } // namespace common
 
 /* ************************************************************************* */
-namespace ternary_linearization {
+namespace fixed_linearization {
+
+// Verifies fixed-size five-way IMU linearization changes only the factor type.
+TEST_PIM(ImuFactor, FiveWayLinearizationIsBitwiseIdentical) {
+  using namespace common;
+  PIM pim(testing::Params());
+  pim.integrateMeasurement(measuredAcc, measuredOmega, deltaT);
+
+  const Key pose1Key = 101, velocity1Key = 102, pose2Key = 103;
+  const Key velocity2Key = 104, biasKey = 105;
+  const ImuFactorT<PIM> factor(pose1Key, velocity1Key, pose2Key, velocity2Key,
+                               biasKey, pim);
+  const Values values{{pose1Key, genericValue(x1)},
+                      {velocity1Key, genericValue(v1)},
+                      {pose2Key, genericValue(x2)},
+                      {velocity2Key, genericValue(v2)},
+                      {biasKey, genericValue(kZeroBias)}};
+  const auto expectedBase = factor.NoiseModelFactor::linearize(values);
+  const auto actualBase = factor.linearize(values);
+  const auto expected = std::dynamic_pointer_cast<JacobianFactor>(expectedBase);
+  const auto actual = std::dynamic_pointer_cast<JacobianFactor>(actualBase);
+
+  const bool isFixed = static_cast<bool>(
+      std::dynamic_pointer_cast<FixedJacobianFactor<9, 6, 3, 6, 3, 6>>(
+          actualBase));
+  CHECK(isFixed);
+  CHECK(expected);
+  CHECK(actual);
+  CHECK(expected->keys() == actual->keys());
+  CHECK(expected->get_model() == actual->get_model());
+  CHECK((expected->getb().array() == actual->getb().array()).all());
+  auto expectedBlock = expected->begin();
+  auto actualBlock = actual->begin();
+  for (; expectedBlock != expected->end(); ++expectedBlock, ++actualBlock) {
+    CHECK((expected->getA(expectedBlock).array() ==
+           actual->getA(actualBlock).array())
+              .all());
+  }
+}
 
 // Verifies fixed-size IMU linearization changes only the concrete factor type.
 TEST_PIM(ImuFactor2, TernaryLinearizationIsBitwiseIdentical) {
@@ -327,7 +365,7 @@ TEST_PIM(ImuFactor2, TernaryLinearizationIsBitwiseIdentical) {
   }
 }
 
-}  // namespace ternary_linearization
+}  // namespace fixed_linearization
 /* ************************************************************************* */
 
 /* ************************************************************************* */
@@ -369,6 +407,16 @@ TEST_PIM(ImuFactor, PreintegrationBaseMethods) {
                 pim, state1, std::placeholders::_1, nullptr, nullptr),
       kZeroBias);
   EXPECT(assert_equal(eH2, aH2, derivativeTolerance));
+
+  // Exercise the direct rotating-Earth prediction's gravity Jacobian.
+  Matrix93 aH3;
+  pim.predict(state1, kZeroBias, p->n_gravity, {}, {}, aH3);
+  const Matrix eH3 = numericalDerivative11<NavState, Vector3>(
+      [&](const Vector3& gravity) {
+        return pim.predict(state1, kZeroBias, gravity);
+      },
+      p->n_gravity);
+  EXPECT(assert_equal(eH3, Matrix(aH3)));
 }
 
 /* ************************************************************************* */
