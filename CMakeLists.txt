@@ -153,6 +153,9 @@ add_subdirectory(CppUnitLite)
 # Build GTSAM library
 add_subdirectory(gtsam)
 
+# Find ceres for tests and timing dependencies
+find_package(Ceres CONFIG QUIET)
+
 # Build Tests
 add_subdirectory(tests)
 
