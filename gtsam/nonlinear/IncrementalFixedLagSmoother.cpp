@@ -75,11 +75,18 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   // Values may arrive before the factors that reference them. Reap pending
   // values when they age out, without passing them to Bayes-tree
   // marginalization where they have no clique.
-  KeySet activeKeys = newFactorKeys;
+  //
+  // A key is active when some factor references it, either one already in the
+  // system or one arriving now. Asking the variable index directly avoids
+  // materialising that set: it is a KeySet, so building it costs an ordered
+  // insert and an allocation per variable in the whole window, on every
+  // update, and both users below are skipped entirely when nothing is
+  // marginalizable.
   const VariableIndex& variableIndex = isam_.getVariableIndex();
-  for (const auto& keyFactors : variableIndex) {
-    activeKeys.insert(keyFactors.first);
-  }
+  const auto isActive = [&](Key key) {
+    return newFactorKeys.exists(key) ||
+           variableIndex.find(key) != variableIndex.end();
+  };
   //
   // An inactive key has no factor referencing it, so after isam_.update() it
   // still has no clique and marginalizeLeaves, which does nodes_[j], has no
@@ -96,7 +103,7 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   marginalizableKeys.erase(
       std::remove_if(marginalizableKeys.begin(), marginalizableKeys.end(),
                      [&](Key key) {
-                       if (activeKeys.exists(key)) return false;
+                       if (isActive(key)) return false;
                        if (isam_.valueExists(key) || newTheta.exists(key))
                          expiredPendingKeys.push_back(key);
                        else
@@ -114,7 +121,7 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   }
 
   // Force iSAM2 to put the marginalizable variables at the beginning
-  createOrderingConstraints(marginalizableKeys, activeKeys, constrainedKeys);
+  createOrderingConstraints(marginalizableKeys, isActive, constrainedKeys);
 
   if (debug) {
     std::cout << "Constrained Keys: ";
@@ -229,14 +236,15 @@ void IncrementalFixedLagSmoother::eraseKeysBefore(double timestamp) {
 
 /* ************************************************************************* */
 void IncrementalFixedLagSmoother::createOrderingConstraints(
-    const KeyVector& marginalizableKeys, const KeySet& activeKeys,
+    const KeyVector& marginalizableKeys,
+    const std::function<bool(Key)>& isActive,
     std::optional<FastMap<Key, int> >& constrainedKeys) const {
   if (marginalizableKeys.size() > 0) {
     constrainedKeys = FastMap<Key, int>();
     // Generate ordering constraints so that the marginalizable variables will be eliminated first
     // Set all variables to Group1
     for(const TimestampKeyMap::value_type& timestamp_key: timestampKeyMap_) {
-      if (activeKeys.exists(timestamp_key.second)) {
+      if (isActive(timestamp_key.second)) {
         constrainedKeys->operator[](timestamp_key.second) = 1;
       }
     }
