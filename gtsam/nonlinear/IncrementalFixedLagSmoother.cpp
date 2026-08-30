@@ -80,15 +80,28 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   for (const auto& keyFactors : variableIndex) {
     activeKeys.insert(keyFactors.first);
   }
+  //
+  // An inactive key has no factor referencing it, so after isam_.update() it
+  // still has no clique and marginalizeLeaves, which does nodes_[j], has no
+  // node for it. Two cases, told apart by whether a value exists:
+  //
+  //  - a value exists (pending): reap it below, once ISAM2 has been updated.
+  //  - no value exists: the caller supplied a timestamp for a key that has
+  //    neither a value nor a factor. Nothing in ISAM2 to remove; only the
+  //    timestamp has to go.
+  //
+  // Both leave marginalizableKeys; only the first needs removeVariables.
   KeyVector expiredPendingKeys;
+  KeyVector staleTimestampKeys;
   marginalizableKeys.erase(
       std::remove_if(marginalizableKeys.begin(), marginalizableKeys.end(),
                      [&](Key key) {
-                       const bool isPending =
-                           !activeKeys.exists(key) &&
-                           (isam_.valueExists(key) || newTheta.exists(key));
-                       if (isPending) expiredPendingKeys.push_back(key);
-                       return isPending;
+                       if (activeKeys.exists(key)) return false;
+                       if (isam_.valueExists(key) || newTheta.exists(key))
+                         expiredPendingKeys.push_back(key);
+                       else
+                         staleTimestampKeys.push_back(key);
+                       return true;
                      }),
       marginalizableKeys.end());
 
@@ -181,6 +194,7 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   // Remove marginalized keys from the KeyTimestampMap
   eraseKeyTimestampMap(marginalizableKeys);
   eraseKeyTimestampMap(expiredPendingKeys);
+  eraseKeyTimestampMap(staleTimestampKeys);
 
   if (debug) {
     PrintSymbolicTree(isam_, "Final Bayes Tree:");

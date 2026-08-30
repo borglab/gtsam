@@ -27,6 +27,8 @@
 #include <gtsam/inference/BayesTreeCliqueBase.h>
 #include <gtsam/base/debug.h>
 #include "gtsam/dllexport.h"
+#include <stdexcept>
+#include <string>
 
 namespace gtsam {
 
@@ -136,7 +138,17 @@ public:
       const BayesTree& bayesTree,
       const std::unordered_set<Key>& keysOfInterest) {
     std::unordered_set<const Clique*> cliques;
+    const auto& nodes = bayesTree.nodes();
     for (const Key& key : keysOfInterest) {
+      if (!nodes.exists(key)) {
+        // Otherwise the lookup fails inside bayesTree[key], naming neither the
+        // key nor this helper, with text that varies by build: "map::at"
+        // without TBB, "Index out of requested size range" with it. A variable
+        // that no factor references is never eliminated, so it has no clique.
+        throw std::out_of_range(
+            "BayesTreeMarginalizationHelper: key '" + DefaultKeyFormatter(key) +
+            "' has no clique in the Bayes tree.");
+      }
       cliques.insert(bayesTree[key].get());
     }
     return cliques;
