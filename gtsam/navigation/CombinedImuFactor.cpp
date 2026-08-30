@@ -79,19 +79,130 @@ void PreintegratedCombinedMeasurementsT<PreintegrationType>::resetIntegration() 
   preintMeasCov_.setZero();
 }
 
-//------------------------------------------------------------------------------
-// sugar for derivative blocks
-#define D_R_R(H) (H)->block<3,3>(0,0)
-#define D_R_t(H) (H)->block<3,3>(0,3)
-#define D_R_v(H) (H)->block<3,3>(0,6)
-#define D_t_R(H) (H)->block<3,3>(3,0)
-#define D_t_t(H) (H)->block<3,3>(3,3)
-#define D_t_v(H) (H)->block<3,3>(3,6)
-#define D_v_R(H) (H)->block<3,3>(6,0)
-#define D_v_t(H) (H)->block<3,3>(6,3)
-#define D_v_v(H) (H)->block<3,3>(6,6)
-#define D_a_a(H) (H)->block<3,3>(9,9)
-#define D_g_g(H) (H)->block<3,3>(12,12)
+namespace {
+
+using Matrix15 = Eigen::Matrix<double, 15, 15>;
+
+/** Propagate Combined PIM covariance using its sparse 5-by-5 block form. */
+template <bool kTangentStructure>
+void propagateCombinedCovariance(Matrix15* covariance, const Matrix9& A,
+                                 const Matrix93& B, const Matrix93& C,
+                                 const PreintegrationCombinedParams& params,
+                                 double dt) {
+  // State blocks are ordered R,p,v,b_a,b_g. The Combined transition is
+  //
+  //       [ A00   0    0    0   C0 ]
+  //       [ A10  A11  A12  B1    0 ]
+  //   F = [ A20   0   A22  B2    0 ] .
+  //       [  0    0    0    I    0 ]
+  //       [  0    0    0    0    I ]
+  const auto A00 = A.block<3, 3>(0, 0);
+  const auto A10 = A.block<3, 3>(3, 0);
+  const auto A11 = A.block<3, 3>(3, 3);
+  const auto A12 = A.block<3, 3>(3, 6);
+  const auto A20 = A.block<3, 3>(6, 0);
+  const auto A22 = A.block<3, 3>(6, 6);
+  const auto B1 = B.middleRows<3>(3);
+  const auto B2 = B.bottomRows<3>();
+  const auto C0 = C.topRows<3>();
+
+  const Matrix15 oldCovariance = *covariance;
+  Matrix15 FP;
+  for (int column = 0; column < 5; ++column) {
+    const int offset = 3 * column;
+    FP.block<3, 3>(0, offset).noalias() =
+        A00 * oldCovariance.block<3, 3>(0, offset) +
+        C0 * oldCovariance.block<3, 3>(12, offset);
+    if constexpr (kTangentStructure) {
+      FP.block<3, 3>(3, offset).noalias() =
+          A10 * oldCovariance.block<3, 3>(0, offset) +
+          oldCovariance.block<3, 3>(3, offset) +
+          dt * oldCovariance.block<3, 3>(6, offset) +
+          B1 * oldCovariance.block<3, 3>(9, offset);
+      FP.block<3, 3>(6, offset).noalias() =
+          A20 * oldCovariance.block<3, 3>(0, offset) +
+          oldCovariance.block<3, 3>(6, offset) +
+          B2 * oldCovariance.block<3, 3>(9, offset);
+    } else {
+      FP.block<3, 3>(3, offset).noalias() =
+          A10 * oldCovariance.block<3, 3>(0, offset) +
+          A11 * oldCovariance.block<3, 3>(3, offset) +
+          A12 * oldCovariance.block<3, 3>(6, offset) +
+          B1 * oldCovariance.block<3, 3>(9, offset);
+      FP.block<3, 3>(6, offset).noalias() =
+          A20 * oldCovariance.block<3, 3>(0, offset) +
+          A22 * oldCovariance.block<3, 3>(6, offset) +
+          B2 * oldCovariance.block<3, 3>(9, offset);
+    }
+    FP.block<3, 3>(9, offset) = oldCovariance.block<3, 3>(9, offset);
+    FP.block<3, 3>(12, offset) = oldCovariance.block<3, 3>(12, offset);
+  }
+
+  // Evaluate only the lower blocks of F*P*F'. Each loop corresponds to one
+  // sparse block row of F above.
+  for (int row = 0; row < 5; ++row) {
+    const int offset = 3 * row;
+    covariance->block<3, 3>(offset, 0).noalias() =
+        FP.block<3, 3>(offset, 0) * A00.transpose() +
+        FP.block<3, 3>(offset, 12) * C0.transpose();
+  }
+  for (int row = 1; row < 5; ++row) {
+    const int offset = 3 * row;
+    if constexpr (kTangentStructure) {
+      covariance->block<3, 3>(offset, 3).noalias() =
+          FP.block<3, 3>(offset, 0) * A10.transpose() +
+          FP.block<3, 3>(offset, 3) + dt * FP.block<3, 3>(offset, 6) +
+          FP.block<3, 3>(offset, 9) * B1.transpose();
+    } else {
+      covariance->block<3, 3>(offset, 3).noalias() =
+          FP.block<3, 3>(offset, 0) * A10.transpose() +
+          FP.block<3, 3>(offset, 3) * A11.transpose() +
+          FP.block<3, 3>(offset, 6) * A12.transpose() +
+          FP.block<3, 3>(offset, 9) * B1.transpose();
+    }
+  }
+  for (int row = 2; row < 5; ++row) {
+    const int offset = 3 * row;
+    if constexpr (kTangentStructure) {
+      covariance->block<3, 3>(offset, 6).noalias() =
+          FP.block<3, 3>(offset, 0) * A20.transpose() +
+          FP.block<3, 3>(offset, 6) +
+          FP.block<3, 3>(offset, 9) * B2.transpose();
+    } else {
+      covariance->block<3, 3>(offset, 6).noalias() =
+          FP.block<3, 3>(offset, 0) * A20.transpose() +
+          FP.block<3, 3>(offset, 6) * A22.transpose() +
+          FP.block<3, 3>(offset, 9) * B2.transpose();
+    }
+  }
+  covariance->block<3, 3>(9, 9) = FP.block<3, 3>(9, 9);
+  covariance->block<3, 3>(12, 9) = FP.block<3, 3>(12, 9);
+  covariance->block<3, 3>(12, 12) = FP.block<3, 3>(12, 12);
+
+  // Add continuous-time measurement and bias noise to the affected blocks.
+  const Matrix3 scaledAccelerometerCovariance =
+      params.accelerometerCovariance / dt;
+  const Matrix3 scaledGyroscopeCovariance = params.gyroscopeCovariance / dt;
+  const Matrix3 B1Covariance = B1 * scaledAccelerometerCovariance;
+  const Matrix3 B2Covariance = B2 * scaledAccelerometerCovariance;
+  covariance->block<3, 3>(0, 0).noalias() +=
+      C0 * scaledGyroscopeCovariance * C0.transpose();
+  covariance->block<3, 3>(3, 3).noalias() +=
+      B1Covariance * B1.transpose() + dt * params.integrationCovariance;
+  covariance->block<3, 3>(6, 3).noalias() += B2Covariance * B1.transpose();
+  covariance->block<3, 3>(6, 6).noalias() += B2Covariance * B2.transpose();
+  covariance->block<3, 3>(9, 9).noalias() += dt * params.biasAccCovariance;
+  covariance->block<3, 3>(12, 12).noalias() += dt * params.biasOmegaCovariance;
+
+  for (int row = 1; row < 5; ++row) {
+    for (int column = 0; column < row; ++column) {
+      covariance->block<3, 3>(3 * column, 3 * row) =
+          covariance->block<3, 3>(3 * row, 3 * column).transpose();
+    }
+  }
+}
+
+}  // namespace
 
 //------------------------------------------------------------------------------
 template <class PreintegrationType>
@@ -109,57 +220,10 @@ void PreintegratedCombinedMeasurementsT<
   Matrix93 B, C;  // Jacobian of state wrpt accel bias and omega bias.
   PreintegrationType::update(measuredAcc, measuredOmega, dt, &A, &B, &C);
 
-  // Update preintegrated measurements covariance: as in [2] we consider a first
-  // order propagation that can be seen as a prediction phase in an EKF
-  // framework. In this implementation, in contrast to [2], we consider the
-  // uncertainty of the bias selection and we keep correlation between biases
-  // and preintegrated measurements
-
-  // Single Jacobians to propagate covariance
-  Matrix3 theta_H_omega = C.topRows<3>();
-  Matrix3 pos_H_acc = B.middleRows<3>(3);
-  Matrix3 vel_H_acc = B.bottomRows<3>();
-
-  // overall Jacobian wrt preintegrated measurements (df/dx)
-  Eigen::Matrix<double, 15, 15> F;
-  F.setZero();
-  F.block<9, 9>(0, 0) = A;
-  F.block<3, 3>(0, 12) = theta_H_omega;
-  F.block<3, 3>(3, 9) = pos_H_acc;
-  F.block<3, 3>(6, 9) = vel_H_acc;
-  F.block<6, 6>(9, 9) = I_6x6;
-
-  // Update the uncertainty on the state (matrix F in [4]).
-  preintMeasCov_ = F * preintMeasCov_ * F.transpose();
-
-  // propagate uncertainty
-  // TODO(frank): use noiseModel routine so we can have arbitrary noise models.
-  const Matrix3& aCov = this->p().accelerometerCovariance;
-  const Matrix3& wCov = this->p().gyroscopeCovariance;
-  const Matrix3& iCov = this->p().integrationCovariance;
-
-  // first order uncertainty propagation
-  // Optimized matrix mult: (1/dt) * G * measurementCovariance * G.transpose()
-  Eigen::Matrix<double, 15, 15> G_measCov_Gt;
-  G_measCov_Gt.setZero(15, 15);
-
-  // BLOCK DIAGONAL TERMS
-  D_R_R(&G_measCov_Gt) =
-      (theta_H_omega * (wCov / dt) * theta_H_omega.transpose());
-
-  D_t_t(&G_measCov_Gt) =
-      (pos_H_acc * (aCov / dt) * pos_H_acc.transpose()) + (dt * iCov);
-
-  D_v_v(&G_measCov_Gt) = (vel_H_acc * (aCov / dt) * vel_H_acc.transpose());
-
-  D_a_a(&G_measCov_Gt) = dt * this->p().biasAccCovariance;
-  D_g_g(&G_measCov_Gt) = dt * this->p().biasOmegaCovariance;
-
-  // OFF BLOCK DIAGONAL TERMS
-  D_t_v(&G_measCov_Gt) = (pos_H_acc * (aCov / dt) * vel_H_acc.transpose());
-  D_v_t(&G_measCov_Gt) = (vel_H_acc * (aCov / dt) * pos_H_acc.transpose());
-
-  preintMeasCov_.noalias() += G_measCov_Gt;
+  constexpr bool kTangentStructure =
+      std::is_same_v<PreintegrationType, TangentPreintegration>;
+  propagateCombinedCovariance<kTangentStructure>(&preintMeasCov_, A, B, C,
+                                                 this->p(), dt);
 }
 
 //------------------------------------------------------------------------------

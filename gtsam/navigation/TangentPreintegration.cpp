@@ -141,15 +141,31 @@ void TangentPreintegration::update(const Vector3& measuredAcc,
     *B *= D_correctedAcc_acc; // NOTE(frank): needs to be last
   }
 
-  // new_H_biasAcc = new_H_old * old_H_biasAcc + new_H_acc * acc_H_biasAcc
-  // where acc_H_biasAcc = -I_3x3, hence
-  // new_H_biasAcc = new_H_old * old_H_biasAcc - new_H_acc
-  preintegrated_H_biasAcc_ = (*A) * preintegrated_H_biasAcc_ - (*B);
+  // Propagate the two accumulated bias Jacobians using the exact Tangent
+  // transition structure instead of two dense 9x9-by-9x3 products:
+  //
+  //                       [ A00   0    0  ]
+  //                   A = [ A10   I   dtI ] .
+  //                       [ A20   0    I  ]
+  //
+  // Acceleration bias never affects rotation. Its top block therefore remains
+  // zero, while position and velocity need only additions and scaling by dt.
+  const Matrix3 oldAccelerationVelocity =
+      preintegrated_H_biasAcc_.bottomRows<3>();
+  preintegrated_H_biasAcc_.middleRows<3>(3) +=
+      oldAccelerationVelocity * dt - B->middleRows<3>(3);
+  preintegrated_H_biasAcc_.bottomRows<3>() -= B->bottomRows<3>();
 
-  // new_H_biasOmega = new_H_old * old_H_biasOmega + new_H_omega * omega_H_biasOmega
-  // where omega_H_biasOmega = -I_3x3, hence
-  // new_H_biasOmega = new_H_old * old_H_biasOmega - new_H_omega
-  preintegrated_H_biasOmega_ = (*A) * preintegrated_H_biasOmega_ - (*C);
+  // Gyroscope bias affects all three blocks. Save the old rotation block since
+  // the position and velocity updates both use it after rotation is replaced.
+  const Matrix3 oldOmegaRotation = preintegrated_H_biasOmega_.topRows<3>();
+  preintegrated_H_biasOmega_.topRows<3>().noalias() =
+      A->block<3, 3>(0, 0) * oldOmegaRotation - C->topRows<3>();
+  preintegrated_H_biasOmega_.middleRows<3>(3).noalias() +=
+      A->block<3, 3>(3, 0) * oldOmegaRotation +
+      dt * preintegrated_H_biasOmega_.bottomRows<3>() - C->middleRows<3>(3);
+  preintegrated_H_biasOmega_.bottomRows<3>().noalias() +=
+      A->block<3, 3>(6, 0) * oldOmegaRotation - C->bottomRows<3>();
 }
 
 //------------------------------------------------------------------------------

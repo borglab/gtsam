@@ -30,23 +30,46 @@ void LieGroupPreintegration::updateBiasJacobians(
     const Vector3& /*bodyOmega*/, double /*dt*/, const Matrix9& stateTransition,
     const Matrix93& accelerationJacobian, const Matrix93& omegaJacobian) {
   const Matrix3 oldRotationTranspose = oldRotation.transpose();
-  Matrix93 oldState_H_biasAcc, oldState_H_biasOmega;
-  oldState_H_biasAcc << Z_3x3, oldRotationTranspose * delPdelBiasAcc_,
-      oldRotationTranspose * delVdelBiasAcc_;
-  oldState_H_biasOmega << delRdelBiasOmega_,
-      oldRotationTranspose * delPdelBiasOmega_,
+  const Matrix3 oldPosition_H_biasAcc = oldRotationTranspose * delPdelBiasAcc_;
+  const Matrix3 oldVelocity_H_biasAcc = oldRotationTranspose * delVdelBiasAcc_;
+  const Matrix3 oldPosition_H_biasOmega =
+      oldRotationTranspose * delPdelBiasOmega_;
+  const Matrix3 oldVelocity_H_biasOmega =
       oldRotationTranspose * delVdelBiasOmega_;
 
-  const Matrix93 newState_H_biasAcc =
-      stateTransition * oldState_H_biasAcc - accelerationJacobian;
-  const Matrix93 newState_H_biasOmega =
-      stateTransition * oldState_H_biasOmega - omegaJacobian;
+  // The NavState transition has the exact block structure
+  //
+  //                       [ A00   0    0  ]
+  //                   A = [ A10  A11  A12 ] .
+  //                       [ A20   0   A22 ]
+  //
+  // Apply only its nonzero 3x3 blocks to the two bias Jacobians.
+  const auto A00 = stateTransition.block<3, 3>(0, 0);
+  const auto A10 = stateTransition.block<3, 3>(3, 0);
+  const auto A11 = stateTransition.block<3, 3>(3, 3);
+  const auto A12 = stateTransition.block<3, 3>(3, 6);
+  const auto A20 = stateTransition.block<3, 3>(6, 0);
+  const auto A22 = stateTransition.block<3, 3>(6, 6);
+  const Matrix3 newRotation_H_biasOmega =
+      A00 * delRdelBiasOmega_ - omegaJacobian.topRows<3>();
+  const Matrix3 newPosition_H_biasAcc = A11 * oldPosition_H_biasAcc +
+                                        A12 * oldVelocity_H_biasAcc -
+                                        accelerationJacobian.middleRows<3>(3);
+  const Matrix3 newVelocity_H_biasAcc =
+      A22 * oldVelocity_H_biasAcc - accelerationJacobian.bottomRows<3>();
+  const Matrix3 newPosition_H_biasOmega =
+      A10 * delRdelBiasOmega_ + A11 * oldPosition_H_biasOmega +
+      A12 * oldVelocity_H_biasOmega - omegaJacobian.middleRows<3>(3);
+  const Matrix3 newVelocity_H_biasOmega = A20 * delRdelBiasOmega_ +
+                                          A22 * oldVelocity_H_biasOmega -
+                                          omegaJacobian.bottomRows<3>();
+
   const Matrix3 newRotation = deltaXij_.R();
-  delRdelBiasOmega_ = newState_H_biasOmega.topRows<3>();
-  delPdelBiasAcc_ = newRotation * newState_H_biasAcc.middleRows<3>(3);
-  delPdelBiasOmega_ = newRotation * newState_H_biasOmega.middleRows<3>(3);
-  delVdelBiasAcc_ = newRotation * newState_H_biasAcc.bottomRows<3>();
-  delVdelBiasOmega_ = newRotation * newState_H_biasOmega.bottomRows<3>();
+  delRdelBiasOmega_ = newRotation_H_biasOmega;
+  delPdelBiasAcc_ = newRotation * newPosition_H_biasAcc;
+  delPdelBiasOmega_ = newRotation * newPosition_H_biasOmega;
+  delVdelBiasAcc_ = newRotation * newVelocity_H_biasAcc;
+  delVdelBiasOmega_ = newRotation * newVelocity_H_biasOmega;
 }
 
 /* ************************************************************************* */
@@ -55,7 +78,6 @@ void LieGroupPreintegration::updateFactor(const Vector3& bodyAcceleration,
                                           OptionalJacobian<9, 9> F,
                                           OptionalJacobian<9, 3> G1,
                                           OptionalJacobian<9, 3> G2) {
-  const bool computeJacobians = F || G1 || G2;
   Matrix39 bodyVelocity_H_state;
   const Vector3 bodyVelocity =
       deltaXij_.bodyVelocity(F ? &bodyVelocity_H_state : nullptr);
@@ -67,29 +89,27 @@ void LieGroupPreintegration::updateFactor(const Vector3& bodyAcceleration,
   Matrix93 increment_H_rotation, increment_H_position, increment_H_velocity;
   const NavState incrementState = NavState::Create(
       incrementRotation, dt * bodyVelocity + halfDtSquared * bodyAcceleration,
-      dt * bodyAcceleration, computeJacobians ? &increment_H_rotation : nullptr,
-      computeJacobians ? &increment_H_position : nullptr,
-      computeJacobians ? &increment_H_velocity : nullptr);
+      dt * bodyAcceleration, G2 ? &increment_H_rotation : nullptr,
+      (F || G1) ? &increment_H_position : nullptr,
+      G1 ? &increment_H_velocity : nullptr);
 
-  Matrix9 tangent_H_increment;
-  const Vector9 increment = NavState::Logmap(
-      incrementState, computeJacobians ? &tangent_H_increment : nullptr);
-
-  Matrix9 newState_H_increment;
-  deltaXij_ = deltaXij_.expmap(
-      increment, F, computeJacobians ? &newState_H_increment : nullptr);
+  // Applying this increment through the Lie exponential would compute
+  //
+  //   deltaXij_ * Expmap(Logmap(incrementState)),
+  //
+  // which is exactly this composition. Its Jacobian with respect to the
+  // increment is the identity in right-local coordinates, so direct
+  // composition also cancels the corresponding Expmap and Logmap Jacobians.
+  deltaXij_ = deltaXij_.compose(incrementState, F);
 
   if (F) {
-    *F += newState_H_increment * tangent_H_increment * increment_H_position *
-          dt * bodyVelocity_H_state;
+    *F += increment_H_position * dt * bodyVelocity_H_state;
   }
   if (G1) {
-    *G1 = newState_H_increment * tangent_H_increment *
-          (increment_H_position * halfDtSquared + increment_H_velocity * dt);
+    *G1 = increment_H_position * halfDtSquared + increment_H_velocity * dt;
   }
   if (G2) {
-    *G2 = newState_H_increment * tangent_H_increment * increment_H_rotation *
-          incrementRotation_H_integratedOmega * dt;
+    *G2 = increment_H_rotation * incrementRotation_H_integratedOmega * dt;
   }
 }
 
