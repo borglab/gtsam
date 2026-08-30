@@ -140,7 +140,12 @@ public:
     std::unordered_set<const Clique*> cliques;
     const auto& nodes = bayesTree.nodes();
     for (const Key& key : keysOfInterest) {
-      if (!nodes.exists(key)) {
+      // One lookup, reused for both the check and the insert. exists() is a
+      // count() and bayesTree[key] is an at(), so testing then indexing would
+      // search the node map twice per key; bayesTree[key] also returns the
+      // shared_ptr by value, which costs a reference count round trip.
+      const auto node = nodes.find(key);
+      if (node == nodes.end()) {
         // Otherwise the lookup fails inside bayesTree[key], naming neither the
         // key nor this helper, with text that varies by build: "map::at"
         // without TBB, "Index out of requested size range" with it. A variable
@@ -149,7 +154,7 @@ public:
             "BayesTreeMarginalizationHelper: key '" + DefaultKeyFormatter(key) +
             "' has no clique in the Bayes tree.");
       }
-      cliques.insert(bayesTree[key].get());
+      cliques.insert(node->second.get());
     }
     return cliques;
   }
