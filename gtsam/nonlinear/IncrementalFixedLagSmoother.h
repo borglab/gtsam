@@ -24,6 +24,8 @@
 #include <gtsam/nonlinear/ISAM2.h>
 #include "gtsam/dllexport.h"
 
+#include <functional>
+
 namespace gtsam {
 
 /**
@@ -138,7 +140,8 @@ protected:
 
   /** Fill in an iSAM2 ConstrainedKeys structure such that the provided keys are eliminated before all others */
   void createOrderingConstraints(
-      const KeyVector& marginalizableKeys, const KeySet& activeKeys,
+      const KeyVector& marginalizableKeys,
+      const std::function<bool(Key)>& isActive,
       std::optional<FastMap<Key, int> >& constrainedKeys) const;
 
 private:

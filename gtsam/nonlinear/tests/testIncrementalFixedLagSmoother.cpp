@@ -29,6 +29,7 @@
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 #include <gtsam/slam/dataset.h>  // For writeG2o
+#include <gtsam/nonlinear/BayesTreeMarginalizationHelper.h>
 #include <gtsam/nonlinear/IncrementalFixedLagSmoother.h>
 
 #include <CppUnitLite/TestHarness.h>
@@ -492,6 +493,129 @@ TEST(IncrementalFixedLagSmoother, ReapsPendingValueAfterLag) {
   EXPECT(!smoother.getLinearizationPoint().exists(X(1)));
   EXPECT(smoother.getLinearizationPoint().exists(X(2)));
   EXPECT(smoother.timestamps().find(X(1)) == smoother.timestamps().end());
+}
+
+// A timestamp may be supplied for a key that has neither a value nor a factor.
+// Such a key is not "pending" -- there is no value for it -- so it survives the
+// pending-value partition, ages out, and reaches marginalizeLeaves with no
+// clique. The variableIndex filter guards only the marginalization helper.
+TEST(IncrementalFixedLagSmoother, TimestampWithoutValueOrFactor) {
+  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  IncrementalFixedLagSmoother smoother(1.0);
+  const Key phantom = Symbol('p', 0);
+
+  NonlinearFactorGraph factors;
+  Values values;
+  FixedLagSmoother::KeyTimestampMap timestamps;
+
+  factors.addPrior(X(0), Point2(0.0, 0.0), noise);
+  values.insert(X(0), Point2(0.0, 0.0));
+  timestamps[X(0)] = 0.0;
+  timestamps[phantom] = 0.0;  // no value, no factor
+  smoother.update(factors, values, timestamps);
+  EXPECT(smoother.timestamps().find(phantom) != smoother.timestamps().end());
+
+  // X(1) is joined to X(0), so marginalizing X(0) leaves a marginal factor.
+  factors.resize(0);
+  values.clear();
+  timestamps.clear();
+  factors.emplace_shared<BetweenPoint2>(X(0), X(1), Point2(1.0, 0.0), noise);
+  values.insert(X(1), Point2(1.0, 0.0));
+  timestamps[X(1)] = 5.0;
+  smoother.update(factors, values, timestamps);
+
+  EXPECT(smoother.timestamps().find(phantom) == smoother.timestamps().end());
+  EXPECT(!smoother.getLinearizationPoint().exists(phantom));
+  EXPECT(smoother.getLinearizationPoint().exists(X(1)));
+  EXPECT(!smoother.getLinearizationPoint().exists(X(0)));  // marginalized
+}
+
+// The same phantom key, but the following variable is in its own connected
+// component. This reached a different failure from the connected case above,
+// so both graph shapes are covered.
+TEST(IncrementalFixedLagSmoother, TimestampWithoutValueOrFactorDisconnected) {
+  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  IncrementalFixedLagSmoother smoother(1.0);
+  const Key phantom = Symbol('p', 0);
+
+  NonlinearFactorGraph factors;
+  Values values;
+  FixedLagSmoother::KeyTimestampMap timestamps;
+
+  factors.addPrior(X(0), Point2(0.0, 0.0), noise);
+  values.insert(X(0), Point2(0.0, 0.0));
+  timestamps[X(0)] = 0.0;
+  timestamps[phantom] = 0.0;
+  smoother.update(factors, values, timestamps);
+
+  // No factor links X(1) to X(0).
+  factors.resize(0);
+  values.clear();
+  timestamps.clear();
+  factors.addPrior(X(1), Point2(1.0, 0.0), noise);
+  values.insert(X(1), Point2(1.0, 0.0));
+  timestamps[X(1)] = 5.0;
+  smoother.update(factors, values, timestamps);
+
+  EXPECT(smoother.timestamps().find(phantom) == smoother.timestamps().end());
+  EXPECT(smoother.getLinearizationPoint().exists(X(1)));
+}
+
+// A key with a value but no factor is still reaped, not treated as stale.
+// Guards the partition split added alongside the two tests above.
+TEST(IncrementalFixedLagSmoother, PendingValueStillReapedAlongsideStaleKey) {
+  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  IncrementalFixedLagSmoother smoother(1.0);
+  const Key phantom = Symbol('p', 0);
+
+  NonlinearFactorGraph factors;
+  Values values;
+  FixedLagSmoother::KeyTimestampMap timestamps;
+
+  factors.addPrior(X(0), Point2(0.0, 0.0), noise);
+  values.insert(X(0), Point2(0.0, 0.0));
+  values.insert(X(1), Point2(1.0, 0.0));  // value, no factor -> pending
+  timestamps[X(0)] = 0.0;
+  timestamps[X(1)] = 0.0;
+  timestamps[phantom] = 0.0;              // no value, no factor -> stale
+  smoother.update(factors, values, timestamps);
+  EXPECT(smoother.getLinearizationPoint().exists(X(1)));
+
+  factors.resize(0);
+  values.clear();
+  timestamps.clear();
+  factors.addPrior(X(2), Point2(2.0, 0.0), noise);
+  values.insert(X(2), Point2(2.0, 0.0));
+  timestamps[X(2)] = 5.0;
+  smoother.update(factors, values, timestamps);
+
+  EXPECT(!smoother.getLinearizationPoint().exists(X(1)));  // reaped
+  EXPECT(smoother.timestamps().find(X(1)) == smoother.timestamps().end());
+  EXPECT(smoother.timestamps().find(phantom) == smoother.timestamps().end());
+}
+
+// A clique-less key should be named rather than failing inside the Bayes tree
+// with a message that identifies neither the key nor the caller.
+TEST(BayesTreeMarginalizationHelper, MissingCliqueNamesTheKey) {
+  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  IncrementalFixedLagSmoother smoother(10.0);
+  NonlinearFactorGraph factors;
+  Values values;
+  FixedLagSmoother::KeyTimestampMap timestamps;
+  factors.addPrior(X(0), Point2(0.0, 0.0), noise);
+  values.insert(X(0), Point2(0.0, 0.0));
+  timestamps[X(0)] = 0.0;
+  smoother.update(factors, values, timestamps);
+
+  const KeyVector absent{Symbol('z', 9)};
+  bool named = false;
+  try {
+    BayesTreeMarginalizationHelper<ISAM2>::gatherAdditionalKeysToReEliminate(
+        smoother.getISAM2(), absent);
+  } catch (const std::out_of_range& e) {
+    named = std::string(e.what()).find("z9") != std::string::npos;
+  }
+  EXPECT(named);
 }
 
 /* ************************************************************************* */
