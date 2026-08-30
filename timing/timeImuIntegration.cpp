@@ -35,6 +35,7 @@ using gtsam::LieGroupPreintegration;
 using gtsam::ManifoldPreintegration;
 using gtsam::Matrix9;
 using gtsam::Matrix93;
+using gtsam::PreintegratedCombinedMeasurementsG;
 using gtsam::PreintegratedCombinedMeasurementsT;
 using gtsam::PreintegratedImuMeasurementsG;
 using gtsam::PreintegratedImuMeasurementsT;
@@ -181,5 +182,7 @@ int main(int argc, const char* argv[]) {
   printCombinedBackend<
       PreintegratedCombinedMeasurementsT<LieGroupPreintegration>>(
       "LieGroup", samples, warmups, repetitions);
+  printCombinedBackend<PreintegratedCombinedMeasurementsG>(
+      "Galilean", samples, warmups, repetitions);
   return benchmarkSink == 0.0 ? 1 : 0;
 }

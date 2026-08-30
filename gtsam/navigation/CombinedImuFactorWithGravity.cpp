@@ -15,6 +15,7 @@
  **/
 
 #include <gtsam/navigation/CombinedImuFactorWithGravity.h>
+#include <gtsam/navigation/GalileanImuFactor.h>
 #include <gtsam/navigation/LieGroupPreintegration.h>
 #include <gtsam/navigation/ManifoldPreintegration.h>
 #include <gtsam/navigation/TangentPreintegration.h>
@@ -96,10 +97,14 @@ template class GTSAM_EXPORT CombinedImuFactorWithGravityT<PreintegratedCombinedM
 template class GTSAM_EXPORT CombinedImuFactorWithGravityT<PreintegratedCombinedMeasurementsT<TangentPreintegration>, Unit3>;
 template class GTSAM_EXPORT CombinedImuFactorWithGravityT<
     PreintegratedCombinedMeasurementsT<LieGroupPreintegration>, Unit3>;
+template class GTSAM_EXPORT
+    CombinedImuFactorWithGravityT<PreintegratedCombinedMeasurementsG, Unit3>;
 template class GTSAM_EXPORT CombinedImuFactorWithGravityT<PreintegratedCombinedMeasurementsT<ManifoldPreintegration>, Point3>;
 template class GTSAM_EXPORT CombinedImuFactorWithGravityT<PreintegratedCombinedMeasurementsT<TangentPreintegration>, Point3>;
 template class GTSAM_EXPORT CombinedImuFactorWithGravityT<
     PreintegratedCombinedMeasurementsT<LieGroupPreintegration>, Point3>;
+template class GTSAM_EXPORT
+    CombinedImuFactorWithGravityT<PreintegratedCombinedMeasurementsG, Point3>;
 
 template GTSAM_EXPORT std::ostream& operator<<(
     std::ostream& os, const CombinedImuFactorWithGravityT<PreintegratedCombinedMeasurementsT<ManifoldPreintegration>, Unit3>& f);
@@ -110,6 +115,10 @@ template GTSAM_EXPORT std::ostream& operator<<(
     const CombinedImuFactorWithGravityT<
         PreintegratedCombinedMeasurementsT<LieGroupPreintegration>, Unit3>& f);
 template GTSAM_EXPORT std::ostream& operator<<(
+    std::ostream& os,
+    const CombinedImuFactorWithGravityT<PreintegratedCombinedMeasurementsG,
+                                        Unit3>& f);
+template GTSAM_EXPORT std::ostream& operator<<(
     std::ostream& os, const CombinedImuFactorWithGravityT<PreintegratedCombinedMeasurementsT<ManifoldPreintegration>, Point3>& f);
 template GTSAM_EXPORT std::ostream& operator<<(
     std::ostream& os, const CombinedImuFactorWithGravityT<PreintegratedCombinedMeasurementsT<TangentPreintegration>, Point3>& f);
@@ -117,5 +126,9 @@ template GTSAM_EXPORT std::ostream& operator<<(
     std::ostream& os,
     const CombinedImuFactorWithGravityT<
         PreintegratedCombinedMeasurementsT<LieGroupPreintegration>, Point3>& f);
+template GTSAM_EXPORT std::ostream& operator<<(
+    std::ostream& os,
+    const CombinedImuFactorWithGravityT<PreintegratedCombinedMeasurementsG,
+                                        Point3>& f);
 
 }  // namespace gtsam

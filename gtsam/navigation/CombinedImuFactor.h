@@ -151,8 +151,9 @@ class GTSAM_EXPORT PreintegratedCombinedMeasurementsT : public PreintegrationTyp
    * J_9 = \operatorname{diag}
    *       \left(J_r(\theta),\Delta R^T,\Delta R^T\right).
    * \f]
-   * ManifoldPreintegration and LieGroupPreintegration already propagate these
-   * rows in the residual chart, so their \f$J_9\f$ is identity.
+   * ManifoldPreintegration, LieGroupPreintegration, and
+   * GalileanPreintegration already propagate these rows in the residual chart,
+   * so their \f$J_9\f$ is identity.
    *
    * The final six propagated coordinates follow the bias change
    * \f$b_j-b_i\f$, whereas the factor residual is

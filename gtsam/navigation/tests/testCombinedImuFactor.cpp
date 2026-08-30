@@ -217,7 +217,7 @@ TEST_PIM(CombinedImuFactor, PredictRotation) {
 
 /* ************************************************************************* */
 // Testing covariance to check if all the jacobians are accounted for.
-TEST_PIM(CombinedImuFactor, CheckCovariance) {
+TEST(CombinedImuFactor, CheckDefaultCovarianceRegression) {
   auto params = PreintegrationCombinedParams::MakeSharedU(9.81);
 
   params->setAccelerometerCovariance(pow(0.01, 2) * I_3x3);
@@ -227,7 +227,7 @@ TEST_PIM(CombinedImuFactor, CheckCovariance) {
 
   imuBias::ConstantBias currentBias;
 
-  CombinedPIM actual(params, currentBias);
+  PreintegratedCombinedMeasurements actual(params, currentBias);
 
   // Measurements
   Vector3 measuredAcc(0.1577, -0.8251, 9.6111);

@@ -16,6 +16,7 @@
 
 #pragma once
 
+#include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/GalileanPreintegration.h>
 #include <gtsam/navigation/ImuFactor.h>
 
@@ -27,5 +28,16 @@ using PreintegratedImuMeasurementsG =
 
 /// Five-way IMU factor using Galilean preintegration.
 using GalileanImuFactor = ImuFactorT<PreintegratedImuMeasurementsG>;
+
+/// Three-way NavState IMU factor using Galilean preintegration.
+using GalileanImuFactor2 = ImuFactor2T<PreintegratedImuMeasurementsG>;
+
+/// Galilean preintegration with combined IMU and bias covariance propagation.
+using PreintegratedCombinedMeasurementsG =
+    PreintegratedCombinedMeasurementsT<GalileanPreintegration>;
+
+/// Six-way Combined IMU factor using Galilean preintegration.
+using GalileanCombinedImuFactor =
+    CombinedImuFactorT<PreintegratedCombinedMeasurementsG>;
 
 }  // namespace gtsam

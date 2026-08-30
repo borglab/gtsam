@@ -57,6 +57,10 @@ BOOST_CLASS_EXPORT_GUID(PreintegratedCombinedMeasurements,
 BOOST_CLASS_EXPORT_GUID(PreintegratedImuMeasurementsG,
                         "gtsam_PreintegratedImuMeasurementsG")
 BOOST_CLASS_EXPORT_GUID(GalileanImuFactor, "gtsam_GalileanImuFactor")
+BOOST_CLASS_EXPORT_GUID(PreintegratedCombinedMeasurementsG,
+                        "gtsam_PreintegratedCombinedMeasurementsG")
+BOOST_CLASS_EXPORT_GUID(GalileanCombinedImuFactor,
+                        "gtsam_GalileanCombinedImuFactor")
 
 /* ************************************************************************* */
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
@@ -276,6 +280,17 @@ TEST(GalileanPreintegration, Serialization) {
   EXPECT(equalsObj(factor));
   EXPECT(equalsXML(factor));
   EXPECT(equalsBinary(factor));
+
+  const PreintegratedCombinedMeasurementsG combinedPim =
+      getPreintegratedMeasurements<PreintegratedCombinedMeasurementsG>();
+  EXPECT(equalsObj(combinedPim));
+  EXPECT(equalsXML(combinedPim));
+  EXPECT(equalsBinary(combinedPim));
+
+  const GalileanCombinedImuFactor combinedFactor(1, 2, 3, 4, 5, 6, combinedPim);
+  EXPECT(equalsObj(combinedFactor));
+  EXPECT(equalsXML(combinedFactor));
+  EXPECT(equalsBinary(combinedFactor));
 }
 
 }  // namespace galilean_serialization

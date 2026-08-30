@@ -2,7 +2,7 @@ name: Nightly CI
 
 on:
   schedule:
-    - cron: "17 3 * * *"
+    - cron: "17 1 * * *"
       timezone: "America/New_York"
   workflow_dispatch:
 
