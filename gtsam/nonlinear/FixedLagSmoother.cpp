@@ -76,7 +76,17 @@ void FixedLagSmoother::updateKeyTimestampMap(const KeyTimestampMap& timestamps) 
 void FixedLagSmoother::eraseKeyTimestampMap(const KeyVector& keys) {
   for(Key key: keys) {
     // Erase the key from the Timestamp->Key map
-    double timestamp = keyTimestampMap_.at(key);
+    const auto entry = keyTimestampMap_.find(key);
+    if (entry == keyTimestampMap_.end()) {
+      // Not every caller can guarantee the key has a timestamp.
+      // IncrementalFixedLagSmoother::update() passes ISAM2Result::unusedKeys
+      // here directly, and ISAM2 derives those from the variable index, which
+      // says nothing about timestamps. There is no entry to erase, which is
+      // not an error; failing here throws a bare "map::at" that names neither
+      // the key nor the map.
+      continue;
+    }
+    const double timestamp = entry->second;
 
     TimestampKeyMap::iterator iter = timestampKeyMap_.lower_bound(timestamp);
     while(iter != timestampKeyMap_.end() && iter->first == timestamp) {
@@ -86,8 +96,10 @@ void FixedLagSmoother::eraseKeyTimestampMap(const KeyVector& keys) {
         ++iter;
       }
     }
-    // Erase the key from the Key->Timestamp map
-    keyTimestampMap_.erase(key);
+    // Erase the key from the Key->Timestamp map. The loop above touches only
+    // timestampKeyMap_, so entry is still valid; erasing through it saves the
+    // second lookup that erase(key) would do.
+    keyTimestampMap_.erase(entry);
   }
 }
 
