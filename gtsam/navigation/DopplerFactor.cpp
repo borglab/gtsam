@@ -48,12 +48,12 @@ DopplerFactor::DopplerFactor(const Key velocityKey, const Key clockBiasPrevKey,
   los_ = e;
 
   // Earth-rotation (Sagnac) rate term:
-  //   (OMGE/c) * (v_s.y*r_r.x + r_s.y*v_r.x - v_s.x*r_r.y - r_s.x*v_r.y)
+  //   (OMGE/c) * (v_s.x*r_r.y + r_s.x*v_r.y - v_s.y*r_r.x - r_s.y*v_r.x)
   // Split into the v_r-independent offset and the linear coefficient on v_r.
   const double k = OMGE / C_LIGHT;
-  sagnacOffset_ = k * (satelliteVelocity.y() * receiverPosition.x() -
-                       satelliteVelocity.x() * receiverPosition.y());
-  velSagnac_ = Point3(k * satellitePosition.y(), -k * satellitePosition.x(), 0.0);
+  sagnacOffset_ = k * (satelliteVelocity.x() * receiverPosition.y() -
+                       satelliteVelocity.y() * receiverPosition.x());
+  velSagnac_ = Point3(-k * satellitePosition.y(), k * satellitePosition.x(), 0.0);
 }
 
 //***************************************************************************
@@ -126,9 +126,9 @@ void initDopplerArmGeometry(const Point3& satellitePosition,
                             double& sagnacOffset, Point3& leverVel) {
   gnss::geodist(satellitePosition, receiverPosition, los);
   const double k = OMGE / C_LIGHT;
-  sagnacOffset = k * (satelliteVelocity.y() * receiverPosition.x() -
-                      satelliteVelocity.x() * receiverPosition.y());
-  velSagnac = Point3(k * satellitePosition.y(), -k * satellitePosition.x(), 0.0);
+  sagnacOffset = k * (satelliteVelocity.x() * receiverPosition.y() -
+                      satelliteVelocity.y() * receiverPosition.x());
+  velSagnac = Point3(-k * satellitePosition.y(), k * satellitePosition.x(), 0.0);
   leverVel = angularVelocity.cross(leverArm);
 }
 }  // namespace

@@ -52,10 +52,10 @@ TEST(TestDopplerFactor, Model) {
   gnss::geodist(sample::kSatPos, sample::kReceiverPos, e);
   const double kSag = gnss::OMGE / kCLight;
   const double sagnacRate =
-      kSag * (satVel.y() * sample::kReceiverPos.x() +
-              sample::kSatPos.y() * rcvVel.x() -
-              satVel.x() * sample::kReceiverPos.y() -
-              sample::kSatPos.x() * rcvVel.y());
+      kSag * (satVel.x() * sample::kReceiverPos.y() +
+              sample::kSatPos.x() * rcvVel.y() -
+              satVel.y() * sample::kReceiverPos.x() -
+              sample::kSatPos.y() * rcvVel.x());
   const double rangeRate = e.dot(satVel - rcvVel) +
                            kCLight * (rcvClkDrift - satClkDrift) + sagnacRate;
   const double expected = rangeRate - (-kLambdaL1 * measDoppler);
@@ -178,10 +178,10 @@ TEST(TestDopplerFactorArm, Model) {
   const Vector3 vAnt = (Vector3)rcvVel + pose.rotation().rotate(omega.cross(lever));
   const double kSag = gnss::OMGE / kCLight;
   const double sagnac =
-      kSag * (satVel.y() * sample::kReceiverPos.x() +
-              sample::kSatPos.y() * vAnt.x() -
-              satVel.x() * sample::kReceiverPos.y() -
-              sample::kSatPos.x() * vAnt.y());
+      kSag * (satVel.x() * sample::kReceiverPos.y() +
+              sample::kSatPos.x() * vAnt.y() -
+              satVel.y() * sample::kReceiverPos.x() -
+              sample::kSatPos.y() * vAnt.x());
   const double rangeRate = e.dot(satVel - Point3(vAnt)) +
                            kCLight * (rcvClkDrift - satClkDrift) + sagnac;
   const double expected = rangeRate - (-kLambdaL1 * measDoppler);
@@ -223,10 +223,10 @@ TEST(TestDopplerFactorArm, NavFrame) {
   const Vector3 vAnt = ecef_T_nav.rotation().rotate(Point3(vAntNav));
   const double kSag = gnss::OMGE / kCLight;
   const double sagnac =
-      kSag * (satVel.y() * sample::kReceiverPos.x() +
-              sample::kSatPos.y() * vAnt.x() -
-              satVel.x() * sample::kReceiverPos.y() -
-              sample::kSatPos.x() * vAnt.y());
+      kSag * (satVel.x() * sample::kReceiverPos.y() +
+              sample::kSatPos.x() * vAnt.y() -
+              satVel.y() * sample::kReceiverPos.x() -
+              sample::kSatPos.y() * vAnt.x());
   const double rangeRate = e.dot(satVel - Point3(vAnt)) +
                            kCLight * (rcvClkDrift - satClkDrift) + sagnac;
   const double expected = rangeRate - (-kLambdaL1 * measDoppler);
@@ -271,6 +271,53 @@ TEST(TestDopplerFactorArm, InvalidDtThrows) {
                        sample::kReceiverPos, lever, omega, -1.0),
       std::invalid_argument);
 }
+
+/* ************************************************************************* */
+namespace sagnac_rate {
+
+TEST(TestDopplerFactor, SagnacRateMatchesGeodistDerivative) {
+  const Point3 satVel(-1500.0, 900.0, 2300.0);
+  const Point3 rcvVel(7.0, -5.0, 3.0);
+
+  // Zero Doppler and equal clock biases, so the error is the modelled rate.
+  DopplerFactor factor(0, 1, 2, /*measuredDoppler=*/0.0, kLambdaL1,
+                       sample::kSatPos, satVel, sample::kReceiverPos,
+                       /*dt=*/1.0);
+  const double modelled = factor.evaluateError((Vector3)rcvVel, 0.0, 0.0)[0];
+
+  const double h = 0.1;
+  Point3 e;
+  const double rangePlus = gnss::geodist(sample::kSatPos + satVel * h,
+                                         sample::kReceiverPos + rcvVel * h, e);
+  const double rangeMinus = gnss::geodist(sample::kSatPos - satVel * h,
+                                          sample::kReceiverPos - rcvVel * h, e);
+  EXPECT_DOUBLES_EQUAL((rangePlus - rangeMinus) / (2.0 * h), modelled, 1e-6);
+}
+
+TEST(TestDopplerFactor, SagnacRateSignMatchesRangeDomain) {
+  const Point3 satVel(-1500.0, 900.0, 2300.0);
+  const Point3 rcvVel(7.0, -5.0, 3.0);
+  const double kSag = gnss::OMGE / kCLight;
+
+  DopplerFactor factor(0, 1, 2, 0.0, kLambdaL1, sample::kSatPos, satVel,
+                       sample::kReceiverPos, 1.0);
+  Point3 e;
+  gnss::geodist(sample::kSatPos, sample::kReceiverPos, e);
+  const double applied =
+      factor.evaluateError((Vector3)rcvVel, 0.0, 0.0)[0] - e.dot(satVel - rcvVel);
+
+  const double expected =
+      kSag * (satVel.x() * sample::kReceiverPos.y() +
+              sample::kSatPos.x() * rcvVel.y() -
+              satVel.y() * sample::kReceiverPos.x() -
+              sample::kSatPos.y() * rcvVel.x());
+
+  EXPECT_DOUBLES_EQUAL(expected, applied, 1e-9);
+  CHECK(expected * applied > 0.0);
+}
+
+}  // namespace sagnac_rate
+/* ************************************************************************* */
 
 // *************************************************************************
 int main() {
