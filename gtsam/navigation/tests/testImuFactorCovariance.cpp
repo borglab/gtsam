@@ -261,6 +261,27 @@ const NavState kErrorStateJ(Rot3::Ypr(-0.2, 0.3, -0.1), Point3(-0.5, 1.2, 2.0),
 const imuBias::ConstantBias kErrorBias(Vector3(0.01, -0.02, 0.03),
                                        Vector3(-0.004, 0.005, -0.006));
 
+// Fresh standard and Combined parameters must select Logmap uniformly.
+TEST(ImuFactorErrorMode, FreshParamsDefaultToLogmap) {
+  const PreintegrationParams direct(Vector3(0.0, 0.0, -9.81));
+  const auto down = PreintegrationParams::MakeSharedD();
+  const auto up = PreintegrationParams::MakeSharedU();
+  const PreintegrationCombinedParams combinedDirect(
+      Vector3(0.0, 0.0, -9.81));
+  const auto combinedDown = PreintegrationCombinedParams::MakeSharedD();
+  const auto combinedUp = PreintegrationCombinedParams::MakeSharedU();
+
+  EXPECT(direct.getImuFactorErrorMode() == ImuFactorErrorMode::Logmap);
+  EXPECT(down->getImuFactorErrorMode() == ImuFactorErrorMode::Logmap);
+  EXPECT(up->getImuFactorErrorMode() == ImuFactorErrorMode::Logmap);
+  EXPECT(combinedDirect.getImuFactorErrorMode() ==
+         ImuFactorErrorMode::Logmap);
+  EXPECT(combinedDown->getImuFactorErrorMode() ==
+         ImuFactorErrorMode::Logmap);
+  EXPECT(combinedUp->getImuFactorErrorMode() ==
+         ImuFactorErrorMode::Logmap);
+}
+
 // Locks the compatibility policy independently of the runtime dispatch test.
 TEST(ImuFactorErrorMode, LegacyBackendMapping) {
   EXPECT(!ManifoldPreintegration::kDefaultUseLieGroupResidual);
@@ -295,6 +316,21 @@ Vector9 expectedError(const PIM& pim, ImuFactorErrorMode mode) {
 TEST_PIM(ImuFactorErrorMode, BackendSelectionAndJacobians) {
   const auto params = makeParams();
   const PIM pim = integrateIdealMeasurements<PIM>(params);
+  EXPECT(params->getImuFactorErrorMode() == ImuFactorErrorMode::Logmap);
+
+  const ImuFactor2T<PIM> defaultFactor(X(1), X(2), B(1), pim);
+  const Vector9 defaultError =
+      defaultFactor.evaluateError(kErrorStateI, kErrorStateJ, kErrorBias);
+  EXPECT(assert_equal(expectedError(pim, ImuFactorErrorMode::Logmap),
+                      defaultError, 1e-12));
+  const ImuFactorT<PIM> defaultSplitFactor(X(1), V(1), X(2), V(2), B(1), pim);
+  EXPECT(assert_equal(
+      defaultError,
+      defaultSplitFactor.evaluateError(
+          kErrorStateI.pose(), kErrorStateI.velocity(), kErrorStateJ.pose(),
+          kErrorStateJ.velocity(), kErrorBias),
+      1e-12));
+
   const ImuFactorErrorMode modes[] = {ImuFactorErrorMode::Legacy,
                                       ImuFactorErrorMode::ComponentWise,
                                       ImuFactorErrorMode::Logmap};
@@ -339,6 +375,15 @@ TEST_PIM_WITH_COMBINED_BACKEND(ImuFactorErrorMode, CombinedSelection) {
       integrateIdealCombinedMeasurements<CombinedPIM>(params);
   const imuBias::ConstantBias biasJ(Vector3(-0.02, 0.01, 0.04),
                                     Vector3(0.002, -0.003, 0.001));
+  EXPECT(params->getImuFactorErrorMode() == ImuFactorErrorMode::Logmap);
+  const CombinedImuFactorT<CombinedPIM> defaultFactor(
+      X(1), V(1), X(2), V(2), B(1), B(2), pim);
+  const Vector15 defaultError = defaultFactor.evaluateError(
+      kErrorStateI.pose(), kErrorStateI.velocity(), kErrorStateJ.pose(),
+      kErrorStateJ.velocity(), kErrorBias, biasJ);
+  EXPECT(assert_equal(expectedError(pim, ImuFactorErrorMode::Logmap),
+                      Vector9(defaultError.head<9>()), 1e-12));
+
   const ImuFactorErrorMode modes[] = {ImuFactorErrorMode::Legacy,
                                       ImuFactorErrorMode::ComponentWise,
                                       ImuFactorErrorMode::Logmap};
@@ -359,21 +404,25 @@ TEST_PIM_WITH_COMBINED_BACKEND(ImuFactorErrorMode, CombinedSelection) {
   }
 }
 
-// Checks gravity-aware factor families share the same runtime error mode.
-TEST(ImuFactorErrorMode, GravityFactorSelection) {
+// Checks both gravity-aware factor topologies for every standard backend.
+TEST_PIM(ImuFactorErrorMode, GravityFactorSelection) {
   const auto params = makeParams();
-  const PreintegratedImuMeasurements pim =
-      integrateIdealMeasurements<PreintegratedImuMeasurements>(params);
-  const ImuFactor2WithGravityVector gravityFactor(X(1), X(2), B(1), G(1), pim);
+  const PIM pim = integrateIdealMeasurements<PIM>(params);
+  const ImuFactor2WithGravityT<PIM, Point3> gravityFactor(X(1), X(2), B(1),
+                                                          G(1), pim);
+  const ImuFactorWithGravityT<PIM, Point3> splitGravityFactor(
+      X(1), V(1), X(2), V(2), B(1), G(1), pim);
 
-  const auto combinedParams = makeCombinedParams();
-  const PreintegratedCombinedMeasurements combinedPim =
-      integrateIdealCombinedMeasurements<PreintegratedCombinedMeasurements>(
-          combinedParams);
-  const imuBias::ConstantBias biasJ(Vector3(-0.02, 0.01, 0.04),
-                                    Vector3(0.002, -0.003, 0.001));
-  const CombinedImuFactorWithGravityVector combinedGravityFactor(
-      X(1), V(1), X(2), V(2), B(1), B(2), G(1), combinedPim);
+  const Vector9 defaultGravityError = gravityFactor.evaluateError(
+      kErrorStateI, kErrorStateJ, kErrorBias, Point3(params->n_gravity));
+  EXPECT(assert_equal(expectedError(pim, ImuFactorErrorMode::Logmap),
+                      defaultGravityError, 1e-12));
+  EXPECT(assert_equal(
+      defaultGravityError,
+      splitGravityFactor.evaluateError(
+          kErrorStateI.pose(), kErrorStateI.velocity(), kErrorStateJ.pose(),
+          kErrorStateJ.velocity(), kErrorBias, Point3(params->n_gravity)),
+      1e-12));
 
   const ImuFactorErrorMode modes[] = {ImuFactorErrorMode::Legacy,
                                       ImuFactorErrorMode::ComponentWise,
@@ -383,14 +432,41 @@ TEST(ImuFactorErrorMode, GravityFactorSelection) {
     const Vector9 gravityError = gravityFactor.evaluateError(
         kErrorStateI, kErrorStateJ, kErrorBias, Point3(params->n_gravity));
     EXPECT(assert_equal(expectedError(pim, mode), gravityError, 1e-12));
+    EXPECT(assert_equal(
+        gravityError,
+        splitGravityFactor.evaluateError(
+            kErrorStateI.pose(), kErrorStateI.velocity(), kErrorStateJ.pose(),
+            kErrorStateJ.velocity(), kErrorBias, Point3(params->n_gravity)),
+        1e-12));
+  }
+}
 
-    combinedParams->setImuFactorErrorMode(mode);
-    const Vector15 combinedGravityError = combinedGravityFactor.evaluateError(
+// Checks gravity-aware Combined factors for every Combined backend.
+TEST_PIM_WITH_COMBINED_BACKEND(ImuFactorErrorMode,
+                               CombinedGravityFactorSelection) {
+  const auto params = makeCombinedParams();
+  const CombinedPIM pim =
+      integrateIdealCombinedMeasurements<CombinedPIM>(params);
+  const imuBias::ConstantBias biasJ(Vector3(-0.02, 0.01, 0.04),
+                                    Vector3(0.002, -0.003, 0.001));
+  const CombinedImuFactorWithGravityT<CombinedPIM, Point3> gravityFactor(
+      X(1), V(1), X(2), V(2), B(1), B(2), G(1), pim);
+
+  const Vector15 defaultError = gravityFactor.evaluateError(
+      kErrorStateI.pose(), kErrorStateI.velocity(), kErrorStateJ.pose(),
+      kErrorStateJ.velocity(), kErrorBias, biasJ, Point3(params->n_gravity));
+  EXPECT(assert_equal(expectedError(pim, ImuFactorErrorMode::Logmap),
+                      Vector9(defaultError.head<9>()), 1e-12));
+
+  const ImuFactorErrorMode modes[] = {ImuFactorErrorMode::Legacy,
+                                      ImuFactorErrorMode::ComponentWise,
+                                      ImuFactorErrorMode::Logmap};
+  for (const ImuFactorErrorMode mode : modes) {
+    params->setImuFactorErrorMode(mode);
+    const Vector15 actual = gravityFactor.evaluateError(
         kErrorStateI.pose(), kErrorStateI.velocity(), kErrorStateJ.pose(),
-        kErrorStateJ.velocity(), kErrorBias, biasJ,
-        Point3(combinedParams->n_gravity));
-    const Vector9 actualNavigationError = combinedGravityError.head<9>();
-    EXPECT(assert_equal(expectedError(combinedPim, mode), actualNavigationError,
+        kErrorStateJ.velocity(), kErrorBias, biasJ, Point3(params->n_gravity));
+    EXPECT(assert_equal(expectedError(pim, mode), Vector9(actual.head<9>()),
                         1e-12));
   }
 }

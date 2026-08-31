@@ -37,6 +37,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <type_traits>
 
 using namespace std;
 using namespace gtsam;
@@ -85,13 +86,13 @@ TEST(PreintegrationParams, LegacySecondOrderFlagSerialization) {
 /* ************************************************************************* */
 // Verifies the IMU factor-error mode participates in equality and archives.
 TEST(PreintegrationParams, ImuFactorErrorModeSerialization) {
-  PreintegrationParams legacy(Vector3(0.1, -0.2, -9.8));
+  PreintegrationParams input(Vector3(0.1, -0.2, -9.8));
   EXPECT_LONGS_EQUAL(
-      static_cast<long>(ImuFactorErrorMode::Legacy),
-      static_cast<long>(legacy.getImuFactorErrorMode()));
+      static_cast<long>(ImuFactorErrorMode::Logmap),
+      static_cast<long>(input.getImuFactorErrorMode()));
 
-  PreintegrationParams input = legacy;
-  input.setImuFactorErrorMode(ImuFactorErrorMode::Logmap);
+  PreintegrationParams legacy = input;
+  legacy.setImuFactorErrorMode(ImuFactorErrorMode::Legacy);
   EXPECT(!legacy.equals(input, 1e-9));
 
   std::ostringstream captured;
@@ -107,6 +108,39 @@ TEST(PreintegrationParams, ImuFactorErrorModeSerialization) {
   EXPECT_LONGS_EQUAL(
       static_cast<long>(ImuFactorErrorMode::Logmap),
       static_cast<long>(output.getImuFactorErrorMode()));
+
+  PreintegrationParams legacyOutput;
+  roundtrip(legacy, legacyOutput);
+  EXPECT(legacy.equals(legacyOutput, 1e-9));
+  EXPECT_LONGS_EQUAL(
+      static_cast<long>(ImuFactorErrorMode::Legacy),
+      static_cast<long>(legacyOutput.getImuFactorErrorMode()));
+}
+
+namespace {
+
+// Minimal loading archive used to exercise the version-0 compatibility path.
+class VersionZeroLoadingArchive {
+ public:
+  using is_loading = std::true_type;
+
+  template <class T>
+  VersionZeroLoadingArchive& operator&(const T&) {
+    return *this;
+  }
+};
+
+}  // namespace
+
+/* ************************************************************************* */
+// Version-0 archives predate the stored mode and must retain Legacy behavior.
+TEST(PreintegrationParams, VersionZeroArchiveUsesLegacyMode) {
+  PreintegrationParams loaded(Vector3(0.0, 0.0, -9.81));
+  EXPECT(loaded.getImuFactorErrorMode() == ImuFactorErrorMode::Logmap);
+
+  VersionZeroLoadingArchive archive;
+  boost::serialization::access::serialize(archive, loaded, 0);
+  EXPECT(loaded.getImuFactorErrorMode() == ImuFactorErrorMode::Legacy);
 }
 
 /* ************************************************************************* */

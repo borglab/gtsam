@@ -27,7 +27,7 @@ namespace gtsam {
 
 /** Error chart used by IMU factors. */
 enum class ImuFactorErrorMode {
-  Legacy,        ///< Manifold/Tangent component-wise; Lie-group/Gal3 Logmap.
+  Legacy,        ///< Historical backend-dependent error chart.
   ComponentWise, ///< Use the component-wise NavState error for every backend.
   Logmap,        ///< Use the SE_2(3) NavState Logmap for every backend.
 };
@@ -54,14 +54,14 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
   ImuFactorErrorMode imuFactorErrorMode_;
 
  public:
-  /// Default constructor for serialization only
+  /// Default constructor for serialization only; fresh params use Logmap.
   PreintegrationParams()
       : PreintegratedRotationParams(),
         accelerometerCovariance(I_3x3),
         integrationCovariance(I_3x3),
         use2ndOrderCoriolis(false),
         n_gravity(0, 0, -1),
-        imuFactorErrorMode_(ImuFactorErrorMode::Legacy) {}
+        imuFactorErrorMode_(ImuFactorErrorMode::Logmap) {}
 
   /// The Params constructor insists on getting the navigation frame gravity vector
   /// For convenience, two commonly used conventions are provided by named constructors below
@@ -71,7 +71,7 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
         integrationCovariance(I_3x3),
         use2ndOrderCoriolis(false),
         n_gravity(n_gravity_),
-        imuFactorErrorMode_(ImuFactorErrorMode::Legacy) {}
+        imuFactorErrorMode_(ImuFactorErrorMode::Logmap) {}
 
   // Default Params for a Z-down navigation frame, such as NED: gravity points along positive Z-axis
   static std::shared_ptr<PreintegrationParams> MakeSharedD(double g = 9.81) {
@@ -93,7 +93,13 @@ struct GTSAM_EXPORT PreintegrationParams: PreintegratedRotationParams {
   const Matrix3& getIntegrationCovariance()   const { return integrationCovariance; }
   const Vector3& getGravity()   const { return n_gravity; }
 
-  /// Select the nonlinear error chart used by IMU factors.
+  /**
+   * Select the nonlinear error chart used by IMU factors.
+   *
+   * Fresh parameters default to Logmap. Legacy restores the historical
+   * backend-dependent choice: component-wise for Manifold/Tangent and Logmap
+   * for Lie-group/Galilean preintegration.
+   */
   void setImuFactorErrorMode(ImuFactorErrorMode mode) {
     imuFactorErrorMode_ = mode;
   }
