@@ -619,6 +619,13 @@ typedef gtsam::PreintegratedCombinedMeasurementsT<
 typedef gtsam::CombinedImuFactorT<
     gtsam::PreintegratedCombinedMeasurementsG> GalileanCombinedImuFactor;
 
+typedef gtsam::PreintegratedCombinedMeasurementsT<
+    gtsam::ManifoldPreintegration>
+    PreintegratedCombinedMeasurementsManifold;
+typedef gtsam::PreintegratedCombinedMeasurementsT<
+    gtsam::LieGroupPreintegration>
+    PreintegratedCombinedMeasurementsLieGroup;
+
 #include <gtsam/navigation/CombinedImuFactorWithGravity.h>
 template <PIM, GRAVITY>
 virtual class CombinedImuFactorWithGravityT : gtsam::NoiseModelFactor {
