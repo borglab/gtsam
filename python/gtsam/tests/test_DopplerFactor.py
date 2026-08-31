@@ -33,10 +33,14 @@ def line_of_sight(sat_pos, rcv_pos):
 
 
 def sagnac_rate(sat_pos, sat_vel, rcv_pos, rcv_vel):
-    """Earth-rotation (Sagnac) range-rate term."""
+    """Earth-rotation (Sagnac) range-rate term.
+
+    The time derivative of the Sagnac term gnss::geodist adds to the range,
+    k * (sat.x * rcv.y - sat.y * rcv.x).
+    """
     k = OMGE / C_LIGHT
-    return k * (sat_vel[1] * rcv_pos[0] + sat_pos[1] * rcv_vel[0] -
-                sat_vel[0] * rcv_pos[1] - sat_pos[0] * rcv_vel[1])
+    return k * (sat_vel[0] * rcv_pos[1] + sat_pos[0] * rcv_vel[1] -
+                sat_vel[1] * rcv_pos[0] - sat_pos[1] * rcv_vel[0])
 
 
 def expected_error(sat_vel, rcv_vel, meas_doppler, dt, bias_prev, bias_curr,
