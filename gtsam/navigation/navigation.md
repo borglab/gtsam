@@ -34,7 +34,8 @@ The `navigation` module in GTSAM provides specialized tools for inertial navigat
   errors and right-applied updates consistent with GTSAM conventions.
 - **[GalileanImuFactor NEES comparison](doc/GalileanImuFactorNEES.ipynb)**:
   Compares Manifold, Tangent, Lie-group, and Galilean preintegration accuracy
-  and statistical consistency under identical high-dynamic IMU samples.
+  and Logmap statistical consistency under identical high-dynamic IMU samples;
+  see the [executed results](doc/Logmap_IMU_NEES.md).
 - **[ImuFactor](doc/ImuFactor.ipynb)**: IMU factor.
 - **[CombinedImuFactor](doc/CombinedImuFactor.ipynb)**: IMU factor with built-in bias evolution.
 
