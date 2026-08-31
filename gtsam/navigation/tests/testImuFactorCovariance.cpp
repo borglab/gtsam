@@ -18,12 +18,14 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/MatrixConstants.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/types.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/Sampler.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
 #include <gtsam/navigation/CombinedImuFactorWithGravity.h>
 #include <gtsam/navigation/ImuFactor.h>
+#include <gtsam/navigation/ImuFactorWithGravity.h>
 
 #include <cmath>
 #include <cstdint>
@@ -250,6 +252,147 @@ template <class PIM>
 Matrix9 theoreticalResidualCovariance(const PIM& pim) {
   const Matrix9 jacobian = residualChartJacobian(pim);
   return jacobian * pim.preintMeasCov() * jacobian.transpose();
+}
+
+const NavState kErrorStateI(Rot3::Ypr(0.4, -0.2, 0.1), Point3(1.0, -2.0, 0.5),
+                            Vector3(0.4, 0.2, -0.1));
+const NavState kErrorStateJ(Rot3::Ypr(-0.2, 0.3, -0.1), Point3(-0.5, 1.2, 2.0),
+                            Vector3(-0.3, 0.6, 0.2));
+const imuBias::ConstantBias kErrorBias(Vector3(0.01, -0.02, 0.03),
+                                       Vector3(-0.004, 0.005, -0.006));
+
+// Locks the compatibility policy independently of the runtime dispatch test.
+TEST(ImuFactorErrorMode, LegacyBackendMapping) {
+  EXPECT(!ManifoldPreintegration::kDefaultUseLieGroupResidual);
+  EXPECT(!TangentPreintegration::kDefaultUseLieGroupResidual);
+  EXPECT(LieGroupPreintegration::kDefaultUseLieGroupResidual);
+  EXPECT(GalileanPreintegration::kDefaultUseLieGroupResidual);
+}
+
+template <class PIM>
+bool usesLogmap(ImuFactorErrorMode mode) {
+  switch (mode) {
+    case ImuFactorErrorMode::Legacy:
+      return PIM::kDefaultUseLieGroupResidual;
+    case ImuFactorErrorMode::ComponentWise:
+      return false;
+    case ImuFactorErrorMode::Logmap:
+      return true;
+  }
+  throw std::invalid_argument("Unknown ImuFactorErrorMode");
+}
+
+template <class PIM>
+Vector9 expectedError(const PIM& pim, ImuFactorErrorMode mode) {
+  const NavState predicted = pim.predict(kErrorStateI, kErrorBias);
+  return usesLogmap<PIM>(mode)
+             ? kErrorStateJ.logmap(predicted)
+             : internal::navStateComponentWiseLocalCoordinates(kErrorStateJ,
+                                                               predicted);
+}
+
+// Checks every backend and runtime mode, including finite-residual Jacobians.
+TEST_PIM(ImuFactorErrorMode, BackendSelectionAndJacobians) {
+  const auto params = makeParams();
+  const PIM pim = integrateIdealMeasurements<PIM>(params);
+  const ImuFactorErrorMode modes[] = {ImuFactorErrorMode::Legacy,
+                                      ImuFactorErrorMode::ComponentWise,
+                                      ImuFactorErrorMode::Logmap};
+
+  for (const ImuFactorErrorMode mode : modes) {
+    params->setImuFactorErrorMode(mode);
+    const ImuFactor2T<PIM> factor(X(1), X(2), B(1), pim);
+    Matrix actualH1, actualH2, actualH3;
+    const Vector9 actual =
+        factor.evaluateError(kErrorStateI, kErrorStateJ, kErrorBias, &actualH1,
+                             &actualH2, &actualH3);
+    EXPECT(assert_equal(expectedError(pim, mode), actual, 1e-12));
+
+    auto error = [&factor](const NavState& state_i, const NavState& state_j,
+                           const imuBias::ConstantBias& bias) {
+      return factor.evaluateError(state_i, state_j, bias);
+    };
+    EXPECT(assert_equal(
+        numericalDerivative31(error, kErrorStateI, kErrorStateJ, kErrorBias),
+        actualH1, 1e-7));
+    EXPECT(assert_equal(
+        numericalDerivative32(error, kErrorStateI, kErrorStateJ, kErrorBias),
+        actualH2, 1e-7));
+    EXPECT(assert_equal(
+        numericalDerivative33(error, kErrorStateI, kErrorStateJ, kErrorBias),
+        actualH3, 1e-7));
+
+    const ImuFactorT<PIM> splitFactor(X(1), V(1), X(2), V(2), B(1), pim);
+    EXPECT(assert_equal(
+        actual,
+        splitFactor.evaluateError(kErrorStateI.pose(), kErrorStateI.velocity(),
+                                  kErrorStateJ.pose(), kErrorStateJ.velocity(),
+                                  kErrorBias),
+        1e-12));
+  }
+}
+
+// Checks Combined factors use the same selected navigation residual.
+TEST_PIM_WITH_COMBINED_BACKEND(ImuFactorErrorMode, CombinedSelection) {
+  const auto params = makeCombinedParams();
+  const CombinedPIM pim =
+      integrateIdealCombinedMeasurements<CombinedPIM>(params);
+  const imuBias::ConstantBias biasJ(Vector3(-0.02, 0.01, 0.04),
+                                    Vector3(0.002, -0.003, 0.001));
+  const ImuFactorErrorMode modes[] = {ImuFactorErrorMode::Legacy,
+                                      ImuFactorErrorMode::ComponentWise,
+                                      ImuFactorErrorMode::Logmap};
+
+  for (const ImuFactorErrorMode mode : modes) {
+    params->setImuFactorErrorMode(mode);
+    const CombinedImuFactorT<CombinedPIM> factor(X(1), V(1), X(2), V(2), B(1),
+                                                 B(2), pim);
+    const Vector15 actual = factor.evaluateError(
+        kErrorStateI.pose(), kErrorStateI.velocity(), kErrorStateJ.pose(),
+        kErrorStateJ.velocity(), kErrorBias, biasJ);
+    const Vector9 actualNavigationError = actual.head<9>();
+    const Vector6 actualBiasError = actual.tail<6>();
+    const Vector6 expectedBiasError = kErrorBias.vector() - biasJ.vector();
+    EXPECT(
+        assert_equal(expectedError(pim, mode), actualNavigationError, 1e-12));
+    EXPECT(assert_equal(expectedBiasError, actualBiasError, 1e-12));
+  }
+}
+
+// Checks gravity-aware factor families share the same runtime error mode.
+TEST(ImuFactorErrorMode, GravityFactorSelection) {
+  const auto params = makeParams();
+  const PreintegratedImuMeasurements pim =
+      integrateIdealMeasurements<PreintegratedImuMeasurements>(params);
+  const ImuFactor2WithGravityVector gravityFactor(X(1), X(2), B(1), G(1), pim);
+
+  const auto combinedParams = makeCombinedParams();
+  const PreintegratedCombinedMeasurements combinedPim =
+      integrateIdealCombinedMeasurements<PreintegratedCombinedMeasurements>(
+          combinedParams);
+  const imuBias::ConstantBias biasJ(Vector3(-0.02, 0.01, 0.04),
+                                    Vector3(0.002, -0.003, 0.001));
+  const CombinedImuFactorWithGravityVector combinedGravityFactor(
+      X(1), V(1), X(2), V(2), B(1), B(2), G(1), combinedPim);
+
+  const ImuFactorErrorMode modes[] = {ImuFactorErrorMode::Legacy,
+                                      ImuFactorErrorMode::ComponentWise,
+                                      ImuFactorErrorMode::Logmap};
+  for (const ImuFactorErrorMode mode : modes) {
+    params->setImuFactorErrorMode(mode);
+    const Vector9 gravityError = gravityFactor.evaluateError(
+        kErrorStateI, kErrorStateJ, kErrorBias, Point3(params->n_gravity));
+    EXPECT(assert_equal(expectedError(pim, mode), gravityError, 1e-12));
+
+    combinedParams->setImuFactorErrorMode(mode);
+    const Vector15 combinedGravityError = combinedGravityFactor.evaluateError(
+        kErrorStateI.pose(), kErrorStateI.velocity(), kErrorStateJ.pose(),
+        kErrorStateJ.velocity(), kErrorBias, biasJ,
+        Point3(combinedParams->n_gravity));
+    const Vector9 actualNavigationError = combinedGravityError.head<9>();
+    EXPECT(assert_equal(expectedError(combinedPim, mode), actualNavigationError,
+                        1e-12));
+  }
 }
 
 // Checks optimized propagation against the original dense equation.

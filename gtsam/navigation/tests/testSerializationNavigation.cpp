@@ -36,6 +36,7 @@
 #include <gtsam/navigation/PseudorangeFactor.h>
 
 #include <fstream>
+#include <sstream>
 
 using namespace std;
 using namespace gtsam;
@@ -80,6 +81,33 @@ TEST(PreintegrationParams, LegacySecondOrderFlagSerialization) {
   EXPECT(input.equals(semanticallyEquivalent, 1e-9));
 }
 #endif
+
+/* ************************************************************************* */
+// Verifies the IMU factor-error mode participates in equality and archives.
+TEST(PreintegrationParams, ImuFactorErrorModeSerialization) {
+  PreintegrationParams legacy(Vector3(0.1, -0.2, -9.8));
+  EXPECT_LONGS_EQUAL(
+      static_cast<long>(ImuFactorErrorMode::Legacy),
+      static_cast<long>(legacy.getImuFactorErrorMode()));
+
+  PreintegrationParams input = legacy;
+  input.setImuFactorErrorMode(ImuFactorErrorMode::Logmap);
+  EXPECT(!legacy.equals(input, 1e-9));
+
+  std::ostringstream captured;
+  std::streambuf* previous = std::cout.rdbuf(captured.rdbuf());
+  input.print();
+  std::cout.rdbuf(previous);
+  EXPECT(captured.str().find("imuFactorErrorMode = Logmap") !=
+         std::string::npos);
+
+  PreintegrationParams output;
+  roundtrip(input, output);
+  EXPECT(input.equals(output, 1e-9));
+  EXPECT_LONGS_EQUAL(
+      static_cast<long>(ImuFactorErrorMode::Logmap),
+      static_cast<long>(output.getImuFactorErrorMode()));
+}
 
 /* ************************************************************************* */
 TEST(AHRSFactor, Serialization) {

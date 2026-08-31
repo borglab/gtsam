@@ -72,7 +72,9 @@ public:
   Vector3  deltaVij() const override { return preintegrated_.tail<3>(); }
   Rot3     deltaRij() const override { return Rot3::Expmap(theta()); }
   Vector3 so3TangentAt(double t) const override;
-  NavState deltaXij() const override { return NavState().retract(preintegrated_); }
+  NavState deltaXij() const override {
+    return internal::navStateComponentWiseRetract(NavState(), preintegrated_);
+  }
 
   const Vector9& preintegrated() const { return preintegrated_; }
   Vector3 theta() const     { return preintegrated_.head<3>(); }

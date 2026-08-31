@@ -148,24 +148,26 @@ public:
    *
    * TangentPreintegration propagates covariance for additive perturbations of
    * \f$\zeta=(\theta,p,v)\f$. Its factor residual instead uses
-   * NavState::localCoordinates at the predicted state. At zero residual, the
-   * differential from the additive chart to that residual chart is
+   * the configured factor-error chart at the predicted state. At zero
+   * residual, the differential from the additive chart to either supported
+   * residual chart is
    * \f[
    * J = \operatorname{diag}\left(J_r(\theta),\Delta R^T,\Delta R^T\right),
    * \qquad \Delta R=\operatorname{Exp}(\theta),
    * \f]
    * where \f$J_r\f$ is the SO(3) right Jacobian. Therefore its covariance is
-   * converted as \f$J P J^T\f$. LieGroupPreintegration evaluates the true
-   * \f$SE_2(3)\f$ logarithm, while the remaining backends retain the NavState
-   * chart; all three already propagate covariance in their respective
-   * residual chart and return it unchanged. This conversion does not alter
-   * the raw covariance returned by preintMeasCov().
+   * converted as \f$J P J^T\f$. The component-wise and \f$SE_2(3)\f$ Logmap
+   * errors have the same first-order tangent at zero, so this covariance is
+   * independent of ImuFactorErrorMode. The other backends already propagate
+   * covariance in this tangent and return it unchanged. This conversion does
+   * not alter the raw covariance returned by preintMeasCov().
    */
   Matrix9 residualCovariance() const {
     if constexpr (std::is_same_v<PreintegrationType,
                                  TangentPreintegration>) {
       Matrix9 chartJacobian;
-      NavState().retract(this->preintegrated_, {}, &chartJacobian);
+      internal::navStateComponentWiseRetract(
+          NavState(), this->preintegrated_, {}, &chartJacobian);
       return chartJacobian * preintMeasCov_ * chartJacobian.transpose();
     } else {
       return preintMeasCov_;

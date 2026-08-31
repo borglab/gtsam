@@ -183,7 +183,7 @@ LieGroupPreintegration makePim() {
   return pim;
 }
 
-// Verifies the factor uses the SE_2(3) logarithm at finite residuals.
+// Verifies Legacy mode uses the SE_2(3) logarithm at finite residuals.
 TEST(LieGroupPreintegration, ComputeErrorUsesGroupLogmap) {
   const LieGroupPreintegration pim = makePim();
   const Bias bias;
@@ -191,10 +191,11 @@ TEST(LieGroupPreintegration, ComputeErrorUsesGroupLogmap) {
   const Vector9 expected = kState2.logmap(predicted);
   const Vector9 actual =
       internal::preintegrationError(pim, kState1, kState2, bias);
-  const Vector9 legacy = kState2.localCoordinates(predicted);
+  const Vector9 componentWise =
+      internal::navStateComponentWiseLocalCoordinates(kState2, predicted);
 
   EXPECT(assert_equal(expected, actual, 1e-12));
-  EXPECT((actual - legacy).norm() > 1e-3);
+  EXPECT((actual - componentWise).norm() > 1e-3);
 }
 
 // Verifies PreintegrationBase error Jacobians with this backend.

@@ -50,6 +50,9 @@ class GTSAM_EXPORT GalileanPreintegration : public PreintegrationBase {
   using Matrix106 = Eigen::Matrix<double, 10, 6>;
   using Matrix910 = Eigen::Matrix<double, 9, 10>;
 
+  /// Select the SE_2(3) logarithm in Legacy factor-error mode.
+  inline static constexpr bool kDefaultUseLieGroupResidual = true;
+
  protected:
   Gal3 preintMatrix_;       ///< Mean increment in Gal(3).
   Matrix106 biasJacobian_;  ///< Right correction wrt (accel, gyro) bias.

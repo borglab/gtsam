@@ -47,8 +47,8 @@ class GTSAM_EXPORT PreintegrationBase {
   typedef imuBias::ConstantBias Bias;
   typedef PreintegrationParams Params;
 
-  /// Whether factors should use the SE_2(3) logarithm for their residual.
-  inline static constexpr bool kUseLieGroupResidual = false;
+  /// Legacy factor-error choice for this preintegration backend.
+  inline static constexpr bool kDefaultUseLieGroupResidual = false;
 
  protected:
   std::shared_ptr<Params> p_;
@@ -227,13 +227,28 @@ Vector9 preintegrationError(
 
   Matrix9 D_error_state_j, D_error_predict;
   Vector9 error;
-  if constexpr (PIM::kUseLieGroupResidual) {
+  bool useLogmap;
+  switch (pim.params()->getImuFactorErrorMode()) {
+    case ImuFactorErrorMode::Legacy:
+      useLogmap = PIM::kDefaultUseLieGroupResidual;
+      break;
+    case ImuFactorErrorMode::ComponentWise:
+      useLogmap = false;
+      break;
+    case ImuFactorErrorMode::Logmap:
+      useLogmap = true;
+      break;
+    default:
+      throw std::invalid_argument("Unknown ImuFactorErrorMode");
+  }
+
+  if (useLogmap) {
     error = state_j.logmap(predictedState_j,
                            H2 ? &D_error_state_j : nullptr,
                            H1 || H3 || H4 ? &D_error_predict : nullptr);
   } else {
-    error = state_j.localCoordinates(
-        predictedState_j, H2 ? &D_error_state_j : nullptr,
+    error = internal::navStateComponentWiseLocalCoordinates(
+        state_j, predictedState_j, H2 ? &D_error_state_j : nullptr,
         H1 || H3 || H4 ? &D_error_predict : nullptr);
   }
 

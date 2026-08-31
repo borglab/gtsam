@@ -26,9 +26,8 @@ namespace gtsam {
  * IMU preintegration using the SE_2(3) Lie-group structure of NavState.
  *
  * Unlike ManifoldPreintegration, each increment is applied with the group
- * exponential map. Factors using this backend evaluate their residual with
- * the SE_2(3) logarithm. NavState's legacy retract/localCoordinates chart
- * remains unchanged for optimization and other preintegration backends.
+ * exponential map. In Legacy factor-error mode, factors using this backend
+ * evaluate their residual with the SE_2(3) logarithm.
  */
 class GTSAM_EXPORT LieGroupPreintegration : public ManifoldPreintegration {
  protected:
@@ -36,8 +35,8 @@ class GTSAM_EXPORT LieGroupPreintegration : public ManifoldPreintegration {
   LieGroupPreintegration() = default;
 
  public:
-  /// Select the SE_2(3) logarithm in the shared IMU-factor error path.
-  inline static constexpr bool kUseLieGroupResidual = true;
+  /// Select the SE_2(3) logarithm in Legacy factor-error mode.
+  inline static constexpr bool kDefaultUseLieGroupResidual = true;
 
   /** Construct an empty preintegrator with parameters and a bias linearization
    * point. */

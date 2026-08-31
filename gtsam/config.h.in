@@ -39,6 +39,10 @@
 // Whether GTSAM is compiled to use Pose3::EXPMAP as the default coordinates mode for Pose3's retract and localCoordinates (otherwise, Pose3::FIRST_ORDER will be used)
 #cmakedefine GTSAM_POSE3_EXPMAP
 
+// Whether GTSAM is compiled to use the full SE_2(3) Expmap/Logmap as the
+// optimization chart for NavState (otherwise, the component-wise chart is used)
+#cmakedefine GTSAM_NAVSTATE_EXPMAP
+
 // Whether GTSAM is compiled to use Rot3::EXPMAP as the default coordinates mode for Rot3's retract and localCoordinates (otherwise, Pose3::CAYLEY will be used)
 #ifndef GTSAM_USE_QUATERNIONS
 	#cmakedefine GTSAM_ROT3_EXPMAP

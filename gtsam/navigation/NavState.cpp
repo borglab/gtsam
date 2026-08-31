@@ -126,15 +126,37 @@ bool NavState::equals(const NavState& other, double tol) const {
 //------------------------------------------------------------------------------
 NavState NavState::retract(const Vector9& xi, //
     OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
-  // NOTE: This is an intentional custom chart for NavState manifold updates.
-  // It differs from the default LieGroup chart based on full Expmap/Logmap.
-  Rot3 nRb = R_;
-  Point3 n_t = t_.col(0), n_v = t_.col(1);
+#ifdef GTSAM_NAVSTATE_EXPMAP
+  return expmap(xi, H1, H2);
+#else
+  return internal::navStateComponentWiseRetract(*this, xi, H1, H2);
+#endif
+}
+
+//------------------------------------------------------------------------------
+Vector9 NavState::localCoordinates(const NavState& g, //
+    OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
+#ifdef GTSAM_NAVSTATE_EXPMAP
+  return logmap(g, H1, H2);
+#else
+  return internal::navStateComponentWiseLocalCoordinates(*this, g, H1, H2);
+#endif
+}
+
+//------------------------------------------------------------------------------
+NavState internal::navStateComponentWiseRetract(
+    const NavState& state, const Vector9& xi,
+    OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) {
+  const Rot3& nRb = state.attitude();
+  const Point3 n_t = state.position();
+  const Vector3 n_v = state.velocity();
   Matrix3 D_bRc_xi, D_R_nRb, D_t_nRb, D_v_nRb;
-  const Rot3 bRc = Rot3::Expmap(dR(xi), H2 ? &D_bRc_xi : 0);
+  const Rot3 bRc = Rot3::Expmap(NavState::dR(xi), H2 ? &D_bRc_xi : 0);
   const Rot3 nRc = nRb.compose(bRc, H1 ? &D_R_nRb : 0);
-  const Point3 t = n_t + nRb.rotate(dP(xi), H1 ? &D_t_nRb : 0);
-  const Point3 v = n_v + nRb.rotate(dV(xi), H1 ? &D_v_nRb : 0);
+  const Point3 t =
+      n_t + nRb.rotate(NavState::dP(xi), H1 ? &D_t_nRb : 0);
+  const Point3 v =
+      n_v + nRb.rotate(NavState::dV(xi), H1 ? &D_v_nRb : 0);
   Matrix3 bRcTranspose;
   if (H1 || H2) bRcTranspose = bRc.transpose();
   if (H1) {
@@ -156,17 +178,20 @@ NavState NavState::retract(const Vector9& xi, //
 }
 
 //------------------------------------------------------------------------------
-Vector9 NavState::localCoordinates(const NavState& g, //
-    OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
-  // Inverse of the custom component-wise chart used in retract().
+Vector9 internal::navStateComponentWiseLocalCoordinates(
+    const NavState& state, const NavState& other,
+    OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) {
   Matrix3 D_dR_R, D_dt_R, D_dv_R;
-  const Rot3 dR = R_.between(g.R_, H1 ? &D_dR_R : 0);
-  const Point3 dP = R_.unrotate(g.t_.col(0) - t_.col(0), H1 ? &D_dt_R : 0);
-  const Vector dV = R_.unrotate(g.t_.col(1) - t_.col(1), H1 ? &D_dv_R : 0);
+  const Rot3 dR = state.attitude().between(
+      other.attitude(), H1 ? &D_dR_R : nullptr);
+  const Point3 dP = state.attitude().unrotate(
+      other.position() - state.position(), H1 ? &D_dt_R : nullptr);
+  const Vector3 dV = state.attitude().unrotate(
+      other.velocity() - state.velocity(), H1 ? &D_dv_R : nullptr);
 
   Vector9 xi;
   Matrix3 D_xi_R;
-  xi << Rot3::Logmap(dR, (H1 || H2) ? &D_xi_R : 0), dP, dV;
+  xi << Rot3::Logmap(dR, (H1 || H2) ? &D_xi_R : nullptr), dP, dV;
   if (H1) {
     *H1 << D_xi_R * D_dR_R, Z_3x3, Z_3x3,  //
         D_dt_R, -I_3x3, Z_3x3,             //
@@ -211,7 +236,8 @@ NavState NavState::update(const Vector3& b_acceleration, const Vector3& b_omega,
 
   // Bring back to manifold
   Matrix9 D_newState_xi;
-  NavState newState = retract(xi, F, G1 || G2 ? &D_newState_xi : 0);
+  NavState newState = internal::navStateComponentWiseRetract(
+      *this, xi, F, G1 || G2 ? &D_newState_xi : nullptr);
 
   // Derivative wrt state is computed by retract directly
   // However, as dP(xi) also depends on state, we need to add that contribution
