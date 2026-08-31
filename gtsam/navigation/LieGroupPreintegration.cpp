@@ -116,53 +116,40 @@ void LieGroupPreintegration::updateFactor(const Vector3& bodyAcceleration,
 /* ************************************************************************* */
 Vector9 LieGroupPreintegration::biasCorrectedDelta(
     const imuBias::ConstantBias& bias, OptionalJacobian<9, 6> H) const {
-  const imuBias::ConstantBias biasIncrement = bias - biasHat_;
-  const Vector3 rotationCorrection =
-      delRdelBiasOmega_ * biasIncrement.gyroscope();
+  // Brossard et al., Eq. (67), applies one complete right correction
+  //
+  //   DeltaX(b) = DeltaX(bHat) Exp(J_b (b - bHat)).
+  //
+  // The inherited position and velocity Jacobians differentiate physical
+  // components. Convert them to the right-local frame before assembling J_b.
+  const Matrix3 deltaRotationTranspose = deltaRij().transpose();
+  Matrix96 biasJacobian;
+  biasJacobian << Z_3x3, delRdelBiasOmega_,
+      deltaRotationTranspose * delPdelBiasAcc_,
+      deltaRotationTranspose * delPdelBiasOmega_,
+      deltaRotationTranspose * delVdelBiasAcc_,
+      deltaRotationTranspose * delVdelBiasOmega_;
 
-  Matrix3 correctedRotation_H_correction;
-  const Rot3 correctedRotation = deltaRij().expmap(
-      rotationCorrection, {}, H ? &correctedRotation_H_correction : nullptr);
-  if (H) correctedRotation_H_correction *= delRdelBiasOmega_;
-
-  Vector9 correctionTangent;
-  NavState::dR(correctionTangent) = rotationCorrection;
-  NavState::dP(correctionTangent) =
-      delPdelBiasAcc_ * biasIncrement.accelerometer() +
-      delPdelBiasOmega_ * biasIncrement.gyroscope();
-  NavState::dV(correctionTangent) =
-      delVdelBiasAcc_ * biasIncrement.accelerometer() +
-      delVdelBiasOmega_ * biasIncrement.gyroscope();
-
+  const Vector9 correctionTangent = biasJacobian * (bias - biasHat_).vector();
   Matrix9 correction_H_tangent;
-  const NavState correction =
-      NavState::Expmap(correctionTangent, H ? &correction_H_tangent : nullptr);
+  const NavState correction = NavState::Expmap(
+      correctionTangent, H ? &correction_H_tangent : nullptr);
 
-  Vector9 corrected;
-  Matrix3 logRotation_H_rotation;
-  NavState::dR(corrected) =
-      Rot3::Logmap(correctedRotation, H ? &logRotation_H_rotation : nullptr);
-  NavState::dP(corrected) = deltaPij() + correction.position();
-  NavState::dV(corrected) = deltaVij() + correction.velocity();
+  Matrix9 corrected_H_correction;
+  const NavState correctedState = deltaXij_.compose(
+      correction, {}, H ? &corrected_H_correction : nullptr);
+
+  // predictPIM consumes (Log(deltaR), deltaP, deltaV), irrespective of the
+  // optimization chart selected for NavState.
+  Matrix9 result_H_corrected;
+  const Vector9 result = internal::navStateComponentWiseLocalCoordinates(
+      NavState(), correctedState, {}, H ? &result_H_corrected : nullptr);
 
   if (H) {
-    const Matrix3 J = correction_H_tangent.block<3, 3>(0, 0);
-    const Matrix3 Qp = correction_H_tangent.block<3, 3>(3, 0);
-    const Matrix3 Qv = correction_H_tangent.block<3, 3>(6, 0);
-
-    Matrix36 rotation_H_bias, position_H_bias, velocity_H_bias;
-    rotation_H_bias << Z_3x3,
-        logRotation_H_rotation * correctedRotation_H_correction;
-    position_H_bias << J * delPdelBiasAcc_,
-        J * delPdelBiasOmega_ + Qp * delRdelBiasOmega_;
-    velocity_H_bias << J * delVdelBiasAcc_,
-        J * delVdelBiasOmega_ + Qv * delRdelBiasOmega_;
-
-    const Matrix3 correctionRotation = correction.attitude().matrix();
-    *H << rotation_H_bias, correctionRotation * position_H_bias,
-        correctionRotation * velocity_H_bias;
+    *H = result_H_corrected * corrected_H_correction *
+         correction_H_tangent * biasJacobian;
   }
-  return corrected;
+  return result;
 }
 
 }  // namespace gtsam

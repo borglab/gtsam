@@ -44,7 +44,7 @@ class GTSAM_EXPORT LieGroupPreintegration : public ManifoldPreintegration {
       const std::shared_ptr<Params>& params,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias());
 
-  /** Return the bias-corrected delta in NavState's legacy tangent ordering. */
+  /** Return Brossard's right-corrected delta in PIM (R,p,v) ordering. */
   Vector9 biasCorrectedDelta(const imuBias::ConstantBias& bias,
                              OptionalJacobian<9, 6> H = {}) const override;
 
