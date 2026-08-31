@@ -258,10 +258,11 @@ The key components are:
 - `NavState` stores tangent blocks in `(R,p,v)` order, whereas Brossard et al.
   write the $SE_2(3)$ matrix in `(R,v,p)` order. Translate the position and
   velocity blocks when comparing equations.
-- Lie-group *integration* does not change the chart used by optimization.
-  `LieGroupPreintegration` applies IMU increments with `NavState::expmap`, while
-  `NavState::retract` and `localCoordinates` retain GTSAM's component-wise
-  optimization chart.
+- `LieGroupPreintegration` applies IMU increments with `NavState::expmap` and
+  evaluates IMU-factor errors with the $SE_2(3)$ logarithm. This does not change
+  the chart used by optimization: `NavState::retract` and `localCoordinates`
+  retain GTSAM's component-wise chart for variable updates and for the other
+  preintegration backends.
 - `omegaCoriolis` is the angular velocity of the navigation frame, expressed
   in navigation-frame coordinates in radians per second. When it is set,
   `PreintegrationBase::predict` and AHRS prediction use the exact rotating-Earth

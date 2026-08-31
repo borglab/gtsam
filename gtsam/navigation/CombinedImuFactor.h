@@ -144,16 +144,17 @@ class GTSAM_EXPORT PreintegratedCombinedMeasurementsT : public PreintegrationTyp
    * Express the propagated covariance in the combined IMU factor residual
    * chart.
    *
-   * The first nine rows use the same NavState residual chart as ImuFactor.
-   * TangentPreintegration propagates them in additive
+   * The first nine rows use the residual chart selected by the preintegration
+   * backend. TangentPreintegration propagates them in additive
    * \f$(\theta,p,v)\f$ coordinates, whose differential into that chart is
    * \f[
    * J_9 = \operatorname{diag}
    *       \left(J_r(\theta),\Delta R^T,\Delta R^T\right).
    * \f]
-   * ManifoldPreintegration, LieGroupPreintegration, and
-   * GalileanPreintegration already propagate these rows in the residual chart,
-   * so their \f$J_9\f$ is identity.
+   * LieGroupPreintegration uses the \f$SE_2(3)\f$ logarithm, while
+   * ManifoldPreintegration and GalileanPreintegration use the NavState chart.
+   * All three already propagate these rows in their residual chart, so their
+   * \f$J_9\f$ is identity.
    *
    * The final six propagated coordinates follow the bias change
    * \f$b_j-b_i\f$, whereas the factor residual is

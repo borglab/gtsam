@@ -47,6 +47,9 @@ class GTSAM_EXPORT PreintegrationBase {
   typedef imuBias::ConstantBias Bias;
   typedef PreintegrationParams Params;
 
+  /// Whether factors should use the SE_2(3) logarithm for their residual.
+  inline static constexpr bool kUseLieGroupResidual = false;
+
  protected:
   std::shared_ptr<Params> p_;
 
@@ -223,9 +226,16 @@ Vector9 preintegrationError(
       H4 ? &D_predict_gravity : nullptr);
 
   Matrix9 D_error_state_j, D_error_predict;
-  const Vector9 error = state_j.localCoordinates(
-      predictedState_j, H2 ? &D_error_state_j : nullptr,
-      H1 || H3 || H4 ? &D_error_predict : nullptr);
+  Vector9 error;
+  if constexpr (PIM::kUseLieGroupResidual) {
+    error = state_j.logmap(predictedState_j,
+                           H2 ? &D_error_state_j : nullptr,
+                           H1 || H3 || H4 ? &D_error_predict : nullptr);
+  } else {
+    error = state_j.localCoordinates(
+        predictedState_j, H2 ? &D_error_state_j : nullptr,
+        H1 || H3 || H4 ? &D_error_predict : nullptr);
+  }
 
   if (H1) *H1 = D_error_predict * D_predict_state_i;
   if (H2) *H2 = D_error_state_j;

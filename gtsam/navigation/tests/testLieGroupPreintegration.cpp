@@ -171,25 +171,51 @@ TEST(LieGroupPreintegration, NonlinearBiasCorrection) {
 /* ************************************************************************* */
 namespace factor_fixture {
 
+const NavState kState1(Rot3::Ypr(0.4, -0.2, 0.1), Point3(1.0, -2.0, 0.5),
+                       Vector3(0.4, 0.2, -0.1));
+const NavState kState2(Rot3::Ypr(-0.2, 0.3, -0.1),
+                       Point3(-0.5, 1.2, 2.0),
+                       Vector3(-0.3, 0.6, 0.2));
+
+LieGroupPreintegration makePim() {
+  LieGroupPreintegration pim(testing::Params());
+  testing::integrateMeasurements(testing::SomeMeasurements(), &pim);
+  return pim;
+}
+
+// Verifies the factor uses the SE_2(3) logarithm at finite residuals.
+TEST(LieGroupPreintegration, ComputeErrorUsesGroupLogmap) {
+  const LieGroupPreintegration pim = makePim();
+  const Bias bias;
+  const NavState predicted = pim.predict(kState1, bias);
+  const Vector9 expected = kState2.logmap(predicted);
+  const Vector9 actual =
+      internal::preintegrationError(pim, kState1, kState2, bias);
+  const Vector9 legacy = kState2.localCoordinates(predicted);
+
+  EXPECT(assert_equal(expected, actual, 1e-12));
+  EXPECT((actual - legacy).norm() > 1e-3);
+}
+
 // Verifies PreintegrationBase error Jacobians with this backend.
 TEST(LieGroupPreintegration, ComputeErrorJacobians) {
-  LieGroupPreintegration pim(testing::Params());
-  const NavState x1, x2;
+  const LieGroupPreintegration pim = makePim();
   const Bias bias;
   Matrix9 actualH1, actualH2;
   Matrix96 actualH3;
-  internal::preintegrationError(pim, x1, x2, bias, actualH1, actualH2,
+  internal::preintegrationError(pim, kState1, kState2, bias, actualH1,
+                                actualH2,
                                 actualH3);
   auto error = [&](const NavState& a, const NavState& b, const Bias& c) {
     return internal::preintegrationError(pim, a, b, c);
   };
 
-  EXPECT(
-      assert_equal(numericalDerivative31(error, x1, x2, bias), actualH1, 1e-9));
-  EXPECT(
-      assert_equal(numericalDerivative32(error, x1, x2, bias), actualH2, 1e-9));
-  EXPECT(
-      assert_equal(numericalDerivative33(error, x1, x2, bias), actualH3, 1e-9));
+  EXPECT(assert_equal(numericalDerivative31(error, kState1, kState2, bias),
+                      actualH1, 1e-8));
+  EXPECT(assert_equal(numericalDerivative32(error, kState1, kState2, bias),
+                      actualH2, 1e-8));
+  EXPECT(assert_equal(numericalDerivative33(error, kState1, kState2, bias),
+                      actualH3, 1e-8));
 }
 
 }  // namespace factor_fixture
