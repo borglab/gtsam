@@ -284,17 +284,17 @@ TEST(ImuFactorErrorMode, FreshParamsDefaultToLogmap) {
 
 // Locks the compatibility policy independently of the runtime dispatch test.
 TEST(ImuFactorErrorMode, LegacyBackendMapping) {
-  EXPECT(!ManifoldPreintegration::kDefaultUseLieGroupResidual);
-  EXPECT(!TangentPreintegration::kDefaultUseLieGroupResidual);
-  EXPECT(LieGroupPreintegration::kDefaultUseLieGroupResidual);
-  EXPECT(GalileanPreintegration::kDefaultUseLieGroupResidual);
+  EXPECT(!ManifoldPreintegration::kLegacyUsesLogmap);
+  EXPECT(!TangentPreintegration::kLegacyUsesLogmap);
+  EXPECT(LieGroupPreintegration::kLegacyUsesLogmap);
+  EXPECT(GalileanPreintegration::kLegacyUsesLogmap);
 }
 
 template <class PIM>
 bool usesLogmap(ImuFactorErrorMode mode) {
   switch (mode) {
     case ImuFactorErrorMode::Legacy:
-      return PIM::kDefaultUseLieGroupResidual;
+      return PIM::kLegacyUsesLogmap;
     case ImuFactorErrorMode::ComponentWise:
       return false;
     case ImuFactorErrorMode::Logmap:

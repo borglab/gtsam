@@ -48,7 +48,7 @@ class GTSAM_EXPORT PreintegrationBase {
   typedef PreintegrationParams Params;
 
   /// Legacy factor-error choice for this preintegration backend.
-  inline static constexpr bool kDefaultUseLieGroupResidual = false;
+  inline static constexpr bool kLegacyUsesLogmap = false;
 
  protected:
   std::shared_ptr<Params> p_;
@@ -230,7 +230,7 @@ Vector9 preintegrationError(
   bool useLogmap;
   switch (pim.params()->getImuFactorErrorMode()) {
     case ImuFactorErrorMode::Legacy:
-      useLogmap = PIM::kDefaultUseLieGroupResidual;
+      useLogmap = PIM::kLegacyUsesLogmap;
       break;
     case ImuFactorErrorMode::ComponentWise:
       useLogmap = false;

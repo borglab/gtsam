@@ -51,7 +51,7 @@ class GTSAM_EXPORT GalileanPreintegration : public PreintegrationBase {
   using Matrix910 = Eigen::Matrix<double, 9, 10>;
 
   /// Select the SE_2(3) logarithm in Legacy factor-error mode.
-  inline static constexpr bool kDefaultUseLieGroupResidual = true;
+  inline static constexpr bool kLegacyUsesLogmap = true;
 
  protected:
   Gal3 preintMatrix_;       ///< Mean increment in Gal(3).

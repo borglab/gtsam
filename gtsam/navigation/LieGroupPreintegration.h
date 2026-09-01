@@ -36,7 +36,7 @@ class GTSAM_EXPORT LieGroupPreintegration : public ManifoldPreintegration {
 
  public:
   /// Select the SE_2(3) logarithm in Legacy factor-error mode.
-  inline static constexpr bool kDefaultUseLieGroupResidual = true;
+  inline static constexpr bool kLegacyUsesLogmap = true;
 
   /** Construct an empty preintegrator with parameters and a bias linearization
    * point. */
