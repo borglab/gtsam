@@ -125,7 +125,7 @@ def _skew(vector):
 def exact_rotating_state(
     state_i, acceleration, angular_velocity, duration, gravity, omega
 ):
-    """Evaluate Brossard's exact constant-rate rotating-frame endpoint."""
+    """Evaluate the paper's exact constant-rate rotating-frame endpoint."""
     tangent = np.zeros(10)
     tangent[:3] = np.asarray(angular_velocity) * duration
     tangent[3:6] = np.asarray(acceleration) * duration
@@ -566,18 +566,59 @@ def _table(headers, rows):
     )
 
 
+def _format_number(value, format_spec, best=False):
+    """Format a number and optionally emphasize it in a Markdown table."""
+    text = format(value, format_spec)
+    return f"**{text}**" if best else text
+
+
+def _is_best(value, best):
+    """Treat numerically identical values as tied for best."""
+    return bool(np.isclose(value, best, rtol=1e-12, atol=1e-15))
+
+
 def inertial_table(result):
+    physical_summaries = result["physical_summary"]
+    statistical_summaries = result["summary"]
+    best_position = min(
+        values["position_rmse"] for values in physical_summaries.values()
+    )
+    best_velocity = min(
+        values["velocity_rmse"] for values in physical_summaries.values()
+    )
+    best_error = min(
+        values["mean_error_norm"] for values in statistical_summaries.values()
+    )
+    best_nees_distance = min(
+        abs(values["mean_nees"] - 9.0) for values in statistical_summaries.values()
+    )
     rows = []
     for name in BACKENDS:
-        physical = result["physical_summary"][name]
-        statistical = result["summary"][name]
+        physical = physical_summaries[name]
+        statistical = statistical_summaries[name]
         rows.append(
             [
                 name,
-                f"{physical['position_rmse']:.4f}",
-                f"{physical['velocity_rmse']:.4f}",
-                f"{statistical['mean_error_norm']:.4f}",
-                f"{statistical['mean_nees']:.3f}",
+                _format_number(
+                    physical["position_rmse"],
+                    ".4f",
+                    _is_best(physical["position_rmse"], best_position),
+                ),
+                _format_number(
+                    physical["velocity_rmse"],
+                    ".4f",
+                    _is_best(physical["velocity_rmse"], best_velocity),
+                ),
+                _format_number(
+                    statistical["mean_error_norm"],
+                    ".4f",
+                    _is_best(statistical["mean_error_norm"], best_error),
+                ),
+                _format_number(
+                    statistical["mean_nees"],
+                    ".3f",
+                    _is_best(abs(statistical["mean_nees"] - 9.0), best_nees_distance),
+                ),
             ]
         )
     return _table(
@@ -592,16 +633,32 @@ def inertial_table(result):
     )
 
 
-def uncertainty_table(result):
+def uncertainty_table(result, expected_nees):
+    summaries = result["summary"]
+    best_nees_distance = min(
+        abs(values["mean_nees"] - expected_nees) for values in summaries.values()
+    )
+    best_error = min(values["mean_error_norm"] for values in summaries.values())
     rows = []
     for name in BACKENDS:
-        values = result["summary"][name]
+        values = summaries[name]
         rows.append(
             [
                 name,
-                f"{values['mean_nees']:.3f}",
+                _format_number(
+                    values["mean_nees"],
+                    ".3f",
+                    _is_best(
+                        abs(values["mean_nees"] - expected_nees),
+                        best_nees_distance,
+                    ),
+                ),
                 f"{values['median_nees']:.3f}",
-                f"{values['mean_error_norm']:.4f}",
+                _format_number(
+                    values["mean_error_norm"],
+                    ".4f",
+                    _is_best(values["mean_error_norm"], best_error),
+                ),
             ]
         )
     return _table(
@@ -610,6 +667,26 @@ def uncertainty_table(result):
 
 
 def rotating_tables(result):
+    conditions = tuple(next(iter(result["summary"].values())))
+    best_position = {
+        condition: min(
+            result["physical_summary"][name][condition]["position_rmse"]
+            for name in BACKENDS
+        )
+        for condition in conditions
+    }
+    best_velocity = {
+        condition: min(
+            result["physical_summary"][name][condition]["velocity_rmse"]
+            for name in BACKENDS
+        )
+        for condition in conditions
+    }
+    best_nees_distance = min(
+        abs(result["summary"][name][condition]["mean_nees"] - 9.0)
+        for name in BACKENDS
+        for condition in conditions
+    )
     physical_rows, nees_rows = [], []
     for name in BACKENDS:
         for condition in result["summary"][name]:
@@ -619,11 +696,32 @@ def rotating_tables(result):
                 [
                     name,
                     condition,
-                    f"{physical['position_rmse']:.4f}",
-                    f"{physical['velocity_rmse']:.4f}",
+                    _format_number(
+                        physical["position_rmse"],
+                        ".4f",
+                        _is_best(physical["position_rmse"], best_position[condition]),
+                    ),
+                    _format_number(
+                        physical["velocity_rmse"],
+                        ".4f",
+                        _is_best(physical["velocity_rmse"], best_velocity[condition]),
+                    ),
                 ]
             )
-            nees_rows.append([name, condition, f"{statistical['mean_nees']:.3f}"])
+            nees_rows.append(
+                [
+                    name,
+                    condition,
+                    _format_number(
+                        statistical["mean_nees"],
+                        ".3f",
+                        _is_best(
+                            abs(statistical["mean_nees"] - 9.0),
+                            best_nees_distance,
+                        ),
+                    ),
+                ]
+            )
     return (
         _table(
             ["Backend", "Earth rate", "Position RMS (m)", "Velocity RMS (m/s)"],
@@ -636,14 +734,38 @@ def rotating_tables(result):
 def bias_update_table(magnitudes, summary):
     """Format median bias-correction errors at the largest update."""
     index = int(np.argmax(magnitudes))
+    best_rotation = min(
+        values["rotation"]["median"][index] for values in summary.values()
+    )
+    best_position = min(
+        values["position"]["median"][index] for values in summary.values()
+    )
+    best_velocity = min(
+        values["velocity"]["median"][index] for values in summary.values()
+    )
     rows = []
     for name in BACKENDS:
+        rotation = summary[name]["rotation"]["median"][index]
+        position = summary[name]["position"]["median"][index]
+        velocity = summary[name]["velocity"]["median"][index]
         rows.append(
             [
                 name,
-                f"{summary[name]['rotation']['median'][index] * 180 / np.pi * 1e6:.3f}",
-                f"{summary[name]['position']['median'][index] * 1e3:.4f}",
-                f"{summary[name]['velocity']['median'][index] * 1e2:.4f}",
+                _format_number(
+                    rotation * 180 / np.pi * 1e6,
+                    ".3f",
+                    _is_best(rotation, best_rotation),
+                ),
+                _format_number(
+                    position * 1e3,
+                    ".4f",
+                    _is_best(position, best_position),
+                ),
+                _format_number(
+                    velocity * 1e2,
+                    ".4f",
+                    _is_best(velocity, best_velocity),
+                ),
             ]
         )
     return _table(
@@ -753,7 +875,7 @@ def rotating_nees_figure(result):
 
 
 def bias_update_figure(magnitudes, summary):
-    """Create Brossard-style small multiples for bias-update errors."""
+    """Create small multiples for first-order bias-update errors."""
     figure = make_subplots(
         rows=3,
         cols=1,

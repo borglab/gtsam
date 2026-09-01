@@ -12,6 +12,12 @@ The notebook is the executable source of truth. Its mechanical Monte Carlo,
 statistics, tables, and Plotly code are kept in
 [`galilean_imu_factor_nees.py`](./galilean_imu_factor_nees.py).
 
+The Galilean row is the companion paper's $\mathrm{Gal}(3)\times\mathbb R^6$
+direct-product model. It retains Delama et al.'s held-input composition and
+uses Brossard et al.'s endpoint and rotating-frame structure, but its physical
+bias model, left-invariant covariance, and right correction are the companion
+paper's formulation.
+
 ## How to read the results
 
 Normalized Estimation Error Squared (NEES) tests whether a residual and its
@@ -69,9 +75,9 @@ is [8.815, 9.187].
 | Backend | Mean NEES | Median NEES | Mean Logmap error norm |
 |---|---:|---:|---:|
 | Manifold | 8.995 | 8.266 | **0.2156** |
-| Tangent | 8.996 | 8.286 | 0.3133 |
+| Tangent | **8.996** | 8.286 | 0.3133 |
 | Lie group | 8.995 | 8.266 | **0.2156** |
-| Galilean | **8.993** | 8.253 | 0.2193 |
+| Galilean | 8.993 | 8.253 | 0.2193 |
 
 All four Logmap results are statistically consistent and within 0.007 of the
 theoretical mean.
@@ -92,9 +98,9 @@ and retains the full state-bias covariance. Its expected mean-NEES interval is
 Every backend remains inside the confidence interval when the state block uses
 the Logmap residual.
 
-## Brossard right-applied bias correction
+## Right-applied first-order bias correction
 
-The deterministic bias experiment evaluates the first-order correction
+The companion paper defines the Galilean first-order correction
 
 $$
 \widehat\Upsilon_{ij}(\hat b+\delta b)
@@ -102,9 +108,12 @@ $$
 \widehat\Upsilon_{ij}(\hat b)\operatorname{Exp}(J_b\delta b)
 $$
 
-against complete reintegration. It uses a nonzero bias linearization point,
-one second of smooth three-axis motion, 2,000 paired random directions per
-magnitude, and $\lVert\delta b_a\rVert=30\lVert\delta b_\omega\rVert$.
+on the right because its direct-product state uses a standard left-invariant
+error. The deterministic experiment compares this correction, and each other
+backend's corresponding first-order approximation, against complete
+reintegration. It uses a nonzero bias linearization point, one second of smooth
+three-axis motion, 2,000 paired random directions per magnitude, and
+$\lVert\delta b_a\rVert=30\lVert\delta b_\omega\rVert$.
 The table reports median error at the largest joint update, 0.35.
 
 | Backend | Rotation (microdeg) | Position (mm) | Velocity (cm/s) |
@@ -131,8 +140,8 @@ approximation errors scale quadratically with update magnitude.
   acceleration, lower IMU rates, longer held-input intervals, or rotating
   navigation frames.
 - Use **Tangent** for established general-purpose and PIM-merging workflows.
-- Use **Lie group** when the formulation requires $SE_2(3)$ increments and
-  Brossard's right-applied bias update.
+- Use **Lie group** when the formulation requires $SE_2(3)$ increments and its
+  complete right-applied group bias update.
 - Supply `omegaCoriolis` whenever navigation-frame rotation is known.
 
 `Legacy` and `ComponentWise` remain compatibility choices, but they are not
