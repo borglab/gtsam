@@ -115,3 +115,6 @@ doxygen build/doc/Doxyfile.xml
 cd $PROJECT_DIR/build/python
 make -j${GTSAM_BUILD_JOBS} install
 make -j${GTSAM_BUILD_JOBS} python-stubs
+if [ "${GTSAM_BUILD_UNSTABLE:-ON}" != "OFF" ]; then
+    make -j${GTSAM_BUILD_JOBS} python-unstable-stubs
+fi
