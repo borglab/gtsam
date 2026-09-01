@@ -19,21 +19,30 @@
 
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
+#include <functional>
+#include <optional>
+
 namespace gtsam {
 
 using JacobianVector = std::vector<Matrix>;
 
 class CustomFactor;
 
+/// Jacobians handed to the Python callback, absent when only the error is wanted.
+using OptionalJacobianVector = std::optional<std::reference_wrapper<JacobianVector>>;
+
 /*
  * NOTE
  * ==========
  * pybind11 will invoke a copy if this is `JacobianVector &`, and modifications in Python will not be reflected.
  *
- * This is safe because this is passing a const pointer, and pybind11 will maintain the `std::vector` memory layout.
- * Thus the pointer will never be invalidated.
+ * A `std::optional<std::reference_wrapper<JacobianVector>>` keeps reference semantics -- `JacobianVector` is
+ * opaque (see `preamble/custom.h`), so pybind11 maintains the `std::vector` memory layout and Python's writes
+ * are visible in C++ -- while also telling pybind11 that the argument is nullable. A bare pointer does not:
+ * pybind11 renders pointer arguments without `Optional`, so the generated stub claims the callback always
+ * receives a `JacobianVector`, and a correct `if H is not None` guard gets reported as unreachable.
  */
-using CustomErrorFunction = std::function<Vector(const CustomFactor &, const Values &, const JacobianVector *)>;
+using CustomErrorFunction = std::function<Vector(const CustomFactor &, const Values &, OptionalJacobianVector)>;
 
 /**
  * @brief Custom factor that takes a std::function as the error
