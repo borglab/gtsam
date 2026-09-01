@@ -320,7 +320,10 @@ TEST(GalileanCombinedImuFactor, ErrorAndJacobians) {
   values.insert(V(1), state_j.velocity());
   values.insert(B(0), bias_i);
   values.insert(B(1), bias_j);
-  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-6, 1e-5);
+  // This checks whitened Jacobians whose largest entries are about 5.8e4.
+  // GCC's finite differences vary by roughly 2e-5 across platforms, so use a
+  // still-tight absolute tolerance corresponding to about 2e-9 relatively.
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-6, 1e-4);
 }
 
 // Bias correction is applied on the right and exposes the complete Jacobian.

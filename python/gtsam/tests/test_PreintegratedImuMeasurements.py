@@ -19,6 +19,34 @@ from gtsam.utils.test_case import GtsamTestCase
 class TestPreintegratedImuMeasurements(GtsamTestCase):
     """Tests the common API of both preintegration backends."""
 
+    def test_error_mode_defaults_and_explicit_compatibility(self):
+        """Fresh standard and Combined parameters default to Logmap."""
+        params = (
+            gtsam.PreintegrationParams(np.zeros(3)),
+            gtsam.PreintegrationParams.MakeSharedD(9.81),
+            gtsam.PreintegrationParams.MakeSharedU(9.81),
+            gtsam.PreintegrationCombinedParams(np.zeros(3)),
+            gtsam.PreintegrationCombinedParams.MakeSharedD(9.81),
+            gtsam.PreintegrationCombinedParams.MakeSharedU(9.81),
+        )
+
+        for value in params:
+            self.assertEqual(
+                gtsam.ImuFactorErrorMode.Logmap,
+                value.getImuFactorErrorMode(),
+            )
+            value.setImuFactorErrorMode(
+                gtsam.ImuFactorErrorMode.ComponentWise)
+            self.assertEqual(
+                gtsam.ImuFactorErrorMode.ComponentWise,
+                value.getImuFactorErrorMode(),
+            )
+            value.setImuFactorErrorMode(gtsam.ImuFactorErrorMode.Legacy)
+            self.assertEqual(
+                gtsam.ImuFactorErrorMode.Legacy,
+                value.getImuFactorErrorMode(),
+            )
+
     def test_preintegrated_coordinates(self):
         """The raw measurements agree with the component accessors."""
         params = gtsam.PreintegrationParams.MakeSharedD(9.81)

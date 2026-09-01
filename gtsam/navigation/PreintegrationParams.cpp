@@ -25,6 +25,22 @@ using namespace std;
 
 namespace gtsam {
 
+namespace {
+
+const char* errorModeName(ImuFactorErrorMode mode) {
+  switch (mode) {
+    case ImuFactorErrorMode::Legacy:
+      return "Legacy";
+    case ImuFactorErrorMode::ComponentWise:
+      return "ComponentWise";
+    case ImuFactorErrorMode::Logmap:
+      return "Logmap";
+  }
+  return "Unknown";
+}
+
+}  // namespace
+
 //------------------------------------------------------------------------------
 void PreintegrationParams::print(const string& s) const {
   PreintegratedRotationParams::print(s);
@@ -33,6 +49,8 @@ void PreintegrationParams::print(const string& s) const {
   cout << "integrationCovariance:\n[\n"
        << integrationCovariance << "\n]" << endl;
   cout << "n_gravity = (" << n_gravity.transpose() << ")" << endl;
+  cout << "imuFactorErrorMode = " << errorModeName(imuFactorErrorMode_)
+       << endl;
 }
 
 //------------------------------------------------------------------------------
@@ -44,7 +62,8 @@ bool PreintegrationParams::equals(const PreintegratedRotationParams& other,
                             tol) &&
          equal_with_abs_tol(integrationCovariance, e->integrationCovariance,
                             tol) &&
-         equal_with_abs_tol(n_gravity, e->n_gravity, tol);
+         equal_with_abs_tol(n_gravity, e->n_gravity, tol) &&
+         imuFactorErrorMode_ == e->imuFactorErrorMode_;
 }
 
 }  // namespace gtsam

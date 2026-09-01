@@ -144,16 +144,17 @@ class GTSAM_EXPORT PreintegratedCombinedMeasurementsT : public PreintegrationTyp
    * Express the propagated covariance in the combined IMU factor residual
    * chart.
    *
-   * The first nine rows use the same NavState residual chart as ImuFactor.
-   * TangentPreintegration propagates them in additive
+   * The first nine rows use the tangent shared by both supported factor-error
+   * charts. TangentPreintegration propagates them in additive
    * \f$(\theta,p,v)\f$ coordinates, whose differential into that chart is
    * \f[
    * J_9 = \operatorname{diag}
    *       \left(J_r(\theta),\Delta R^T,\Delta R^T\right).
    * \f]
-   * ManifoldPreintegration, LieGroupPreintegration, and
-   * GalileanPreintegration already propagate these rows in the residual chart,
-   * so their \f$J_9\f$ is identity.
+   * The component-wise and \f$SE_2(3)\f$ Logmap errors have the same
+   * first-order tangent at zero, so this conversion is independent of
+   * ImuFactorErrorMode. The other backends already propagate these rows in
+   * that tangent, so their \f$J_9\f$ is identity.
    *
    * The final six propagated coordinates follow the bias change
    * \f$b_j-b_i\f$, whereas the factor residual is
@@ -173,8 +174,9 @@ class GTSAM_EXPORT PreintegratedCombinedMeasurementsT : public PreintegrationTyp
 
     if constexpr (std::is_same_v<PreintegrationType, TangentPreintegration>) {
       Matrix9 preintegrationChartJacobian;
-      NavState().retract(this->preintegrated_, {},
-                         &preintegrationChartJacobian);
+      internal::navStateComponentWiseRetract(
+          NavState(), this->preintegrated_, {},
+          &preintegrationChartJacobian);
       chartJacobian.topLeftCorner<9, 9>() = preintegrationChartJacobian;
     }
 

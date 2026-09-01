@@ -26,8 +26,8 @@ namespace gtsam {
  * IMU preintegration using the SE_2(3) Lie-group structure of NavState.
  *
  * Unlike ManifoldPreintegration, each increment is applied with the group
- * exponential map. NavState's legacy retract/localCoordinates chart remains
- * unchanged and is still used by optimization and PreintegrationBase.
+ * exponential map. In Legacy factor-error mode, factors using this backend
+ * evaluate their residual with the SE_2(3) logarithm.
  */
 class GTSAM_EXPORT LieGroupPreintegration : public ManifoldPreintegration {
  protected:
@@ -35,13 +35,16 @@ class GTSAM_EXPORT LieGroupPreintegration : public ManifoldPreintegration {
   LieGroupPreintegration() = default;
 
  public:
+  /// Select the SE_2(3) logarithm in Legacy factor-error mode.
+  inline static constexpr bool kLegacyUsesLogmap = true;
+
   /** Construct an empty preintegrator with parameters and a bias linearization
    * point. */
   LieGroupPreintegration(
       const std::shared_ptr<Params>& params,
       const imuBias::ConstantBias& biasHat = imuBias::ConstantBias());
 
-  /** Return the bias-corrected delta in NavState's legacy tangent ordering. */
+  /** Return Brossard's right-corrected delta in PIM (R,p,v) ordering. */
   Vector9 biasCorrectedDelta(const imuBias::ConstantBias& bias,
                              OptionalJacobian<9, 6> H = {}) const override;
 

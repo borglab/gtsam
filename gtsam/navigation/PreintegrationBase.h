@@ -47,6 +47,9 @@ class GTSAM_EXPORT PreintegrationBase {
   typedef imuBias::ConstantBias Bias;
   typedef PreintegrationParams Params;
 
+  /// Legacy factor-error choice for this preintegration backend.
+  inline static constexpr bool kLegacyUsesLogmap = false;
+
  protected:
   std::shared_ptr<Params> p_;
 
@@ -223,9 +226,31 @@ Vector9 preintegrationError(
       H4 ? &D_predict_gravity : nullptr);
 
   Matrix9 D_error_state_j, D_error_predict;
-  const Vector9 error = state_j.localCoordinates(
-      predictedState_j, H2 ? &D_error_state_j : nullptr,
-      H1 || H3 || H4 ? &D_error_predict : nullptr);
+  Vector9 error;
+  bool useLogmap;
+  switch (pim.params()->getImuFactorErrorMode()) {
+    case ImuFactorErrorMode::Legacy:
+      useLogmap = PIM::kLegacyUsesLogmap;
+      break;
+    case ImuFactorErrorMode::ComponentWise:
+      useLogmap = false;
+      break;
+    case ImuFactorErrorMode::Logmap:
+      useLogmap = true;
+      break;
+    default:
+      throw std::invalid_argument("Unknown ImuFactorErrorMode");
+  }
+
+  if (useLogmap) {
+    error = state_j.logmap(predictedState_j,
+                           H2 ? &D_error_state_j : nullptr,
+                           H1 || H3 || H4 ? &D_error_predict : nullptr);
+  } else {
+    error = internal::navStateComponentWiseLocalCoordinates(
+        state_j, predictedState_j, H2 ? &D_error_state_j : nullptr,
+        H1 || H3 || H4 ? &D_error_predict : nullptr);
+  }
 
   if (H1) *H1 = D_error_predict * D_predict_state_i;
   if (H2) *H2 = D_error_state_j;

@@ -203,6 +203,8 @@ gtsam::Rot3 integrateSingleSpeedConing(
     const gtsam::Rot3& body_R_sensor = gtsam::Rot3());
 
 #include <gtsam/navigation/PreintegrationParams.h>
+enum class ImuFactorErrorMode { Legacy, ComponentWise, Logmap };
+
 virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
   PreintegrationParams(const gtsam::Vector3& n_gravity);
 
@@ -216,6 +218,9 @@ virtual class PreintegrationParams : gtsam::PreintegratedRotationParams {
 
   const gtsam::Matrix3& getAccelerometerCovariance() const;
   const gtsam::Matrix3& getIntegrationCovariance() const;
+
+  void setImuFactorErrorMode(gtsam::ImuFactorErrorMode mode);
+  gtsam::ImuFactorErrorMode getImuFactorErrorMode() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -618,6 +623,13 @@ typedef gtsam::PreintegratedCombinedMeasurementsT<
     gtsam::GalileanPreintegration> PreintegratedCombinedMeasurementsG;
 typedef gtsam::CombinedImuFactorT<
     gtsam::PreintegratedCombinedMeasurementsG> GalileanCombinedImuFactor;
+
+typedef gtsam::PreintegratedCombinedMeasurementsT<
+    gtsam::ManifoldPreintegration>
+    PreintegratedCombinedMeasurementsManifold;
+typedef gtsam::PreintegratedCombinedMeasurementsT<
+    gtsam::LieGroupPreintegration>
+    PreintegratedCombinedMeasurementsLieGroup;
 
 #include <gtsam/navigation/CombinedImuFactorWithGravity.h>
 template <PIM, GRAVITY>

@@ -13,15 +13,16 @@
  * @file    GalileanPreintegration.h
  * @brief   Left-invariant Galilean IMU preintegration with bias correction
  *
- * This class implements the Galilean preintegration model described in:
+ * This class implements the direct-product model developed in
+ * "Left-Invariant Galilean IMU Preintegration in Inertial and Rotating
+ * Frames." It combines exact held-input Gal(3) increments with the physical
+ * six-axis IMU bias on Gal(3) x R^6, using the standard left-invariant error
+ * and a right-applied first-order bias correction.
  *
- *   Giulio Delama, Alessandro Fornasier, Robert Mahony, Stephan Weiss,
- *   "Equivariant IMU Preintegration with Biases: a Galilean Group Approach,"
- *   IEEE Robotics and Automation Letters, 2025.
- *
- * Unlike the paper's right-invariant error, this implementation uses GTSAM's
- * right retraction and therefore a left-invariant local error. See
- * navigation/doc/GalileanImuFactor.ipynb for the conventions and derivation.
+ * The model retains Delama et al.'s held-input Galilean composition and uses
+ * the endpoint and rotating-frame structure of Brossard et al., but it is not
+ * either prior formulation. See navigation/doc/GalileanImuFactor.ipynb for
+ * the conventions, derivation, and detailed comparison.
  */
 
 #pragma once
@@ -49,6 +50,9 @@ class GTSAM_EXPORT GalileanPreintegration : public PreintegrationBase {
   using Matrix10 = Eigen::Matrix<double, 10, 10>;
   using Matrix106 = Eigen::Matrix<double, 10, 6>;
   using Matrix910 = Eigen::Matrix<double, 9, 10>;
+
+  /// Select the SE_2(3) logarithm in Legacy factor-error mode.
+  inline static constexpr bool kLegacyUsesLogmap = true;
 
  protected:
   Gal3 preintMatrix_;       ///< Mean increment in Gal(3).

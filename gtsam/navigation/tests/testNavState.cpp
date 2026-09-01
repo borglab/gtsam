@@ -168,14 +168,18 @@ TEST( NavState, Manifold ) {
   EXPECT(assert_equal(kState1, kState1.retract(kZeroXi)));
   EXPECT(assert_equal(kZeroXi, kState1.localCoordinates(kState1)));
 
-  // Check definition of retract as operating on components separately
+  // Check definition of the configured optimization chart.
   Vector9 xi{0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3};
+#ifdef GTSAM_NAVSTATE_EXPMAP
+  NavState state2 = kState1.expmap(xi);
+#else
   Rot3 drot = Rot3::Expmap(xi.head<3>());
   Point3 dt = Point3(xi.segment<3>(3));
   Velocity3 dvel = Velocity3(-0.1, -0.2, -0.3);
   NavState state2 = NavState(kState1.attitude() * drot,
                              kState1.position() + kState1.attitude() * dt,
                              kState1.velocity() + kState1.attitude() * dvel);
+#endif
   EXPECT(assert_equal(state2, kState1.retract(xi)));
   EXPECT(assert_equal(xi, kState1.localCoordinates(state2)));
 
@@ -212,6 +216,56 @@ TEST( NavState, Manifold ) {
   state2.localCoordinates(kIdentity, aH1, aH2);
   EXPECT(assert_equal(numericalDerivative21(local, state2, kIdentity), aH1));
   EXPECT(assert_equal(numericalDerivative22(local, state2, kIdentity), aH2));
+}
+
+/* ************************************************************************* */
+TEST(NavState, ComponentWiseChart) {
+  const Vector9 xi{0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3};
+  const Rot3 drot = Rot3::Expmap(xi.head<3>());
+  const Point3 dt = Point3(xi.segment<3>(3));
+  const Velocity3 dvel = Velocity3(-0.1, -0.2, -0.3);
+  const NavState expected(kState1.attitude() * drot,
+                          kState1.position() + kState1.attitude() * dt,
+                          kState1.velocity() + kState1.attitude() * dvel);
+
+  Matrix9 actualH1, actualH2;
+  const NavState actual = internal::navStateComponentWiseRetract(
+      kState1, xi, actualH1, actualH2);
+  EXPECT(assert_equal(expected, actual));
+  EXPECT(assert_equal(
+      numericalDerivative21<NavState, NavState, Vector9>(
+          [](const NavState& state, const Vector9& delta) {
+            return internal::navStateComponentWiseRetract(state, delta);
+          },
+          kState1, xi),
+      actualH1));
+  EXPECT(assert_equal(
+      numericalDerivative22<NavState, NavState, Vector9>(
+          [](const NavState& state, const Vector9& delta) {
+            return internal::navStateComponentWiseRetract(state, delta);
+          },
+          kState1, xi),
+      actualH2));
+
+  const Vector9 local = internal::navStateComponentWiseLocalCoordinates(
+      kState1, actual, actualH1, actualH2);
+  EXPECT(assert_equal(xi, local));
+  EXPECT(assert_equal(
+      numericalDerivative21<Vector9, NavState, NavState>(
+          [](const NavState& state, const NavState& other) {
+            return internal::navStateComponentWiseLocalCoordinates(state,
+                                                                     other);
+          },
+          kState1, actual),
+      actualH1));
+  EXPECT(assert_equal(
+      numericalDerivative22<Vector9, NavState, NavState>(
+          [](const NavState& state, const NavState& other) {
+            return internal::navStateComponentWiseLocalCoordinates(state,
+                                                                     other);
+          },
+          kState1, actual),
+      actualH2));
 }
 
 /* ************************************************************************* */
@@ -656,7 +710,7 @@ TEST(NavState, Print) {
 }
 
 /* ************************************************************************* */
-#ifndef GTSAM_POSE3_EXPMAP
+#ifndef GTSAM_NAVSTATE_EXPMAP
 TEST(NavState, Retract_first_order) {
   NavState id;
   Vector v = Z_9x1;

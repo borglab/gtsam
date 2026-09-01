@@ -143,28 +143,31 @@ public:
   Matrix preintMeasCov() const { return preintMeasCov_; }
 
   /**
-   * Express the covariance propagated by the selected backend in the
-   * NavState local-coordinate chart used by the IMU factor residual.
+   * Express the covariance propagated by the selected backend in the chart
+   * used by the IMU factor residual.
    *
    * TangentPreintegration propagates covariance for additive perturbations of
-   * \f$\zeta=(\theta,p,v)\f$. The unchanged factor residual instead uses
-   * NavState::localCoordinates at the predicted state. At zero residual, the
-   * differential from the additive chart to that residual chart is
+   * \f$\zeta=(\theta,p,v)\f$. Its factor residual instead uses
+   * the configured factor-error chart at the predicted state. At zero
+   * residual, the differential from the additive chart to either supported
+   * residual chart is
    * \f[
    * J = \operatorname{diag}\left(J_r(\theta),\Delta R^T,\Delta R^T\right),
    * \qquad \Delta R=\operatorname{Exp}(\theta),
    * \f]
    * where \f$J_r\f$ is the SO(3) right Jacobian. Therefore its covariance is
-   * converted as \f$J P J^T\f$. Other backends already propagate covariance
-   * in the residual chart and return it unchanged. This conversion does not
-   * redefine the nonlinear residual or alter the raw covariance returned by
-   * preintMeasCov().
+   * converted as \f$J P J^T\f$. The component-wise and \f$SE_2(3)\f$ Logmap
+   * errors have the same first-order tangent at zero, so this covariance is
+   * independent of ImuFactorErrorMode. The other backends already propagate
+   * covariance in this tangent and return it unchanged. This conversion does
+   * not alter the raw covariance returned by preintMeasCov().
    */
   Matrix9 residualCovariance() const {
     if constexpr (std::is_same_v<PreintegrationType,
                                  TangentPreintegration>) {
       Matrix9 chartJacobian;
-      NavState().retract(this->preintegrated_, {}, &chartJacobian);
+      internal::navStateComponentWiseRetract(
+          NavState(), this->preintegrated_, {}, &chartJacobian);
       return chartJacobian * preintMeasCov_ * chartJacobian.transpose();
     } else {
       return preintMeasCov_;

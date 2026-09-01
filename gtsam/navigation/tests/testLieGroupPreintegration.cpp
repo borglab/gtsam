@@ -83,6 +83,17 @@ TEST(LieGroupPreintegration, UpdateJacobians) {
 /* ************************************************************************* */
 namespace bias_fixture {
 
+Matrix96 rightBiasJacobian(const LieGroupPreintegration& pim) {
+  const Matrix3 deltaRotationTranspose = pim.deltaRij().transpose();
+  Matrix96 result;
+  result << Z_3x3, pim.delRdelBiasOmega(),
+      deltaRotationTranspose * pim.delPdelBiasAcc(),
+      deltaRotationTranspose * pim.delPdelBiasOmega(),
+      deltaRotationTranspose * pim.delVdelBiasAcc(),
+      deltaRotationTranspose * pim.delVdelBiasOmega();
+  return result;
+}
+
 // Verifies accumulated component Jacobians with respect to the bias hat.
 TEST(LieGroupPreintegration, AccumulatedBiasJacobians) {
   const testing::SomeMeasurements measurements;
@@ -126,6 +137,23 @@ TEST(LieGroupPreintegration, AccumulatedBiasJacobians) {
                       pim.delVdelBiasOmega(), 1e-3));
 }
 
+// Verifies the right-local bias Jacobian implements Brossard's recursion.
+TEST(LieGroupPreintegration, RightBiasJacobianMatchesReintegration) {
+  const testing::SomeMeasurements measurements;
+  LieGroupPreintegration nominal(testing::Params());
+  testing::integrateMeasurements(measurements, &nominal);
+
+  auto reintegratedCorrection = [&](const Bias& bias) {
+    LieGroupPreintegration reintegrated(testing::Params(), bias);
+    testing::integrateMeasurements(measurements, &reintegrated);
+    return nominal.deltaXij().logmap(reintegrated.deltaXij());
+  };
+
+  const Matrix96 numerical =
+      numericalDerivative11<Vector9, Bias>(reintegratedCorrection, Bias());
+  EXPECT(assert_equal(numerical, rightBiasJacobian(nominal), 1e-6));
+}
+
 // Verifies the nonlinear Lie-group bias correction and its Jacobian.
 TEST(LieGroupPreintegration, BiasCorrectedDeltaJacobian) {
   LieGroupPreintegration pim(testing::Params());
@@ -141,55 +169,81 @@ TEST(LieGroupPreintegration, BiasCorrectedDeltaJacobian) {
                       1e-6));
 }
 
-// Verifies bias correction applies the SE_2(3) exponential nonlinearly.
-TEST(LieGroupPreintegration, NonlinearBiasCorrection) {
+// Verifies bias correction applies one complete SE_2(3) update on the right.
+TEST(LieGroupPreintegration, RightAppliedBiasCorrection) {
   LieGroupPreintegration pim(testing::Params());
   testing::integrateMeasurements(testing::SomeMeasurements(), &pim);
   const Bias bias(Vector3{0.02, -0.01, 0.03}, Vector3{-0.015, 0.01, -0.02});
   const Bias biasIncrement = bias - pim.biasHat();
 
-  Vector9 correctionTangent;
-  NavState::dR(correctionTangent) =
-      pim.delRdelBiasOmega() * biasIncrement.gyroscope();
-  NavState::dP(correctionTangent) =
-      pim.delPdelBiasAcc() * biasIncrement.accelerometer() +
-      pim.delPdelBiasOmega() * biasIncrement.gyroscope();
-  NavState::dV(correctionTangent) =
-      pim.delVdelBiasAcc() * biasIncrement.accelerometer() +
-      pim.delVdelBiasOmega() * biasIncrement.gyroscope();
-  const NavState correction = NavState::Expmap(correctionTangent);
-
-  Vector9 expected;
-  NavState::dR(expected) =
-      Rot3::Logmap(pim.deltaRij().expmap(NavState::dR(correctionTangent)));
-  NavState::dP(expected) = pim.deltaPij() + correction.position();
-  NavState::dV(expected) = pim.deltaVij() + correction.velocity();
+  const Vector9 correctionTangent =
+      rightBiasJacobian(pim) * biasIncrement.vector();
+  const NavState corrected =
+      pim.deltaXij().compose(NavState::Expmap(correctionTangent));
+  const Vector9 expected = internal::navStateComponentWiseLocalCoordinates(
+      NavState(), corrected);
   EXPECT(assert_equal(expected, pim.biasCorrectedDelta(bias), 1e-12));
+
+  // The former implementation added the correction's translation columns
+  // without rotating them through the preintegrated state.
+  const NavState correction = NavState::Expmap(correctionTangent);
+  Vector9 additive;
+  NavState::dR(additive) = Rot3::Logmap(corrected.attitude());
+  NavState::dP(additive) = pim.deltaPij() + correction.position();
+  NavState::dV(additive) = pim.deltaVij() + correction.velocity();
+  EXPECT((expected.tail<6>() - additive.tail<6>()).norm() > 1e-6);
 }
 
 }  // namespace bias_fixture
 /* ************************************************************************* */
 namespace factor_fixture {
 
+const NavState kState1(Rot3::Ypr(0.4, -0.2, 0.1), Point3(1.0, -2.0, 0.5),
+                       Vector3(0.4, 0.2, -0.1));
+const NavState kState2(Rot3::Ypr(-0.2, 0.3, -0.1),
+                       Point3(-0.5, 1.2, 2.0),
+                       Vector3(-0.3, 0.6, 0.2));
+
+LieGroupPreintegration makePim() {
+  LieGroupPreintegration pim(testing::Params());
+  testing::integrateMeasurements(testing::SomeMeasurements(), &pim);
+  return pim;
+}
+
+// Verifies Legacy mode uses the SE_2(3) logarithm at finite residuals.
+TEST(LieGroupPreintegration, ComputeErrorUsesGroupLogmap) {
+  const LieGroupPreintegration pim = makePim();
+  const Bias bias;
+  const NavState predicted = pim.predict(kState1, bias);
+  const Vector9 expected = kState2.logmap(predicted);
+  const Vector9 actual =
+      internal::preintegrationError(pim, kState1, kState2, bias);
+  const Vector9 componentWise =
+      internal::navStateComponentWiseLocalCoordinates(kState2, predicted);
+
+  EXPECT(assert_equal(expected, actual, 1e-12));
+  EXPECT((actual - componentWise).norm() > 1e-3);
+}
+
 // Verifies PreintegrationBase error Jacobians with this backend.
 TEST(LieGroupPreintegration, ComputeErrorJacobians) {
-  LieGroupPreintegration pim(testing::Params());
-  const NavState x1, x2;
+  const LieGroupPreintegration pim = makePim();
   const Bias bias;
   Matrix9 actualH1, actualH2;
   Matrix96 actualH3;
-  internal::preintegrationError(pim, x1, x2, bias, actualH1, actualH2,
+  internal::preintegrationError(pim, kState1, kState2, bias, actualH1,
+                                actualH2,
                                 actualH3);
   auto error = [&](const NavState& a, const NavState& b, const Bias& c) {
     return internal::preintegrationError(pim, a, b, c);
   };
 
-  EXPECT(
-      assert_equal(numericalDerivative31(error, x1, x2, bias), actualH1, 1e-9));
-  EXPECT(
-      assert_equal(numericalDerivative32(error, x1, x2, bias), actualH2, 1e-9));
-  EXPECT(
-      assert_equal(numericalDerivative33(error, x1, x2, bias), actualH3, 1e-9));
+  EXPECT(assert_equal(numericalDerivative31(error, kState1, kState2, bias),
+                      actualH1, 1e-8));
+  EXPECT(assert_equal(numericalDerivative32(error, kState1, kState2, bias),
+                      actualH2, 1e-8));
+  EXPECT(assert_equal(numericalDerivative33(error, kState1, kState2, bias),
+                      actualH3, 1e-8));
 }
 
 }  // namespace factor_fixture

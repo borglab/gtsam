@@ -35,6 +35,7 @@ option(GTSAM_FORCE_SHARED_LIB               "Force gtsam to be a shared library,
 option(GTSAM_FORCE_STATIC_LIB               "Force gtsam to be a static library, overriding BUILD_SHARED_LIBS" OFF)
 option(GTSAM_USE_QUATERNIONS                "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices. If enable, Rot3::EXPMAP is enforced by default." OFF)
 option(GTSAM_POSE3_EXPMAP                   "Enable/Disable using Pose3::EXPMAP as the default mode. If disabled, Pose3::FIRST_ORDER will be used." ON)
+option(GTSAM_NAVSTATE_EXPMAP                "Enable/Disable using the full NavState SE_2(3) Expmap/Logmap optimization chart. If disabled, the component-wise chart will be used." OFF)
 option(GTSAM_ROT3_EXPMAP                    "Ignore if GTSAM_USE_QUATERNIONS is OFF (Rot3::EXPMAP by default). Otherwise, enable Rot3::EXPMAP, or if disabled, use Rot3::CAYLEY." ON)
 option(GTSAM_DT_MERGING                     "Enable/Disable merging of equal leaf nodes in DecisionTrees. This leads to significant speed up and memory savings." ON)
 option(GTSAM_ENABLE_TIMING                  "Enable the timing tools (gttic/gttoc)" OFF)

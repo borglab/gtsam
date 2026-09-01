@@ -179,20 +179,15 @@ public:
   }
 
   /**
-   * Manifold retract used by optimization.
-   * This intentionally uses a component-wise chart (R via Expmap, and p/v via
-   * world-frame rotation of the tangent increments), not the default LieGroup
-   * chart based on full Expmap/Logmap.
+   * Manifold retract used by optimization. The compile-time option
+   * GTSAM_NAVSTATE_EXPMAP selects the full Lie Expmap; otherwise this uses the
+   * component-wise chart.
    */
   NavState retract(const Vector9& v, //
       OptionalJacobian<9, 9> H1 = {}, OptionalJacobian<9, 9> H2 =
           {}) const;
 
-  /**
-   * Inverse of the custom manifold chart used by retract.
-   * Kept consistent with retract for optimization; Lie expmap/logmap remain
-   * available separately for group operations.
-   */
+  /// Inverse of the optimization chart selected by GTSAM_NAVSTATE_EXPMAP.
   Vector9 localCoordinates(const NavState& g, //
       OptionalJacobian<9, 9> H1 = {}, OptionalJacobian<9, 9> H2 =
           {}) const;
@@ -277,7 +272,21 @@ private:
   /// @}
 };
 
-// Specialize NavState traits to use a Retract/Local that agrees with IMUFactors
+namespace internal {
+
+/** Component-wise NavState retraction independent of the optimization chart. */
+GTSAM_EXPORT NavState navStateComponentWiseRetract(
+    const NavState& state, const Vector9& v,
+    OptionalJacobian<9, 9> H1 = {}, OptionalJacobian<9, 9> H2 = {});
+
+/** Component-wise NavState local coordinates independent of optimization. */
+GTSAM_EXPORT Vector9 navStateComponentWiseLocalCoordinates(
+    const NavState& state, const NavState& other,
+    OptionalJacobian<9, 9> H1 = {}, OptionalJacobian<9, 9> H2 = {});
+
+}  // namespace internal
+
+// Specialize NavState traits to use the configured optimization chart.
 template <>
 struct traits<NavState> : public internal::MatrixLieGroup<NavState, 5> {};
 
