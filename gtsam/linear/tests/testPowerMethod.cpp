@@ -35,6 +35,47 @@ using namespace std;
 using namespace gtsam;
 
 /* ************************************************************************* */
+namespace multiplication_reuse {
+
+class CountingOperator {
+ public:
+  explicit CountingOperator(const Matrix& matrix) : matrix_(matrix) {}
+
+  DenseIndex rows() const { return matrix_.rows(); }
+
+  Vector operator*(const Vector& vector) const {
+    ++multiplicationCount_;
+    return matrix_ * vector;
+  }
+
+  void resetCount() const { multiplicationCount_ = 0; }
+
+  size_t multiplicationCount() const { return multiplicationCount_; }
+
+ private:
+  Matrix matrix_;
+  mutable size_t multiplicationCount_ = 0;
+};
+
+// Verifies that compute reuses each matrix-vector product across iterations.
+TEST(PowerMethod, reusesMatrixVectorProducts) {
+  Matrix matrix = Matrix::Zero(3, 3);
+  matrix.diagonal() << 3.0, 2.0, 1.0;
+  const Vector initial = Vector3(1.0, 1.0, 1.0);
+  CountingOperator countingOperator(matrix);
+  PowerMethod<CountingOperator> powerMethod(countingOperator, initial);
+  countingOperator.resetCount();
+
+  EXPECT(!powerMethod.compute(3, -1.0));
+
+  EXPECT_LONGS_EQUAL(3, powerMethod.nrIterations());
+  EXPECT_LONGS_EQUAL(4, countingOperator.multiplicationCount());
+}
+
+}  // namespace multiplication_reuse
+/* ************************************************************************* */
+
+/* ************************************************************************* */
 TEST(PowerMethod, powerIteration) {
   // test power iteration, beta is set to 0
   Sparse A(6, 6);
