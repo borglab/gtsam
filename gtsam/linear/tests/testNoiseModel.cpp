@@ -41,6 +41,16 @@ static const Matrix kCovariance = I_3x3 * kVariance;
 static const Vector3 kSigmas(kSigma, kSigma, kSigma);
 
 /* ************************************************************************* */
+// Verifies sigmas for a correlated Gaussian square-root information matrix.
+TEST(NoiseModel, GaussianSigmasFromUpperTriangularInformation) {
+  const Matrix22 sqrtInformation{{2.0, 1.0}, {0.0, 4.0}};
+  const Vector2 expected{std::sqrt(17.0) / 8.0, 0.25};
+  const auto model = Gaussian::SqrtInformation(sqrtInformation, false);
+
+  EXPECT(assert_equal(expected, model->sigmas(), 1e-12));
+}
+
+/* ************************************************************************* */
 TEST(NoiseModel, constructors)
 {
   Vector whitened = Vector3(5.0,10.0,15.0);
