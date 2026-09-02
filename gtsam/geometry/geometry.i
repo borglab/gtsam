@@ -651,7 +651,12 @@ class Pose2 {
   Pose2(double x, double y, double theta);
   Pose2(double theta, const gtsam::Point2& t);
   Pose2(const gtsam::Rot2& r, const gtsam::Point2& t);
-  Pose2(gtsam::Vector3 v);
+  // NOTE: stays dynamic. Pose2 declares both Pose2(const Matrix&) and
+  // Pose2(const Vector&), and a fixed-size Vector3 converts to both, so
+  // py::init<gtsam::Vector3> is ambiguous. Passing the wrong length here
+  // is still unchecked; fixing it needs a disambiguating adapter, which
+  // wrap_ctors does not currently support.
+  Pose2(gtsam::Vector v);
 
   static std::optional<gtsam::Pose2> Align(const gtsam::Point2Pairs& abPointPairs);
   static std::optional<gtsam::Pose2> Align(gtsam::ConstMatrixView a, gtsam::ConstMatrixView b);

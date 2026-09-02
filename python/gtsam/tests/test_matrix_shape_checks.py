@@ -40,12 +40,6 @@ class TestMatrixShapeChecks(GtsamTestCase):
                 gtsam.Pose3(bad)
         gtsam.Pose3(np.eye(4))
 
-    def test_pose2_rejects_wrong_length(self) -> None:
-        for bad in (np.zeros(2), np.zeros(4)):
-            with self.subTest(size=bad.size), self.assertRaises(TypeError):
-                gtsam.Pose2(bad)
-        gtsam.Pose2(np.zeros(3))
-
     def test_oriented_plane3_rejects_wrong_length(self) -> None:
         for bad in (np.zeros(2), np.zeros(3), np.zeros(5)):
             with self.subTest(size=bad.size), self.assertRaises(TypeError):
