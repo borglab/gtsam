@@ -100,11 +100,6 @@ public:
   /// @name Advanced Constructors
   /// @{
 
-  /** Construct from canonical coordinates \f$ [T_x,T_y,\theta] \f$ (Lie algebra) */
-  Pose2(const Vector& v) : Pose2() {
-    *this = Expmap(v);
-  }
-
   /**
    *  Create Pose2 by aligning two point pairs
    *  A pose aTb is estimated between pairs (a_point, b_point) such that 
@@ -340,6 +335,12 @@ public:
   /// @deprecated: use Hat
   static inline Matrix3 wedge(double vx, double vy, double w) {
     return Hat(TangentVector(vx, vy, w));
+  }
+
+  /// @deprecated: use Expmap. This is the exponential map, not componentwise
+  /// construction: use Pose2(x, y, theta) for that.
+  Pose2(const Vector& v) : Pose2() {
+    *this = Expmap(v);
   }
 #endif
   /// @}

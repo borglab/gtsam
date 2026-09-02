@@ -40,6 +40,22 @@ class TestMatrixShapeChecks(GtsamTestCase):
                 gtsam.Pose3(bad)
         gtsam.Pose3(np.eye(4))
 
+    def test_pose2_vector_constructor_is_gone(self) -> None:
+        """Pose2(vector) was Expmap in disguise; use Pose2.Expmap instead."""
+        with self.assertRaises(TypeError):
+            gtsam.Pose2(np.array([1.0, 2.0, 3.0]))
+        # The replacement is explicit about being the exponential map, and is
+        # declared Vector3 so it rejects wrong lengths.
+        pose = gtsam.Pose2.Expmap(np.array([1.0, 2.0, 3.0]))
+        self.assertAlmostEqual(pose.theta(), 3.0)
+        for bad in (np.zeros(2), np.zeros(4)):
+            with self.subTest(size=bad.size), self.assertRaises(TypeError):
+                gtsam.Pose2.Expmap(bad)
+        # Componentwise construction is a different thing, and still works.
+        p = gtsam.Pose2(1.0, 2.0, 3.0)
+        self.assertAlmostEqual(p.x(), 1.0)
+        self.assertAlmostEqual(p.y(), 2.0)
+
     def test_oriented_plane3_rejects_wrong_length(self) -> None:
         for bad in (np.zeros(2), np.zeros(3), np.zeros(5)):
             with self.subTest(size=bad.size), self.assertRaises(TypeError):
