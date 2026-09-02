@@ -326,7 +326,7 @@ class CalibratedCamera {
   // Standard Constructors and Named Constructors
   CalibratedCamera();
   CalibratedCamera(const gtsam::Pose3& pose);
-  CalibratedCamera(const gtsam::Vector& v);
+  CalibratedCamera(const gtsam::Vector6& v);
   static gtsam::CalibratedCamera Level(const gtsam::Pose2& pose2,
                                        double height);
 
@@ -514,7 +514,7 @@ class SphericalCamera {
   SphericalCamera(const gtsam::Pose3& pose);
   SphericalCamera(const gtsam::Pose3& pose,
                   const gtsam::EmptyCal::shared_ptr& cal);
-  SphericalCamera(const gtsam::Vector& v);
+  SphericalCamera(const gtsam::Vector6& v);
 
   // Testable
   bool equals(const gtsam::SphericalCamera& camera, double tol = 1e-9) const;
