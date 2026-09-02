@@ -1193,15 +1193,14 @@ TEST(SparseLevenbergMarquardt,
   const CustomErrorFunction callback = [callbackState](
                                            const CustomFactor&,
                                            const Values& values,
-                                           const JacobianVector* jacobians) {
+                                           OptionalJacobianVector jacobians) {
     if (jacobians) {
       callbackState->jacobianCalls.fetch_add(1);
       {
         std::lock_guard<std::mutex> lock(callbackState->mutex);
         callbackState->jacobianThreads.push_back(std::this_thread::get_id());
       }
-      auto& mutableJacobians = *const_cast<JacobianVector*>(jacobians);
-      mutableJacobians[0] = Matrix::Identity(1, 1);
+      jacobians->get()[0] = Matrix::Identity(1, 1);
     } else {
       callbackState->errorCalls.fetch_add(1);
     }

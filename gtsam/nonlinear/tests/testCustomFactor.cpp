@@ -46,17 +46,17 @@ class Residual {
       : measurements_(std::move(measurements)) {}
 
   Vector operator()(const CustomFactor& factor, const Values& values,
-                    const JacobianVector* jacobians) const {
+                    OptionalJacobianVector jacobians) const {
     const Pose2& pose = values.at<Pose2>(factor.keys()[0]);
     const size_t measurementCount = measurements_.size();
     Vector error = Vector::Zero(2 * measurementCount);
     Matrix* H = nullptr;
 
     if (jacobians) {
-      // CustomFactor exposes a const JacobianVector* so wrapped languages can
-      // mutate the shared storage directly. Native C++ callbacks still need to
-      // fill the same storage when derivatives are requested.
-      auto& mutableJacobians = *const_cast<JacobianVector*>(jacobians);
+      // CustomFactor hands the callback a reference to the shared storage so
+      // wrapped languages can mutate it directly. Native C++ callbacks still
+      // need to fill the same storage when derivatives are requested.
+      auto& mutableJacobians = jacobians->get();
       H = &mutableJacobians[0];
       H->resize(2 * measurementCount, 3);
     }

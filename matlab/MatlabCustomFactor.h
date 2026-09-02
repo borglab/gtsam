@@ -163,11 +163,11 @@ class MatlabCustomFactor : public CustomFactor {
       : CustomFactor(
             noiseModel, keys,
             [callbackId](const CustomFactor& factor, const Values& values,
-                         const JacobianVector* jacobians) {
+                         OptionalJacobianVector jacobians) {
               const auto& matlabFactor =
                   static_cast<const MatlabCustomFactor&>(factor);
               return matlabFactor.invokeCallback(
-                  values, const_cast<JacobianVector*>(jacobians));
+                  values, jacobians ? &jacobians->get() : nullptr);
             }),
         callback_id_(callbackId)
 #ifdef GTSAM_USE_TBB
