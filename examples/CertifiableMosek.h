@@ -19,6 +19,7 @@
 #include <gtsam/certifiable/LiftedSDPProblem.h>
 #include <gtsam/constrained/LinearConstraint.h>
 #include <gtsam/constrained/QcqpProblem.h>
+#include <gtsam/geometry/Rot2.h>
 
 #include <algorithm>
 #include <chrono>
@@ -27,6 +28,7 @@
 #include <map>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 namespace gtsam::examples {
@@ -69,12 +71,21 @@ void addPoseGauge(Key rotationKey, Key pointKey, QcqpProblem* problem) {
   constexpr int kPointDim = traits<Point>::QcqpVectorDim;
   constexpr int kDimension = Point::RowsAtCompileTime;
 
-  Matrix rotationSelector = Matrix::Zero(kDimension * kDimension, kRotationDim);
-  rotationSelector.block(0, 1, kDimension * kDimension, kDimension * kDimension)
-      .setIdentity();
-  const Matrix identity = Matrix::Identity(kDimension, kDimension);
-  const Vector identityVector =
-      Eigen::Map<const Vector>(identity.data(), kDimension * kDimension);
+  Matrix rotationSelector;
+  Vector identityVector;
+  if constexpr (std::is_same_v<Rotation, Rot2>) {
+    rotationSelector = Matrix::Zero(2, kRotationDim);
+    rotationSelector.block<2, 2>(0, 1).setIdentity();
+    identityVector = Vector2(1.0, 0.0);
+  } else {
+    rotationSelector = Matrix::Zero(kDimension * kDimension, kRotationDim);
+    rotationSelector
+        .block(0, 1, kDimension * kDimension, kDimension * kDimension)
+        .setIdentity();
+    const Matrix identity = Matrix::Identity(kDimension, kDimension);
+    identityVector =
+        Eigen::Map<const Vector>(identity.data(), kDimension * kDimension);
+  }
   problem->addConstraint(LinearConstraint::Equal(
       JacobianFactor(rotationKey, rotationSelector, identityVector)));
 

@@ -170,15 +170,24 @@ class RelativeTranslationFactor
     constexpr int kPointDim = traits<Point>::QcqpVectorDim;
     const double sw = std::sqrt(weight_);
 
-    // R * measured = (measured' kron I) * vec(R), in column-major order.
-    Matrix rotateMeasurement = Matrix::Zero(d, d * d);
-    for (int column = 0; column < d; ++column) {
-      rotateMeasurement.block(0, column * d, d, d) =
-          measured_(column) * Matrix::Identity(d, d);
+    // Express R*measured in the non-homogeneous rotation coordinates.
+    Matrix rotateMeasurement;
+    if constexpr (d == 2) {
+      // [[mx,-my],[my,mx]] [c,s]' = R(c,s)*measured.
+      rotateMeasurement.resize(2, 2);
+      rotateMeasurement << measured_(0), -measured_(1), measured_(1),
+          measured_(0);
+    } else {
+      // (measured' kron I) vec(R), in column-major order.
+      rotateMeasurement = Matrix::Zero(d, d * d);
+      for (int column = 0; column < d; ++column) {
+        rotateMeasurement.block(0, column * d, d, d) =
+            measured_(column) * Matrix::Identity(d, d);
+      }
     }
 
     Matrix B = Matrix::Zero(d, kRotationDim + 2 * kPointDim);
-    B.block(0, 1, d, d * d) = -sw * rotateMeasurement;
+    B.block(0, 1, d, kRotationDim - 1) = -sw * rotateMeasurement;
     B.block(0, kRotationDim + 1, d, d) = -sw * Matrix::Identity(d, d);
     B.block(0, kRotationDim + kPointDim + 1, d, d) =
         sw * Matrix::Identity(d, d);

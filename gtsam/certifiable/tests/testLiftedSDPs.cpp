@@ -415,12 +415,10 @@ QcqpProblem ApplicationQcqp() {
                                               std::sqrt(2.0), 3.0);
 
   QcqpProblem problem(graph, 1);
-  Matrix rotationSelector = Matrix::Zero(4, traits<Rot2>::QcqpVectorDim);
-  rotationSelector.block(0, 1, 4, 4).setIdentity();
-  const Matrix2 identity = Matrix2::Identity();
+  Matrix rotationSelector = Matrix::Zero(2, traits<Rot2>::QcqpVectorDim);
+  rotationSelector.block<2, 2>(0, 1).setIdentity();
   problem.addConstraint(LinearConstraint::Equal(
-      JacobianFactor(kR0, rotationSelector,
-                     Vector(Eigen::Map<const Vector4>(identity.data())))));
+      JacobianFactor(kR0, rotationSelector, Vector2(1.0, 0.0))));
 
   Matrix pointSelector = Matrix::Zero(2, traits<Vector2>::QcqpVectorDim);
   pointSelector.block(0, 1, 2, 2).setIdentity();
