@@ -511,7 +511,7 @@ class Quaternion {
 class Rot3 {
   // Standard Constructors and Named Constructors
   Rot3();
-  Rot3(gtsam::Matrix R);
+  Rot3(gtsam::Matrix3 R);
   Rot3(const gtsam::Point3& col1, const gtsam::Point3& col2,
        const gtsam::Point3& col3);
   Rot3(double R11, double R12, double R13, double R21, double R22, double R23,
@@ -651,7 +651,6 @@ class Pose2 {
   Pose2(double x, double y, double theta);
   Pose2(double theta, const gtsam::Point2& t);
   Pose2(const gtsam::Rot2& r, const gtsam::Point2& t);
-  Pose2(gtsam::Vector v);
 
   static std::optional<gtsam::Pose2> Align(const gtsam::Point2Pairs& abPointPairs);
   static std::optional<gtsam::Pose2> Align(gtsam::ConstMatrixView a, gtsam::ConstMatrixView b);
@@ -770,7 +769,7 @@ class Pose3 {
   Pose3(const gtsam::Pose3& other);
   Pose3(const gtsam::Rot3& r, const gtsam::Point3& t);
   Pose3(const gtsam::Pose2& pose2);
-  Pose3(gtsam::Matrix mat);
+  Pose3(gtsam::Matrix4 mat);
 
   static std::optional<gtsam::Pose3> Align(const gtsam::Point3Pairs& abPointPairs);
   static std::optional<gtsam::Pose3> Align(gtsam::ConstMatrixView a, gtsam::ConstMatrixView b);
@@ -1205,7 +1204,7 @@ class OrientedPlane3 {
   // Standard constructors
   OrientedPlane3();
   OrientedPlane3(const gtsam::Unit3& n, double d);
-  OrientedPlane3(const gtsam::Vector& vec);
+  OrientedPlane3(const gtsam::Vector4& vec);
   OrientedPlane3(double a, double b, double c, double d);
 
   // Testable

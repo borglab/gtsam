@@ -120,8 +120,11 @@ TEST(Pose2, expmap3) {
 
   Vector v = Vector3(0.01, -0.015, 0.99);
   Pose2 pose = Pose2::Expmap(v);
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  // The deprecated Vector constructor is Expmap.
   Pose2 pose2(v);
   EXPECT(assert_equal(pose, pose2));
+#endif
   Matrix actual = pose.matrix();
   //EXPECT(assert_equal(expected, actual));
 }

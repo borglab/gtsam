@@ -387,7 +387,7 @@ class RotateDirectionsFactor : gtsam::NoiseModelFactor {
 #include <gtsam/slam/OrientedPlane3Factor.h>
 class OrientedPlane3Factor : gtsam::NoiseModelFactor {
   OrientedPlane3Factor();
-  OrientedPlane3Factor(const gtsam::Vector& z, const gtsam::noiseModel::Gaussian* noiseModel,
+  OrientedPlane3Factor(const gtsam::Vector4& z, const gtsam::noiseModel::Gaussian* noiseModel,
       gtsam::Key poseKey, gtsam::Key landmarkKey);
 
   gtsam::Vector evaluateError(
@@ -396,7 +396,7 @@ class OrientedPlane3Factor : gtsam::NoiseModelFactor {
 
 class OrientedPlane3DirectionPrior : gtsam::NoiseModelFactor {
   OrientedPlane3DirectionPrior();
-  OrientedPlane3DirectionPrior(gtsam::Key key, const gtsam::Vector& z,
+  OrientedPlane3DirectionPrior(gtsam::Key key, const gtsam::Vector4& z,
                                const gtsam::noiseModel::Gaussian* noiseModel);
 
   gtsam::Vector evaluateError(const gtsam::OrientedPlane3& plane) const;
