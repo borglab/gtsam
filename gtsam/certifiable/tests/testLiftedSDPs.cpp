@@ -22,10 +22,13 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot2.h>
+#include <gtsam/geometry/Unit3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/sam/QuadraticRangeFactor.h>
 #include <gtsam/slam/FrobeniusFactor.h>
+#include <gtsam/slam/RelativeTranslationFactor.h>
 
 #include <algorithm>
 #include <cmath>
@@ -389,6 +392,78 @@ TEST(LiftedSDPs, Pose3_MonolithicAndChordal) {
 }
 
 }  // namespace pose_ring_sdp_fixture
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace application_sdp_fixture {
+
+const Key kR0 = Symbol('R', 0), kR1 = Symbol('R', 1);
+const Key kT0 = Symbol('t', 0), kT1 = Symbol('t', 1);
+const Key kLandmark = Symbol('l', 0), kDirection = Symbol('u', 0);
+
+// Build a small exact graph containing the rotation, relative-translation,
+// landmark-observation, and quadratic-range terms used by PR #2713.
+QcqpProblem ApplicationQcqp() {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(kR0, kR1,
+                                                     Rot2::fromAngle(0.2));
+  graph.emplace_shared<RelativeTranslationFactor2>(kR0, kT0, kT1,
+                                                   Vector2(1.0, 0.0), 2.0);
+  graph.emplace_shared<RelativeTranslationFactor2>(kR0, kT0, kLandmark,
+                                                   Vector2(2.0, 1.0), 1.5);
+  graph.emplace_shared<QuadraticRangeFactor2>(kT1, kLandmark, kDirection,
+                                              std::sqrt(2.0), 3.0);
+
+  QcqpProblem problem(graph, 1);
+  Matrix rotationSelector = Matrix::Zero(4, traits<Rot2>::QcqpVectorDim);
+  rotationSelector.block(0, 1, 4, 4).setIdentity();
+  const Matrix2 identity = Matrix2::Identity();
+  problem.addConstraint(LinearConstraint::Equal(
+      JacobianFactor(kR0, rotationSelector,
+                     Vector(Eigen::Map<const Vector4>(identity.data())))));
+
+  Matrix pointSelector = Matrix::Zero(2, traits<Vector2>::QcqpVectorDim);
+  pointSelector.block(0, 1, 2, 2).setIdentity();
+  problem.addConstraint(LinearConstraint::Equal(
+      JacobianFactor(kT0, pointSelector, Vector2::Zero())));
+  return problem;
+}
+
+struct ApplicationSolution {
+  bool solved;
+  double objective;
+  size_t valueCount;
+  std::vector<double> evrs;
+};
+
+template <typename Solver>
+ApplicationSolution SolveApplication(Solver* solver) {
+  const std::map<std::string, double> params{{"optimizerMaxTime", 60.0}};
+  const bool solved = solver->solve(params);
+  return {solved, solver->objectiveValue(), solver->qcqpValues().size(),
+          solver->variableEVRs()};
+}
+
+// Both MOSEK formulations solve a D=1 graph containing every new QCQP factor
+// role added by PR #2713 and recover all six keyed variables.
+TEST(LiftedSDPs, Pr2713ApplicationFactorsMonolithicAndChordal) {
+  const QcqpProblem problem = ApplicationQcqp();
+  MosekMonolithicSDP monolithic(problem);
+  MosekChordalSDP chordal(problem, ChordalOrderingType::Metis);
+  const ApplicationSolution monolithicResult = SolveApplication(&monolithic);
+  const ApplicationSolution chordalResult = SolveApplication(&chordal);
+  for (const ApplicationSolution* result :
+       {&monolithicResult, &chordalResult}) {
+    EXPECT(result->solved);
+    EXPECT(result->objective < 1e-5);
+    EXPECT_LONGS_EQUAL(6, result->valueCount);
+    EXPECT_LONGS_EQUAL(6, result->evrs.size());
+    EXPECT(std::all_of(result->evrs.begin(), result->evrs.end(),
+                       [](double evr) { return evr > 1e3; }));
+  }
+}
+
+}  // namespace application_sdp_fixture
 /* ************************************************************************* */
 #endif
 

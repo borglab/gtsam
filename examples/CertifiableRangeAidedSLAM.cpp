@@ -13,7 +13,8 @@
  * @file    CertifiableRangeAidedSLAM.cpp
  * @brief   Certifiable range-aided SLAM via the Riemannian
  *          Staircase. Minimizes
- *          Sum_ij kappa_ij ||R_j - R_i R_ij||^2_F + tau_ij ||t_j - t_i - R_i t_ij||^2
+ *          Sum_ij kappa_ij ||R_j - R_i R_ij||^2_F + tau_ij ||t_j - t_i - R_i
+ * t_ij||^2
  *          + Sum_m nu_m ||p_j - p_i - d_m u_m||^2
  *          over R_i in O(d), t_i, l_k in R^d, subject to ||u_m|| = 1.
  * @author  Zhexin Xu
@@ -21,6 +22,7 @@
  * Usage:
  *   ./CertifiableRangeAidedSLAM --data=<pyfg file>
  *       [--initialization=<fast-sync|random>]
+ *       [--solver=<staircase|mosek-monolithic|mosek-chordal>]
  */
 
 #include <gtsam/certifiable/RiemannianStaircaseOptimizer.h>
@@ -33,23 +35,25 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/sam/QuadraticRangeFactor.h>
 #include <gtsam/slam/FastSync.h>
 #include <gtsam/slam/FrobeniusFactor.h>
-#include <gtsam/sam/QuadraticRangeFactor.h>
 #include <gtsam/slam/RelativeTranslationFactor.h>
 
 #include <Eigen/SVD>
-
 #include <chrono>
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <numeric>
 #include <random>
 #include <sstream>
 #include <string>
 #include <vector>
+
+#include "CertifiableMosek.h"
 
 using namespace gtsam;
 using RSO = RiemannianStaircaseOptimizer;
@@ -223,7 +227,8 @@ Matrix randomBlock(int rows, int p, std::mt19937& rng, bool unitRows) {
 
 template <int d>
 int runCertifiableRangeAidedSLAM(const std::string& path,
-                                 InitializationMethod initializationMethod) {
+                                 InitializationMethod initializationMethod,
+                                 examples::CertifiableSolver solver) {
   using Point = Eigen::Matrix<double, d, 1>;
   using RotT = typename std::conditional<d == 2, Rot2, Rot3>::type;
   // The auxiliary direction has no analogue in the pose-only examples, so its
@@ -232,8 +237,10 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
   constexpr int kDirectionRows = QuadraticRangeFactor<d>::kDirectionRows;
 
   const auto directionFrom = [](const Point& v) -> DirT {
-    if constexpr (d == 2) return Rot2::atan2(v.y(), v.x());
-    else return DirT(v);
+    if constexpr (d == 2)
+      return Rot2::atan2(v.y(), v.x());
+    else
+      return DirT(v);
   };
 
   const Dataset<d> data = readPyfg<d>(path);
@@ -257,15 +264,67 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
     const auto& r = data.ranges[m];
     const Key target = r.targetIsLandmark ? landmarkKey(r.targetIndex)
                                           : translationKey(r.targetIndex);
-    graph.emplace_shared<QuadraticRangeFactor<d>>(
-        translationKey(r.poseIndex), target, unitVectorKey(m), r.range,
-        r.weight);
+    graph.emplace_shared<QuadraticRangeFactor<d>>(translationKey(r.poseIndex),
+                                                  target, unitVectorKey(m),
+                                                  r.range, r.weight);
   }
   std::cout << path.substr(path.find_last_of('/') + 1)
             << "  poses=" << data.poseIds.size()
             << "  landmarks=" << data.landmarkIds.size()
             << "  odometry=" << data.odometry.size()
             << "  ranges=" << data.ranges.size() << "\n";
+
+  if (solver != examples::CertifiableSolver::Staircase) {
+    QcqpProblem problem(graph, 1);
+    examples::addPoseGauge<RotT, Point>(rotationKey(0), translationKey(0),
+                                        &problem);
+    const examples::MosekExampleResult result =
+        examples::solveMosek(problem, solver);
+    if (!result.solved) {
+      examples::printMosekSummary(result, solver,
+                                  std::numeric_limits<double>::quiet_NaN());
+      return 1;
+    }
+
+    Values rounded;
+    for (size_t i = 0; i < data.poseIds.size(); ++i) {
+      rounded.insert(rotationKey(i),
+                     traits<RotT>::template FromQcqpValue<1>(
+                         result.qcqpValues.at<Matrix>(rotationKey(i))));
+      rounded.insert(translationKey(i),
+                     traits<Point>::template FromQcqpValue<1>(
+                         result.qcqpValues.at<Matrix>(translationKey(i))));
+    }
+    for (size_t i = 0; i < data.landmarkIds.size(); ++i) {
+      rounded.insert(landmarkKey(i),
+                     traits<Point>::template FromQcqpValue<1>(
+                         result.qcqpValues.at<Matrix>(landmarkKey(i))));
+    }
+    for (size_t m = 0; m < data.ranges.size(); ++m) {
+      rounded.insert(unitVectorKey(m),
+                     traits<DirT>::template FromQcqpValue<1>(
+                         result.qcqpValues.at<Matrix>(unitVectorKey(m))));
+    }
+    const double roundedObjective = graph.error(rounded);
+    examples::printMosekSummary(result, solver, roundedObjective);
+    try {
+      LevenbergMarquardtParams localParams;
+      localParams.maxIterations = 300;
+      localParams.relativeErrorTol = 1e-7;
+      localParams.absoluteErrorTol = 1e-7;
+      const Values refined =
+          LevenbergMarquardtOptimizer(graph, rounded, localParams).optimize();
+      const double refinedObjective = graph.error(refined);
+      const double refinedRelativeGap =
+          (refinedObjective - result.objective) /
+          std::max(1.0, std::abs(refinedObjective));
+      std::cout << "Refined objective: " << refinedObjective << "\n"
+                << "Refined relative gap: " << refinedRelativeGap << "\n";
+    } catch (const std::exception& error) {
+      std::cout << "Refined objective: n/a (" << error.what() << ")\n";
+    }
+    return result.solved ? 0 : 1;
+  }
 
   const int p = d;
   std::mt19937 rng(kSeed);
@@ -309,7 +368,8 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
   }
   const double initializationSeconds =
       std::chrono::duration<double>(std::chrono::steady_clock::now() -
-                                    initializationStart).count();
+                                    initializationStart)
+          .count();
 
   // Certifiable solver
   RiemannianStaircaseParams params;
@@ -327,9 +387,9 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
 
   const auto solveStart = std::chrono::steady_clock::now();
   const auto result = RSO(graph, initial, params).optimize();
-  const double solveSeconds =
-      std::chrono::duration<double>(std::chrono::steady_clock::now() -
-                                    solveStart).count();
+  const double solveSeconds = std::chrono::duration<double>(
+                                  std::chrono::steady_clock::now() - solveStart)
+                                  .count();
 
   // Rounding and extracting solution
   const auto recoverTyped = [&](const Values& atRankDInput) {
@@ -342,18 +402,20 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
       typed.insert(rotationKey(i), traits<RotT>::template FromQcqpValue<d>(
                                        atRankD.at<Matrix>(rotationKey(i))));
     for (size_t i = 0; i < data.poseIds.size(); ++i)
-      typed.insert(translationKey(i),
-                   Point(atRankD.at<Matrix>(translationKey(i))
-                             .row(0).transpose()));
+      typed.insert(
+          translationKey(i),
+          Point(atRankD.at<Matrix>(translationKey(i)).row(0).transpose()));
     for (size_t k = 0; k < data.landmarkIds.size(); ++k)
-      typed.insert(landmarkKey(k),
-                   Point(atRankD.at<Matrix>(landmarkKey(k))
-                             .row(0).transpose()));
+      typed.insert(
+          landmarkKey(k),
+          Point(atRankD.at<Matrix>(landmarkKey(k)).row(0).transpose()));
 
     for (size_t m = 0; m < data.ranges.size(); ++m)
       typed.insert(unitVectorKey(m),
                    directionFrom(Point(atRankD.at<Matrix>(unitVectorKey(m))
-                                           .row(0).head(d).transpose())));
+                                           .row(0)
+                                           .head(d)
+                                           .transpose())));
     return typed;
   };
 
@@ -364,7 +426,8 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
   }
   const double roundingSeconds =
       std::chrono::duration<double>(std::chrono::steady_clock::now() -
-                                    roundingStart).count();
+                                    roundingStart)
+          .count();
 
   std::cout << "\n========== Result ==========\n"
             << "Certified:         " << (result.certified ? "yes" : "no")
@@ -388,9 +451,10 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
         LevenbergMarquardtOptimizer(graph, rounded, localParams).optimize();
     const double localSeconds =
         std::chrono::duration<double>(std::chrono::steady_clock::now() -
-                                      localStart).count();
-    std::cout << "Refined objective: " << graph.error(localRefined)
-              << "   (" << localSeconds << " s)\n";
+                                      localStart)
+            .count();
+    std::cout << "Refined objective: " << graph.error(localRefined) << "   ("
+              << localSeconds << " s)\n";
   }
 
   const double buildSeconds =
@@ -400,8 +464,8 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
                                             result.nlpTimePerLevel.end(), 0.0);
   const double verifySeconds = std::accumulate(
       result.verifyTimePerLevel.begin(), result.verifyTimePerLevel.end(), 0.0);
-  std::cout << "Initialization:    "
-            << initializationName(initializationMethod) << "\n"
+  std::cout << "Initialization:    " << initializationName(initializationMethod)
+            << "\n"
             << "Initialization time: " << initializationSeconds << " s\n"
             << "QCQP build time:    " << buildSeconds << " s\n"
             << "Local solve time:  " << nlpSeconds << " s\n"
@@ -419,12 +483,15 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
 int main(int argc, char** argv) {
   std::string dataPath;
   std::string initialization = "random";
+  std::string solverName = "staircase";
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
     if (arg.rfind("--data=", 0) == 0) {
       dataPath = arg.substr(7);
     } else if (arg.rfind("--initialization=", 0) == 0) {
       initialization = arg.substr(17);
+    } else if (arg.rfind("--solver=", 0) == 0) {
+      solverName = arg.substr(9);
     }
   }
   InitializationMethod initializationMethod;
@@ -436,18 +503,26 @@ int main(int argc, char** argv) {
     std::cerr << "Unknown initialization method: " << initialization << "\n";
     return 2;
   }
+  examples::CertifiableSolver solver;
+  try {
+    solver = examples::parseCertifiableSolver(solverName);
+  } catch (const std::invalid_argument& error) {
+    std::cerr << error.what() << "\n";
+    return 2;
+  }
   if (dataPath.empty()) {
     std::cerr << "Usage: " << argv[0]
               << " --data=<pyfg file> "
-                 "[--initialization=<fast-sync|random>]\n";
+                 "[--initialization=<fast-sync|random>] "
+                 "[--solver=<staircase|mosek-monolithic|mosek-chordal>]\n";
     return 2;
   }
 
   if (detectDimension(dataPath) == 3) {
-    return runCertifiableRangeAidedSLAM<3>(
-        dataPath, initializationMethod);
+    return runCertifiableRangeAidedSLAM<3>(dataPath, initializationMethod,
+                                           solver);
   } else {
-    return runCertifiableRangeAidedSLAM<2>(
-        dataPath, initializationMethod);
+    return runCertifiableRangeAidedSLAM<2>(dataPath, initializationMethod,
+                                           solver);
   }
 }

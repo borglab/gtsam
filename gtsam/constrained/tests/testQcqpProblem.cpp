@@ -1081,10 +1081,9 @@ TEST(QcqpProblem, Pose2D1QcqpValueConstraints) {
                        1e-12);
 
   Vector7 reflectedX{1.0, 1.0, 0.0, 0.0, -1.0, 2.0, -3.0};
-  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first *
-                   reflectedX)(0, 0) -
-                  constraints[1].second) >
-         1e-12);
+  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first * reflectedX)(
+                      0, 0) -
+                  constraints[1].second) > 1e-12);
   for (size_t k = 2; k < constraints.size(); ++k) {
     EXPECT_DOUBLES_EQUAL(
         constraints[k].second,
@@ -1167,10 +1166,9 @@ TEST(QcqpProblem, Pose3D1QcqpValueConstraints) {
 
   Eigen::Matrix<double, 13, 1> reflectedX{1.0, 1.0, 0.0,  0.0, 0.0,  1.0, 0.0,
                                           0.0, 0.0, -1.0, 2.0, -3.0, 4.0};
-  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first *
-                   reflectedX)(0, 0) -
-                  constraints[1].second) >
-         1e-12);
+  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first * reflectedX)(
+                      0, 0) -
+                  constraints[1].second) > 1e-12);
   for (size_t k = 4; k < constraints.size(); ++k) {
     EXPECT_DOUBLES_EQUAL(
         constraints[k].second,
@@ -1462,10 +1460,31 @@ namespace QcqpExtractionFixture {
 
 // Verify the published D=1 QCQP vector dimensions for each supported group.
 TEST(QcqpProblem, QcqpVectorDimensions) {
+  LONGS_EQUAL(3, traits<Vector2>::QcqpVectorDim);
+  LONGS_EQUAL(4, traits<Vector3>::QcqpVectorDim);
   LONGS_EQUAL(5, traits<Rot2>::QcqpVectorDim);
   LONGS_EQUAL(10, traits<Rot3>::QcqpVectorDim);
   LONGS_EQUAL(7, traits<Pose2>::QcqpVectorDim);
   LONGS_EQUAL(13, traits<Pose3>::QcqpVectorDim);
+}
+
+// Fixed-size Euclidean values use [1; vec(x)] and recover after homogeneous
+// scaling, with only the leading coordinate constrained.
+TEST(QcqpProblem, FixedVectorD1QcqpValueConstraints) {
+  const Vector3 value(2.0, -3.0, 4.0);
+  const Matrix qcqpValue = traits<Vector3>::QcqpValue<1>(value);
+  EXPECT(assert_equal(Vector(Vector4(1.0, 2.0, -3.0, 4.0)),
+                      Vector(qcqpValue.col(0)), 1e-12));
+  EXPECT(assert_equal(
+      value, traits<Vector3>::FromQcqpValue<1>(-2.0 * qcqpValue), 1e-12));
+
+  const auto constraints = traits<Vector3>::QcqpConstraints<1>();
+  LONGS_EQUAL(1, constraints.size());
+  EXPECT_DOUBLES_EQUAL(
+      1.0,
+      (qcqpValue.transpose() * constraints.front().first * qcqpValue)(0, 0),
+      1e-12);
+  EXPECT_DOUBLES_EQUAL(1.0, constraints.front().second, 1e-12);
 }
 
 // Verify that a D=1 QCQP value remains recoverable after homogeneous scaling.

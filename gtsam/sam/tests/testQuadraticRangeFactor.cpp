@@ -243,6 +243,29 @@ TEST(QuadraticRangeFactor, QcqpCostMatchesTypedResidual) {
   EXPECT_DOUBLES_EQUAL(directCost, costs.error(Y), 1e-10);
 }
 
+// The D=1 lowering uses homogeneous point and direction vectors and preserves
+// the exact planar range-factor cost.
+TEST(QuadraticRangeFactor, QcqpCostMatchesTypedResidualAtD1) {
+  const Vector2 ti(0.4, -0.2), target(1.9, 0.7);
+  const Rot2 u = Rot2(0.35);
+  const QuadraticRangeFactor2 factor(kTi, kTarget, kU, 1.4, 2.25);
+
+  NonlinearFactorGraph graph;
+  graph.push_back(factor.clone());
+  const QcqpProblem problem(graph, 1);
+
+  Values qcqpValues;
+  InsertQcqpValue<Vector2, 1>(kTi, ti, &qcqpValues);
+  InsertQcqpValue<Vector2, 1>(kTarget, target, &qcqpValues);
+  InsertQcqpValue<Rot2, 1>(kU, u, &qcqpValues);
+
+  const double directCost =
+      0.5 * factor.evaluateError(ti, target, u, {}, {}, {}).squaredNorm();
+  EXPECT_DOUBLES_EQUAL(directCost, problem.costs().error(qcqpValues), 1e-10);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
+                       1e-12);
+}
+
 // The factor owns the auxiliary, so it emits that direction type's own QCQP
 // constraints rather than writing them out here: three row-orthonormality
 // constraints for the planar Rot2 frame.
@@ -305,6 +328,28 @@ TEST(QuadraticRangeFactor, QcqpCostMatchesTypedResidualIn3D) {
   EXPECT_DOUBLES_EQUAL(directCost, costs.error(Y), 1e-10);
 }
 
+// The exact homogeneous-vector lowering also supports Unit3 auxiliaries.
+TEST(QuadraticRangeFactor, QcqpCostMatchesTypedResidualAtD1In3D) {
+  const Vector3 ti(0.4, -0.2, 0.1), target(1.9, 0.7, -0.3);
+  const Unit3 u(Point3(0.3, -0.5, 0.8));
+  const QuadraticRangeFactor3 factor(kTi, kTarget, kU, 1.4, 2.25);
+
+  NonlinearFactorGraph graph;
+  graph.push_back(factor.clone());
+  const QcqpProblem problem(graph, 1);
+
+  Values qcqpValues;
+  InsertQcqpValue<Vector3, 1>(kTi, ti, &qcqpValues);
+  InsertQcqpValue<Vector3, 1>(kTarget, target, &qcqpValues);
+  InsertQcqpValue<Unit3, 1>(kU, u, &qcqpValues);
+
+  const double directCost =
+      0.5 * factor.evaluateError(ti, target, u, {}, {}, {}).squaredNorm();
+  EXPECT_DOUBLES_EQUAL(directCost, problem.costs().error(qcqpValues), 1e-10);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
+                       1e-12);
+}
+
 // Lifting pads the variables with zero columns, so the cost at rank p > d has
 // to stay equal to the cost at rank d as the staircase climbs.
 TEST(QuadraticRangeFactor, QcqpCostIsUnchangedByLifting) {
@@ -322,8 +367,7 @@ TEST(QuadraticRangeFactor, QcqpCostIsUnchangedByLifting) {
     Matrix translation = Matrix::Zero(1, p), landmark = Matrix::Zero(1, p);
     translation.leftCols<2>() = ti.transpose();
     landmark.leftCols<2>() = target.transpose();
-    Matrix direction =
-        Matrix::Zero(QuadraticRangeFactor2::kDirectionRows, p);
+    Matrix direction = Matrix::Zero(QuadraticRangeFactor2::kDirectionRows, p);
     direction.leftCols<2>() = traits<Rot2>::QcqpValue<2>(u);
 
     Values Y;

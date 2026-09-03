@@ -83,9 +83,9 @@ class RelativeTranslationFactor
   const Point& measured() const { return measured_; }
   double weight() const { return weight_; }
 
-  void print(const std::string& s = "",
-             const KeyFormatter& keyFormatter =
-                 DefaultKeyFormatter) const override {
+  void print(
+      const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << s << "RelativeTranslationFactor(" << keyFormatter(this->key1())
               << "," << keyFormatter(this->key2()) << ","
               << keyFormatter(this->key3()) << ") weight=" << weight_
@@ -123,8 +123,17 @@ class RelativeTranslationFactor
 
   /// Add this translation factor as a QCQP cost when traits exist.
   void qcqpFactors(NonlinearFactorGraph* costs,
-                   NonlinearEqualityConstraints* /*constraints*/,
+                   NonlinearEqualityConstraints* constraints,
                    size_t columnDimension = 1) const override {
+    if (columnDimension == 0) {
+      throw std::invalid_argument(
+          "RelativeTranslationFactor::qcqpFactors requires a positive "
+          "columnDimension.");
+    }
+    if (columnDimension == 1) {
+      qcqpFactorsForVector(costs, constraints);
+      return;
+    }
     if (columnDimension < static_cast<size_t>(d)) {
       throw std::invalid_argument(
           "RelativeTranslationFactor::qcqpFactors requires columnDimension "
@@ -146,6 +155,43 @@ class RelativeTranslationFactor
     costs->push_back(std::make_shared<QpCost>(
         KeyVector{this->key1(), this->key2(), this->key3()}, blockQ,
         columnDimension));
+  }
+
+ private:
+  /// Add the exact D=1 homogeneous-vector cost and variable constraints.
+  void qcqpFactorsForVector(NonlinearFactorGraph* costs,
+                            NonlinearEqualityConstraints* constraints) const {
+    if (!costs) {
+      throw std::invalid_argument(
+          "RelativeTranslationFactor::qcqpFactors: costs is null.");
+    }
+
+    constexpr int kRotationDim = traits<Rot>::QcqpVectorDim;
+    constexpr int kPointDim = traits<Point>::QcqpVectorDim;
+    const double sw = std::sqrt(weight_);
+
+    // R * measured = (measured' kron I) * vec(R), in column-major order.
+    Matrix rotateMeasurement = Matrix::Zero(d, d * d);
+    for (int column = 0; column < d; ++column) {
+      rotateMeasurement.block(0, column * d, d, d) =
+          measured_(column) * Matrix::Identity(d, d);
+    }
+
+    Matrix B = Matrix::Zero(d, kRotationDim + 2 * kPointDim);
+    B.block(0, 1, d, d * d) = -sw * rotateMeasurement;
+    B.block(0, kRotationDim + 1, d, d) = -sw * Matrix::Identity(d, d);
+    B.block(0, kRotationDim + kPointDim + 1, d, d) =
+        sw * Matrix::Identity(d, d);
+
+    InsertQcqpConstraints<Rot, 1>(this->key1(), constraints);
+    InsertQcqpConstraints<Point, 1>(this->key2(), constraints);
+    InsertQcqpConstraints<Point, 1>(this->key3(), constraints);
+
+    const Matrix Q = B.transpose() * B;
+    const SymmetricBlockMatrix blockQ(
+        std::vector<DenseIndex>{kRotationDim, kPointDim, kPointDim}, Q);
+    costs->push_back(std::make_shared<QpCost>(
+        KeyVector{this->key1(), this->key2(), this->key3()}, blockQ));
   }
 };
 
