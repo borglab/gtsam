@@ -63,6 +63,22 @@ public:
    * @param newTheta new values for new variables only
    * @param timestamps an (optional) map from keys to real time stamps
    * @param factorsToRemove an (optional) list of factors to remove.
+   *
+   * Every key in @p timestamps must name a value the smoother already holds or
+   * one supplied in @p newTheta in this update; otherwise the update throws
+   * std::invalid_argument identifying the key, before any state is mutated, so
+   * a rejected update leaves the smoother unchanged. Timestamp-before-value is
+   * not supported. A timestamp for an existing value is accepted whether or
+   * not a factor references the key yet, and participates in the smoother
+   * clock normally.
+   *
+   * If this validation fails, no timestamp is retained and no part of the
+   * update is applied. A caller that later supplies the value must supply its
+   * timestamp again; until timestamped, that value is not eligible for
+   * fixed-lag expiration.
+   *
+   * @throws std::invalid_argument if a key in @p timestamps has no value in
+   * the smoother or in @p newTheta.
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
                 const Values& newTheta = Values(), //

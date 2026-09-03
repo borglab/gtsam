@@ -36,6 +36,7 @@
 
 // #include <algorithm>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 
 using namespace std;
@@ -495,13 +496,86 @@ TEST(IncrementalFixedLagSmoother, ReapsPendingValueAfterLag) {
   EXPECT(smoother.timestamps().find(X(1)) == smoother.timestamps().end());
 }
 
-// A timestamp may be supplied for a key that has neither a value nor a factor.
-// Such a key is not "pending" -- there is no value for it -- so it survives the
-// pending-value partition, ages out, and reaches marginalizeLeaves with no
-// clique. The variableIndex filter guards only the marginalization helper.
+// A timestamp naming no value -- neither an existing one nor one supplied in
+// this update -- is rejected with an error identifying the key, before any
+// state is mutated. The invalid entry arrives mixed with valid factors, values
+// and timestamps, and sorts after them, so a partially mutating implementation
+// cannot pass; rejection must be atomic. No timestamp is retained, so the
+// retry supplies the value together with the same timestamp.
 TEST(IncrementalFixedLagSmoother, TimestampWithoutValueOrFactor) {
   const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
   IncrementalFixedLagSmoother smoother(1.0);
+  const Key invalid = Symbol('z', 0);  // sorts after X(1) in the map
+
+  NonlinearFactorGraph factors;
+  Values values;
+  FixedLagSmoother::KeyTimestampMap timestamps;
+
+  factors.addPrior(X(0), Point2(0.0, 0.0), noise);
+  values.insert(X(0), Point2(0.0, 0.0));
+  timestamps[X(0)] = 0.0;
+  smoother.update(factors, values, timestamps);
+
+  const Values before = smoother.calculateEstimate();
+  const NonlinearFactorGraph factorsBefore = smoother.getFactors();
+  const FixedLagSmoother::KeyTimestampMap timestampsBefore =
+      smoother.timestamps();
+
+  // Valid input for X(1) plus one timestamp with no value anywhere.
+  factors.resize(0);
+  values.clear();
+  timestamps.clear();
+  factors.emplace_shared<BetweenPoint2>(X(0), X(1), Point2(1.0, 0.0), noise);
+  values.insert(X(1), Point2(1.0, 0.0));
+  timestamps[X(1)] = 0.5;
+  timestamps[invalid] = 0.75;  // no value, no factor
+  bool rejectedNamingTheKey = false;
+  try {
+    smoother.update(factors, values, timestamps);
+  } catch (const std::invalid_argument& e) {
+    rejectedNamingTheKey =
+        std::string(e.what()).find(DefaultKeyFormatter(invalid)) !=
+        std::string::npos;
+  }
+  EXPECT(rejectedNamingTheKey);
+
+  // Atomic: the valid parts of the rejected update must not have landed.
+  EXPECT(assert_equal(before, smoother.calculateEstimate(), 0.0));
+  EXPECT(assert_equal(factorsBefore, smoother.getFactors(), 0.0));
+  EXPECT(timestampsBefore == smoother.timestamps());
+  EXPECT(!smoother.getLinearizationPoint().exists(X(1)));
+
+  // The corrected retry supplies the missing value, with the previously
+  // rejected timestamp still present: both must be accepted together.
+  values.insert(invalid, Point2(9.0, 9.0));
+  smoother.update(factors, values, timestamps);
+  EXPECT(smoother.getLinearizationPoint().exists(X(1)));
+  EXPECT(smoother.getLinearizationPoint().exists(invalid));
+  DOUBLES_EQUAL(0.75, smoother.timestamps().at(invalid), 0.0);
+  DOUBLES_EQUAL(0.5, smoother.timestamps().at(X(1)), 0.0);
+}
+
+/* ************************************************************************* */
+namespace seeded_cleanup {
+
+// Timestamps naming no value are rejected at admission, so #2769's cleanup
+// branch is publicly unreachable. This subclass seeds that state directly, for
+// the tests that exercise the cleanup itself.
+class TestableIncrementalFixedLagSmoother : public IncrementalFixedLagSmoother {
+ public:
+  using IncrementalFixedLagSmoother::IncrementalFixedLagSmoother;
+  void injectTimestampForTest(Key key, double timestamp) {
+    KeyTimestampMap timestamps{{key, timestamp}};
+    updateKeyTimestampMap(timestamps);
+  }
+};
+
+// #2769's cleanup of an aged timestamp-only key, in the connected graph shape.
+// Admission now rejects such input, so the state is seeded directly and
+// asserted present before ageing, keeping the test non-vacuous.
+TEST(IncrementalFixedLagSmoother, SeededTimestampWithoutValueIsCleanedUp) {
+  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  TestableIncrementalFixedLagSmoother smoother(1.0);
   const Key phantom = Symbol('p', 0);
 
   NonlinearFactorGraph factors;
@@ -511,8 +585,9 @@ TEST(IncrementalFixedLagSmoother, TimestampWithoutValueOrFactor) {
   factors.addPrior(X(0), Point2(0.0, 0.0), noise);
   values.insert(X(0), Point2(0.0, 0.0));
   timestamps[X(0)] = 0.0;
-  timestamps[phantom] = 0.0;  // no value, no factor
   smoother.update(factors, values, timestamps);
+
+  smoother.injectTimestampForTest(phantom, 0.0);
   EXPECT(smoother.timestamps().find(phantom) != smoother.timestamps().end());
 
   // X(1) is joined to X(0), so marginalizing X(0) leaves a marginal factor.
@@ -530,12 +605,13 @@ TEST(IncrementalFixedLagSmoother, TimestampWithoutValueOrFactor) {
   EXPECT(!smoother.getLinearizationPoint().exists(X(0)));  // marginalized
 }
 
-// The same phantom key, but the following variable is in its own connected
-// component. This reached a different failure from the connected case above,
-// so both graph shapes are covered.
+// The same seeded phantom key, but the following variable is in its own
+// connected component. The cleanup reached a different failure from the
+// connected case, so both graph shapes stay covered. Seeded and asserted
+// present before ageing, since admission now rejects this input.
 TEST(IncrementalFixedLagSmoother, TimestampWithoutValueOrFactorDisconnected) {
   const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
-  IncrementalFixedLagSmoother smoother(1.0);
+  TestableIncrementalFixedLagSmoother smoother(1.0);
   const Key phantom = Symbol('p', 0);
 
   NonlinearFactorGraph factors;
@@ -545,8 +621,10 @@ TEST(IncrementalFixedLagSmoother, TimestampWithoutValueOrFactorDisconnected) {
   factors.addPrior(X(0), Point2(0.0, 0.0), noise);
   values.insert(X(0), Point2(0.0, 0.0));
   timestamps[X(0)] = 0.0;
-  timestamps[phantom] = 0.0;
   smoother.update(factors, values, timestamps);
+
+  smoother.injectTimestampForTest(phantom, 0.0);
+  EXPECT(smoother.timestamps().find(phantom) != smoother.timestamps().end());
 
   // No factor links X(1) to X(0).
   factors.resize(0);
@@ -561,11 +639,12 @@ TEST(IncrementalFixedLagSmoother, TimestampWithoutValueOrFactorDisconnected) {
   EXPECT(smoother.getLinearizationPoint().exists(X(1)));
 }
 
-// A key with a value but no factor is still reaped, not treated as stale.
-// Guards the partition split added alongside the two tests above.
+// A key with a value but no factor is still reaped, not treated as stale, and
+// both partition arms are exercised in the same update. The stale entry is
+// seeded and asserted present before ageing, since admission now rejects it.
 TEST(IncrementalFixedLagSmoother, PendingValueStillReapedAlongsideStaleKey) {
   const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
-  IncrementalFixedLagSmoother smoother(1.0);
+  TestableIncrementalFixedLagSmoother smoother(1.0);
   const Key phantom = Symbol('p', 0);
 
   NonlinearFactorGraph factors;
@@ -577,9 +656,13 @@ TEST(IncrementalFixedLagSmoother, PendingValueStillReapedAlongsideStaleKey) {
   values.insert(X(1), Point2(1.0, 0.0));  // value, no factor -> pending
   timestamps[X(0)] = 0.0;
   timestamps[X(1)] = 0.0;
-  timestamps[phantom] = 0.0;              // no value, no factor -> stale
   smoother.update(factors, values, timestamps);
+
+  smoother.injectTimestampForTest(phantom,
+                                  0.0);  // no value, no factor -> stale
   EXPECT(smoother.getLinearizationPoint().exists(X(1)));
+  EXPECT(smoother.timestamps().find(X(1)) != smoother.timestamps().end());
+  EXPECT(smoother.timestamps().find(phantom) != smoother.timestamps().end());
 
   factors.resize(0);
   values.clear();
@@ -593,6 +676,9 @@ TEST(IncrementalFixedLagSmoother, PendingValueStillReapedAlongsideStaleKey) {
   EXPECT(smoother.timestamps().find(X(1)) == smoother.timestamps().end());
   EXPECT(smoother.timestamps().find(phantom) == smoother.timestamps().end());
 }
+
+}  // namespace seeded_cleanup
+/* ************************************************************************* */
 
 // A clique-less key should be named rather than failing inside the Bayes tree
 // with a message that identifies neither the key nor the caller.
@@ -840,6 +926,110 @@ TEST(FixedLagSmoother, EraseKeyTimestampMapStillErasesPresentKeys) {
   EXPECT(!smoother.getLinearizationPoint().exists(X(0)));
   EXPECT(smoother.getLinearizationPoint().exists(X(1)));
 }
+
+/* ************************************************************************* */
+namespace timestamp_validation {
+
+// Timestamps for keys the smoother can account for are accepted: an existing
+// active value, a previously supplied pending value, and a value arriving in
+// the same update. None of these may be rejected by the validation.
+TEST(IncrementalFixedLagSmoother, AcceptsTimestampsForValuedKeys) {
+  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  IncrementalFixedLagSmoother smoother(10.0);
+  const Key pending = Symbol('p', 0);
+
+  // Same-update value with no factor: accepted.
+  NonlinearFactorGraph factors;
+  Values values;
+  FixedLagSmoother::KeyTimestampMap timestamps;
+  factors.addPrior(X(0), Point2(0.0, 0.0), noise);
+  values.insert(X(0), Point2(0.0, 0.0));
+  values.insert(pending, Point2(1.0, 0.0));  // value + timestamp, no factor
+  timestamps[X(0)] = 0.0;
+  timestamps[pending] = 0.5;
+  smoother.update(factors, values, timestamps);
+  EXPECT(smoother.getLinearizationPoint().exists(pending));
+
+  // Existing active value (X(0)) and previously pending value: both accepted
+  // in a timestamps-only update.
+  timestamps.clear();
+  timestamps[X(0)] = 1.0;
+  timestamps[pending] = 1.5;
+  smoother.update(NonlinearFactorGraph(), Values(), timestamps);
+  DOUBLES_EQUAL(1.0, smoother.timestamps().at(X(0)), 0.0);
+  DOUBLES_EQUAL(1.5, smoother.timestamps().at(pending), 0.0);
+}
+
+// A pending value's timestamp participates in the smoother clock normally: it
+// may advance the window and expire established states. A timestamp on such a
+// key that is wildly inconsistent with the stream is caller error, outside the
+// validation's protection.
+TEST(IncrementalFixedLagSmoother, PendingValueTimestampAdvancesClock) {
+  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  IncrementalFixedLagSmoother smoother(1.0);
+  const Key pending = Symbol('p', 0);
+
+  NonlinearFactorGraph factors;
+  Values values;
+  FixedLagSmoother::KeyTimestampMap timestamps;
+  factors.addPrior(X(0), Point2(0.0, 0.0), noise);
+  values.insert(X(0), Point2(0.0, 0.0));
+  timestamps[X(0)] = 0.0;
+  smoother.update(factors, values, timestamps);
+
+  values.clear();
+  timestamps.clear();
+  values.insert(pending, Point2(1.0, 0.0));  // value, no factor
+  timestamps[pending] = 5.0;
+  smoother.update(NonlinearFactorGraph(), values, timestamps);
+
+  EXPECT(!smoother.getLinearizationPoint().exists(X(0)));  // 5.0 - 1.0 > 0.0
+  EXPECT(smoother.timestamps().find(X(0)) == smoother.timestamps().end());
+  EXPECT(smoother.getLinearizationPoint().exists(pending));
+}
+
+// A value and its timestamp may arrive before the factor that constrains
+// them, with the connecting factor landing in a later update and the timestamp
+// not resent. The key becomes active and keeps the timestamp it was given.
+TEST(IncrementalFixedLagSmoother, PendingValueKeepsTimestampWhenFactorArrives) {
+  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  IncrementalFixedLagSmoother smoother(10.0);
+  const Key pending = Symbol('p', 0);
+
+  NonlinearFactorGraph factors;
+  Values values;
+  FixedLagSmoother::KeyTimestampMap timestamps;
+  factors.addPrior(X(0), Point2(0.0, 0.0), noise);
+  values.insert(X(0), Point2(0.0, 0.0));
+  timestamps[X(0)] = 0.0;
+  smoother.update(factors, values, timestamps);
+
+  values.clear();
+  timestamps.clear();
+  values.insert(pending, Point2(1.0, 0.0));  // value + timestamp, no factor
+  timestamps[pending] = 0.5;
+  smoother.update(NonlinearFactorGraph(), values, timestamps);
+
+  factors.resize(0);
+  values.clear();
+  timestamps.clear();  // the timestamp is not resent
+  factors.emplace_shared<BetweenPoint2>(X(0), pending, Point2(1.0, 0.0), noise);
+  smoother.update(factors, values, timestamps);
+
+  EXPECT(smoother.getLinearizationPoint().exists(pending));
+  bool connected = false;
+  for (const auto& factor : smoother.getFactors()) {
+    if (FactorInvolvesKey(factor, X(0)) && FactorInvolvesKey(factor, pending)) {
+      connected = true;
+      break;
+    }
+  }
+  EXPECT(connected);
+  DOUBLES_EQUAL(0.5, smoother.timestamps().at(pending), 0.0);
+}
+
+}  // namespace timestamp_validation
+/* ************************************************************************* */
 
 int main() {
   TestResult tr;
