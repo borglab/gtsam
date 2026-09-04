@@ -14,13 +14,14 @@
  * @brief   Certifiable SE(d) synchronization, that is pose-graph
  *          optimization, via the Riemannian Staircase (Burer-Monteiro
  *          low-rank SDP + sparse-eigensolver certificate). Minimizes
- *          Sum_ij kappa_ij ||R_j - R_i R_ij||^2_F + tau_ij ||t_j - t_i - R_i t_ij||^2
- *          over R_i in O(d), t_i in R^d.
+ *          Sum_ij kappa_ij ||R_j - R_i R_ij||^2_F + tau_ij ||t_j - t_i - R_i
+ * t_ij||^2 over R_i in O(d), t_i in R^d.
  * @author  Zhexin Xu
  *
  * Usage:
  *   ./CertifiablePoseGraphOptimization --data=<g2o file> --dim=<2|3>
  *       [--initialization=<fast-sync|g2o|random>]
+ *       [--solver=<staircase|mosek-monolithic|mosek-chordal>]
  */
 
 #include <gtsam/certifiable/RiemannianStaircaseOptimizer.h>
@@ -38,15 +39,17 @@
 #include <gtsam/slam/dataset.h>
 
 #include <Eigen/SVD>
-
 #include <chrono>
 #include <iostream>
+#include <limits>
 #include <numeric>
 #include <random>
 #include <set>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
+
+#include "CertifiableMosek.h"
 
 using namespace gtsam;
 using RSO = RiemannianStaircaseOptimizer;
@@ -152,8 +155,8 @@ Values randomInitial(const std::set<Key>& poseIndices) {
   std::uniform_real_distribution<double> uniform(-kPi, kPi);
   for (Key poseIndex : poseIndices) {
     if constexpr (std::is_same_v<RotT, Rot2>) {
-      InsertQcqpValue<Rot2, d>(
-          rotationKey(poseIndex), Rot2::fromAngle(uniform(rng)), &values);
+      InsertQcqpValue<Rot2, d>(rotationKey(poseIndex),
+                               Rot2::fromAngle(uniform(rng)), &values);
     } else {
       const Vector3 rpy(uniform(rng), uniform(rng), uniform(rng));
       InsertQcqpValue<Rot3, d>(rotationKey(poseIndex),
@@ -169,7 +172,8 @@ Values randomInitial(const std::set<Key>& poseIndices) {
 
 template <int d>
 int runCertifiablePGO(const std::string& dataPath,
-                      InitializationMethod initializationMethod) {
+                      InitializationMethod initializationMethod,
+                      examples::CertifiableSolver solver) {
   using PoseT = typename std::conditional<d == 2, Pose2, Pose3>::type;
   using RotT = typename std::conditional<d == 2, Rot2, Rot3>::type;
   constexpr bool kIs3D = (d == 3);
@@ -228,6 +232,33 @@ int runCertifiablePGO(const std::string& dataPath,
   if (skipped > 0) std::cout << "  (" << skipped << " non-Between skipped)";
   std::cout << "\n\n";
 
+  if (solver != examples::CertifiableSolver::Staircase) {
+    QcqpProblem problem(graph, 1);
+    const Key anchor = *poseIndices.begin();
+    examples::addPoseGauge<RotT, Point>(rotationKey(anchor),
+                                        translationKey(anchor), &problem);
+    const examples::MosekExampleResult result =
+        examples::solveMosek(problem, solver);
+    if (!result.solved) {
+      examples::printMosekSummary(result, solver,
+                                  std::numeric_limits<double>::quiet_NaN());
+      return 1;
+    }
+
+    Values rounded;
+    for (Key poseIndex : poseIndices) {
+      rounded.insert(rotationKey(poseIndex),
+                     traits<RotT>::template FromQcqpValue<1>(
+                         result.qcqpValues.at<Matrix>(rotationKey(poseIndex))));
+      rounded.insert(
+          translationKey(poseIndex),
+          traits<Point>::template FromQcqpValue<1>(
+              result.qcqpValues.at<Matrix>(translationKey(poseIndex))));
+    }
+    examples::printMosekSummary(result, solver, graph.error(rounded));
+    return result.solved ? 0 : 1;
+  }
+
   RiemannianStaircaseParams params;
   params.pMin = d;
   params.pMax = 10;
@@ -267,7 +298,8 @@ int runCertifiablePGO(const std::string& dataPath,
   }
   const double initializationSeconds =
       std::chrono::duration<double>(std::chrono::steady_clock::now() -
-                                    initializationStart).count();
+                                    initializationStart)
+          .count();
 
   // Certifiable solver
   const auto solveStart = std::chrono::steady_clock::now();
@@ -294,7 +326,8 @@ int runCertifiablePGO(const std::string& dataPath,
 
   const double roundingSeconds =
       std::chrono::duration<double>(std::chrono::steady_clock::now() -
-                                    roundingStart).count();
+                                    roundingStart)
+          .count();
 
   std::cout << "\n========== Result ==========\n"
             << "Certified:         " << (result.certified ? "yes" : "no")
@@ -333,6 +366,7 @@ int main(int argc, char** argv) {
   std::string dataPath;
   std::string initialization = "fast-sync";
   int dim = 0;
+  std::string solverName = "staircase";
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
     if (arg.rfind("--data=", 0) == 0) {
@@ -341,6 +375,8 @@ int main(int argc, char** argv) {
       dim = std::stoi(arg.substr(6));
     } else if (arg.rfind("--initialization=", 0) == 0) {
       initialization = arg.substr(17);
+    } else if (arg.rfind("--solver=", 0) == 0) {
+      solverName = arg.substr(9);
     }
   }
   InitializationMethod initializationMethod;
@@ -354,16 +390,24 @@ int main(int argc, char** argv) {
     std::cerr << "Unknown initialization method: " << initialization << "\n";
     return 2;
   }
+  examples::CertifiableSolver solver;
+  try {
+    solver = examples::parseCertifiableSolver(solverName);
+  } catch (const std::invalid_argument& error) {
+    std::cerr << error.what() << "\n";
+    return 2;
+  }
   if (dataPath.empty() || (dim != 2 && dim != 3)) {
     std::cerr << "Usage: " << argv[0]
               << " --data=<g2o file> --dim=<2|3> "
-                 "[--initialization=<fast-sync|g2o|random>]\n";
+                 "[--initialization=<fast-sync|g2o|random>] "
+                 "[--solver=<staircase|mosek-monolithic|mosek-chordal>]\n";
     return 2;
   }
 
   if (dim == 3) {
-    return runCertifiablePGO<3>(dataPath, initializationMethod);
+    return runCertifiablePGO<3>(dataPath, initializationMethod, solver);
   } else {
-    return runCertifiablePGO<2>(dataPath, initializationMethod);
+    return runCertifiablePGO<2>(dataPath, initializationMethod, solver);
   }
 }

@@ -13,7 +13,8 @@
  * @file    CertifiableLandmarkSLAM.cpp
  * @brief   Certifiable landmark SLAM via the Riemannian
  *          Staircase. Minimizes
- *          Sum_ij kappa_ij ||R_j - R_i R_ij||^2_F + tau_ij ||t_j - t_i - R_i t_ij||^2
+ *          Sum_ij kappa_ij ||R_j - R_i R_ij||^2_F + tau_ij ||t_j - t_i - R_i
+ * t_ij||^2
  *          + Sum_ik nu_ik ||l_k - t_i - R_i v_ik||^2
  *          over R_i in O(d), t_i in R^d, l_k in R^d.
  * @author  Zhexin Xu
@@ -21,6 +22,7 @@
  * Usage:
  *   ./CertifiableLandmarkSLAM --data=<g2o file> --dim=<2|3>
  *       [--initialization=<fast-sync|random>]
+ *       [--solver=<staircase|mosek-monolithic|mosek-chordal>]
  */
 
 #include <gtsam/certifiable/RiemannianStaircaseOptimizer.h>
@@ -34,16 +36,18 @@
 #include <gtsam/slam/RelativeTranslationFactor.h>
 
 #include <Eigen/SVD>
-
 #include <chrono>
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <numeric>
 #include <random>
 #include <set>
 #include <sstream>
 #include <string>
 #include <vector>
+
+#include "CertifiableMosek.h"
 
 using namespace gtsam;
 using RSO = RiemannianStaircaseOptimizer;
@@ -120,8 +124,7 @@ Dataset<d> readLandmarkG2o(const std::string& path) {
     std::string tag;
     stream >> tag;
 
-    if ((d == 2 && tag == "EDGE_SE2") ||
-        (d == 3 && tag == "EDGE_SE3:QUAT")) {
+    if ((d == 2 && tag == "EDGE_SE2") || (d == 3 && tag == "EDGE_SE3:QUAT")) {
       Odometry<d> edge;
       stream >> edge.i >> edge.j;
       constexpr int dim = d == 2 ? 3 : 6;
@@ -147,13 +150,12 @@ Dataset<d> readLandmarkG2o(const std::string& path) {
       // (translation, rotation) order.
       if constexpr (d == 2) {
         edge.kappa = information(2, 2);
-        edge.tau =
-            2.0 / information.topLeftCorner<2, 2>().inverse().trace();
+        edge.tau = 2.0 / information.topLeftCorner<2, 2>().inverse().trace();
       } else {
-        edge.kappa = 3.0 / (2.0 * information.bottomRightCorner<3, 3>()
-                                      .inverse().trace());
-        edge.tau =
-            3.0 / information.topLeftCorner<3, 3>().inverse().trace();
+        edge.kappa =
+            3.0 /
+            (2.0 * information.bottomRightCorner<3, 3>().inverse().trace());
+        edge.tau = 3.0 / information.topLeftCorner<3, 3>().inverse().trace();
       }
       data.poseIds.insert(edge.i);
       data.poseIds.insert(edge.j);
@@ -189,7 +191,8 @@ Matrix randomBlock(int rows, int p, std::mt19937& rng, bool orthonormal) {
 
 template <int d>
 int runCertifiableLandmarkSLAM(const std::string& path,
-                               InitializationMethod initializationMethod) {
+                               InitializationMethod initializationMethod,
+                               examples::CertifiableSolver solver) {
   using Point = Eigen::Matrix<double, d, 1>;
   using RotT = typename std::conditional<d == 2, Rot2, Rot3>::type;
 
@@ -230,6 +233,39 @@ int runCertifiableLandmarkSLAM(const std::string& path,
             << "  landmarks=" << landmarkIndices.size()
             << "  init=" << initializationName(initializationMethod) << "\n";
 
+  if (solver != examples::CertifiableSolver::Staircase) {
+    QcqpProblem problem(graph, 1);
+    const Key anchor = *poseIndices.begin();
+    examples::addPoseGauge<RotT, Point>(rotationKey(anchor),
+                                        translationKey(anchor), &problem);
+    const examples::MosekExampleResult result =
+        examples::solveMosek(problem, solver);
+    if (!result.solved) {
+      examples::printMosekSummary(result, solver,
+                                  std::numeric_limits<double>::quiet_NaN());
+      return 1;
+    }
+
+    Values rounded;
+    for (Key poseIndex : poseIndices) {
+      rounded.insert(rotationKey(poseIndex),
+                     traits<RotT>::template FromQcqpValue<1>(
+                         result.qcqpValues.at<Matrix>(rotationKey(poseIndex))));
+      rounded.insert(
+          translationKey(poseIndex),
+          traits<Point>::template FromQcqpValue<1>(
+              result.qcqpValues.at<Matrix>(translationKey(poseIndex))));
+    }
+    for (Key landmarkIndex : landmarkIndices) {
+      rounded.insert(
+          landmarkKey(landmarkIndex),
+          traits<Point>::template FromQcqpValue<1>(
+              result.qcqpValues.at<Matrix>(landmarkKey(landmarkIndex))));
+    }
+    examples::printMosekSummary(result, solver, graph.error(rounded));
+    return result.solved ? 0 : 1;
+  }
+
   const int p = d;
   std::mt19937 rng(kSeed);
 
@@ -260,7 +296,8 @@ int runCertifiableLandmarkSLAM(const std::string& path,
     initial.insert(landmarkKey(landmarkIndex), randomBlock(1, p, rng, false));
   const double initializationSeconds =
       std::chrono::duration<double>(std::chrono::steady_clock::now() -
-                                    initializationStart).count();
+                                    initializationStart)
+          .count();
 
   // Certifiable solver
   RiemannianStaircaseParams params;
@@ -278,9 +315,9 @@ int runCertifiableLandmarkSLAM(const std::string& path,
 
   const auto solveStart = std::chrono::steady_clock::now();
   const auto result = RSO(graph, initial, params).optimize();
-  const double solveSeconds =
-      std::chrono::duration<double>(std::chrono::steady_clock::now() -
-                                    solveStart).count();
+  const double solveSeconds = std::chrono::duration<double>(
+                                  std::chrono::steady_clock::now() - solveStart)
+                                  .count();
 
   // Rounding and extracting solution
   const auto roundingStart = std::chrono::steady_clock::now();
@@ -302,7 +339,8 @@ int runCertifiableLandmarkSLAM(const std::string& path,
 
   const double roundingSeconds =
       std::chrono::duration<double>(std::chrono::steady_clock::now() -
-                                    roundingStart).count();
+                                    roundingStart)
+          .count();
 
   std::cout << "\n========== Result ==========\n"
             << "Certified:         " << (result.certified ? "yes" : "no")
@@ -320,8 +358,8 @@ int runCertifiableLandmarkSLAM(const std::string& path,
                                             result.nlpTimePerLevel.end(), 0.0);
   const double verifySeconds = std::accumulate(
       result.verifyTimePerLevel.begin(), result.verifyTimePerLevel.end(), 0.0);
-  std::cout << "Initialization:    "
-            << initializationName(initializationMethod) << "\n"
+  std::cout << "Initialization:    " << initializationName(initializationMethod)
+            << "\n"
             << "Initialization time: " << initializationSeconds << " s\n"
             << "QCQP build time:    " << buildSeconds << " s\n"
             << "Local solve time:  " << nlpSeconds << " s\n"
@@ -339,6 +377,7 @@ int runCertifiableLandmarkSLAM(const std::string& path,
 int main(int argc, char** argv) {
   std::string dataPath;
   std::string initialization = "random";
+  std::string solverName = "staircase";
   int dim = 3;
   for (int i = 1; i < argc; ++i) {
     const std::string arg = argv[i];
@@ -348,6 +387,8 @@ int main(int argc, char** argv) {
       dim = std::stoi(arg.substr(6));
     } else if (arg.rfind("--initialization=", 0) == 0) {
       initialization = arg.substr(17);
+    } else if (arg.rfind("--solver=", 0) == 0) {
+      solverName = arg.substr(9);
     }
   }
   InitializationMethod initializationMethod;
@@ -359,18 +400,26 @@ int main(int argc, char** argv) {
     std::cerr << "Unknown initialization method: " << initialization << "\n";
     return 2;
   }
+  examples::CertifiableSolver solver;
+  try {
+    solver = examples::parseCertifiableSolver(solverName);
+  } catch (const std::invalid_argument& error) {
+    std::cerr << error.what() << "\n";
+    return 2;
+  }
   if (dataPath.empty() || (dim != 2 && dim != 3)) {
     std::cerr << "Usage: " << argv[0]
               << " --data=<g2o file> --dim=<2|3> "
-                 "[--initialization=<fast-sync|random>]\n";
+                 "[--initialization=<fast-sync|random>] "
+                 "[--solver=<staircase|mosek-monolithic|mosek-chordal>]\n";
     return 2;
   }
 
   if (dim == 3) {
-    return runCertifiableLandmarkSLAM<3>(
-        dataPath, initializationMethod);
+    return runCertifiableLandmarkSLAM<3>(dataPath, initializationMethod,
+                                         solver);
   } else {
-    return runCertifiableLandmarkSLAM<2>(
-        dataPath, initializationMethod);
+    return runCertifiableLandmarkSLAM<2>(dataPath, initializationMethod,
+                                         solver);
   }
 }

@@ -59,8 +59,7 @@ class QuadraticRangeFactor
     : public NoiseModelFactorN<
           Eigen::Matrix<double, d, 1>, Eigen::Matrix<double, d, 1>,
           typename std::conditional<d == 2, Rot2, Unit3>::type> {
-  static_assert(d == 2 || d == 3,
-                "QuadraticRangeFactor supports d = 2 or 3.");
+  static_assert(d == 2 || d == 3, "QuadraticRangeFactor supports d = 2 or 3.");
 
   using Point = Eigen::Matrix<double, d, 1>;
   /// Lifted constraints come from the type's own QCQP traits.
@@ -103,9 +102,9 @@ class QuadraticRangeFactor
   double range() const { return range_; }
   double weight() const { return weight_; }
 
-  void print(const std::string& s = "",
-             const KeyFormatter& keyFormatter =
-                 DefaultKeyFormatter) const override {
+  void print(
+      const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << s << "QuadraticRangeFactor(" << keyFormatter(this->key1())
               << "," << keyFormatter(this->key2()) << ","
               << keyFormatter(this->key3()) << ") range=" << range_
@@ -127,8 +126,10 @@ class QuadraticRangeFactor
                        OptionalMatrixType H3) const override {
     const double sw = std::sqrt(weight_);
     const Point u = [&direction] {
-      if constexpr (d == 2) return Point(direction.c(), direction.s());
-      else return direction.unitVector();
+      if constexpr (d == 2)
+        return Point(direction.c(), direction.s());
+      else
+        return direction.unitVector();
     }();
     if (H1) *H1 = -sw * Matrix::Identity(d, d);
     if (H2) *H2 = sw * Matrix::Identity(d, d);
@@ -147,14 +148,22 @@ class QuadraticRangeFactor
 
   gtsam::NonlinearFactor::shared_ptr clone() const override {
     return std::static_pointer_cast<gtsam::NonlinearFactor>(
-        gtsam::NonlinearFactor::shared_ptr(
-            new QuadraticRangeFactor(*this)));
+        gtsam::NonlinearFactor::shared_ptr(new QuadraticRangeFactor(*this)));
   }
 
   /// Add this range factor as a QCQP cost when traits exist.
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
                    size_t columnDimension = 1) const override {
+    if (columnDimension == 0) {
+      throw std::invalid_argument(
+          "QuadraticRangeFactor::qcqpFactors requires a positive "
+          "columnDimension.");
+    }
+    if (columnDimension == 1) {
+      qcqpFactorsForVector(costs, constraints);
+      return;
+    }
     if (columnDimension < static_cast<size_t>(d)) {
       throw std::invalid_argument(
           "QuadraticRangeFactor::qcqpFactors requires columnDimension "
@@ -171,9 +180,9 @@ class QuadraticRangeFactor
     // which takes 1. Only the first row is used; any others stay zero.
     const double sw = std::sqrt(weight_);
     Matrix B = Matrix::Zero(1, 2 + kDirectionRows);
-    B(0, 0) = -sw;            // pose translation
-    B(0, 1) = sw;             // target
-    B(0, 2) = -sw * range_;   // leading row of the auxiliary direction
+    B(0, 0) = -sw;           // pose translation
+    B(0, 1) = sw;            // target
+    B(0, 2) = -sw * range_;  // leading row of the auxiliary direction
 
     const Matrix Q = B.transpose() * B;
     const SymmetricBlockMatrix blockQ(
@@ -181,6 +190,41 @@ class QuadraticRangeFactor
     costs->push_back(std::make_shared<QpCost>(
         KeyVector{this->key1(), this->key2(), this->key3()}, blockQ,
         columnDimension));
+  }
+
+ private:
+  /// Add the exact D=1 homogeneous-vector cost and variable constraints.
+  void qcqpFactorsForVector(NonlinearFactorGraph* costs,
+                            NonlinearEqualityConstraints* constraints) const {
+    if (!costs) {
+      throw std::invalid_argument(
+          "QuadraticRangeFactor::qcqpFactors: costs is null.");
+    }
+
+    constexpr int kPointDim = traits<Point>::QcqpVectorDim;
+    constexpr int kDirectionDim = traits<Direction>::QcqpVectorDim;
+    const double sw = std::sqrt(weight_);
+
+    // Both Rot2 and Unit3 store the relevant direction in the d entries after
+    // the homogeneous coordinate (Rot2's first matrix column in 2D).
+    Matrix directionSelector = Matrix::Zero(d, kDirectionDim);
+    directionSelector.block(0, 1, d, d).setIdentity();
+
+    Matrix B = Matrix::Zero(d, 2 * kPointDim + kDirectionDim);
+    B.block(0, 1, d, d) = -sw * Matrix::Identity(d, d);
+    B.block(0, kPointDim + 1, d, d) = sw * Matrix::Identity(d, d);
+    B.block(0, 2 * kPointDim, d, kDirectionDim) =
+        -sw * range_ * directionSelector;
+
+    InsertQcqpConstraints<Point, 1>(this->key1(), constraints);
+    InsertQcqpConstraints<Point, 1>(this->key2(), constraints);
+    InsertQcqpConstraints<Direction, 1>(this->key3(), constraints);
+
+    const Matrix Q = B.transpose() * B;
+    const SymmetricBlockMatrix blockQ(
+        std::vector<DenseIndex>{kPointDim, kPointDim, kDirectionDim}, Q);
+    costs->push_back(std::make_shared<QpCost>(
+        KeyVector{this->key1(), this->key2(), this->key3()}, blockQ));
   }
 };
 

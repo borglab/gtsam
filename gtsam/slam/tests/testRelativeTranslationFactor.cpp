@@ -44,8 +44,7 @@ TEST(RelativeTranslationFactor, EvaluateErrorMatchesDirectComputation) {
 
   const RelativeTranslationFactor3 factor(kR, kT1, kT2, measured, weight);
   const Vector actual = factor.evaluateError(Ri, ti, tj, {}, {}, {});
-  const Vector expected =
-      std::sqrt(weight) * (tj - ti - Ri.rotate(measured));
+  const Vector expected = std::sqrt(weight) * (tj - ti - Ri.rotate(measured));
   EXPECT(assert_equal(expected, actual, 1e-12));
 }
 
@@ -62,12 +61,12 @@ TEST(RelativeTranslationFactor, JacobiansMatchNumericalDerivative) {
   auto f = [&](const Rot3& R, const Vector3& a, const Vector3& b) {
     return factor.evaluateError(R, a, b, {}, {}, {});
   };
-  const Matrix numH1 = numericalDerivative31<Vector, Rot3, Vector3, Vector3>(
-      f, Ri, ti, tj);
-  const Matrix numH2 = numericalDerivative32<Vector, Rot3, Vector3, Vector3>(
-      f, Ri, ti, tj);
-  const Matrix numH3 = numericalDerivative33<Vector, Rot3, Vector3, Vector3>(
-      f, Ri, ti, tj);
+  const Matrix numH1 =
+      numericalDerivative31<Vector, Rot3, Vector3, Vector3>(f, Ri, ti, tj);
+  const Matrix numH2 =
+      numericalDerivative32<Vector, Rot3, Vector3, Vector3>(f, Ri, ti, tj);
+  const Matrix numH3 =
+      numericalDerivative33<Vector, Rot3, Vector3, Vector3>(f, Ri, ti, tj);
 
   EXPECT(assert_equal(numH1, H1, 1e-6));
   EXPECT(assert_equal(numH2, H2, 1e-6));
@@ -111,6 +110,30 @@ TEST(RelativeTranslationFactor, QcqpFactorsMatchesNonlinearErrorAtRankD) {
   const double directCost =
       0.5 * factor.evaluateError(Ri, ti, tj, {}, {}, {}).squaredNorm();
   EXPECT_DOUBLES_EQUAL(directCost, qcqpCost, 1e-10);
+}
+
+// The D=1 lowering uses homogeneous vectors for the rotation and both points
+// and exactly matches the typed three-dimensional residual.
+TEST(RelativeTranslationFactor, QcqpFactorsMatchesNonlinearErrorAtD1) {
+  const Rot3 Ri = Rot3::RzRyRx(-0.1, 0.2, 0.15);
+  const Vector3 ti(0.3, -0.1, 0.4), tj(-0.2, 0.5, 0.1);
+  const Vector3 measured(0.1, 0.2, -0.1);
+  const RelativeTranslationFactor3 factor(kR, kT1, kT2, measured, 0.8);
+
+  NonlinearFactorGraph graph;
+  graph.push_back(factor.clone());
+  const QcqpProblem problem(graph, 1);
+
+  Values qcqpValues;
+  InsertQcqpValue<Rot3, 1>(kR, Ri, &qcqpValues);
+  InsertQcqpValue<Vector3, 1>(kT1, ti, &qcqpValues);
+  InsertQcqpValue<Vector3, 1>(kT2, tj, &qcqpValues);
+
+  const double directCost =
+      0.5 * factor.evaluateError(Ri, ti, tj, {}, {}, {}).squaredNorm();
+  EXPECT_DOUBLES_EQUAL(directCost, problem.costs().error(qcqpValues), 1e-10);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
+                       1e-12);
 }
 
 // Non-positive weight is rejected at construction.
@@ -162,6 +185,28 @@ TEST(RelativeTranslationFactor, QcqpFactorsMatchesNonlinearErrorAtRankD2) {
   const double directCost =
       0.5 * factor.evaluateError(Ri, ti, tj, {}, {}, {}).squaredNorm();
   EXPECT_DOUBLES_EQUAL(directCost, qcqpCost, 1e-10);
+}
+
+// The exact homogeneous-vector lowering also supports the planar case.
+TEST(RelativeTranslationFactor, QcqpFactorsMatchesNonlinearErrorAtD1In2D) {
+  const Rot2 Ri = Rot2::fromAngle(0.4);
+  const Vector2 ti(0.2, -0.3), tj(0.5, 0.1), measured(0.1, -0.2);
+  const RelativeTranslationFactor2 factor(kR, kT1, kT2, measured, 1.3);
+
+  NonlinearFactorGraph graph;
+  graph.push_back(factor.clone());
+  const QcqpProblem problem(graph, 1);
+
+  Values qcqpValues;
+  InsertQcqpValue<Rot2, 1>(kR, Ri, &qcqpValues);
+  InsertQcqpValue<Vector2, 1>(kT1, ti, &qcqpValues);
+  InsertQcqpValue<Vector2, 1>(kT2, tj, &qcqpValues);
+
+  const double directCost =
+      0.5 * factor.evaluateError(Ri, ti, tj, {}, {}, {}).squaredNorm();
+  EXPECT_DOUBLES_EQUAL(directCost, problem.costs().error(qcqpValues), 1e-10);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
+                       1e-12);
 }
 
 }  // namespace Rot2Fixture
