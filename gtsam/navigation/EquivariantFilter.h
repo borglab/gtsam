@@ -143,10 +143,13 @@ class EquivariantFilter : public ManifoldEKF<M> {
 
   /// Advance the group estimate by a lifted increment and propagate the
   /// covariance with an already-discretized transition and process noise.
+  /// The base class validates Phi and Qd before it changes anything, so g_ is
+  /// only committed once that has succeeded and stays in sync with X_ and P_.
   void propagate(const TangentG& increment, const MatrixM& Phi,
                  const CovarianceM& Qd) {
-    g_ = traits<G>::Compose(g_, traits<G>::Expmap(increment));
-    Base::predict(act_on_ref_(g_), Phi, Qd);
+    const G g_next = traits<G>::Compose(g_, traits<G>::Expmap(increment));
+    Base::predict(act_on_ref_(g_next), Phi, Qd);
+    g_ = g_next;
   }
 
   /// Apply an innovation correction, which lives in error coordinates at the
@@ -311,10 +314,13 @@ class EquivariantFilter : public ManifoldEKF<M> {
     // 2. Lifted increment in the frame the prediction composes in. This is
     // where the two action types differ; A itself does not. For a left action
     // the value just computed is already the right one.
-    const TangentG Lambda =
-        incrementIsAtOrigin() ? lambda_at_origin : lift_u(this->state());
-
-    propagate(Lambda * dt, transitionMatrix<K>(A, dt), CovarianceM(Qc * dt));
+    if constexpr (incrementIsAtOrigin()) {
+      propagate(lambda_at_origin * dt, transitionMatrix<K>(A, dt),
+                CovarianceM(Qc * dt));
+    } else {
+      propagate(lift_u(this->state()) * dt, transitionMatrix<K>(A, dt),
+                CovarianceM(Qc * dt));
+    }
   }
 
   /**
@@ -354,7 +360,9 @@ class EquivariantFilter : public ManifoldEKF<M> {
    *
    * Takes the input orbit for the same reason predict() does: for a left
    * action the lifted increment must be evaluated at the reference state (see
-   * incrementIsAtOrigin()). It is unused for a right action.
+   * incrementIsAtOrigin()), which requires `Lift(psi_u(X^-1))`. For a right
+   * action psi_u is unused and `Lift` need only be callable as `Lift(xi_est)`,
+   * as in predictWithJacobian().
    *
    * @param lift_u Lift functor for the current input.
    * @param psi_u Input Orbit instance.
@@ -366,9 +374,14 @@ class EquivariantFilter : public ManifoldEKF<M> {
   void predictWithTransition(const Lift& lift_u, const InputOrbit& psi_u,
                              const MatrixM& Phi, const CovarianceM& Qd,
                              double dt) {
-    const TangentG Lambda = incrementIsAtOrigin() ? liftAtOrigin<Lift>(psi_u)
-                                                  : lift_u(this->state());
-    propagate(Lambda * dt, Phi, Qd);
+    // if constexpr, not a conditional expression: the discarded branch is not
+    // instantiated, so a right action does not require Lift to be constructible
+    // from the input orbit's output, and a left action does not need lift_u.
+    if constexpr (incrementIsAtOrigin()) {
+      propagate(liftAtOrigin<Lift>(psi_u) * dt, Phi, Qd);
+    } else {
+      propagate(lift_u(this->state()) * dt, Phi, Qd);
+    }
   }
 
   /**
