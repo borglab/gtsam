@@ -63,6 +63,9 @@ class LiftedSDPProblem;
  *
  * The problem owns its MOSEK model. Call solve() before querying solver
  * results or recovered variables.
+ * Set GTSAM_MOSEK_DIAGNOSTICS to a unique output path prefix before solve()
+ * to export a .task.gz model, .log iteration/feasibility analysis, and
+ * .solution.json raw solution without changing the solver parameters.
  */
 template <>
 class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
@@ -116,6 +119,9 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
  *
  * The problem owns its MOSEK model. Call solve() before querying solver
  * results or recovered variables.
+ * Set GTSAM_MOSEK_DIAGNOSTICS to a unique output path prefix before solve()
+ * to export a .task.gz model, .log iteration/feasibility analysis, and
+ * .solution.json raw solution without changing the solver parameters.
  */
 template <>
 class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
