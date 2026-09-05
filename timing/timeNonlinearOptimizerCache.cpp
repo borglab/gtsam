@@ -1,0 +1,105 @@
+/* ----------------------------------------------------------------------------
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+ * See LICENSE for the license information
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file timeNonlinearOptimizerCache.cpp
+ * @brief Compare repeated optimizer solves with fresh symbolic elimination.
+ */
+
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
+#include <gtsam/slam/BetweenFactor.h>
+
+#include <algorithm>
+#include <chrono>
+#include <iomanip>
+#include <iostream>
+#include <string>
+#include <vector>
+
+using namespace gtsam;
+
+/// Return median microseconds per operation after an untimed warmup.
+template <class Operation>
+double medianTime(size_t repetitions, Operation operation) {
+  using Clock = std::chrono::steady_clock;
+  operation();
+  std::vector<double> samples;
+  for (size_t sample = 0; sample < 7; ++sample) {
+    const auto start = Clock::now();
+    for (size_t i = 0; i < repetitions; ++i) operation();
+    samples.push_back(
+        std::chrono::duration<double, std::micro>(Clock::now() - start)
+            .count() /
+        repetitions);
+  }
+  std::sort(samples.begin(), samples.end());
+  return samples[samples.size() / 2];
+}
+
+/// Benchmark a fixed graph with scalar or six-dimensional variable blocks.
+void benchmarkLinear(size_t variables, size_t dimension, size_t repetitions) {
+  GaussianFactorGraph graph;
+  const Matrix identity = Matrix::Identity(dimension, dimension);
+  const Vector measurement = Vector::Ones(dimension);
+  for (Key key = 0; key < variables; ++key) {
+    graph.emplace_shared<JacobianFactor>(key, identity, measurement);
+    if (key > 0) {
+      graph.emplace_shared<JacobianFactor>(key - 1, -identity, key, identity,
+                                           measurement);
+    }
+  }
+  NonlinearOptimizerParams params;
+  params.setOrdering(Ordering::Colamd(graph));
+  GaussNewtonOptimizer optimizer(NonlinearFactorGraph{}, Values{});
+  double checksum = 0.0;
+  const double cached = medianTime(repetitions, [&] {
+    checksum += optimizer.solve(graph, params).at(0)(0);
+  });
+  const double rebuilt = medianTime(repetitions, [&] {
+    checksum += graph.optimize(*params.ordering).at(0)(0);
+  });
+  std::cout << "linear," << variables << ',' << dimension << ',' << cached
+            << ',' << rebuilt << ',' << checksum << '\n';
+}
+
+/// Include linearization, error evaluation, and retraction in the measurement.
+void benchmarkNonlinear(size_t variables, size_t repetitions) {
+  NonlinearFactorGraph graph;
+  Values initial;
+  const Vector3 measurement{1.0, 0.5, -0.25};
+  const auto model = noiseModel::Unit::Create(3);
+  for (Key key = 0; key < variables; ++key) {
+    initial.insert(key, Vector3::Zero().eval());
+    graph.addPrior(key, measurement, model);
+    if (key > 0) {
+      graph.emplace_shared<BetweenFactor<Vector3>>(key - 1, key, measurement,
+                                                   model);
+    }
+  }
+  GaussNewtonOptimizer optimizer(graph, initial);
+  const double time = medianTime(repetitions, [&] { optimizer.iterate(); });
+  std::cout << "nonlinear," << variables << ",3," << time << ",,"
+            << optimizer.error() << '\n';
+}
+
+/// Usage: timeNonlinearOptimizerCache [variables=1000] [repetitions=30].
+int main(int argc, char** argv) {
+  const size_t variables = argc > 1 ? std::stoul(argv[1]) : 1000;
+  const size_t repetitions = argc > 2 ? std::stoul(argv[2]) : 30;
+  if (variables == 0 || repetitions == 0) {
+    std::cerr << "variables and repetitions must be positive\n";
+    return 1;
+  }
+  std::cout << std::fixed << std::setprecision(3)
+            << "case,variables,dimension,cached_us,rebuilt_us,checksum\n";
+  benchmarkLinear(variables, 1, repetitions);
+  benchmarkLinear(variables, 6, repetitions);
+  benchmarkNonlinear(variables, repetitions);
+  return 0;
+}
