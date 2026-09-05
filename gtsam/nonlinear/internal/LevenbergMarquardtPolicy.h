@@ -35,7 +35,10 @@ inline void increaseLevenbergMarquardtLambda(
   }
 }
 
-/** Decrease LM damping after accepting a step with the given fidelity. */
+/**
+ * Update LM damping after accepting a step with the given fidelity.
+ * The adaptive Nielsen policy resets the rejection multiplier to two.
+ */
 inline void decreaseLevenbergMarquardtLambda(
     const LevenbergMarquardtParams& params, double modelFidelity,
     double* lambda, double* currentFactor) {
@@ -45,7 +48,7 @@ inline void decreaseLevenbergMarquardtLambda(
     *lambda *= std::max(
         1.0 / 3.0,
         1.0 - std::pow(2.0 * modelFidelity - 1.0, 3));
-    *currentFactor *= 2.0;
+    *currentFactor = 2.0;
   }
   *lambda = std::max(params.lambdaLowerBound, *lambda);
 }

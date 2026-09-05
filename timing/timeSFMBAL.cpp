@@ -24,6 +24,7 @@
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/nonlinear/BatchFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/internal/LevenbergMarquardtPolicy.h>
 #include <gtsam/sfm/SfmLevenbergMarquardt.h>
 #include <gtsam/symbolic/IndexedJunctionTree.h>
 
@@ -410,19 +411,13 @@ PointCholeskyProfileRow profilePointFirstCholeskyVariant(
       stopSearchingLambda = std::abs(costChange) < minAbsoluteTolerance;
 
       if (stepSuccessful) {
-        if (params.useFixedLambdaFactor) {
-          lambda /= currentFactor;
-        } else {
-          lambda *=
-              std::max(1.0 / 3.0, 1.0 - std::pow(2.0 * modelFidelity - 1.0, 3));
-          currentFactor = 2.0 * currentFactor;
-        }
-        lambda = std::max(params.lambdaLowerBound, lambda);
+        internal::decreaseLevenbergMarquardtLambda(
+            params, modelFidelity, &lambda, &currentFactor);
         acceptedValues = std::move(newValues);
         acceptedError = newError;
       } else if (!stopSearchingLambda) {
-        lambda *= currentFactor;
-        if (!params.useFixedLambdaFactor) currentFactor *= 2.0;
+        internal::increaseLevenbergMarquardtLambda(params, &lambda,
+                                                 &currentFactor);
         if (lambda >= params.lambdaUpperBound) {
           stopSearchingLambda = true;
         }
