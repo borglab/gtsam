@@ -137,6 +137,7 @@ if(GTSAM_ENABLE_CUDA)
         ${PROJECT_SOURCE_DIR}/gtsam/linear/cuda/cuda_linear.i
         ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/cuda/cuda_nonlinear.i
         ${PROJECT_SOURCE_DIR}/gtsam/sfm/cuda/cuda_sfm.i
+        ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/cuda/cuda_gnc.i
     )
 endif()
 
@@ -212,6 +213,7 @@ copy_directory("${CMAKE_CURRENT_SOURCE_DIR}/gtsam"
 
 if(NOT GTSAM_ENABLE_CUDA)
     file(REMOVE
+        "${GTSAM_MODULE_PATH}/tests/test_CudaGnc.py"
         "${GTSAM_MODULE_PATH}/tests/test_CudaSfm.py"
         "${GTSAM_MODULE_PATH}/tests/test_CudaSparseLevenbergMarquardt.py")
 endif()
@@ -220,7 +222,7 @@ endif()
 file(GLOB GTSAM_PYTHON_TEST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/tests/*.py")
 if(NOT GTSAM_ENABLE_CUDA)
     list(FILTER GTSAM_PYTHON_TEST_FILES EXCLUDE REGEX
-        ".*/test_Cuda(Sfm|SparseLevenbergMarquardt)\\.py$")
+        ".*/test_Cuda(Gnc|Sfm|SparseLevenbergMarquardt)\\.py$")
 endif()
 foreach(test_file ${GTSAM_PYTHON_TEST_FILES})
         get_filename_component(test_file_name ${test_file} NAME)
