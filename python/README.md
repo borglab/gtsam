@@ -65,7 +65,7 @@ Cholesky. Add `-DGTSAM_ENABLE_CUDSS=ON` to enable the cuDSS sparse direct
 backend; cuDSS must be installed separately.
 
 When CUDA is disabled, `gtsam.cuda` is intentionally absent. See the
-[CUDA linear solver guide](../docs/CUDA_LINEAR_SOLVERS.md) for the General LM
+[CUDA linear solver guide](../doc/CUDA_LINEAR_SOLVERS.md) for the General LM
 and SFM Python APIs, backend selection, and examples.
 
 ## Windows Installation

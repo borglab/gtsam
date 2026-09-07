@@ -48,7 +48,7 @@ $ cmake --build . --target install
        (`GTSAM_ENABLE_CUDSS=OFF` by default) additionally needs cuDSS 0.8.0 or
        newer installed separately, since it is neither part of the CUDA toolkit
        nor bundled with GTSAM. See
-       [docs/CUDA_LINEAR_SOLVERS.md](docs/CUDA_LINEAR_SOLVERS.md).
+       [doc/CUDA_LINEAR_SOLVERS.md](doc/CUDA_LINEAR_SOLVERS.md).
 
 2. GTSAM makes extensive use of debug assertions, and we highly recommend you work
 in Debug mode while developing (enabled by default). Likewise, it is imperative

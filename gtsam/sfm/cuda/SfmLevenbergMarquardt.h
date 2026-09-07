@@ -111,7 +111,7 @@ class GTSAM_EXPORT SfmLevenbergMarquardtParams
  * `Point3` landmarks; any other factor type throws. Values of other types are
  * carried through untouched. Landmarks are eliminated with a Schur complement,
  * and `SfmLevenbergMarquardtParams::linear` selects how the reduced camera
- * system is solved; see `docs/CUDA_LINEAR_SOLVERS.md`.
+ * system is solved; see `doc/CUDA_LINEAR_SOLVERS.md`.
  *
  * As elsewhere in GTSAM the parameter type selects the optimizer, so passing
  * `SfmLevenbergMarquardtParams` is what routes a problem here — including

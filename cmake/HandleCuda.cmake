@@ -354,7 +354,7 @@ if(GTSAM_ENABLE_CUDA)
 
   if(GTSAM_ENABLE_CUDSS)
     # cuDSS is not part of the CUDA toolkit; it is a separate NVIDIA download.
-    # docs/CUDA_LINEAR_SOLVERS.md records where to get it. Keep this search in
+    # doc/CUDA_LINEAR_SOLVERS.md records where to get it. Keep this search in
     # step with the copy in cmake/Config.cmake.in, which is what downstream
     # projects consuming an installed GTSAM run.
     if(NOT TARGET cudss::cudss)
@@ -392,7 +392,7 @@ if(GTSAM_ENABLE_CUDA)
           "GTSAM_ENABLE_CUDSS=ON but cuDSS was not found (cudss.h: "
           "${CUDSS_INCLUDE_DIR}, libcudss: ${CUDSS_LIBRARY}).\n"
           "cuDSS is a separate NVIDIA download rather than part of the CUDA "
-          "toolkit; see docs/CUDA_LINEAR_SOLVERS.md. Set CUDSS_ROOT to an "
+          "toolkit; see doc/CUDA_LINEAR_SOLVERS.md. Set CUDSS_ROOT to an "
           "existing install, or build with -DGTSAM_ENABLE_CUDSS=OFF to use the "
           "PCG and dense Cholesky backends only.")
       endif()
