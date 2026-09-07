@@ -353,6 +353,30 @@ TEST(EquivariantFilter_Attitude, Predict) {
   EXPECT(assert_equal(state_expected, filter.state()));
 }
 
+// Explicit paths preserve right composition and accept plain callables.
+TEST(EquivariantFilter_Attitude, ExplicitPredictionAtNonIdentity) {
+  using namespace attitude_example;
+  const G initial = Rot3::Expmap(Vector3{0.4, 0.1, -0.7});
+  const double dt = 0.1;
+  const Vector3 velocity{0.1, -0.2, 0.3};
+  const auto lift = [velocity](const M&) { return velocity; };
+  const G expected = initial * Rot3::Expmap(velocity * dt);
+  const Matrix2 noise = 0.02 * I_2x2;
+
+  EquivariantFilter<M, Symmetry> continuous(eta_ref, I_2x2, initial);
+  continuous.predictWithJacobian(lift, Z_2x2, noise, dt);
+  EXPECT(assert_equal(expected, continuous.groupEstimate(), 1e-12));
+
+  EquivariantFilter<M, Symmetry> discrete(eta_ref, I_2x2, initial);
+  discrete.predictWithTransition(lift, I_2x2, Matrix2(noise * dt), dt);
+  EXPECT(assert_equal(expected, discrete.groupEstimate(), 1e-12));
+  EXPECT(assert_equal(expected.unrotate(eta_ref), discrete.state(), 1e-12));
+  EXPECT(assert_equal(Matrix2(I_2x2 + noise * dt),
+                      discrete.errorCovariance(), 1e-12));
+  EXPECT(assert_equal(continuous.errorCovariance(),
+                      discrete.errorCovariance(), 1e-12));
+}
+
 /* ************************************************************************* */
 namespace covariance_transport {
 using namespace attitude_example;
@@ -582,6 +606,30 @@ TEST(EquivariantFilter_LeftConstantLift, ZeroDynamicsAndSpatialMean) {
   EXPECT(assert_equal(Rot3::Expmap(omega * dt) * X0, filter.state(), 1e-9));
 }
 
+// A constant spatial lift still needs left composition. Explicit paths accept
+// a callable alone, with no input-orbit constructor or Jacobian requirement.
+TEST(EquivariantFilter_LeftConstantLift, ExplicitPredictionUsesSpatialFrame) {
+  const Vector3 omega{0.1, -0.2, 0.3};
+  const G initial = Rot3::Expmap(Vector3{0.4, 0.1, -0.7});
+  const M reference = Rot3::Expmap(Vector3{0.3, -0.6, 0.2});
+  const double dt = 0.1;
+  const auto lift = [omega](const M&) { return omega; };
+  const M expected = Rot3::Expmap(omega * dt) * initial * reference;
+  const Matrix3 noise = 0.02 * I_3x3;
+
+  EquivariantFilter<M, Symmetry> continuous(reference, I_3x3, initial);
+  continuous.predictWithJacobian(lift, Z_3x3, noise, dt);
+  EXPECT(assert_equal(expected, continuous.state(), 1e-12));
+  EXPECT(assert_equal(Matrix3(I_3x3 + noise * dt),
+                      continuous.errorCovariance(), 1e-12));
+
+  EquivariantFilter<M, Symmetry> discrete(reference, I_3x3, initial);
+  discrete.predictWithTransition(lift, I_3x3, Matrix3(noise * dt), dt);
+  EXPECT(assert_equal(expected, discrete.state(), 1e-12));
+  EXPECT(assert_equal(continuous.errorCovariance(),
+                      discrete.errorCovariance(), 1e-12));
+}
+
 }  // namespace left_constant_lift
 /* ************************************************************************* */
 
@@ -694,9 +742,8 @@ TEST(EquivariantFilter_LeftRegular, MatchesNumericalErrorFlow) {
   EXPECT(assert_equal(numericalPhi, Phi, 1e-9));
 }
 
-// The prediction right-composes, so the lifted increment must be the
-// origin-frame Lambda(xi_ref, u_origin) and the mean must follow the
-// body-velocity dynamics xi_hat+ = xi_hat Exp(u h).
+// Left composition of the lift at the estimate reproduces body-velocity
+// dynamics xi_hat+ = xi_hat Exp(u h), including a non-identity reference.
 TEST(EquivariantFilter_LeftRegular, MeanPropagation) {
   const double h = 0.01;
   const M xi_hat = kInitialEstimate.compose(kReference);
@@ -707,8 +754,8 @@ TEST(EquivariantFilter_LeftRegular, MeanPropagation) {
                       1e-9));
 }
 
-// predictWithTransition() must evaluate the lift in the same frame as
-// predict(); taking it at the estimate would give a silently wrong mean.
+// Explicit prediction paths use the same lift at the estimate as predict(),
+// without requiring an input orbit, and propagate the same error covariance.
 TEST(EquivariantFilter_LeftRegular, PredictWithTransitionMatchesPredict) {
   const double h = 0.01;
   const InputOrbit inputOrbit(kInput);
@@ -722,9 +769,18 @@ TEST(EquivariantFilter_LeftRegular, PredictWithTransitionMatchesPredict) {
       explicitTransition.computeErrorDynamicsMatrix<Lift, InputOrbit>(
           inputOrbit);
   explicitTransition.predictWithTransition(
-      Lift(kInput), inputOrbit, Matrix3(I_3x3 + A * h), Matrix3(Z_3x3), h);
+      Lift(kInput), Matrix3(I_3x3 + A * h), Matrix3(Z_3x3), h);
 
   EXPECT(assert_equal(automatic.state(), explicitTransition.state(), 1e-12));
+  EXPECT(assert_equal(automatic.errorCovariance(),
+                      explicitTransition.errorCovariance(), 1e-12));
+
+  EquivariantFilter<M, Symmetry> explicitJacobian(kReference, I_3x3,
+                                                kInitialEstimate);
+  explicitJacobian.predictWithJacobian(Lift(kInput), A, Z_3x3, h);
+  EXPECT(assert_equal(automatic.state(), explicitJacobian.state(), 1e-12));
+  EXPECT(assert_equal(automatic.errorCovariance(),
+                      explicitJacobian.errorCovariance(), 1e-12));
 }
 
 // A measurement correction lives in error coordinates at the reference state,

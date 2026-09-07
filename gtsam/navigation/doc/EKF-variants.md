@@ -181,30 +181,123 @@ The **[NavStateImuEKF](NavStateImuEKF.ipynb)** is a left-invariant EKF specializ
 More: **[Full tutorial (with plots)](../../../python/gtsam/examples/NavStateImuExample.ipynb)**, Source: [NavStateImuEKF.h](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/NavStateImuEKF.h), [NavStateImuEKF.cpp](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/NavStateImuEKF.cpp)
 
 ## EquivariantFilter
-The **[EquivariantFilter](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/EquivariantFilter.h)** class implements the Equivariant Filter (EqF) for state estimation on Lie groups. It estimates a Lie group state $g \in G$ and a manifold state $\xi \in M$, using a symmetry principle where the error dynamics are autonomous in a specific frame. This class inherits from ```ManifoldEKF```.
 
-### EqF Predict Stage
-The prediction step involves lifting the manifold dynamics to the group using a lift $\Lambda(\xi, u)$.
+The **[EquivariantFilter](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/EquivariantFilter.h)** estimates a physical state $\xi\in M$ by maintaining a group element $X\in G$ and a fixed reference $\xi_0$. The state estimate is $\hat\xi=\phi_X(\xi_0)$, where $\phi_X$ is the state action. The class inherits from `ManifoldEKF`, but stores its covariance in error coordinates at the reference.
+
+### State actions and lifts
+
+An action specifies how group elements move physical states. In the equations below, $\phi_X(\xi)$ denotes either action type; the C++ functor takes `(group, state)` for `ActionType::Left` and `(state, group)` for `ActionType::Right`.
+
+| Action type | Composition rule | Example on rotations |
+|---|---|---|
+| Left | $\phi_A(\phi_B(\xi))=\phi_{AB}(\xi)$ | $\phi_A(R)=AR$ |
+| Right | $\phi_A(\phi_B(\xi))=\phi_{BA}(\xi)$ | $\phi_A(R)=RA$ |
+
+A lift $\Lambda(\xi,u)$ converts the current input into a group velocity that generates the physical dynamics through that action. Every prediction API requires the lift condition
+
 ```math
-\hat{g}_{k|k-1} = \hat{g}_{k-1|k-1} \cdot \exp(\Lambda(\hat{\xi}_{k-1|k-1}, u_k) \Delta t)
-```
-The state on the manifold is then recovered via the group action $\phi$:
-```math
-\hat{\xi}_{k|k-1} = \phi(\hat{g}_{k|k-1}, \xi_{\text{ref}})
+\left.\frac{d}{dt}\right|_{t=0}
+\phi_{\operatorname{Exp}(t\Lambda(\xi,u))}(\xi)=f_u(\xi).
 ```
 
-### EqF Update Stage
-The update step applies a correction in the tangent space of the manifold, which is then lifted to the group using the innovation lift matrix $(D\phi_0)^+$.
+This condition states that the lifted motion has the correct physical velocity. It does not, by itself, imply equivariance; automatic error linearization has an additional requirement described below.
+
+### Prediction at the current estimate
+
+All prediction paths evaluate the supplied lift at the current estimate, $\lambda=\Lambda(\hat\xi,u)$. The composition side places that increment at $\hat\xi$:
+
 ```math
-\delta \xi_k = K_k y_k
+X^+=\begin{cases}
+\operatorname{Exp}(h\lambda)X,&\text{left action},\\
+X\operatorname{Exp}(h\lambda),&\text{right action}.
+\end{cases}
+\qquad
+\hat\xi^+=\phi_{X^+}(\xi_0).
 ```
+
+For example, the left-action composition rule gives $\phi_{\operatorname{Exp}(h\lambda)X}(\xi_0)=\phi_{\operatorname{Exp}(h\lambda)}(\hat\xi)$. The right-action rule gives the same physical interpretation with the opposite multiplication side. The exponential step integrates a frozen lift; a general state-dependent lift may require smaller steps for accurate integration.
+
+For a left action on rotations, the same physical motion can be expressed with a body or spatial velocity. If $\dot R=R[u]_\times$, the lift is $\Lambda(R,u)=Ru=\operatorname{Ad}_R u$, since a left action generates $[\Lambda]_\times R$. Thus
+
 ```math
-\delta x_k = (D\phi_0)^+ \delta \xi_k
+\operatorname{Exp}(h[Ru]_\times)R=R\operatorname{Exp}(h[u]_\times).
 ```
-The group estimate is updated using group composition:
+
+If instead the input $\omega$ is already a spatial angular velocity, $\dot R=[\omega]_\times R$, the correct lift is constant: $\Lambda(R,\omega)=\omega$. It still requires left composition. State independence does not determine the frame of an increment.
+
+**Migration for left-action callers:** `predictWithJacobian()` formerly right-multiplied for both action types. A caller that supplied a body-coordinate velocity for a left-regular action must now supply the lift that generates motion through that action: $\Lambda(R,u)=\operatorname{Ad}_R u$. Supplying an explicit covariance model does not convert the mean increment's frame. Right-action callers retain their composition convention.
+
+### Error coordinates and automatic linearization
+
+The filter error is $e=\phi_{X^{-1}}(\xi)$, with local coordinates $\epsilon=\operatorname{Local}(\xi_0,e)$. The covariance $P$, continuous error matrix $A$, and process noise all refer to these coordinates. `errorCovariance()` returns $P$; `covariance()` pushes it to the tangent space at the current estimate using the state-action differential.
+
+Automatic prediction additionally needs an input action $\psi_X$ and an equivariant lift. The input action must be compatible with the physical dynamics, and the lift must satisfy
+
 ```math
-\hat{g}_{k|k} = \exp(\delta x_k) \cdot \hat{g}_{k|k-1}
+\Lambda(\phi_X(\xi),\psi_X(u))=
+\begin{cases}
+\operatorname{Ad}_X\Lambda(\xi,u),&\text{left action},\\
+\operatorname{Ad}_{X^{-1}}\Lambda(\xi,u),&\text{right action}.
+\end{cases}
 ```
+
+Here $\operatorname{Ad}_X$ transports a group velocity by conjugation: for matrix groups, $[\operatorname{Ad}_X v]^\wedge=X[v]^\wedge X^{-1}$. Lift equivariance is a separate condition from reproducing the dynamics. In particular, for a non-free action, adding a stabilizer velocity can preserve the physical dynamics while violating equivariance.
+
+The input orbit `psi_u` holds the current input fixed and evaluates its action, `psi_u(X) = psi_X(u)`. Mapping it to the reference gives $u_0=\psi_{X^{-1}}(u)$. Define
+
+```math
+D\phi_0=\left.\frac{\partial}{\partial v}\right|_{v=0}
+\operatorname{Local}(\xi_0,\phi_{\operatorname{Exp}(v)}(\xi_0)),
+\qquad
+D\Lambda=\left.\frac{\partial}{\partial\epsilon}\right|_{\epsilon=0}
+\Lambda(\operatorname{Retract}(\xi_0,\epsilon),u_0).
+```
+
+For an equivariant lift, the error velocity can be written as the infinitesimal action of $\Lambda(e,u_0)-\Lambda(\xi_0,u_0)$ at $e$. This difference vanishes at the reference, so its linearization is
+
+```math
+\dot\epsilon=A\epsilon,\qquad A=D\phi_0 D\Lambda.
+```
+
+The matrices have shapes $\dim(M)\times\dim(G)$ and $\dim(G)\times\dim(M)$ respectively, so the formula also covers non-free actions such as rotations acting on a direction. It removes explicit dependence on $X$ except through $u_0$; the transformed input can still vary over time.
+
+For the left-regular body-velocity rotation example, the input action is trivial and $\Lambda(R,u)=Ru$. At $R_0=I$, $\operatorname{Exp}([\epsilon]_\times)u\approx u-[u]_\times\epsilon$, so $A=-[u]_\times$. For the constant spatial lift, the compatible input action is $\psi_X(\omega)=X\omega$ and $A=0$. These two examples explain why checking only whether a lift is constant cannot establish its dynamics or equivariance.
+
+### Choosing a prediction API
+
+The three APIs share the same lift-at-the-estimate mean update. Only automatic prediction needs an input orbit and lift equivariance:
+
+```cpp
+filter.predict(lift_u, psi_u, Qc, dt);          // Computes A automatically.
+filter.predictWithJacobian(lift_u, A, Qc, dt);  // Caller supplies continuous A.
+filter.predictWithTransition(lift_u, Phi, Qd, dt);  // Caller supplies discrete Phi/Qd.
+```
+
+The explicit paths need a callable `lift_u(state)` and an error model derived in reference error coordinates. They require neither an input-orbit constructor nor a lift Jacobian. The automatic path also constructs `Lift(psi_u(X.inverse()))` and evaluates its Jacobian at the reference. The supplied lift and input orbit must describe the same current input and model.
+
+`predict()` and `predictWithJacobian()` use $\Phi=I+A\,dt$ by default, or the `transitionMatrix<K>()` exponential approximation for higher `K`, and $Q_d=Q_c\,dt$. They propagate $P^+=\Phi P\Phi^T+Q_d$. `predictWithTransition()` uses the supplied discrete matrices directly and uses `dt` only for the mean. Do not pass a discrete transition as `A`, since it would be discretized again.
+
+### Measurement correction at the reference
+
+A measurement correction is expressed at the reference, so it composes on the opposite side from prediction. With the implementation's residual convention $r=\operatorname{Local}(z,\hat z)$, the correction is
+
+```math
+\delta\xi=-Kr,\qquad \delta x=(D\phi_0)^+\delta\xi,
+\qquad
+X^+=\begin{cases}
+X\operatorname{Exp}(\delta x),&\text{left action},\\
+\operatorname{Exp}(\delta x)X,&\text{right action}.
+\end{cases}
+```
+
+Both cases reconstruct $\hat\xi^+=\phi_X(\phi_{\operatorname{Exp}(\delta x)}(\xi_0))$ using the pre-update $X$. The pseudo-inverse innovation lift accommodates different group and manifold dimensions. The measurement Jacobian supplied to the update must differentiate the predicted measurement with respect to $\epsilon$ at the reference; a Jacobian in the tangent space at the current estimate must first be multiplied by `actionDifferential()`. The covariance update uses Joseph form in the reference coordinates.
+
+| Operation | Where its increment is defined | Left action | Right action |
+|---|---|---|---|
+| Prediction | Current estimate | $\operatorname{Exp}(h\lambda)X$ | $X\operatorname{Exp}(h\lambda)$ |
+| Correction | Reference | $X\operatorname{Exp}(\delta x)$ | $\operatorname{Exp}(\delta x)X$ |
+
+The rotation and sphere fixtures in [testEquivariantFilter.cpp](../tests/testEquivariantFilter.cpp) exercise these conventions with non-identity estimates and reference states.
 
 # Examples 
 Below are four examples of these filters in action. 

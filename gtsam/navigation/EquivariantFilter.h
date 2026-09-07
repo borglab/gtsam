@@ -27,8 +27,8 @@ namespace gtsam {
  * specific frame.
  *
  * Both ActionType::Right and ActionType::Left symmetries are supported. The
- * two differ only in where the prediction and the measurement correction land
- * on the manifold; see incrementIsAtOrigin().
+ * prediction increment acts at the current estimate, while the measurement
+ * correction acts at the reference. Their composition sides depend on the action.
  *
  * Prediction comes in three forms:
  * 1. **Automatic**: predict() calculates the Jacobian A from the input orbit.
@@ -108,32 +108,9 @@ class EquivariantFilter : public ManifoldEKF<M> {
   const M& referenceState() const { return xi_ref_; }
 
   /**
-   * Whether the lifted prediction increment must be evaluated at the
-   * reference state rather than at the current estimate.
-   *
-   * ActionType::Left means a left group *action*, phi(X, phi(Y, xi)) =
-   * phi(XY, xi). It is unrelated to a left-*invariant* error (the form
-   * Xhat^-1 X that GTSAM's right retraction induces and that LieGroupEKF uses)
-   * or to the left-*trivialized* tangent group; either error form pairs with
-   * either action type.
-   *
-   * Prediction always right-composes, X <- X Exp(Lambda dt). For a right
-   * action that places the motion at the current estimate, so Lambda is the
-   * lift there; for a left action it places it at the reference, so Lambda
-   * must be the lift there instead.
-   *
-   * A measurement correction is already expressed in error coordinates at the
-   * reference, so there the *composition side* changes instead:
-   * Exp(dx) X keeps it at the reference for a right action, X Exp(dx) for a
-   * left action. See applyCorrection().
+   * Evaluate the lift at the reference with input u_origin = psi_u(X^-1).
+   * Used by automatic error linearization.
    */
-  static constexpr bool incrementIsAtOrigin() {
-    return Symmetry::type == ActionType::Left;
-  }
-
-  /// Evaluate the lift at the reference state with the input mapped there,
-  /// u_origin = psi_u(X^-1). One group inverse, one orbit application, one
-  /// lift evaluation; the value and the Jacobian come from the same call.
   template <typename Lift, typename InputOrbit>
   TangentG liftAtOrigin(const InputOrbit& psi_u,
                         OptionalJacobian<DimG, DimM> D_lift = {}) const {
@@ -141,24 +118,31 @@ class EquivariantFilter : public ManifoldEKF<M> {
     return lift_u_origin(xi_ref_, D_lift);
   }
 
-  /// Advance the group estimate by a lifted increment and propagate the
-  /// covariance with an already-discretized transition and process noise.
-  /// The base class validates Phi and Qd before it changes anything, so g_ is
-  /// only committed once that has succeeded and stays in sync with X_ and P_.
+  /**
+   * Advance using a lift evaluated at the current estimate and propagate
+   * covariance with an already-discretized transition and process noise.
+   * Commit g_ after the base class validates the matrix dimensions and updates
+   * the manifold state and covariance.
+   */
   void propagate(const TangentG& increment, const MatrixM& Phi,
                  const CovarianceM& Qd) {
-    const G g_next = traits<G>::Compose(g_, traits<G>::Expmap(increment));
+    const G step = traits<G>::Expmap(increment);
+    const G g_next = Symmetry::type == ActionType::Left
+                         ? traits<G>::Compose(step, g_)
+                         : traits<G>::Compose(g_, step);
     Base::predict(act_on_ref_(g_next), Phi, Qd);
     g_ = g_next;
   }
 
-  /// Apply an innovation correction, which lives in error coordinates at the
-  /// reference state, on the side that keeps it there. See
-  /// incrementIsAtOrigin() for why the side depends on the action type.
+  /**
+   * Apply an innovation correction, which lives in error coordinates at the
+   * reference state, on the opposite side from the prediction increment.
+   */
   void applyCorrection(const TangentG& delta_x) {
     const G step = traits<G>::Expmap(delta_x);
-    g_ = incrementIsAtOrigin() ? traits<G>::Compose(g_, step)
-                               : traits<G>::Compose(step, g_);
+    g_ = Symmetry::type == ActionType::Left
+             ? traits<G>::Compose(g_, step)
+             : traits<G>::Compose(step, g_);
     this->X_ = act_on_ref_(g_);
   }
 
@@ -231,7 +215,7 @@ class EquivariantFilter : public ManifoldEKF<M> {
    *
    * Concept requirements:
    * - `Lift` must be callable as `Lift(u_origin)(xi_ref, D_lift)` where
-   *   D_lift is an OptionalJacobian of shape DimM x DimG.
+   *   D_lift is an OptionalJacobian of shape DimG x DimM.
    * - `InputOrbit` must be a group action on the input space with operator()
    *   that accepts the current group estimate X and returns the mapped input
    *   (no other methods are required by the filter).
@@ -241,23 +225,14 @@ class EquivariantFilter : public ManifoldEKF<M> {
    * @param psi_u Input Orbit instance.
    * @return MatrixM The calculated error dynamics matrix A.
    *
-   * Precondition: the lift must be *equivariant*, i.e. satisfy the EqF lift
-   * condition X_{Lambda(xi,u)}(xi) = f_u(xi) for every xi, equivalently
-   * Lambda(phi_X(xi), psi_X(u)) = Ad_X Lambda(xi,u) for a left action (and
-   * Ad_{X^-1} for a right action). Then the error dynamics are autonomous and
-   * D_lift already carries any transport term, so the formula holds for both
-   * ActionType::Right and ActionType::Left and for DimM != DimG. For the
-   * left-regular action of a group on itself with the body-velocity lift
-   * Lambda(xi,u) = Ad_xi u it gives -ad_u, the term LieGroupEKF derives from
-   * Baker-Campbell-Hausdorff for a left-invariant error.
-   *
-   * A lift that is only *invariant*, Lambda(phi_X(xi), psi_X(u)) =
-   * Lambda(xi,u), does not satisfy the precondition and this formula omits its
-   * transport term (for the left-regular action the correct matrix would be
-   * Dphi0 * D_lift - ad_Lambda). Since the two agree at xi_ref, a check at the
-   * origin will not reveal the difference. Either supply the equivariant form
-   * (for a body-frame lift lambda on a left-regular factor, Ad_xi lambda) or
-   * use predictWithJacobian() / predictWithTransition().
+   * The lift must reproduce the physical dynamics through the state action.
+   * Automatic linearization additionally requires equivariance:
+   * Lambda(phi_X(xi), psi_X(u)) = Ad_X Lambda(xi,u) for a left action,
+   * or Ad_{X^-1} Lambda(xi,u) for a right action. These are separate
+   * requirements, especially for actions with nontrivial stabilizers.
+   * See the EquivariantFilter section of doc/EKF-variants.md for derivations
+   * and examples. Explicit prediction accepts a caller-supplied error model
+   * without requiring lift equivariance.
    */
   template <typename Lift, typename InputOrbit>
   MatrixM computeErrorDynamicsMatrix(const InputOrbit& psi_u) const {
@@ -285,12 +260,14 @@ class EquivariantFilter : public ManifoldEKF<M> {
   /**
    * @brief Propagate the filter state (Automatic).
    *
-   * Automatically computes the error dynamics matrix A.
+   * Automatically computes the error dynamics matrix A. Requires the lift
+   * equivariance condition documented in computeErrorDynamicsMatrix().
+   * The supplied lift is also evaluated at the current estimate for the mean.
    *
    * Concept requirements:
    * - `Lift` is used as `Lift(u_origin)(xi_ref_, D_lift)` to obtain the lift
    *   and its Jacobian w.r.t. the manifold state.
-   * - `InputOrbit` is only used via `psi_u(X_.inverse())` to map the current
+   * - `InputOrbit` is only used via `psi_u(g_.inverse())` to map the current
    *   input to the origin; no other methods are needed.
    *
    * @tparam K Truncation order for discretization (1 = first order Euler,
@@ -305,38 +282,26 @@ class EquivariantFilter : public ManifoldEKF<M> {
   template <size_t K = 1, typename Lift, typename InputOrbit>
   void predict(const Lift& lift_u, const InputOrbit& psi_u, const MatrixM& Qc,
                double dt) {
-    // 1. One evaluation of the lift at the origin yields both its Jacobian,
-    // from which A follows, and the origin-frame value.
-    MatrixGM D_lift;
-    const TangentG lambda_at_origin = liftAtOrigin<Lift>(psi_u, &D_lift);
-    const MatrixM A = Dphi0_ * D_lift;
-
-    // 2. Lifted increment in the frame the prediction composes in. This is
-    // where the two action types differ; A itself does not. For a left action
-    // the value just computed is already the right one.
-    if constexpr (incrementIsAtOrigin()) {
-      propagate(lambda_at_origin * dt, transitionMatrix<K>(A, dt),
-                CovarianceM(Qc * dt));
-    } else {
-      propagate(lift_u(this->state()) * dt, transitionMatrix<K>(A, dt),
-                CovarianceM(Qc * dt));
-    }
+    const MatrixM A = computeErrorDynamicsMatrix<Lift>(psi_u);
+    predictWithJacobian<K>(lift_u, A, Qc, dt);
   }
 
   /**
    * @brief Propagate the filter state (Explicit).
    *
-   * Uses provided Jacobian A and manifold covariance Qc. This allows `psi_u`
-   * to be a pure Orbit without needing to implement `inputMatrixB`.
+   * Uses the provided error Jacobian A and process covariance Qc.
    *
    * Concept requirements:
    * - `Lift` is only used via `Lift(xi_est)` to produce a tangent vector.
    *   No additional methods are needed for this overload.
    *
-   * The lift is evaluated at the current estimate. For a left action whose
-   * lift depends on the state that is the wrong frame (see
-   * incrementIsAtOrigin()); use predict() or predictWithTransition(), which
-   * take the input orbit needed to evaluate the lift at the reference.
+   * The lift is evaluated at the current estimate and must generate the
+   * physical dynamics through the declared state action. Prediction composes
+   * Exp(Lambda dt) on the left for a left action and on the right for a right
+   * action. Equivariance and an input orbit are not required when A is supplied.
+   * A and Qc must be expressed in error coordinates at the reference state.
+   * Left-action callers that previously supplied body-frame increments for
+   * right multiplication must convert their lift to the declared action.
    *
    * @tparam Lift Functor for the lift Λ(ξ, u).
    * @param lift_u Lift functor for the current input.
@@ -358,30 +323,19 @@ class EquivariantFilter : public ManifoldEKF<M> {
    * exp(A dt) is available, this avoids the truncated-series discretization of
    * transitionMatrix(), which is only first order at the default K = 1.
    *
-   * Takes the input orbit for the same reason predict() does: for a left
-   * action the lifted increment must be evaluated at the reference state (see
-   * incrementIsAtOrigin()), which requires `Lift(psi_u(X^-1))`. For a right
-   * action psi_u is unused and `Lift` need only be callable as `Lift(xi_est)`,
-   * as in predictWithJacobian().
+   * The lift has the same contract as predictWithJacobian(): it is evaluated
+   * at the current estimate and generates motion through the state action.
+   * No input orbit or equivariance condition is required.
    *
    * @param lift_u Lift functor for the current input.
-   * @param psi_u Input Orbit instance.
    * @param Phi Discrete transition matrix over dt (DimM x DimM).
    * @param Qd Discrete process noise over dt, in error coordinates.
    * @param dt Time step, used for the mean only.
    */
-  template <typename Lift, typename InputOrbit>
-  void predictWithTransition(const Lift& lift_u, const InputOrbit& psi_u,
-                             const MatrixM& Phi, const CovarianceM& Qd,
-                             double dt) {
-    // if constexpr, not a conditional expression: the discarded branch is not
-    // instantiated, so a right action does not require Lift to be constructible
-    // from the input orbit's output, and a left action does not need lift_u.
-    if constexpr (incrementIsAtOrigin()) {
-      propagate(liftAtOrigin<Lift>(psi_u) * dt, Phi, Qd);
-    } else {
-      propagate(lift_u(this->state()) * dt, Phi, Qd);
-    }
+  template <typename Lift>
+  void predictWithTransition(const Lift& lift_u, const MatrixM& Phi,
+                             const CovarianceM& Qd, double dt) {
+    propagate(lift_u(this->state()) * dt, Phi, Qd);
   }
 
   /**
