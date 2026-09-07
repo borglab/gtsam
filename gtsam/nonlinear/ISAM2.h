@@ -257,6 +257,15 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
    */
   const Value& calculateEstimate(Key key) const;
 
+  /** Compute estimates for a set of variables from the incomplete linear
+   * delta computed during the last update, as a Values holding only those
+   * keys, whatever their types. Costs one retract per requested key, unlike
+   * the no-argument calculateEstimate(), which retracts every variable.
+   * @param keys The keys to estimate; must be unique.
+   * @throws ValuesKeyDoesNotExist if a key is not in the linearization point.
+   */
+  Values calculateEstimate(const KeyVector& keys) const;
+
   /// Return the marginal information matrix on any variable.
   Matrix marginalInformation(Key key) const;
 

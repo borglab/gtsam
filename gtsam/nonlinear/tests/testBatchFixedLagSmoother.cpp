@@ -21,6 +21,7 @@
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/inference/Key.h>
+#include <gtsam/inference/Symbol.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/linear/GaussianBayesNet.h>
@@ -402,6 +403,38 @@ TEST( BatchFixedLagSmoother, NEES )
   EXPECT(neesCount > 0);
   EXPECT(avgNees_on > 0.0);
   EXPECT(avgNees_off > 0.0);
+}
+
+/* ************************************************************************* */
+// calculateEstimate(keys) retracts only the requested keys and matches the
+// full estimate there.
+TEST(BatchFixedLagSmoother, CalculateEstimateForKeys) {
+  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  BatchFixedLagSmoother smoother(10.0, LevenbergMarquardtParams());
+
+  NonlinearFactorGraph factors;
+  Values values;
+  FixedLagSmoother::KeyTimestampMap timestamps;
+  factors.addPrior(Symbol('x', 0), Point2(0.0, 0.0), noise);
+  values.insert(Symbol('x', 0), Point2(0.1, -0.1));
+  timestamps[Symbol('x', 0)] = 0.0;
+  for (size_t i = 1; i < 4; ++i) {
+    factors.emplace_shared<BetweenFactor<Point2>>(
+        Symbol('x', i - 1), Symbol('x', i), Point2(1.0, 0.0), noise);
+    values.insert(Symbol('x', i), Point2(double(i) + 0.1, -0.1));
+    timestamps[Symbol('x', i)] = double(i);
+  }
+  smoother.update(factors, values, timestamps);
+
+  const Values full = smoother.calculateEstimate();
+  const Values subset =
+      smoother.calculateEstimate(KeyVector{Symbol('x', 3), Symbol('x', 1)});
+  LONGS_EQUAL(2, subset.size());
+  EXPECT(!subset.exists(Symbol('x', 0)));
+  EXPECT(assert_equal(full.at<Point2>(Symbol('x', 1)),
+                      subset.at<Point2>(Symbol('x', 1))));
+  EXPECT(assert_equal(full.at<Point2>(Symbol('x', 3)),
+                      subset.at<Point2>(Symbol('x', 3))));
 }
 
 /* ************************************************************************* */

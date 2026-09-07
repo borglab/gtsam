@@ -114,6 +114,16 @@ public:
    */
   virtual Values calculateEstimate() const  = 0;
 
+  /** Compute estimates for a set of variables only, as a Values holding those
+   * keys, whatever their types. The default retracts the whole window and
+   * extracts; subclasses override it with a per-key path.
+   * @param keys The keys to estimate; must be unique.
+   * @throws ValuesKeyDoesNotExist if a key is not in the smoother.
+   */
+  virtual Values calculateEstimate(const KeyVector& keys) const {
+    return calculateEstimate().extract(keys);
+  }
+
 
 protected:
 

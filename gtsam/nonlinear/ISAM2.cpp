@@ -907,6 +907,14 @@ const Value& ISAM2::calculateEstimate(Key key) const {
 }
 
 /* ************************************************************************* */
+Values ISAM2::calculateEstimate(const KeyVector& keys) const {
+  const VectorValues& delta = getDelta();
+  Values result;
+  for (Key key : keys) result.insert(key, *theta_.at(key).retract_(delta[key]));
+  return result;
+}
+
+/* ************************************************************************* */
 Values ISAM2::calculateBestEstimate() const {
   updateDelta(true);  // Force full solve when updating delta_
   return theta_.retract(delta_);
