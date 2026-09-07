@@ -381,6 +381,35 @@ TEST(Values, localCoordinates)
 }
 
 /* ************************************************************************* */
+// extract(keys) copies the named values of any type into a new Values.
+TEST(Values, extract_by_keys)
+{
+  Values values;
+  values.insert(key1, Pose2(1.0, 2.0, 0.3));
+  values.insert(key2, Point3(1.0, 2.0, 3.0));
+  values.insert(key3, Vector3(4.0, 5.0, 6.0));
+  values.insert(key4, Pose3());
+
+  const Values subset = values.extract(KeyVector{key3, key1});
+  LONGS_EQUAL(2, subset.size());
+  EXPECT(subset.exists(key1));
+  EXPECT(subset.exists(key3));
+  EXPECT(!subset.exists(key2));
+  EXPECT(assert_equal(Pose2(1.0, 2.0, 0.3), subset.at<Pose2>(key1)));
+  EXPECT(assert_equal(Vector3(4.0, 5.0, 6.0), subset.at<Vector3>(key3)));
+
+  // Copies, not references: the source is untouched by edits to the subset.
+  Values edited = subset;
+  edited.update(key1, Pose2());
+  EXPECT(assert_equal(Pose2(1.0, 2.0, 0.3), values.at<Pose2>(key1)));
+
+  // Empty request, and a missing key.
+  EXPECT(values.extract(KeyVector{}).empty());
+  CHECK_EXCEPTION(values.extract(KeyVector{key1, Symbol('z', 9)}),
+                  ValuesKeyDoesNotExist);
+}
+
+/* ************************************************************************* */
 TEST(Values, extract_keys)
 {
   Values config;

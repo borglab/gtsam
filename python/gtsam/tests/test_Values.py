@@ -80,6 +80,31 @@ class TestValues(GtsamTestCase):
         actualMatrix2 = values.atMatrix(13)
         np.testing.assert_allclose(mat2, actualMatrix2, tol)
 
+    def test_extract_by_keys(self):
+        """extract(keys) returns a Values with copies of the named values,
+        of any type, without the caller knowing each key's type."""
+        values = gtsam.Values()
+        values.insert(0, Point2(1.0, 2.0))
+        values.insert(1, Pose3())
+        values.insert(2, np.array([4.0, 5.0, 6.0]))
+        values.insert(3, Rot3())
+
+        subset = values.extract([2, 0])
+        self.assertEqual(subset.size(), 2)
+        self.assertTrue(subset.exists(0))
+        self.assertTrue(subset.exists(2))
+        self.assertFalse(subset.exists(1))
+        np.testing.assert_allclose(subset.atPoint2(0), Point2(1.0, 2.0))
+        np.testing.assert_allclose(subset.atVector(2), np.array([4.0, 5.0, 6.0]))
+
+        # copies, not references
+        subset.update(0, Point2(9.0, 9.0))
+        np.testing.assert_allclose(values.atPoint2(0), Point2(1.0, 2.0))
+
+        self.assertEqual(values.extract([]).size(), 0)
+        with self.assertRaises(RuntimeError):
+            values.extract([0, 99])
+
 
 if __name__ == "__main__":
     unittest.main()

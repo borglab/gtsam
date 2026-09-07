@@ -230,6 +230,13 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  Values Values::extract(const KeyVector& keys) const {
+    Values result;
+    for (Key key : keys) result.insert(key, at(key));
+    return result;
+  }
+
+  /* ************************************************************************* */
   Values& Values::operator=(const Values& rhs) {
     this->clear();
     this->insert(rhs);

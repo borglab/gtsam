@@ -352,6 +352,16 @@ namespace gtsam {
      */
     KeySet keySet() const;
 
+    /**
+     * Returns a new Values holding copies of the values at the given keys,
+     * whatever their types. Complements the typed extract<ValueType>(), which
+     * returns a map of one type; this one keeps the result a Values, so it can
+     * be fed straight back into a factor graph, optimizer, or smoother.
+     * @param keys The keys to copy; must be unique.
+     * @throws ValuesKeyDoesNotExist if a key is not present.
+     */
+    Values extract(const KeyVector& keys) const;
+
     /** Replace all keys and variables */
     Values& operator=(const Values& rhs);
 
