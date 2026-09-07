@@ -230,7 +230,7 @@ class EquivariantFilter : public ManifoldEKF<M> {
    * Lambda(phi_X(xi), psi_X(u)) = Ad_X Lambda(xi,u) for a left action,
    * or Ad_{X^-1} Lambda(xi,u) for a right action. These are separate
    * requirements, especially for actions with nontrivial stabilizers.
-   * See the EquivariantFilter section of doc/EKF-variants.md for derivations
+   * See the user guide doc/EquivariantFilter.ipynb for derivations
    * and examples. Explicit prediction accepts a caller-supplied error model
    * without requiring lift equivariance.
    */
