@@ -25,7 +25,8 @@ enum class ChordalOrderingType { Metis, Colamd };
 
 class MosekChordalSDP {
   MosekChordalSDP(const gtsam::QcqpProblem& problem,
-                  gtsam::ChordalOrderingType orderingType);
+                  gtsam::ChordalOrderingType orderingType,
+                  bool eliminateKnownNullDirections = false);
 
   bool solve(
       const std::map<std::string, double>& mosekParams =
