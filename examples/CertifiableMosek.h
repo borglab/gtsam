@@ -175,7 +175,8 @@ inline MosekExampleResult solveMosek(const QcqpProblem& problem,
     MosekMonolithicSDP sdp(problem);
     result = solveMosek(&sdp);
   } else if (solver == CertifiableSolver::MosekChordal) {
-    MosekChordalSDP sdp(problem, ChordalOrderingType::Metis);
+    std::cout << "Chordal ordering: COLAMD" << std::endl;
+    MosekChordalSDP sdp(problem, ChordalOrderingType::Colamd);
     result = solveMosek(&sdp);
   } else {
     throw std::invalid_argument("solveMosek requires a MOSEK solver mode.");
