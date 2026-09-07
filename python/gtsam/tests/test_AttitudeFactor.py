@@ -40,6 +40,25 @@ class TestAttitudeFactor(GtsamTestCase):
         values.insert(0, state)
         self.assertAlmostEqual(factor.error(values), 0.0, places=9)
 
+    def test_accepts_any_noise_model(self):
+        """The constructor takes a noiseModel.Base, not only a Diagonal.
+
+        Regression test: the wrapper used to declare the model as a
+        Diagonal, which rejected robust and full-covariance models.
+        """
+        gaussian = gtsam.noiseModel.Gaussian.Covariance(
+            np.array([[0.1, 0.02], [0.02, 0.2]]))
+        robust = gtsam.noiseModel.Robust.Create(
+            gtsam.noiseModel.mEstimator.Huber.Create(1.345), self.model())
+        for model in (gaussian, robust):
+            factor = gtsam.AttitudeFactorRot3(0, self.n_down(), model)
+            values = gtsam.Values()
+            values.insert(0, gtsam.Rot3())
+            self.assertAlmostEqual(factor.error(values), 0.0, places=9)
+            # a rotated state gives a non-zero, finite error under both models
+            values.update(0, gtsam.Rot3.Roll(0.5))
+            self.assertGreater(factor.error(values), 0.0)
+
     def test_navstate_attitude_factor(self):
         state = gtsam.NavState(
             gtsam.Rot3(),
