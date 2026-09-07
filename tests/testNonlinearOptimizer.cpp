@@ -47,31 +47,96 @@ using symbol_shorthand::X;
 using symbol_shorthand::L;
 
 /* ************************************************************************* */
-// Verifies LevenbergMarquardtPolicy::AppliesAdaptiveLambdaUpdates.
+namespace lm_policy_fixture {
+
+// A smooth residual whose first two LM steps from x = 2 succeed, then overshoot.
+class CubicFactor : public NoiseModelFactorN<double> {
+ public:
+  CubicFactor() : NoiseModelFactorN<double>(noiseModel::Unit::Create(1), 0) {}
+
+  Vector evaluateError(const double& value,
+                       OptionalMatrixType derivative) const override {
+    if (derivative) *derivative = Matrix11{3.0 * value * value - 2.0};
+    return Vector1{value * value * value - 2.0 * value + 2.0};
+  }
+};
+
+// A custom initial multiplier applies before the first acceptance, then resets.
 TEST(LevenbergMarquardtPolicy, AppliesAdaptiveLambdaUpdates) {
   LevenbergMarquardtParams params;
   params.useFixedLambdaFactor = false;
-  params.lambdaLowerBound = 1e-6;
+  params.lambdaFactor = 10.0;
 
   double lambda = 9e-3;
-  double factor = 10.0;
+  double factor = params.lambdaFactor;
   internal::increaseLevenbergMarquardtLambda(params, &lambda, &factor);
   DOUBLES_EQUAL(9e-2, lambda, 1e-15);
   DOUBLES_EQUAL(20.0, factor, 1e-15);
 
   internal::decreaseLevenbergMarquardtLambda(params, 1.0, &lambda, &factor);
   DOUBLES_EQUAL(3e-2, lambda, 1e-15);
-  DOUBLES_EQUAL(40.0, factor, 1e-15);
+  DOUBLES_EQUAL(2.0, factor, 1e-15);
 
-  lambda = 1e-7;
-  factor = 10.0;
-  internal::decreaseLevenbergMarquardtLambda(params, 1.0, &lambda, &factor);
-  DOUBLES_EQUAL(params.lambdaLowerBound, lambda, 1e-15);
-  DOUBLES_EQUAL(20.0, factor, 1e-15);
+  internal::increaseLevenbergMarquardtLambda(params, &lambda, &factor);
+  DOUBLES_EQUAL(6e-2, lambda, 1e-15);
+  DOUBLES_EQUAL(4.0, factor, 1e-15);
 }
 
-/* ************************************************************************* */
-// Verifies LevenbergMarquardtPolicy::AppliesFixedLambdaUpdates.
+// Consecutive accepted steps must not amplify the next rejected step's damping.
+TEST(LevenbergMarquardtPolicy, AcceptAcceptReject) {
+  const auto params = LevenbergMarquardtParams::CeresDefaults();
+  double lambda = 9e-3;
+  double factor = params.lambdaFactor;
+
+  internal::decreaseLevenbergMarquardtLambda(params, 1.0, &lambda, &factor);
+  internal::decreaseLevenbergMarquardtLambda(params, 1.0, &lambda, &factor);
+  DOUBLES_EQUAL(1e-3, lambda, 1e-15);
+  DOUBLES_EQUAL(2.0, factor, 1e-15);
+
+  internal::increaseLevenbergMarquardtLambda(params, &lambda, &factor);
+  DOUBLES_EQUAL(2e-3, lambda, 1e-15);
+  DOUBLES_EQUAL(4.0, factor, 1e-15);
+}
+
+// Acceptance clears the multiplier accumulated by consecutive rejections.
+TEST(LevenbergMarquardtPolicy, RejectRejectAcceptReject) {
+  const auto params = LevenbergMarquardtParams::CeresDefaults();
+  double lambda = 1e-3;
+  double factor = params.lambdaFactor;
+
+  internal::increaseLevenbergMarquardtLambda(params, &lambda, &factor);
+  DOUBLES_EQUAL(2e-3, lambda, 1e-15);
+  DOUBLES_EQUAL(4.0, factor, 1e-15);
+  internal::increaseLevenbergMarquardtLambda(params, &lambda, &factor);
+  DOUBLES_EQUAL(8e-3, lambda, 1e-15);
+  DOUBLES_EQUAL(8.0, factor, 1e-15);
+
+  internal::decreaseLevenbergMarquardtLambda(params, 0.75, &lambda, &factor);
+  DOUBLES_EQUAL(7e-3, lambda, 1e-15);
+  DOUBLES_EQUAL(2.0, factor, 1e-15);
+  internal::increaseLevenbergMarquardtLambda(params, &lambda, &factor);
+  DOUBLES_EQUAL(14e-3, lambda, 1e-15);
+  DOUBLES_EQUAL(4.0, factor, 1e-15);
+}
+
+// Long success sequences stay bounded, including when lambda reaches its floor.
+TEST(LevenbergMarquardtPolicy, RepeatedAcceptancesAtLowerBound) {
+  auto params = LevenbergMarquardtParams::CeresDefaults();
+  params.lambdaLowerBound = 1e-6;
+  double lambda = 1e-7;
+  double factor = params.lambdaFactor;
+
+  for (size_t iteration = 0; iteration < 2048; ++iteration) {
+    internal::decreaseLevenbergMarquardtLambda(params, 1.0, &lambda, &factor);
+  }
+  DOUBLES_EQUAL(params.lambdaLowerBound, lambda, 1e-15);
+  DOUBLES_EQUAL(2.0, factor, 1e-15);
+  internal::increaseLevenbergMarquardtLambda(params, &lambda, &factor);
+  DOUBLES_EQUAL(2e-6, lambda, 1e-15);
+  DOUBLES_EQUAL(4.0, factor, 1e-15);
+}
+
+// Fixed damping keeps the configured multiplier across rejections and successes.
 TEST(LevenbergMarquardtPolicy, AppliesFixedLambdaUpdates) {
   LevenbergMarquardtParams params;
   params.useFixedLambdaFactor = true;
@@ -86,7 +151,48 @@ TEST(LevenbergMarquardtPolicy, AppliesFixedLambdaUpdates) {
   DOUBLES_EQUAL(1e-3, lambda, 1e-15);
   DOUBLES_EQUAL(10.0, factor, 1e-15);
 
+  params.lambdaLowerBound = 5e-4;
+  internal::decreaseLevenbergMarquardtLambda(params, 1.0, &lambda, &factor);
+  DOUBLES_EQUAL(params.lambdaLowerBound, lambda, 1e-15);
+  DOUBLES_EQUAL(10.0, factor, 1e-15);
 }
+
+// Real LM acceptances reset the next rejection multiplier with Cholesky and QR.
+TEST(NonlinearOptimizer, AdaptiveLambdaAfterAcceptedSteps) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<CubicFactor>();
+  Values initial;
+  initial.insert(0, 2.0);
+
+  for (const auto solver : {NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY,
+                            NonlinearOptimizerParams::MULTIFRONTAL_QR}) {
+    LevenbergMarquardtParams params;
+    params.useFixedLambdaFactor = false;
+    params.lambdaInitial = 1e-2;
+    params.lambdaFactor = 2.0;
+    params.relativeErrorTol = 0.0;
+    params.linearSolverType = solver;
+    LevenbergMarquardtOptimizer optimizer(graph, initial, params);
+
+    optimizer.iterate();
+    optimizer.iterate();
+    LONGS_EQUAL(2, optimizer.iterations());
+    LONGS_EQUAL(2, optimizer.getInnerIterations());
+    const Values acceptedValues = optimizer.values();
+    const double acceptedError = optimizer.error();
+    const double lambdaBeforeRejection = optimizer.lambda();
+
+    EXPECT(!optimizer.tryLambda(*optimizer.linearize(), VectorValues()));
+    EXPECT(assert_equal(acceptedValues, optimizer.values()));
+    DOUBLES_EQUAL(acceptedError, optimizer.error(), 1e-15);
+    LONGS_EQUAL(2, optimizer.iterations());
+    LONGS_EQUAL(3, optimizer.getInnerIterations());
+    DOUBLES_EQUAL(2.0 * lambdaBeforeRejection, optimizer.lambda(), 1e-12);
+  }
+}
+
+}  // namespace lm_policy_fixture
+/* ************************************************************************* */
 
 class CountingNonlinearFactorGraph : public NonlinearFactorGraph {
  public:
