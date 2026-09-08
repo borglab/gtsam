@@ -19,6 +19,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <functional>
 #include <iomanip>
 #include <iostream>
 #include <string>
@@ -44,22 +45,29 @@ class UncheckedCacheOptimizer : public GaussNewtonOptimizer {
   }
 };
 
-/// Return median microseconds per operation after an untimed warmup.
-template <class Operation>
-double medianTime(size_t repetitions, Operation operation) {
+/// Interleave alternatives, reversing their order to limit timing drift.
+std::vector<double> medianTimes(
+    size_t repetitions, const std::vector<std::function<void()>>& operations) {
   using Clock = std::chrono::steady_clock;
-  operation();
-  std::vector<double> samples;
+  for (const auto& operation : operations) operation();
+  std::vector<std::vector<double>> samples(operations.size());
   for (size_t sample = 0; sample < 7; ++sample) {
-    const auto start = Clock::now();
-    for (size_t i = 0; i < repetitions; ++i) operation();
-    samples.push_back(
-        std::chrono::duration<double, std::micro>(Clock::now() - start)
-            .count() /
-        repetitions);
+    for (size_t j = 0; j < operations.size(); ++j) {
+      const size_t index = sample % 2 ? operations.size() - 1 - j : j;
+      const auto start = Clock::now();
+      for (size_t i = 0; i < repetitions; ++i) operations[index]();
+      samples[index].push_back(
+          std::chrono::duration<double, std::micro>(Clock::now() - start)
+              .count() /
+          repetitions);
+    }
   }
-  std::sort(samples.begin(), samples.end());
-  return samples[samples.size() / 2];
+  std::vector<double> medians;
+  for (auto& times : samples) {
+    std::sort(times.begin(), times.end());
+    medians.push_back(times[times.size() / 2]);
+  }
+  return medians;
 }
 
 /// Benchmark a fixed graph with scalar or six-dimensional variable blocks.
@@ -79,17 +87,12 @@ void benchmarkLinear(size_t variables, size_t dimension, size_t repetitions) {
   GaussNewtonOptimizer optimizer(NonlinearFactorGraph{}, Values{});
   UncheckedCacheOptimizer uncheckedOptimizer(NonlinearFactorGraph{}, Values{});
   double checksum = 0.0;
-  const double cached = medianTime(repetitions, [&] {
-    checksum += optimizer.solve(graph, params).at(0)(0);
-  });
-  const double unchecked = medianTime(repetitions, [&] {
-    checksum += uncheckedOptimizer.solve(graph, params).at(0)(0);
-  });
-  const double rebuilt = medianTime(repetitions, [&] {
-    checksum += graph.optimize(*params.ordering).at(0)(0);
-  });
-  std::cout << "linear," << variables << ',' << dimension << ',' << cached
-            << ',' << unchecked << ',' << rebuilt << ',' << checksum << '\n';
+  const auto times = medianTimes(repetitions, {
+      [&] { checksum += optimizer.solve(graph, params).at(0)(0); },
+      [&] { checksum += uncheckedOptimizer.solve(graph, params).at(0)(0); },
+      [&] { checksum += graph.optimize(*params.ordering).at(0)(0); }});
+  std::cout << "linear," << variables << ',' << dimension << ',' << times[0]
+            << ',' << times[1] << ',' << times[2] << ',' << checksum << '\n';
 }
 
 /// Include linearization, error evaluation, and retraction in the measurement.
@@ -108,10 +111,9 @@ void benchmarkNonlinear(size_t variables, size_t repetitions) {
   }
   GaussNewtonOptimizer optimizer(graph, initial);
   UncheckedCacheOptimizer uncheckedOptimizer(graph, initial);
-  const double time = medianTime(repetitions, [&] { optimizer.iterate(); });
-  const double unchecked =
-      medianTime(repetitions, [&] { uncheckedOptimizer.iterate(); });
-  std::cout << "nonlinear," << variables << ",3," << time << ',' << unchecked << ",,"
+  const auto times = medianTimes(repetitions, {
+      [&] { optimizer.iterate(); }, [&] { uncheckedOptimizer.iterate(); }});
+  std::cout << "nonlinear," << variables << ",3," << times[0] << ',' << times[1] << ",,"
             << optimizer.error() << '\n';
 }
 
