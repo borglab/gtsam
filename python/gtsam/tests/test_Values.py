@@ -106,5 +106,75 @@ class TestValues(GtsamTestCase):
             values.extract([0, 99])
 
 
+class TestCalculateEstimateForKeys(GtsamTestCase):
+    """calculateEstimate(keys) on ISAM2 and both fixed-lag smoothers."""
+
+    X, V, B, S = 0, 100, 200, 300
+
+    def _graph(self):
+        """A Pose3 / velocity / bias / double set, so the subset spans types."""
+        graph = gtsam.NonlinearFactorGraph()
+        values = gtsam.Values()
+        graph.push_back(gtsam.PriorFactorPose3(
+            self.X, Pose3(), gtsam.noiseModel.Isotropic.Sigma(6, 0.1)))
+        values.insert(self.X, Pose3(Rot3.Rz(0.05), Point3(0.1, 0.0, 0.0)))
+        graph.push_back(gtsam.PriorFactorPoint3(
+            self.V, Point3(1.0, 0.0, 0.0), gtsam.noiseModel.Isotropic.Sigma(3, 0.1)))
+        values.insert(self.V, Point3(0.9, 0.1, 0.0))
+        graph.push_back(gtsam.PriorFactorConstantBias(
+            self.B, gtsam.imuBias.ConstantBias(),
+            gtsam.noiseModel.Isotropic.Sigma(6, 0.1)))
+        values.insert(self.B, gtsam.imuBias.ConstantBias())
+        graph.push_back(gtsam.PriorFactorDouble(
+            self.S, 2.0, gtsam.noiseModel.Isotropic.Sigma(1, 0.1)))
+        values.insert(self.S, 1.9)
+        return graph, values
+
+    def _check(self, subset, full):
+        """The subset holds exactly the requested keys, equal to the full estimate."""
+        self.assertEqual(subset.size(), 3)
+        self.assertFalse(subset.exists(self.B))
+        self.gtsamAssertEquals(subset.atPose3(self.X), full.atPose3(self.X), 1e-9)
+        np.testing.assert_allclose(subset.atPoint3(self.V),
+                                   full.atPoint3(self.V), atol=1e-9)
+        self.assertAlmostEqual(subset.atDouble(self.S), full.atDouble(self.S),
+                               places=9)
+
+    def _requested(self):
+        return [self.X, self.V, self.S]
+
+    def test_isam2(self):
+        graph, values = self._graph()
+        isam = gtsam.ISAM2()
+        isam.update(graph, values)
+        # Request the subset first, so the full estimate cannot have warmed
+        # anything the subset path depends on.
+        subset = isam.calculateEstimate(self._requested())
+        self._check(subset, isam.calculateEstimate())
+
+    def test_incremental_fixed_lag_smoother(self):
+        graph, values = self._graph()
+        smoother = gtsam.IncrementalFixedLagSmoother(10.0)
+        smoother.update(graph, values, {k: 0.0 for k in
+                                        [self.X, self.V, self.B, self.S]})
+        subset = smoother.calculateEstimate(self._requested())
+        self._check(subset, smoother.calculateEstimate())
+
+    def test_batch_fixed_lag_smoother(self):
+        graph, values = self._graph()
+        smoother = gtsam.BatchFixedLagSmoother(10.0)
+        smoother.update(graph, values, {k: 0.0 for k in
+                                        [self.X, self.V, self.B, self.S]})
+        subset = smoother.calculateEstimate(self._requested())
+        self._check(subset, smoother.calculateEstimate())
+
+    def test_missing_key_raises(self):
+        graph, values = self._graph()
+        isam = gtsam.ISAM2()
+        isam.update(graph, values)
+        with self.assertRaises(RuntimeError):
+            isam.calculateEstimate([999])
+
+
 if __name__ == "__main__":
     unittest.main()

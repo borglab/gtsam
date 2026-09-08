@@ -106,10 +106,15 @@ namespace gtsam {
                          const KeyVector& keys) const {
     Values result;
     for (Key key : keys) {
-      // retract_() returns an owning raw pointer; adopt it immediately.
-      auto value = std::unique_ptr<Value>(at(key).retract_(delta[key]));
+      const Value& value = at(key);
+      // Match retract(delta): a value with no delta is copied unchanged.
+      // retract_() and clone_() both return owning raw pointers; adopt them
+      // immediately.
+      VectorValues::const_iterator it = delta.find(key);
+      auto retracted = std::unique_ptr<Value>(
+          it != delta.end() ? value.retract_(it->second) : value.clone_());
       const bool inserted =
-          result.values_.try_emplace(key, std::move(value)).second;
+          result.values_.try_emplace(key, std::move(retracted)).second;
       if (!inserted) throw ValuesKeyAlreadyExists(key);
     }
     return result;

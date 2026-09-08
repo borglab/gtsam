@@ -235,9 +235,11 @@ namespace gtsam {
     /**
      * Retract only the named keys, returning a Values holding just those.
      * Complements retract(delta), which retracts every variable.
+     * As in retract(delta), a requested key with no entry in @p delta is
+     * copied unchanged rather than treated as an error.
      * @param delta The delta vector in the tangent space of this Values.
      * @param keys The keys to retract; must be unique.
-     * @throws ValuesKeyDoesNotExist if a key is not present.
+     * @throws ValuesKeyDoesNotExist if a key is not in this Values.
      * @throws ValuesKeyAlreadyExists if a key is repeated.
      */
     Values retract(const VectorValues& delta, const KeyVector& keys) const;

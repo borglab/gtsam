@@ -402,6 +402,20 @@ TEST(Values, retract_by_keys)
   EXPECT(assert_equal(full.at<Pose2>(key1), subset.at<Pose2>(key1)));
   EXPECT(assert_equal(full.at<Vector3>(key3), subset.at<Vector3>(key3)));
 
+  // A requested key with no delta is copied unchanged, as retract(delta) does.
+  VectorValues partial;
+  partial.insert(key1, Vector3(0.1, 0.2, 0.05));
+  const Values partialFull = values.retract(partial);
+  const Values partialSubset = values.retract(partial, KeyVector{key3, key1});
+  EXPECT(assert_equal(values.at<Vector3>(key3),
+                      partialSubset.at<Vector3>(key3)));
+  EXPECT(assert_equal(partialFull.at<Vector3>(key3),
+                      partialSubset.at<Vector3>(key3)));
+  EXPECT(assert_equal(partialFull.at<Pose2>(key1),
+                      partialSubset.at<Pose2>(key1)));
+  EXPECT(values.retract(VectorValues(), KeyVector{key1}).at<Pose2>(key1).equals(
+      values.at<Pose2>(key1)));
+
   EXPECT(values.retract(delta, KeyVector{}).empty());
   CHECK_EXCEPTION(values.retract(delta, KeyVector{key1, key1}),
                   ValuesKeyAlreadyExists);

@@ -426,9 +426,11 @@ TEST(BatchFixedLagSmoother, CalculateEstimateForKeys) {
   }
   smoother.update(factors, values, timestamps);
 
-  const Values full = smoother.calculateEstimate();
+  // Request the subset first, so the full estimate cannot have warmed
+  // anything the subset path depends on.
   const Values subset =
       smoother.calculateEstimate(KeyVector{Symbol('x', 3), Symbol('x', 1)});
+  const Values full = smoother.calculateEstimate();
   LONGS_EQUAL(2, subset.size());
   EXPECT(!subset.exists(Symbol('x', 0)));
   EXPECT(assert_equal(full.at<Point2>(Symbol('x', 1)),
