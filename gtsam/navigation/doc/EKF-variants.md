@@ -181,7 +181,10 @@ The **[NavStateImuEKF](NavStateImuEKF.ipynb)** is a left-invariant EKF specializ
 More: **[Full tutorial (with plots)](../../../python/gtsam/examples/NavStateImuExample.ipynb)**, Source: [NavStateImuEKF.h](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/NavStateImuEKF.h), [NavStateImuEKF.cpp](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/NavStateImuEKF.cpp)
 
 ## EquivariantFilter
+
 The **[EquivariantFilter](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/EquivariantFilter.h)** class implements the Equivariant Filter (EqF) for state estimation on Lie groups. It estimates a Lie group state $g \in G$ and a manifold state $\xi \in M$, using a symmetry principle where the error dynamics are autonomous in a specific frame. This class inherits from ```ManifoldEKF```.
+
+The overview below uses a **right group action**, as in ABC. Both action types are supported; see the **[EquivariantFilter user guide](EquivariantFilter.ipynb)** for left-action conventions, API choices, and the lift and equivariance requirements.
 
 ### EqF Predict Stage
 The prediction step involves lifting the manifold dynamics to the group using a lift $\Lambda(\xi, u)$.
@@ -194,7 +197,7 @@ The state on the manifold is then recovered via the group action $\phi$:
 ```
 
 ### EqF Update Stage
-The update step applies a correction in the tangent space of the manifold, which is then lifted to the group using the innovation lift matrix $(D\phi_0)^+$.
+The update step applies a correction in the tangent space at the reference, then lifts it to the group using the innovation lift matrix $(D\phi_0)^+$. Here $y_k=-\operatorname{Local}(z_k,\hat z_k)$, matching the implementation's negative predicted-minus-observed residual.
 ```math
 \delta \xi_k = K_k y_k
 ```

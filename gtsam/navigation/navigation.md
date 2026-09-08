@@ -14,6 +14,8 @@ The `navigation` module in GTSAM provides specialized tools for inertial navigat
 - **[LieGroupEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/LieGroupEKF.h)**: Implements an EKF for states that operate on a Lie group with state dependent dynamics.
 - **[InvariantEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/InvariantEKF.h)**: Implements an EKF for states that operate on a Lie group with group composition (state independent) dynamics. See the [InvariantEKF user guide](doc/InvariantEKF.ipynb).
 
+- **[EquivariantFilter](doc/EquivariantFilter.ipynb)**: User guide to filtering with state actions, lifts, and covariance in reference error coordinates.
+
 ### Attitude Estimation
 
 - **[PreintegrationParams](doc/PreintegrationParams.ipynb)**: Parameters for IMU preintegration.
@@ -30,7 +32,7 @@ The `navigation` module in GTSAM provides specialized tools for inertial navigat
   $SE_2(3)$ group exponential described by [Brossard, Barrau, and
   Bonnabel](https://arxiv.org/abs/2007.14097).
 - **[GalileanImuFactor](doc/GalileanImuFactor.ipynb)**: Develops Galilean
-  IMU preintegration from a direct-product EqF symmetry, with left-invariant
+  IMU preintegration on a direct-product state, with left-invariant
   errors and right-applied updates consistent with GTSAM conventions.
 - **[GalileanImuFactor NEES comparison](doc/GalileanImuFactorNEES.ipynb)**:
   Compares Manifold, Tangent, Lie-group, and Galilean preintegration accuracy
