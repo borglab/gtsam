@@ -102,6 +102,20 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  Values Values::retract(const VectorValues& delta,
+                         const KeyVector& keys) const {
+    Values result;
+    for (Key key : keys) {
+      // retract_() returns an owning raw pointer; adopt it immediately.
+      auto value = std::unique_ptr<Value>(at(key).retract_(delta[key]));
+      const bool inserted =
+          result.values_.try_emplace(key, std::move(value)).second;
+      if (!inserted) throw ValuesKeyAlreadyExists(key);
+    }
+    return result;
+  }
+
+  /* ************************************************************************* */
   void Values::retractMasked(const VectorValues& delta, const KeySet& mask) {
     gttic(retractMasked);
     assert(this->size() == delta.size());

@@ -381,6 +381,35 @@ TEST(Values, localCoordinates)
 }
 
 /* ************************************************************************* */
+// retract(delta, keys) retracts only the named keys, and owns what retract_()
+// allocates: no leak on success or when a later key throws.
+TEST(Values, retract_by_keys)
+{
+  Values values;
+  values.insert(key1, Pose2(1.0, 2.0, 0.3));
+  values.insert(key2, Point3(1.0, 2.0, 3.0));
+  values.insert(key3, Vector3(4.0, 5.0, 6.0));
+
+  VectorValues delta;
+  delta.insert(key1, Vector3(0.1, 0.2, 0.05));
+  delta.insert(key2, Vector3(0.1, 0.1, 0.1));
+  delta.insert(key3, Vector3(1.0, 1.0, 1.0));
+
+  const Values full = values.retract(delta);
+  const Values subset = values.retract(delta, KeyVector{key3, key1});
+  LONGS_EQUAL(2, subset.size());
+  EXPECT(!subset.exists(key2));
+  EXPECT(assert_equal(full.at<Pose2>(key1), subset.at<Pose2>(key1)));
+  EXPECT(assert_equal(full.at<Vector3>(key3), subset.at<Vector3>(key3)));
+
+  EXPECT(values.retract(delta, KeyVector{}).empty());
+  CHECK_EXCEPTION(values.retract(delta, KeyVector{key1, key1}),
+                  ValuesKeyAlreadyExists);
+  CHECK_EXCEPTION(values.retract(delta, KeyVector{key1, Symbol('z', 9)}),
+                  ValuesKeyDoesNotExist);
+}
+
+/* ************************************************************************* */
 // extract(keys) copies the named values of any type into a new Values.
 TEST(Values, extract_by_keys)
 {

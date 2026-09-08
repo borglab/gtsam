@@ -233,6 +233,16 @@ namespace gtsam {
     Values retract(const VectorValues& delta) const;
 
     /**
+     * Retract only the named keys, returning a Values holding just those.
+     * Complements retract(delta), which retracts every variable.
+     * @param delta The delta vector in the tangent space of this Values.
+     * @param keys The keys to retract; must be unique.
+     * @throws ValuesKeyDoesNotExist if a key is not present.
+     * @throws ValuesKeyAlreadyExists if a key is repeated.
+     */
+    Values retract(const VectorValues& delta, const KeyVector& keys) const;
+
+    /**
      * Retract, but only for Keys appearing in \c mask. In-place.
      * \param mask Mask on Keys where to apply retract.
      */
