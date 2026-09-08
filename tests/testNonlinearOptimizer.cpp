@@ -221,7 +221,7 @@ TEST(NonlinearOptimizer, SymbolicCacheTracksOrdering) {
   bool rejected = false;
   try {
     optimizer.solve(graph, params);
-  } catch (const std::runtime_error&) {
+  } catch (const std::invalid_argument&) {
     rejected = true;
   }
   CHECK(rejected);

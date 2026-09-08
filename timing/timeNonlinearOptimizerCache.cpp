@@ -8,12 +8,14 @@
 
 /**
  * @file timeNonlinearOptimizerCache.cpp
- * @brief Compare repeated optimizer solves with fresh symbolic elimination.
+ * @brief Compare validated cache reuse, unchecked reuse, and fresh elimination.
  */
 
+#include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/slam/BetweenFactor.h>
+#include <gtsam/symbolic/IndexedJunctionTree.h>
 
 #include <algorithm>
 #include <chrono>
@@ -23,6 +25,24 @@
 #include <vector>
 
 using namespace gtsam;
+
+/// Reproduce the old cache policy for fixed-structure benchmark inputs only.
+class UncheckedCacheOptimizer : public GaussNewtonOptimizer {
+  mutable std::optional<IndexedJunctionTree> tree_;
+
+ public:
+  using GaussNewtonOptimizer::GaussNewtonOptimizer;
+
+  /// Reuse the first tree without validating subsequent symbolic inputs.
+  VectorValues solve(const GaussianFactorGraph& graph,
+                     const NonlinearOptimizerParams& params) const override {
+    if (!tree_) {
+      tree_ = graph.buildIndexedJunctionTree(*params.ordering);
+    }
+    return graph.eliminateMultifrontal(*tree_, params.getEliminationFunction())
+        ->optimize();
+  }
+};
 
 /// Return median microseconds per operation after an untimed warmup.
 template <class Operation>
@@ -57,15 +77,19 @@ void benchmarkLinear(size_t variables, size_t dimension, size_t repetitions) {
   NonlinearOptimizerParams params;
   params.setOrdering(Ordering::Colamd(graph));
   GaussNewtonOptimizer optimizer(NonlinearFactorGraph{}, Values{});
+  UncheckedCacheOptimizer uncheckedOptimizer(NonlinearFactorGraph{}, Values{});
   double checksum = 0.0;
   const double cached = medianTime(repetitions, [&] {
     checksum += optimizer.solve(graph, params).at(0)(0);
+  });
+  const double unchecked = medianTime(repetitions, [&] {
+    checksum += uncheckedOptimizer.solve(graph, params).at(0)(0);
   });
   const double rebuilt = medianTime(repetitions, [&] {
     checksum += graph.optimize(*params.ordering).at(0)(0);
   });
   std::cout << "linear," << variables << ',' << dimension << ',' << cached
-            << ',' << rebuilt << ',' << checksum << '\n';
+            << ',' << unchecked << ',' << rebuilt << ',' << checksum << '\n';
 }
 
 /// Include linearization, error evaluation, and retraction in the measurement.
@@ -83,8 +107,11 @@ void benchmarkNonlinear(size_t variables, size_t repetitions) {
     }
   }
   GaussNewtonOptimizer optimizer(graph, initial);
+  UncheckedCacheOptimizer uncheckedOptimizer(graph, initial);
   const double time = medianTime(repetitions, [&] { optimizer.iterate(); });
-  std::cout << "nonlinear," << variables << ",3," << time << ",,"
+  const double unchecked =
+      medianTime(repetitions, [&] { uncheckedOptimizer.iterate(); });
+  std::cout << "nonlinear," << variables << ",3," << time << ',' << unchecked << ",,"
             << optimizer.error() << '\n';
 }
 
@@ -97,7 +124,7 @@ int main(int argc, char** argv) {
     return 1;
   }
   std::cout << std::fixed << std::setprecision(3)
-            << "case,variables,dimension,cached_us,rebuilt_us,checksum\n";
+            << "case,variables,dimension,cached_us,unchecked_us,rebuilt_us,checksum\n";
   benchmarkLinear(variables, 1, repetitions);
   benchmarkLinear(variables, 6, repetitions);
   benchmarkNonlinear(variables, repetitions);
