@@ -20,10 +20,8 @@
 
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizerParams.h>
-#include <gtsam/symbolic/IndexedJunctionTree.h>
 
 #include <memory>
-#include <optional>
 
 namespace gtsam {
 
@@ -97,9 +95,9 @@ class GTSAM_EXPORT NonlinearOptimizer {
   mutable std::unique_ptr<internal::CholmodSolver> cholmodSolver_;
 
  private:
-  /// Cached indexed junction tree used to avoid rebuilding the symbolic structure
-  /// across iterations when the ordering remains constant.
-  mutable std::optional<IndexedJunctionTree> indexedJunctionTreeCache_;
+  /// Symbolic tree and the ordering and per-factor keys that permit its reuse.
+  struct IndexedJunctionTreeCache;
+  mutable std::unique_ptr<IndexedJunctionTreeCache> indexedJunctionTreeCache_;
 
  public:
   /** A shared pointer to this class */

@@ -221,6 +221,147 @@ class CountingNonlinearFactorGraph : public NonlinearFactorGraph {
 };
 
 /* ************************************************************************* */
+namespace symbolic_cache_regression {
+
+/// A continuous squared hinge penalty that activates above x = 0.5.
+class HingeFactor : public NoiseModelFactor1<double> {
+ public:
+  /// Construct a unit-noise upper-bound penalty.
+  HingeFactor() : NoiseModelFactor1<double>(noiseModel::Unit::Create(1), 0) {}
+
+  /// Determine activity from the current estimate, without external mutation.
+  bool active(const Values& values) const override {
+    return values.at<double>(0) > 0.5;
+  }
+
+  /// Evaluate the active residual and its tangent derivative.
+  Vector evaluateError(const double& x, OptionalMatrixType H) const override {
+    if (H) *H = Matrix11::Identity();
+    return Vector1{x - 0.5};
+  }
+};
+
+// Both GN and LM must include a factor activated by their own state updates.
+TEST(NonlinearOptimizer, ActivatesFactorDuringOptimization) {
+  NonlinearFactorGraph graph;
+  graph.addPrior(0, 2.0);
+  graph.emplace_shared<HingeFactor>();
+  Values initial;
+  initial.insert(0, 0.0);
+  for (auto solver : {NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY,
+                      NonlinearOptimizerParams::MULTIFRONTAL_QR}) {
+    GaussNewtonParams gnParams;
+    gnParams.setLinearSolver(solver);
+    GaussNewtonOptimizer gn(graph, initial, gnParams);
+    DOUBLES_EQUAL(1.25, gn.optimize().at<double>(0), 1e-8);
+    DOUBLES_EQUAL(0.5625, gn.error(), 1e-8);
+
+    LevenbergMarquardtParams lmParams;
+    lmParams.setLinearSolver(solver);
+    LevenbergMarquardtOptimizer lm(graph, initial, lmParams);
+    DOUBLES_EQUAL(1.25, lm.optimize().at<double>(0), 1e-8);
+    DOUBLES_EQUAL(0.5625, lm.error(), 1e-8);
+  }
+}
+
+// Factor slots can become active, disappear, or be appended between solves.
+TEST(NonlinearOptimizer, SymbolicCacheTracksFactorSlots) {
+  GaussNewtonOptimizer optimizer(NonlinearFactorGraph{}, Values{});
+  NonlinearOptimizerParams params;
+  params.setOrdering(Ordering{0});
+  for (auto solver : {NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY,
+                      NonlinearOptimizerParams::MULTIFRONTAL_QR}) {
+    params.setLinearSolver(solver);
+    GaussianFactorGraph graph;
+    graph.emplace_shared<JacobianFactor>(0, Matrix11::Identity(), Vector1{0.0});
+    graph.push_back(GaussianFactor::shared_ptr{});
+    DOUBLES_EQUAL(0.0, optimizer.solve(graph, params).at(0)(0), 1e-9);
+
+    graph[1] =
+        std::make_shared<JacobianFactor>(0, Matrix11::Identity(), Vector1{2.0});
+    DOUBLES_EQUAL(1.0, optimizer.solve(graph, params).at(0)(0), 1e-9);
+
+    graph[1].reset();
+    DOUBLES_EQUAL(0.0, optimizer.solve(graph, params).at(0)(0), 1e-9);
+
+    graph.emplace_shared<JacobianFactor>(0, Matrix11::Identity(), Vector1{4.0});
+    DOUBLES_EQUAL(2.0, optimizer.solve(graph, params).at(0)(0), 1e-9);
+
+    graph.resize(1);
+    DOUBLES_EQUAL(0.0, optimizer.solve(graph, params).at(0)(0), 1e-9);
+  }
+}
+
+// A factor's support can change in place without changing its address or arity.
+TEST(NonlinearOptimizer, SymbolicCacheTracksFactorKeys) {
+  GaussNewtonOptimizer optimizer(NonlinearFactorGraph{}, Values{});
+  NonlinearOptimizerParams params;
+  params.setOrdering(Ordering{0, 1});
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, Matrix11::Identity(), Vector1{0.0});
+  graph.emplace_shared<JacobianFactor>(1, Matrix11::Identity(), Vector1{4.0});
+  auto changingFactor =
+      std::make_shared<JacobianFactor>(0, Matrix11::Identity(), Vector1{2.0});
+  graph.push_back(changingFactor);
+  DOUBLES_EQUAL(1.0, optimizer.solve(graph, params).at(0)(0), 1e-9);
+
+  *changingFactor = JacobianFactor(1, Matrix11::Identity(), Vector1{2.0});
+  const VectorValues result = optimizer.solve(graph, params);
+  DOUBLES_EQUAL(0.0, result.at(0)(0), 1e-9);
+  DOUBLES_EQUAL(3.0, result.at(1)(0), 1e-9);
+}
+
+// A changed ordering must be validated instead of silently reusing the old one.
+TEST(NonlinearOptimizer, SymbolicCacheTracksOrdering) {
+  GaussNewtonOptimizer optimizer(NonlinearFactorGraph{}, Values{});
+  NonlinearOptimizerParams params;
+  params.setOrdering(Ordering{0, 1});
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, Matrix11::Identity(), Vector1{1.0});
+  graph.emplace_shared<JacobianFactor>(1, Matrix11::Identity(), Vector1{2.0});
+  const VectorValues expected = optimizer.solve(graph, params);
+  params.setOrdering(Ordering{1, 0});
+  EXPECT(assert_equal(expected, optimizer.solve(graph, params), 1e-9));
+
+  params.setOrdering(Ordering{0, 2});
+  bool rejected = false;
+  try {
+    optimizer.solve(graph, params);
+  } catch (const std::invalid_argument&) {
+    rejected = true;
+  }
+  CHECK(rejected);
+
+  // Failed rebuilding must not corrupt the previously valid cache.
+  params.setOrdering(Ordering{1, 0});
+  EXPECT(assert_equal(expected, optimizer.solve(graph, params), 1e-9));
+}
+
+// The symbolic tree contains keys, not numerical blocks or variable dimensions.
+TEST(NonlinearOptimizer, SymbolicCacheAllowsNumericalChanges) {
+  GaussNewtonOptimizer optimizer(NonlinearFactorGraph{}, Values{});
+  NonlinearOptimizerParams params;
+  params.setOrdering(Ordering{0});
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, Matrix11::Identity(), Vector1{1.0});
+  DOUBLES_EQUAL(1.0, optimizer.solve(graph, params).at(0)(0), 1e-9);
+
+  graph[0] = std::make_shared<HessianFactor>(0, Matrix22::Identity(),
+                                             Vector2{2.0, 3.0}, 13.0);
+  EXPECT(assert_equal(Vector2{2.0, 3.0}, optimizer.solve(graph, params).at(0),
+                      1e-9));
+  graph[0] = std::make_shared<JacobianFactor>(
+      0, Matrix22::Identity(), Vector2{4.0, 5.0},
+      noiseModel::Isotropic::Sigma(2, 2.0));
+  EXPECT(assert_equal(Vector2{4.0, 5.0}, optimizer.solve(graph, params).at(0),
+                      1e-9));
+
+  params.setOrdering(Ordering{});
+  LONGS_EQUAL(0, optimizer.solve(GaussianFactorGraph{}, params).size());
+}
+
+}  // namespace symbolic_cache_regression
+/* ************************************************************************* */
 namespace arm64_return_regression {
 
 class GpsLikePositionFactor : public NoiseModelFactorN<Pose2> {
