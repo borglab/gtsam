@@ -142,6 +142,9 @@ TEST(IncrementalFixedLagSmoother, UpdateResultMarginalizationMetadata) {
   LONGS_EQUAL(1, result.keysOfDeletedNodes.size());
   EXPECT(result.keysOfDeletedNodes.exists(X(0)));
   EXPECT(result.getKeysOfDeletedNodes().exists(X(0)));
+  // every expired key had a factor here, so nothing was reaped as pending
+  EXPECT(result.expiredPendingKeys.empty());
+  EXPECT(result.getExpiredPendingKeys().empty());
 
   // Marginalized key removed from the smoother state
   EXPECT(!smoother.getLinearizationPoint().exists(X(0)));
@@ -489,11 +492,21 @@ TEST(IncrementalFixedLagSmoother, ReapsPendingValueAfterLag) {
   factors.addPrior(X(2), Point2(2.0, 0.0), noise);
   values.insert(X(2), Point2(2.0, 0.0));
   timestamps[X(2)] = 3.0;
-  smoother.update(factors, values, timestamps);
+  const FixedLagSmoother::Result result =
+      smoother.update(factors, values, timestamps);
 
   EXPECT(!smoother.getLinearizationPoint().exists(X(1)));
   EXPECT(smoother.getLinearizationPoint().exists(X(2)));
   EXPECT(smoother.timestamps().find(X(1)) == smoother.timestamps().end());
+
+  // The result reports the reaped pending key, so a caller holding queued
+  // measurements for X(1) can drop them without diffing the estimate. X(0)
+  // had a factor and was marginalized instead, so it is reported separately.
+  LONGS_EQUAL(1, result.expiredPendingKeys.size());
+  EXPECT(result.expiredPendingKeys.exists(X(1)));
+  EXPECT(result.getExpiredPendingKeys().exists(X(1)));
+  EXPECT(!result.keysOfDeletedNodes.exists(X(1)));
+  EXPECT(result.keysOfDeletedNodes.exists(X(0)));
 }
 
 // A timestamp naming no value -- neither an existing one nor one supplied in

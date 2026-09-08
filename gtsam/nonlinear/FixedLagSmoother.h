@@ -54,6 +54,9 @@ public:
     FactorIndices marginalFactorIndices; ///< Indices added during the marginalizeLeaves step
     FactorIndices deletedFactorIndices; ///< Indices removed during the marginalizeLeaves step
     KeySet keysOfDeletedNodes; ///< Keys of nodes removed during the marginalizeLeaves step
+    KeySet expiredPendingKeys;  ///< Keys of values that left the lag window
+                                ///< before any factor referenced them, and were
+                                ///< removed without marginalization
     Result() : iterations(0), intermediateSteps(0), nonlinearVariables(0), linearVariables(0), error(0) {}
 
     /// Getter methods
@@ -65,6 +68,7 @@ public:
     FactorIndices getMarginalFactorIndices() const { return marginalFactorIndices; }
     FactorIndices getDeletedFactorIndices() const { return deletedFactorIndices; }
     KeySet getKeysOfDeletedNodes() const { return keysOfDeletedNodes; }
+    KeySet getExpiredPendingKeys() const { return expiredPendingKeys; }
     GTSAM_EXPORT void print() const;
   };
 

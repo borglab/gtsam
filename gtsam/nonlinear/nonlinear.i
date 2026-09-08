@@ -982,6 +982,7 @@ class FixedLagSmootherResult {
   gtsam::FactorIndices getMarginalFactorIndices() const;
   gtsam::FactorIndices getDeletedFactorIndices() const;
   gtsam::KeySet getKeysOfDeletedNodes() const;
+  gtsam::KeySet getExpiredPendingKeys() const;
   void print() const;
 };
 

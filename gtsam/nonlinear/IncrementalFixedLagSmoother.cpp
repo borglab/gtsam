@@ -236,6 +236,7 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   result.marginalFactorIndices = marginalFactorIndices;
   result.deletedFactorIndices = deletedFactorIndices;
   result.keysOfDeletedNodes = KeySet(marginalizableKeys);
+  result.expiredPendingKeys = KeySet(expiredPendingKeys);
 
   if (debug)
     std::cout << "IncrementalFixedLagSmoother::update() Finish" << std::endl;
