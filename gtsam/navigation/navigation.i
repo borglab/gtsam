@@ -717,10 +717,10 @@ template<VALUE = {gtsam::Rot3, gtsam::Pose3, gtsam::NavState, gtsam::Gal3,
                   gtsam::Se23, gtsam::ExtendedPose3d}>
 virtual class AttitudeFactor : gtsam::NoiseModelFactor {
   AttitudeFactor(gtsam::Key key, const gtsam::Unit3& nRef,
-                 const gtsam::noiseModel::Diagonal* model,
+                 const gtsam::noiseModel::Base* model,
                  const gtsam::Unit3& bMeasured);
   AttitudeFactor(gtsam::Key key, const gtsam::Unit3& nRef,
-                 const gtsam::noiseModel::Diagonal* model);
+                 const gtsam::noiseModel::Base* model);
   AttitudeFactor();
   const gtsam::Unit3& nRef() const;
   const gtsam::Unit3& bMeasured() const;
