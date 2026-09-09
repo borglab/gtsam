@@ -47,6 +47,35 @@ pybind11::arg py_arg(const char* name) {
 }  // namespace gtwrap
 """
 
+    VARIABLE_BINDING_SUPPORT = """
+#include <pybind11/functional.h>
+
+namespace gtwrap {
+namespace internal {
+
+// Let C++ resolve aliases rather than guessing callable types in the parser.
+template <typename T>
+void bind_variable(pybind11::module_& module, const char* name, const T& value) {
+  module.attr(name) = value;
+}
+
+template <typename Return, typename... Args>
+void bind_variable(pybind11::module_& module, const char* name,
+                   const std::function<Return(Args...)>& value) {
+  if (!value) {
+    module.attr(name) = pybind11::none();
+  } else if (auto target = value.template target<Return (*)(Args...)>()) {
+    // Preserve pybind11's direct C++ callback path for function pointers.
+    module.def(name, *target);
+  } else {
+    module.def(name, value);
+  }
+}
+
+}  // namespace internal
+}  // namespace gtwrap
+"""
+
     def __init__(self,
                  module_name,
                  top_module_namespaces='',
@@ -443,7 +472,9 @@ pybind11::arg py_arg(const char* name) {
         else:
             variable_value = variable.default
 
-        return '{prefix}{module_var}.attr("{variable_name}") = {namespace}{variable_value};'.format(
+        return ('{prefix}gtwrap::internal::bind_variable('
+                '{module_var}, "{variable_name}", '
+                '{namespace}{variable_value});').format(
             prefix=prefix,
             module_var=module_var,
             variable_name=variable.name,
@@ -936,6 +967,8 @@ pybind11::arg py_arg(const char* name) {
             ])
 
         includes += self.ARG_POLICY_SUPPORT
+        if 'gtwrap::internal::bind_variable(' in wrapped_bindings:
+            includes += self.VARIABLE_BINDING_SUPPORT
 
         return self.module_template.format(
             module_def=module_def,

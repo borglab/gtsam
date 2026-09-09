@@ -29,6 +29,33 @@ pybind11::arg py_arg(const char* name) {
 }  // namespace internal
 }  // namespace gtwrap
 
+#include <pybind11/functional.h>
+
+namespace gtwrap {
+namespace internal {
+
+// Let C++ resolve aliases rather than guessing callable types in the parser.
+template <typename T>
+void bind_variable(pybind11::module_& module, const char* name, const T& value) {
+  module.attr(name) = value;
+}
+
+template <typename Return, typename... Args>
+void bind_variable(pybind11::module_& module, const char* name,
+                   const std::function<Return(Args...)>& value) {
+  if (!value) {
+    module.attr(name) = pybind11::none();
+  } else if (auto target = value.template target<Return (*)(Args...)>()) {
+    // Preserve pybind11's direct C++ callback path for function pointers.
+    module.def(name, *target);
+  } else {
+    module.def(name, value);
+  }
+}
+
+}  // namespace internal
+}  // namespace gtwrap
+
 
 
 
@@ -98,7 +125,7 @@ void gtwrap_bind_namespaces_py(py::module_ &m_) {
     gtwrap_class_m_ns2_ClassC
         .def(py::init<>());
 
-    m_ns2.attr("aNs2Var") = ns2::aNs2Var;
+    gtwrap::internal::bind_variable(m_ns2, "aNs2Var", ns2::aNs2Var);
     m_ns2.def("aGlobalFunction",static_cast<gtsam::Vector (*)()>(&ns2::aGlobalFunction));
     m_ns2.def("overloadedGlobalFunction",static_cast<ns1::ClassA (*)(const ns1::ClassA&)>(&ns2::overloadedGlobalFunction), gtwrap::internal::py_arg<const ns1::ClassA&>("a"));
     m_ns2.def("overloadedGlobalFunction",static_cast<ns1::ClassA (*)(const ns1::ClassA&, double)>(&ns2::overloadedGlobalFunction), gtwrap::internal::py_arg<const ns1::ClassA&>("a"), gtwrap::internal::py_arg<double>("b"));
@@ -106,7 +133,7 @@ void gtwrap_bind_namespaces_py(py::module_ &m_) {
     gtwrap_class_m__ClassD
         .def(py::init<>());
 
-    m_.attr("aGlobalVar") = aGlobalVar;
+    gtwrap::internal::bind_variable(m_, "aGlobalVar", aGlobalVar);
     pybind11::module m_gtsam = py::reinterpret_borrow<pybind11::module>(m_.attr("gtsam"));
 
     auto gtwrap_class_m_gtsam_Values = py::reinterpret_borrow<py::class_<gtsam::Values, std::shared_ptr<gtsam::Values>>>(m_gtsam.attr("Values"));

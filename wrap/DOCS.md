@@ -128,7 +128,12 @@ The python wrapper supports keyword arguments for functions/methods. Hence, the 
 
 - Global variables
     - Similar to global functions, the wrapper supports global variables as well.
-    - Currently we only support primitive types, such as `double`, `int`, `string`, etc.
+    - Primitive types such as `double`, `int`, and `string` become Python module attributes.
+    - Variables whose C++ type is `std::function`, including type aliases, become
+      named Python functions with signatures that `pybind11-stubgen` can discover.
+      Declare the alias in an included C++ header and use it as the variable type
+      in the interface file. Empty `std::function` values become `None`.
+      MATLAB continues to ignore global variables.
     - E.g.
         ```cpp
         const double kGravity = -9.81;
