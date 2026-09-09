@@ -63,8 +63,16 @@ namespace smart_pcg_tests {
 bal::PcgOptimizationResult optimize(const SfmData& data,
                                     LinearizationMode mode) {
   bal::BalBenchmarkConfig config;
-  const NonlinearFactorGraph graph = bal::buildSmartSfmGraph(
+  NonlinearFactorGraph graph = bal::buildSmartSfmGraph(
       data, config, SmartProjectionParams(mode));
+  // This tiny dataset is underconstrained even beyond the similarity gauge.
+  // Soft priors on every camera's pose and calibration make the comparison
+  // observable, so roundoff does not send the two modes along different paths.
+  const auto cameraPriorNoise = noiseModel::Unit::Create(9);
+  for (size_t i = 0; i < data.numberCameras(); ++i) {
+    graph.addPrior<bal::Camera>(symbol_shorthand::C(i), data.cameras[i],
+                               cameraPriorNoise);
+  }
   const Values initial = bal::buildSmartSfmInitial(data);
   const Ordering ordering = bal::createCameraOrdering(data);
   LevenbergMarquardtParams parameters =
@@ -82,9 +90,8 @@ TEST(SfmBalBenchmark, SmartPcgLinearizationsAgree) {
 
   CHECK(hessian.finalError < hessian.initialError);
   CHECK(implicit.finalError < implicit.initialError);
-  // This tiny, gauge-sensitive problem can follow slightly different
-  // nonlinear trajectories after mathematically equivalent flat reductions.
-  DOUBLES_EQUAL(hessian.finalError, implicit.finalError, 3e-3);
+  DOUBLES_EQUAL(hessian.initialError, implicit.initialError, 1e-9);
+  DOUBLES_EQUAL(hessian.finalError, implicit.finalError, 1e-6);
   CHECK(hessian.linearSolves > 0);
   CHECK(implicit.linearSolves > 0);
   LONGS_EQUAL(0, hessian.nonConvergedLinearSolves);
