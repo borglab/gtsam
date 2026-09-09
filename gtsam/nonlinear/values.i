@@ -59,6 +59,7 @@ class Values {
 
   bool exists(gtsam::Key j) const;
   gtsam::KeyVector keys() const;
+  gtsam::Values extract(const gtsam::KeyVector& keys) const;
 
   std::map<gtsam::Key,size_t> dims() const;
   gtsam::VectorValues zeroVectors() const;

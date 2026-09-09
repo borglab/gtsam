@@ -1044,6 +1044,39 @@ TEST(IncrementalFixedLagSmoother, PendingValueKeepsTimestampWhenFactorArrives) {
 }  // namespace timestamp_validation
 /* ************************************************************************* */
 
+/* ************************************************************************* */
+// calculateEstimate(keys) returns only the requested keys, equal to the full
+// estimate at those keys, and rejects keys the smoother does not hold.
+TEST(IncrementalFixedLagSmoother, CalculateEstimateForKeys) {
+  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  IncrementalFixedLagSmoother smoother(10.0);
+
+  NonlinearFactorGraph factors;
+  Values values;
+  FixedLagSmoother::KeyTimestampMap timestamps;
+  factors.addPrior(X(0), Point2(0.0, 0.0), noise);
+  values.insert(X(0), Point2(0.1, -0.1));
+  timestamps[X(0)] = 0.0;
+  for (size_t i = 1; i < 4; ++i) {
+    factors.emplace_shared<BetweenFactor<Point2>>(X(i - 1), X(i),
+                                                  Point2(1.0, 0.0), noise);
+    values.insert(X(i), Point2(double(i) + 0.1, -0.1));
+    timestamps[X(i)] = double(i);
+  }
+  smoother.update(factors, values, timestamps);
+
+  // Request the subset first, so the full estimate cannot have warmed
+  // anything the subset path depends on.
+  const Values subset = smoother.calculateEstimate(KeyVector{X(3), X(1)});
+  const Values full = smoother.calculateEstimate();
+  LONGS_EQUAL(2, subset.size());
+  EXPECT(!subset.exists(X(0)));
+  EXPECT(assert_equal(full.at<Point2>(X(1)), subset.at<Point2>(X(1))));
+  EXPECT(assert_equal(full.at<Point2>(X(3)), subset.at<Point2>(X(3))));
+  CHECK_EXCEPTION(smoother.calculateEstimate(KeyVector{X(9)}),
+                  ValuesKeyDoesNotExist);
+}
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

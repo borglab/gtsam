@@ -381,6 +381,78 @@ TEST(Values, localCoordinates)
 }
 
 /* ************************************************************************* */
+// retract(delta, keys) retracts only the named keys, and owns what retract_()
+// allocates: no leak on success or when a later key throws.
+TEST(Values, retract_by_keys)
+{
+  Values values;
+  values.insert(key1, Pose2(1.0, 2.0, 0.3));
+  values.insert(key2, Point3(1.0, 2.0, 3.0));
+  values.insert(key3, Vector3(4.0, 5.0, 6.0));
+
+  VectorValues delta;
+  delta.insert(key1, Vector3(0.1, 0.2, 0.05));
+  delta.insert(key2, Vector3(0.1, 0.1, 0.1));
+  delta.insert(key3, Vector3(1.0, 1.0, 1.0));
+
+  const Values full = values.retract(delta);
+  const Values subset = values.retract(delta, KeyVector{key3, key1});
+  LONGS_EQUAL(2, subset.size());
+  EXPECT(!subset.exists(key2));
+  EXPECT(assert_equal(full.at<Pose2>(key1), subset.at<Pose2>(key1)));
+  EXPECT(assert_equal(full.at<Vector3>(key3), subset.at<Vector3>(key3)));
+
+  // A requested key with no delta is copied unchanged, as retract(delta) does.
+  VectorValues partial;
+  partial.insert(key1, Vector3(0.1, 0.2, 0.05));
+  const Values partialFull = values.retract(partial);
+  const Values partialSubset = values.retract(partial, KeyVector{key3, key1});
+  EXPECT(assert_equal(values.at<Vector3>(key3),
+                      partialSubset.at<Vector3>(key3)));
+  EXPECT(assert_equal(partialFull.at<Vector3>(key3),
+                      partialSubset.at<Vector3>(key3)));
+  EXPECT(assert_equal(partialFull.at<Pose2>(key1),
+                      partialSubset.at<Pose2>(key1)));
+  EXPECT(values.retract(VectorValues(), KeyVector{key1}).at<Pose2>(key1).equals(
+      values.at<Pose2>(key1)));
+
+  EXPECT(values.retract(delta, KeyVector{}).empty());
+  CHECK_EXCEPTION(values.retract(delta, KeyVector{key1, key1}),
+                  ValuesKeyAlreadyExists);
+  CHECK_EXCEPTION(values.retract(delta, KeyVector{key1, Symbol('z', 9)}),
+                  ValuesKeyDoesNotExist);
+}
+
+/* ************************************************************************* */
+// extract(keys) copies the named values of any type into a new Values.
+TEST(Values, extract_by_keys)
+{
+  Values values;
+  values.insert(key1, Pose2(1.0, 2.0, 0.3));
+  values.insert(key2, Point3(1.0, 2.0, 3.0));
+  values.insert(key3, Vector3(4.0, 5.0, 6.0));
+  values.insert(key4, Pose3());
+
+  const Values subset = values.extract(KeyVector{key3, key1});
+  LONGS_EQUAL(2, subset.size());
+  EXPECT(subset.exists(key1));
+  EXPECT(subset.exists(key3));
+  EXPECT(!subset.exists(key2));
+  EXPECT(assert_equal(Pose2(1.0, 2.0, 0.3), subset.at<Pose2>(key1)));
+  EXPECT(assert_equal(Vector3(4.0, 5.0, 6.0), subset.at<Vector3>(key3)));
+
+  // Copies, not references: the source is untouched by edits to the subset.
+  Values edited = subset;
+  edited.update(key1, Pose2());
+  EXPECT(assert_equal(Pose2(1.0, 2.0, 0.3), values.at<Pose2>(key1)));
+
+  // Empty request, and a missing key.
+  EXPECT(values.extract(KeyVector{}).empty());
+  CHECK_EXCEPTION(values.extract(KeyVector{key1, Symbol('z', 9)}),
+                  ValuesKeyDoesNotExist);
+}
+
+/* ************************************************************************* */
 TEST(Values, extract_keys)
 {
   Values config;

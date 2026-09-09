@@ -900,10 +900,17 @@ Values ISAM2::calculateEstimate() const {
   gttoc(Expmap);
 }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 /* ************************************************************************* */
 const Value& ISAM2::calculateEstimate(Key key) const {
   const Vector& delta = getDelta()[key];
   return *theta_.at(key).retract_(delta);
+}
+#endif
+
+/* ************************************************************************* */
+Values ISAM2::calculateEstimate(const KeyVector& keys) const {
+  return theta_.retract(getDelta(), keys);
 }
 
 /* ************************************************************************* */

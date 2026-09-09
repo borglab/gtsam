@@ -93,6 +93,11 @@ public:
     return isam_.calculateEstimate();
   }
 
+  /** Compute estimates for a set of variables only, one retract per key. */
+  Values calculateEstimate(const KeyVector& keys) const override {
+    return isam_.calculateEstimate(keys);
+  }
+
   /** Compute an estimate for a single variable using its incomplete linear delta computed
    * during the last update.  This is faster than calling the no-argument version of
    * calculateEstimate, which operates on all variables.
