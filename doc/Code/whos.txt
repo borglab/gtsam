@@ -1,7 +1,0 @@
->> whos
-  Name                 Size            Bytes  Class
-  graph                1x1               112  gtsam.NonlinearFactorGraph
-  priorNoise           1x1               112  gtsam.noiseModel.Diagonal
-  model                1x1               112  gtsam.noiseModel.Diagonal
-  initialEstimate      1x1               112  gtsam.Values                                   
-  optimizer            1x1               112  gtsam.LevenbergMarquardtOptimizer              
