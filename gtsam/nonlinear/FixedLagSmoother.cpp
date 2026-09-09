@@ -27,7 +27,10 @@ void FixedLagSmoother::Result::print() const {
             << "Nr intermediateSteps: " << intermediateSteps << '\n'
             << "Nr nonlinear variables: " << nonlinearVariables << '\n'
             << "Nr linear variables: " << linearVariables << '\n'
-            << "error: " << error << std::endl;
+            << "error: " << error << '\n'
+            << "Nr keys of deleted nodes: " << keysOfDeletedNodes.size() << '\n'
+            << "Nr expired pending keys: " << expiredPendingKeys.size()
+            << std::endl;
 }
 
 /* ************************************************************************* */
