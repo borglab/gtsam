@@ -19,6 +19,7 @@
 
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
+#include <gtsam/sam/RangeFactor.h>
 #include <gtsam/slam/dataset.h>
 
 #include <cstddef>
@@ -63,8 +64,15 @@ namespace smart_pcg_tests {
 bal::PcgOptimizationResult optimize(const SfmData& data,
                                     LinearizationMode mode) {
   bal::BalBenchmarkConfig config;
-  const NonlinearFactorGraph graph = bal::buildSmartSfmGraph(
+  NonlinearFactorGraph graph = bal::buildSmartSfmGraph(
       data, config, SmartProjectionParams(mode));
+  // Anchor the first camera's pose and calibration, and the baseline to the
+  // second camera to remove the remaining monocular scale ambiguity.
+  graph.addPrior<bal::Camera>(symbol_shorthand::C(0), data.cameras[0],
+                             noiseModel::Unit::Create(9));
+  graph.emplace_shared<RangeFactor<bal::Camera>>(
+      symbol_shorthand::C(0), symbol_shorthand::C(1),
+      data.cameras[0].range(data.cameras[1]), noiseModel::Unit::Create(1));
   const Values initial = bal::buildSmartSfmInitial(data);
   const Ordering ordering = bal::createCameraOrdering(data);
   LevenbergMarquardtParams parameters =
@@ -82,8 +90,7 @@ TEST(SfmBalBenchmark, SmartPcgLinearizationsAgree) {
 
   CHECK(hessian.finalError < hessian.initialError);
   CHECK(implicit.finalError < implicit.initialError);
-  // This tiny, gauge-sensitive problem can follow slightly different
-  // nonlinear trajectories after mathematically equivalent flat reductions.
+  // Allow small differences in nonlinear trajectories from the PCG solves.
   DOUBLES_EQUAL(hessian.finalError, implicit.finalError, 3e-3);
   CHECK(hessian.linearSolves > 0);
   CHECK(implicit.linearSolves > 0);
