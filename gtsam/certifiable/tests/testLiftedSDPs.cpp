@@ -17,6 +17,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/certifiable/LiftedSDPProblem.h>
+#include <gtsam/certifiable/internal/DirectSDP.h>
 #include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/constrained/QpCost.h>
 #include <gtsam/geometry/Pose2.h>
@@ -391,6 +392,200 @@ TEST(LiftedSDPs, Pose3_MonolithicAndChordal) {
 }  // namespace pose_ring_sdp_fixture
 /* ************************************************************************* */
 #endif
+
+/* ************************************************************************* */
+namespace direct_sdp_fixture {
+
+std::vector<Pose2> poses2() {
+  return {Pose2(1.2, -0.7, 0.4), Pose2(2.0, 0.3, -0.6), Pose2(-0.8, 1.1, 1.0)};
+}
+
+std::vector<Pose3> poses3() {
+  return {Pose3(Rot3::RzRyRx(0.3, -0.2, 0.4), Point3(1.2, -0.7, 0.2)),
+          Pose3(Rot3::RzRyRx(-0.5, 0.4, -0.6), Point3(2.0, 0.3, 1.0)),
+          Pose3(Rot3::RzRyRx(0.2, 0.7, 1.0), Point3(-0.8, 1.1, -0.3))};
+}
+
+template <typename T>
+NonlinearFactorGraph graphForPoses(const std::vector<T>& poses, bool anchor) {
+  constexpr int N = T::LieAlgebra::RowsAtCompileTime;
+  const KeyVector keys{19, 3, 81};
+  NonlinearFactorGraph graph;
+  if (anchor) {
+    graph.emplace_shared<FrobeniusPrior<T>>(
+        keys[0], poses[0].matrix(), noiseModel::Constrained::All(N * N));
+  }
+  Matrix covariance = Matrix::Identity(N * N, N * N);
+  covariance(0, 1) = covariance(1, 0) = 0.2;
+  covariance(1, 1) = 2.0;
+  const auto noise = noiseModel::Gaussian::Covariance(covariance);
+  for (size_t i = 0; i < poses.size(); ++i) {
+    auto measurement = poses[i].matrix().eval();
+    measurement(0, N - 1) += 0.15;
+    graph.emplace_shared<FrobeniusPrior<T>>(keys[i], measurement, noise);
+    if (i + 1 < poses.size()) {
+      graph.emplace_shared<FrobeniusBetweenFactor<T>>(
+          keys[i + 1], keys[i], poses[i + 1].between(poses[i]), noise);
+    }
+  }
+  return graph;
+}
+
+template <typename T>
+bool coefficientsMatch(const std::vector<T>& poses) {
+  const auto graph = graphForPoses(poses, false);
+  const QcqpProblem qcqp(graph);
+  const auto direct = internal::buildDirectSDP(graph);
+  if (direct.costs.size() != qcqp.costs().size() ||
+      direct.constraints.size() != qcqp.eConstraints().size()) return false;
+  for (size_t i = 0; i < direct.costs.size(); ++i) {
+    const auto& cost = dynamic_cast<const QpCost&>(*qcqp.costs()[i]);
+    if (cost.keys() != direct.costs[i].keys ||
+        !assert_equal(cost.hessianFactor().information(), direct.costs[i].matrix, 1e-12)) {
+      return false;
+    }
+    // Equality of full coefficient matrices also covers higher-rank Gram
+    // matrices, including directions that vanish on the pose manifold.
+    const Matrix& Q = direct.costs[i].matrix;
+    const Matrix gram = Matrix::Identity(Q.rows(), Q.cols());
+    if (std::abs(Q.cwiseProduct(gram).sum() -
+        cost.hessianFactor().information().cwiseProduct(gram).sum()) > 1e-12) return false;
+  }
+  for (const auto& constraint : direct.constraints) {
+    bool found = false;
+    for (const auto& factor : qcqp.eConstraints()) {
+      const auto& other = dynamic_cast<const QuadraticEqualityConstraintFactor&>(*factor)
+                              .quadraticConstraint();
+      if (other.key() == constraint.key && other.b() == constraint.rhs &&
+          other.A().isApprox(constraint.matrix, 1e-14)) found = true;
+    }
+    if (!found) return false;
+  }
+  Values values, lifted;
+  const KeyVector keys{19, 3, 81};
+  for (size_t i = 0; i < poses.size(); ++i) {
+    values.insert(keys[i], poses[i]);
+    InsertQcqpValue<T, 1>(keys[i], poses[i], &lifted);
+  }
+  return std::abs(graph.error(values) - qcqp.costs().error(lifted)) < 1e-10;
+}
+
+// Independent direct coefficients agree with QCQP lowering for nontrivial SE(2).
+TEST(LiftedSDPs, DirectPose2Coefficients) {
+  EXPECT(coefficientsMatch(poses2()));
+}
+
+// Full 3D rotations and correlated ambient noise expose ordering/whitening errors.
+TEST(LiftedSDPs, DirectPose3Coefficients) {
+  EXPECT(coefficientsMatch(poses3()));
+}
+
+// An arbitrary ambient prior's fixed-row mismatch remains part of its cost.
+TEST(LiftedSDPs, DirectPriorFixedRowCost) {
+  Matrix3 measurement = Pose2(1.0, 2.0, 0.3).matrix();
+  measurement(2, 0) = 0.4;
+  measurement(2, 2) = 1.2;
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusPrior<Pose2>>(7, measurement);
+  Values values, lifted;
+  values.insert(7, Pose2(-1.0, 0.7, -0.2));
+  InsertQcqpValue<Pose2, 1>(7, values.at<Pose2>(7), &lifted);
+  const QcqpProblem qcqp(graph);
+  const auto direct = internal::buildDirectSDP(graph);
+  const Vector x = lifted.at<Matrix>(7).col(0);
+  EXPECT_DOUBLES_EQUAL(graph.error(values), qcqp.costs().error(lifted), 1e-12);
+  EXPECT_DOUBLES_EQUAL(graph.error(values), 0.5 * x.dot(direct.costs[0].matrix * x), 1e-12);
+}
+
+// Partial hard priors and mixed pose types must not silently change semantics.
+TEST(LiftedSDPs, DirectRejectsUnsupportedGraphs) {
+  NonlinearFactorGraph partial;
+  Vector sigmas = Vector::Ones(9);
+  sigmas(0) = 0.0;
+  partial.emplace_shared<FrobeniusPrior<Pose2>>(
+      1, Pose2().matrix(), noiseModel::Constrained::MixedSigmas(sigmas));
+  CHECK_EXCEPTION(internal::buildDirectSDP(partial), std::invalid_argument);
+  CHECK_EXCEPTION({ QcqpProblem problem(partial); }, std::invalid_argument);
+  NonlinearFactorGraph mixed;
+  mixed.emplace_shared<FrobeniusPrior<Pose2>>(1, Pose2().matrix());
+  mixed.emplace_shared<FrobeniusPrior<Pose3>>(2, Pose3().matrix());
+  CHECK_EXCEPTION(internal::buildDirectSDP(mixed), std::invalid_argument);
+}
+
+#ifdef GTSAM_USE_MOSEK
+template <typename T>
+bool solvesMatch(const std::vector<T>& poses, ChordalOrderingType ordering) {
+  const auto graph = graphForPoses(poses, true);
+  const QcqpProblem qcqp(graph);
+  MosekMonolithicSDP qm(qcqp), dm(graph);
+  MosekChordalSDP qc(qcqp, ordering), dc(graph, ordering);
+  if (!qm.solve() || !dm.solve() || !qc.solve() || !dc.solve()) return false;
+  for (const auto& residuals : {qm.primalResiduals(), dm.primalResiduals(),
+                                qc.primalResiduals(), dc.primalResiduals()}) {
+    for (const auto& [name, residual] : residuals) {
+      if (!std::isfinite(residual) || residual > 1e-7) return false;
+    }
+  }
+  for (const auto& status : {qm.solutionStatus(), dm.solutionStatus(),
+                             qc.solutionStatus(), dc.solutionStatus()}) {
+    if (status != "SolutionStatus::Optimal") return false;
+  }
+  const double objective = qm.objectiveValue();
+  for (double other : {dm.objectiveValue(), qc.objectiveValue(), dc.objectiveValue()}) {
+    if (std::abs(objective - other) > 1e-6) return false;
+  }
+  const Vector target = traits<T>::template QcqpValue<1>(poses[0]).col(0);
+  const Matrix anchor = target * target.transpose();
+  return assert_equal(anchor, dm.liftedBlock(19, 19), 1e-7) &&
+         assert_equal(anchor, dc.liftedBlock(19, 19), 1e-7) &&
+         assert_equal(anchor, qm.liftedBlock(19, 19), 1e-7) &&
+         assert_equal(anchor, qc.liftedBlock(19, 19), 1e-7) &&
+         std::abs(dc.liftedBlock(19, 3)(0, 0) - 1.0) < 1e-7;
+}
+
+// All four SE(2) solves agree with exact anchors and noisy absolute measurements.
+TEST(LiftedSDPs, DirectPose2Solves) {
+  EXPECT(solvesMatch(poses2(), ChordalOrderingType::Colamd));
+#ifdef GTSAM_SUPPORT_NESTED_DISSECTION
+  EXPECT(solvesMatch(poses2(), ChordalOrderingType::Metis));
+#endif
+}
+
+// All four SE(3) solves agree away from planar or identity-only configurations.
+TEST(LiftedSDPs, DirectPose3Solves) {
+  EXPECT(solvesMatch(poses3(), ChordalOrderingType::Colamd));
+}
+
+// A unary-only variable still owns a PSD block in the direct chordal graph.
+TEST(LiftedSDPs, DirectUnaryOnly) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusPrior<Pose2>>(91, Pose2(1, 2, 0.4).matrix());
+  MosekChordalSDP problem(graph, ChordalOrderingType::Colamd);
+  CHECK_EXCEPTION(problem.liftedBlock(91, 91), std::runtime_error);
+  EXPECT(problem.solve());
+  EXPECT(std::abs(problem.objectiveValue()) < 1e-7);
+}
+
+// Cross blocks preserve row/column key orientation when read from Fusion.
+TEST(LiftedSDPs, DirectCrossBlockOrientation) {
+  const auto poses = poses2();
+  NonlinearFactorGraph graph;
+  for (size_t i = 0; i < 2; ++i) {
+    graph.emplace_shared<FrobeniusPrior<Pose2>>(
+        i, poses[i].matrix(), noiseModel::Constrained::All(9));
+  }
+  graph.emplace_shared<FrobeniusBetweenFactor<Pose2>>(
+      0, 1, poses[0].between(poses[1]));
+  MosekMonolithicSDP problem(graph);
+  EXPECT(problem.solve());
+  const Vector first = traits<Pose2>::QcqpValue<1>(poses[0]).col(0);
+  const Vector second = traits<Pose2>::QcqpValue<1>(poses[1]).col(0);
+  EXPECT(assert_equal(Matrix(first * second.transpose()), problem.liftedBlock(0, 1), 1e-7));
+}
+#endif
+
+}  // namespace direct_sdp_fixture
+/* ************************************************************************* */
 
 int main() {
   TestResult tr;
