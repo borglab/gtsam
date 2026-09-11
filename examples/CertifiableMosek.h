@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
 #include <iostream>
 #include <map>
 #include <stdexcept>
@@ -175,8 +176,11 @@ inline MosekExampleResult solveMosek(const QcqpProblem& problem,
     MosekMonolithicSDP sdp(problem);
     result = solveMosek(&sdp);
   } else if (solver == CertifiableSolver::MosekChordal) {
+    // Opt-in experiment: keep baseline runs available without changing inputs.
+    const char* reduction = std::getenv("GTSAM_MOSEK_ELIMINATE_NULLS");
     std::cout << "Chordal ordering: COLAMD" << std::endl;
-    MosekChordalSDP sdp(problem, ChordalOrderingType::Colamd);
+    MosekChordalSDP sdp(problem, ChordalOrderingType::Colamd,
+                        reduction && std::string(reduction) == "1");
     result = solveMosek(&sdp);
   } else {
     throw std::invalid_argument("solveMosek requires a MOSEK solver mode.");
