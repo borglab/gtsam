@@ -156,7 +156,7 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
   /// D=1 constrained-noise prior in lifted vector form.
   /// The stored measurement is vecM_ = vec(M), where M is the matrix passed to
   /// the FrobeniusPrior constructor. Pose lifts retain only the variable top
-  /// rows of M; rotation lifts retain the full matrix.
+  /// rows of M; Rot3 retains the full matrix and compact Rot2 retains c,s.
   void qcqpFactorsForVec(NonlinearFactorGraph* costs,
                          NonlinearEqualityConstraints* constraints) const {
     if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
@@ -179,15 +179,19 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
         InsertQcqpConstraints<T, 1>(this->key(), constraints);
 
         constexpr int LiftedDim = traits<T>::QcqpVectorDim;
-        static_assert((LiftedDim - 1) % N == 0);
-        constexpr int M = (LiftedDim - 1) / N;
-
-        // Build the homogeneous target while omitting fixed pose-matrix rows.
         Vector target = Vector::Zero(LiftedDim);
         target(0) = 1.0;
-        for (int column = 0; column < N; ++column) {
-          target.segment<M>(1 + column * M) =
-              vecM_.template segment<M>(column * N);
+        if constexpr (std::is_same_v<T, Rot2>) {
+          // vec(R)=[c,s,-s,c], so the compact lift retains its first column.
+          target.segment<2>(1) = vecM_.template head<2>();
+        } else {
+          static_assert((LiftedDim - 1) % N == 0);
+          constexpr int M = (LiftedDim - 1) / N;
+          // Build the homogeneous target while omitting fixed pose-matrix rows.
+          for (int column = 0; column < N; ++column) {
+            target.segment<M>(1 + column * M) =
+                vecM_.template segment<M>(column * N);
+          }
         }
 
         constraints->push_back(
@@ -459,38 +463,47 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       }
 
       constexpr int LiftedDim = traits<T>::QcqpVectorDim;
-      constexpr int MN = LiftedDim - 1;  // The lifted vector has a leading 1
-      static_assert(MN % N == 0);
-      constexpr int M = MN / N;
-      using MatrixM = Eigen::Matrix<double, M, M>;
+      Matrix Q_trunc_hom;
+      if constexpr (std::is_same_v<T, Rot2>) {
+        // vec(R)=L[c,s]' exactly. Since SO(2) is abelian,
+        // vec(R2-R1*M)=L(q2-M*q1).
+        Matrix L(4, 2);
+        L << 1.0, 0.0, 0.0, 1.0, 0.0, -1.0, 1.0, 0.0;
+        Matrix fullB = Matrix::Zero(4, 2 * LiftedDim);
+        fullB.block<4, 2>(0, 1) = -L * this->T12_.matrix();
+        fullB.block<4, 2>(0, LiftedDim + 1) = L;
+        const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
+        Q_trunc_hom = whitenedB.transpose() * whitenedB;
+      } else {
+        constexpr int MN = LiftedDim - 1;
+        static_assert(MN % N == 0);
+        constexpr int M = MN / N;
+        using MatrixM = Eigen::Matrix<double, M, M>;
 
-      const MatrixN measurement = this->T12_.matrix();
-      const MatrixM I_M = MatrixM::Identity();
-      // Column-major vec(XM) = (M.transpose() kron I) vec(X).
-      const Matrix A = internalKroneckerProduct(measurement.transpose(), I_M);
+        const MatrixN measurement = this->T12_.matrix();
+        const MatrixM I_M = MatrixM::Identity();
+        // Column-major vec(XM) = (M.transpose() kron I) vec(X).
+        const Matrix A = internalKroneckerProduct(measurement.transpose(), I_M);
 
-      // Build the retained-coordinate residual B = [-A I].
-      Matrix B = Matrix::Zero(MN, 2 * MN);
-      B.block<MN, MN>(0, 0) = -A;
-      B.block<MN, MN>(0, MN).setIdentity();
+        Matrix B = Matrix::Zero(MN, 2 * MN);
+        B.block<MN, MN>(0, 0) = -A;
+        B.block<MN, MN>(0, MN).setIdentity();
 
-      // Restore omitted pose-matrix rows before applying the noise model.
-      Matrix fullB = Matrix::Zero(Dim, 2 * MN);
-      for (int column = 0; column < N; ++column) {
-        fullB.block<M, 2 * MN>(column * N, 0) =
-            B.block<M, 2 * MN>(column * M, 0);
+        Matrix fullB = Matrix::Zero(Dim, 2 * MN);
+        for (int column = 0; column < N; ++column) {
+          fullB.block<M, 2 * MN>(column * N, 0) =
+              B.block<M, 2 * MN>(column * M, 0);
+        }
+
+        const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
+        const Matrix Q = whitenedB.transpose() * whitenedB;
+        Q_trunc_hom = Matrix::Zero(2 * LiftedDim, 2 * LiftedDim);
+        Q_trunc_hom.block<MN, MN>(1, 1) = Q.block<MN, MN>(0, 0);
+        Q_trunc_hom.block<MN, MN>(1, LiftedDim + 1) = Q.block<MN, MN>(0, MN);
+        Q_trunc_hom.block<MN, MN>(LiftedDim + 1, 1) = Q.block<MN, MN>(MN, 0);
+        Q_trunc_hom.block<MN, MN>(LiftedDim + 1, LiftedDim + 1) =
+            Q.block<MN, MN>(MN, MN);
       }
-
-      const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
-      const Matrix Q = whitenedB.transpose() * whitenedB;
-
-      // Embed both Hessian blocks into homogeneous QCQP coordinates.
-      Matrix Q_trunc_hom = Matrix::Zero(2 * LiftedDim, 2 * LiftedDim);
-      Q_trunc_hom.block<MN, MN>(1, 1) = Q.block<MN, MN>(0, 0);
-      Q_trunc_hom.block<MN, MN>(1, LiftedDim + 1) = Q.block<MN, MN>(0, MN);
-      Q_trunc_hom.block<MN, MN>(LiftedDim + 1, 1) = Q.block<MN, MN>(MN, 0);
-      Q_trunc_hom.block<MN, MN>(LiftedDim + 1, LiftedDim + 1) =
-          Q.block<MN, MN>(MN, MN);
 
       InsertQcqpConstraints<T, 1>(this->key1(), constraints);
       InsertQcqpConstraints<T, 1>(this->key2(), constraints);
@@ -699,36 +712,45 @@ class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       }
 
       constexpr int LiftedDim = traits<T>::QcqpVectorDim;
-      constexpr int MN = LiftedDim - 1;
-      static_assert(MN % N == 0);
-      constexpr int M = MN / N;
-      using MatrixM = Eigen::Matrix<double, M, M>;
+      Matrix Q;
+      if constexpr (std::is_same_v<T, Rot2>) {
+        Matrix L(4, 2);
+        L << 1.0, 0.0, 0.0, 1.0, 0.0, -1.0, 1.0, 0.0;
+        Matrix fullB = Matrix::Zero(4, 2 * LiftedDim);
+        fullB.block<4, 2>(0, 1) = L;
+        fullB.block<4, 2>(0, LiftedDim + 1) = -L * this->T12_.matrix();
+        const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
+        Q = whitenedB.transpose() * whitenedB;
+      } else {
+        constexpr int MN = LiftedDim - 1;
+        static_assert(MN % N == 0);
+        constexpr int M = MN / N;
+        using MatrixM = Eigen::Matrix<double, M, M>;
 
-      const MatrixN iTj = this->T12_.matrix();
-      const MatrixM linearPart = iTj.template topLeftCorner<M, M>();
-      const Matrix leftAction =
-          internalKroneckerProduct(MatrixN::Identity(), linearPart);
+        const MatrixN iTj = this->T12_.matrix();
+        const MatrixM linearPart = iTj.template topLeftCorner<M, M>();
+        const Matrix leftAction =
+            internalKroneckerProduct(MatrixN::Identity(), linearPart);
 
-      Vector offset = Vector::Zero(MN);
-      if constexpr (M < N) {
-        offset.segment((N - 1) * M, M) = iTj.block(0, N - 1, M, 1);
+        Vector offset = Vector::Zero(MN);
+        if constexpr (M < N) {
+          offset.segment((N - 1) * M, M) = iTj.block(0, N - 1, M, 1);
+        }
+
+        Matrix retainedB = Matrix::Zero(MN, 2 * LiftedDim);
+        retainedB.block(0, 1, MN, MN).setIdentity();
+        retainedB.col(LiftedDim) = -offset;
+        retainedB.block(0, LiftedDim + 1, MN, MN) = -leftAction;
+
+        Matrix fullB = Matrix::Zero(Dim, 2 * LiftedDim);
+        for (int column = 0; column < N; ++column) {
+          fullB.block(column * N, 0, M, 2 * LiftedDim) =
+              retainedB.block(column * M, 0, M, 2 * LiftedDim);
+        }
+
+        const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
+        Q = whitenedB.transpose() * whitenedB;
       }
-
-      // With x = [h; vec(iTw); h; vec(jTw)], the retained-row residual is
-      // vec(iTw) - (I kron iTj) vec(jTw) - h*offset.
-      Matrix retainedB = Matrix::Zero(MN, 2 * LiftedDim);
-      retainedB.block(0, 1, MN, MN).setIdentity();
-      retainedB.col(LiftedDim) = -offset;
-      retainedB.block(0, LiftedDim + 1, MN, MN) = -leftAction;
-
-      Matrix fullB = Matrix::Zero(Dim, 2 * LiftedDim);
-      for (int column = 0; column < N; ++column) {
-        fullB.block(column * N, 0, M, 2 * LiftedDim) =
-            retainedB.block(column * M, 0, M, 2 * LiftedDim);
-      }
-
-      const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
-      const Matrix Q = whitenedB.transpose() * whitenedB;
 
       InsertQcqpConstraints<T, 1>(this->key1(), constraints);
       InsertQcqpConstraints<T, 1>(this->key2(), constraints);

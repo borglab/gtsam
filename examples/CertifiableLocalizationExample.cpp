@@ -138,7 +138,7 @@ int main() {
   }
 
   LiftedSDPProblem<ChordalSDP, MosekSDPSolver> chordalSdp(
-      qcqp, ChordalOrderingType::Metis);
+      qcqp, ChordalOrderingType::Colamd);
   if (!solveAndReportSdp("Chordal", chordalSdp, mosekParams, problem)) {
     return 1;
   }

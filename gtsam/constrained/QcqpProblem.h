@@ -132,7 +132,10 @@ void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
  *
  * D=1 accepts the exact homogenized vector dimension defined by T. D>1 accepts
  * exact N-by-D matrix slices, where N is the intrinsic matrix row dimension
- * of T. Canonical lifts and solutions whose connected component has been
+ * of T. Selection is shape-only: types with identical lift dimensions (for
+ * example, compact Rot2 and Vector2 at D=1) cannot be distinguished in a
+ * mixed Values container; recover those variables using their known keys.
+ * Canonical lifts and solutions whose connected component has been
  * explicitly gauge-aligned have meaningful absolute rotations. An unaligned
  * D>1 component has a common right-O(D) gauge, so its independently extracted
  * absolute rotations are intentionally best-effort and gauge-dependent.

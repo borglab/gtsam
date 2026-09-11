@@ -376,7 +376,7 @@ TEST(QcqpProblem, MissingQcqpTraitsThrows) {
   EXPECT(ThrowsMissingQcqpTraits(graph));
 }
 
-// For x_i=[1;vec(R_i)], verifies the lifted quadratic cost equals
+// For x_i=[1,c_i,s_i], verifies the lifted quadratic cost equals
 // 0.5*||R_2-R_1*M||_F^2 and all homogeneous SO(2) constraints are feasible.
 TEST(QcqpProblem, SingleFrobeniusBetweenFactor) {
   NonlinearFactorGraph graph;
@@ -422,6 +422,16 @@ std::array<double, 4> D1FrobeniusBetweenFactorErrors(const T& value1,
           problem.costs().error(predictedQcqpValues)};
 }
 
+// The compact Rot2 coordinates preserve arbitrary ambient diagonal weighting.
+TEST(QcqpProblem, FrobeniusBetweenFactorRot2D1Anisotropic) {
+  const auto errors = D1FrobeniusBetweenFactorErrors(
+      Rot2::fromAngle(0.3), Rot2::fromAngle(-0.2), Rot2::fromAngle(0.4),
+      Vector4{0.4, 0.7, 1.1, 1.6});
+  EXPECT_DOUBLES_EQUAL(errors[0], errors[1], 1e-10);
+  EXPECT_DOUBLES_EQUAL(0.0, errors[2], 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, errors[3], 1e-12);
+}
+
 TEST(QcqpProblem, FrobeniusBetweenFactorRot3D1) {
   const Rot3 value1 = Rot3::Expmap(Vector3{0.2, -0.3, 0.4});
   const Rot3 value2 = Rot3::Expmap(Vector3{-0.1, 0.5, 0.2});
@@ -462,8 +472,8 @@ TEST(QcqpProblem, FrobeniusBetweenFactorPose3D1) {
   EXPECT_DOUBLES_EQUAL(0.0, errors[3], 1e-12);
 }
 
-// A hard prior imposes x=[1;vec(M)], not merely a homogeneous direction.
-// Since ||x||^2=1+||M||_F^2=3, the negated lift has violation 2*sqrt(3).
+// A hard prior imposes x=[1,c,s], not merely a homogeneous direction.
+// Since ||x||^2=2, the negated lift has violation 2*sqrt(2).
 TEST(QcqpProblem, HardFrobeniusPriorRot2D1) {
   const Rot2 measured = Rot2::fromAngle(0.25);
   const auto hardNoise = noiseModel::Constrained::All(4);
@@ -486,10 +496,10 @@ TEST(QcqpProblem, HardFrobeniusPriorRot2D1) {
   EXPECT(priorConstraint != nullptr);
   if (!priorConstraint) return;
 
-  const Vector5 expectedTarget = traits<Rot2>::QcqpValue<1>(measured).col(0);
+  const Vector3 expectedTarget = traits<Rot2>::QcqpValue<1>(measured).col(0);
   const JacobianFactor& priorJacobian =
       priorConstraint->linearConstraint().factor();
-  EXPECT(assert_equal(Matrix(Matrix5::Identity()), Matrix(priorJacobian.getA()),
+  EXPECT(assert_equal(Matrix(Matrix3::Identity()), Matrix(priorJacobian.getA()),
                       1e-12));
   EXPECT(assert_equal(Vector(expectedTarget), Vector(priorJacobian.getb()),
                       1e-12));
@@ -501,7 +511,7 @@ TEST(QcqpProblem, HardFrobeniusPriorRot2D1) {
 
   Values negatedQcqpValues;
   negatedQcqpValues.insert(x0, -traits<Rot2>::QcqpValue<1>(measured));
-  EXPECT_DOUBLES_EQUAL(2.0 * std::sqrt(3.0),
+  EXPECT_DOUBLES_EQUAL(2.0 * std::sqrt(2.0),
                        problem.eConstraints().violationNorm(negatedQcqpValues),
                        1e-12);
 }
@@ -799,7 +809,7 @@ TEST(QcqpProblem, HardPriorPinsRot2RingSign) {
                        problem.costs().error(negated), 1e-12);
   EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(canonical),
                        1e-12);
-  EXPECT_DOUBLES_EQUAL(2.0 * std::sqrt(3.0),
+  EXPECT_DOUBLES_EQUAL(2.0 * std::sqrt(2.0),
                        problem.eConstraints().violationNorm(negated), 1e-12);
 }
 
@@ -1081,10 +1091,9 @@ TEST(QcqpProblem, Pose2D1QcqpValueConstraints) {
                        1e-12);
 
   Vector7 reflectedX{1.0, 1.0, 0.0, 0.0, -1.0, 2.0, -3.0};
-  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first *
-                   reflectedX)(0, 0) -
-                  constraints[1].second) >
-         1e-12);
+  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first * reflectedX)(
+                      0, 0) -
+                  constraints[1].second) > 1e-12);
   for (size_t k = 2; k < constraints.size(); ++k) {
     EXPECT_DOUBLES_EQUAL(
         constraints[k].second,
@@ -1167,10 +1176,9 @@ TEST(QcqpProblem, Pose3D1QcqpValueConstraints) {
 
   Eigen::Matrix<double, 13, 1> reflectedX{1.0, 1.0, 0.0,  0.0, 0.0,  1.0, 0.0,
                                           0.0, 0.0, -1.0, 2.0, -3.0, 4.0};
-  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first *
-                   reflectedX)(0, 0) -
-                  constraints[1].second) >
-         1e-12);
+  EXPECT(std::abs((reflectedX.transpose() * constraints[1].first * reflectedX)(
+                      0, 0) -
+                  constraints[1].second) > 1e-12);
   for (size_t k = 4; k < constraints.size(); ++k) {
     EXPECT_DOUBLES_EQUAL(
         constraints[k].second,
@@ -1462,10 +1470,31 @@ namespace QcqpExtractionFixture {
 
 // Verify the published D=1 QCQP vector dimensions for each supported group.
 TEST(QcqpProblem, QcqpVectorDimensions) {
-  LONGS_EQUAL(5, traits<Rot2>::QcqpVectorDim);
+  LONGS_EQUAL(3, traits<Vector2>::QcqpVectorDim);
+  LONGS_EQUAL(4, traits<Vector3>::QcqpVectorDim);
+  LONGS_EQUAL(3, traits<Rot2>::QcqpVectorDim);
   LONGS_EQUAL(10, traits<Rot3>::QcqpVectorDim);
   LONGS_EQUAL(7, traits<Pose2>::QcqpVectorDim);
   LONGS_EQUAL(13, traits<Pose3>::QcqpVectorDim);
+}
+
+// Fixed-size Euclidean values use [1; vec(x)] and recover after homogeneous
+// scaling, with only the leading coordinate constrained.
+TEST(QcqpProblem, FixedVectorD1QcqpValueConstraints) {
+  const Vector3 value(2.0, -3.0, 4.0);
+  const Matrix qcqpValue = traits<Vector3>::QcqpValue<1>(value);
+  EXPECT(assert_equal(Vector(Vector4(1.0, 2.0, -3.0, 4.0)),
+                      Vector(qcqpValue.col(0)), 1e-12));
+  EXPECT(assert_equal(
+      value, traits<Vector3>::FromQcqpValue<1>(-2.0 * qcqpValue), 1e-12));
+
+  const auto constraints = traits<Vector3>::QcqpConstraints<1>();
+  LONGS_EQUAL(1, constraints.size());
+  EXPECT_DOUBLES_EQUAL(
+      1.0,
+      (qcqpValue.transpose() * constraints.front().first * qcqpValue)(0, 0),
+      1e-12);
+  EXPECT_DOUBLES_EQUAL(1.0, constraints.front().second, 1e-12);
 }
 
 // Verify that a D=1 QCQP value remains recoverable after homogeneous scaling.
@@ -1475,9 +1504,17 @@ T ScaledD1RoundTrip(const T& value) {
   return traits<T>::template FromQcqpValue<1>(X);
 }
 
-// Rot2 D=1 conversion and recovery use the same column-major coordinates.
+// Rot2 D=1 conversion and recovery use the compact [1,cos(theta),sin(theta)].
 TEST(QcqpProblem, Rot2D1QcqpValueRoundTrip) {
   const Rot2 value = Rot2::fromAngle(0.4);
+  const Matrix X = traits<Rot2>::QcqpValue<1>(value);
+  EXPECT(assert_equal(Vector3(1.0, value.c(), value.s()), Vector(X.col(0)),
+                      1e-12));
+  const auto constraints = traits<Rot2>::QcqpConstraints<1>();
+  LONGS_EQUAL(2, constraints.size());
+  for (const auto& [A, b] : constraints) {
+    EXPECT_DOUBLES_EQUAL(b, (X.transpose() * A * X)(0, 0), 1e-12);
+  }
   EXPECT(assert_equal(value, ScaledD1RoundTrip(value), 1e-12));
 }
 

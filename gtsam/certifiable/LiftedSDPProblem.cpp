@@ -21,6 +21,8 @@
 #include <Eigen/Eigenvalues>
 #include <algorithm>
 #include <cmath>
+#include <cstdlib>
+#include <fstream>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -79,11 +81,40 @@ MosekSolveSummary SolveMosekModel(
     M->setSolverParam(kv.first, kv.second);
   }
 
+  // Opt-in diagnostics preserve the model and solver parameters. Use a unique
+  // prefix per solve; the task, iteration log, and raw solution stay together.
+  const char* diagnosticPrefix = std::getenv("GTSAM_MOSEK_DIAGNOSTICS");
+  std::shared_ptr<std::ofstream> diagnosticLog;
+  if (diagnosticPrefix && *diagnosticPrefix) {
+    diagnosticLog = std::make_shared<std::ofstream>(
+        std::string(diagnosticPrefix) + ".log");
+    if (!*diagnosticLog) {
+      throw std::runtime_error("Cannot open MOSEK diagnostic log.");
+    }
+    M->setLogHandler([diagnosticLog](const std::string& message) {
+      *diagnosticLog << message;
+    });
+    M->writeTask(std::string(diagnosticPrefix) + ".task.gz");
+  }
+
   MosekSolveSummary summary;
   M->solve();
   summary.problemStatus = M->getProblemStatus();
   summary.optimizerTimeSeconds = M->getSolverDoubleInfo("optimizerTime");
   summary.solved = true;
+
+  if (diagnosticLog) {
+    *diagnosticLog << "\nGTSAM optimize response: "
+                   << M->getSolverIntInfo("optimizeResponse") << '\n';
+    const auto task = M->getTask();
+    if (MSK_analyzesolution(task, MSK_STREAM_LOG, MSK_SOL_ITR) != MSK_RES_OK ||
+        MSK_writejsonsol(task, (std::string(diagnosticPrefix) + ".solution.json")
+                                  .c_str()) != MSK_RES_OK) {
+      throw std::runtime_error("Cannot export MOSEK solution diagnostics.");
+    }
+    diagnosticLog->flush();
+    M->setLogHandler(nullptr);
+  }
 
   return summary;
 }

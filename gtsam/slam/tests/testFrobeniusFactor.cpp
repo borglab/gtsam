@@ -317,16 +317,14 @@ TEST(FrobeniusLeftBetweenFactorPose3, QcqpError) {
 
 // Verifies polymorphic cloning and rejects a lossy covariance conversion.
 TEST(FrobeniusLeftBetweenFactorPose3, CloneAndNoiseValidation) {
-  const auto isotropic =
-      noiseModel::Isotropic::Sigma(Pose3::dimension, 0.2);
+  const auto isotropic = noiseModel::Isotropic::Sigma(Pose3::dimension, 0.2);
   const FrobeniusLeftBetweenFactor<Pose3> factor(i, j, iTj, isotropic);
   EXPECT(factor.equals(*factor.clone()));
 
   Vector6 sigmas;
   sigmas << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6;
   const auto anisotropic = noiseModel::Diagonal::Sigmas(sigmas);
-  CHECK_EXCEPTION((FrobeniusLeftBetweenFactor<Pose3>(
-                      i, j, iTj, anisotropic)),
+  CHECK_EXCEPTION((FrobeniusLeftBetweenFactor<Pose3>(i, j, iTj, anisotropic)),
                   std::invalid_argument);
 
   const auto ambient =
@@ -336,6 +334,34 @@ TEST(FrobeniusLeftBetweenFactorPose3, CloneAndNoiseValidation) {
 }
 
 }  // namespace frobenius_left_pose3_fixture
+/* ************************************************************************* */
+
+// Verify the compact Rot2 lift preserves a left-composed ambient Frobenius
+// cost, including unequal weights on the four matrix entries.
+TEST(FrobeniusLeftBetweenFactorRot2, QcqpError) {
+  const Key i = 21, j = 22;
+  const Rot2 iRw = Rot2::fromAngle(0.7);
+  const Rot2 jRw = Rot2::fromAngle(-0.3);
+  const Rot2 iRj = iRw.compose(jRw.inverse());
+  const auto model = noiseModel::Diagonal::Sigmas(Vector4{0.4, 0.7, 1.1, 1.6});
+
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusLeftBetweenFactor<Rot2>>(i, j, iRj, model);
+
+  Values values;
+  values.insert(i, iRw.compose(Rot2::fromAngle(0.04)));
+  values.insert(j, jRw.compose(Rot2::fromAngle(-0.02)));
+  Values qcqpValues;
+  InsertQcqpValue<Rot2, 1>(i, values.at<Rot2>(i), &qcqpValues);
+  InsertQcqpValue<Rot2, 1>(j, values.at<Rot2>(j), &qcqpValues);
+
+  const QcqpProblem qcqp(graph, 1);
+  EXPECT_DOUBLES_EQUAL(graph.error(values), qcqp.costs().error(qcqpValues),
+                       1e-10);
+  EXPECT_DOUBLES_EQUAL(0.0, qcqp.eConstraints().violationNorm(qcqpValues),
+                       1e-12);
+}
+
 /* ************************************************************************* */
 
 /* ************************************************************************* */

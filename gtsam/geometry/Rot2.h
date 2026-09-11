@@ -252,25 +252,22 @@ namespace gtsam {
 
 template <>
 struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
-  /// Dimension of the D=1 homogenized QCQP vector.
-  inline constexpr static int QcqpVectorDim = 5;
+  /// Dimension of the D=1 homogenized QCQP vector [h, cos(theta), sin(theta)].
+  inline constexpr static int QcqpVectorDim = 3;
 
   /**
    * Return a matrix-valued QCQP variable for Rot2.
    *
-   * D=1 prepends a fixed homogenization coordinate to the existing
-   * column-major SO(2) vectorization, yielding a 5-by-1 matrix.
+   * D=1 uses the minimal homogeneous representation [1, cos(theta),
+   * sin(theta)]', yielding a 3-by-1 matrix. The remaining matrix entries are
+   * recovered from the exact linear identities r01=-r10 and r11=r00.
    * D>=2 returns [R', 0] as a 2-by-D row-orthonormal matrix. These matrix
    * variables form a Stiefel relaxation with a common right-O(D) gauge.
    */
   template <int D = 1>
   static Matrix QcqpValue(const Rot2& value) {
     if constexpr (D == 1) {
-      const Matrix2 R = value.matrix();
-      Vector5 X;
-      X(0, 0) = 1.0;  // Homogenization entry.
-      X.bottomRows(4) = Eigen::Map<const Matrix>(R.data(), 4, 1);
-      return X;
+      return Vector3(1.0, value.c(), value.s());
     } else if constexpr (D >= 2) {
       Matrix X = Matrix::Zero(2, D);
       X.leftCols<2>() = value.matrix().transpose();
@@ -283,50 +280,29 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
 
   /**
    * Return row-space QCQP equality constraints A, b such that
-   * trace(x_i' A x_i) = b[j]. For D=1 these are the lifted SO(2) constraints in
-   * column-major coordinates. For D>=2 the same 2-by-2 constraints enforce
-   * row orthonormality. The matrix constraints enforce XX'=I, not determinant
-   * +1; square D=2 variables therefore admit both components of O(2).
+   * trace(x_i' A x_i) = b[j]. For D=1 these fix h^2=1 and impose the
+   * unit-circle constraint c^2+s^2=1. For D>=2 the same 2-by-2 constraints
+   * enforce row orthonormality. The matrix constraints enforce XX'=I, not
+   * determinant +1; square D=2 variables therefore admit both components of
+   * O(2).
    */
   template <int D = 1>
   static std::vector<std::pair<Matrix, double>> QcqpConstraints() {
     if constexpr (D == 1) {
-      // The homogenized Rot2 lifted vector is
-      // x = [1, r00, r10, r01, r11].
+      // The minimal homogenized Rot2 lifted vector is x = [h, c, s].
       std::vector<std::pair<Matrix, double>> constraints;
-      constraints.reserve(5);
+      constraints.reserve(2);
 
-      Matrix A = Matrix::Zero(5, 5);
+      Matrix A = Matrix::Zero(QcqpVectorDim, QcqpVectorDim);
 
       // The quadratic lift fixes x(0)^2 = 1; a hard prior pins its sign.
       A(0, 0) = 1.0;
       constraints.emplace_back(A, 1.0);
 
-      // det(R) = r00*r11 - r10*r01 = 1.
-      A.setZero();
-      A(1, 4) = 0.5;
-      A(4, 1) = 0.5;
-      A(2, 3) = -0.5;
-      A(3, 2) = -0.5;
-      constraints.emplace_back(A, 1.0);
-
-      // RR^T = I supplies the default, non-redundant row-orthonormality
-      // Note the reuse of the A variable for multiple constraints.
+      // c^2 + s^2 = 1 simultaneously enforces orthonormality and det(R)=1.
       A.setZero();
       A(1, 1) = 1.0;
-      A(3, 3) = 1.0;
-      constraints.emplace_back(A, 1.0);
-
-      A.setZero();
-      A(1, 2) = 0.5;
-      A(2, 1) = 0.5;
-      A(3, 4) = 0.5;
-      A(4, 3) = 0.5;
-      constraints.emplace_back(A, 0.0);
-
-      A.setZero();
       A(2, 2) = 1.0;
-      A(4, 4) = 1.0;
       constraints.emplace_back(A, 1.0);
 
       return constraints;
@@ -355,7 +331,7 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
   }
 
   /**
-   * Project a D=1 vector or canonical 2-by-D lift back to Rot2.
+   * Project a D=1 minimal vector or canonical 2-by-D lift back to Rot2.
    *
    * Matrix-form QCQP solutions have a right-O(D) gauge, making this
    * leading-block projection gauge-dependent unless the caller has first
@@ -367,14 +343,11 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
       if (X.rows() != QcqpVectorDim || X.cols() != 1 ||
           std::abs(X(0, 0)) < 1e-9) {
         throw std::invalid_argument(
-            "traits<Rot2>::FromQcqpValue requires a 5-by-1 vector with a "
+            "traits<Rot2>::FromQcqpValue requires a 3-by-1 vector with a "
             "nonzero homogenization entry.");
       }
       const Vector x = X.col(0) / X(0, 0);
-      Matrix2 R;
-      R.col(0) = x.segment<2>(1);
-      R.col(1) = x.segment<2>(3);
-      return Rot2::ClosestTo(R);
+      return Rot2::atan2(x(2), x(1));
     } else {
       static_assert(D >= 2,
                     "traits<Rot2>::FromQcqpValue requires D >= 2.");
