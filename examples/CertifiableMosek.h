@@ -19,16 +19,14 @@
 #include <gtsam/certifiable/LiftedSDPProblem.h>
 #include <gtsam/constrained/LinearConstraint.h>
 #include <gtsam/constrained/QcqpProblem.h>
-#include <gtsam/geometry/Rot2.h>
+#include <gtsam/slam/FrobeniusFactor.h>
 
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <iostream>
-#include <map>
 #include <stdexcept>
 #include <string>
-#include <type_traits>
 #include <vector>
 
 namespace gtsam::examples {
@@ -60,39 +58,26 @@ inline CertifiableSolver parseCertifiableSolver(const std::string& name) {
   throw std::invalid_argument("Unknown solver: " + name);
 }
 
-/** Fix one rotation and point to remove the global SE(d) gauge from an SDP. */
+/**
+ * Build a D=1 QCQP with one rotation and point fixed to remove the SE(d) gauge.
+ * Keep the input graph unchanged for physical-cost evaluation and the BM path.
+ */
 template <typename Rotation, typename Point>
-void addPoseGauge(Key rotationKey, Key pointKey, QcqpProblem* problem) {
-  if (!problem) {
-    throw std::invalid_argument("addPoseGauge: problem is null.");
-  }
-
-  constexpr int kRotationDim = traits<Rotation>::QcqpVectorDim;
+QcqpProblem makeAnchoredQcqp(const NonlinearFactorGraph& graph, Key rotationKey,
+                             Key pointKey) {
   constexpr int kPointDim = traits<Point>::QcqpVectorDim;
   constexpr int kDimension = Point::RowsAtCompileTime;
-
-  Matrix rotationSelector;
-  Vector identityVector;
-  if constexpr (std::is_same_v<Rotation, Rot2>) {
-    rotationSelector = Matrix::Zero(2, kRotationDim);
-    rotationSelector.block<2, 2>(0, 1).setIdentity();
-    identityVector = Vector2(1.0, 0.0);
-  } else {
-    rotationSelector = Matrix::Zero(kDimension * kDimension, kRotationDim);
-    rotationSelector
-        .block(0, 1, kDimension * kDimension, kDimension * kDimension)
-        .setIdentity();
-    const Matrix identity = Matrix::Identity(kDimension, kDimension);
-    identityVector =
-        Eigen::Map<const Vector>(identity.data(), kDimension * kDimension);
-  }
-  problem->addConstraint(LinearConstraint::Equal(
-      JacobianFactor(rotationKey, rotationSelector, identityVector)));
+  NonlinearFactorGraph anchoredGraph = graph;
+  anchoredGraph.emplace_shared<FrobeniusPrior<Rotation>>(
+      rotationKey, Rotation().matrix(),
+      noiseModel::Constrained::All(kDimension * kDimension));
+  QcqpProblem problem(anchoredGraph, 1);
 
   Matrix pointSelector = Matrix::Zero(kDimension, kPointDim);
   pointSelector.block(0, 1, kDimension, kDimension).setIdentity();
-  problem->addConstraint(LinearConstraint::Equal(
+  problem.addConstraint(LinearConstraint::Equal(
       JacobianFactor(pointKey, pointSelector, Vector::Zero(kDimension))));
+  return problem;
 }
 
 struct MosekExampleResult {
@@ -146,13 +131,10 @@ template <typename Solver>
 MosekExampleResult solveMosek(Solver* solver) {
   if (!solver) throw std::invalid_argument("solveMosek: solver is null.");
   constexpr double kMaximumSolveTimeSeconds = 1500.0;
-  const std::map<std::string, double> params{
-      {"intpntCoTolRelGap", 1e-10},
-      {"optimizerMaxTime", kMaximumSolveTimeSeconds},
-  };
-
   MosekExampleResult result;
-  result.solved = solver->solve(params);
+  // Accuracy defaults belong to the backend; only cap the example's runtime.
+  result.solved =
+      solver->solve({{"optimizerMaxTime", kMaximumSolveTimeSeconds}});
   result.status = solver->problemStatus();
   result.objective = solver->objectiveValue();
   result.solveTimeSeconds = solver->solveTimeSeconds();

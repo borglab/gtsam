@@ -275,9 +275,8 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
             << "  ranges=" << data.ranges.size() << "\n";
 
   if (solver != examples::CertifiableSolver::Staircase) {
-    QcqpProblem problem(graph, 1);
-    examples::addPoseGauge<RotT, Point>(rotationKey(0), translationKey(0),
-                                        &problem);
+    const QcqpProblem problem = examples::makeAnchoredQcqp<RotT, Point>(
+        graph, rotationKey(0), translationKey(0));
     const examples::MosekExampleResult result =
         examples::solveMosek(problem, solver);
     if (!result.solved) {

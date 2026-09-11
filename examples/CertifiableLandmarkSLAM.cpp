@@ -234,10 +234,9 @@ int runCertifiableLandmarkSLAM(const std::string& path,
             << "  init=" << initializationName(initializationMethod) << "\n";
 
   if (solver != examples::CertifiableSolver::Staircase) {
-    QcqpProblem problem(graph, 1);
     const Key anchor = *poseIndices.begin();
-    examples::addPoseGauge<RotT, Point>(rotationKey(anchor),
-                                        translationKey(anchor), &problem);
+    const QcqpProblem problem = examples::makeAnchoredQcqp<RotT, Point>(
+        graph, rotationKey(anchor), translationKey(anchor));
     const examples::MosekExampleResult result =
         examples::solveMosek(problem, solver);
     if (!result.solved) {
