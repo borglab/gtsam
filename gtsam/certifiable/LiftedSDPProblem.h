@@ -77,6 +77,12 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
    */
   explicit LiftedSDPProblem(const QcqpProblem& problem);
 
+  /**
+   * Transcribe a homogeneous Pose2 or Pose3 Frobenius graph directly to SDP.
+   * Supports Gaussian measurement costs and fully hard Frobenius priors.
+   */
+  explicit LiftedSDPProblem(const NonlinearFactorGraph& graph);
+
   /// Dispose of the owned MOSEK model.
   ~LiftedSDPProblem();
 
@@ -96,6 +102,21 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
 
   /// Return MOSEK's optimizer time in seconds after solve().
   double solveTimeSeconds() const;
+
+  /**
+   * Return a solved Gram block for numerical auditing. In a chordal SDP the
+   * requested pair must occur together in a clique. Requires solve().
+   */
+  Matrix liftedBlock(Key first, Key second) const;
+
+  /// Return primal solution status after solve().
+  std::string solutionStatus() const;
+
+  /// Return the dual objective after solve().
+  double dualObjectiveValue() const;
+
+  /// Return MOSEK's maximum primal violations for constraints and PSD cones.
+  std::map<std::string, double> primalResiduals() const;
 
   /// Return one keyed D=1 QCQP vector per diagonal SDP block after solve().
   Values qcqpValues() const;
@@ -135,6 +156,13 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
   LiftedSDPProblem(const QcqpProblem& problem,
                    ChordalOrderingType orderingType);
 
+  /**
+   * Transcribe a homogeneous Pose2 or Pose3 Frobenius graph directly to SDP,
+   * using the requested symbolic elimination ordering.
+   */
+  LiftedSDPProblem(const NonlinearFactorGraph& graph,
+                   ChordalOrderingType orderingType);
+
   /// Dispose of the owned MOSEK model.
   ~LiftedSDPProblem();
 
@@ -154,6 +182,21 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
 
   /// Return MOSEK's optimizer time in seconds after solve().
   double solveTimeSeconds() const;
+
+  /**
+   * Return a solved Gram block for numerical auditing. In a chordal SDP the
+   * requested pair must occur together in a clique. Requires solve().
+   */
+  Matrix liftedBlock(Key first, Key second) const;
+
+  /// Return primal solution status after solve().
+  std::string solutionStatus() const;
+
+  /// Return the dual objective after solve().
+  double dualObjectiveValue() const;
+
+  /// Return MOSEK's maximum primal violations for constraints and PSD cones.
+  std::map<std::string, double> primalResiduals() const;
 
   /// Return one keyed D=1 QCQP vector per diagonal SDP block after solve().
   Values qcqpValues() const;

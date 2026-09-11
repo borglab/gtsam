@@ -16,6 +16,10 @@
  */
 
 #include <gtsam/certifiable/LiftedSDPProblem.h>
+#include <gtsam/certifiable/internal/DirectSDP.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/slam/FrobeniusFactor.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 
 #include <Eigen/Eigenvalues>
@@ -36,6 +40,150 @@ namespace mf = mosek::fusion;
 #endif
 
 namespace gtsam {
+
+namespace internal {
+namespace {
+
+// A coefficient of x_r*x_c is split between symmetric matrix entries.
+void addProduct(Matrix* matrix, int row, int column, double coefficient) {
+  (*matrix)(row, column) += 0.5 * coefficient;
+  (*matrix)(column, row) += 0.5 * coefficient;
+}
+
+void addPoseManifoldConstraints(Key key, int n, DirectSDPData* data) {
+  const int d = 1 + n * (n + 1);
+  const auto entry = [n](int row, int column) { return 1 + n * column + row; };
+  Matrix matrix = Matrix::Zero(d, d);
+  matrix(0, 0) = 1.0;
+  data->constraints.push_back({key, matrix, 1.0});
+  if (n == 2) {
+    matrix.setZero();
+    addProduct(&matrix, entry(0, 0), entry(1, 1), 1.0);
+    addProduct(&matrix, entry(1, 0), entry(0, 1), -1.0);
+    data->constraints.push_back({key, matrix, 1.0});
+  } else {
+    // The last two rotation columns cross to the first, with the shared
+    // homogeneous coordinate supplying the linear term after lifting.
+    for (int row = 0; row < 3; ++row) {
+      const int next = (row + 1) % 3, last = (row + 2) % 3;
+      matrix.setZero();
+      addProduct(&matrix, entry(next, 1), entry(last, 2), 1.0);
+      addProduct(&matrix, entry(last, 1), entry(next, 2), -1.0);
+      addProduct(&matrix, 0, entry(row, 0), -1.0);
+      data->constraints.push_back({key, matrix, 0.0});
+    }
+  }
+  for (int row = 0; row < n; ++row) {
+    for (int other = row; other < n; ++other) {
+      matrix.setZero();
+      for (int column = 0; column < n; ++column) {
+        addProduct(&matrix, entry(row, column), entry(other, column), 1.0);
+      }
+      data->constraints.push_back({key, matrix, row == other ? 1.0 : 0.0});
+    }
+  }
+}
+
+template <typename T>
+bool transcribePoseFactor(const NonlinearFactor& factor, DirectSDPData* data) {
+  const auto* between = dynamic_cast<const FrobeniusBetweenFactor<T>*>(&factor);
+  const auto* prior = dynamic_cast<const FrobeniusPrior<T>*>(&factor);
+  if (!between && !prior) return false;
+  constexpr int N = T::LieAlgebra::RowsAtCompileTime;
+  constexpr int n = N - 1;
+  constexpr int d = 1 + n * N;
+  const auto& noise = static_cast<const NoiseModelFactor&>(factor).noiseModel();
+  if (!noise || dynamic_cast<const noiseModel::Robust*>(noise.get()) ||
+      !dynamic_cast<const noiseModel::Gaussian*>(noise.get())) {
+    throw std::invalid_argument("direct SDP requires Gaussian quadratic noise");
+  }
+  if (!data->dimensions.empty() && data->dimensions.begin()->second != d) {
+    throw std::invalid_argument("direct SDP requires a homogeneous Pose2 or Pose3 graph");
+  }
+  for (Key key : factor.keys()) {
+    if (data->dimensions.emplace(key, d).second) {
+      addPoseManifoldConstraints(key, n, data);
+    }
+  }
+  if (noise->isConstrained()) {
+    if (!prior || !(noise->sigmas().array() == 0.0).all()) {
+      throw std::invalid_argument("direct SDP supports only fully hard Frobenius priors");
+    }
+    const auto targetMatrix = prior->priorMatrix();
+    if (!targetMatrix.row(n).isApprox(T().matrix().row(n), 1e-12)) {
+      throw std::invalid_argument("hard pose prior has an inconsistent fixed matrix row");
+    }
+    Vector target(d);
+    target(0) = 1.0;
+    for (int column = 0; column < N; ++column) {
+      target.segment<n>(1 + n * column) = targetMatrix.col(column).template head<n>();
+    }
+    auto [it, inserted] = data->anchors.emplace(prior->key(), target);
+    if (!inserted && !it->second.isApprox(target, 1e-12)) {
+      throw std::invalid_argument("conflicting hard Frobenius priors");
+    }
+    return true;
+  }
+
+  Matrix residual = Matrix::Zero(N * N, between ? 2 * d : d);
+  if (between) {
+    if (between->key1() == between->key2()) {
+      throw std::invalid_argument("direct SDP does not support self edges");
+    }
+    const auto measurement = between->measured().matrix();
+    // Form the ambient residual coefficient entry by entry, independently
+    // of the Kronecker-product construction in Frobenius QCQP lowering.
+    for (int column = 0; column < N; ++column) {
+      for (int row = 0; row < n; ++row) {
+        const int equation = row + N * column;
+        residual(equation, d + 1 + row + n * column) = 1.0;
+        for (int inner = 0; inner < N; ++inner) {
+          residual(equation, 1 + row + n * inner) = -measurement(inner, column);
+        }
+      }
+    }
+  } else {
+    const auto measurement = prior->priorMatrix();
+    for (int column = 0; column < N; ++column) {
+      for (int row = 0; row < N; ++row) {
+        const int equation = row + N * column;
+        residual(equation, 0) = -measurement(row, column);
+        if (row < n) {
+          residual(equation, 1 + row + n * column) = 1.0;
+        } else if (column == n) {
+          residual(equation, 0) += 1.0;
+        }
+      }
+    }
+  }
+  const Matrix whitened = noise->Whiten(residual);
+  data->costs.push_back({factor.keys(), whitened.transpose() * whitened});
+  return true;
+}
+
+}  // namespace
+
+DirectSDPData buildDirectSDP(const NonlinearFactorGraph& graph) {
+  DirectSDPData data;
+  for (size_t index = 0; index < graph.size(); ++index) {
+    if (!graph[index]) continue;
+    try {
+      if (!transcribePoseFactor<Pose2>(*graph[index], &data) &&
+          !transcribePoseFactor<Pose3>(*graph[index], &data)) {
+        throw std::invalid_argument("unsupported factor type");
+      }
+    } catch (const std::invalid_argument& error) {
+      throw std::invalid_argument("buildDirectSDP factor " + std::to_string(index) +
+                                  ": " + error.what());
+    }
+  }
+  if (data.dimensions.empty()) {
+    throw std::invalid_argument("buildDirectSDP requires a nonempty graph");
+  }
+  return data;
+}
+
+}  // namespace internal
 
 #ifdef GTSAM_USE_MOSEK
 
@@ -200,9 +348,8 @@ SymbolicFactorGraph BuildQpCostSymbolicFactorGraph(const QcqpProblem& problem) {
 }
 
 // Eliminate the objective sparsity graph using the requested ordering.
-SymbolicBayesTree BuildSymbolicBayesTree(const QcqpProblem& problem,
+SymbolicBayesTree BuildSymbolicBayesTree(const SymbolicFactorGraph& sfg,
                                          ChordalOrderingType orderingType) {
-  const SymbolicFactorGraph sfg = BuildQpCostSymbolicFactorGraph(problem);
   Ordering ordering;
 
   switch (orderingType) {
@@ -272,6 +419,15 @@ Matrix ConvertFromMosekLevelColMajor(
       Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
   Eigen::Map<const ColMajorMat> view(level->raw(), rows, cols);
   return Matrix(view);
+}
+
+// Fusion flattens slice levels in row-major order. Unlike diagonal Gram
+// blocks, cross blocks are not symmetric and expose this distinction.
+Matrix convertFromMosekLevelRowMajor(
+    const std::shared_ptr<monty::ndarray<double, 1>>& level, int rows, int cols) {
+  using RowMajorMatrix =
+      Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+  return Eigen::Map<const RowMajorMatrix>(level->raw(), rows, cols);
 }
 
 // Extract and validate a square SDP block from a solved Fusion variable.
@@ -348,6 +504,24 @@ std::vector<double> ComputeVariableEVRs(
   return variableEVRs;
 }
 
+// Assemble local Gram views in the coefficient matrix's key order.
+mf::Expression::t buildMatrixObjectiveTerm(
+    const KeyVector& keys, const Matrix& matrix,
+    const LiftedVariableXijToSDPVariableViewMap& xijMap) {
+  std::vector<mf::Expression::t> blockRows;
+  for (Key first : keys) {
+    std::vector<mf::Expression::t> rowBlocks;
+    for (Key second : keys) {
+      rowBlocks.push_back(xijMap.at({first, second})->asExpr());
+    }
+    blockRows.push_back(
+        mf::Expr::hstack(monty::new_array_ptr<mf::Expression::t>(rowBlocks)));
+  }
+  const auto localX =
+      mf::Expr::vstack(monty::new_array_ptr<mf::Expression::t>(blockRows));
+  return mf::Expr::dot(convertToMosekDenseMatrix(matrix), localX);
+}
+
 // Form one lifted objective term in the Hessian factor's local key order.
 mf::Expression::t BuildQpCostObjectiveTerm(
     const QpCost& cost, const LiftedVariableXijToSDPVariableViewMap& xijMap) {
@@ -357,22 +531,8 @@ mf::Expression::t BuildQpCostObjectiveTerm(
         "BuildQpCostObjectiveTerm: linear/constant QpCost terms are not "
         "supported yet.");
   }
-
   // Assemble the local SDP block matrix X_f in the Hessian factor's key order.
-  std::vector<mf::Expression::t> blockRows;
-  for (Key key_i : H.keys()) {
-    std::vector<mf::Expression::t> rowBlocks;
-    for (Key key_j : H.keys()) {
-      rowBlocks.push_back(xijMap.at({key_i, key_j})->asExpr());
-    }
-    blockRows.push_back(
-        mf::Expr::hstack(monty::new_array_ptr<mf::Expression::t>(rowBlocks)));
-  }
-
-  const auto X_f =
-      mf::Expr::vstack(monty::new_array_ptr<mf::Expression::t>(blockRows));
-  const Matrix Q_f = H.information();
-  return mf::Expr::dot(convertToMosekDenseMatrix(Q_f), X_f);
+  return buildMatrixObjectiveTerm(H.keys(), H.information(), xijMap);
 }
 
 // Sum the lifted objective terms contributed by all QCQP costs.
@@ -475,21 +635,15 @@ void AddHomogenizationConsistencyConstraints(
 
 // Tie homogenization entries shared by adjacent chordal blocks.
 void AddChordalHomogenizationConsistencyConstraints(
-    const mf::Model::t& M, const QcqpProblem& problem,
+    const mf::Model::t& M, const SymbolicFactorGraph& graph,
     const LiftedVariableXijToSDPVariableViewMap& xijMap) {
   std::set<std::pair<Key, Key>> constrainedPairs;
-  for (const auto& factor : problem.costs()) {
+  for (const auto& factor : graph) {
     if (!factor) {
       continue;
     }
 
-    const auto* cost = dynamic_cast<const QpCost*>(factor.get());
-    if (!cost) {
-      throw std::runtime_error(
-          "AddChordalHomogenizationConsistencyConstraints: expected QpCost.");
-    }
-
-    const KeyVector& keys = cost->keys();
+    const KeyVector& keys = factor->keys();
     for (size_t i = 0; i < keys.size(); ++i) {
       for (size_t j = i + 1; j < keys.size(); ++j) {
         const std::pair<Key, Key> keyPair = std::minmax(keys[i], keys[j]);
@@ -551,6 +705,42 @@ void AddQcqpConstraints(const mf::Model::t& M, const QcqpProblem& problem,
 
     throw std::runtime_error(
         "LiftedSDPProblem: expected quadratic inequality constraints.");
+  }
+}
+
+SymbolicFactorGraph buildDirectSymbolicGraph(const internal::DirectSDPData& data) {
+  SymbolicFactorGraph graph;
+  for (const auto& [key, dimension] : data.dimensions) {
+    graph.push_back(SymbolicFactor(key));
+  }
+  for (const auto& cost : data.costs) {
+    if (cost.keys.size() == 2) {
+      graph.push_back(SymbolicFactor(cost.keys[0], cost.keys[1]));
+    }
+  }
+  return graph;
+}
+
+void addDirectModel(const mf::Model::t& model,
+                    const internal::DirectSDPData& data,
+                    const LiftedVariableXijToSDPVariableViewMap& blocks) {
+  std::vector<mf::Expression::t> terms;
+  for (const auto& cost : data.costs) {
+    terms.push_back(buildMatrixObjectiveTerm(cost.keys, cost.matrix, blocks));
+  }
+  const auto objective = terms.empty() ? mf::Expr::constTerm(0.0) :
+      mf::Expr::add(monty::new_array_ptr<mf::Expression::t>(terms));
+  model->objective(mf::ObjectiveSense::Minimize, mf::Expr::mul(0.5, objective));
+  for (const auto& constraint : data.constraints) {
+    model->constraint(mf::Expr::dot(convertToMosekDenseMatrix(constraint.matrix),
+                                   blocks.at({constraint.key, constraint.key})),
+                       mf::Domain::equalsTo(constraint.rhs));
+  }
+  for (const auto& [key, target] : data.anchors) {
+    const Matrix gram = target * target.transpose();
+    model->constraint(mf::Expr::sub(blocks.at({key, key}),
+                                   convertToMosekDenseMatrix(gram)),
+                       mf::Domain::equalsTo(0.0));
   }
 }
 
@@ -734,6 +924,22 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
                      impl_->liftedVariableXijToSDPVariableViewMap);
 }
 
+LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
+    const NonlinearFactorGraph& graph)
+    : impl_(std::make_unique<Impl>()) {
+  const auto data = internal::buildDirectSDP(graph);
+  impl_->orderedKeyDims = data.dimensions;
+  for (const auto& [key, dimension] : data.dimensions) impl_->orderedKeys.push_back(key);
+  impl_->computeMonolithicLayout();
+  impl_->M = new mf::Model("DirectMonolithicSDP");
+  auto variable = impl_->M->variable(
+      "Y", mf::Domain::inPSDCone(static_cast<int>(impl_->totalMonolithicDimension)));
+  impl_->populateXijMap(variable);
+  AddHomogenizationConsistencyConstraints(
+      impl_->M, impl_->orderedKeys, impl_->liftedVariableXijToSDPVariableViewMap);
+  addDirectModel(impl_->M, data, impl_->liftedVariableXijToSDPVariableViewMap);
+}
+
 LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::~LiftedSDPProblem() = default;
 
 bool LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::solve(
@@ -763,6 +969,45 @@ double LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::solveTimeSeconds()
     throw std::runtime_error("solveTimeSeconds: solve() has not been called.");
   }
   return impl_->lastSolveSummary.optimizerTimeSeconds;
+}
+
+Matrix LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::liftedBlock(
+    Key first, Key second) const {
+  if (!impl_->lastSolveSummary.solved) {
+    throw std::runtime_error("liftedBlock: solve() has not been called.");
+  }
+  impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
+  const auto block = impl_->liftedVariableXijToSDPVariableViewMap.at({first, second});
+  return convertFromMosekLevelRowMajor(block->level(),
+      static_cast<int>(impl_->orderedKeyDims.at(first)),
+      static_cast<int>(impl_->orderedKeyDims.at(second)));
+}
+
+std::string LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::solutionStatus() const {
+  if (!impl_->lastSolveSummary.solved) {
+    throw std::runtime_error("solutionStatus: solve() has not been called.");
+  }
+  std::ostringstream result;
+  result << impl_->M->getPrimalSolutionStatus();
+  return result.str();
+}
+
+double LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::dualObjectiveValue() const {
+  if (!impl_->lastSolveSummary.solved) {
+    throw std::runtime_error("dualObjectiveValue: solve() has not been called.");
+  }
+  impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
+  return impl_->M->dualObjValue();
+}
+
+std::map<std::string, double>
+LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::primalResiduals() const {
+  if (!impl_->lastSolveSummary.solved) {
+    throw std::runtime_error("primalResiduals: solve() has not been called.");
+  }
+  return {{"constraints", impl_->M->getSolverDoubleInfo("solItrPviolcon")},
+          {"psd_cones", impl_->M->getSolverDoubleInfo("solItrPviolbarvar")},
+          {"affine_cones", impl_->M->getSolverDoubleInfo("solItrPviolacc")}};
 }
 
 Values LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::qcqpValues() const {
@@ -800,13 +1045,14 @@ LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
   CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                             &impl_->orderedKeyDims);
   impl_->M = new mf::Model("ChordalSDP_MosekSDPSolver");
-  impl_->bayesTree_ = BuildSymbolicBayesTree(problem, orderingType);
+  impl_->bayesTree_ = BuildSymbolicBayesTree(BuildQpCostSymbolicFactorGraph(problem), orderingType);
 
   // Use one positive semidefinite variable per symbolic clique.
   impl_->populateXijMap();
 
   AddChordalHomogenizationConsistencyConstraints(
-      impl_->M, problem, impl_->liftedVariableXijToSDPVariableViewMap);
+      impl_->M, BuildQpCostSymbolicFactorGraph(problem),
+      impl_->liftedVariableXijToSDPVariableViewMap);
 
   const auto objective =
       BuildObjective(problem, impl_->liftedVariableXijToSDPVariableViewMap);
@@ -815,6 +1061,21 @@ LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
 
   AddQcqpConstraints(impl_->M, problem,
                      impl_->liftedVariableXijToSDPVariableViewMap);
+}
+
+LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
+    const NonlinearFactorGraph& graph, ChordalOrderingType orderingType)
+    : impl_(std::make_unique<Impl>()) {
+  const auto data = internal::buildDirectSDP(graph);
+  impl_->orderedKeyDims = data.dimensions;
+  for (const auto& [key, dimension] : data.dimensions) impl_->orderedKeys.push_back(key);
+  const auto symbolic = buildDirectSymbolicGraph(data);
+  impl_->bayesTree_ = BuildSymbolicBayesTree(symbolic, orderingType);
+  impl_->M = new mf::Model("DirectChordalSDP");
+  impl_->populateXijMap();
+  AddChordalHomogenizationConsistencyConstraints(
+      impl_->M, symbolic, impl_->liftedVariableXijToSDPVariableViewMap);
+  addDirectModel(impl_->M, data, impl_->liftedVariableXijToSDPVariableViewMap);
 }
 
 LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::~LiftedSDPProblem() = default;
@@ -845,6 +1106,45 @@ double LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::solveTimeSeconds() const {
     throw std::runtime_error("solveTimeSeconds: solve() has not been called.");
   }
   return impl_->lastSolveSummary.optimizerTimeSeconds;
+}
+
+Matrix LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::liftedBlock(
+    Key first, Key second) const {
+  if (!impl_->lastSolveSummary.solved) {
+    throw std::runtime_error("liftedBlock: solve() has not been called.");
+  }
+  impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
+  const auto block = impl_->liftedVariableXijToSDPVariableViewMap.at({first, second});
+  return convertFromMosekLevelRowMajor(block->level(),
+      static_cast<int>(impl_->orderedKeyDims.at(first)),
+      static_cast<int>(impl_->orderedKeyDims.at(second)));
+}
+
+std::string LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::solutionStatus() const {
+  if (!impl_->lastSolveSummary.solved) {
+    throw std::runtime_error("solutionStatus: solve() has not been called.");
+  }
+  std::ostringstream result;
+  result << impl_->M->getPrimalSolutionStatus();
+  return result.str();
+}
+
+double LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::dualObjectiveValue() const {
+  if (!impl_->lastSolveSummary.solved) {
+    throw std::runtime_error("dualObjectiveValue: solve() has not been called.");
+  }
+  impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
+  return impl_->M->dualObjValue();
+}
+
+std::map<std::string, double>
+LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::primalResiduals() const {
+  if (!impl_->lastSolveSummary.solved) {
+    throw std::runtime_error("primalResiduals: solve() has not been called.");
+  }
+  return {{"constraints", impl_->M->getSolverDoubleInfo("solItrPviolcon")},
+          {"psd_cones", impl_->M->getSolverDoubleInfo("solItrPviolbarvar")},
+          {"affine_cones", impl_->M->getSolverDoubleInfo("solItrPviolacc")}};
 }
 
 Values LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::qcqpValues() const {
