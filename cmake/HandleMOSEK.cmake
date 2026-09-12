@@ -46,6 +46,13 @@ if(GTSAM_WITH_MOSEK)
       target_link_libraries(gtsam_mosek_backend INTERFACE ${MOSEK_LIBRARIES})
     endif()
     add_library(GTSAM::mosek_backend ALIAS gtsam_mosek_backend)
+
+    # Static GTSAM consumers must also link the Fusion implementation.
+    if(NOT GTSAM_SHARED_LIB)
+      install(TARGETS gtsam_mosek_backend EXPORT GTSAM-exports
+          ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR})
+      list(APPEND GTSAM_EXPORTED_TARGETS gtsam_mosek_backend)
+    endif()
   else()
     message(FATAL_ERROR "GTSAM_WITH_MOSEK is ON but MOSEK was not found. "
         "Please set MOSEK_ROOT to your MOSEK installation path.")
