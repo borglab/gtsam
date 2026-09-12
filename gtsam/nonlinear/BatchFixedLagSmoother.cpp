@@ -23,6 +23,8 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianFactor.h>
 
+#include <stdexcept>
+
 using namespace std;
 
 namespace gtsam {
@@ -54,6 +56,24 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
     const NonlinearFactorGraph& newFactors, const Values& newTheta,
     const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove) {
 
+  // Capture keys touched by explicit removals before adding new factors. They
+  // are removed below only when no replacement factor still references them.
+  set<size_t> factorSlotsToRemove;
+  KeySet keysWithRemovedFactors;
+  for (const size_t factorIndex : factorsToRemove) {
+    if (factorIndex >= factors_.size()) {
+      throw out_of_range(
+          "BatchFixedLagSmoother::update: factor index " +
+          to_string(factorIndex) + " is outside the factor graph.");
+    }
+    // An empty slot may be reused by insertFactors below; it is not a removal.
+    if (factors_[factorIndex] &&
+        factorSlotsToRemove.insert(factorIndex).second) {
+      keysWithRemovedFactors.insert(factors_[factorIndex]->begin(),
+                                    factors_[factorIndex]->end());
+    }
+  }
+
   // Update all of the internal variables with the new information
   gttic(augment_system);
   // Add the new variables to theta
@@ -69,21 +89,43 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
   insertFactors(newFactors);
   gttoc(augment_system);
 
-  // remove factors in factorToRemove
-  for(const size_t i : factorsToRemove){
-    if(factors_[i])
-      factors_[i].reset();
-  }
-
-  // Update the Timestamps associated with the factor keys
+  // Update timestamps before removing unused keys so a removed key cannot
+  // reappear as a timestamp-only entry after its state is erased.
   updateKeyTimestampMap(timestamps);
 
-  // Get current timestamp
-  double current_timestamp = getCurrentTimestamp();
+  // Preserve this update's cutoff even if the newest state is removed below.
+  const double current_timestamp = getCurrentTimestamp();
+
+  // Remove factors and keep the factor index and reusable slots synchronized.
+  removeFactors(factorSlotsToRemove);
+
+  // Removing the last factor touching a key removes that state immediately. A
+  // replacement factor in this update keeps the key in the active graph.
+  const KeySet activeFactorKeys = factors_.keys();
+  KeyVector unusedKeys;
+  for (const Key key : keysWithRemovedFactors) {
+    if (!activeFactorKeys.exists(key)) unusedKeys.push_back(key);
+  }
+  eraseKeys(unusedKeys);
 
   // Find the set of variables to be marginalized out
   KeyVector marginalizableKeys = findKeysBefore(
       current_timestamp - smootherLag_);
+
+  // Values may arrive before the factors that reference them. Once such a
+  // value expires, erase it before constructing the constrained ordering,
+  // which only contains keys appearing in live factors.
+  const KeySet activeFactorKeysAfterRemoval = factors_.keys();
+  KeyVector expiredPendingKeys;
+  marginalizableKeys.erase(
+      remove_if(marginalizableKeys.begin(), marginalizableKeys.end(),
+                [&](const Key key) {
+                  if (activeFactorKeysAfterRemoval.exists(key)) return false;
+                  expiredPendingKeys.push_back(key);
+                  return true;
+                }),
+      marginalizableKeys.end());
+  eraseKeys(expiredPendingKeys);
 
   // Reorder
   gttic(reorder);
@@ -96,6 +138,7 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
   if (factors_.size() > 0) {
     result = optimize();
   }
+  result.expiredPendingKeys = KeySet(expiredPendingKeys);
   gttoc(optimize);
 
   // Marginalize out old variables.
@@ -155,7 +198,7 @@ void BatchFixedLagSmoother::eraseKeys(const KeyVector& keys) {
 
   for(Key key: keys) {
     // Erase the key from the values
-    theta_.erase(key);
+    if (theta_.exists(key)) theta_.erase(key);
 
     // Erase the key from the factor index
     factorIndex_.erase(key);
@@ -170,8 +213,9 @@ void BatchFixedLagSmoother::eraseKeys(const KeyVector& keys) {
 
   // Remove marginalized keys from the ordering and delta
   for(Key key: keys) {
-    ordering_.erase(find(ordering_.begin(), ordering_.end(), key));
-    delta_.erase(key);
+    const auto orderingEntry = find(ordering_.begin(), ordering_.end(), key);
+    if (orderingEntry != ordering_.end()) ordering_.erase(orderingEntry);
+    if (delta_.exists(key)) delta_.erase(key);
   }
 }
 
