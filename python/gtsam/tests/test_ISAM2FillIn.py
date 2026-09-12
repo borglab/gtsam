@@ -74,15 +74,19 @@ class TestTreeNnz(GtsamTestCase):
 
     def test_result_reports_nnz(self):
         graph, values = pose_chain(5)
-        isam = gtsam.ISAM2()
+        params = gtsam.ISAM2Params()
+        params.enableDetailedResults = True
+        isam = gtsam.ISAM2(params)
         result = isam.update(graph, values)
 
         self.assertGreater(result.getTreeNnz(), 0)
 
     def test_isam_accessor_matches_result(self):
-        """ISAM2.treeNnz() agrees with the value recorded in the result."""
+        """The explicit accessor agrees with an opt-in recorded value."""
         graph, values = pose_chain(5)
-        isam = gtsam.ISAM2()
+        params = gtsam.ISAM2Params()
+        params.enableDetailedResults = True
+        isam = gtsam.ISAM2(params)
         result = isam.update(graph, values)
 
         self.assertEqual(isam.treeNnz(), result.getTreeNnz())
