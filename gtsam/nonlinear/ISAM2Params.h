@@ -270,9 +270,10 @@ struct GTSAM_EXPORT ISAM2Params {
       keyFormatter;  ///< A KeyFormatter for when keys are printed during
                      ///< debugging (default: DefaultKeyFormatter)
 
-  bool enableDetailedResults;  ///< Whether to compute and return
-                               ///< ISAM2Result::detailedResults, this can
-                               ///< increase running time (default: false)
+  /** Compute per-variable details and ISAM2Result::treeNnz. The latter visits
+   * every clique, so enabling this can increase update time (default: false).
+   */
+  bool enableDetailedResults;
 
   /** Check variables for relinearization in tree-order, stopping the check once
    * a variable does not need to be relinearized (default: false). This can

@@ -119,7 +119,7 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
   int count = 0;
   KeyVector keys(nVars); // Array to store the keys in the order we add them so we can retrieve them in permuted order
   size_t index = 0;
-  for (auto key_factors: variableIndex) {
+  for (const auto& key_factors: variableIndex) {
     // Arrange factor indices into COLAMD format
     const FactorIndices& column = key_factors.second;
     for(size_t factorIndex: column) {
@@ -181,7 +181,7 @@ Ordering Ordering::ColamdConstrainedLast(const VariableIndex& variableIndex,
   // TODO(frank): think of a way to not build this
   FastMap<Key, size_t> keyIndices;
   size_t j = 0;
-  for (auto key_factors: variableIndex)
+  for (const auto& key_factors: variableIndex)
     keyIndices.insert(keyIndices.end(), make_pair(key_factors.first, j++));
 
   // If at least some variables are not constrained to be last, constrain the
@@ -208,7 +208,7 @@ Ordering Ordering::ColamdConstrainedFirst(const VariableIndex& variableIndex,
   // Build a mapping to look up sorted Key indices by Key
   FastMap<Key, size_t> keyIndices;
   size_t j = 0;
-  for (auto key_factors: variableIndex)
+  for (const auto& key_factors: variableIndex)
     keyIndices.insert(keyIndices.end(), make_pair(key_factors.first, j++));
 
   // If at least some variables are not constrained to be last, constrain the
@@ -239,7 +239,7 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
   // Build a mapping to look up sorted Key indices by Key
   FastMap<Key, size_t> keyIndices;
   size_t j = 0;
-  for (auto key_factors: variableIndex)
+  for (const auto& key_factors: variableIndex)
     keyIndices.insert(keyIndices.end(), make_pair(key_factors.first, j++));
 
   // Assign groups
