@@ -21,10 +21,13 @@
 # OPEN - Open MPI library
 # SGI - SGI MPT Library
 
+set(GTSAM_MKL_USES_CONFIG OFF)
+
 # vcpkg
 if(DEFINED VCPKG_INSTALLED_DIR)
     find_package(MKL CONFIG)
     if(MKL_FOUND)
+        set(GTSAM_MKL_USES_CONFIG ON)
         add_library(mkl-gtsam-if INTERFACE)
         target_link_libraries(mkl-gtsam-if INTERFACE MKL::MKL)
         set(MKL_LIBRARIES mkl-gtsam-if)

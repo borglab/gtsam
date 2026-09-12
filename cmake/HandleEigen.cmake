@@ -39,7 +39,7 @@ else()
 
     # set full path to be used by external projects
     # this will be added to GTSAM_INCLUDE_DIR by gtsam_extra.cmake.in
-    set(GTSAM_EIGEN_INCLUDE_FOR_INSTALL "include/gtsam/3rdparty/Eigen/")
+    set(GTSAM_EIGEN_INCLUDE_FOR_INSTALL "${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/Eigen/")
 
     # The actual include directory (for BUILD cmake target interface):
     set(GTSAM_EIGEN_INCLUDE_FOR_BUILD "${GTSAM_SOURCE_DIR}/gtsam/3rdparty/Eigen")
