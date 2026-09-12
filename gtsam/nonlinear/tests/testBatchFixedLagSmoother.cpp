@@ -241,6 +241,150 @@ TEST( BatchFixedLagSmoother, Example )
 }
 
 /* ************************************************************************* */
+// Removing the only factor touching a state removes its value and timestamp.
+TEST(BatchFixedLagSmoother, RemovesUnusedState) {
+  const auto noise = noiseModel::Unit::Create(1);
+  BatchFixedLagSmoother smoother(10.0);
+
+  NonlinearFactorGraph factors;
+  factors.addPrior(0, 0.0, noise);
+  Values values;
+  values.insert(0, 0.0);
+  smoother.update(factors, values, {{0, 0.0}});
+
+  smoother.update(NonlinearFactorGraph(), Values(),
+                  {{0, 1.0}}, {0});
+
+  EXPECT(!smoother.getFactors().exists(0));
+  EXPECT(!smoother.getLinearizationPoint().exists(0));
+  EXPECT(!smoother.getDelta().exists(0));
+  EXPECT(smoother.timestamps().find(0) == smoother.timestamps().end());
+  EXPECT(smoother.getOrdering().empty());
+}
+
+/* ************************************************************************* */
+// Removing an expired state and adding a new state in one update is valid.
+TEST(BatchFixedLagSmoother, RemovesUnusedStateBeforeExpiration) {
+  const auto noise = noiseModel::Unit::Create(1);
+  BatchFixedLagSmoother smoother(1.0);
+
+  NonlinearFactorGraph firstFactors;
+  firstFactors.addPrior(0, 0.0, noise);
+  Values firstValues;
+  firstValues.insert(0, 0.0);
+  smoother.update(firstFactors, firstValues, {{0, 0.0}});
+
+  NonlinearFactorGraph secondFactors;
+  secondFactors.addPrior(1, 0.0, noise);
+  Values secondValues;
+  secondValues.insert(1, 0.0);
+  smoother.update(secondFactors, secondValues, {{1, 2.0}}, {0});
+
+  EXPECT(!smoother.getLinearizationPoint().exists(0));
+  EXPECT(smoother.getLinearizationPoint().exists(1));
+  EXPECT(smoother.timestamps().find(0) == smoother.timestamps().end());
+  EXPECT(smoother.timestamps().find(1) != smoother.timestamps().end());
+  EXPECT(smoother.getFactors().exists(1));
+}
+
+/* ************************************************************************* */
+// Removing an already empty slot must not remove a new factor reusing it.
+TEST(BatchFixedLagSmoother, IgnoresEmptyRemovalSlotBeforeInsertion) {
+  const auto noise = noiseModel::Unit::Create(1);
+  BatchFixedLagSmoother smoother(10.0);
+
+  NonlinearFactorGraph factors;
+  factors.addPrior(0, 0.0, noise);
+  factors.addPrior(1, 1.0, noise);
+  Values values;
+  values.insert(0, 0.0);
+  values.insert(1, 1.0);
+  smoother.update(factors, values, {{0, 0.0}, {1, 0.0}});
+  smoother.update(NonlinearFactorGraph(), Values(), {}, {0});
+  EXPECT(!smoother.getFactors().exists(0));
+
+  NonlinearFactorGraph newFactors;
+  newFactors.addPrior(2, 2.0, noise);
+  Values newValues;
+  newValues.insert(2, 2.0);
+  smoother.update(newFactors, newValues, {{2, 1.0}}, {0, 0});
+
+  EXPECT(smoother.getFactors().exists(0));
+  EXPECT(smoother.getFactors().exists(1));
+  EXPECT_LONGS_EQUAL(2, smoother.getFactors().nrFactors());
+  EXPECT_LONGS_EQUAL(2, smoother.getOrdering().size());
+  EXPECT(assert_equal(2.0, smoother.calculateEstimate<double>(2)));
+}
+
+/* ************************************************************************* */
+// Removing the newest state must preserve this update's marginalization cutoff.
+TEST(BatchFixedLagSmoother, PreservesCutoffWhenRemovingNewestState) {
+  const auto noise = noiseModel::Unit::Create(1);
+  BatchFixedLagSmoother smoother(1.0);
+
+  NonlinearFactorGraph factors;
+  factors.addPrior(0, 0.0, noise);
+  factors.addPrior(1, 1.0, noise);
+  Values values;
+  values.insert(0, 0.0);
+  values.insert(1, 1.0);
+  smoother.update(factors, values, {{0, 0.0}, {1, 0.0}});
+
+  // Advancing the state that is removed still expires the older active state.
+  smoother.update(NonlinearFactorGraph(), Values(), {{1, 2.0}}, {1});
+
+  EXPECT(smoother.getLinearizationPoint().empty());
+  EXPECT_LONGS_EQUAL(0, smoother.getDelta().size());
+  EXPECT(smoother.getOrdering().empty());
+  EXPECT(smoother.timestamps().empty());
+  EXPECT_LONGS_EQUAL(0, smoother.getFactors().nrFactors());
+}
+
+/* ************************************************************************* */
+// A value without a factor is discarded when it leaves the fixed-lag window.
+TEST(BatchFixedLagSmoother, ExpiresPendingValueBeforeOrdering) {
+  const auto noise = noiseModel::Unit::Create(1);
+  BatchFixedLagSmoother smoother(1.0);
+
+  Values pending;
+  pending.insert(0, 0.0);
+  const auto pendingResult =
+      smoother.update(NonlinearFactorGraph(), pending, {{0, 0.0}});
+  EXPECT(pendingResult.expiredPendingKeys.empty());
+
+  NonlinearFactorGraph factors;
+  factors.addPrior(1, 0.0, noise);
+  Values values;
+  values.insert(1, 0.0);
+  const auto result = smoother.update(factors, values, {{1, 2.0}});
+
+  EXPECT(result.expiredPendingKeys.exists(0));
+  EXPECT(!smoother.getLinearizationPoint().exists(0));
+  EXPECT(smoother.getLinearizationPoint().exists(1));
+}
+
+/* ************************************************************************* */
+// Replacing a factor in one update keeps the state and cleans the old index.
+TEST(BatchFixedLagSmoother, ReplacesFactorWithoutRemovingState) {
+  const auto noise = noiseModel::Unit::Create(1);
+  BatchFixedLagSmoother smoother(10.0);
+
+  NonlinearFactorGraph firstFactors;
+  firstFactors.addPrior(0, 0.0, noise);
+  Values values;
+  values.insert(0, 0.0);
+  smoother.update(firstFactors, values, {{0, 0.0}});
+
+  NonlinearFactorGraph replacement;
+  replacement.addPrior(0, 1.0, noise);
+  smoother.update(replacement, Values(), {}, {0});
+
+  EXPECT(smoother.getLinearizationPoint().exists(0));
+  EXPECT(smoother.getFactors().exists(1));
+  EXPECT(smoother.timestamps().find(0) != smoother.timestamps().end());
+}
+
+/* ************************************************************************* */
 TEST( BatchFixedLagSmoother, EnforceConsistency )
 {
   // Verify that enforceConsistency_ actually preserves linearization points
