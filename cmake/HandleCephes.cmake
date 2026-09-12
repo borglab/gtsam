@@ -7,6 +7,11 @@
 
 add_subdirectory(${GTSAM_SOURCE_DIR}/gtsam/3rdparty/cephes)
 
+# Match the bundled headers' install destination without changing vendor code.
+set_property(TARGET cephes-gtsam PROPERTY INTERFACE_INCLUDE_DIRECTORIES
+  $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/cephes>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/cephes/>)
+
 list(APPEND GTSAM_EXPORTED_TARGETS cephes-gtsam)
 
 add_library(cephes-gtsam-if INTERFACE)

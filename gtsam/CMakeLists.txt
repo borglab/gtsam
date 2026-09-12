@@ -260,7 +260,7 @@ endif()
 target_include_directories(gtsam BEFORE PUBLIC
   # main gtsam includes:
   $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include/>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   # config.h
   $<BUILD_INTERFACE:${GTSAM_BINARY_DIR}>
   # unit tests:
