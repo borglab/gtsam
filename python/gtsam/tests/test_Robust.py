@@ -18,6 +18,21 @@ import gtsam
 
 class TestRobust(GtsamTestCase):
 
+    def test_scalar_objective(self):
+        """Vector loss and factor error sum scalar losses after whitening."""
+        model = gtsam.noiseModel.Robust.Create(
+            gtsam.noiseModel.mEstimator.Huber.Create(
+                1.0, gtsam.noiseModel.mEstimator.Base.ReweightScheme.Scalar),
+            gtsam.noiseModel.Diagonal.Sigmas(np.array([2.0, 3.0])))
+        point = np.array([4.0, 6.0])
+        factor = gtsam.PriorFactorPoint2(0, np.zeros(2), model)
+        values = gtsam.Values()
+        values.insert(0, point)
+        self.assertAlmostEqual(model.loss(point), 3.0)
+        self.assertAlmostEqual(factor.error(values), 3.0)
+        # The scalar overload remains the loss of a squared distance.
+        self.assertAlmostEqual(model.loss(8.0), np.sqrt(8.0) - 0.5)
+
     def test_RobustLossAndWeight(self):
         k = 10.0
 

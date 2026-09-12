@@ -105,9 +105,19 @@ namespace gtsam {
         return std::sqrt(squaredMahalanobisDistance(v));
       }
 
-      /// loss function, input is Mahalanobis distance
+      /// Loss function, input is squared Mahalanobis distance.
       virtual double loss(const double squared_distance) const {
         return 0.5 * squared_distance;
+      }
+
+      /**
+       * Evaluate the loss of an unwhitened residual v. Unlike the
+       * squared-distance overload, this retains the individual components
+       * and their signs for scalar robust losses.
+       * The default delegates to the squared-distance loss.
+       */
+      virtual double loss(const Vector& v) const {
+        return loss(squaredMahalanobisDistance(v));
       }
 
       virtual void WhitenSystem(std::vector<Matrix>& A, Vector& b) const = 0;
@@ -764,10 +774,21 @@ namespace gtsam {
       inline Vector unwhiten(const Vector& /*v*/) const override
       { throw std::invalid_argument("unwhiten is not currently supported for robust noise models."); }
       inline void whitenInPlace(Vector& v) const override { this->WhitenSystem(v); }
-      /// Compute loss from the m-estimator using the Mahalanobis distance.
+      /**
+       * Compute the block loss from a squared Mahalanobis distance. Use the
+       * vector overload to respect Scalar reweighting and residual signs.
+       */
       double loss(const double squared_distance) const override {
         return robust_->loss(std::sqrt(squared_distance));
       }
+
+      /**
+       * Evaluate the loss of an unwhitened residual v. Scalar mode sums
+       * m-estimator losses at the negated whitened components, matching the
+       * existing reweighting of the linear-system right-hand side -v.
+       * Block mode evaluates the loss of the Mahalanobis distance.
+       */
+      double loss(const Vector& v) const override;
 
       // NOTE: This is special because in whiten the base version will do the re-weighting
       // which is incorrect!
