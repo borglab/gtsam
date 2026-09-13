@@ -86,7 +86,7 @@ gtsam::SfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
 const gtsam::Values& result = optimizer.optimize();
 ```
 
-[The Python Full-and-Schur tutorial](../../python/gtsam/examples/SfmLevenbergMarquardtOptimizerExample.ipynb) demonstrates both elimination modes with a calibration shared by every camera. When constructing `Values` from NumPy arrays, use `Values.insertPoint3()` for landmarks so Python preserves their fixed-size `Point3` type.
+[The Python Full-and-Schur tutorial](../../python/gtsam/examples/sfm/SfmLevenbergMarquardtOptimizerExample.ipynb) demonstrates both elimination modes with a calibration shared by every camera. When constructing `Values` from NumPy arrays, use `Values.insertPoint3()` for landmarks so Python preserves their fixed-size `Point3` type.
 
 ## What Schur means for each solver
 
