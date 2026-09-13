@@ -43,10 +43,10 @@ linear basis weights and a cumulative Lie-group trajectory.
 
 - [CumulativeSplineTrajectory](doc/CumulativeSplineTrajectory.ipynb): Smooth
   trajectories whose controls are poses, rotations, or other Lie-group
-  values. See the [Pose2 example](../../python/gtsam/examples/CumulativeSplineTrajectoryExample.ipynb).
+  values. See the [Pose2 example](../../python/gtsam/examples/basis/CumulativeSplineTrajectoryExample.ipynb).
 - [CardinalSplineBasis](doc/CardinalSplineBasis.ipynb): Dense cubic
   weights for scalar or vector coefficients at a known coordinate. See the
-  [scalar example](../../python/gtsam/examples/CardinalSplineBasisExample.ipynb).
+  [scalar example](../../python/gtsam/examples/basis/CardinalSplineBasisExample.ipynb).
 - [`KernelBase`](https://github.com/borglab/gtsam/blob/develop/gtsam/basis/KernelBase.h):
   Interface for the compactly supported smooth switch used by cumulative
   trajectories.

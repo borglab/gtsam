@@ -40,7 +40,7 @@ project:
         - pattern: ./gtsam/symbolic/doc/*
       - file: ./gtsam/navigation/navigation.md
         children:
-        - pattern: ./gtsam/navigation/doc/*
+        - pattern: ./gtsam/navigation/doc/*.{md,ipynb}
       - file: ./gtsam/sfm/sfm.md
         children:
         - pattern: ./gtsam/sfm/doc/*
@@ -54,8 +54,40 @@ project:
         children:
         - pattern: ./gtsam/hybrid/doc/*
     - file: ./doc/examples.md
-      children: 
-      - pattern: ./python/gtsam/examples/*.ipynb
+      children:
+      - title: Geometry
+        children:
+        - pattern: ./python/gtsam/examples/geometry/*.ipynb
+      - title: Basis
+        children:
+        - pattern: ./python/gtsam/examples/basis/*.ipynb
+      - title: Linear
+        children:
+        - pattern: ./python/gtsam/examples/linear/*.ipynb
+      - title: Discrete
+        children:
+        - pattern: ./python/gtsam/examples/discrete/*.ipynb
+      - title: Hybrid
+        children:
+        - pattern: ./python/gtsam/examples/hybrid/*.ipynb
+      - title: Nonlinear
+        children:
+        - pattern: ./python/gtsam/examples/nonlinear/*.ipynb
+      - title: Constrained
+        children:
+        - pattern: ./python/gtsam/examples/constrained/*.ipynb
+      - title: Certifiable
+        children:
+        - pattern: ./python/gtsam/examples/certifiable/*.ipynb
+      - title: Navigation
+        children:
+        - pattern: ./python/gtsam/examples/navigation/*.ipynb
+      - title: Structure from Motion
+        children:
+        - pattern: ./python/gtsam/examples/sfm/*.ipynb
+      - title: SLAM
+        children:
+        - pattern: ./python/gtsam/examples/slam/*.ipynb
     - file: ./doc/expressions.md
 site:
   nav: 
