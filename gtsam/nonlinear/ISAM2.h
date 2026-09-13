@@ -313,7 +313,9 @@ class GTSAM_EXPORT ISAM2 : public BayesTree<ISAM2Clique> {
 
   const ISAM2Params& params() const { return params_; }
 
-  /** Compute the total number of nonzeros in the Bayes tree. */
+  /** Compute the total number of nonzeros by traversing the entire Bayes tree.
+   * Available regardless of whether update() computes ISAM2Result::treeNnz.
+   */
   size_t treeNnz() const;
 
   /** prints out clique statistics */
