@@ -18,6 +18,7 @@ endif()
 
 if(NOT GTSAM_USE_MOSEK)
   list(APPEND excluded_examples
+      "PoseSLAMSDPComparison.cpp"
       "Pose2RingSLAM_LiftedSDP.cpp"
       "Pose3RingSLAM_LiftedSDP.cpp"
       "Rot2RingQcqpToMonolithicSDP.cpp")

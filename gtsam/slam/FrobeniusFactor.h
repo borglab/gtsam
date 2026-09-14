@@ -137,6 +137,8 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
    * exact homogeneous lifts. Matrix-form priors are not lowered because a
    * fixed lifted target breaks the right-orthogonal gauge required by the
    * Burer--Monteiro formulation.
+   * Pose2 and Pose3 also support Gaussian D=1 prior costs, with ambient
+   * measurement offsets retained in the homogeneous quadratic objective.
    */
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
@@ -174,8 +176,17 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
           "FrobeniusPrior::qcqpFactors D=1 is implemented only for Rot2, "
           "Rot3, Pose2, and Pose3.");
     } else {
-      (void)costs;
       if (this->noiseModel_->isConstrained()) {
+        if (!(this->noiseModel_->sigmas().array() == 0.0).all()) {
+          throw std::invalid_argument(
+              "FrobeniusPrior::qcqpFactors does not support partially hard priors.");
+        }
+        if constexpr (std::is_same_v<T, Pose2> || std::is_same_v<T, Pose3>) {
+          if (!priorMatrix().row(N - 1).isApprox(T().matrix().row(N - 1), 1e-12)) {
+            throw std::invalid_argument(
+                "FrobeniusPrior::qcqpFactors hard prior has an inconsistent fixed row.");
+          }
+        }
         InsertQcqpConstraints<T, 1>(this->key(), constraints);
 
         constexpr int LiftedDim = traits<T>::QcqpVectorDim;
@@ -200,9 +211,33 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
                                Matrix::Identity(LiftedDim, LiftedDim), target))
                 .createEqualityFactor());
       } else {
-        throw std::runtime_error(
-            "FrobeniusPrior::qcqpFactors D=1 non-constrained noise is not yet "
-            "implemented.");
+        if constexpr (!(std::is_same_v<T, Pose2> || std::is_same_v<T, Pose3>)) {
+          throw std::runtime_error(
+              "FrobeniusPrior::qcqpFactors Gaussian D=1 priors support Pose2/Pose3.");
+        }
+        if (!costs ||
+            std::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_)) {
+          throw std::invalid_argument(
+              "FrobeniusPrior::qcqpFactors requires costs and quadratic noise.");
+        }
+        constexpr int LiftedDim = traits<T>::QcqpVectorDim;
+        constexpr int M = (LiftedDim - 1) / N;
+        Matrix residual = Matrix::Zero(Dim, LiftedDim);
+        residual.col(0) = -vecM_;
+        for (int column = 0; column < N; ++column) {
+          residual.template block<M, M>(column * N, 1 + column * M)
+              .setIdentity();
+        }
+        // The omitted homogeneous row is fixed, but its mismatch with an
+        // arbitrary ambient prior matrix still contributes to the objective.
+        if constexpr (M < N) {
+          residual(Dim - 1, 0) += 1.0;
+        }
+        const Matrix whitened = this->noiseModel_->Whiten(residual);
+        const Matrix Q = whitened.transpose() * whitened;
+        costs->push_back(std::make_shared<QpCost>(HessianFactor(
+            this->key(), Q, Vector::Zero(LiftedDim), 0.0)));
+        InsertQcqpConstraints<T, 1>(this->key(), constraints);
       }
     }
   }
