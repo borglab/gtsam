@@ -33,11 +33,10 @@ if(GTSAM_USE_SYSTEM_METIS)
   endif()
 else()
   # Bundled version:
-  option(GTSAM_BUILD_METIS_EXECUTABLES "Build metis library executables" OFF)
   add_subdirectory(${GTSAM_SOURCE_DIR}/gtsam/3rdparty/metis)
 
   target_include_directories(metis-gtsam BEFORE PUBLIC
-    $<INSTALL_INTERFACE:include/gtsam/3rdparty/metis/>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/metis/>
     $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}/gtsam/3rdparty/metis/include>
   )
 
