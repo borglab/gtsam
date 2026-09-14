@@ -77,6 +77,12 @@ public:
    * timestamp again; until timestamped, that value is not eligible for
    * fixed-lag expiration.
    *
+   * Removal indices must be within the factor graph at update entry, including
+   * empty slots; adding factors cannot make an invalid index valid. Removal
+   * indices are checked before timestamp keys. Either validation failure leaves
+   * the smoother unchanged, with no part of the update applied.
+   *
+   * @throws std::out_of_range identifying a removal index outside the graph.
    * @throws std::invalid_argument if a key in @p timestamps has no value in
    * the smoother or in @p newTheta.
    */

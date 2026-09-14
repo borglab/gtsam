@@ -74,6 +74,18 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
     }
   }
 
+  // A timestamp without a value could advance the clock and expire valid
+  // states. Reject it before any part of this update mutates the smoother.
+  for (const auto& keyTimestamp : timestamps) {
+    const Key key = keyTimestamp.first;
+    if (!theta_.exists(key) && !newTheta.exists(key)) {
+      throw invalid_argument(
+          "BatchFixedLagSmoother::update: timestamp supplied for key '" +
+          DefaultKeyFormatter(key) +
+          "', but no value exists in the smoother or newTheta.");
+    }
+  }
+
   // Update all of the internal variables with the new information
   gttic(augment_system);
   // Add the new variables to theta
