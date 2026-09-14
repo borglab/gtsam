@@ -58,6 +58,39 @@ TEST(MosekSDP, SimplePSD) {
   EXPECT_DOUBLES_EQUAL(1.0, trace, tol);
 }
 
+// Indexed views preserve row-major rectangular layout and repeated coordinates.
+TEST(MosekSDP, IndexedPSDViews) {
+  Model::t model = new Model("IndexedPSDViews");
+  auto cleanup = finally([&]() { model->dispose(); });
+  auto Z = model->variable("Z", Domain::inPSDCone(3));
+  // Positive definite, with distinct entries in its lower triangle.
+  auto expected = new_array_ptr<double, 1>({10, 2, 3, 2, 20, 4, 3, 4, 30});
+  model->constraint(Z, Domain::equalsTo(Matrix::dense(3, 3, expected)));
+
+  // Rows [0, 2, 0], columns [0, 1]: the first homogeneous row repeats.
+  auto coordinates = new_array_ptr<int, 2>(shape(6, 2));
+  const int rows[] = {0, 2, 0};
+  for (int r = 0; r < 3; ++r) {
+    for (int c = 0; c < 2; ++c) {
+      (*coordinates)(2 * r + c, 0) = rows[r];
+      (*coordinates)(2 * r + c, 1) = c;
+    }
+  }
+  auto view = Z->pick(coordinates)->reshape(3, 2);
+  // Exercise the view as an expression as well as a solved variable.
+  model->objective(ObjectiveSense::Minimize, Expr::sum(view->asExpr()));
+  model->solve();
+
+  const double expectedView[] = {10, 2, 3, 4, 10, 2};
+  const auto level = view->level();
+  EXPECT_LONGS_EQUAL(6, level->size());
+  for (int index = 0; index < 6; ++index) {
+    EXPECT_DOUBLES_EQUAL(expectedView[index], (*level)[index], 1e-7);
+  }
+  EXPECT_DOUBLES_EQUAL(31.0, model->primalObjValue(), 1e-7);
+  EXPECT_DOUBLES_EQUAL(4.0, (*view->index(1, 1)->level())[0], 1e-7);
+}
+
 }  // namespace mosek_sdp_tests
 /* ************************************************************************* */
 

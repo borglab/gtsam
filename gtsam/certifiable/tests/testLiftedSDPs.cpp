@@ -463,6 +463,114 @@ TEST(LiftedSDPs, Pr2713ApplicationFactorsMonolithicAndChordal) {
 
 }  // namespace application_sdp_fixture
 /* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace shared_homogeneous_fixture {
+
+// A nonzero optimum checks objective transcription independently of recovery.
+TEST(LiftedSDPs, SharedHomogeneousNoisyRot2Ring) {
+  constexpr size_t count = 4;
+  constexpr double delta = 0.2;
+  QcqpProblem problem(lifted_sdp_tests::Rot2RingGraph(count, delta), 1);
+  problem.addConstraint(LinearConstraint::Equal(JacobianFactor(
+      Symbol('x', 0), Matrix{{0, 1, 0}, {0, 0, 1}}, Vector2(0.6, 0.8))));
+  // Each Frobenius edge costs 2*(1-cos(delta)); the total winding is zero.
+  const double expected = 2.0 * count * (1.0 - std::cos(delta));
+  auto check = [&](auto* solver) {
+    EXPECT(solver->solve());
+    EXPECT_DOUBLES_EQUAL(expected, solver->objectiveValue(), 1e-6);
+    const Values values = solver->qcqpValues();
+    EXPECT_DOUBLES_EQUAL(expected, problem.costs().error(values), 1e-6);
+    EXPECT(assert_equal(Vector3(1, 0.6, 0.8),
+                        Vector(values.at<Matrix>(Symbol('x', 0)).col(0)),
+                        1e-6));
+    EXPECT(assert_equal(values, solver->qcqpValues(), 1e-12));
+    for (double ratio : solver->variableEVRs()) EXPECT(ratio > 1e5);
+  };
+  MosekMonolithicSDP monolithic(problem);
+  check(&monolithic);
+  for (const auto ordering :
+       {ChordalOrderingType::Colamd, ChordalOrderingType::Metis}) {
+    MosekChordalSDP chordal(problem, ordering);
+    check(&chordal);
+    EXPECT_DOUBLES_EQUAL(monolithic.objectiveValue(), chordal.objectiveValue(),
+                         1e-6);
+  }
+}
+
+// Minimize half the squared norm with prescribed homogeneous squared norms.
+// Different block dimensions also exercise rectangular objective views.
+QcqpProblem NormProblem(size_t count, bool connected, double firstSquaredNorm) {
+  NonlinearFactorGraph costs;
+  if (connected) {
+    costs.emplace_shared<QpCost>(HessianFactor(
+        0, 1, Matrix2::Identity(), Matrix::Zero(2, 3), Vector2::Zero(),
+        Matrix3::Identity(), Vector3::Zero(), 0.0));
+  } else {
+    for (size_t key = 0; key < count; ++key) {
+      const size_t dimension = key + 2;
+      costs.emplace_shared<QpCost>(
+          HessianFactor(key, Matrix::Identity(dimension, dimension),
+                        Vector::Zero(dimension), 0.0));
+    }
+  }
+  NonlinearEqualityConstraints constraints;
+  for (size_t key = 0; key < count; ++key) {
+    const double scale = key == 0 ? -3.0 : 2.0;
+    Matrix A = Matrix::Zero(key + 2, key + 2);
+    A(0, 0) = scale;
+    constraints.push_back(
+        QuadraticConstraint::Equal(key, A,
+                                   scale * (key == 0 ? firstSquaredNorm : 1.0))
+            .createEqualityFactor());
+  }
+  return QcqpProblem(costs, constraints);
+}
+
+void CheckNormProblem(size_t count, bool connected, double firstSquaredNorm,
+                      TestResult& result_, const std::string& name_) {
+  const auto problem = NormProblem(count, connected, firstSquaredNorm);
+  const double expected = 0.5 * (firstSquaredNorm + count - 1);
+  auto check = [&](auto* solver) {
+    EXPECT(solver->solve());
+    EXPECT_DOUBLES_EQUAL(expected, solver->objectiveValue(), 1e-6);
+    const Values values = solver->qcqpValues();
+    EXPECT_LONGS_EQUAL(count, values.size());
+    for (size_t key = 0; key < count; ++key) {
+      Vector expectedColumn = Vector::Zero(key + 2);
+      expectedColumn(0) = key == 0 ? firstSquaredNorm : 1.0;
+      EXPECT_LONGS_EQUAL(key + 2, solver->orderedKeyDims().at(key));
+      EXPECT(assert_equal(expectedColumn, Vector(values.at<Matrix>(key).col(0)),
+                          1e-6));
+    }
+  };
+  MosekMonolithicSDP monolithic(problem);
+  check(&monolithic);
+  for (const auto ordering :
+       {ChordalOrderingType::Colamd, ChordalOrderingType::Metis}) {
+    MosekChordalSDP chordal(problem, ordering);
+    check(&chordal);
+  }
+}
+
+// Exact positive and negative multiples of h^2=1 permit coordinate sharing.
+TEST(LiftedSDPs, SharedHomogeneousScaledNormalization) {
+  CheckNormProblem(2, true, 1.0, result_, name_);
+}
+
+// A non-unit h^2=4 keeps the old formulation, including cross moment h0*h1=1.
+TEST(LiftedSDPs, SharedHomogeneousNonUnitFallback) {
+  CheckNormProblem(2, true, 4.0, result_, name_);
+}
+
+// One-key cones and separate components retain their original keyed results.
+TEST(LiftedSDPs, SharedHomogeneousSingleKeyAndDisconnected) {
+  CheckNormProblem(1, false, 1.0, result_, name_);
+  CheckNormProblem(2, false, 1.0, result_, name_);
+}
+
+}  // namespace shared_homogeneous_fixture
+/* ************************************************************************* */
 #endif
 
 int main() {
