@@ -450,14 +450,39 @@ TEST(LiftedSDPs, Pr2713ApplicationFactorsMonolithicAndChordal) {
   MosekChordalSDP chordal(problem, ChordalOrderingType::Metis);
   const ApplicationSolution monolithicResult = SolveApplication(&monolithic);
   const ApplicationSolution chordalResult = SolveApplication(&chordal);
+  MosekChordalSDP reduced(problem, ChordalOrderingType::Metis, true);
+  const ApplicationSolution reducedResult = SolveApplication(&reduced);
   for (const ApplicationSolution* result :
-       {&monolithicResult, &chordalResult}) {
+       {&monolithicResult, &chordalResult, &reducedResult}) {
     EXPECT(result->solved);
     EXPECT(result->objective < 1e-5);
     EXPECT_LONGS_EQUAL(6, result->valueCount);
     EXPECT_LONGS_EQUAL(6, result->evrs.size());
     EXPECT(std::all_of(result->evrs.begin(), result->evrs.end(),
                        [](double evr) { return evr > 1e3; }));
+  }
+}
+
+// Reduction preserves a nonzero optimum and original-coordinate recovery.
+TEST(LiftedSDPs, ReducedNoisyRot2Ring) {
+  NonlinearFactorGraph graph = lifted_sdp_tests::Rot2RingGraph(4, 0.2);
+  QcqpProblem problem(graph, 1);
+  const Matrix selector{{0, 1, 0}, {0, 0, 1}};
+  problem.addConstraint(LinearConstraint::Equal(JacobianFactor(
+      Symbol('x', 0), selector, Vector2(0.6, 0.8))));
+  MosekMonolithicSDP monolithic(problem);
+  const auto reference = SolveApplication(&monolithic);
+  EXPECT(reference.objective > 0.01);
+  for (const auto ordering :
+       {ChordalOrderingType::Metis, ChordalOrderingType::Colamd}) {
+    MosekChordalSDP reduced(problem, ordering, true);
+    const auto result = SolveApplication(&reduced);
+    EXPECT(result.solved);
+    EXPECT_DOUBLES_EQUAL(reference.objective, result.objective, 1e-6);
+    EXPECT_DOUBLES_EQUAL(result.objective,
+                         problem.costs().error(reduced.qcqpValues()), 1e-6);
+    EXPECT(assert_equal(Vector3(1, 0.6, 0.8),
+                        Vector(reduced.qcqpValues().at<Matrix>(Symbol('x', 0)).col(0)), 1e-7));
   }
 }
 

@@ -131,9 +131,14 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
    *
    * @param problem QCQP to relax.
    * @param orderingType Ordering used for symbolic elimination.
+   * @param eliminateKnownNullDirections Experimental, disabled by default.
+   * Post-process clique layouts to remove duplicate homogeneous coordinates
+   * and individually fixed coordinates. Smaller cones do not guarantee better
+   * convergence or certification.
    */
   LiftedSDPProblem(const QcqpProblem& problem,
-                   ChordalOrderingType orderingType);
+                   ChordalOrderingType orderingType,
+                   bool eliminateKnownNullDirections = false);
 
   /// Dispose of the owned MOSEK model.
   ~LiftedSDPProblem();

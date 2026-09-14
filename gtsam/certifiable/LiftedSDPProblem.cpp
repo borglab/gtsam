@@ -16,6 +16,7 @@
  */
 
 #include <gtsam/certifiable/LiftedSDPProblem.h>
+#include <gtsam/certifiable/SDPNullspaceReduction.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 
 #include <Eigen/Eigenvalues>
@@ -42,9 +43,26 @@ namespace gtsam {
 // Keep MOSEK-specific helpers private to this translation unit.
 namespace {
 
-// Maps each pair of QCQP keys to its block in an SDP variable.
+// A view in original QCQP coordinates, optionally backed by a smaller cone.
+struct SDPBlockView {
+  mf::Variable::t variable;
+  mf::Expression::t expression;
+  Matrix rowBasis, columnBasis;
+
+  explicit SDPBlockView(const mf::Variable::t& view)
+      : variable(view), expression(view->asExpr()) {}
+  SDPBlockView(const mf::Variable::t& cone, const Matrix& rows,
+               const Matrix& columns);
+  mf::Expression::t asExpr() const { return expression; }
+  mf::Expression::t index(int row, int col) const {
+    return expression->index(monty::new_array_ptr<int, 1>({row, col}));
+  }
+  Matrix matrix() const;
+};
+
+// Maps each pair of QCQP keys to its original-coordinate SDP block.
 using LiftedVariableXijToSDPVariableViewMap =
-    std::map<std::pair<Key, Key>, mf::Variable::t>;
+    std::map<std::pair<Key, Key>, std::shared_ptr<SDPBlockView>>;
 
 // Stores the solver information exposed by the public result accessors.
 struct MosekSolveSummary {
@@ -274,20 +292,34 @@ Matrix ConvertFromMosekLevelColMajor(
   return Matrix(view);
 }
 
-// Extract and validate a square SDP block from a solved Fusion variable.
-Matrix ExtractSolvedMatrixBlock(const mf::Variable::t& blockView,
+// Express original QCQP rows through the post-processing substitution basis.
+SDPBlockView::SDPBlockView(const mf::Variable::t& cone, const Matrix& rows,
+                         const Matrix& columns)
+    : variable(cone), rowBasis(rows), columnBasis(columns) {
+  expression = mf::Expr::mul(
+      mf::Expr::mul(convertToMosekDenseMatrix(rows), cone->asExpr()),
+      convertToMosekDenseMatrix(Matrix(columns.transpose())));
+}
+
+// Lift the solved reduced cone back before running the existing recovery code.
+Matrix SDPBlockView::matrix() const {
+  Matrix result = ConvertFromMosekLevelColMajor(
+      variable->level(), variable->getDim(0), variable->getDim(1));
+  if (rowBasis.size()) result = rowBasis * result * columnBasis.transpose();
+  return result;
+}
+
+// Extract and validate a square block in the original QCQP coordinates.
+Matrix ExtractSolvedMatrixBlock(const std::shared_ptr<SDPBlockView>& blockView,
                                 DenseIndex expectedDim) {
-  const auto level = blockView->level();
-  const size_t numel = static_cast<size_t>(level->size(0));
-  const size_t expectedSize = static_cast<size_t>(expectedDim);
-  if (numel != expectedSize * expectedSize) {
+  const Matrix result = blockView->matrix();
+  if (result.rows() != expectedDim || result.cols() != expectedDim) {
     throw std::runtime_error(
         "ExtractSolvedMatrixBlock: solved block size does not match the QCQP "
         "variable dimension.");
   }
 
-  return ConvertFromMosekLevelColMajor(level, static_cast<int>(expectedDim),
-                                       static_cast<int>(expectedDim));
+  return result;
 }
 
 // Compute the dominant-to-second eigenvalue ratio used as a rank-one metric.
@@ -433,10 +465,6 @@ void AddLinearEqualityConstraint(
     const Key key = *it;
     const auto Xii = xijMap.at({key, key});
     const DenseIndex dim = J.getDim(it);
-
-    auto first = monty::new_array_ptr<int, 1>({0, 0});
-    auto last = monty::new_array_ptr<int, 1>({static_cast<int>(dim), 1});
-    const auto xi = Xii->slice(first, last)->asExpr();
     const Matrix A = J.getA(it);
     const Vector b = J.getb();
 
@@ -444,9 +472,8 @@ void AddLinearEqualityConstraint(
     // Since x is the first column of X and x(0)=1, x'=X(0,:).
     // Enforcing only A*X(:,0)=b leaves unconstrained PSD slack in X.
     const auto xTranspose =
-        Xii->slice(monty::new_array_ptr<int, 1>({0, 0}),
-                   monty::new_array_ptr<int, 1>({1, static_cast<int>(dim)}))
-            ->asExpr();
+        Xii->asExpr()->slice(monty::new_array_ptr<int, 1>({0, 0}),
+                            monty::new_array_ptr<int, 1>({1, static_cast<int>(dim)}));
     const auto lhs = mf::Expr::mul(convertToMosekDenseMatrix(A), Xii->asExpr());
     const auto rhs = mf::Expr::mul(convertToMosekDenseMatrix(b), xTranspose);
     M->constraint(mf::Expr::sub(lhs, rhs), mf::Domain::equalsTo(0.0));
@@ -598,7 +625,8 @@ struct LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::Impl {
             {static_cast<int>(i_end), static_cast<int>(j_end)});
 
         liftedVariableXijToSDPVariableViewMap.emplace(
-            std::make_pair(key_i, key_j), Y->slice(first, last));
+            std::make_pair(key_i, key_j),
+            std::make_shared<SDPBlockView>(Y->slice(first, last)));
       }
     }
   }
@@ -610,6 +638,7 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
   KeyVector orderedKeys;
   std::map<Key, DenseIndex> orderedKeyDims;
   SymbolicBayesTree bayesTree_;
+  std::map<KeyVector, Matrix> cliqueBases;
   LiftedVariableXijToSDPVariableViewMap liftedVariableXijToSDPVariableViewMap;
 
   ~Impl() {
@@ -629,10 +658,11 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
 
   // Constrain duplicate clique views to agree on their shared entries.
   void addChordalOverlapEquality(const std::pair<Key, Key>& key,
-                                 const mf::Variable::t& owner,
-                                 const mf::Variable::t& duplicate) {
+                                 const std::shared_ptr<SDPBlockView>& owner,
+                                 const std::shared_ptr<SDPBlockView>& duplicate) {
     if (key.first < key.second) {
-      M->constraint(mf::Expr::sub(owner, duplicate), mf::Domain::equalsTo(0.0));
+      M->constraint(mf::Expr::sub(owner->asExpr(), duplicate->asExpr()),
+                    mf::Domain::equalsTo(0.0));
       return;
     }
 
@@ -649,6 +679,34 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
       }
       return;
     }
+  }
+
+  // Collect completed layouts for the separate numerical post-processing pass.
+  static void collectCliques(const SymbolicBayesTree::sharedClique& clique,
+                            std::vector<KeyVector>* layouts) {
+    KeyVector keys = clique->conditional()->keys();
+    std::sort(keys.begin(), keys.end());
+    layouts->push_back(keys);
+    for (const auto& child : clique->children) collectCliques(child, layouts);
+  }
+
+  // Register one original-coordinate block, regardless of its backing cone size.
+  void registerBlock(const mf::Variable::t& cone, const Matrix* basis,
+                     const std::pair<Key, Key>& key,
+                     DenseIndex rowStart, DenseIndex rowEnd,
+                     DenseIndex colStart, DenseIndex colEnd) {
+    std::shared_ptr<SDPBlockView> view;
+    if (basis) {
+      view = std::make_shared<SDPBlockView>(
+          cone, basis->middleRows(rowStart, rowEnd - rowStart),
+          basis->middleRows(colStart, colEnd - colStart));
+    } else {
+      view = std::make_shared<SDPBlockView>(cone->slice(
+          monty::new_array_ptr<int, 1>({int(rowStart), int(colStart)}),
+          monty::new_array_ptr<int, 1>({int(rowEnd), int(colEnd)})));
+    }
+    auto [owner, inserted] = liftedVariableXijToSDPVariableViewMap.emplace(key, view);
+    if (!inserted) addChordalOverlapEquality(key, owner->second, view);
   }
 
   // Allocate clique variables and register their block views recursively.
@@ -670,26 +728,19 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
     }
 
     if (!indices.empty()) {
+      const auto found = cliqueBases.find(indices);
+      const Matrix* basis = found == cliqueBases.end() ? nullptr : &found->second;
+      const DenseIndex coneDimension = basis ? basis->cols() : cliqueDimension;
       auto cliqueY =
           M->variable(makeCliqueVariableName(indices),
-                      mf::Domain::inPSDCone(static_cast<int>(cliqueDimension)));
+                      mf::Domain::inPSDCone(static_cast<int>(coneDimension)));
 
       for (Key key_i : indices) {
         for (Key key_j : indices) {
           const auto [i_start, i_end] = keyToCliqueSlice.at(key_i);
           const auto [j_start, j_end] = keyToCliqueSlice.at(key_j);
-          auto blockView = cliqueY->slice(
-              monty::new_array_ptr<int, 1>(
-                  {static_cast<int>(i_start), static_cast<int>(j_start)}),
-              monty::new_array_ptr<int, 1>(
-                  {static_cast<int>(i_end), static_cast<int>(j_end)}));
-
-          const std::pair<Key, Key> key(key_i, key_j);
-          auto [it, inserted] =
-              liftedVariableXijToSDPVariableViewMap.emplace(key, blockView);
-          if (!inserted) {
-            addChordalOverlapEquality(key, it->second, blockView);
-          }
+          registerBlock(cliqueY, basis, {key_i, key_j},
+                        i_start, i_end, j_start, j_end);
         }
       }
     }
@@ -795,12 +846,24 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::orderedKeyDims() const {
 }
 
 LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
-    const QcqpProblem& problem, ChordalOrderingType orderingType)
+    const QcqpProblem& problem, ChordalOrderingType orderingType,
+    bool eliminateKnownNullDirections)
     : impl_(std::make_unique<Impl>()) {
   CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                             &impl_->orderedKeyDims);
   impl_->M = new mf::Model("ChordalSDP_MosekSDPSolver");
   impl_->bayesTree_ = BuildSymbolicBayesTree(problem, orderingType);
+
+  // POST-PROCESSING PASS: reduce the numerical cone coordinates only.
+  // The QCQP, clique membership, and original-coordinate constraints are intact.
+  if (eliminateKnownNullDirections) {
+    std::vector<KeyVector> layouts;
+    for (const auto& root : impl_->bayesTree_.roots()) {
+      Impl::collectCliques(root, &layouts);
+    }
+    impl_->cliqueBases = internal::EliminateKnownNullDirections(
+        problem, impl_->orderedKeyDims, layouts);
+  }
 
   // Use one positive semidefinite variable per symbolic clique.
   impl_->populateXijMap();
