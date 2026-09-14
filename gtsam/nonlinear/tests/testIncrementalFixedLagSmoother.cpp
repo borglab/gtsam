@@ -1077,6 +1077,75 @@ TEST(IncrementalFixedLagSmoother, CalculateEstimateForKeys) {
                   ValuesKeyDoesNotExist);
 }
 
+/* ************************************************************************* */
+namespace removal_validation {
+
+// Invalid removal indices are diagnosed before additions or valid removals land.
+TEST(IncrementalFixedLagSmoother, RejectsInvalidRemovalAtomically) {
+  const auto noise = noiseModel::Unit::Create(1);
+  for (const size_t invalid : {size_t{1}, size_t{100}}) {
+    IncrementalFixedLagSmoother smoother(10.0);
+    NonlinearFactorGraph factors;
+    factors.addPrior(0, 0.0, noise);
+    Values values;
+    values.insert(0, 0.0);
+    smoother.update(factors, values, {{0, 0.0}});
+
+    const Values valuesBefore = smoother.getLinearizationPoint();
+    const NonlinearFactorGraph factorsBefore = smoother.getFactors();
+    const auto timestampsBefore = smoother.timestamps();
+    const ISAM2 isamBefore = smoother.getISAM2();
+    NonlinearFactorGraph newFactors;
+    newFactors.addPrior(1, 1.0, noise);
+    Values newValues;
+    newValues.insert(1, 1.0);
+    bool rejected = false;
+    try {
+      // Index 1 would exist after insertion, but does not exist at update entry.
+      smoother.update(newFactors, newValues, {{0, 0.5}, {1, 0.5}}, {0, invalid});
+    } catch (const std::out_of_range& error) {
+      rejected = std::string(error.what()) ==
+          "IncrementalFixedLagSmoother::update: factor index " +
+          std::to_string(invalid) + " is outside the factor graph.";
+    } catch (const std::exception&) {
+      // A later solver exception does not provide the admission guarantee.
+    }
+    EXPECT(rejected);
+    EXPECT(assert_equal(valuesBefore, smoother.getLinearizationPoint(), 1e-12));
+    EXPECT(assert_equal(factorsBefore, smoother.getFactors(), 1e-12));
+    EXPECT(timestampsBefore == smoother.timestamps());
+    EXPECT(isamBefore.equals(smoother.getISAM2(), 1e-12));
+    if (!rejected) continue;
+
+    smoother.update(newFactors, newValues, {{0, 0.5}, {1, 0.5}}, {0});
+    EXPECT(!smoother.getLinearizationPoint().exists(0));
+    EXPECT(assert_equal(1.0, smoother.calculateEstimate<double>(1)));
+
+    // In-range empty slots remain accepted when no new factor reuses the slot.
+    smoother.update(NonlinearFactorGraph(), Values(), {}, {0});
+    EXPECT(assert_equal(1.0, smoother.calculateEstimate<double>(1)));
+  }
+}
+
+// When both inputs are invalid, removal validation runs before timestamp checks.
+TEST(IncrementalFixedLagSmoother, ValidatesRemovalsBeforeTimestamps) {
+  IncrementalFixedLagSmoother smoother(1.0);
+  bool rejected = false;
+  try {
+    smoother.update(NonlinearFactorGraph(), Values(), {{0, 1000.0}}, {0});
+  } catch (const std::out_of_range& error) {
+    rejected = std::string(error.what()) ==
+        "IncrementalFixedLagSmoother::update: factor index 0 is outside the factor graph.";
+  } catch (const std::exception&) {
+  }
+  EXPECT(rejected);
+  EXPECT(smoother.timestamps().empty());
+  EXPECT(smoother.getLinearizationPoint().empty());
+}
+
+}  // namespace removal_validation
+/* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

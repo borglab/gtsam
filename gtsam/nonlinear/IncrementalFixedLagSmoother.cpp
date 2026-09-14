@@ -56,6 +56,16 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
     std::cout << "END" << std::endl;
   }
 
+  // Validate against the graph at update entry, before timestamps or ISAM2
+  // change. New factors cannot make an invalid removal index valid.
+  for (const size_t factorIndex : factorsToRemove) {
+    if (factorIndex >= isam_.getFactorsUnsafe().size()) {
+      throw std::out_of_range(
+          "IncrementalFixedLagSmoother::update: factor index " +
+          std::to_string(factorIndex) + " is outside the factor graph.");
+    }
+  }
+
   FastVector<size_t> removedFactors;
   std::optional<FastMap<Key, int> > constrainedKeys = {};
 
