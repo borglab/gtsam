@@ -225,7 +225,7 @@ class ProductLieGroup
   size_t secondDim() const { return traits<H>::GetDimension(this->second); }
 
   /// Extract a tangent segment for one factor.
-  template <typename T, int Dim = traits<T>::dimension>
+  template <typename T, int ComponentDimension = traits<T>::dimension>
   static typename traits<T>::TangentVector tangentSegment(
       const TangentVector& v, size_t start, size_t d);
 
