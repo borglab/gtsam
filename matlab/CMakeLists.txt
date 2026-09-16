@@ -90,6 +90,10 @@ set(interface_files
     # matlab/custom.i lives outside the main gtsam/ tree, see comment below.
     ${GTSAM_SOURCE_DIR}/matlab/custom.i
 )
+if(GTSAM_USE_MOSEK)
+  list(APPEND interface_files
+       ${GTSAM_SOURCE_DIR}/gtsam/certifiable/certifiable_mosek.i)
+endif()
 # The fourth matlab_wrap() argument contains extra include directories for the
 # generated mex target. We point it at matlab/ because matlab/custom.i includes
 # MatlabCustomFactor.h from there.

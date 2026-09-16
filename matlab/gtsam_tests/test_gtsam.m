@@ -24,6 +24,9 @@ testValues
 display 'Starting: testCustomFactor'
 testCustomFactor
 
+display 'Starting: testMosekSDP'
+testMosekSDP
+
 %% SLAM
 display 'Starting: testPriorFactor'
 testPriorFactor
