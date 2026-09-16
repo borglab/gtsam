@@ -224,8 +224,13 @@ Install [pyparsing>=3.2.5](https://github.com/pyparsing/pyparsing), [pybind-stub
   ```
 
 1. Follow the above steps for GTSAM general installation.
-  - In the CMake settings variables, set `GTSAM_BUILD_PYTHON` to true and specify the desired environment's interpreter in the "CMake command arguments" field using `-DPYTHON_EXECUTABLE="<path to your python.exe>"`.
-  - Confirm that the configure summary reports the intended interpreter. If an exact version must be requested, set `GTSAM_PYTHON_VERSION`; the wrapper and pybind11 version settings are derived from it.
+  - Activate the desired Python environment, set `GTSAM_BUILD_PYTHON` to true
+    in the CMake settings variables, and specify its interpreter in the "CMake
+    command arguments" field using
+    `-DPython3_EXECUTABLE="<path to your python.exe>"`.
+  - Confirm that the configure summary reports the intended interpreter. If an
+    exact version must be requested, set `GTSAM_PYTHON_VERSION`; the wrapper and
+    pybind11 version settings are derived from it.
 2. Build the project (Build > Build All).
   - If you encounter an error involving copying `.pyd` files, find the files mentioned (`gtsam_py.pyd` and `gtsam_unstable_py.pyd`, probably in the `Debug`/`Release`/etc. folder inside `build/<your build>/python/gtsam`) and copy them to where they are supposed to be (the source of the copy error, probably `build/<your build>/python/gtsam`) then rebuild.
 3. At this point, `gtsam` in `build/<your build>/python` is available to be used as a Python package. You can use `pip install .` in that directory to install the package.
@@ -248,8 +253,8 @@ We support several build configurations for GTSAM (case insensitive)
 ```cmake -DCMAKE_BUILD_TYPE=[Option] ..```
 
   - Debug            All error checking options on, no optimization. Use for development.
-  - Release (default for single-configuration generators) Optimizations turned
-    on, no debug symbols.
+  - Release (the default selected for non-MSVC, non-Xcode generators when
+    `CMAKE_BUILD_TYPE` is unset) Optimizations turned on, no debug symbols.
   - Timing           Adds ENABLE_TIMING flag to provide statistics on operation
   - Profiling        Standard configuration for use during profiling
   - RelWithDebInfo   Same as Release, but with debug symbols.
@@ -279,8 +284,9 @@ Set with the command line as follows:
 
   ON (Default for source checkouts): When enabled, `libgtsam_unstable` is built
   and installed with the same options as `libgtsam`. If tests are enabled, its
-  unit tests are built as well. Its MATLAB toolbox is also generated when the
-  MATLAB toolbox is enabled, under `gtsam_unstable`.
+  unit tests are built as well. Its MATLAB toolbox is generated under
+  `gtsam_unstable` only when both `GTSAM_INSTALL_MATLAB_TOOLBOX` and
+  `GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX` are enabled.
   OFF: If disabled, no `gtsam_unstable` code will be included in build or install.
 
 ## Convenience Options:

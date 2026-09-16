@@ -45,8 +45,9 @@ APIs.
   measurement, constraint, or cost involving one or more variables.
 - **Keys** identify variables. `gtsam::Key` is a 64-bit unsigned integer;
   `gtsam::Symbol` and `gtsam::LabeledSymbol` provide readable structured keys.
-- **Values** stores typed variable values indexed by keys and supplies the
-  linearization point or initial estimate used by nonlinear optimizers.
+- **`gtsam::Values`** is a container that stores typed variable values indexed
+  by keys and supplies the linearization point or initial estimate used by
+  nonlinear optimizers.
 - **Optimizers and inference algorithms** operate on factor graphs and values to
   compute estimates, marginals, or discrete assignments.
 
