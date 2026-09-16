@@ -35,7 +35,11 @@ using gtsam::Point3;
 
 #include <mex.h>
 
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
+#include <map>
+#include <vector>
 #include <limits>
 #include <list>
 #include <optional>
@@ -647,3 +651,75 @@ Class* unwrap_ptr(const mxArray* obj, const string& propertyName) {
 //  static_assert(unwrap_shared_ptr_Matrix_attempted, "Matrix cannot be unwrapped as a shared pointer");
 //  return Matrix();
 //}
+
+// Numeric STL containers use MATLAB values rather than opaque proxy objects.
+inline mxArray* wrap_numeric_container(const std::vector<double>& values) {
+  mxArray* result = mxCreateDoubleMatrix(values.size(), 1, mxREAL);
+  std::copy(values.begin(), values.end(), mxGetPr(result));
+  return result;
+}
+
+template <typename Key, typename Value>
+mxArray* wrap_numeric_container(const std::map<Key, Value>& values) {
+  mxArray* result = nullptr;
+  if (values.empty()) {
+    const char* keyType = std::is_same_v<Key, std::string> ? "char" :
+        (std::is_integral_v<Key> ? "uint64" : "double");
+    mxArray* args[] = {mxCreateString("KeyType"), mxCreateString(keyType),
+                      mxCreateString("ValueType"), mxCreateString("double")};
+    int status = mexCallMATLAB(1, &result, 4, args, "containers.Map");
+    for (auto arg : args) mxDestroyArray(arg);
+    if (status) error("Could not create containers.Map");
+  } else {
+    mxArray* args[] = {mxCreateCellMatrix(1, values.size()),
+                      mxCreateCellMatrix(1, values.size())};
+    mwIndex index = 0;
+    for (const auto& entry : values) {
+      mxSetCell(args[0], index, wrap<Key>(entry.first));
+      mxSetCell(args[1], index++, mxCreateDoubleScalar(entry.second));
+    }
+    int status = mexCallMATLAB(1, &result, 2, args, "containers.Map");
+    for (auto arg : args) mxDestroyArray(arg);
+    if (status) error("Could not create containers.Map");
+  }
+  return result;
+}
+
+template <typename Container>
+Container unwrap_numeric_container(const mxArray* array) {
+  if constexpr (std::is_same_v<Container, std::vector<double>>) {
+    if (!mxIsDouble(array) || mxIsComplex(array) || mxIsSparse(array) ||
+        (!mxIsEmpty(array) && mxGetM(array) != 1 && mxGetN(array) != 1))
+      error("Expected a real, full double vector");
+    if (mxIsEmpty(array)) return {};
+    const double* data = mxGetPr(array);
+    return Container(data, data + mxGetNumberOfElements(array));
+  } else {
+    if (!mxIsClass(array, "containers.Map")) error("Expected containers.Map");
+    mxArray* input = const_cast<mxArray*>(array);
+    mxArray *keys = nullptr, *values = nullptr;
+    if (mexCallMATLAB(1, &keys, 1, &input, "keys") ||
+        mexCallMATLAB(1, &values, 1, &input, "values"))
+      error("Could not read containers.Map");
+    Container result;
+    for (mwIndex i = 0; i < mxGetNumberOfElements(keys); ++i) {
+      using Key = typename Container::key_type;
+      using Value = typename Container::mapped_type;
+      const mxArray* value = mxGetCell(values, i);
+      if (!mxIsDouble(value) || mxIsComplex(value) ||
+          mxGetNumberOfElements(value) != 1)
+        error("Expected scalar double map values");
+      double number = mxGetScalar(value);
+      if constexpr (std::is_integral_v<Value>) {
+        if (!std::isfinite(number) || std::trunc(number) != number ||
+            static_cast<long double>(number) < std::numeric_limits<Value>::lowest() ||
+            static_cast<long double>(number) > std::numeric_limits<Value>::max())
+          error("Map value is outside the integer range");
+      }
+      result.emplace(unwrap<Key>(mxGetCell(keys, i)), static_cast<Value>(number));
+    }
+    mxDestroyArray(keys);
+    mxDestroyArray(values);
+    return result;
+  }
+}
