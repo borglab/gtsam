@@ -204,7 +204,7 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
         self.assertEqual(list(solver.orderedKeys()), expected_keys)
         ordered_key_dims = solver.orderedKeyDims()
         self.assertEqual(set(ordered_key_dims), set(expected_keys))
-        self.assertTrue(all(dimension == 5 for dimension in ordered_key_dims.values()))
+        self.assertTrue(all(dimension == 3 for dimension in ordered_key_dims.values()))
 
         variable_evrs = solver.variableEVRs()
         qcqp_values = solver.qcqpValues()
@@ -215,7 +215,7 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
         self.assertTrue(all(np.isfinite(evr) for evr in variable_evrs))
         np.testing.assert_allclose(variable_evrs, repeated_variable_evrs)
         for key in expected_keys:
-            self.assertEqual(qcqp_values.atMatrix(key).shape, (5, 1))
+            self.assertEqual(qcqp_values.atMatrix(key).shape, (3, 1))
             np.testing.assert_allclose(
                 qcqp_values.atMatrix(key), repeated_qcqp_values.atMatrix(key)
             )
@@ -245,6 +245,15 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
         solver = MosekChordalSDP(problem, ChordalOrderingType.Colamd)
         self.assertGreater(solver.bayesTree().size(), 0)
         self.assert_solver_solution(solver, ground_truth)
+
+    def test_unshared_homogeneous_coordinates(self):
+        """Opt out through both constructor bindings and retain pose recovery."""
+        problem, ground_truth = rot2_ring_qcqp()
+        monolithic = MosekMonolithicSDP(problem, shareHomogeneousCoordinates=False)
+        chordal = MosekChordalSDP(problem, ChordalOrderingType.Colamd, False)
+        for solver in (monolithic, chordal):
+            with self.subTest(solver=type(solver).__name__):
+                self.assert_solver_solution(solver, ground_truth)
 
 
 if __name__ == "__main__":
