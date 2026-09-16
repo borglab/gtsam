@@ -34,6 +34,11 @@ $ cmake --build . --target install
         -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
     ```
 
+    ROS 2 `colcon` builds also use the system Eigen package by default. This
+    keeps GTSAM and downstream ROS packages on the same Eigen version. Plain
+    CMake builds continue to use GTSAM's bundled Eigen by default. Either build
+    mode can override the choice explicitly with `GTSAM_USE_SYSTEM_EIGEN`.
+
     Optional dependent libraries:
      - If TBB is installed and detectable by CMake GTSAM will use it automatically.
        Ensure that CMake prints "Use Intel TBB : Yes".  To disable the use of TBB,
