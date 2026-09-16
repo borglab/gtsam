@@ -50,19 +50,19 @@ $ cmake --build . --target install
        nor bundled with GTSAM. See
        [doc/CUDA_LINEAR_SOLVERS.md](doc/CUDA_LINEAR_SOLVERS.md).
 
-2. GTSAM makes extensive use of debug assertions, and we highly recommend you work
-in Debug mode while developing (enabled by default). Likewise, it is imperative
-that you switch to release mode when running finished code and for timing. GTSAM
-will run up to 10x faster in Release mode! See the end of this document for
-additional debugging tips.
+2. GTSAM makes extensive use of debug assertions, and we highly recommend you
+explicitly select Debug mode while developing. Single-configuration builds
+default to Release mode. Use Release mode when running finished code and for
+timing; GTSAM can run up to 10x faster than in Debug mode. See the end of this
+document for additional debugging tips.
 
 3. GTSAM has Doxygen documentation. To generate, run 'make doc' from your
 build directory after setting the `GTSAM_BUILD_DOCS` and
 `GTSAM_BUILD_DOC_[HTML|LATEX]` cmake flags.
 
 4. The instructions below install the library to the default system install path and
-build all components. From a terminal, starting in the root library folder,
-execute commands as follows for an out-of-source build:
+build the default components. From a terminal, starting in the root library
+folder, execute commands as follows for an out-of-source build:
 
   ```sh
   $ mkdir build
@@ -220,7 +220,6 @@ Install [pyparsing(>=2.4.2)](https://github.com/pyparsing/pyparsing), [pybind-st
   - In the CMake settings variables, set `GTSAM_BUILD_PYTHON` to be true and specify the path to your desired Python environment executable in the "CMake command arguments" field using `-DPYTHON_EXECUTABLE="<path to your python.exe>"`
   - Once the cache is generated, ensure it's using your desired Python executable and the version is correct. It may cause errors later otherwise, such as missing Python packages required to build. If the version is not the one you specified in `DPYTHON_EXECUTABLE`, change the version in all 3 Python version specifiers in the CMake variables (`GTSAM_PYTHON_VERSION`, `PYBIND11_PYTHON_VERSION`, `WRAP_PYTHON_VERSION`) to the exact version of your desired executable. CMake might look for executables in the standard locations first, so ensure it's using the one you want before continuing.
 2. Build the project (Build > Build All).
-  - If you encounter the error `C1083	Cannot open include file: 'boost/serialization/export.hpp': No such file or directory`, you need to make changes to the template files that include Boost since your build is not using Boost. Locate `python/gtsam/gtsam.tpl` (and `python/gtsam_unstable/gtsam_unstable.tpl` if you are building unstable) and comment out the line `#include <boost/serialization/export.hpp>` near the top of each. Delete the generated build directory (e.g. if you made `build/x64-Debug`, delete the `x64-Debug` folder), regenerate the cache, and build again.
   - If you encounter an error involving copying `.pyd` files, find the files mentioned (`gtsam_py.pyd` and `gtsam_unstable_py.pyd`, probably in the `Debug`/`Release`/etc. folder inside `build/<your build>/python/gtsam`) and copy them to where they are supposed to be (the source of the copy error, probably `build/<your build>/python/gtsam`) then rebuild.
 3. At this point, `gtsam` in `build/<your build>/python` is available to be used as a Python package. You can use `pip install .` in that directory to install the package.
 
@@ -241,8 +240,9 @@ We support several build configurations for GTSAM (case insensitive)
 
 ```cmake -DCMAKE_BUILD_TYPE=[Option] ..```
 
-  - Debug (default)  All error checking options on, no optimization. Use for development.
-  - Release          Optimizations turned on, no debug symbols.
+  - Debug            All error checking options on, no optimization. Use for development.
+  - Release (default for single-configuration generators) Optimizations turned
+    on, no debug symbols.
   - Timing           Adds ENABLE_TIMING flag to provide statistics on operation
   - Profiling        Standard configuration for use during profiling
   - RelWithDebInfo   Same as Release, but with the -g flag for debug symbols
@@ -256,19 +256,10 @@ To configure to install to your home directory, you could execute:
 
 #### GTSAM_TOOLBOX_INSTALL_PATH
 
-The Matlab toolbox will be installed in a subdirectory
-of this folder, called 'gtsam'.
+The final destination for the installed MATLAB toolbox. If unset, it defaults
+to `${CMAKE_INSTALL_PREFIX}/gtsam_toolbox`.
 
 ```cmake -DGTSAM_TOOLBOX_INSTALL_PATH:PATH=$HOME/toolbox ..```
-
-#### GTSAM_BUILD_CONVENIENCE_LIBRARIES
-
-This is a build option to allow for tests in subfolders to be linked against convenience libraries rather than the full libgtsam.
-Set with the command line as follows:
-
-```cmake -DGTSAM_BUILD_CONVENIENCE_LIBRARIES:OPTION=ON ..```
-  - ON (Default): This builds convenience libraries and links tests against them. This   				 option is suggested for gtsam developers, as it is possible to build and run tests without first building the rest of the library, and speeds up compilation for a single test. The downside of this option is that it will build the entire library again to build the full libgtsam library, so build/install will be slower.
-  - OFF: This will build all of libgtsam before any of the tests, and then link all of the tests at once. This option is best for users of GTSAM, as it avoids rebuilding the entirety of gtsam an extra time.
 
 #### GTSAM_BUILD_UNSTABLE
 
@@ -277,8 +268,11 @@ Set with the command line as follows:
 
 ```cmake -DGTSAM_BUILD_UNSTABLE:OPTION=ON ..```
 
-  ON:             When enabled, libgtsam_unstable will be built and installed with the same options as libgtsam.  In addition, if tests are enabled, the unit tests will be built as well.  The Matlab toolbox will also be generated if the matlab toolbox is enabled, installing into a folder called `gtsam_unstable`.
-  OFF (Default)  If disabled, no `gtsam_unstable` code will be included in build or install.
+  ON (Default for source checkouts): When enabled, `libgtsam_unstable` is built
+  and installed with the same options as `libgtsam`. If tests are enabled, its
+  unit tests are built as well. Its MATLAB toolbox is also generated when the
+  MATLAB toolbox is enabled, under `gtsam_unstable`.
+  OFF: If disabled, no `gtsam_unstable` code will be included in build or install.
 
 ## Convenience Options:
 
@@ -395,9 +389,14 @@ Setup vcpkg and Python dependencies
 
 ```bash
 ./vcpkg/vcpkg install
-# The Python executable is called python, not python3 on Windows
+
+# Linux and macOS
 ./vcpkg_installed/<triplet>/tools/python3/python3 -m ensurepip --upgrade
 ./vcpkg_installed/<triplet>/tools/python3/python3 -m pip install -r python/dev_requirements.txt
+
+# Windows (PowerShell)
+./vcpkg_installed/<triplet>/tools/python3/python.exe -m ensurepip --upgrade
+./vcpkg_installed/<triplet>/tools/python3/python.exe -m pip install -r python/dev_requirements.txt
 ```
 
 Configure CMake build:
