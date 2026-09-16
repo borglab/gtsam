@@ -165,7 +165,7 @@ There are two ways to build GTSAM on Windows: the traditional way with Visual St
 - Visual Studio with Desktop development with C++
   - You need MSVC and the Windows SDK to build GTSAM.
   - This also includes the C++ CMake tools for Windows component, which includes Ninja and CMake.
-  - CMake >= 3.21 is required for Visual Studio installation because custom templates used in the build were added in 3.21. Use `cmake --version` in the VS Developer Command Prompt to ensure you meet this requirement.
+  - CMake 3.21 or newer is required when generating Visual Studio 2022 project files because that generator was added in CMake 3.21. GTSAM's minimum remains CMake 3.16 when using another supported generator such as Ninja. Use `cmake --version` in the VS Developer Command Prompt to check the selected CMake installation.
 - All the other pre-requisites listed above.
 
 ## Building with CMake and Ninja
@@ -200,25 +200,25 @@ This section details how to build a GTSAM `.sln` file using Visual Studio.
   - You can optionally create a new configuration for a `Release` build.
   - Set the necessary CMake variables for your use case. If you are not using Boost, uncheck `GTSAM_ENABLE_BOOST_SERIALIZATION` and `GTSAM_USE_BOOST_FEATURES`. 
   - Click on `Show advanced settings`.
-  - For `CMake generator`, select a version which matches `Visual Studio <Version> <Year> Win64`, e.g. `Visual Studio 17 2022 Win64`.
+  - For `CMake generator`, select `Visual Studio 17 2022` and select `x64` as the target platform.
   - Save the settings (Ctrl + S).
 4. Saving the CMake settings should automatically generate the cache. Otherwise, click on `Project -> Configure Cache`. This will generate the CMake build files (as seen in the Output window).
-  - If generating the cache yields `CMake Error ... (ADD_CUSTOM_COMMAND)` errors, you have an old CMake. Verify that your CMake is >= 3.21. If Visual Studio says that it is but you're still getting the error, install the latest CMake (tested with 3.31.4) and point to its executable in `CMakeSettings > Advanced settings > CMake executable`.
+  - If `Visual Studio 17 2022` is not an available generator, install CMake 3.21 or newer and select that executable in `CMakeSettings > Advanced settings > CMake executable`.
 5. The last step will generate a `GTSAM.sln` file in the `build` directory. At this point, GTSAM can be used as a regular Visual Studio project.
 
 ### Python Installation
 
 To install the Python bindings on Windows:
 
-Install [pyparsing(>=2.4.2)](https://github.com/pyparsing/pyparsing), [pybind-stubgen>=2.5.1](https://github.com/sizmailov/pybind11-stubgen) and [numpy(>=1.11.0)](https://numpy.org/) with the Python environment you wish to develop in. These can all be installed as follows:
+Install [pyparsing>=3.2.5](https://github.com/pyparsing/pyparsing), [pybind-stubgen>=2.5.1](https://github.com/sizmailov/pybind11-stubgen), and [numpy>=1.11.0](https://numpy.org/) in the Python environment you wish to use. The tested development dependencies can all be installed as follows:
 
   ```bash
   pip install -r <gtsam_folder>/python/dev_requirements.txt
   ```
 
 1. Follow the above steps for GTSAM general installation.
-  - In the CMake settings variables, set `GTSAM_BUILD_PYTHON` to be true and specify the path to your desired Python environment executable in the "CMake command arguments" field using `-DPYTHON_EXECUTABLE="<path to your python.exe>"`
-  - Once the cache is generated, ensure it's using your desired Python executable and the version is correct. It may cause errors later otherwise, such as missing Python packages required to build. If the version is not the one you specified in `DPYTHON_EXECUTABLE`, change the version in all 3 Python version specifiers in the CMake variables (`GTSAM_PYTHON_VERSION`, `PYBIND11_PYTHON_VERSION`, `WRAP_PYTHON_VERSION`) to the exact version of your desired executable. CMake might look for executables in the standard locations first, so ensure it's using the one you want before continuing.
+  - In the CMake settings variables, set `GTSAM_BUILD_PYTHON` to true and specify the desired environment's interpreter in the "CMake command arguments" field using `-DPYTHON_EXECUTABLE="<path to your python.exe>"`.
+  - Confirm that the configure summary reports the intended interpreter. If an exact version must be requested, set `GTSAM_PYTHON_VERSION`; the wrapper and pybind11 version settings are derived from it.
 2. Build the project (Build > Build All).
   - If you encounter an error involving copying `.pyd` files, find the files mentioned (`gtsam_py.pyd` and `gtsam_unstable_py.pyd`, probably in the `Debug`/`Release`/etc. folder inside `build/<your build>/python/gtsam`) and copy them to where they are supposed to be (the source of the copy error, probably `build/<your build>/python/gtsam`) then rebuild.
 3. At this point, `gtsam` in `build/<your build>/python` is available to be used as a Python package. You can use `pip install .` in that directory to install the package.
@@ -332,29 +332,25 @@ NOTE:  The native Snow Leopard g++ compiler/library contains a bug that makes it
 NOTE:  If _GLIBCXX_DEBUG is used to compile gtsam, anything that links against gtsam will need to be compiled with _GLIBCXX_DEBUG as well, due to the use of header-only Eigen.
 
 
-## Installing MKL on Linux
+## Installing oneMKL on Linux
 
-Intel has a guide for installing MKL on Linux through APT repositories at <https://software.intel.com/en-us/articles/installing-intel-free-libs-and-python-apt-repo>.
+Follow Intel's current [oneMKL APT installation instructions](https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl-download.html) and install the development package:
 
-After following the instructions, add the following to your `~/.bashrc` (and afterwards, open a new terminal before compiling GTSAM):
-`LD_PRELOAD` need only be set if you are building the python wrapper to use GTSAM from python.
 ```sh
-source /opt/intel/mkl/bin/mklvars.sh intel64
-export LD_PRELOAD="$LD_PRELOAD:/opt/intel/mkl/lib/intel64/libmkl_core.so:/opt/intel/mkl/lib/intel64/libmkl_sequential.so"
+sudo apt install intel-oneapi-mkl-devel
 ```
-To use MKL in GTSAM pass the flag `-DGTSAM_WITH_EIGEN_MKL=ON` to cmake.
 
+Initialize the oneAPI environment before configuring GTSAM. The standard
+component-layout installation provides:
 
-The `LD_PRELOAD` fix seems to be related to a well known problem with MKL which leads to lots of undefined symbol errors, for example:
-- <https://software.intel.com/en-us/forums/intel-math-kernel-library/topic/300857>
-- <https://software.intel.com/en-us/forums/intel-distribution-for-python/topic/628976>
-- <https://groups.google.com/a/continuum.io/forum/#!topic/anaconda/J3YGoef64z8>
+```sh
+source /opt/intel/oneapi/setvars.sh
+```
 
-Failing to specify `LD_PRELOAD` may lead to errors such as:
-`ImportError: /opt/intel/mkl/lib/intel64/libmkl_vml_avx2.so: undefined symbol: mkl_serv_getenv`
-or
-`Intel MKL FATAL ERROR: Cannot load libmkl_avx2.so or libmkl_def.so.`
-when importing GTSAM using the python wrapper.
+Installations using Intel's unified layout provide `oneapi-vars.sh` instead.
+Then configure GTSAM with `-DGTSAM_WITH_EIGEN_MKL=ON`; add
+`-DGTSAM_WITH_EIGEN_MKL_OPENMP=ON` when OpenMP-backed MKL threading is desired.
+No manual `LD_PRELOAD` setting is required for the supported oneAPI layout.
 
 
 ## Compile gtsam with vcpkg
@@ -414,10 +410,13 @@ cmake -B build -G Ninja \
     -DGTSAM_BUILD_TESTS=ON \
     -DGTSAM_BUILD_UNSTABLE=ON \
     -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
-    -DGTSAM_USE_SYSTEM_EIGEN=OFF \
+    -DGTSAM_USE_SYSTEM_EIGEN=ON \
     -DGTSAM_USE_SYSTEM_METIS=OFF \
     -DGTSAM_USE_SYSTEM_PYBIND=ON \
-    -DGTSAM_SUPPORT_NESTED_DISSECTION=ON
+    -DGTSAM_ENABLE_GEOGRAPHICLIB=ON \
+    -DGTSAM_SUPPORT_NESTED_DISSECTION=ON \
+    -DGTSAM_WITH_EIGEN_MKL=ON \
+    -DGTSAM_WITH_EIGEN_MKL_OPENMP=ON
 ```
 
 Build gtsam:
