@@ -69,6 +69,25 @@ Tests complete!
 
 Coding for the GTSAM MATLAB toolbox is straightforward and very fast once you understand a few basic concepts! Please see the [manual](https://borglab.github.io/gtsam/) to get started.
 
+### MOSEK SDP solvers
+
+With `GTSAM_WITH_MOSEK=ON`, the toolbox includes `MosekMonolithicSDP` and
+`MosekChordalSDP`. Both share homogeneous coordinates by default; pass `false`
+as the final constructor argument to use the original formulation:
+
+```matlab
+problem = gtsam.QcqpProblem(graph);
+solver = gtsam.MosekMonolithicSDP(problem, false);
+% Or: gtsam.MosekChordalSDP(problem, gtsam.ChordalOrderingType.Colamd, false)
+solver.solve();
+values = solver.qcqpValues();
+```
+
+`solve` also accepts a `containers.Map` of solver parameter names to doubles.
+`orderedKeyDims()` returns a `containers.Map` with `uint64` keys, and
+`variableEVRs()` returns a double column vector. Running `test_gtsam` exercises
+both formulations and the sharing option when MOSEK is available.
+
 
 ## Filename Case Sensitivity
 
@@ -88,7 +107,7 @@ cmake .. \
   -DGTSAM_INSTALL_MATLAB_TOOLBOX=ON \
   -DMatlab_ROOT_DIR=/Applications/MATLAB_R2025b.app \
   -DGTSAM_TOOLBOX_INSTALL_PATH=/path/to/gtsam/build/gtsam_toolbox
-cmake --build . -j6 --target gtsam_matlab_wrapper
+cmake --build . -j6 --target gtsam_matlab_wrapper CppUnitLite
 cmake --install .
 ```
 
