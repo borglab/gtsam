@@ -83,10 +83,18 @@ solver.solve();
 values = solver.qcqpValues();
 ```
 
-`solve` also accepts a `containers.Map` of solver parameter names to doubles.
-`orderedKeyDims()` returns a `containers.Map` with `uint64` keys, and
-`variableEVRs()` returns a double column vector. Running `test_gtsam` exercises
-both formulations and the sharing option when MOSEK is available.
+Use the wrapped C++ map to set solver parameters:
+
+```matlab
+params = std.mapstringdouble();
+params.emplace('intpntCoTolRelGap', 1e-8);
+solver.solve(params);
+```
+
+`orderedKeyDims()` returns a wrapped map with `size()` and `at(key)` methods.
+`variableEVRs()` returns a wrapped vector with `size()` and zero-based `at(i)`
+access. Running `test_gtsam` exercises both formulations and the sharing option
+when MOSEK is available.
 
 
 ## Filename Case Sensitivity
