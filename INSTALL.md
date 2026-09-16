@@ -17,7 +17,7 @@ $ cmake --build . --target install
 1. GTSAM requires the following libraries to be installed on your system:
     - CMake version 3.16 or higher
     - A compiler with C++17 support. The continuously tested toolchains are:
-      - Linux: GCC 11, 13, 14, or 15 and Clang 11 or 16
+      - Linux: GCC 11, 13, 14, or 15 and Clang 11, 14, or 16
       - macOS: Xcode 16
       - Windows: MSVC toolset 14.40
 

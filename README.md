@@ -66,7 +66,7 @@ Prerequisites:
 
 - [CMake](https://cmake.org/download/) 3.16 or newer
 - A compiler with C++17 support. The continuously tested toolchains are:
-    - Linux: GCC 11, 13, 14, or 15 and Clang 11 or 16
+    - Linux: GCC 11, 13, 14, or 15 and Clang 11, 14, or 16
     - macOS: Xcode 16
     - Windows: MSVC toolset 14.40
 
