@@ -467,7 +467,7 @@ TEST(LiftedSDPs, Pr2713ApplicationFactorsMonolithicAndChordal) {
 /* ************************************************************************* */
 namespace shared_homogeneous_fixture {
 
-// A nonzero optimum checks objective transcription independently of recovery.
+// Sharing and opting out preserve the nonzero optimum, anchor, and recovery.
 TEST(LiftedSDPs, SharedHomogeneousNoisyRot2Ring) {
   constexpr size_t count = 4;
   constexpr double delta = 0.2;
@@ -487,14 +487,16 @@ TEST(LiftedSDPs, SharedHomogeneousNoisyRot2Ring) {
     EXPECT(assert_equal(values, solver->qcqpValues(), 1e-12));
     for (double ratio : solver->variableEVRs()) EXPECT(ratio > 1e5);
   };
-  MosekMonolithicSDP monolithic(problem);
-  check(&monolithic);
-  for (const auto ordering :
-       {ChordalOrderingType::Colamd, ChordalOrderingType::Metis}) {
-    MosekChordalSDP chordal(problem, ordering);
-    check(&chordal);
-    EXPECT_DOUBLES_EQUAL(monolithic.objectiveValue(), chordal.objectiveValue(),
-                         1e-6);
+  for (bool shareHomogeneousCoordinates : {true, false}) {
+    MosekMonolithicSDP monolithic(problem, shareHomogeneousCoordinates);
+    check(&monolithic);
+    for (const auto ordering :
+         {ChordalOrderingType::Colamd, ChordalOrderingType::Metis}) {
+      MosekChordalSDP chordal(problem, ordering, shareHomogeneousCoordinates);
+      check(&chordal);
+      EXPECT_DOUBLES_EQUAL(monolithic.objectiveValue(), chordal.objectiveValue(),
+                           1e-6);
+    }
   }
 }
 

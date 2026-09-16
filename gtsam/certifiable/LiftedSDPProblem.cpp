@@ -759,11 +759,12 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
 };
 
 LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
-    const QcqpProblem& problem)
+    const QcqpProblem& problem, bool shareHomogeneousCoordinates)
     : impl_(std::make_unique<Impl>()) {
   CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                             &impl_->orderedKeyDims);
   const bool shareHomogeneous =
+      shareHomogeneousCoordinates &&
       canShareHomogeneousCoordinate(problem, impl_->orderedKeys);
   int coneDimension;
   const auto layout = makeConeLayout(impl_->orderedKeys, impl_->orderedKeyDims,
@@ -855,7 +856,8 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::orderedKeyDims() const {
 }
 
 LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
-    const QcqpProblem& problem, ChordalOrderingType orderingType)
+    const QcqpProblem& problem, ChordalOrderingType orderingType,
+    bool shareHomogeneousCoordinates)
     : impl_(std::make_unique<Impl>()) {
   CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                             &impl_->orderedKeyDims);
@@ -864,6 +866,7 @@ LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
   // Cost-edge consistency and PSD overlaps propagate the homogeneous row
   // identity through each connected component, including chordal fill edges.
   impl_->shareHomogeneous =
+      shareHomogeneousCoordinates &&
       canShareHomogeneousCoordinate(problem, impl_->orderedKeys);
 
   // Use one positive semidefinite variable per symbolic clique.

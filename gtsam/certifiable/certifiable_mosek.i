@@ -5,7 +5,8 @@ namespace gtsam {
 
 #include <gtsam/certifiable/LiftedSDPProblem.h>
 class MosekMonolithicSDP {
-  MosekMonolithicSDP(const gtsam::QcqpProblem& problem);
+  MosekMonolithicSDP(const gtsam::QcqpProblem& problem,
+                     bool shareHomogeneousCoordinates = true);
 
   bool solve(
       const std::map<std::string, double>& mosekParams =
@@ -25,7 +26,8 @@ enum class ChordalOrderingType { Metis, Colamd };
 
 class MosekChordalSDP {
   MosekChordalSDP(const gtsam::QcqpProblem& problem,
-                  gtsam::ChordalOrderingType orderingType);
+                  gtsam::ChordalOrderingType orderingType,
+                  bool shareHomogeneousCoordinates = true);
 
   bool solve(
       const std::map<std::string, double>& mosekParams =
