@@ -16,10 +16,12 @@ $ cmake --build . --target install
 
 1. GTSAM requires the following libraries to be installed on your system:
     - CMake version 3.16 or higher
-    - A compiler with C++17 support:
-      - Linux: GCC 9 or Clang 11
-      - macOS: Xcode 14.2
-      - Windows: MSVC 14.2
+    - A compiler with C++17 support. The continuously tested toolchains are:
+      - Linux: GCC 11, 13, 14, or 15 and Clang 11 or 16
+      - macOS: Xcode 16
+      - Windows: MSVC toolset 14.40
+
+    Older C++17-capable toolchains may work but are not continuously tested.
 
     Boost version 1.70 or greater is required when either
     `GTSAM_USE_BOOST_FEATURES` or `GTSAM_ENABLE_BOOST_SERIALIZATION` is
@@ -38,7 +40,7 @@ $ cmake --build . --target install
        disable the CMake flag `GTSAM_WITH_TBB` (enabled by default) by providing
        the argument `-DGTSAM_WITH_TBB=OFF` to `cmake`.  On Ubuntu, TBB may be
        installed from the Ubuntu repositories, and for other platforms it may be
-       downloaded from https://www.threadingbuildingblocks.org/
+       downloaded from the [oneTBB project](https://github.com/uxlfoundation/oneTBB).
      - GTSAM may be configured to use MKL by toggling `GTSAM_WITH_EIGEN_MKL` and
        `GTSAM_WITH_EIGEN_MKL_OPENMP` to `ON`; however, best performance is usually
        achieved with MKL disabled. We therefore advise you to benchmark your problem
@@ -53,7 +55,7 @@ $ cmake --build . --target install
 2. GTSAM makes extensive use of debug assertions, and we highly recommend you
 explicitly select Debug mode while developing. Single-configuration builds
 default to Release mode. Use Release mode when running finished code and for
-timing; GTSAM can run up to 10x faster than in Debug mode. See the end of this
+timing; GTSAM can run substantially faster than in Debug mode. See the end of this
 document for additional debugging tips.
 
 3. GTSAM has Doxygen documentation. To generate, run 'make doc' from your
@@ -245,7 +247,9 @@ We support several build configurations for GTSAM (case insensitive)
     on, no debug symbols.
   - Timing           Adds ENABLE_TIMING flag to provide statistics on operation
   - Profiling        Standard configuration for use during profiling
-  - RelWithDebInfo   Same as Release, but with the -g flag for debug symbols
+  - RelWithDebInfo   Same as Release, but with debug symbols.
+  - MinSizeRel       Optimize for binary size.
+  - None             Do not apply configuration-specific build flags.
 
 #### CMAKE_INSTALL_PREFIX
 
@@ -302,19 +306,16 @@ $MATLABROOT can be found by executing the command `matlabroot` in MATLAB
 
 Here are some tips to get the best possible performance out of GTSAM.
 
-1. Build in `Release` mode. GTSAM will run up to 10x faster compared to `Debug` mode.
-2. Enable TBB. On modern processors with multiple cores, this can easily speed up
-    optimization by 30-50%. Please note that this may not be true for very small
-    problems where the overhead of dispatching work to multiple threads outweighs
-    the benefit. We recommend that you benchmark your problem with/without TBB.
-    Note: TBB's parallel tree traversal can significantly increase memory usage
-    (e.g., from ~4GB to ~12GB in tested scenarios). If memory is a concern, you
-    can set `-DGTSAM_TBB_BOUNDED_MEMORY_GROWTH=ON` to disable parallel tree
-    traversal while keeping other TBB benefits.
-3. Use `GTSAM_BUILD_WITH_MARCH_NATIVE`. A performance gain of
-    25-30% can be expected on modern processors. Note that this affects the portability
-    of your executable. It may not run when copied to another system with older/different
-    processor architecture.
+1. Build in `Release` mode. It can be substantially faster than `Debug` mode.
+2. Enable TBB for workloads that benefit from parallel execution. Small problems
+    may instead be slower because task-dispatch overhead outweighs the benefit, so
+    benchmark your workload with and without TBB. TBB's parallel tree traversal
+    can also significantly increase memory usage. If memory is a concern, set
+    `-DGTSAM_TBB_BOUNDED_MEMORY_GROWTH=ON` to disable parallel tree traversal
+    while retaining other TBB benefits.
+3. Try `GTSAM_BUILD_WITH_MARCH_NATIVE` and benchmark the result. This can improve
+    performance but affects executable portability; the binary may not run on a
+    system with an older or different processor architecture.
     Also note that all dependent projects *must* be compiled with the same flag, or
     seg-faults and other undefined behavior may result.
 4. Possibly enable MKL. Please note that our benchmarks have shown that this helps only
@@ -326,8 +327,6 @@ Here are some tips to get the best possible performance out of GTSAM.
 ## Debugging tips
 
 Another useful debugging symbol is _GLIBCXX_DEBUG, which enables debug checks and safe containers in the standard C++ library and makes problems much easier to find.
-
-NOTE:  The native Snow Leopard g++ compiler/library contains a bug that makes it impossible to use _GLIBCXX_DEBUG.  MacPorts g++ compilers do work with it though.
 
 NOTE:  If _GLIBCXX_DEBUG is used to compile gtsam, anything that links against gtsam will need to be compiled with _GLIBCXX_DEBUG as well, due to the use of header-only Eigen.
 
