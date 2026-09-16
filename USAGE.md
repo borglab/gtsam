@@ -1,48 +1,66 @@
-# GTSAM USAGE
+# Using GTSAM
 
-This file explains how to make use of the library for common SLAM tasks, using a visual SLAM implementation as an example.
+This guide summarizes how to consume an installed GTSAM library and introduces
+the main concepts used to construct and optimize factor graphs.
 
-## Getting Started
+## Install GTSAM
 
-### Install
-	
-Follow the installation instructions in the README file to build and install gtsam, as well as running tests to ensure the library is working properly.
+Build and install GTSAM by following [INSTALL.md](INSTALL.md). Run the `check`
+target when validating a local build.
 
-### Compiling/Linking with GTSAM
+## Compile and link with CMake
 
-The installation creates a binary `libgtsam` at the installation prefix, and an include folder `gtsam`.  These are the only required includes, but the library has also been designed to make use of XML serialization through the `Boost.serialization` library, which requires the the Boost.serialization headers and binaries to be linked.  
+An installation provides CMake package configuration files and the exported
+`gtsam` target. Link that target instead of adding include directories or
+third-party libraries manually:
 
-If you use CMake for your project, you can use the CMake scripts in the cmake folder for finding `GTSAM`, `CppUnitLite`, and `Wrap`.  
+```cmake
+find_package(GTSAM REQUIRED)
 
-### Examples
+add_executable(my_program main.cpp)
+target_link_libraries(my_program PRIVATE gtsam)
+```
 
-To see how the library works, examine the unit tests provided.  
- 
-## Overview
+The exported target supplies GTSAM's include directories, required compiler
+settings, and the dependencies enabled when GTSAM was built. For an installation
+under a nonstandard prefix, configure the consuming project with:
 
-The GTSAM library has three primary components necessary for the construction of factor graph representation and optimization which users will need to adapt to their particular problem.  
+```sh
+cmake -S . -B build -DCMAKE_PREFIX_PATH=/path/to/gtsam
+```
 
-* FactorGraph
+See [`cmake/example_cmake_find_gtsam`](cmake/example_cmake_find_gtsam) for a
+complete consuming project.
 
-	A factor graph contains a set of variables to solve for (i.e., robot poses, landmark poses, etc.) and a set of constraints between these variables, which make up factors.
+## Examples
 
-* Values:
+Runnable programs under [`examples/`](examples) cover SLAM, structure from
+motion, navigation, discrete inference, robust optimization, and other common
+workflows. Unit tests beside each module provide smaller examples of individual
+APIs.
 
-	Values is a single object containing labeled values for all of the variables.  Currently, all variables are labeled with strings, but the type or organization of the variables can change.
+## Core concepts
 
-* Factors
+- **Factor graphs** contain variables and factors. A factor expresses a
+  measurement, constraint, or cost involving one or more variables.
+- **Keys** identify variables. `gtsam::Key` is a 64-bit unsigned integer;
+  `gtsam::Symbol` and `gtsam::LabeledSymbol` provide readable structured keys.
+- **Values** stores typed variable values indexed by keys and supplies the
+  linearization point or initial estimate used by nonlinear optimizers.
+- **Optimizers and inference algorithms** operate on factor graphs and values to
+  compute estimates, marginals, or discrete assignments.
 
-	A nonlinear factor expresses a constraint between variables, which in the SLAM example, is a measurement such as a visual reading on a landmark or odometry.
+## Source layout
 
-The library is organized according to the following directory structure:
+The public C++ library is organized under `gtsam/`:
 
-    3rdparty      local copies of third party libraries e.g. Eigen3 and CCOLAMD
-    base          provides some base Math and data structures, as well as test-related utilities
-    geometry      points, poses, tensors, etc
-    inference     core graphical model inference such as factor graphs, junction trees, Bayes nets, Bayes trees 
-    linear        inference specialized to Gaussian linear case, GaussianFactorGraph etc...
-    nonlinear     non-linear factor graphs and non-linear optimization
-    slam          SLAM and visual SLAM application code
-
-
-
+- `base`, `geometry`, and `basis` provide foundational mathematical types.
+- `inference`, `linear`, `nonlinear`, and `symbolic` provide the core graphical
+  model and optimization machinery.
+- `discrete` and `hybrid` provide discrete and mixed discrete-continuous
+  inference.
+- `navigation`, `sam`, `sfm`, and `slam` provide robotics and vision factors and
+  algorithms.
+- `constrained` and `certifiable` provide constrained and certifiable
+  optimization tools.
+- `3rdparty` contains vendored dependencies used by the build.
