@@ -203,10 +203,12 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
         expected_keys = [X(index) for index in range(len(ground_truth))]
         self.assertEqual(list(solver.orderedKeys()), expected_keys)
         ordered_key_dims = solver.orderedKeyDims()
+        self.assertIsInstance(ordered_key_dims, dict)
         self.assertEqual(set(ordered_key_dims), set(expected_keys))
         self.assertTrue(all(dimension == 3 for dimension in ordered_key_dims.values()))
 
         variable_evrs = solver.variableEVRs()
+        self.assertIsInstance(variable_evrs, list)
         qcqp_values = solver.qcqpValues()
         repeated_qcqp_values = solver.qcqpValues()
         repeated_variable_evrs = solver.variableEVRs()
@@ -232,6 +234,7 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
         self.assertEqual(recovered_poses.size(), len(ground_truth))
         self.assertEqual(len(pose_errors), len(ground_truth))
         self.assertLess(max(pose_errors), 1e-5)
+        self.assertTrue(solver.solve({"intpntCoTolRelGap": 1e-8}))
 
     def test_monolithic_rot2_ring(self):
         """Solve and recover a small Rot2 ring with the monolithic SDP."""
