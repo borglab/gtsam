@@ -35,14 +35,21 @@ if(@GTSAM_USE_SYSTEM_EIGEN@)
 find_dependency(Eigen3 REQUIRED)
 endif()
 
-# Define GTSAM's system CCOLAMD implementation dependency before loading the
-# exported targets.
-if("@GTSAM_USE_SYSTEM_CCOLAMD@")
-  find_dependency(CCOLAMD CONFIG)
+# The vcpkg MKL interface exports MKL::MKL, which consumers must recreate.
+if("@GTSAM_MKL_USES_CONFIG@")
+  find_dependency(MKL CONFIG)
 endif()
 
-if("@GTSAM_ENABLE_CHOLMOD@")
-  find_dependency(CHOLMOD CONFIG)
+# SuiteSparse is a private implementation dependency. Only static GTSAM
+# consumers need its link interface; shared consumers may enable C++ alone,
+# while SuiteSparse's package can require OpenMP's C component.
+if(NOT "@GTSAM_SHARED_LIB@")
+  if("@GTSAM_USE_SYSTEM_CCOLAMD@")
+    find_dependency(CCOLAMD CONFIG)
+  endif()
+  if("@GTSAM_ENABLE_CHOLMOD@")
+    find_dependency(CHOLMOD CONFIG)
+  endif()
 endif()
 
 if(@GTSAM_ENABLE_CUDA@)

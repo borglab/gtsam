@@ -26,6 +26,7 @@ macro(SET_PYTHON_TARGET_PROPERTIES PYTHON_TARGET OUTPUT_NAME OUTPUT_DIRECTORY)
         LIBRARY_OUTPUT_DIRECTORY "${OUTPUT_DIRECTORY}"
         DEBUG_POSTFIX "" # Otherwise you will have a wrong name
         RELWITHDEBINFO_POSTFIX "" # Otherwise you will have a wrong name
+        MINSIZEREL_POSTFIX "" # Otherwise you will have a wrong name
         TIMING_POSTFIX "" # Otherwise you will have a wrong name
         PROFILING_POSTFIX "" # Otherwise you will have a wrong name
     )
