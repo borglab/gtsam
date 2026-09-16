@@ -72,8 +72,10 @@ Coding for the GTSAM MATLAB toolbox is straightforward and very fast once you un
 ### MOSEK SDP solvers
 
 With `GTSAM_WITH_MOSEK=ON`, the toolbox includes `MosekMonolithicSDP` and
-`MosekChordalSDP`. Both share homogeneous coordinates by default; pass `false`
-as the final constructor argument to use the original formulation:
+`MosekChordalSDP`. Both enable homogeneous-coordinate sharing by default when
+every key has an explicit unit-normalization constraint; otherwise they retain
+the original formulation. Pass `false` as the final constructor argument to
+disable sharing:
 
 ```matlab
 problem = gtsam.QcqpProblem(graph);
