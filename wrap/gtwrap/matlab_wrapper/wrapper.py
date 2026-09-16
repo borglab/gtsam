@@ -233,11 +233,6 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                            variable,
                            wrap_datatypes=True):
         """Return the MATLAB predicate used to dispatch one argument."""
-        if self.is_numeric_container(ctype):
-            matlab_type = ('double' if ctype.typename.name == 'vector'
-                           else 'containers.Map')
-            return f"isa({variable},'{matlab_type}')"
-
         if self.is_optional(ctype):
             value_check = self._matlab_type_check(
                 self.optional_value_type(ctype), variable, wrap_datatypes)
@@ -365,9 +360,6 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                                  value,
                                  instantiated_class=None):
         """Return a C++ expression that unwraps one MATLAB value."""
-        if self.is_numeric_container(ctype):
-            return f'unwrap_numeric_container<{ctype.get_typename()}>({value})'
-
         if self.is_optional(ctype):
             value_type = self.optional_value_type(ctype)
             cpp_type = value_type.to_cpp()
@@ -408,11 +400,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         ctype_camel = self._format_type_name(arg.ctype.typename, separator='')
         ctype_sep = self._format_type_name(arg.ctype.typename)
 
-        if self.is_numeric_container(arg.ctype):
-            arg_type = arg.ctype.get_typename()
-            unwrap = f'unwrap_numeric_container<{arg_type}>(in[{arg_id}]);'
-
-        elif self.is_optional(arg.ctype):
+        if self.is_optional(arg.ctype):
             arg_type = arg.ctype.get_typename()
             unwrap = self._unwrap_value_expression(
                 arg.ctype, f'in[{arg_id}]', instantiated_class) + ';'
@@ -1348,9 +1336,6 @@ class MatlabWrapper(CheckMixin, FormatMixin):
                                    ctype,
                                    instantiated_class=None):
         """Return the expression that converts one C++ value to mxArray*."""
-        if self.is_numeric_container(ctype):
-            return f'wrap_numeric_container({obj})'
-
         if self.is_optional(ctype):
             value_type = self.optional_value_type(ctype)
             cpp_type = value_type.to_cpp()
@@ -1410,9 +1395,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         pair_value = 'first' if func_id == 0 else 'second'
         new_line = '\n' if func_id == 0 else ''
 
-        if self.is_numeric_container(return_type):
-            return_type_text += f'wrap_numeric_container(pairResult.{pair_value});{new_line}'
-        elif self.is_fixed_size_eigen_value(return_type):
+        if self.is_fixed_size_eigen_value(return_type):
             return_type_text += 'wrapFixedSizeEigen(pairResult.{0});{1}'.format(
                 pair_value, new_line)
         elif self.is_shared_ptr(return_type) or self.is_ptr(return_type) or \
@@ -1452,10 +1435,7 @@ class MatlabWrapper(CheckMixin, FormatMixin):
         """Helper method to get the final statement before the return in the collector function."""
         expanded = ''
 
-        if self.is_numeric_container(ctype):
-            expanded = f'  out[0] = wrap_numeric_container({obj});'
-
-        elif self.is_optional(ctype):
+        if self.is_optional(ctype):
             expanded = '  out[0] = {wrapped};'.format(
                 wrapped=self._collector_wrap_expression(
                     obj, ctype, instantiated_class))

@@ -43,21 +43,6 @@ class CheckMixin:
                 return True
         return False
 
-    @staticmethod
-    def is_numeric_container(ctype):
-        """Containers represented by MATLAB double vectors or containers.Map."""
-        if not isinstance(ctype, parser.TemplatedType):
-            return False
-        if ctype.is_ptr or ctype.is_shared_ptr:
-            return False
-        name = ctype.typename.qualified_name()
-        params = [p.typename.name for p in ctype.template_params]
-        if name == 'std::vector':
-            return params == ['double']
-        return (name == 'std::map' and len(params) == 2
-                and params[0] in ('string', 'double', 'Key', 'size_t', 'uint64_t')
-                and params[1] in ('double', 'int', 'size_t', 'DenseIndex'))
-
     def can_be_pointer(self, arg_type: parser.Type):
         """
         Determine if the `arg_type` can have a pointer to it.
@@ -65,8 +50,7 @@ class CheckMixin:
         E.g. `Pose3` can have `Pose3*` but 
         `Matrix` should not have `Matrix*`.
         """
-        return (not self.is_numeric_container(arg_type)
-                and arg_type.typename.name not in self.not_ptr_type
+        return (arg_type.typename.name not in self.not_ptr_type
                 and arg_type.typename.name not in self.ignore_namespace
                 and not self.is_fixed_size_eigen_value(arg_type)
                 and not self.is_matrix_view(arg_type)

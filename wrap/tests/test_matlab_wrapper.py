@@ -333,27 +333,6 @@ class TestWrap(unittest.TestCase):
         self.assertIn('out[1] = wrap< Eigen::MatrixXd >(Hxi);', cpp_content)
         self.assertIn('checkArguments("gtsam::Pose3.Expmap",nargout,nargin,1);', cpp_content)
 
-    def test_numeric_containers(self):
-        """Numeric STL containers use native MATLAB values in both directions."""
-        wrapper = MatlabWrapper(module_name='numeric_containers',
-                                top_module_namespace=['gtsam'])
-        wrapper.wrap([osp.join(self.INTERFACE_DIR, 'numeric_containers.i')],
-                     path=self.MATLAB_ACTUAL_DIR)
-        generated = Path(self.MATLAB_ACTUAL_DIR)
-        cpp = (generated / 'numeric_containers_wrapper.cpp').read_text()
-        matlab = (generated / '+gtsam' / 'NumericContainers.m').read_text()
-        self.assertIn("isa(varargin{1},'containers.Map')", matlab)
-        self.assertIn("isa(varargin{1},'double')", matlab)
-        self.assertNotIn("'std.map", matlab)
-        self.assertNotIn("'std.vector", matlab)
-        self.assertIn('unwrap_numeric_container<std::map<std::string, double>>(in[1])', cpp)
-        self.assertIn('unwrap_numeric_container<std::vector<double>>(in[1])', cpp)
-        self.assertIn('obj->echo(values)', cpp)
-        self.assertNotIn('obj->echo(*values)', cpp)
-        for result in ('obj->evrs()', 'obj->dims()', 'pairResult.first',
-                       'pairResult.second', 'value'):
-            self.assertIn(f'wrap_numeric_container({result})', cpp)
-
     def test_std_optional(self):
         """Test MATLAB [] <-> std::nullopt and engaged value conversion."""
         file = osp.join(self.INTERFACE_DIR, 'optionals.i')
