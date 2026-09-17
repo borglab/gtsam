@@ -801,6 +801,20 @@ bool Robust::equals(const Base& expected, double tol) const {
   return noise_->equals(*p->noise_,tol) && robust_->equals(*p->robust_,tol);
 }
 
+double Robust::loss(const Vector& v) const {
+  if (robust_->reweightScheme() == RobustModel::Block) {
+    return Base::loss(v);
+  }
+  const Vector whitened = noise_->whiten(v);
+  double result = 0.0;
+  // Linearization reweights the right-hand side -v. Match that convention
+  // here so asymmetric losses agree with the existing linearized gradient.
+  for (Eigen::Index i = 0; i < whitened.size(); ++i) {
+    result += robust_->loss(-whitened[i]);
+  }
+  return result;
+}
+
 void Robust::WhitenSystem(Vector& b) const {
   noise_->whitenInPlace(b);
   robust_->reweight(b);

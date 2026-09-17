@@ -863,7 +863,7 @@ TEST(NoiseModel, robustFunctionDCS)
   DOUBLES_EQUAL(0.00039211, dcs->weight(error2), 1e-8);
 
   DOUBLES_EQUAL(0.5         , dcs->loss(error1), 1e-8);
-  DOUBLES_EQUAL(0.9900990099, dcs->loss(error2), 1e-8);
+  DOUBLES_EQUAL(1.4801980198, dcs->loss(error2), 1e-8);
 }
 
 TEST(NoiseModel, robustFunctionL2WithDeadZone)
@@ -963,6 +963,33 @@ TEST(NoiseModel, robustNoiseTLS)
   DOUBLES_EQUAL(sqrt_weight_error2*a11, A(1,1), 1e-8);
 }
 
+// DCS must match the derivative of its loss, including graduation and clipping.
+TEST(NoiseModel, DCSLossDerivative) {
+  const double step = 1e-6;
+  for (double c : {0.5, 1.0, 5.0}) {
+    const auto dcs = mEstimator::DCS::Create(c);
+    for (double mu : {0.0, 0.2, 0.7, 1.0}) {
+      for (double residual : {-10.0, -2.0, -0.5, 0.0, 0.5, 2.0, 10.0}) {
+        const double derivative =
+            (dcs->graduatedLoss(residual + step, mu) -
+             dcs->graduatedLoss(residual - step, mu)) / (2 * step);
+        DOUBLES_EQUAL(residual * dcs->graduatedWeight(residual, mu),
+                     derivative, 1e-7);
+      }
+      if (mu > 0) {
+        const double threshold = std::sqrt(c / mu);
+        DOUBLES_EQUAL(0.5 * threshold * threshold,
+                     dcs->graduatedLoss(threshold, mu), 1e-12);
+        const double derivative =
+            (dcs->graduatedLoss(threshold + step, mu) -
+             dcs->graduatedLoss(threshold - step, mu)) / (2 * step);
+        DOUBLES_EQUAL(threshold, derivative, 2e-6);
+      }
+    }
+  }
+}
+
+// Checks DCS row weighting without changing the established IRLS weights.
 TEST(NoiseModel, robustNoiseDCS)
 {
   const double k = 1.0, error1 = 1.0, error2 = 100.0;
@@ -1040,16 +1067,10 @@ TEST(NoiseModel, graduatedWeightLossAll) {
     DOUBLES_EQUAL(mest->weight(e1), mest->graduatedWeight(e1, 1.0), 1e-5);
     DOUBLES_EQUAL(mest->weight(e2), mest->graduatedWeight(e2, 1.0), 1e-5);
   };
-  auto testLoss = [&](const mEstimator::Base::shared_ptr mest,
-                      bool isDcs) -> void {
+  auto testLoss = [&](const mEstimator::Base::shared_ptr mest) -> void {
     // Convex for \mu = 0.0
-    if (isDcs) {
-      DOUBLES_EQUAL(e1 * e1, mest->graduatedLoss(e1, 0.0), 1e-5);
-      DOUBLES_EQUAL(e2 * e2, mest->graduatedLoss(e2, 0.0), 1e-5);
-    } else {
-      DOUBLES_EQUAL(0.5 * e1 * e1, mest->graduatedLoss(e1, 0.0), 1e-5);
-      DOUBLES_EQUAL(0.5 * e2 * e2, mest->graduatedLoss(e2, 0.0), 1e-5);
-    }
+    DOUBLES_EQUAL(0.5 * e1 * e1, mest->graduatedLoss(e1, 0.0), 1e-5);
+    DOUBLES_EQUAL(0.5 * e2 * e2, mest->graduatedLoss(e2, 0.0), 1e-5);
     // Standard for \mu = 1.0
     DOUBLES_EQUAL(mest->loss(e1), mest->graduatedLoss(e1, 1.0), 1e-5);
     DOUBLES_EQUAL(mest->loss(e2), mest->graduatedLoss(e2, 1.0), 1e-5);
@@ -1057,26 +1078,26 @@ TEST(NoiseModel, graduatedWeightLossAll) {
 
   auto huber = mEstimator::Huber::Create(k);
   testWeight(huber);
-  testLoss(huber, false);
+  testLoss(huber);
   auto cauchy = mEstimator::Cauchy::Create(k);
   testWeight(cauchy);
-  testLoss(cauchy, false);
+  testLoss(cauchy);
   auto gmc = mEstimator::GemanMcClure::Create(k);
   testWeight(gmc);
-  testLoss(gmc, false);
+  testLoss(gmc);
   auto welsch = mEstimator::Welsch::Create(k);
   testWeight(welsch);
-  testLoss(welsch, false);
+  testLoss(welsch);
   auto tukey = mEstimator::Tukey::Create(k);
   testWeight(tukey);
-  testLoss(tukey, false);
+  testLoss(tukey);
   auto dcs = mEstimator::DCS::Create(k);
   testWeight(dcs);
-  testLoss(dcs, true);
+  testLoss(dcs);
   auto tlsStandard = mEstimator::TruncatedLeastSquares::Create(
       k, mEstimator::TruncatedLeastSquares::GradScheme::STANDARD);
   testWeight(tlsStandard);
-  testLoss(tlsStandard, false);
+  testLoss(tlsStandard);
 }
 
 TEST(NoiseModel, graduatedWeightLossNonStandard) {

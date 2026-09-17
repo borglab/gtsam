@@ -456,6 +456,45 @@ TEST(BatchFactor, JacobianVsHessian) {
 }
 
 /* ************************************************************************* */
+// Checks asymmetric objective gradients for compact, dense, and Hessian batches.
+TEST(BatchFactor, AsymmetricObjectiveGradient) {
+  using namespace noiseModel;
+  const auto noise = Robust::Create(
+      mEstimator::AsymmetricCauchy::Create(1.0, mEstimator::Base::Scalar),
+      Unit::Create(1));
+  const PriorFactor<double> prior(0, 0.0, noise);
+  BatchFactor<PriorFactor<double>, 1> fixed(
+      std::vector<PriorFactor<double>>{prior});
+  const DynamicVectorFactor dynamicPrior(0, Vector::Zero(1), noise);
+  BatchFactor<DynamicVectorFactor, 1> dynamic(
+      std::vector<DynamicVectorFactor>{dynamicPrior});
+
+  for (double residual : {-2.0, 2.0}) {
+    Values values, plus, minus, dynamicValues;
+    const double step = 1e-5;
+    values.insert(0, residual);
+    plus.insert(0, residual + step);
+    minus.insert(0, residual - step);
+    dynamicValues.insert(0, Vector(Vector::Constant(1, residual)));
+    const double gradient =
+        (fixed.error(plus) - fixed.error(minus)) / (2 * step);
+    DOUBLES_EQUAL(residual > 0 ? 2.0 : -0.4, gradient, 1e-8);
+    DOUBLES_EQUAL(gradient, prior.linearize(values)->gradientAtZero().at(0)[0],
+                 1e-8);
+    for (bool hessian : {false, true}) {
+      fixed.setUseHessianFactor(hessian);
+      DOUBLES_EQUAL(gradient,
+                   fixed.linearize(values)->gradientAtZero().at(0)[0], 1e-8);
+    }
+    // A dynamic variable forces the dense Jacobian path without conversion.
+    DOUBLES_EQUAL(fixed.error(values), dynamic.error(dynamicValues), 1e-8);
+    const auto linear = dynamic.linearize(dynamicValues);
+    CHECK(std::dynamic_pointer_cast<JacobianFactor>(linear));
+    DOUBLES_EQUAL(gradient, linear->gradientAtZero().at(0)[0], 1e-8);
+  }
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

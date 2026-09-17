@@ -106,6 +106,48 @@ TEST( triangulation, TriangulationFactorStereo ) {
 }
 
 //******************************************************************************
+// Spherical scalar weighting must use the same residual chart as error().
+TEST(triangulation, SphericalRobustGradient) {
+  using namespace noiseModel;
+  const SphericalCamera camera(Pose3::Identity());
+  const Unit3 measured(2, -3, 1);
+  const auto gaussian = Gaussian::SqrtInformation(
+      Matrix2{{5.0, 0.7}, {0.0, 3.0}});
+  const std::vector<SharedNoiseModel> models{
+      gaussian,
+      Robust::Create(mEstimator::Huber::Create(0.5, mEstimator::Base::Block),
+                     gaussian),
+      Robust::Create(mEstimator::Huber::Create(0.5, mEstimator::Base::Scalar),
+                     gaussian),
+      Robust::Create(mEstimator::AsymmetricCauchy::Create(
+                         0.5, mEstimator::Base::Scalar), gaussian)};
+  for (const auto& model : models) {
+    const TriangulationFactor<SphericalCamera> factor(camera, measured, model, 0);
+    for (const Point3& point : {Point3(1, 2, 4), Point3(-1, -2, -4)}) {
+      Matrix H;
+      factor.evaluateError(point, H);
+      const auto residual = [&factor](const Point3& p) {
+        return factor.evaluateError(p);
+      };
+      EXPECT(assert_equal(numericalDerivative11<Vector, Point3>(residual, point),
+                          H, 1e-6));
+      const auto objective = [&factor](const Point3& p) {
+        Values values;
+        values.insert(0, p);
+        return factor.error(values);
+      };
+      Values values;
+      values.insert(0, point);
+      const Vector expected =
+          numericalDerivative11<double, Point3>(objective, point).transpose();
+      EXPECT(assert_equal(expected,
+                          factor.linearize(values)->gradientAtZero().at(0),
+                          1e-6));
+    }
+  }
+}
+
+//******************************************************************************
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

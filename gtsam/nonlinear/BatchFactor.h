@@ -211,11 +211,11 @@ class BatchFactor : public NonlinearFactor {
     for (size_t i = 0; i < factors_.size(); ++i) {
       const auto& factor = factors_[i];
       const size_t row_start = i * ErrorDim;
-      Vector raw_error = factor.unwhitenedError(values, H);
+      Vector rhs = -factor.unwhitenedError(values, H);
 
       const auto noise = factor.noiseModel();
       if (!allNoiseModelsAreUnit_ && noise && !noise->isUnit()) {
-        factor.noiseModel()->WhitenSystem(H, raw_error);
+        factor.noiseModel()->WhitenSystem(H, rhs);
       }
 
       if (hasConstrainedNoiseModel_ && noise && noise->isConstrained()) {
@@ -242,7 +242,7 @@ class BatchFactor : public NonlinearFactor {
         const DenseIndex index = indices_i[k];
         Ab(index).block(row_start, 0, ErrorDim, H[k].cols()) = H[k];
       }
-      Ab(keys().size()).block(row_start, 0, ErrorDim, 1) = -raw_error;
+      Ab(keys().size()).block(row_start, 0, ErrorDim, 1) = rhs;
     }
 
     SharedDiagonal jacobianModel = noiseModel::Unit::Create(total_rows);
@@ -267,13 +267,13 @@ class BatchFactor : public NonlinearFactor {
     std::vector<Matrix> H(FactorType::N);
     for (size_t i = 0; i < factors_.size(); ++i) {
       const auto& factor = factors_[i];
-      Vector raw_error = factor.unwhitenedError(values, H);
+      Vector rhs = -factor.unwhitenedError(values, H);
 
       if (factor.noiseModel() && !factor.noiseModel()->isUnit()) {
-        factor.noiseModel()->WhitenSystem(H, raw_error);
+        factor.noiseModel()->WhitenSystem(H, rhs);
       }
 
-      batch->addRow(indices_[i], H, -raw_error);
+      batch->addRow(indices_[i], H, rhs);
     }
     return batch;
   }

@@ -28,6 +28,8 @@
 #include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/SphericalCamera.h>
 
 #include <memory>
 #include <CppUnitLite/TestHarness.h>
@@ -554,6 +556,65 @@ TEST(GeneralSFMFactor, FixedJacobianFactor2) {
       EXPECT(
           assert_equal(factor->augmentedInformation(),
               jacobian.augmentedInformation(), 1e-9));
+    }
+  }
+}
+
+/* ************************************************************************* */
+// Checks the pointer and fixed-size Jacobian overloads and robust gradients.
+TEST(GeneralSFMFactor, SphericalRobustGradient) {
+  using namespace noiseModel;
+  const SphericalCamera camera(Pose3::Identity());
+  const Unit3 measured(2, -3, 1);
+  const auto gaussian = Gaussian::SqrtInformation(
+      Matrix2{{5.0, 0.7}, {0.0, 3.0}});
+  const std::vector<SharedNoiseModel> models{
+      gaussian,
+      Robust::Create(mEstimator::Huber::Create(0.5, mEstimator::Base::Block),
+                     gaussian),
+      Robust::Create(mEstimator::Huber::Create(0.5, mEstimator::Base::Scalar),
+                     gaussian),
+      Robust::Create(mEstimator::AsymmetricCauchy::Create(
+                         0.5, mEstimator::Base::Scalar), gaussian)};
+  for (const auto& model : models) {
+    const GeneralSFMFactor<SphericalCamera, Point3> factor(measured, model, 1, 0);
+    for (const Point3& point : {Point3(1, 2, 4), Point3(-1, -2, -4)}) {
+      const auto residual = [&factor](const SphericalCamera& c, const Point3& p) {
+        return factor.evaluateError(c, p, nullptr, nullptr);
+      };
+      Matrix Hcamera, Hpoint;
+      factor.evaluateError(camera, point, &Hcamera, &Hpoint);
+      EXPECT(assert_equal(
+          numericalDerivative21<Vector2, SphericalCamera, Point3>(
+              residual, camera, point), Hcamera, 1e-6));
+      EXPECT(assert_equal(
+          numericalDerivative22<Vector2, SphericalCamera, Point3>(
+              residual, camera, point), Hpoint, 1e-6));
+      Matrix26 fixedCamera;
+      Matrix23 fixedPoint;
+      EXPECT(assert_equal(residual(camera, point),
+                          factor.evaluateError(camera, point, fixedCamera,
+                                               fixedPoint), 1e-12));
+      EXPECT(assert_equal(Hcamera, fixedCamera, 1e-12));
+      EXPECT(assert_equal(Hpoint, fixedPoint, 1e-12));
+      const auto objective = [&factor](const SphericalCamera& c, const Point3& p) {
+        Values values;
+        values.insert(1, c);
+        values.insert(0, p);
+        return factor.error(values);
+      };
+      Values values;
+      values.insert(1, camera);
+      values.insert(0, point);
+      const auto gradient = factor.linearize(values)->gradientAtZero();
+      const Vector expectedCamera =
+          numericalDerivative21<double, SphericalCamera, Point3>(
+              objective, camera, point).transpose();
+      const Vector expectedPoint =
+          numericalDerivative22<double, SphericalCamera, Point3>(
+              objective, camera, point).transpose();
+      EXPECT(assert_equal(expectedCamera, gradient.at(1), 1e-6));
+      EXPECT(assert_equal(expectedPoint, gradient.at(0), 1e-6));
     }
   }
 }

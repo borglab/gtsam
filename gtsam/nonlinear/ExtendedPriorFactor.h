@@ -175,10 +175,7 @@ class ExtendedPriorFactor : public NoiseModelFactorN<VALUE> {
 
   /// Compute the negative log-likelihood of a given value
   double error(const T& x) const {
-    Vector e = evaluateError(x);
-    double squared_mahalanobis_distance =
-        this->noiseModel_->squaredMahalanobisDistance(e);
-    return this->noiseModel_->loss(squared_mahalanobis_distance);
+    return this->noiseModel_->loss(evaluateError(x));
   }
 
   /// Compute the likelihood of a given value

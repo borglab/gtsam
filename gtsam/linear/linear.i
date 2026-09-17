@@ -52,6 +52,7 @@ virtual class Base {
   double squaredMahalanobisDistance(const gtsam::Vector& v) const;
   double mahalanobisDistance(const gtsam::Vector& v) const;
   double loss(double squared_distance) const;
+  double loss(const gtsam::Vector& v) const;
   gtsam::Vector unweightedWhiten(const gtsam::Vector& v) const;
   double weight(const gtsam::Vector& v) const;
 };

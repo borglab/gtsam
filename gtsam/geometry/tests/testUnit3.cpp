@@ -256,6 +256,30 @@ TEST(Unit3, Distance) {
   }
 }
 
+// Checks both chart derivatives, including coincident and nearly coincident rays.
+TEST(Unit3, LocalCoordinatesJacobians) {
+  const Unit3 origin(2, -3, 1);
+  for (const Vector2& tangent :
+       {Vector2(0, 0), Vector2(1e-7, -2e-7), Vector2(0.001, -0.002),
+        Vector2(0.8, -1.1), Vector2(2.8, 0.4)}) {
+    const Unit3 other = origin.retract(tangent);
+    Matrix2 H1, H2;
+    const Vector2 actual = traits<Unit3>::Local(origin, other, H1, H2);
+    EXPECT(assert_equal(origin.localCoordinates(other), actual, 1e-12));
+    const auto local = [](const Unit3& a, const Unit3& b) {
+      return a.localCoordinates(b);
+    };
+    EXPECT(assert_equal(numericalDerivative21<Vector2, Unit3, Unit3>(
+                            local, origin, other, 1e-6), H1, 1e-6));
+    EXPECT(assert_equal(numericalDerivative22<Vector2, Unit3, Unit3>(
+                            local, origin, other, 1e-6), H2, 1e-6));
+  }
+  const Unit3 antipode(-origin.unitVector());
+  EXPECT(assert_equal(Vector2(M_PI, 0), origin.localCoordinates(antipode)));
+  Matrix2 H;
+  CHECK_EXCEPTION(origin.localCoordinates(antipode, {}, H), std::domain_error);
+}
+
 //*******************************************************************************
 TEST(Unit3, LocalCoordinates0) {
   Unit3 p;

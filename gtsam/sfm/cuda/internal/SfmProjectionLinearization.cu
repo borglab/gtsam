@@ -213,7 +213,13 @@ __global__ void computeSfmProjectionErrorKernel(
       r1 = sqrtInfo.r11 * rawR1;
     }
     if constexpr (kRobust) {
-      sum += robustLoss(robustModels[i], sqrt(r0 * r0 + r1 * r1));
+      const SfmRobustModel& model = robustModels[i];
+      if (model.reweightScheme == SfmRobustReweightScheme::Scalar) {
+        // Match the CPU scalar objective's linear-system RHS convention.
+        sum += robustLoss(model, -r0) + robustLoss(model, -r1);
+      } else {
+        sum += robustLoss(model, sqrt(r0 * r0 + r1 * r1));
+      }
     } else {
       sum += 0.5 * (r0 * r0 + r1 * r1);
     }

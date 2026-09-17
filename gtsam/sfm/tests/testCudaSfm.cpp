@@ -924,8 +924,12 @@ TEST(SfmProjectionLinearization,
     RobustRowScales(robustModel, whitenedResidual, &row0Scale, &row1Scale);
     const Vector2 expectedResidual(row0Scale * whitenedResidual(0),
                                    row1Scale * whitenedResidual(1));
-    expectedError += RobustLoss(
-        robustModel, std::sqrt(whitenedResidual.squaredNorm()));
+    if (robustModel.reweightScheme == SfmRobustReweightScheme::Scalar) {
+      expectedError += RobustLoss(robustModel, -whitenedResidual(0)) +
+                       RobustLoss(robustModel, -whitenedResidual(1));
+    } else {
+      expectedError += RobustLoss(robustModel, whitenedResidual.norm());
+    }
 
     DOUBLES_EQUAL(expectedResidual(0), residuals[2 * i],
                   kResidualTolerance);
@@ -961,6 +965,31 @@ TEST(SfmProjectionLinearization,
   const double actualError =
       computeSfmProjectionError(values, batch, context.stream());
   DOUBLES_EQUAL(expectedError, actualError, kResidualTolerance);
+}
+
+// Scalar Huber sums component losses for each observation, including both signs.
+TEST(SfmProjectionLinearization, ScalarHuberObjective) {
+  SfmData data;
+  data.cameras.emplace_back(Pose3(), Cal3Bundler(100.0, 0.0, 0.0));
+  data.cameras.push_back(data.camera(0));
+  SfmTrack track(Point3(0.0, 0.0, 5.0));
+  track.measurements.emplace_back(0, Point2(-2.0, -2.0));
+  track.measurements.emplace_back(1, Point2(2.0, 2.0));
+  data.tracks.push_back(track);
+
+  Context context;
+  DeviceValues values = packSfmValues(data, context.stream());
+  const SfmRobustModel model = MakeRobustModel(
+      SfmRobustModelKind::Huber, 1.0, SfmRobustReweightScheme::Scalar);
+  const std::vector<std::vector<SfmSqrtInfo2>> sqrtInfos{
+      {MakeSqrtInfo(1.0, 0.0, 1.0), MakeSqrtInfo(1.0, 0.0, 1.0)}};
+  const std::vector<std::vector<SfmRobustModel>> models{{model, model}};
+  const SfmProjectionBatch batch = SfmProjectionBatch::fromSfmData(
+      data, sqrtInfos, models, context.stream());
+
+  // Each of four residual components contributes rho(2) = 1.5.
+  DOUBLES_EQUAL(6.0, computeSfmProjectionError(values, batch, context.stream()),
+               1e-12);
 }
 
 // Verifies SfmProjectionLinearization::ComputesClampedHessianDiagonal.
@@ -1869,6 +1898,50 @@ TEST(SfmLevenbergMarquardtOptimizer,
   const double expectedInitialError = graph.error(initial);
   DOUBLES_EQUAL(expectedInitialError, optimizer.result().initialError, 1e-6);
   DOUBLES_EQUAL(expectedInitialError, optimizer.result().finalError, 1e-6);
+}
+
+// CUDA initial and accepted-step objectives agree with the CPU graph for both
+// supported robust losses and reweighting schemes after correlated whitening.
+TEST(SfmLevenbergMarquardtOptimizer, RobustObjectivesMatchCpuGraph) {
+  const SfmData measuredData = makeTrueBalLikeData();
+  const SfmData initialData = makePerturbedBalLikeData(measuredData);
+  Values initial;
+  for (size_t i = 0; i < initialData.numberCameras(); ++i) {
+    initial.insert(C(i), initialData.camera(i));
+  }
+  for (size_t i = 0; i < initialData.numberTracks(); ++i) {
+    initial.insert(P(i), initialData.track(i).point3());
+  }
+
+  const auto gaussian = noiseModel::Gaussian::SqrtInformation(
+      Matrix2{{1.5, 0.1}, {0.0, 2.0}}, false);
+  for (const auto scheme : {noiseModel::mEstimator::Base::Scalar,
+                            noiseModel::mEstimator::Base::Block}) {
+    const std::vector<noiseModel::mEstimator::Base::shared_ptr> losses{
+        noiseModel::mEstimator::Huber::Create(1.0, scheme),
+        noiseModel::mEstimator::Tukey::Create(10.0, scheme)};
+    for (const auto& loss : losses) {
+      NonlinearFactorGraph graph;
+      const auto model = noiseModel::Robust::Create(loss, gaussian);
+      for (size_t i = 0; i < measuredData.numberTracks(); ++i) {
+        for (const auto& measurement : measuredData.track(i).measurements) {
+          graph.emplace_shared<BundlerProjectionFactor>(
+              measurement.second, model, C(measurement.first), P(i));
+        }
+      }
+      SfmLevenbergMarquardtParams params =
+          SfmLevenbergMarquardtParams::ceresDefaults();
+      params.maxIterations = 5;
+      params.relativeErrorTol = 1e-12;
+      SfmLevenbergMarquardtOptimizer optimizer(graph, initial, params);
+      const Values& result = optimizer.optimize();
+
+      CHECK(optimizer.result().acceptedSteps > 0);
+      CHECK(graph.error(result) < graph.error(initial));
+      DOUBLES_EQUAL(graph.error(initial), optimizer.result().initialError, 1e-6);
+      DOUBLES_EQUAL(graph.error(result), optimizer.result().finalError, 1e-6);
+    }
+  }
 }
 
 // Verifies SfmLevenbergMarquardt::ReducesTinyBalErrorAndDownloadsValues.
