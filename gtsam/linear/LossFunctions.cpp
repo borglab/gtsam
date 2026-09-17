@@ -661,12 +661,11 @@ double DCS::Weight(double distance, double c) {
 }
 
 double DCS::Loss(double distance, double c) {
-  // This is the simplified version of Eq 9 from (Agarwal13icra)
-  // after you simplify and cancel terms.
+  // Integrate distance * Weight(distance, c), with loss(0) = 0.
+  // The two pieces agree in both value and derivative at distance^2 = c.
   const double e2 = distance * distance;
-  const double e4 = e2 * e2;
-  const double c2 = c * c;
-  return (c2 * e2 + c * e4) / ((e2 + c) * (e2 + c));
+  if (e2 <= c) return 0.5 * e2;
+  return c * (1.5 - 2.0 / (1.0 + e2 / c));
 }
 
 double DCS::weight(double distance) const { return Weight(distance, c_); }
@@ -682,8 +681,7 @@ double DCS::graduatedWeight(double distance, double mu) const {
 
 double DCS::graduatedLoss(double distance, double mu) const {
   const double m = ClampMu(mu);
-  // NOTE: DCS uses the x^2 (not 0.5 x^2) least-squares convention.
-  if (m <= 0.0) return distance * distance;
+  if (m <= 0.0) return 0.5 * distance * distance;
   return Loss(distance, GradShapeSquared(c_, m));
 }
 

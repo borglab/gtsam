@@ -728,8 +728,11 @@ namespace gtsam {
      *  Taking as an example noise = Isotropic::Create(d, sigma),  we first divide the residuals
      *  uw = |Ax-b| by sigma by "whitening" the system (A,b), obtaining r = |Ax-b|/sigma, and
      *  then we pass the now whitened residual 'r' through the robust M-estimator.
-     *  This is currently done by multiplying with sqrt(w), because the residuals will be squared
-     *  again in error, yielding 0.5 \sum w(r)*r^2.
+     *  Linearization multiplies by sqrt(w), with weights evaluated at the
+     *  linear-system right-hand side. The resulting Gaussian factor evaluates
+     *  a quadratic approximation, 0.5 \sum w(r)*r^2, with those weights held
+     *  fixed. Nonlinear factor error() instead evaluates the robust objective
+     *  via loss(v); it is generally not the squared norm of whiten(v).
      *
      *  In other words, while sigma is expressed in the native residual units, a parameter like
      *  k in the Huber norm is expressed in whitened units, i.e., "nr of sigmas".

@@ -89,6 +89,8 @@ TEST(RobustNoise, ObjectiveGradient) {
       gaussian,
       Robust::Create(mEstimator::Huber::Create(1.0, Scheme::Scalar), gaussian),
       Robust::Create(mEstimator::Cauchy::Create(1.0, Scheme::Scalar), gaussian),
+      Robust::Create(mEstimator::DCS::Create(1.0, Scheme::Scalar), gaussian),
+      Robust::Create(mEstimator::DCS::Create(1.0, Scheme::Block), gaussian),
       Robust::Create(mEstimator::AsymmetricCauchy::Create(1.0, Scheme::Scalar),
                      gaussian),
       Robust::Create(mEstimator::AsymmetricTukey::Create(4.0, Scheme::Scalar),

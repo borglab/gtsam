@@ -633,9 +633,12 @@ class GTSAM_EXPORT TruncatedLeastSquares : public Base {
  *
  *  This model has a scalar parameter "c" (with "units" of squared error).
  *
- * - Loss       \rho(x) = (c²x² + cx⁴)/(x²+c)²   (for any "x")
- * - Derivative \phi(x) = 2c²x/(x²+c)²
- * - Weight     w(x) = \phi(x)/x = 2c²/(x²+c)²  if x²>c,   1  otherwise
+ * - Loss       \rho(x) = 0.5x² if x²<=c,  1.5c - 2c²/(c+x²) otherwise
+ * - Derivative \phi(x) = x if x²<=c,  4c²x/(c+x²)² otherwise
+ * - Weight     w(x) = \phi(x)/x = 1 if x²<=c,  4c²/(c+x²)² otherwise
+ *
+ * The loss integrates the clipped DCS weight, using the same 0.5x²
+ * least-squares convention as other M-estimators.
  *
  *  DCS loss is graduated by scaling c with \lambda = 1 / \mu, i.e. by
  *  replacing c with c/\mu (c already has units of squared error).
