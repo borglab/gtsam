@@ -148,7 +148,20 @@ class GeneralSFMFactor
                             OptionalMatrixType H1,
                             OptionalMatrixType H2) const override {
     try {
-      Measurement predicted = camera.project2(point, H1, H2);
+      const Measurement predicted = camera.project2(point, H1, H2);
+      if constexpr (internal::HasLocalJacobians<Measurement>::value &&
+                    !std::is_base_of_v<
+                        vector_space_tag,
+                        typename traits<Measurement>::structure_category>) {
+        if (H1 || H2) {
+          typename traits<Measurement>::ChartJacobian::Jacobian Hlocal;
+          const ErrorVector error =
+              traits<Measurement>::Local(measured_, predicted, {}, Hlocal);
+          if (H1) *H1 = Hlocal * *H1;
+          if (H2) *H2 = Hlocal * *H2;
+          return error;
+        }
+      }
       return traits<Measurement>::Local(measured_, predicted);
     } catch (CheiralityException& e [[maybe_unused]]) {
       if (H1) *H1 = JacobianC::Zero();
@@ -166,7 +179,21 @@ class GeneralSFMFactor
                             Eigen::Ref<Matrix> H1,
                             Eigen::Ref<Matrix> H2) const {
     try {
-      Measurement predicted = camera.project2(point, H1, H2);
+      const Measurement predicted = camera.project2(point, H1, H2);
+      if constexpr (internal::HasLocalJacobians<Measurement>::value &&
+                    !std::is_base_of_v<
+                        vector_space_tag,
+                        typename traits<Measurement>::structure_category>) {
+        typename traits<Measurement>::ChartJacobian::Jacobian Hlocal;
+        const ErrorVector error =
+            traits<Measurement>::Local(measured_, predicted, {}, Hlocal);
+        // Fixed-size temporaries keep this overload allocation-free.
+        const JacobianC Dcamera = Hlocal * H1;
+        const JacobianL Dlandmark = Hlocal * H2;
+        H1 = Dcamera;
+        H2 = Dlandmark;
+        return error;
+      }
       return traits<Measurement>::Local(measured_, predicted);
     } catch (CheiralityException& e [[maybe_unused]]) {
       H1.setZero();

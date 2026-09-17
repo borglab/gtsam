@@ -201,6 +201,14 @@ public:
   /// The local coordinates function
   Vector2 localCoordinates(const Unit3& s) const;
 
+  /**
+   * Local coordinates with derivatives in the tangent bases of this and s.
+   * Derivatives are undefined at the antipode; requesting them there throws
+   * std::domain_error. The value-only overload retains its antipodal convention.
+   */
+  Vector2 localCoordinates(const Unit3& s, OptionalJacobian<2, 2> H1,
+                           OptionalJacobian<2, 2> H2 = {}) const;
+
   /// @}
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43

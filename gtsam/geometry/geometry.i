@@ -1188,6 +1188,9 @@ class Unit3 {
       const gtsam::Vector2& v,
       gtsam::OptionalJacobian<2, 2> H = nullptr) const;
   gtsam::Vector2 localCoordinates(const gtsam::Unit3& s) const;
+  gtsam::Vector2 localCoordinates(const gtsam::Unit3& s,
+                                 gtsam::OptionalJacobian<2, 2> H1,
+                                 gtsam::OptionalJacobian<2, 2> H2 = nullptr) const;
   static gtsam::Unit3 FromPoint3(
       const gtsam::Point3& point,
       gtsam::OptionalJacobian<2, 3> H = nullptr);

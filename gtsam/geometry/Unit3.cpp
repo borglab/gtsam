@@ -25,6 +25,7 @@
 
 #include <iostream>
 #include <limits>
+#include <stdexcept>
 #include <cmath>
 #include <vector>
 
@@ -309,23 +310,40 @@ Unit3 Unit3::retract(const Vector2& v, OptionalJacobian<2,2> H) const {
 
 /* ************************************************************************* */
 Vector2 Unit3::localCoordinates(const Unit3& other) const {
-  const double x = p_.dot(other.p_);
-  // Crucial quantity here is y = theta/sin(theta) with theta=acos(x)
-  // Now, y = acos(x) / sin(acos(x)) = acos(x)/sqrt(1-x^2)
-  // We treat the special case 1 and -1 below
-  const double x2 = x * x;
-  const double z = 1 - x2;
-  double y;
-  if (z < std::numeric_limits<double>::epsilon()) {
-    if (x > 0)  // first order expansion at x=1
-      y = 1.0 - (x - 1.0) / 3.0;
-    else  // cop out
-      return Vector2(M_PI, 0.0);
-  } else {
-    // no special case
-    y = acos(x) / sqrt(z);
+  return localCoordinates(other, {}, {});
+}
+
+Vector2 Unit3::localCoordinates(const Unit3& other, OptionalJacobian<2, 2> H1,
+                               OptionalJacobian<2, 2> H2) const {
+  Matrix12 Hcos1, Hcos2;
+  const double cosine = dot(other, H1 ? &Hcos1 : nullptr,
+                           H2 ? &Hcos2 : nullptr);
+  const double sineSquared = 1.0 - cosine * cosine;
+  if (cosine < 0 && sineSquared < std::numeric_limits<double>::epsilon()) {
+    if (H1 || H2)
+      throw std::domain_error("Unit3::localCoordinates derivative at antipode");
+    return Vector2(M_PI, 0.0);
   }
-  return basis().transpose() * y * (other.p_ - x * p_);
+
+  // scale = acos(cosine)/sqrt(1-cosine^2). Its series avoids cancellation
+  // in both the value and derivative near coincident directions.
+  double scale, scaleDerivative;
+  const double distanceFromOne = 1.0 - cosine;
+  if (distanceFromOne < 1e-5) {
+    scale = 1.0 + distanceFromOne / 3.0 +
+            2.0 * distanceFromOne * distanceFromOne / 15.0;
+    scaleDerivative = -1.0 / 3.0 - 4.0 * distanceFromOne / 15.0;
+  } else {
+    scale = std::acos(cosine) / std::sqrt(sineSquared);
+    scaleDerivative = (cosine * scale - 1.0) / sineSquared;
+  }
+
+  Matrix2 Herror1, Herror2;
+  const Vector2 error = errorVector(other, H1 ? &Herror1 : nullptr,
+                                   H2 ? &Herror2 : nullptr);
+  if (H1) *H1 = scale * Herror1 + scaleDerivative * error * Hcos1;
+  if (H2) *H2 = scale * Herror2 + scaleDerivative * error * Hcos2;
+  return scale * error;
 }
 /* ************************************************************************* */
 
