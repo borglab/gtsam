@@ -308,16 +308,16 @@ T ProductLieGroup<G, H>::defaultIdentity() {
 }
 
 template <typename G, typename H>
-template <typename T, int Dim>
+template <typename T, int ComponentDimension>
 typename traits<T>::TangentVector ProductLieGroup<G, H>::tangentSegment(
     const TangentVector& v, size_t start, size_t d) {
   const int startIndex = static_cast<int>(start);
   const int runtimeIndex = static_cast<int>(d);
-  if constexpr (Dim == Eigen::Dynamic) {
+  if constexpr (ComponentDimension == Eigen::Dynamic) {
     return v.segment(startIndex, runtimeIndex);
   } else {
     static_cast<void>(d);
-    return v.template segment<Dim>(startIndex);
+    return v.template segment<ComponentDimension>(startIndex);
   }
 }
 

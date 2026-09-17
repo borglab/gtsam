@@ -4,6 +4,10 @@ GTSAM is a C++17 library for factor graphs and sensor fusion, with Python and
 MATLAB wrappers. Follow the existing code near your change and keep changes
 focused.
 
+When fixing additional build problems discovered during a task, establish the
+concrete failure and explain why each fix is necessary. Keep independently
+useful API or infrastructure redesigns in separate PRs.
+
 ## Public C++ APIs
 
 * All functions in header files should have Doxygen-style API documentation
@@ -120,6 +124,30 @@ Matrix23 matrix{{1.0, 2.0, 3.0},
   for changes that belong upstream.
 * Do not edit files under `gtsam/3rdparty/`. These are vendored third-party
   libraries, including Eigen; direct changes make upstream updates difficult.
+
+### Shared Python and MATLAB interfaces
+
+* Keep declarations for the same C++ API in shared `.i` files.
+  When an optional dependency controls availability, have both wrappers
+  include the same interface conditionally. Use language-specific files
+  only for genuinely language-specific APIs, such as MATLAB callbacks.
+* Before adding container bindings, inspect existing precedents such as
+  KeyVector, Point2Vector, and FixedLagSmootherKeyTimestampMap. Check the
+  Python ignore list and compatibility aliases as well as the `.i` files.
+  Shared declarations may produce MATLAB proxy classes while Python
+  uses native lists and dictionaries.
+* Before proposing a wrapper-generator change, demonstrate why existing
+  interface declarations and configuration cannot express the required
+  binding. Distinguish missing functionality from a preferred conversion
+  or naming convention. Keep broader generator improvements separate.
+* Validate wrapper changes through actual calls in both languages.
+  Successful generation or compilation alone does not establish that
+  arguments, returned containers, or object lifetimes work. Exercise
+  parameter maps, container access, repeated retrieval, and 64-bit keys
+  where relevant. Check optional-dependency configurations too.
+* When an investigation reveals a simpler supported approach, remove
+  the superseded scaffolding and rewrite the PR description around the
+  final implementation.
 
 ## Tests
 
