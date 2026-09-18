@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file concepts.h
+ * @file gtsam/geometry/concepts.h
  *
  * @brief Concept-checking macros for geometric objects
  * Each macro instantiates a concept check structure, which

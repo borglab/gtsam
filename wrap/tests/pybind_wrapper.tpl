@@ -12,12 +12,19 @@ using namespace std;
 
 namespace py = pybind11;
 
-PYBIND11_MODULE({module_name}, m_) {{
-    m_.doc() = "pybind11 wrapper of {module_name}";
+{submodules}
 
-{wrapped_namespace}
-
-#include "python/specializations.h"
-
+{declaration_module_def} {{
+{wrapped_declarations}
 }}
 
+{binding_module_def} {{
+#include "python/specializations.h"
+{wrapped_bindings}
+}}
+
+{module_def} {{
+    m_.doc() = "pybind11 wrapper of {module_name}";
+
+{module_init}
+}}

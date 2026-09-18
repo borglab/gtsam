@@ -15,7 +15,11 @@
  * @author  Vadim Indelman, Stephen Williams
  */
 
+#include <gtsam/config.h>
 #include <CppUnitLite/TestHarness.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
@@ -275,7 +279,7 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
 
   Vector measurement_acc(
       Vector3(6.501390843381716, -6.763926150509185, -2.300389940090343));
-  Vector measurement_gyro((Vector(3) << 3.14, 3.14 / 2, -3.14).finished());
+  Vector measurement_gyro{{3.14, 3.14 / 2, -3.14}};
 
   InertialNavFactor_GlobalVelocity<Pose3, Vector3, imuBias::ConstantBias> factor(
       PoseKey1, VelKey1, BiasKey1, PoseKey2, VelKey2, measurement_acc,
@@ -602,7 +606,8 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
 
   Pose3 body_P_sensor(Rot3(0, 1, 0, 1, 0, 0, 0, 0, -1), Point3(1.0, -2.0, 3.0)); // IMU is in ENU orientation
 
-  Vector measurement_gyro((Vector(3) << 3.14 / 2, 3.14, +3.14).finished()); // Measured in ENU orientation
+  Vector measurement_gyro(
+      Vector{{3.14 / 2, 3.14, +3.14}});  // Measured in ENU orientation
   Matrix omega__cross = skewSymmetric(measurement_gyro);
   Vector measurement_acc =
       Vector3(-6.763926150509185, 6.501390843381716, +2.300389940090343)
@@ -703,6 +708,8 @@ Vector predictionErrorVel(const Pose3& p1, const Vector3& v1,
 }
 
 /* ************************************************************************* */
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

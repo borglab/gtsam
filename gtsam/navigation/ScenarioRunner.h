@@ -70,26 +70,17 @@ class GTSAM_EXPORT ScenarioRunner {
 
   const Scenario& scenario() const { return scenario_; }
 
-  // A gyro simply measures angular velocity in body frame
-  Vector3 actualAngularVelocity(double t) const { return scenario_.omega_b(t); }
+  /// Ideal gyroscope measurement expressed in the sensor frame.
+  Vector3 actualAngularVelocity(double t) const;
 
-  // An accelerometer measures acceleration in body, but not gravity
-  Vector3 actualSpecificForce(double t) const {
-    Rot3 bRn(scenario_.rotation(t).transpose());
-    return scenario_.acceleration_b(t) - bRn * gravity_n();
-  }
+  /// Ideal accelerometer measurement expressed in the sensor frame.
+  Vector3 actualSpecificForce(double t) const;
 
   // Angular velocity measured by gyroscope, corrupted by bias and noise
-  Vector3 measuredAngularVelocity(double t) const {
-    return actualAngularVelocity(t) + estimatedBias_.gyroscope() +
-           gyroSampler_.sample() / sqrt_dt_;
-  }
+  Vector3 measuredAngularVelocity(double t) const;
 
   /// Specific force measured by accelerometer, corrupted by bias and noise
-  Vector3 measuredSpecificForce(double t) const {
-    return actualSpecificForce(t) + estimatedBias_.accelerometer() +
-           accSampler_.sample() / sqrt_dt_;
-  }
+  Vector3 measuredSpecificForce(double t) const;
 
   /// The IMU sample time (i.e. the time between two IMU measurements)
   double imuSampleTime() const { return imuSampleTime_; }

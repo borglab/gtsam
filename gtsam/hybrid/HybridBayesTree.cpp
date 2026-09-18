@@ -47,13 +47,7 @@ DiscreteValues HybridBayesTree::discreteMaxProduct(
     const DiscreteFactorGraph& dfg) const {
   DiscreteFactor::shared_ptr product = dfg.scaledProduct();
 
-  // Check type of product, and get as TableFactor for efficiency.
-  TableFactor p;
-  if (auto tf = std::dynamic_pointer_cast<TableFactor>(product)) {
-    p = *tf;
-  } else {
-    p = TableFactor(product->toDecisionTreeFactor());
-  }
+  TableFactor p = product->toTableFactor();
   DiscreteValues assignment = TableDistribution(p).argmax();
   return assignment;
 }

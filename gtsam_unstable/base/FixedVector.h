@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <stdarg.h>
 #include <gtsam/base/Vector.h>
 
@@ -25,6 +29,7 @@ namespace gtsam {
 /**
  * Fixed size vectors - compatible with boost vectors, but with compile-type
  * size checking.
+ * @deprecated Use Eigen::Matrix<double, N, 1> or GTSAM fixed vector aliases.
  */
 template<size_t N>
 class FixedVector : public Eigen::Matrix<double, N, 1> {
@@ -101,3 +106,5 @@ public:
 
 
 } // \namespace
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

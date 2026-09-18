@@ -18,6 +18,7 @@
 
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/geometry/Kernel.h>
+#include <gtsam/geometry/SO3.h>
 #include <gtsam/navigation/NavState.h>
 
 #include <string>
@@ -125,15 +126,37 @@ bool NavState::equals(const NavState& other, double tol) const {
 //------------------------------------------------------------------------------
 NavState NavState::retract(const Vector9& xi, //
     OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
-  // NOTE: This is an intentional custom chart for NavState manifold updates.
-  // It differs from the default LieGroup chart based on full Expmap/Logmap.
-  Rot3 nRb = R_;
-  Point3 n_t = t_.col(0), n_v = t_.col(1);
+#ifdef GTSAM_NAVSTATE_EXPMAP
+  return expmap(xi, H1, H2);
+#else
+  return internal::navStateComponentWiseRetract(*this, xi, H1, H2);
+#endif
+}
+
+//------------------------------------------------------------------------------
+Vector9 NavState::localCoordinates(const NavState& g, //
+    OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
+#ifdef GTSAM_NAVSTATE_EXPMAP
+  return logmap(g, H1, H2);
+#else
+  return internal::navStateComponentWiseLocalCoordinates(*this, g, H1, H2);
+#endif
+}
+
+//------------------------------------------------------------------------------
+NavState internal::navStateComponentWiseRetract(
+    const NavState& state, const Vector9& xi,
+    OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) {
+  const Rot3& nRb = state.attitude();
+  const Point3 n_t = state.position();
+  const Vector3 n_v = state.velocity();
   Matrix3 D_bRc_xi, D_R_nRb, D_t_nRb, D_v_nRb;
-  const Rot3 bRc = Rot3::Expmap(dR(xi), H2 ? &D_bRc_xi : 0);
+  const Rot3 bRc = Rot3::Expmap(NavState::dR(xi), H2 ? &D_bRc_xi : 0);
   const Rot3 nRc = nRb.compose(bRc, H1 ? &D_R_nRb : 0);
-  const Point3 t = n_t + nRb.rotate(dP(xi), H1 ? &D_t_nRb : 0);
-  const Point3 v = n_v + nRb.rotate(dV(xi), H1 ? &D_v_nRb : 0);
+  const Point3 t =
+      n_t + nRb.rotate(NavState::dP(xi), H1 ? &D_t_nRb : 0);
+  const Point3 v =
+      n_v + nRb.rotate(NavState::dV(xi), H1 ? &D_v_nRb : 0);
   Matrix3 bRcTranspose;
   if (H1 || H2) bRcTranspose = bRc.transpose();
   if (H1) {
@@ -155,17 +178,20 @@ NavState NavState::retract(const Vector9& xi, //
 }
 
 //------------------------------------------------------------------------------
-Vector9 NavState::localCoordinates(const NavState& g, //
-    OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) const {
-  // Inverse of the custom component-wise chart used in retract().
+Vector9 internal::navStateComponentWiseLocalCoordinates(
+    const NavState& state, const NavState& other,
+    OptionalJacobian<9, 9> H1, OptionalJacobian<9, 9> H2) {
   Matrix3 D_dR_R, D_dt_R, D_dv_R;
-  const Rot3 dR = R_.between(g.R_, H1 ? &D_dR_R : 0);
-  const Point3 dP = R_.unrotate(g.t_.col(0) - t_.col(0), H1 ? &D_dt_R : 0);
-  const Vector dV = R_.unrotate(g.t_.col(1) - t_.col(1), H1 ? &D_dv_R : 0);
+  const Rot3 dR = state.attitude().between(
+      other.attitude(), H1 ? &D_dR_R : nullptr);
+  const Point3 dP = state.attitude().unrotate(
+      other.position() - state.position(), H1 ? &D_dt_R : nullptr);
+  const Vector3 dV = state.attitude().unrotate(
+      other.velocity() - state.velocity(), H1 ? &D_dv_R : nullptr);
 
   Vector9 xi;
   Matrix3 D_xi_R;
-  xi << Rot3::Logmap(dR, (H1 || H2) ? &D_xi_R : 0), dP, dV;
+  xi << Rot3::Logmap(dR, (H1 || H2) ? &D_xi_R : nullptr), dP, dV;
   if (H1) {
     *H1 << D_xi_R * D_dR_R, Z_3x3, Z_3x3,  //
         D_dt_R, -I_3x3, Z_3x3,             //
@@ -210,7 +236,8 @@ NavState NavState::update(const Vector3& b_acceleration, const Vector3& b_omega,
 
   // Bring back to manifold
   Matrix9 D_newState_xi;
-  NavState newState = retract(xi, F, G1 || G2 ? &D_newState_xi : 0);
+  NavState newState = internal::navStateComponentWiseRetract(
+      *this, xi, F, G1 || G2 ? &D_newState_xi : nullptr);
 
   // Derivative wrt state is computed by retract directly
   // However, as dP(xi) also depends on state, we need to add that contribution
@@ -239,12 +266,16 @@ NavState NavState::update(const Vector3& b_acceleration, const Vector3& b_omega,
 
 //------------------------------------------------------------------------------
 
-// Because our navigation frames are placed on a spinning Earth, we experience two apparent forces on our inertials
-// Let Omega be the Earth's rotation rate in the navigation frame
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+// Because our navigation frames are placed on a spinning Earth, we experience
+// two apparent forces on our inertials. Let Omega be the Earth's rotation rate
+// in the navigation frame.
 // Coriolis acceleration = -2 * (omega X n_v)
 // Centrifugal acceleration (secondOrder) = -omega X (omega X n_t)
-// We would also experience a rotation of (omega*dt) over time - so, counteract by compensating rotation by (-omega * dt)
-// Integrate centrifugal & coriolis accelerations to yield position, velocity perturbations
+// We would also experience a rotation of (omega*dt) over time - so, counteract
+// by compensating rotation by (-omega * dt).
+// Integrate centrifugal & coriolis accelerations to yield position and velocity
+// perturbations.
 Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
     OptionalJacobian<9, 9> H) const {
   Rot3 nRb = R_;
@@ -293,45 +324,253 @@ Vector9 NavState::coriolis(double dt, const Vector3& omega, bool secondOrder,
   }
   return xi;
 }
+#endif
+
+namespace {
+
+/** Common data and operations for inertial and rotating PIM prediction. */
+struct PIMPrediction {
+  const Vector9& pim;
+  const double dt;
+  const Vector3& gravity;
+
+  /** Make the body-frame PIM increment U = (Delta R, Delta p, Delta v). */
+  NavState makeU(OptionalJacobian<9, 9> D_U = {}) const {
+    Matrix3 D_R;
+    const Rot3 deltaR = Rot3::Expmap(NavState::dR(pim), D_U ? &D_R : nullptr);
+    if (D_U) {
+      const Matrix3 deltaRt = deltaR.transpose();
+      *D_U << D_R, Z_3x3, Z_3x3,  //
+          Z_3x3, deltaRt, Z_3x3,  //
+          Z_3x3, Z_3x3, deltaRt;
+    }
+    return {deltaR, NavState::dP(pim), NavState::dV(pim)};
+  }
+
+  /** Evaluate W * phi_dt(X) * U and differentiate with respect to W, X, U. */
+  NavState propagate(const NavState& W, const NavState& X, const NavState& U,
+                     OptionalJacobian<9, 9> D_Y_W = {},
+                     OptionalJacobian<9, 9> D_Y_X = {},
+                     OptionalJacobian<9, 9> D_Y_U = {}) const {
+    Matrix9 D_F_X, D_Z_F, D_Z_U, D_Y_Z;
+    const NavState::AutonomousFlow phi{dt};
+    if (D_Y_X) D_F_X = phi.dIdentity();
+    const NavState F = phi(X);
+    const NavState Z =
+        F.compose(U, D_Y_X ? &D_Z_F : nullptr, D_Y_U ? &D_Z_U : nullptr);
+    const NavState Y = W.compose(Z, D_Y_W, (D_Y_X || D_Y_U) ? &D_Y_Z : nullptr);
+
+    if (D_Y_X) *D_Y_X = D_Y_Z * D_Z_F * D_F_X;
+    if (D_Y_U) *D_Y_U = D_Y_Z * D_Z_U;
+    return Y;
+  }
+};
+
+/** PIM prediction in the ordinary inertial navigation frame. */
+struct PIMPredictionInertial : PIMPrediction {
+  /** Make the world increment W, which contains only gravity. */
+  NavState makeW() const {
+    const double dt2 = dt * dt;
+    return {Rot3(), 0.5 * gravity * dt2, gravity * dt};
+  }
+
+  NavState predict(const NavState& X, OptionalJacobian<9, 9> H1 = {},
+                   OptionalJacobian<9, 9> H2 = {},
+                   OptionalJacobian<9, 3> H3 = {}) const {
+    // The ordinary path is deliberately a literal reading of
+    //
+    //                 X_j = W * phi_dt(X_i) * U.
+    //
+    // W carries world-frame gravity, while U carries the body-frame PIM.
+    const NavState W = makeW();
+    const NavState U = makeU(H2);
+    const Point3 X_p = X.position(), U_p = U.position();
+    const Velocity3 X_v = X.velocity(), U_v = U.velocity();
+    const Rot3 Y_R = X.attitude().compose(U.attitude());
+    const Matrix3 X_R = X.R();
+    const NavState Y{Y_R, W.position() + X_p + X_v * dt + X_R * U_p,
+                     W.velocity() + X_v + X_R * U_v};
+
+    if (H1) {
+      const Matrix3 deltaRt = U.attitude().transpose();
+      H1->setZero();
+      H1->block<3, 3>(0, 0) = deltaRt;
+      H1->block<3, 3>(3, 0) = -deltaRt * skewSymmetric(U_p);
+      H1->block<3, 3>(3, 3) = deltaRt;
+      H1->block<3, 3>(3, 6) = dt * deltaRt;
+      H1->block<3, 3>(6, 0) = -deltaRt * skewSymmetric(U_v);
+      H1->block<3, 3>(6, 6) = deltaRt;
+    }
+    // makeU has already written its own Jacobian directly into H2.
+    if (H3) {
+      const double dt2 = dt * dt;
+      const Matrix3 Y_Rt = Y_R.transpose();
+      *H3 << Z_3x3, 0.5 * dt2 * Y_Rt, dt * Y_Rt;
+    }
+    return Y;
+  }
+};
+
+/** PIM prediction in a rotating navigation frame. */
+struct PIMPredictionRotating : PIMPrediction {
+  /** Make the rotating-frame world increment W, including gravity. */
+  NavState makeW(const Vector3& omega, OptionalJacobian<9, 3> D_W = {}) const {
+    const so3::DexpFunctor earthRotation(-omega * dt);
+    const Rot3 A(earthRotation.Rodrigues().left());
+    const Matrix3 gammaVelocity = earthRotation.Jacobian().left();
+
+    // Brossard's Gamma^p is J_l(w) - Gamma_2,l(w) in GTSAM's kernel
+    // convention. Its limit as omega approaches zero is 1/2 I.
+    const Matrix3 gammaPosition = gammaVelocity - earthRotation.Gamma().left();
+
+    const double dt2 = dt * dt;
+    if (D_W) {
+      // NavState uses right-local position and velocity coordinates, hence
+      // the A^T factors in the differential of W.
+      *D_W << Z_3x3,  // rotation does not depend on gravity
+          A.transpose() * gammaPosition * dt2,
+          A.transpose() * gammaVelocity * dt;
+    }
+    return {A, gammaPosition * gravity * dt2, gammaVelocity * gravity * dt};
+  }
+
+  /** Lift physical velocity v to transported velocity v_bar = v + Omega*p. */
+  NavState lift(const NavState& X, const Matrix3& omegaCross,
+                OptionalJacobian<9, 9> D_L_X = {}) const {
+    const Point3 p = X.position();
+    if (D_L_X) {
+      const Matrix3 R = X.attitude().matrix();
+      const Matrix3 omegaBody = R.transpose() * omegaCross * R;
+      *D_L_X << I_3x3, Z_3x3, Z_3x3,  //
+          Z_3x3, I_3x3, Z_3x3,        //
+          Z_3x3, omegaBody, I_3x3;
+    }
+    return {X.attitude(), p, X.velocity() + omegaCross * p};
+  }
+
+  /** Project transported velocity back to physical velocity v. */
+  NavState project(const NavState& Y, const Matrix3& omegaCross,
+                   OptionalJacobian<9, 9> D_P_Y = {}) const {
+    const Point3 p = Y.position();
+    if (D_P_Y) {
+      const Matrix3 R = Y.attitude().matrix();
+      const Matrix3 omegaBody = R.transpose() * omegaCross * R;
+      *D_P_Y << I_3x3, Z_3x3, Z_3x3,  //
+          Z_3x3, I_3x3, Z_3x3,        //
+          Z_3x3, -omegaBody, I_3x3;
+    }
+    return {Y.attitude(), p, Y.velocity() - omegaCross * p};
+  }
+
+  NavState predict(const NavState& X, const Vector3& omega,
+                   OptionalJacobian<9, 9> H1 = {},
+                   OptionalJacobian<9, 9> H2 = {},
+                   OptionalJacobian<9, 3> H3 = {}) const {
+    // The same W * phi(L) * U equation applies after lifting the initial state
+    // to transported velocity. Projection is the only extra operation:
+    //
+    //             X_j = P(W * phi_dt(L(X_i)) * U).
+    Matrix9 D_U, D_L_X, D_Y_W, D_Y_L, D_Y_U, D_P_Y;
+    Matrix93 D_W;
+    const Matrix3 omegaCross = skewSymmetric(omega);
+    const NavState W = makeW(omega, H3 ? &D_W : nullptr);
+    const NavState U = makeU(H2 ? &D_U : nullptr);
+    const NavState L = lift(X, omegaCross, H1 ? &D_L_X : nullptr);
+    const NavState Y = propagate(W, L, U, H3 ? &D_Y_W : nullptr,
+                                 H1 ? &D_Y_L : nullptr, H2 ? &D_Y_U : nullptr);
+    const NavState P =
+        project(Y, omegaCross, (H1 || H2 || H3) ? &D_P_Y : nullptr);
+
+    // The short D_* names keep the complete chain rule visible next to the
+    // equally visible value computation above.
+    if (H1) *H1 = D_P_Y * D_Y_L * D_L_X;
+    if (H2) *H2 = D_P_Y * D_Y_U * D_U;
+    if (H3) *H3 = D_P_Y * D_Y_W * D_W;
+    return P;
+  }
+};
+
+}  // namespace
 
 //------------------------------------------------------------------------------
+NavState NavState::predictPIM(const Vector9& pim, double dt,
+                              const Vector3& n_gravity,
+                              const std::optional<Vector3>& omegaCoriolis,
+                              OptionalJacobian<9, 9> H1,
+                              OptionalJacobian<9, 9> H2,
+                              OptionalJacobian<9, 3> H3) const {
+  if (omegaCoriolis && !omegaCoriolis->isZero(0.0)) {
+    return PIMPredictionRotating{{pim, dt, n_gravity}}.predict(
+        *this, *omegaCoriolis, H1, H2, H3);
+  }
+  return PIMPredictionInertial{{pim, dt, n_gravity}}.predict(*this, H1, H2, H3);
+}
+
+//------------------------------------------------------------------------------
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 Vector9 NavState::correctPIM(const Vector9& pim, double dt,
-    const Vector3& n_gravity, const std::optional<Vector3>& omegaCoriolis,
-    bool use2ndOrderCoriolis, OptionalJacobian<9, 9> H1,
-    OptionalJacobian<9, 9> H2) const {
+                             const Vector3& n_gravity,
+                             const std::optional<Vector3>& omegaCoriolis,
+                             bool /*use2ndOrderCoriolis*/,
+                             OptionalJacobian<9, 9> H1,
+                             OptionalJacobian<9, 9> H2,
+                             OptionalJacobian<9, 3> H3) const {
+  if (omegaCoriolis && !omegaCoriolis->isZero(0.0)) {
+    Matrix9 predicted_H_state, predicted_H_pim;
+    Matrix93 predicted_H_gravity;
+    const bool computeJacobians = H1 || H2 || H3;
+    const NavState predicted = predictPIM(
+        pim, dt, n_gravity, omegaCoriolis, H1 ? &predicted_H_state : nullptr,
+        H2 ? &predicted_H_pim : nullptr, H3 ? &predicted_H_gravity : nullptr);
+
+    Matrix9 chart_H_initial, chart_H_predicted;
+    const Vector9 result =
+        localCoordinates(predicted, H1 ? &chart_H_initial : nullptr,
+                         computeJacobians ? &chart_H_predicted : nullptr);
+    if (H1) *H1 = chart_H_initial + chart_H_predicted * predicted_H_state;
+    if (H2) *H2 = chart_H_predicted * predicted_H_pim;
+    if (H3) *H3 = chart_H_predicted * predicted_H_gravity;
+    return result;
+  }
   const Rot3& nRb = R_;
   const Velocity3 n_v = t_.col(1); // derivative is Ri !
   const double dt22 = 0.5 * dt * dt;
 
   Vector9 xi;
-  Matrix3 D_dP_Ri1, D_dP_Ri2, D_dP_nv, D_dV_Ri;
+  Matrix3 D_dP_Ri1, D_dP_Ri2, D_dP_nv;
+  // The gravity contributions to the position and velocity rows share both
+  // the unrotated vector and the Jacobians wrt rotation and wrt gravity.
+  Matrix3 D_bGravity_nGravity;
+  const Vector3 b_gravity = nRb.unrotate(n_gravity, H1 ? &D_dP_Ri2 : 0,
+                                         H3 ? &D_bGravity_nGravity : 0);
   dR(xi) = dR(pim);
   dP(xi) = dP(pim)
       + dt * nRb.unrotate(n_v, H1 ? &D_dP_Ri1 : 0, H2 ? &D_dP_nv : 0)
-      + dt22 * nRb.unrotate(n_gravity, H1 ? &D_dP_Ri2 : 0);
-  dV(xi) = dV(pim) + dt * nRb.unrotate(n_gravity, H1 ? &D_dV_Ri : 0);
+      + dt22 * b_gravity;
+  dV(xi) = dV(pim) + dt * b_gravity;
 
-  if (omegaCoriolis) {
-    xi += coriolis(dt, *omegaCoriolis, use2ndOrderCoriolis, H1);
-  }
-
-  if (H1 || H2) {
-    Matrix3 Ri = nRb.matrix();
-
+  if (H1 || H2 || H3) {
     if (H1) {
-      if (!omegaCoriolis)
-        H1->setZero(); // if coriolis H1 is already initialized
+      const Matrix3 Ri = nRb.matrix();
+      H1->setZero();
       D_t_R(H1) += dt * D_dP_Ri1 + dt22 * D_dP_Ri2;
       D_t_v(H1) += dt * D_dP_nv * Ri;
-      D_v_R(H1) += dt * D_dV_Ri;
+      D_v_R(H1) += dt * D_dP_Ri2;
     }
     if (H2) {
       H2->setIdentity();
+    }
+    if (H3) {
+      // The rotation rows do not depend on gravity:
+      H3->block<3, 3>(0, 0).setZero();
+      H3->block<3, 3>(3, 0) = dt22 * D_bGravity_nGravity;
+      H3->block<3, 3>(6, 0) = dt * D_bGravity_nGravity;
     }
   }
 
   return xi;
 }
+#endif
 //------------------------------------------------------------------------------
 
 }/// namespace gtsam

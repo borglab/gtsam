@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <gtsam/base/Manifold.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
@@ -93,6 +94,19 @@ class FunctorizedFactor : public NoiseModelFactorN<T> {
   }
 
   Vector evaluateError(const T &params, OptionalMatrixType H) const override {
+#ifdef GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
+    if constexpr (internal::HasLocalJacobians<R>::value) {
+      if (H) {
+        Matrix Hprojection;
+        const R value = func_(params, &Hprojection);
+        typename traits<R>::ChartJacobian::Jacobian Hlocal;
+        const Vector error =
+            traits<R>::Local(measured_, value, OptionalNone, &Hlocal);
+        *H = Hlocal * Hprojection;
+        return error;
+      }
+    }
+#endif
     R x = func_(params, H);
     Vector error = traits<R>::Local(measured_, x);
     return error;
@@ -204,6 +218,22 @@ class FunctorizedFactor2 : public NoiseModelFactorN<T1, T2> {
   Vector evaluateError(
       const T1 &params1, const T2 &params2,
       OptionalMatrixType H1, OptionalMatrixType H2) const override {
+#ifdef GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
+    if constexpr (internal::HasLocalJacobians<R>::value) {
+      if (H1 || H2) {
+        Matrix Hprojection1, Hprojection2;
+        const R value = func_(params1, params2,
+                              H1 ? &Hprojection1 : nullptr,
+                              H2 ? &Hprojection2 : nullptr);
+        typename traits<R>::ChartJacobian::Jacobian Hlocal;
+        const Vector error =
+            traits<R>::Local(measured_, value, OptionalNone, &Hlocal);
+        if (H1) *H1 = Hlocal * Hprojection1;
+        if (H2) *H2 = Hlocal * Hprojection2;
+        return error;
+      }
+    }
+#endif
     R x = func_(params1, params2, H1, H2);
     Vector error = traits<R>::Local(measured_, x);
     return error;

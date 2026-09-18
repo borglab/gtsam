@@ -107,7 +107,7 @@ TEST(QPSolver, equalityConstrainedOptimizeAndDualKey) {
 
   CHECK(assert_equal(expected, solution, 1e-10));
   CHECK(duals.exists(0));
-  CHECK(assert_equal((Vector(1) << -1.0).finished(), duals.at(0), 1e-7));
+  CHECK(assert_equal(Vector{{-1.0}}, duals.at(0), 1e-7));
 }
 
 /* ************************************************************************* */
@@ -119,8 +119,8 @@ TEST(QPSolver, optimizeForst10book_pg171Ex5) {
   initialValues.insert(X(2), Z_1x1);
   VectorValues solution = solver.optimize(initialValues).first;
   VectorValues expected;
-  expected.insert(X(1), (Vector(1) << 1.5).finished());
-  expected.insert(X(2), (Vector(1) << 0.5).finished());
+  expected.insert(X(1), Vector{{1.5}});
+  expected.insert(X(2), Vector{{0.5}});
   CHECK(assert_equal(expected, solution, 1e-100));
 }
 
@@ -158,8 +158,8 @@ TEST(QPSolver, optimizeMatlabEx) {
   initialValues.insert(X(2), Z_1x1);
   VectorValues solution = solver.optimize(initialValues).first;
   VectorValues expected;
-  expected.insert(X(1), (Vector(1) << 2.0 / 3.0).finished());
-  expected.insert(X(2), (Vector(1) << 4.0 / 3.0).finished());
+  expected.insert(X(1), Vector{{2.0 / 3.0}});
+  expected.insert(X(2), Vector{{4.0 / 3.0}});
   CHECK(assert_equal(expected, solution, 1e-7));
 }
 
@@ -187,8 +187,8 @@ TEST(QPSolver, optimizeMatlabExNoinitials) {
   QPSolver solver(qp);
   VectorValues solution = solver.optimize().first;
   VectorValues expected;
-  expected.insert(X(1), (Vector(1) << 2.0 / 3.0).finished());
-  expected.insert(X(2), (Vector(1) << 4.0 / 3.0).finished());
+  expected.insert(X(1), Vector{{2.0 / 3.0}});
+  expected.insert(X(2), Vector{{4.0 / 3.0}});
   CHECK(assert_equal(expected, solution, 1e-7));
 }
 
@@ -214,13 +214,13 @@ TEST(QPSolver, optimizeNocedal06bookEx16_4) {
   QP qp = createTestNocedal06bookEx16_4();
   QPSolver solver(qp);
   VectorValues initialValues;
-  initialValues.insert(X(1), (Vector(1) << 2.0).finished());
+  initialValues.insert(X(1), Vector{{2.0}});
   initialValues.insert(X(2), Z_1x1);
 
   VectorValues solution = solver.optimize(initialValues).first;
   VectorValues expected;
-  expected.insert(X(1), (Vector(1) << 1.4).finished());
-  expected.insert(X(2), (Vector(1) << 1.7).finished());
+  expected.insert(X(1), Vector{{1.4}});
+  expected.insert(X(2), Vector{{1.7}});
   CHECK(assert_equal(expected, solution, 1e-7));
 }
 
@@ -229,13 +229,13 @@ TEST(QPSolver, failedSubproblem) {
   QP qp;
   qp.cost.add(X(1), I_2x2, Z_2x1);
   qp.cost.push_back(HessianFactor(X(1), Z_2x2, Z_2x1, 100.0));
-  qp.inequalities.add(X(1), (Matrix(1, 2) << -1.0, 0.0).finished(), -1.0, 0);
+  qp.inequalities.add(X(1), Matrix{{-1.0, 0.0}}, -1.0, 0);
 
   VectorValues expected;
-  expected.insert(X(1), (Vector(2) << 1.0, 0.0).finished());
+  expected.insert(X(1), Vector{{1.0, 0.0}});
 
   VectorValues initialValues;
-  initialValues.insert(X(1), (Vector(2) << 10.0, 100.0).finished());
+  initialValues.insert(X(1), Vector{{10.0, 100.0}});
 
   QPSolver solver(qp);
   VectorValues solution = solver.optimize(initialValues).first;
@@ -248,13 +248,13 @@ TEST(QPSolver, infeasibleInitial) {
   QP qp;
   qp.cost.add(X(1), I_2x2, Vector::Zero(2));
   qp.cost.push_back(HessianFactor(X(1), Z_2x2, Vector::Zero(2), 100.0));
-  qp.inequalities.add(X(1), (Matrix(1, 2) << -1.0, 0.0).finished(), -1.0, 0);
+  qp.inequalities.add(X(1), Matrix{{-1.0, 0.0}}, -1.0, 0);
 
   VectorValues expected;
-  expected.insert(X(1), (Vector(2) << 1.0, 0.0).finished());
+  expected.insert(X(1), Vector{{1.0, 0.0}});
 
   VectorValues initialValues;
-  initialValues.insert(X(1), (Vector(2) << -10.0, 100.0).finished());
+  initialValues.insert(X(1), Vector{{-10.0, 100.0}});
 
   QPSolver solver(qp);
   VectorValues solution;

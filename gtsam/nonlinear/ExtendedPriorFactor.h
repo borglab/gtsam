@@ -145,12 +145,25 @@ class ExtendedPriorFactor : public NoiseModelFactorN<VALUE> {
 
   /// vector of errors
   Vector evaluateError(const T& x, OptionalMatrixType H) const override {
-    if (H) {
-      (*H) = Matrix::Identity(traits<T>::GetDimension(x),
-                              traits<T>::GetDimension(x));
-    }
     // manifold equivalent of z-x -> Local(x,z)
-    Vector error = -traits<T>::Local(x, origin_);
+    Vector error;
+#ifdef GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
+    if constexpr (internal::HasLocalJacobians<T>::value) {
+      if (H) {
+        error = -traits<T>::Local(x, origin_, H, OptionalNone);
+        *H *= -1.0;
+      } else {
+        error = -traits<T>::Local(x, origin_);
+      }
+    } else
+#endif
+    {
+      if (H) {
+        *H = Matrix::Identity(traits<T>::GetDimension(x),
+                              traits<T>::GetDimension(x));
+      }
+      error = -traits<T>::Local(x, origin_);
+    }
     if (mean_) {
       return error - *mean_;
     }
@@ -162,10 +175,7 @@ class ExtendedPriorFactor : public NoiseModelFactorN<VALUE> {
 
   /// Compute the negative log-likelihood of a given value
   double error(const T& x) const {
-    Vector e = evaluateError(x);
-    double squared_mahalanobis_distance =
-        this->noiseModel_->squaredMahalanobisDistance(e);
-    return this->noiseModel_->loss(squared_mahalanobis_distance);
+    return this->noiseModel_->loss(evaluateError(x));
   }
 
   /// Compute the likelihood of a given value

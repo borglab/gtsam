@@ -2,23 +2,25 @@ function [isam,result,nextPoseIndex] = VisualISAMStep(data,noiseModels,isam,resu
 % VisualISAMStep executes one update step of visualSLAM::iSAM object
 % Authors: Duy Nguyen Ta and Frank Dellaert
 
-import gtsam.*
-
 % iSAM expects us to give it a new set of factors 
 % along with initial estimates for any new variables introduced.
-newFactors = NonlinearFactorGraph;
-initialEstimates = Values;
+newFactors = gtsam.NonlinearFactorGraph;
+initialEstimates = gtsam.Values;
 
 %% Add odometry
 odometry = data.odometry{nextPoseIndex-1};
-newFactors.add(BetweenFactorPose3(symbol('x',nextPoseIndex-1), symbol('x',nextPoseIndex), odometry, noiseModels.odometry));
+newFactors.add(gtsam.BetweenFactorPose3( ...
+    gtsam.symbol('x',nextPoseIndex-1), gtsam.symbol('x',nextPoseIndex), ...
+    odometry, noiseModels.odometry));
 
 %% Add visual measurement factors and initializations as necessary
 for k=1:length(data.Z{nextPoseIndex})
     zij = data.Z{nextPoseIndex}{k};
     j = data.J{nextPoseIndex}{k};
-    jj = symbol('l', j);
-    newFactors.add(GenericProjectionFactorCal3_S2(zij, noiseModels.measurement, symbol('x',nextPoseIndex), jj, data.K));
+    jj = gtsam.symbol('l', j);
+    newFactors.add(gtsam.GenericProjectionFactorCal3_S2( ...
+        zij, noiseModels.measurement, gtsam.symbol('x',nextPoseIndex), ...
+        jj, data.K));
     % TODO: initialize with something other than truth
     if ~result.exists(jj) && ~initialEstimates.exists(jj)
         lmInit = truth.points{j};
@@ -27,8 +29,9 @@ for k=1:length(data.Z{nextPoseIndex})
 end
 
 %% Initial estimates for the new pose.
-prevPose = result.atPose3(symbol('x',nextPoseIndex-1));
-initialEstimates.insert(symbol('x',nextPoseIndex), prevPose.compose(odometry));
+prevPose = result.atPose3(gtsam.symbol('x',nextPoseIndex-1));
+initialEstimates.insert( ...
+    gtsam.symbol('x',nextPoseIndex), prevPose.compose(odometry));
 
 %% Update ISAM
 % figure(1);tic;
@@ -39,4 +42,3 @@ result = isam.calculateEstimate();
 
 % Update nextPoseIndex to return
 nextPoseIndex = nextPoseIndex + 1;
-

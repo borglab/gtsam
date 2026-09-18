@@ -22,7 +22,7 @@
 #include <gtsam/linear/Errors.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/SubgraphBuilder.h>
-#include <gtsam/base/kruskal.h>
+#include <gtsam/inference/kruskal.h>
 
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/archive/text_iarchive.hpp>

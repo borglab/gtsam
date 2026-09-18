@@ -22,18 +22,22 @@
 #pragma once
 
 /* GTSAM includes */
-#include <gtsam/nonlinear/NonlinearFactor.h>
-#include <gtsam/nonlinear/NoiseModelFactorN.h>
+#include <gtsam/base/debug.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
+#include <gtsam/navigation/LieGroupPreintegration.h>
 #include <gtsam/navigation/ManifoldPreintegration.h>
 #include <gtsam/navigation/TangentPreintegration.h>
-#include <gtsam/base/debug.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
-#include <type_traits> // For std::is_same, std::enable_if
- 
+#include <type_traits>  // For std::is_same, std::enable_if
+
 namespace gtsam {
 
 // Determine default preintegration backend
-#ifdef GTSAM_TANGENT_PREINTEGRATION
+#ifdef GTSAM_LIEGROUP_PREINTEGRATION
+typedef LieGroupPreintegration DefaultPreintegrationType;
+#elif defined(GTSAM_TANGENT_PREINTEGRATION)
 typedef TangentPreintegration DefaultPreintegrationType;
 #else
 typedef ManifoldPreintegration DefaultPreintegrationType;
@@ -82,10 +86,10 @@ protected:
 
 public:
 
-  /// Default constructor for serialization and wrappers
-  PreintegratedImuMeasurementsT() {
-    this->resetIntegration();
-  }
+  /// Default constructor with default preintegration parameters.
+  PreintegratedImuMeasurementsT()
+      : PreintegratedImuMeasurementsT(
+            std::make_shared<PreintegrationParams>()) {}
 
  /**
    *  Constructor, initializes the class with no measurements
@@ -135,12 +139,73 @@ public:
   void integrateMeasurement(const Vector3& measuredAcc,
       const Vector3& measuredOmega, const double dt) override;
 
-  /// Add multiple measurements, in matrix columns
-  void integrateMeasurements(const Matrix& measuredAccs, const Matrix& measuredOmegas,
-                             const Matrix& dts);
-
   /// Return pre-integrated measurement covariance
   Matrix preintMeasCov() const { return preintMeasCov_; }
+
+  /**
+   * Express the covariance propagated by the selected backend in the chart
+   * used by the IMU factor residual.
+   *
+   * TangentPreintegration propagates covariance for additive perturbations of
+   * \f$\zeta=(\theta,p,v)\f$. Its factor residual instead uses
+   * the configured factor-error chart at the predicted state. At zero
+   * residual, the differential from the additive chart to either supported
+   * residual chart is
+   * \f[
+   * J = \operatorname{diag}\left(J_r(\theta),\Delta R^T,\Delta R^T\right),
+   * \qquad \Delta R=\operatorname{Exp}(\theta),
+   * \f]
+   * where \f$J_r\f$ is the SO(3) right Jacobian. Therefore its covariance is
+   * converted as \f$J P J^T\f$. The component-wise and \f$SE_2(3)\f$ Logmap
+   * errors have the same first-order tangent at zero, so this covariance is
+   * independent of ImuFactorErrorMode. The other backends already propagate
+   * covariance in this tangent.
+   *
+   * When a nonzero omegaCoriolis is configured, the inverse rotating-frame
+   * lift is applied after the backend chart conversion. This no-argument
+   * overload uses the endpoint attitude predicted from identity at biasHat().
+   * Prefer residualCovarianceAt() when a nominal initial state is known. If
+   * omegaCoriolis is unset or zero, the attitude choice has no effect.
+   *
+   * Neither conversion alters the raw covariance returned by
+   * preintMeasCov().
+   */
+  Matrix9 residualCovariance() const {
+    // An endpoint attitude is needed only for the rotating-frame lift.
+    if (!this->params() || !this->p().omegaCoriolis ||
+        this->p().omegaCoriolis->isZero(0.0)) {
+      return residualCovarianceAt(Rot3());
+    }
+    return residualCovarianceAt(
+        this->predict(NavState(), this->biasHat()).attitude());
+  }
+
+  /**
+   * Physical endpoint covariance at a fixed nominal predicted attitude.
+   * With a nonzero omegaCoriolis, the inverse transported-velocity lift acts
+   * after the backend chart conversion. Freeze this covariance when
+   * constructing a factor; it is not differentiated with respect to
+   * subsequently optimized states. If omegaCoriolis is unset or zero,
+   * predictedAttitude has no effect.
+   */
+  Matrix9 residualCovarianceAt(const Rot3& predictedAttitude) const {
+    Eigen::Matrix<double, 9, 9> physicalChart =
+        Eigen::Matrix<double, 9, 9>::Identity();
+    if (this->params() && this->p().omegaCoriolis) {
+      const Matrix3 rotation = predictedAttitude.matrix();
+      physicalChart.template block<3, 3>(6, 3) =
+          -rotation.transpose() *
+          skewSymmetric(*this->p().omegaCoriolis) * rotation;
+    }
+    if constexpr (std::is_same_v<PreintegrationType,
+                                 TangentPreintegration>) {
+      Matrix9 chartJacobian;
+      internal::navStateComponentWiseRetract(
+          NavState(), this->preintegrated_, {}, &chartJacobian);
+      physicalChart *= chartJacobian;
+    }
+    return physicalChart * preintMeasCov_ * physicalChart.transpose();
+  }
 
   /// Merge in a different set of measurements and update bias derivatives accordingly
   /// This method is specific to TangentPreintegration backend.
@@ -186,13 +251,15 @@ using PreintegratedImuMeasurements = PreintegratedImuMeasurementsT<DefaultPreint
  * @ingroup navigation
  */
 template <class PIM = PreintegratedImuMeasurements>
-class GTSAM_EXPORT ImuFactorT: public NoiseModelFactorN<Pose3, Vector3, Pose3, Vector3,
-    imuBias::ConstantBias> {
+class GTSAM_EXPORT ImuFactorT
+    : public NoiseModelFactorT<Vector9, Pose3, Vector3, Pose3, Vector3,
+                               imuBias::ConstantBias> {
 private:
 
   typedef ImuFactorT<PIM> This;
-  typedef NoiseModelFactorN<Pose3, Vector3, Pose3, Vector3,
-      imuBias::ConstantBias> Base;
+  typedef NoiseModelFactorT<Vector9, Pose3, Vector3, Pose3, Vector3,
+                            imuBias::ConstantBias>
+      Base;
 
   PIM pim_;
 
@@ -217,10 +284,42 @@ public:
    * @param bias   Previous bias key
    * @param preintegratedMeasurements The preintegreated measurements since the
    * last pose.
+   * @note With a nonzero omegaCoriolis, this compatibility overload freezes
+   * the covariance at the attitude predicted from identity at biasHat(). When
+   * a nominal initial state and bias are available, prefer the overload taking
+   * predictedAttitude. If omegaCoriolis is unset or zero, both overloads are
+   * equivalent.
    */
   ImuFactorT(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
       const PIM& preintegratedMeasurements)
-      : Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov()),
+      : Base(noiseModel::Gaussian::Covariance(
+                 preintegratedMeasurements.residualCovariance()),
+             pose_i, vel_i, pose_j, vel_j, bias),
+        pim_(preintegratedMeasurements) {}
+
+  /**
+   * Construct a factor whose rotating-frame covariance is expressed at a
+   * supplied nominal endpoint attitude.
+   *
+   * This is the recommended overload when a nonzero omegaCoriolis is configured
+   * and an initial state is available while building the graph. Supply the
+   * attitude of
+   * `preintegratedMeasurements.predict(nominalState_i, nominalBias_i)`.
+   * Without it, the compatibility constructor uses prediction from identity at
+   * biasHat(). The choice affects only covariance whitening, not prediction or
+   * the nonlinear residual. If omegaCoriolis is unset or zero, both overloads
+   * are equivalent. The Gaussian noise model remains fixed during optimization.
+   *
+   * @param predictedAttitude Nominal endpoint attitude used to transport the
+   * propagated covariance into the physical factor-residual chart.
+   */
+  template <class Measurement = PIM>
+  ImuFactorT(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
+             const Measurement& preintegratedMeasurements,
+             const Rot3& predictedAttitude)
+      : Base(noiseModel::Gaussian::Covariance(
+                 preintegratedMeasurements.residualCovarianceAt(
+                     predictedAttitude)),
              pose_i, vel_i, pose_j, vel_j, bias),
         pim_(preintegratedMeasurements) {}
 
@@ -248,10 +347,12 @@ public:
   /** implement functions needed to derive from Factor */
 
   /// vector of errors
-  Vector evaluateError(const Pose3& pose_i, const Vector3& vel_i,
-      const Pose3& pose_j, const Vector3& vel_j,
-      const imuBias::ConstantBias& bias_i, OptionalMatrixType H1, OptionalMatrixType H2,
-      OptionalMatrixType H3, OptionalMatrixType H4, OptionalMatrixType H5) const override;
+  Vector9 evaluateError(const Pose3& pose_i, const Vector3& vel_i,
+                        const Pose3& pose_j, const Vector3& vel_j,
+                        const imuBias::ConstantBias& bias_i,
+                        OptionalMatrixType H1, OptionalMatrixType H2,
+                        OptionalMatrixType H3, OptionalMatrixType H4,
+                        OptionalMatrixType H5) const override;
 
   /// Merge two pre-integrated measurement classes
   template <typename MethodPIMArg = PIM,
@@ -354,11 +455,15 @@ GTSAM_EXPORT std::ostream& operator<<(std::ostream& os, const ImuFactorT<PIM>& f
  * @ingroup navigation
  */
 template <class PIM = PreintegratedImuMeasurements>
-class GTSAM_EXPORT ImuFactor2T : public NoiseModelFactorN<NavState, NavState, imuBias::ConstantBias> {
+class GTSAM_EXPORT ImuFactor2T
+    : public NoiseModelFactorT<Vector9, NavState, NavState,
+                               imuBias::ConstantBias> {
 private:
 
   typedef ImuFactor2T<PIM> This;
-  typedef NoiseModelFactorN<NavState, NavState, imuBias::ConstantBias> Base;
+  typedef NoiseModelFactorT<Vector9, NavState, NavState,
+                            imuBias::ConstantBias>
+      Base;
 
   PIM pim_;
 
@@ -375,13 +480,44 @@ public:
    * @param state_i Previous state key
    * @param state_j Current state key
    * @param bias    Previous bias key
+   * @note With a nonzero omegaCoriolis, this compatibility overload freezes
+   * the covariance at the attitude predicted from identity at biasHat(). When
+   * a nominal initial state and bias are available, prefer the overload taking
+   * predictedAttitude. If omegaCoriolis is unset or zero, both overloads are
+   * equivalent.
    */
   ImuFactor2T(Key state_i, Key state_j, Key bias,
              const PIM& preintegratedMeasurements)
-      : Base(noiseModel::Gaussian::Covariance(preintegratedMeasurements.preintMeasCov()),
+      : Base(noiseModel::Gaussian::Covariance(
+                 preintegratedMeasurements.residualCovariance()),
              state_i, state_j, bias),
         pim_(preintegratedMeasurements) {}
 
+  /**
+   * Construct a NavState factor with rotating-frame covariance frozen at a
+   * supplied nominal endpoint attitude.
+   *
+   * This is the recommended overload when a nonzero omegaCoriolis is configured
+   * and an initial state is available while building the graph. Supply the
+   * attitude of
+   * `preintegratedMeasurements.predict(nominalState_i, nominalBias_i)`.
+   * Without it, the compatibility constructor uses prediction from identity at
+   * biasHat(). The choice affects only covariance whitening, not prediction or
+   * the nonlinear residual. If omegaCoriolis is unset or zero, both overloads
+   * are equivalent. The Gaussian noise model remains fixed during optimization.
+   *
+   * @param predictedAttitude Nominal endpoint attitude used to transport the
+   * propagated covariance into the physical factor-residual chart.
+   */
+  template <class Measurement = PIM>
+  ImuFactor2T(Key state_i, Key state_j, Key bias,
+              const Measurement& preintegratedMeasurements,
+              const Rot3& predictedAttitude)
+      : Base(noiseModel::Gaussian::Covariance(
+                 preintegratedMeasurements.residualCovarianceAt(
+                     predictedAttitude)),
+             state_i, state_j, bias),
+        pim_(preintegratedMeasurements) {}
 
   ~ImuFactor2T() override {
   }
@@ -408,10 +544,10 @@ public:
   /** implement functions needed to derive from Factor */
 
   /// vector of errors
-  Vector evaluateError(const NavState& state_i, const NavState& state_j,
-                       const imuBias::ConstantBias& bias_i,  //
-                       OptionalMatrixType H1, OptionalMatrixType H2,
-                       OptionalMatrixType H3) const override;
+  Vector9 evaluateError(const NavState& state_i, const NavState& state_j,
+                        const imuBias::ConstantBias& bias_i,  //
+                        OptionalMatrixType H1, OptionalMatrixType H2,
+                        OptionalMatrixType H3) const override;
 
 private:
 

@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file serialization.h
+ * @file gtsam/base/serialization.h
  * @brief Convenience functions for serializing data structures via boost.serialization
  * @author Alex Cunningham
  * @author Richard Roberts

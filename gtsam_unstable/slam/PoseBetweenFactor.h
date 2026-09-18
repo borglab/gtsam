@@ -30,12 +30,16 @@ namespace gtsam {
    * @ingroup slam
    */
   template<class POSE>
-  class PoseBetweenFactor: public NoiseModelFactorN<POSE, POSE> {
+  class PoseBetweenFactor
+      : public NoiseModelFactorT<typename traits<POSE>::TangentVector, POSE,
+                                 POSE> {
 
   private:
 
     typedef PoseBetweenFactor<POSE> This;
-    typedef NoiseModelFactorN<POSE, POSE> Base;
+    typedef NoiseModelFactorT<typename traits<POSE>::TangentVector, POSE, POSE>
+        Base;
+    using ErrorVector = typename traits<POSE>::TangentVector;
 
     POSE measured_; /** The measurement */
     std::optional<POSE> body_P_sensor_; ///< The pose of the sensor in the body frame
@@ -92,8 +96,9 @@ namespace gtsam {
     /** implement functions needed to derive from Factor */
 
     /** vector of errors */
-    Vector evaluateError(const POSE& p1, const POSE& p2,
-        OptionalMatrixType H1, OptionalMatrixType H2) const override {
+    ErrorVector evaluateError(const POSE& p1, const POSE& p2,
+                              OptionalMatrixType H1,
+                              OptionalMatrixType H2) const override {
       if(body_P_sensor_) {
         POSE hx;
         if(H1 || H2) {

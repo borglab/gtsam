@@ -18,7 +18,6 @@
 %  */
 
 %% Run the tests
-import gtsam.*
 [bayesNet tree] = thinTreeBayesNet(4,2);
-EQUALITY('7 = bayesNet.size', 7, bayesNet.size);
+gtsam.EQUALITY('7 = bayesNet.size', 7, bayesNet.size);
 gtsam.plotBayesNet(bayesNet);

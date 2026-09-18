@@ -14,6 +14,7 @@ from typing import Any, Iterable, List, Union
 
 from pyparsing import Literal, Optional, ParseResults, DelimitedList
 
+from .annotations import PYBIND_LAMBDA
 from .template import Template
 from .tokens import (COMMA, DEFAULT_ARG, EQUAL, IDENT, LOPBRACK, LPAREN, PAIR,
                      ROPBRACK, RPAREN, SEMI_COLON)
@@ -156,25 +157,34 @@ class GlobalFunction:
     Rule to parse functions defined in the global scope.
     """
     rule = (
-        Optional(Template.rule("template")) + ReturnType.rule("return_type")  #
+        Optional(Template.rule("template"))  #
+        + Optional(PYBIND_LAMBDA("pybind_lambda"))  #
+        + ReturnType.rule("return_type")  #
         + IDENT("name")  #
         + LPAREN  #
         + ArgumentList.rule("args_list")  #
         + RPAREN  #
         + SEMI_COLON  #
-    ).set_parse_action(lambda t: GlobalFunction(t.name, t.return_type, t.
-                                              args_list, t.template))
+    ).set_parse_action(lambda t: GlobalFunction(
+        t.name,
+        t.return_type,
+        t.args_list,
+        t.template,
+        force_pybind_lambda=bool(t.pybind_lambda),
+    ))
 
     def __init__(self,
                  name: str,
                  return_type: ReturnType,
                  args_list: ArgumentList,
                  template: Template,
-                 parent: Any = ''):
+                 parent: Any = '',
+                 force_pybind_lambda: bool = False):
         self.name = name
         self.return_type = return_type
         self.args = args_list
         self.template = template
+        self.force_pybind_lambda = force_pybind_lambda
 
         self.parent = parent
         self.return_type.parent = self

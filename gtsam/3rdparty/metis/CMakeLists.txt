@@ -47,10 +47,6 @@ include_directories(include)
 add_subdirectory("include")
 add_subdirectory("libmetis")
 
-if(GTSAM_BUILD_METIS_EXECUTABLES)
-  add_subdirectory("programs")
-endif()
-
 set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 # Export macros assumed in metis public headers to clients of the library.
 # This was added to solve MSVC build errors.

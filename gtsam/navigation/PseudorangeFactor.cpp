@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  *  @file   PseudorangeFactor.cpp
  *  @author Sammy Guo
@@ -44,7 +55,7 @@ bool PseudorangeFactor::equals(const NonlinearFactor& expected,
 }
 
 //***************************************************************************
-Vector PseudorangeFactor::evaluateError(
+Vector1 PseudorangeFactor::evaluateError(
     const Point3& receiverPosition, const double& receiverClockBias,
     OptionalMatrixType HreceiverPos,
     OptionalMatrixType HreceiverClockBias) const {
@@ -263,7 +274,7 @@ bool PseudorangeFactorArm::equals(const NonlinearFactor& expected,
 }
 
 //***************************************************************************
-Vector PseudorangeFactorArm::evaluateError(
+Vector1 PseudorangeFactorArm::evaluateError(
     const Pose3& pose, const double& receiverClockBias,
     OptionalMatrixType H_pose,
     OptionalMatrixType HreceiverClockBias) const {
@@ -322,7 +333,7 @@ bool DifferentialPseudorangeFactor::equals(const NonlinearFactor& expected,
 }
 
 //***************************************************************************
-Vector DifferentialPseudorangeFactor::evaluateError(
+Vector1 DifferentialPseudorangeFactor::evaluateError(
     const Point3& receiverPosition, const double& receiverClock_bias,
     const double& differentialCorrection, OptionalMatrixType HreceiverPos,
     OptionalMatrixType HreceiverClockBias,
@@ -398,7 +409,7 @@ bool DifferentialPseudorangeFactorArm::equals(
 }
 
 //***************************************************************************
-Vector DifferentialPseudorangeFactorArm::evaluateError(
+Vector1 DifferentialPseudorangeFactorArm::evaluateError(
     const Pose3& pose, const double& receiverClockBias,
     const double& differentialCorrection, OptionalMatrixType H_pose,
     OptionalMatrixType HreceiverClockBias,

@@ -23,14 +23,15 @@
 
 #pragma once
 
-#include <gtsam/geometry/Unit3.h>
+#include <gtsam/base/concepts.h>
+#include <gtsam/config.h>  // Get GTSAM_USE_QUATERNIONS macro
 #include <gtsam/geometry/Quaternion.h>
 #include <gtsam/geometry/SO3.h>
-#include <gtsam/base/concepts.h>
-#include <gtsam/config.h> // Get GTSAM_USE_QUATERNIONS macro
+#include <gtsam/geometry/Unit3.h>
 
 #include <random>
 #include <stdexcept>
+#include <utility>
 
 // You can override the default coordinate mode using this flag
 #ifndef ROT3_DEFAULT_COORDINATES_MODE
@@ -49,6 +50,11 @@
 #endif
 
 namespace gtsam {
+
+namespace internal {
+template <typename G>
+struct TangentLieGroupJacobian;
+}  // namespace internal
 
 /**
  * @brief Rot3 is a 3D rotation represented as a rotation matrix if the
@@ -141,6 +147,9 @@ class GTSAM_EXPORT Rot3 : public MatrixLieGroup<Rot3, 3, 3> {
 
     /** Virtual destructor */
     virtual ~Rot3() {}
+
+    /// Check if a 3x3 matrix is a valid rotation (orthonormal with det +1).
+    static bool IsValid(const Matrix3& R, double tol = 1e-9);
 
     /* Static member function to generate some well known rotations */
 
@@ -592,33 +601,132 @@ class GTSAM_EXPORT Rot3 : public MatrixLieGroup<Rot3, 3, 3> {
 
 template <>
 struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
+  /// Dimension of the D=1 homogenized QCQP vector.
+  inline constexpr static int QcqpVectorDim = 10;
+
   /**
    * Return a matrix-valued QCQP variable for Rot3.
    *
+   * D=1 prepends a fixed homogenization coordinate to the existing
+   * column-major SO(3) vectorization, yielding a 10-by-1 matrix.
    * D>=3 returns [R', 0] as a 3-by-D row-orthonormal matrix. These variables
    * form a Stiefel relaxation with a common right-O(D) gauge.
    */
   template <int D = 1>
   static Matrix QcqpValue(const Rot3& value) {
-    if constexpr (D >= 3) {
+    if constexpr (D == 1) {
+      const Matrix3 R = value.matrix();
+      Vector10 X;
+      X(0, 0) = 1.0;  // Homogenization entry.
+      X.bottomRows(9) = Eigen::Map<const Matrix>(R.data(), 9, 1);
+      return X;
+    } else if constexpr (D >= 3) {
       Matrix X = Matrix::Zero(3, D);
       X.template leftCols<3>() = value.matrix().transpose();
       return X;
     } else {
       throw std::invalid_argument(
-          "traits<Rot3>::QcqpValue only supports D>=3.");
+          "traits<Rot3>::QcqpValue only supports D=1 and D>=3.");
     }
   }
 
   /**
    * Return row-space QCQP equality constraints A, b such that
-   * trace(X' A X) = b. For D>=3 the same 3-by-3 constraints enforce
-   * XX'=I. For square D=3 this permits both determinant signs; it does not
-   * distinguish SO(3) from the reflected component of O(3).
+   * trace(X' A X) = b. For D=1 these are the lifted SO(3) constraints in
+   * column-major coordinates. For D>=3 the same 3-by-3 constraints enforce
+   * XX'=I. The D=1 right-handedness constraints distinguish SO(3) from the
+   * reflected component of O(3).
    */
   template <int D = 1>
   static std::vector<std::pair<Matrix, double>> QcqpConstraints() {
-    if constexpr (D >= 3) {
+    if constexpr (D == 1) {
+      // The homogenized Rot3 lifted vector is
+      // x = [1, r00, r10, r20, r01, r11, r21, r02, r12, r22].
+      std::vector<std::pair<Matrix, double>> constraints;
+      constraints.reserve(10);
+
+      Matrix A = Matrix::Zero(10, 10);
+
+      // The quadratic lift fixes x(0)^2 = 1.
+      A(0, 0) = 1.0;
+      constraints.emplace_back(A, 1.0);
+
+      // cross(R.col(1), R.col(2)) = x(0) * R.col(0).
+      A.setZero();
+      A(5, 9) = 0.5;
+      A(9, 5) = 0.5;
+      A(6, 8) = -0.5;
+      A(8, 6) = -0.5;
+      A(0, 1) = -0.5;
+      A(1, 0) = -0.5;
+      constraints.emplace_back(A, 0.0);
+
+      A.setZero();
+      A(6, 7) = 0.5;
+      A(7, 6) = 0.5;
+      A(4, 9) = -0.5;
+      A(9, 4) = -0.5;
+      A(0, 2) = -0.5;
+      A(2, 0) = -0.5;
+      constraints.emplace_back(A, 0.0);
+
+      A.setZero();
+      A(4, 8) = 0.5;
+      A(8, 4) = 0.5;
+      A(5, 7) = -0.5;
+      A(7, 5) = -0.5;
+      A(0, 3) = -0.5;
+      A(3, 0) = -0.5;
+      constraints.emplace_back(A, 0.0);
+
+      // RR^T = I supplies the six row-orthonormality constraints.
+      A.setZero();
+      A(1, 1) = 1.0;
+      A(4, 4) = 1.0;
+      A(7, 7) = 1.0;
+      constraints.emplace_back(A, 1.0);
+
+      A.setZero();
+      A(1, 2) = 0.5;
+      A(2, 1) = 0.5;
+      A(4, 5) = 0.5;
+      A(5, 4) = 0.5;
+      A(7, 8) = 0.5;
+      A(8, 7) = 0.5;
+      constraints.emplace_back(A, 0.0);
+
+      A.setZero();
+      A(1, 3) = 0.5;
+      A(3, 1) = 0.5;
+      A(4, 6) = 0.5;
+      A(6, 4) = 0.5;
+      A(7, 9) = 0.5;
+      A(9, 7) = 0.5;
+      constraints.emplace_back(A, 0.0);
+
+      A.setZero();
+      A(2, 2) = 1.0;
+      A(5, 5) = 1.0;
+      A(8, 8) = 1.0;
+      constraints.emplace_back(A, 1.0);
+
+      A.setZero();
+      A(2, 3) = 0.5;
+      A(3, 2) = 0.5;
+      A(5, 6) = 0.5;
+      A(6, 5) = 0.5;
+      A(8, 9) = 0.5;
+      A(9, 8) = 0.5;
+      constraints.emplace_back(A, 0.0);
+
+      A.setZero();
+      A(3, 3) = 1.0;
+      A(6, 6) = 1.0;
+      A(9, 9) = 1.0;
+      constraints.emplace_back(A, 1.0);
+
+      return constraints;
+    } else if constexpr (D >= 3) {
       std::vector<std::pair<Matrix, double>> constraints;
       constraints.reserve(6);
 
@@ -641,30 +749,90 @@ struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
       return constraints;
     } else {
       throw std::invalid_argument(
-          "traits<Rot3>::QcqpConstraints only supports D>=3.");
+          "traits<Rot3>::QcqpConstraints only supports D=1 and D>=3.");
     }
   }
 
   /**
-   * Project a canonical 3-by-D lift back to Rot3.
+   * Project a D=1 vector or canonical 3-by-D lift back to Rot3.
    *
    * Matrix-form QCQP solutions have a right-O(D) gauge, making this
    * leading-block projection gauge-dependent unless the caller has first
-   * chosen a gauge. X must be exactly 3-by-D.
+   * chosen a gauge. Matrix-form X must be exactly 3-by-D.
    */
   template <int D>
   static Rot3 FromQcqpValue(const Matrix& X) {
-    static_assert(D >= 3,
-                  "traits<Rot3>::FromQcqpValue requires D >= 3.");
-    if (X.rows() != 3 || X.cols() != D) {
-      throw std::invalid_argument(
-          "traits<Rot3>::FromQcqpValue requires a 3-by-D matrix.");
+    if constexpr (D == 1) {
+      if (X.rows() != QcqpVectorDim || X.cols() != 1 ||
+          std::abs(X(0, 0)) < 1e-9) {
+        throw std::invalid_argument(
+            "traits<Rot3>::FromQcqpValue requires a 10-by-1 vector with a "
+            "nonzero homogenization entry.");
+      }
+      const Vector x = X.col(0) / X(0, 0);
+      Matrix3 R;
+      R.col(0) = x.segment<3>(1);
+      R.col(1) = x.segment<3>(4);
+      R.col(2) = x.segment<3>(7);
+      return Rot3::ClosestTo(R);
+    } else {
+      static_assert(D >= 3,
+                    "traits<Rot3>::FromQcqpValue requires D >= 3.");
+      if (X.rows() != 3 || X.cols() != D) {
+        throw std::invalid_argument(
+            "traits<Rot3>::FromQcqpValue requires a 3-by-D matrix.");
+      }
+      return Rot3::ClosestTo(X.template leftCols<3>().transpose());
     }
-    return Rot3::ClosestTo(X.template leftCols<3>().transpose());
   }
 };
 
 template <>
 struct traits<const Rot3> : public traits<Rot3> {};
+
+namespace internal {
+
+/**
+ * Closed-form right Jacobian for TSO(3) = SO(3) semidirect-product so(3).
+ *
+ * Under the standard [omega; v] coordinates, TSO(3) is isomorphic to SE(3):
+ * the algebra component v is exactly the translational component. Reusing the
+ * SO(3) dexp kernel therefore produces the same block Jacobian as
+ * Pose3::Expmap, without evaluating the generic 9-by-9 Frechet exponential.
+ */
+template <>
+struct TangentLieGroupJacobian<Rot3> {
+  static constexpr bool available = true;
+  static constexpr bool expmapAvailable = true;
+
+  /**
+   * Evaluate the complete TSO(3) exponential from one SO(3) kernel.
+   *
+   * The precomputed rotation is passed back into tangentExpmap so evaluating
+   * Q_r never repeats Rodrigues' formula. The returned pair is exactly the
+   * rotation and translation of Pose3::Expmap under the TSO(3) isomorphism.
+   */
+  static std::pair<Rot3, Vector3> expmap(
+      const Vector3& omega, const Vector3& v,
+      OptionalJacobian<6, 6> derivative = {}) {
+    const so3::DexpFunctor local(omega);
+#ifdef GTSAM_USE_QUATERNIONS
+    const Rot3 rotation = traits<gtsam::Quaternion>::Expmap(omega);
+#else
+    const Rot3 rotation(local.expmap());
+#endif
+    const Vector3 transported =
+        local.tangentExpmap(v, rotation.matrix(), derivative);
+    return {rotation, transported};
+  }
+
+  static Matrix6 rightJacobian(const Vector3& omega, const Vector3& v) {
+    Matrix6 derivative;
+    expmap(omega, v, derivative);
+    return derivative;
+  }
+};
+
+}  // namespace internal
 
 }  // namespace gtsam

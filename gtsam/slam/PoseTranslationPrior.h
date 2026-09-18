@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include <gtsam/base/Manifold.h>
 #include <gtsam/geometry/concepts.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
@@ -64,15 +65,20 @@ public:
 
   /** h(x)-z */
   Vector evaluateError(const Pose& pose, OptionalMatrixType H) const override {
-    const Translation& newTrans = pose.translation();
-    const Rotation& R = pose.rotation();
-    const size_t tDim = traits<Translation>::GetDimension(newTrans);
-    const size_t xDim = traits<Pose>::GetDimension(pose);
-    if (H) {
-      *H = Matrix::Zero(tDim, xDim);
-      std::pair<size_t, size_t> transInterval = POSE::translationInterval();
-      (*H).middleCols(transInterval.first, tDim) = R.matrix();
+    Matrix Htranslation;
+    const Translation& newTrans = pose.translation(H ? &Htranslation : nullptr);
+#ifdef GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
+    if constexpr (internal::HasLocalJacobians<Translation>::value) {
+      if (H) {
+        typename traits<Translation>::ChartJacobian::Jacobian Hlocal;
+        const Vector error = traits<Translation>::Local(
+            measured_, newTrans, OptionalNone, &Hlocal);
+        *H = Hlocal * Htranslation;
+        return error;
+      }
     }
+#endif
+    if (H) *H = Htranslation;
 
     return traits<Translation>::Local(measured_, newTrans);
   }
@@ -106,6 +112,5 @@ private:
 };
 
 } // \namespace gtsam
-
 
 

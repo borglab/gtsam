@@ -103,6 +103,15 @@ TEST(EliminationTree, Create) {
 }
 
 /* ************************************************************************* */
+// Missing ordering keys must throw before accessing their factor indices.
+TEST(EliminationTree, RejectsMissingOrderingKey) {
+  SymbolicFactorGraph graph;
+  graph.emplace_shared<SymbolicFactor>(0);
+  CHECK_EXCEPTION(SymbolicEliminationTree(graph, Ordering{1}),
+                  std::invalid_argument);
+}
+
+/* ************************************************************************* */
 TEST(EliminationTree, Create2) {
   //        l1                  l2
   //    /    |                /  |

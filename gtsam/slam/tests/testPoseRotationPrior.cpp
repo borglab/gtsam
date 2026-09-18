@@ -17,7 +17,7 @@
 
 using namespace gtsam;
 
-const SharedNoiseModel model1 = noiseModel::Diagonal::Sigmas((Vector(1) << 0.1).finished());
+const SharedNoiseModel model1 = noiseModel::Diagonal::Sigmas(Vector{{0.1}});
 const SharedNoiseModel model3 = noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.2, 0.3));
 
 typedef PoseRotationPrior<Pose2> Pose2RotationPrior;
@@ -67,9 +67,7 @@ TEST( testPoseRotationFactor, level3_error ) {
   EXPECT(assert_equal(Vector3(-0.1, -0.2, -0.3), factor.evaluateError(pose1, actH1),1e-2));
 #endif
   Matrix expH1 = numericalDerivative22<Vector3,Pose3RotationPrior,Pose3>(evalFactorError3, factor, pose1, 1e-5);
-  // the derivative is more complex, but is close to the identity for Rot3 around the origin
-  // If not using true expmap will be close, but not exact around the origin
-  // EXPECT(assert_equal(expH1, actH1, tol));
+  EXPECT(assert_equal(expH1, actH1, tol));
 }
 
 /* ************************************************************************* */
@@ -87,7 +85,7 @@ TEST( testPoseRotationFactor, level2_error ) {
   Pose2 pose1(rot2A, point2A);
   Pose2RotationPrior factor(poseKey, rot2B, model1);
   Matrix actH1;
-  EXPECT(assert_equal((Vector(1) << -M_PI_2).finished(), factor.evaluateError(pose1, actH1)));
+  EXPECT(assert_equal(Vector{{-M_PI_2}}, factor.evaluateError(pose1, actH1)));
   Matrix expH1 = numericalDerivative22<Vector1,Pose2RotationPrior,Pose2>(evalFactorError2, factor, pose1, 1e-5);
   EXPECT(assert_equal(expH1, actH1, tol));
 }
@@ -97,7 +95,7 @@ TEST( testPoseRotationFactor, level2_error_wrap ) {
   Pose2 pose1(rot2C, point2A);
   Pose2RotationPrior factor(poseKey, rot2D, model1);
   Matrix actH1;
-  EXPECT(assert_equal((Vector(1) << -0.02).finished(), factor.evaluateError(pose1, actH1)));
+  EXPECT(assert_equal(Vector{{-0.02}}, factor.evaluateError(pose1, actH1)));
   Matrix expH1 = numericalDerivative22<Vector1,Pose2RotationPrior,Pose2>(evalFactorError2, factor, pose1, 1e-5);
   EXPECT(assert_equal(expH1, actH1, tol));
 }

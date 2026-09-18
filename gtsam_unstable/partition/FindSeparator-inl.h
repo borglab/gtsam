@@ -12,6 +12,7 @@
 
 #include <stdexcept>
 #include <iostream>
+#include <string>
 #include <vector>
 #include <optional>
 #include <cassert>
@@ -22,12 +23,6 @@
 #include "FindSeparator.h"
 
 #include <metis.h>
-
-extern "C" {
-#include <metislib.h>
-}
-
-
 
 namespace gtsam { namespace partition {
 
@@ -79,49 +74,6 @@ namespace gtsam { namespace partition {
   }
 
   /* ************************************************************************* */
-  void modefied_EdgeComputeSeparator(idx_t *nvtxs, idx_t *xadj, idx_t *adjncy, idx_t *vwgt,
-      idx_t *adjwgt, idx_t *options, idx_t *edgecut, idx_t *part)
-  {
-    idx_t i, ncon;
-    graph_t *graph;
-    real_t *tpwgts2;
-    ctrl_t *ctrl;
-    ctrl = SetupCtrl(METIS_OP_OMETIS, options, 1, 3, nullptr, nullptr);
-    ctrl->iptype = METIS_IPTYPE_GROW;
-    //if () == nullptr)
-    //  return METIS_ERROR_INPUT;
-
-    InitRandom(ctrl->seed);
-
-    graph = SetupGraph(ctrl, *nvtxs, 1, xadj, adjncy, vwgt, nullptr, nullptr);
-
-    AllocateWorkSpace(ctrl, graph);
-
-    ncon = graph->ncon;
-    ctrl->ncuts = 1;
-
-    /* determine the weights of the two partitions as a function of the weight of the
-       target partition weights */
-
-    tpwgts2 = rwspacemalloc(ctrl, 2*ncon);
-    for (i=0; i<ncon; i++) {
-      tpwgts2[i]      = rsum((2>>1), ctrl->tpwgts+i, ncon);
-      tpwgts2[ncon+i] = 1.0 - tpwgts2[i];
-    }
-    /* perform the bisection */
-    *edgecut = MultilevelBisect(ctrl, graph, tpwgts2);
-
-    //  ConstructMinCoverSeparator(&ctrl, &graph, 1.05);
-  //  *edgecut = graph->mincut;
-  //  *sepsize = graph.pwgts[2];
-    icopy(*nvtxs, graph->where, part);
-    std::cout << "Finished bisection:" << *edgecut << std::endl;
-    FreeGraph(&graph);
-
-    FreeCtrl(&ctrl);
-  }
-
-  /* ************************************************************************* */
   /**
    * Return the number of edge cuts and the partition indices {part}
    * Part [j] is 0 or 1, depending on
@@ -134,6 +86,9 @@ namespace gtsam { namespace partition {
     std::vector<idx_t> vwgt;                  // the weights of the vertices
     idx_t options[METIS_NOPTIONS];
     METIS_SetDefaultOptions(options);  // use defaults
+    options[METIS_OPTION_IPTYPE] = METIS_IPTYPE_GROW;
+    options[METIS_OPTION_NCUTS] = 1;
+    options[METIS_OPTION_UFACTOR] = 200;
     idx_t edgecut;                      // the number of edge cuts, output
     sharedInts part_(new idx_t[n]);      // the partition of each vertex, output
 
@@ -151,12 +106,21 @@ namespace gtsam { namespace partition {
       //starttimer(TOTALTmr);
     }
 
-    //int wgtflag = 1; // only edge weights
-    //int numflag = 0; // c style numbering starting from 0
-    //int nparts = 2; // partition the graph to 2 submaps
-    modefied_EdgeComputeSeparator(&n, xadj.get(), adjncy.get(), &vwgt[0], adjwgt.get(),
-        options, &edgecut, part_.get());
-
+    idx_t ncon = 1;
+    idx_t nparts = 2;
+    // Deliberately preserve the existing behavior: the private implementation
+    // ignored adjwgt and treated every edge as having uniform weight.
+    static_cast<void>(adjwgt);
+    const int status = METIS_PartGraphRecursive(
+        &n, &ncon, xadj.get(), adjncy.get(), &vwgt[0], nullptr, nullptr,
+        &nparts, nullptr, nullptr, options, &edgecut, part_.get());
+    if (status != METIS_OK) {
+      throw std::runtime_error(
+          "METIS_PartGraphRecursive failed with error code " +
+          std::to_string(status) +
+          "; check the graph inputs and METIS installation");
+    }
+    std::cout << "Finished bisection:" << edgecut << std::endl;
 
     if (verbose) {
       //stoptimer(TOTALTmr);

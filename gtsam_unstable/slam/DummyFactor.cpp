@@ -5,6 +5,10 @@
  * @author Alex Cunningham
  */
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam_unstable/slam/DummyFactor.h>
 
 namespace gtsam {
@@ -57,6 +61,7 @@ DummyFactor::linearize(const Values& c) const {
 
 } // \namespace gtsam
 
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 
 

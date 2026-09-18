@@ -65,9 +65,8 @@ GaussianFactorGraph InitializePose3::buildLinearOrientationGraph(const Nonlinear
   // prior on the anchor orientation
   linearGraph.add(
       initialize::kAnchorKey, I_9x9,
-      (Vector(9) << 1.0, 0.0, 0.0, /*  */ 0.0, 1.0, 0.0, /*  */ 0.0, 0.0, 1.0)
-          .finished(),
-          noiseModel::Isotropic::Precision(9, 1));
+      Vector{{1.0, 0.0, 0.0, /*  */ 0.0, 1.0, 0.0, /*  */ 0.0, 0.0, 1.0}},
+      noiseModel::Isotropic::Precision(9, 1));
   return linearGraph;
 }
 

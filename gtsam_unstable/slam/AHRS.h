@@ -7,12 +7,21 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include "Mechanization_bRn2.h"
 #include <gtsam_unstable/dllexport.h>
 #include <gtsam/linear/KalmanFilter.h>
 
 namespace gtsam {
 
+/**
+ * Experimental attitude and heading reference system.
+ * @deprecated Use supported GTSAM navigation preintegration and attitude
+ * estimation facilities.
+ */
 class GTSAM_UNSTABLE_EXPORT AHRS {
 
 private:
@@ -79,3 +88,5 @@ public:
 };
 
 } /* namespace gtsam */
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

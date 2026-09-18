@@ -24,7 +24,9 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/navigation/PreintegratedRotation.h>
 
+#include <initializer_list>
 #include <memory>
+#include <stdexcept>
 
 #include "gtsam/base/Matrix.h"
 #include "gtsam/base/Vector.h"
@@ -92,6 +94,135 @@ TEST(PreintegratedRotation, integrateGyroMeasurement) {
   corrected = pim.biascorrectedDeltaRij(biasOmegaIncr, H);
   EXPECT(assert_equal(expectedH, H));
 }
+
+/* ************************************************************************* */
+namespace gyro_integration_methods {
+
+Vector times(const std::initializer_list<double>& values) {
+  Vector result(values.size());
+  Eigen::Index index = 0;
+  for (const double value : values) result(index++) = value;
+  return result;
+}
+
+Matrix omegas(const std::initializer_list<Vector3>& rows) {
+  Matrix result(rows.size(), 3);
+  Eigen::Index index = 0;
+  for (const Vector3& row : rows) result.row(index++) = row.transpose();
+  return result;
+}
+
+Matrix constantOmegas(const Vector3& omega, size_t count) {
+  Matrix result(count, 3);
+  for (size_t row = 0; row < count; ++row) {
+    result.row(row) = omega.transpose();
+  }
+  return result;
+}
+
+// Checks constant angular velocity for both gyroscope integrators.
+TEST(PreintegratedRotation, GyroIntegrationConstantOmega) {
+  const Vector sampleTimes = times({0.0, 0.25, 0.5, 0.75, 1.0});
+  const Vector3 omega{0.1, -0.2, 0.3};
+  const Matrix measurements = constantOmegas(omega, sampleTimes.size());
+  const Rot3 expected = Rot3::Expmap(omega);
+
+  EXPECT(assert_equal(
+      expected, integrateSequentialRotations(sampleTimes, measurements),
+      1e-12));
+  EXPECT(assert_equal(
+      expected, integrateSingleSpeedConing(sampleTimes, measurements), 1e-12));
+}
+
+// Checks that both functions subtract the supplied gyroscope bias.
+TEST(PreintegratedRotation, GyroIntegrationBiasCorrection) {
+  const Vector sampleTimes = times({0.0, 0.5, 1.0});
+  const Vector3 omega{0.15, 0.0, -0.05};
+  const Vector3 bias{0.3, -0.4, 0.5};
+  const Matrix measurements = constantOmegas(omega + bias, sampleTimes.size());
+  const Rot3 expected = Rot3::Expmap(omega);
+
+  EXPECT(assert_equal(
+      expected, integrateSequentialRotations(sampleTimes, measurements, bias),
+      1e-12));
+  EXPECT(assert_equal(
+      expected, integrateSingleSpeedConing(sampleTimes, measurements, bias),
+      1e-12));
+}
+
+// Checks that samples are rotated from the sensor frame into the body frame.
+TEST(PreintegratedRotation, GyroIntegrationSensorRotation) {
+  const Vector sampleTimes = times({0.0, 0.5, 1.0});
+  const Rot3 body_R_sensor = Rot3::Yaw(M_PI_2);
+  const Vector3 sensorOmega{0.2, 0.0, 0.0};
+  const Vector3 bodyOmega = body_R_sensor * sensorOmega;
+  const Matrix measurements =
+      constantOmegas(sensorOmega, sampleTimes.size());
+  const Rot3 expected = Rot3::Expmap(bodyOmega);
+
+  EXPECT(assert_equal(expected,
+                      integrateSequentialRotations(
+                          sampleTimes, measurements, Vector3::Zero(),
+                          body_R_sensor),
+                      1e-12));
+  EXPECT(assert_equal(expected,
+                      integrateSingleSpeedConing(
+                          sampleTimes, measurements, Vector3::Zero(),
+                          body_R_sensor),
+                      1e-12));
+}
+
+// Checks sequential rotations against explicit trapezoidal composition.
+TEST(PreintegratedRotation, GyroIntegrationSequentialRotations) {
+  const Vector sampleTimes = times({0.0, 1.0, 2.0});
+  const Matrix measurements =
+      omegas({Vector3{1.0, 0.0, 0.0}, Vector3{0.0, 1.0, 0.0},
+              Vector3{0.0, 0.0, 1.0}});
+  const Vector3 theta0{0.5, 0.5, 0.0};
+  const Vector3 theta1{0.0, 0.5, 0.5};
+  const Rot3 expected =
+      Rot3::Expmap(theta0).compose(Rot3::Expmap(theta1));
+
+  EXPECT(assert_equal(
+      expected, integrateSequentialRotations(sampleTimes, measurements),
+      1e-12));
+}
+
+// Checks the single-speed coning correction against its defining formula.
+TEST(PreintegratedRotation, GyroIntegrationSingleSpeedConing) {
+  const Vector sampleTimes = times({0.0, 1.0, 2.0});
+  const Matrix measurements =
+      omegas({Vector3{1.0, 0.0, 0.0}, Vector3{0.0, 1.0, 0.0},
+              Vector3{0.0, 0.0, 1.0}});
+  const Vector3 theta0{0.5, 0.5, 0.0};
+  const Vector3 theta1{0.0, 0.5, 0.5};
+  const Vector3 correctedTheta1 =
+      theta1 + (1.0 / 12.0) * theta0.cross(theta1);
+  const Rot3 expected =
+      Rot3::Expmap(theta0).compose(Rot3::Expmap(correctedTheta1));
+
+  EXPECT(assert_equal(
+      expected, integrateSingleSpeedConing(sampleTimes, measurements), 1e-12));
+}
+
+// Checks that invalid sample layouts and timestamps are rejected.
+TEST(PreintegratedRotation, GyroIntegrationInvalidInputs) {
+  CHECK_EXCEPTION(
+      integrateSequentialRotations(times({0.0}), Matrix::Zero(1, 3)),
+      std::invalid_argument);
+  CHECK_EXCEPTION(integrateSequentialRotations(times({0.0, 1.0}),
+                                               Matrix::Zero(2, 2)),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(integrateSequentialRotations(times({0.0, 0.0}),
+                                               Matrix::Zero(2, 3)),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(integrateSingleSpeedConing(times({0.0, 1.0, 0.5}),
+                                             Matrix::Zero(3, 3)),
+                  std::invalid_argument);
+}
+
+}  // namespace gyro_integration_methods
+/* ************************************************************************* */
 
 //******************************************************************************
 

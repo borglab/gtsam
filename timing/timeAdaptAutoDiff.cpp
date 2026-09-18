@@ -16,22 +16,23 @@
  * @date    October 3, 2014
  */
 
-#include "timeLinearize.h"
-#include <gtsam/3rdparty/ceres/example.h>
+#include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Point3.h>
 #include <gtsam/nonlinear/AdaptAutoDiff.h>
 #include <gtsam/nonlinear/ExpressionFactor.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
-#include <gtsam/geometry/PinholeCamera.h>
-#include <gtsam/geometry/Cal3Bundler.h>
-#include <gtsam/geometry/Point3.h>
+#include <tests/SnavelyProjection.h>
+
+#include "timeLinearize.h"
 
 using namespace std;
 using namespace gtsam;
+using gtsam::testing::SnavelyProjection;
 
 #define time timeMultiThreaded
 
 int main() {
-
   // The DefaultChart of Camera below is laid out like Snavely's 9-dim vector
   typedef PinholeCamera<Cal3Bundler> Camera;
   typedef Expression<Point2> Point2_;
@@ -64,10 +65,11 @@ int main() {
 
   // AdaptAutoDiff
   values.clear();
-  values.insert(1,Vector9(Vector9::Zero()));
-  values.insert(2,Vector3(0,0,1));
+  values.insert(1, Vector9(Vector9::Zero()));
+  values.insert(2, Vector3(0, 0, 1));
   typedef AdaptAutoDiff<SnavelyProjection, 2, 9, 3> AdaptedSnavely;
-  Expression<Vector2> expression(AdaptedSnavely(), Expression<Vector9>(1), Expression<Vector3>(2));
+  Expression<Vector2> expression(AdaptedSnavely(), Expression<Vector9>(1),
+                                 Expression<Vector3>(2));
   f2 = std::make_shared<ExpressionFactor<Vector2> >(model, z, expression);
   time("Point2_(AdaptedSnavely(), camera, point): ", f2, values);
 

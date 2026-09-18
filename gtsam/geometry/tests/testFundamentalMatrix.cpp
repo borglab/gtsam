@@ -62,8 +62,7 @@ TEST(FundamentalMatrix, Conversion) {
 
 //*************************************************************************
 TEST(FundamentalMatrix, RoundTrip) {
-  Vector7 d;
-  d << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
+  Vector7 d{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7};
   FundamentalMatrix hx = trueF.retract(d);
   Vector actual = trueF.localCoordinates(hx);
   EXPECT(assert_equal(d, actual, 1e-8));
@@ -96,8 +95,7 @@ TEST(SimpleStereo, Retract) {
 
 //*************************************************************************
 TEST(SimpleStereo, RoundTrip) {
-  Vector7 d;
-  d << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
+  Vector7 d{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7};
   SimpleFundamentalMatrix hx = stereoF.retract(d);
   Vector actual = stereoF.localCoordinates(hx);
   EXPECT(assert_equal(d, actual, 1e-8));

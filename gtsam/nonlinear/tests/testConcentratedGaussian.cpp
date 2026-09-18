@@ -64,9 +64,8 @@ TEST(ConcentratedGaussian, Pose2WithMean) {
   ConcentratedGaussian<Pose2> factor(key, origin, mean, model);
 
   // Compute expected error = 0.5 * ||-mean||^2_{Sigma^{-1}}
-  Vector sigmas(3);
-  sigmas << 0.1, 0.2, 0.3;
-  Vector invSigmas = sigmas.cwiseInverse();
+  Vector3 sigmas{0.1, 0.2, 0.3};
+  Vector3 invSigmas = sigmas.cwiseInverse();
   double mahalanobis =
       (-mean.cwiseProduct(invSigmas)).squaredNorm();  // (r .* invSigmas)^2 sum
   double expected_error = 0.5 * mahalanobis;
@@ -92,12 +91,10 @@ TEST(ConcentratedGaussian, Pose2WithMean) {
 TEST(ConcentratedGaussian, TransportToSameOrigin) {
   Key key(1);
   Pose2 origin(1.0, 2.0, 0.3);
-  Matrix3 Sigma;
-  Sigma << 0.04, 0.0, 0.0, 0.0, 0.09, 0.0, 0.0, 0.0, 0.16;
+  Matrix3 Sigma{{0.04, 0.0, 0.0}, {0.0, 0.09, 0.0}, {0.0, 0.0, 0.16}};
 
   // Nonzero mean to verify it's preserved when mapping to same reference
-  Vector3 mean;
-  mean << 0.01, -0.02, 0.05;
+  Vector3 mean{0.01, -0.02, 0.05};
   ConcentratedGaussian<Pose2> d(key, origin, mean, Sigma);
 
   ConcentratedGaussian<Pose2> mapped = d.transportTo(origin);
@@ -117,11 +114,9 @@ TEST(ConcentratedGaussian, TransportToSameOrigin) {
 TEST(ConcentratedGaussian, ResetMatchesTransport) {
   Key key(1);
   Pose2 origin(1.0, 2.0, 0.3);
-  Matrix3 Sigma;
-  Sigma << 0.04, 0.0, 0.0, 0.0, 0.09, 0.0, 0.0, 0.0, 0.16;
+  Matrix3 Sigma{{0.04, 0.0, 0.0}, {0.0, 0.09, 0.0}, {0.0, 0.0, 0.16}};
 
-  Vector3 mean;
-  mean << 0.05, -0.02, 0.1;
+  Vector3 mean{0.05, -0.02, 0.1};
   ConcentratedGaussian<Pose2> d(key, origin, mean, Sigma);
 
   // Compute expected new origin xplus = Retract(origin, mean)
@@ -149,8 +144,7 @@ TEST(ConcentratedGaussian, ResetMatchesTransport) {
 TEST(ConcentratedGaussian, FusionPose2Identical) {
   Key key(1);
   Pose2 origin(1.0, 2.0, 0.3);
-  Matrix3 Sigma;
-  Sigma << 0.04, 0.0, 0.0, 0.0, 0.09, 0.0, 0.0, 0.0, 0.16;
+  Matrix3 Sigma{{0.04, 0.0, 0.0}, {0.0, 0.09, 0.0}, {0.0, 0.0, 0.16}};
   sharedGaussianNoiseModel model = noiseModel::Gaussian::Covariance(Sigma);
 
   ConcentratedGaussian<Pose2> a(key, origin, model);

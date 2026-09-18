@@ -67,6 +67,10 @@ inline Matrix3 SO3::AdjointMap() const{ return matrix_; }
  */
 template <>
 GTSAM_EXPORT
+SO3 SO3::Expmap(const Vector3& omega);
+
+template <>
+GTSAM_EXPORT
 SO3 SO3::Expmap(const Vector3& omega, ChartJacobian H);
 
 /// Derivative of Expmap
@@ -80,6 +84,10 @@ Matrix3 SO3::ExpmapDerivative(const Vector3& omega);
  */
 template <>
 GTSAM_EXPORT
+Vector3 SO3::Logmap(const SO3& R);
+
+template <>
+GTSAM_EXPORT
 Vector3 SO3::Logmap(const SO3& R, ChartJacobian H);
 
 /// Derivative of Logmap
@@ -90,7 +98,15 @@ Matrix3 SO3::LogmapDerivative(const Vector3& omega);
 // Chart at origin for SO3 is *not* Cayley but actual Expmap/Logmap
 template <>
 GTSAM_EXPORT
+SO3 SO3::ChartAtOrigin::Retract(const Vector3& omega);
+
+template <>
+GTSAM_EXPORT
 SO3 SO3::ChartAtOrigin::Retract(const Vector3& omega, ChartJacobian H);
+
+template <>
+GTSAM_EXPORT
+Vector3 SO3::ChartAtOrigin::Local(const SO3& R);
 
 template <>
 GTSAM_EXPORT
@@ -194,6 +210,23 @@ struct GTSAM_EXPORT DexpFunctor : public ExpmapFunctor {
 
   // Compute the left Jacobian for Exponential map in SO(3)
   Matrix3 leftJacobian() const;
+
+  /**
+   * Apply the SO(3) left Jacobian to a tangent vector and optionally compute
+   * the complete right-trivialized Jacobian of the lifted [omega; v]
+   * exponential. This is the shared exponential kernel for both SE(3) and
+   * TSO(3), whose translational/algebra component is J_l(omega) * v.
+   */
+  Vector3 tangentExpmap(const Vector3& v,
+                        OptionalJacobian<6, 6> H = {}) const;
+
+  /**
+   * Apply the lifted exponential using a rotation matrix already evaluated
+   * from this functor's omega. This avoids recomputing Expmap when the caller
+   * needs both the group value and the complete tangent Jacobian.
+   */
+  Vector3 tangentExpmap(const Vector3& v, const Matrix3& rotation,
+                        OptionalJacobian<6, 6> H = {}) const;
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
   /// @deprecated: use InvJacobian().right()

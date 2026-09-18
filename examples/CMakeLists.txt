@@ -17,7 +17,10 @@ if (NOT GTSAM_USE_BOOST_FEATURES)
 endif()
 
 if(NOT GTSAM_USE_MOSEK)
-  list(APPEND excluded_examples "Rot2RingQcqpToMonolithicSDP.cpp")
+  list(APPEND excluded_examples
+      "Pose2RingSLAM_LiftedSDP.cpp"
+      "Pose3RingSLAM_LiftedSDP.cpp"
+      "Rot2RingQcqpToMonolithicSDP.cpp")
 endif()
 
 gtsamAddExamplesGlob("*.cpp" "${excluded_examples}" "gtsam;${Boost_PROGRAM_OPTIONS_LIBRARY}" ${GTSAM_BUILD_EXAMPLES_ALWAYS})

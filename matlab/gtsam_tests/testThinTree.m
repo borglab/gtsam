@@ -21,7 +21,6 @@
 clc, close all, clear all;
 
 %% Create different trees for our example
-import gtsam.*
 t0 = thinTree(2,1);
 t1 = thinTree(3,2);
 % Add contents in it
@@ -38,12 +37,12 @@ expectedParentsOf7in1 = [3 1];
 % Number of parents for each node
 %TODO
 % Number of elements
-EQUALITY('expectedNumberOfNodes0,t0.getNumberOfElements', expectedNumberOfNodes0,t0.getNumberOfElements);
-EQUALITY('expectedNumberOfNodes1,t1.getNumberOfElements', expectedNumberOfNodes1,t1.getNumberOfElements);
+gtsam.EQUALITY('expectedNumberOfNodes0,t0.getNumberOfElements', expectedNumberOfNodes0,t0.getNumberOfElements);
+gtsam.EQUALITY('expectedNumberOfNodes1,t1.getNumberOfElements', expectedNumberOfNodes1,t1.getNumberOfElements);
 % Parents linking
-EQUALITY('expectedParentsOf6in1,t1.getParents(6)', expectedParentsOf6in1,t1.getParents(6));
-EQUALITY('expectedParentsOf7in1,t1.getParents(7)', expectedParentsOf7in1,t1.getParents(7));
+gtsam.EQUALITY('expectedParentsOf6in1,t1.getParents(6)', expectedParentsOf6in1,t1.getParents(6));
+gtsam.EQUALITY('expectedParentsOf7in1,t1.getParents(7)', expectedParentsOf7in1,t1.getParents(7));
 % Adding an element
 
 bn = thinTreeBayesNet(3,2);
-EQUALITY('7 = bn.size', 7, bn.size);
+gtsam.EQUALITY('7 = bn.size', 7, bn.size);

@@ -1,0 +1,10 @@
+fgz 1
+style node_size=9mm factor_size=3mm label_sep=0.2pt label_font=small
+
+node a_2 {} (3.5, 4) color=orange!20
+node a_1 {a_2} (1.5, 2) color=orange!20
+node a_0 {a_1, a_2} (5.5, 2) color=orange!20
+
+node x_2 {a_2} (7, 4) color=cyan!15
+node x_1 {a_1} (1.5, 0) color=cyan!15
+node x_0 {a_0} (5.5, 0) color=cyan!15

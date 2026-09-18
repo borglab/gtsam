@@ -183,17 +183,17 @@ DiscreteScenario DiscreteScenario::FromCSV(const string& csv_filepath) {
       double qy = stod(values[columnIndex.at("q_y")]);
       double qz = stod(values[columnIndex.at("q_z")]);
 
-      dp.velocity_n << stod(values[columnIndex.at("v_x")]),
-                       stod(values[columnIndex.at("v_y")]),
-                       stod(values[columnIndex.at("v_z")]);
+      dp.velocity_n = Vector3{stod(values[columnIndex.at("v_x")]),
+                              stod(values[columnIndex.at("v_y")]),
+                              stod(values[columnIndex.at("v_z")])};
 
-      dp.omega_b << stod(values[columnIndex.at("w_x")]),
-                    stod(values[columnIndex.at("w_y")]),
-                    stod(values[columnIndex.at("w_z")]);
+      dp.omega_b = Vector3{stod(values[columnIndex.at("w_x")]),
+                           stod(values[columnIndex.at("w_y")]),
+                           stod(values[columnIndex.at("w_z")])};
 
-      dp.acceleration_n << stod(values[columnIndex.at("a_x")]),
-                           stod(values[columnIndex.at("a_y")]),
-                           stod(values[columnIndex.at("a_z")]);
+      dp.acceleration_n = Vector3{stod(values[columnIndex.at("a_x")]),
+                                  stod(values[columnIndex.at("a_y")]),
+                                  stod(values[columnIndex.at("a_z")])};
 
       dp.pose = Pose3(Rot3::Quaternion(qw, qx, qy, qz), Point3(px, py, pz));
       data_points.push_back(dp);

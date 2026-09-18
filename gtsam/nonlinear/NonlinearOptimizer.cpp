@@ -26,6 +26,7 @@
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/linear/internal/CholmodSolver.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/symbolic/IndexedJunctionTree.h>
 
@@ -33,10 +34,44 @@
 #include <stdexcept>
 #include <iostream>
 #include <iomanip>
+#include <vector>
 
 using namespace std;
 
 namespace gtsam {
+
+/// Cache only the symbolic inputs; numerical factors are read at each solve.
+struct NonlinearOptimizer::IndexedJunctionTreeCache {
+  Ordering ordering;
+  std::vector<KeyVector> factorKeys;
+  IndexedJunctionTree tree;
+
+  /// Snapshot the factor slots and ordering used to build the tree.
+  IndexedJunctionTreeCache(const GaussianFactorGraph& graph,
+                           const Ordering& ordering)
+      : ordering(ordering), tree(graph.buildIndexedJunctionTree(ordering)) {
+    factorKeys.reserve(graph.size());
+    for (const auto& factor : graph) {
+      factorKeys.push_back(factor ? factor->keys() : KeyVector{});
+    }
+  }
+
+  /// Compare exact symbolic inputs without allocating or checking numeric data.
+  bool matches(const GaussianFactorGraph& graph,
+               const Ordering& requestedOrdering) const {
+    if (ordering != requestedOrdering || factorKeys.size() != graph.size()) {
+      return false;
+    }
+    for (size_t i = 0; i < graph.size(); ++i) {
+      if (graph[i]) {
+        if (factorKeys[i] != graph[i]->keys()) return false;
+      } else if (!factorKeys[i].empty()) {
+        return false;
+      }
+    }
+    return true;
+  }
+};
 
 /* ************************************************************************* */
 // NOTE(frank): unique_ptr by-value takes ownership, as discussed in
@@ -141,15 +176,16 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
   if (params.isMultifrontal()) {
     // Multifrontal QR or Cholesky (decided by params.getEliminationFunction())
     if (params.ordering) {
-      if (!indexedJunctionTreeCache_.has_value()) {
-        indexedJunctionTreeCache_ = gfg.buildIndexedJunctionTree(*params.ordering);
+      if (!indexedJunctionTreeCache_ ||
+          !indexedJunctionTreeCache_->matches(gfg, *params.ordering)) {
+        indexedJunctionTreeCache_ =
+            std::make_unique<IndexedJunctionTreeCache>(gfg, *params.ordering);
       }
 
-      delta = gfg.eliminateMultifrontal(*indexedJunctionTreeCache_,
+      delta = gfg.eliminateMultifrontal(indexedJunctionTreeCache_->tree,
                                         params.getEliminationFunction())
                   ->optimize();
-    }
-    else
+    } else
       delta = gfg.optimize(params.getEliminationFunction());
   } else if (params.isSequential()) {
     // Sequential QR or Cholesky (decided by params.getEliminationFunction())
@@ -180,6 +216,14 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
       throw std::runtime_error(
           "NonlinearOptimizer::solve: special cg parameter type is not handled in LM solver ...");
     }
+  } else if (params.isCholmod()) {
+    if (!params.ordering) {
+      throw std::runtime_error("CHOLMOD requires a variable ordering");
+    }
+    if (!cholmodSolver_) {
+      cholmodSolver_ = std::make_unique<internal::CholmodSolver>();
+    }
+    delta = cholmodSolver_->solve(gfg, *params.ordering);
   } else {
     throw std::runtime_error("NonlinearOptimizer::solve: Optimization parameter is invalid");
   }

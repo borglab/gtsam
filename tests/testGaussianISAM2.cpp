@@ -14,6 +14,8 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/constrained/NonlinearEquality.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/nonlinear/Marginals.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianBayesTree.h>
@@ -37,8 +39,10 @@ static const SharedNoiseModel model;
 //  SETDEBUG("ISAM2 recalculate", true);
 
 // Set up parameters
-SharedDiagonal odoNoise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.1, 0.1, M_PI/100.0).finished());
-SharedDiagonal brNoise = noiseModel::Diagonal::Sigmas((Vector(2) << M_PI/100.0, 0.1).finished());
+SharedDiagonal odoNoise =
+    noiseModel::Diagonal::Sigmas(Vector{{0.1, 0.1, M_PI / 100.0}});
+SharedDiagonal brNoise =
+    noiseModel::Diagonal::Sigmas(Vector{{M_PI / 100.0, 0.1}});
 
 ISAM2 createSlamlikeISAM2(
     Values* init_values = nullptr,
@@ -1240,6 +1244,7 @@ TEST(ISAM2, AdaptiveReorder_Triggered) {
 }
 
 /* ************************************************************************* */
+// Default updates leave full-tree statistics to an explicit query.
 TEST(ISAM2, AdaptiveReorder_DisabledByDefault) {
   // With default params, adaptive reorder should never trigger
   ISAM2 isam;
@@ -1252,8 +1257,162 @@ TEST(ISAM2, AdaptiveReorder_DisabledByDefault) {
   ISAM2Result result = isam.update(graph, init);
 
   EXPECT(!result.batchReorderTriggered);
-  // treeNnz should still be populated
-  EXPECT(result.treeNnz > 0);
+  EXPECT_LONGS_EQUAL(0, result.treeNnz);
+  EXPECT_LONGS_EQUAL(6, isam.treeNnz());
+}
+
+/* ************************************************************************* */
+namespace optional_tree_statistics {
+
+// Requested statistics remain exact across incremental and batch updates.
+TEST(ISAM2, OptionalTreeStatistics) {
+  for (bool adaptive : {false, true}) {
+    for (bool detailed : {false, true}) {
+      ISAM2Params params;
+      params.enableAdaptiveReorder = adaptive;
+      params.enableDetailedResults = detailed;
+      params.adaptiveReorderThreshold = 1.01;
+      ISAM2 isam(params);
+      const auto checkStatistics = [&](const ISAM2Result& result) {
+        EXPECT_LONGS_EQUAL(adaptive || detailed ? isam.treeNnz() : 0,
+                          result.treeNnz);
+      };
+      for (Key key = 0; key < 8; ++key) {
+        NonlinearFactorGraph graph;
+        Values initial;
+        initial.insert(key, double(key));
+        if (key == 0)
+          graph.addPrior(0, 0.0, noiseModel::Unit::Create(1));
+        else
+          graph.emplace_shared<BetweenFactor<double>>(
+              key - 1, key, 1.0, noiseModel::Unit::Create(1));
+        checkStatistics(isam.update(graph, initial));
+        EXPECT_DOUBLES_EQUAL(double(key), isam.calculateEstimate<double>(key), 1e-9);
+      }
+      NonlinearFactorGraph loop;
+      loop.emplace_shared<BetweenFactor<double>>(
+          0, 7, 7.0, noiseModel::Unit::Create(1));
+      const auto loopResult = isam.update(loop);
+      checkStatistics(loopResult);
+      checkStatistics(isam.update());
+      checkStatistics(isam.update({}, {}, loopResult.newFactorsIndices));
+      EXPECT_DOUBLES_EQUAL(7.0, isam.calculateEstimate<double>(7), 1e-9);
+    }
+  }
+}
+
+// Statistics reflect marginalization immediately, including copied solvers.
+TEST(ISAM2, TreeStatisticsAfterMarginalization) {
+  ISAM2Params params;
+  params.enableDetailedResults = true;
+  ISAM2 isam(params);
+  NonlinearFactorGraph graph;
+  graph.addPrior(0, 0.0, noiseModel::Unit::Create(1));
+  graph.emplace_shared<BetweenFactor<double>>(
+      0, 1, 1.0, noiseModel::Unit::Create(1));
+  graph.emplace_shared<BetweenFactor<double>>(
+      1, 2, 1.0, noiseModel::Unit::Create(1));
+  Values initial;
+  for (Key key = 0; key < 3; ++key) initial.insert(key, double(key));
+  FastMap<Key, int> constraints;
+  for (Key key = 0; key < 3; ++key) constraints[key] = int(key);
+  const auto before = isam.update(graph, initial, {}, constraints);
+  isam.marginalizeLeaves({0});
+  EXPECT(isam.treeNnz() < before.treeNnz);
+  EXPECT_LONGS_EQUAL(isam.treeNnz(), isam.update().treeNnz);
+  ISAM2 copy(isam);
+  EXPECT_LONGS_EQUAL(isam.treeNnz(), copy.update().treeNnz);
+  EXPECT_DOUBLES_EQUAL(2.0, copy.calculateEstimate<double>(2), 1e-9);
+}
+
+}  // namespace optional_tree_statistics
+/* ************************************************************************* */
+namespace batch_factor_removal {
+
+// Batch reordering preserves live variables when removing most of the graph.
+TEST(ISAM2, BatchReorderWithUnusedKeys) {
+  for (bool cache : {false, true}) {
+    for (bool reuseSlots : {false, true}) {
+      ISAM2Params params;
+      params.cacheLinearizedFactors = cache;
+      params.findUnusedFactorSlots = reuseSlots;
+      ISAM2 isam(params);
+      NonlinearFactorGraph graph;
+      Values initial;
+      for (Key key = 0; key < 10; ++key) {
+        graph.addPrior(key, double(key), noiseModel::Unit::Create(1));
+        initial.insert(key, double(key) + 0.1);
+      }
+      const auto added = isam.update(graph, initial);
+      const FactorIndices removed(added.newFactorsIndices.begin(),
+                                  added.newFactorsIndices.begin() + 8);
+      const auto result = isam.update({}, {}, removed);
+      EXPECT(result.batchReorderTriggered);
+      EXPECT_LONGS_EQUAL(8, result.unusedKeys.size());
+      EXPECT_LONGS_EQUAL(2, isam.getLinearizationPoint().size());
+      EXPECT_DOUBLES_EQUAL(8.0, isam.calculateEstimate<double>(8), 1e-9);
+      EXPECT_DOUBLES_EQUAL(9.0, isam.calculateEstimate<double>(9), 1e-9);
+
+      NonlinearFactorGraph next;
+      next.addPrior(10, 10.0, noiseModel::Unit::Create(1));
+      Values nextInitial;
+      nextInitial.insert(10, 10.1);
+      isam.update(next, nextInitial);
+      EXPECT_LONGS_EQUAL(3, isam.getLinearizationPoint().size());
+      EXPECT_DOUBLES_EQUAL(10.0, isam.calculateEstimate<double>(10), 1e-9);
+    }
+  }
+}
+
+}  // namespace batch_factor_removal
+/* ************************************************************************* */
+TEST(ISAM2, constrained_gradient_at_zero) {
+  // A hard-constrained variable should not receive gradient contributions from
+  // regular factors after the Bayes tree aggregates clique gradients.
+  ISAM2Params params(ISAM2DoglegParams(1.0), 0.0, 0, false);
+  ISAM2 isam(params);
+  NonlinearFactorGraph graph;
+  Values init;
+  const Pose2 origin(0.0, 0.0, 0.0);
+
+  graph.emplace_shared<NonlinearEquality<Pose2>>(1, origin);
+  graph.emplace_shared<BetweenFactor<Pose2>>(
+      0, 1, Pose2(1.0, 0.0, 0.0), odoNoise);
+  init.insert(0, origin);
+  init.insert(1, origin);
+
+  FastMap<Key, int> constrainedKeys;
+  constrainedKeys.emplace(1, 1);
+  isam.update(graph, init, FactorIndices(), constrainedKeys);
+
+  const VectorValues gradient = isam.gradientAtZero();
+  EXPECT(assert_equal(Vector3::Zero(), gradient.at(1)));
+  EXPECT(gradient.at(0).norm() > 0.0);
+}
+
+/* ************************************************************************* */
+TEST(ISAM2, constrained_gradient_at_zero_mixed_components) {
+  // Only constrained scalar components should be represented as zero.
+  ISAM2Params params(ISAM2DoglegParams(1.0), 0.0, 0, false);
+  ISAM2 isam(params);
+  NonlinearFactorGraph graph;
+  Values init;
+
+  graph.emplace_shared<PriorFactor<Point2>>(
+      1, Point2(0.0, 0.0),
+      noiseModel::Constrained::MixedSigmas(Vector2(0.0, 1.0)));
+  graph.emplace_shared<BetweenFactor<Point2>>(
+      0, 1, Point2(1.0, 1.0), noiseModel::Isotropic::Sigma(2, 1.0));
+  init.insert(0, Point2(0.0, 0.0));
+  init.insert(1, Point2(0.0, 0.0));
+
+  FastMap<Key, int> constrainedKeys;
+  constrainedKeys.emplace(1, 1);
+  isam.update(graph, init, FactorIndices(), constrainedKeys);
+
+  const VectorValues gradient = isam.gradientAtZero();
+  EXPECT(std::abs(gradient.at(1)(0)) < 1e-9);
+  EXPECT(std::abs(gradient.at(1)(1)) > 1e-9);
 }
 
 /* ************************************************************************* */

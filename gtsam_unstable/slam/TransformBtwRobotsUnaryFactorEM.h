@@ -229,7 +229,7 @@ namespace gtsam {
 
         Matrix H_inlier  = sqrt(p_inlier)*model_inlier_->Whiten(H_unwh);
         Matrix H_outlier = sqrt(p_outlier)*model_outlier_->Whiten(H_unwh);
-        Matrix H_aug = stack(2, &H_inlier, &H_outlier);
+        Matrix H_aug = stack(std::vector<Matrix>{H_inlier, H_outlier});
 
         (*H)[0].resize(H_aug.rows(),H_aug.cols());
         (*H)[0] = H_aug;
@@ -291,7 +291,7 @@ namespace gtsam {
         }
       }
 
-      return (Vector(2) << p_inlier, p_outlier).finished();
+      return Vector{{p_inlier, p_outlier}};
     }
 
     /* ************************************************************************* */

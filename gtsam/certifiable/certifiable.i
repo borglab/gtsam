@@ -9,10 +9,11 @@ class RiemannianStaircaseParams {
 
   RiemannianStaircaseParams();
 
-  // Wrapper-facing integer scalars use int; the C++ fields remain size_t.
-  int pMin;
-  int pMax;
+  size_t pMin;
+  size_t pMax;
   double alpha;
+  bool useSaddleLineSearch;
+  double saddleStepTolerance;
   gtsam::RiemannianStaircaseParams::VerificationMethod verificationMethod;
   double eta;
   int maxSpectraIters;
@@ -36,6 +37,8 @@ class RiemannianStaircaseResult {
   gtsam::Vector getRanksVisited() const;
   gtsam::Vector getCostPerLevel() const;
   gtsam::Vector getMinEigenvaluePerLevel() const;
+  gtsam::Vector getStationarityPerLevel() const;
+  gtsam::Vector getQcqpBuildTimePerLevel() const;
   gtsam::Vector getNlpTimePerLevel() const;
   gtsam::Vector getVerifyTimePerLevel() const;
 };
@@ -48,7 +51,7 @@ class RiemannianStaircaseOptimizer {
           gtsam::RiemannianStaircaseParams());
 
   gtsam::RiemannianStaircaseResult optimize() const;
-  static gtsam::Values padInitialValues(const gtsam::Values& Y, int pMin);
+  static gtsam::Values padInitialValues(const gtsam::Values& Y, size_t pMin);
 
   const gtsam::NonlinearFactorGraph& graph() const;
   const gtsam::Values& initialValues() const;

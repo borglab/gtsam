@@ -15,6 +15,7 @@
  * @author Ni Kai
  * @author Luca Carlone
  * @author Varun Agrawal
+ * @author Frank Dellaert
  * @brief utility functions for loading datasets
  */
 
@@ -202,7 +203,18 @@ readG2o(const std::string& g2oFile, const bool is3D = false,
 GTSAM_EXPORT void writeG2o(const NonlinearFactorGraph& graph,
     const Values& estimate, const std::string& filename);
 
-/// Load TORO 3D Graph
+/**
+ * Load a TORO/G2O-style 3D graph.
+ *
+ * In addition to Pose3 edges and vertices, this accepts Cartesian landmark
+ * observations of the form `EDGE_SE3_TRACKXYZ pose_id landmark_id offset_id x
+ * y z I11 I12 I13 I22 I23 I33`, where the point and full information matrix
+ * are expressed in the sensor frame. The referenced `PARAMS_SE3OFFSET` must be
+ * identity. Each edge is converted to a BearingRangeFactor<Pose3, Point3>. The
+ * information models are equivalent at the measurement linearization point,
+ * but not globally under the nonlinear Cartesian-to-bearing-range
+ * transformation.
+ */
 GTSAM_EXPORT GraphAndValues load3D(const std::string& filename);
 
 // Wrapper-friendly versions of parseFactors<Pose2> and parseFactors<Pose2>

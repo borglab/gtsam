@@ -13,8 +13,11 @@
 if(MSVC)
     # By default, Boost pre-compiled binaries for Windows are static libraries.
     set(Boost_USE_STATIC_LIBS ON)
+    # GTSAM links Boost through imported CMake targets, so disable Boost's
+    # pragma-based auto-linking to avoid bare library names on the link line.
+    list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_ALL_NO_LIB)
     if(NOT Boost_USE_STATIC_LIBS)
-        list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_ALL_NO_LIB BOOST_ALL_DYN_LINK)
+        list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_ALL_DYN_LINK)
     endif()
     if(MSVC_VERSION LESS 1910) # older than VS2017
       list_append_cache(GTSAM_COMPILE_OPTIONS_PRIVATE -Zm295)
@@ -63,8 +66,10 @@ endforeach()
 option(GTSAM_DISABLE_NEW_TIMERS "Disables using Boost.chrono for timing" OFF)
 
 if(GTSAM_DISABLE_NEW_TIMERS)
-  message("WARNING:  GTSAM timing instrumentation manually disabled")
-  list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC DGTSAM_DISABLE_NEW_TIMERS)
+  message(STATUS "Using the legacy Boost timer")
+  # Recent Boost releases require an explicit opt-in to boost/timer.hpp.
+  list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC
+    GTSAM_DISABLE_NEW_TIMERS BOOST_TIMER_ENABLE_DEPRECATED)
 else()
   # Link against compiled timer libraries if they exist.
   if(TARGET Boost::timer AND TARGET Boost::chrono)

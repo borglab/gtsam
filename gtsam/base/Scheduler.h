@@ -7,7 +7,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Scheduler.h
+ * @file gtsam/base/Scheduler.h
  * @brief Policy-based work-stealing scheduler.
  *
  * @details

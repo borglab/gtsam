@@ -102,17 +102,22 @@ GTSAM_EXPORT void print(const Vector& v, const std::string& s = "");
  */
 GTSAM_EXPORT void save(const Vector& A, const std::string &s, const std::string& filename);
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 /**
- * operator==()
+ * Exact vector equality.
+ * @deprecated Since GTSAM 4.3, use Eigen's `vec1 == vec2`.
  */
-GTSAM_EXPORT bool operator==(const Vector& vec1,const Vector& vec2);
+GTSAM_EXPORT bool operator==(const Vector& vec1, const Vector& vec2);
 
 /**
  * Greater than or equal to operation
  * returns true if all elements in v1
  * are greater than corresponding elements in v2
+ * @deprecated Since GTSAM 4.3, use
+ * `(v1.array() >= v2.array()).all()`.
  */
 GTSAM_EXPORT bool greaterThanOrEqual(const Vector& v1, const Vector& v2);
+#endif
 
 /**
  * VecA == VecB up to tolerance
@@ -187,11 +192,16 @@ inline double dot(const V1 &a, const V2& b) {
   return a.dot(b);
 }
 
-/** compatibility version for ublas' inner_prod() */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+/**
+ * compatibility version for ublas' inner_prod()
+ * @deprecated Since GTSAM 4.3, use `a.dot(b)`.
+ */
 template<class V1, class V2>
 inline double inner_prod(const V1 &a, const V2& b) {
   return a.dot(b);
 }
+#endif
 
 /**
  * house(x,j) computes HouseHolder vector v and scaling factor beta
@@ -228,8 +238,11 @@ GTSAM_EXPORT double weightedPseudoinverse(const Vector& a, const Vector& weights
  */
 GTSAM_EXPORT Vector concatVectors(const std::list<Vector>& vs);
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 /**
  * concatenate Vectors
+ * @deprecated Since GTSAM 4.3, use the `std::list<Vector>` overload.
  */
 GTSAM_EXPORT Vector concatVectors(size_t nrVectors, ...);
+#endif
 }  // namespace gtsam

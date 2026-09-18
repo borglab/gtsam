@@ -22,19 +22,22 @@
 namespace gtsam {
 
   /* ************************************************************************* */
-  const char* IndeterminantLinearSystemException::what() const noexcept
+  const char* IndeterminateSystemException::what() const noexcept
   {
     if(!description_) {
       description_ = String(
-          "\nIndeterminant linear system detected while working near variable\n"
+          "\nIndeterminate linear system detected while working near variable\n"
           + std::to_string(j_) +
           + " (Symbol: " + gtsam::DefaultKeyFormatter(gtsam::Symbol(j_)) + ").\n"
           "\n\
 Thrown when a linear system is ill-posed.  The most common cause for this\n\
-error is having underconstrained variables.  Mathematically, the system is\n\
-underdetermined.  See the GTSAM Doxygen documentation at\n\
-http://borg.cc.gatech.edu/ on gtsam::IndeterminantLinearSystemException for\n\
-more information.");
+error is having underconstrained variables, but the exception is also raised\n\
+for nearly indeterminate systems that are too poorly conditioned to solve\n\
+reliably.  See the GTSAM Doxygen documentation for\n\
+gtsam::IndeterminateSystemException and the user\n\
+guide at\n\
+https://github.com/borglab/gtsam/blob/develop/gtsam/linear/doc/IndeterminateSystemException.ipynb\n\
+for more information.");
     }
     return description_->c_str();
   }

@@ -135,8 +135,8 @@ void TemplatedConstructor_deconstructor_5(int nargout, mxArray *out[], int nargi
   item = collector_TemplatedConstructor.find(self);
   if(item != collector_TemplatedConstructor.end()) {
     collector_TemplatedConstructor.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void ScopedTemplateResult_collectorInsertAndMakeBase_6(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -169,8 +169,8 @@ void ScopedTemplateResult_deconstructor_8(int nargout, mxArray *out[], int nargi
   item = collector_ScopedTemplateResult.find(self);
   if(item != collector_ScopedTemplateResult.end()) {
     collector_ScopedTemplateResult.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 
@@ -214,6 +214,7 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       break;
     }
   } catch(const std::exception& e) {
+    std::cout.rdbuf(outbuf);
     mexErrMsgTxt(("Exception from gtsam:\n" + std::string(e.what()) + "\n").c_str());
   }
 

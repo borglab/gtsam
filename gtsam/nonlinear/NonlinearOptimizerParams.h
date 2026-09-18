@@ -143,6 +143,13 @@ public:
     return (linearSolverType == Iterative);
   }
 
+  /// Return whether this solver needs a variable-elimination ordering.
+  bool requiresOrdering() const {
+    if (!isIterative()) return true;
+    return std::dynamic_pointer_cast<SubgraphSolverParameters>(
+               iterativeParams) != nullptr;
+  }
+
   GaussianFactorGraph::Eliminate getEliminationFunction() const {
     switch (linearSolverType) {
     case MULTIFRONTAL_SOLVER:
@@ -164,9 +171,15 @@ public:
     return linearSolverTranslator(linearSolverType);
   }
 
+  /// Return the selected linear solver as a strongly typed value.
+  LinearSolverType getLinearSolver() const { return linearSolverType; }
+
   void setLinearSolverType(const std::string& solver) {
     linearSolverType = linearSolverTranslator(solver);
   }
+
+  /// Select the linear solver using the public enum.
+  void setLinearSolver(LinearSolverType solver) { linearSolverType = solver; }
 
   void setIterativeParams(const std::shared_ptr<IterativeOptimizationParameters> params);
 

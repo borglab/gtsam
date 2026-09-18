@@ -161,6 +161,8 @@ public:
         print_created(this);
         pointer_set<MyObject4a>().insert(this);
     };
+    MyObject4a(const MyObject4a &) = delete;
+
     int value;
 
     static void cleanupAllInstances() {
@@ -182,6 +184,7 @@ protected:
 class MyObject4b : public MyObject4a {
 public:
     explicit MyObject4b(int i) : MyObject4a(i) { print_created(this); }
+    MyObject4b(const MyObject4b &) = delete;
     ~MyObject4b() override { print_destroyed(this); }
 };
 
@@ -189,6 +192,7 @@ public:
 class MyObject5 { // managed by huge_unique_ptr
 public:
     explicit MyObject5(int value) : value{value} { print_created(this); }
+    MyObject5(const MyObject5 &) = delete;
     ~MyObject5() { print_destroyed(this); }
     int value;
 };
@@ -216,7 +220,7 @@ struct SharedPtrRef {
         ~A() { print_destroyed(this); }
     };
 
-    A value = {};
+    A value;
     std::shared_ptr<A> shared = std::make_shared<A>();
 };
 
@@ -224,13 +228,14 @@ struct SharedPtrRef {
 struct SharedFromThisRef {
     struct B : std::enable_shared_from_this<B> {
         B() { print_created(this); }
-        // NOLINTNEXTLINE(bugprone-copy-constructor-init)
+        // NOLINTNEXTLINE(bugprone-copy-constructor-init, readability-redundant-member-init)
         B(const B &) : std::enable_shared_from_this<B>() { print_copy_created(this); }
+        // NOLINTNEXTLINE(readability-redundant-member-init)
         B(B &&) noexcept : std::enable_shared_from_this<B>() { print_move_created(this); }
         ~B() { print_destroyed(this); }
     };
 
-    B value = {};
+    B value;
     std::shared_ptr<B> shared = std::make_shared<B>();
 };
 
@@ -242,9 +247,32 @@ struct SharedFromThisVBase : std::enable_shared_from_this<SharedFromThisVBase> {
 };
 struct SharedFromThisVirt : virtual SharedFromThisVBase {};
 
+// Issue #5989: static_pointer_cast where dynamic_pointer_cast is needed
+// (virtual inheritance with shared_ptr holder)
+struct SftVirtBase : std::enable_shared_from_this<SftVirtBase> {
+    SftVirtBase() = default;
+    virtual ~SftVirtBase() = default;
+    static std::shared_ptr<SftVirtBase> create() { return std::make_shared<SftVirtBase>(); }
+    virtual std::string name() { return "SftVirtBase"; }
+};
+struct SftVirtDerived : SftVirtBase {
+    using SftVirtBase::SftVirtBase;
+    static std::shared_ptr<SftVirtDerived> create() { return std::make_shared<SftVirtDerived>(); }
+    std::string name() override { return "SftVirtDerived"; }
+};
+struct SftVirtDerived2 : virtual SftVirtDerived {
+    using SftVirtDerived::SftVirtDerived;
+    static std::shared_ptr<SftVirtDerived2> create() {
+        return std::make_shared<SftVirtDerived2>();
+    }
+    std::string name() override { return "SftVirtDerived2"; }
+    std::string call_name(const std::shared_ptr<SftVirtDerived2> &d2) { return d2->name(); }
+};
+
 // test_move_only_holder
 struct C {
     C() { print_created(this); }
+    C(const C &) = delete;
     ~C() { print_destroyed(this); }
 };
 
@@ -265,6 +293,7 @@ struct TypeForHolderWithAddressOf {
 // test_move_only_holder_with_addressof_operator
 struct TypeForMoveOnlyHolderWithAddressOf {
     explicit TypeForMoveOnlyHolderWithAddressOf(int value) : value{value} { print_created(this); }
+    TypeForMoveOnlyHolderWithAddressOf(const TypeForMoveOnlyHolderWithAddressOf &) = delete;
     ~TypeForMoveOnlyHolderWithAddressOf() { print_destroyed(this); }
     std::string toString() const {
         return "MoveOnlyHolderWithAddressOf[" + std::to_string(value) + "]";
@@ -514,6 +543,17 @@ TEST_SUBMODULE(smart_ptr, m) {
     static std::shared_ptr<SharedFromThisVirt> sft(new SharedFromThisVirt());
     py::class_<SharedFromThisVirt, std::shared_ptr<SharedFromThisVirt>>(m, "SharedFromThisVirt")
         .def_static("get", []() { return sft.get(); });
+
+    // Issue #5989: static_pointer_cast where dynamic_pointer_cast is needed
+    py::class_<SftVirtBase, std::shared_ptr<SftVirtBase>>(m, "SftVirtBase")
+        .def(py::init<>(&SftVirtBase::create))
+        .def("name", &SftVirtBase::name);
+    py::class_<SftVirtDerived, SftVirtBase, std::shared_ptr<SftVirtDerived>>(m, "SftVirtDerived")
+        .def(py::init<>(&SftVirtDerived::create));
+    py::class_<SftVirtDerived2, SftVirtDerived, std::shared_ptr<SftVirtDerived2>>(
+        m, "SftVirtDerived2")
+        .def(py::init<>(&SftVirtDerived2::create))
+        .def("call_name", &SftVirtDerived2::call_name, py::arg("d2"));
 
     // test_move_only_holder
     py::class_<C, custom_unique_ptr<C>>(m, "TypeWithMoveOnlyHolder")

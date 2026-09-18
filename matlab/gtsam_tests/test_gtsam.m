@@ -24,6 +24,13 @@ testValues
 display 'Starting: testCustomFactor'
 testCustomFactor
 
+display 'Starting: testMosekSDP'
+testMosekSDP
+
+%% navigation
+display 'Starting: testRotatingImuCovariance'
+testRotatingImuCovariance
+
 %% SLAM
 display 'Starting: testPriorFactor'
 testPriorFactor

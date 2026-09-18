@@ -39,9 +39,11 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/ProductLieGroup.h>
+#include <gtsam/base/SemidirectLieGroup.h>
 #include <gtsam/base/serialization.h>
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/base/SymmetricBlockMatrix.h>
+#include <gtsam/base/TangentLieGroup.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/ThreadsafeException.h>

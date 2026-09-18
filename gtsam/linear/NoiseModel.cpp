@@ -71,7 +71,7 @@ std::optional<Vector> checkIfDiagonal(const Matrix& M) {
 
 /* ************************************************************************* */
 Vector Base::sigmas() const {
-  throw("Base::sigmas: sigmas() not implemented for this noise model");
+  throw runtime_error("Base::sigmas: sigmas() not implemented for this noise model");
 }
 
 /* ************************************************************************* */
@@ -158,7 +158,10 @@ Matrix Gaussian::covariance() const {
 
 /* ************************************************************************* */
 Vector Gaussian::sigmas() const {
-  return Vector(covariance().diagonal()).cwiseSqrt();
+  const Matrix& R = this->R();
+  Matrix Rinv = Matrix::Identity(R.rows(), R.cols());
+  R.triangularView<Eigen::Upper>().solveInPlace(Rinv);
+  return Rinv.rowwise().squaredNorm().cwiseSqrt();
 }
 
 /* ************************************************************************* */
@@ -168,7 +171,7 @@ Vector Gaussian::whiten(const Vector& v) const {
 
 /* ************************************************************************* */
 Vector Gaussian::unwhiten(const Vector& v) const {
-  return backSubstituteUpper(thisR(), v);
+  return thisR().triangularView<Eigen::Upper>().solve(v);
 }
 
 void Gaussian::unwhitenInPlace(Vector& v) const {
@@ -341,11 +344,11 @@ void Diagonal::unwhitenInPlace(Vector& v) const {
 }
 
 Matrix Diagonal::Whiten(const Matrix& H) const {
-  return vector_scale(invsigmas(), H);
+  return (H.array().colwise() * invsigmas().array()).matrix();
 }
 
 void Diagonal::WhitenInPlace(Matrix& H) const {
-  vector_scale_inplace(invsigmas(), H);
+  H.array().colwise() *= invsigmas().array();
 }
 
 void Diagonal::WhitenInPlace(Eigen::Block<Matrix> H) const {
@@ -796,6 +799,20 @@ bool Robust::equals(const Base& expected, double tol) const {
   const Robust* p = dynamic_cast<const Robust*> (&expected);
   if (p == nullptr) return false;
   return noise_->equals(*p->noise_,tol) && robust_->equals(*p->robust_,tol);
+}
+
+double Robust::loss(const Vector& v) const {
+  if (robust_->reweightScheme() == RobustModel::Block) {
+    return Base::loss(v);
+  }
+  const Vector whitened = noise_->whiten(v);
+  double result = 0.0;
+  // Linearization reweights the right-hand side -v. Match that convention
+  // here so asymmetric losses agree with the existing linearized gradient.
+  for (Eigen::Index i = 0; i < whitened.size(); ++i) {
+    result += robust_->loss(-whitened[i]);
+  }
+  return result;
 }
 
 void Robust::WhitenSystem(Vector& b) const {

@@ -28,14 +28,18 @@ namespace gtsam {
 
 /* ************************************************************************* */
 Rot2 Rot2::fromCosSin(double c, double s) {
-  Rot2 R(c, s);
-  return R.normalize();
+  double squaredNorm = c * c + s * s;
+  if (std::abs(squaredNorm - 1.0) > 1e-10) {
+    const double inverseNorm = 1.0 / std::sqrt(squaredNorm);
+    c *= inverseNorm;
+    s *= inverseNorm;
+  }
+  return Rot2(c, s);
 }
 
 /* ************************************************************************* */
 Rot2 Rot2::atan2(double y, double x) {
-  Rot2 R(x, y);
-  return R.normalize();
+  return fromCosSin(x, y);
 }
 
 /* ************************************************************************* */
@@ -56,17 +60,6 @@ bool Rot2::equals(const Rot2& R, double tol) const {
 }
 
 /* ************************************************************************* */
-Rot2& Rot2::normalize() {
-  double scale = c_*c_ + s_*s_;
-  if(std::abs(scale-1.0) > 1e-10) {
-    scale = 1 / sqrt(scale);
-    c_ *= scale;
-    s_ *= scale;
-  }
-  return *this;
-}
-
-/* ************************************************************************* */
 Rot2 Rot2::Expmap(const Vector1& v, OptionalJacobian<1, 1> H) {
   if (H)
     *H = I_1x1;
@@ -80,17 +73,11 @@ Rot2 Rot2::Expmap(const Vector1& v, OptionalJacobian<1, 1> H) {
 Vector1 Rot2::Logmap(const Rot2& r, OptionalJacobian<1, 1> H) {
   if (H)
     *H = I_1x1;
-  Vector1 v;
-  v << r.theta();
-  return v;
+  return Vector1{r.theta()};
 }
 
 /* ************************************************************************* */
-Matrix1 Rot2::adjointMap(const Vector1&) {
-  Matrix1 ad;
-  ad << 0.0;
-  return ad;
-}
+Matrix1 Rot2::adjointMap(const Vector1&) { return Matrix1{{0.0}}; }
 
 /* ************************************************************************* */
 Vector1 Rot2::adjoint(const Vector1&, const Vector1&,
@@ -103,39 +90,24 @@ Vector1 Rot2::adjoint(const Vector1&, const Vector1&,
 
 /* ************************************************************************* */
 Matrix2 Rot2::Hat(const Vector1& xi) {
-  Matrix2 X;
-  X << 0., -xi.x(),
-    xi.x(), 0.;
-  return X;
+  return Matrix2{{0., -xi.x()}, {xi.x(), 0.}};
 }
 
 /* ************************************************************************* */
-Vector1 Rot2::Vee(const Matrix2& X) {
-  TangentVector v;
-  v << X(1, 0);
-  return v;
-}
+Vector1 Rot2::Vee(const Matrix2& X) { return TangentVector{X(1, 0)}; }
 
 /* ************************************************************************* */
-Matrix2 Rot2::matrix() const {
-  Matrix2 rvalue_;
-  rvalue_ <<  c_, -s_, s_, c_;
-  return rvalue_;
-}
+Matrix2 Rot2::matrix() const { return Matrix2{{c_, -s_}, {s_, c_}}; }
 
 /* ************************************************************************* */
-Matrix2 Rot2::transpose() const {
-  Matrix2 rvalue_;
-  rvalue_ <<   c_, s_, -s_, c_;
-  return rvalue_;
-}
+Matrix2 Rot2::transpose() const { return Matrix2{{c_, s_}, {-s_, c_}}; }
 
 /* ************************************************************************* */
 // see doc/math.lyx, SO(2) section
 Point2 Rot2::rotate(const Point2& p, OptionalJacobian<2, 1> H1,
     OptionalJacobian<2, 2> H2) const {
   const Point2 q = Point2(c_ * p.x() + -s_ * p.y(), s_ * p.x() + c_ * p.y());
-  if (H1) *H1 << -q.y(), q.x();
+  if (H1) *H1 = Matrix21{{-q.y()}, {q.x()}};
   if (H2) *H2 = matrix();
   return q;
 }
@@ -145,7 +117,7 @@ Point2 Rot2::rotate(const Point2& p, OptionalJacobian<2, 1> H1,
 Point2 Rot2::unrotate(const Point2& p,
     OptionalJacobian<2, 1> H1, OptionalJacobian<2, 2> H2) const {
   const Point2 q = Point2(c_ * p.x() + s_ * p.y(), -s_ * p.x() + c_ * p.y());
-  if (H1) *H1 << q.y(), -q.x();
+  if (H1) *H1 = Matrix21{{q.y()}, {-q.x()}};
   if (H2) *H2 = transpose();
   return q;
 }
@@ -155,11 +127,11 @@ Rot2 Rot2::relativeBearing(const Point2& d, OptionalJacobian<1, 2> H) {
   double x = d.x(), y = d.y(), d2 = x * x + y * y, n = sqrt(d2);
   if(std::abs(n) > 1e-5) {
     if (H) {
-      *H << -y / d2, x / d2;
+      *H = Matrix12{{-y / d2, x / d2}};
     }
     return Rot2::fromCosSin(x / n, y / n);
   } else {
-    if (H) *H << 0.0, 0.0;
+    if (H) *H = Matrix12{{0.0, 0.0}};
     return Rot2();
   }
 }

@@ -69,13 +69,17 @@ void testChartDerivatives(TestResult& result_, const std::string& name_,
   OJ none;
   V w12 = T::Local(t1, t2);
   EXPECT(assert_equal<G>(t2, T::Retract(t1,w12, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative41<G,G,V,OJ,OJ>(T::Retract, t1, w12, none, none), H1));
-  EXPECT(assert_equal(numericalDerivative42<G,G,V,OJ,OJ>(T::Retract, t1, w12, none, none), H2));
+  const auto retract = [](const G& origin, const V& v, const OJ& H1,
+                          const OJ& H2) { return T::Retract(origin, v, H1, H2); };
+  EXPECT(assert_equal(numericalDerivative41<G,G,V,OJ,OJ>(retract, t1, w12, none, none), H1));
+  EXPECT(assert_equal(numericalDerivative42<G,G,V,OJ,OJ>(retract, t1, w12, none, none), H2));
 
   // Local
   EXPECT(assert_equal(w12, T::Local(t1, t2, H1, H2)));
-  EXPECT(assert_equal(numericalDerivative41<V,G,G,OJ,OJ>(T::Local, t1, t2, none, none), H1));
-  EXPECT(assert_equal(numericalDerivative42<V,G,G,OJ,OJ>(T::Local, t1, t2, none, none), H2));
+  const auto local = [](const G& origin, const G& other, const OJ& H1,
+                        const OJ& H2) { return T::Local(origin, other, H1, H2); };
+  EXPECT(assert_equal(numericalDerivative41<V,G,G,OJ,OJ>(local, t1, t2, none, none), H1));
+  EXPECT(assert_equal(numericalDerivative42<V,G,G,OJ,OJ>(local, t1, t2, none, none), H2));
 }
 } // namespace gtsam
 

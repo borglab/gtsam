@@ -43,10 +43,12 @@ int main(int argc, char* argv[]) {
   ExpressionFactorGraph graph;
 
   // Specify uncertainty on first pose prior and also for between factor (simplicity reasons)
-  auto poseNoise = noiseModel::Diagonal::Sigmas((Vector(6)<<0.3,0.3,0.3,0.1,0.1,0.1).finished());
+  auto poseNoise =
+      noiseModel::Diagonal::Sigmas(Vector{{0.3, 0.3, 0.3, 0.1, 0.1, 0.1}});
 
   // Uncertainty bearing range measurement;
-  auto bearingRangeNoise = noiseModel::Diagonal::Sigmas((Vector(3)<<0.01,0.03,0.05).finished());
+  auto bearingRangeNoise =
+      noiseModel::Diagonal::Sigmas(Vector{{0.01, 0.03, 0.05}});
 
   // Expressions for body-frame at key 0 and sensor-tf
   Pose3_ x_('x', 0);

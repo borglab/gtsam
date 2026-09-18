@@ -15,6 +15,8 @@ from typing import Any, Iterable, List, Union
 from pyparsing import ZeroOrMore  # type: ignore
 from pyparsing import Literal, Optional, Word, alphas
 
+from .annotations import (PYBIND_LAMBDA, UNSUPPORTED_ANNOTATION,
+                          UNSUPPORTED_TEMPLATED_ANNOTATION)
 from .enum import Enum
 from .function import ArgumentList, ReturnType
 from .template import Template
@@ -39,6 +41,7 @@ class Method:
     """
     rule = (
         Optional(Template.rule("template"))  #
+        + Optional(PYBIND_LAMBDA("pybind_lambda"))  #
         + ReturnType.rule("return_type")  #
         + IDENT("name")  #
         + LPAREN  #
@@ -46,8 +49,14 @@ class Method:
         + RPAREN  #
         + Optional(CONST("is_const"))  #
         + SEMI_COLON  # BR
-    ).set_parse_action(lambda t: Method(t.template, t.name, t.return_type, t.
-                                      args_list, t.is_const))
+    ).set_parse_action(lambda t: Method(
+        t.template,
+        t.name,
+        t.return_type,
+        t.args_list,
+        t.is_const,
+        force_pybind_lambda=bool(t.pybind_lambda),
+    ))
 
     def __init__(self,
                  template: Union[Template, Any],
@@ -55,12 +64,14 @@ class Method:
                  return_type: ReturnType,
                  args: ArgumentList,
                  is_const: str,
-                 parent: Union["Class", Any] = ''):
+                 parent: Union["Class", Any] = '',
+                 force_pybind_lambda: bool = False):
         self.template = template
         self.name = name
         self.return_type = return_type
         self.args = args
         self.is_const = is_const
+        self.force_pybind_lambda = force_pybind_lambda
 
         self.parent = parent
 
@@ -91,6 +102,7 @@ class StaticMethod:
     """
     rule = (
         Optional(Template.rule("template"))  #
+        + Optional(PYBIND_LAMBDA("pybind_lambda"))  #
         + STATIC  #
         + ReturnType.rule("return_type")  #
         + IDENT("name")  #
@@ -98,19 +110,26 @@ class StaticMethod:
         + ArgumentList.rule("args_list")  #
         + RPAREN  #
         + SEMI_COLON  # BR
-    ).set_parse_action(
-        lambda t: StaticMethod(t.name, t.return_type, t.args_list, t.template))
+    ).set_parse_action(lambda t: StaticMethod(
+        t.name,
+        t.return_type,
+        t.args_list,
+        t.template,
+        force_pybind_lambda=bool(t.pybind_lambda),
+    ))
 
     def __init__(self,
                  name: str,
                  return_type: ReturnType,
                  args: ArgumentList,
                  template: Union[Template, Any] = None,
-                 parent: Union["Class", Any] = ''):
+                 parent: Union["Class", Any] = '',
+                 force_pybind_lambda: bool = False):
         self.name = name
         self.return_type = return_type
         self.args = args
         self.template = template
+        self.force_pybind_lambda = force_pybind_lambda
 
         self.parent = parent
 
@@ -291,6 +310,8 @@ class Class:
                           ^ Variable.rule  #
                           ^ Operator.rule  #
                           ^ Enum.rule  #
+                          ^ UNSUPPORTED_TEMPLATED_ANNOTATION  #
+                          ^ UNSUPPORTED_ANNOTATION  #
                           ).set_parse_action(lambda t: Class.Members(t.as_list()))
 
         def __init__(self, members: List[Union[Constructor, Method,

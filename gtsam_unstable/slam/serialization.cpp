@@ -8,16 +8,16 @@
 #include <gtsam/slam/serialization.h>
 #include <gtsam/base/serialization.h>
 
-//#include <gtsam/slam/AntiFactor.h>
+//#include <gtsam/nonlinear/AntiFactor.h>
 #include <gtsam/sam/BearingRangeFactor.h>
 #include <gtsam/slam/BetweenFactor.h>
-//#include <gtsam/slam/BoundingConstraint.h>
+//#include <gtsam/constrained/BoundingConstraint.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/sam/RangeFactor.h>
 #include <gtsam/slam/StereoFactor.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianISAM.h>
 #include <gtsam/linear/GaussianMultifrontalSolver.h>

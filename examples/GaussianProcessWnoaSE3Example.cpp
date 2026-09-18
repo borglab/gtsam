@@ -52,9 +52,8 @@ State makeState(int index, double time) {
 }
 
 Velocity makeTwist(double time, double total_time) {
-  Velocity twist;
-  twist << 0.0, 0.0, -0.3 * std::sin(2.0 * M_PI * time / total_time), -1.0, 0.0,
-      0.0;
+  Velocity twist{0.0,  0.0, -0.3 * std::sin(2.0 * M_PI * time / total_time),
+                 -1.0, 0.0, 0.0};
   return twist;
 }
 
@@ -117,15 +116,14 @@ int main() {
   // Define measurement noise model and WNOA process noise covariance.
   // These define the prior belief about measurement and process uncertainties.
   Eigen::Matrix<double, kDoF, kDoF> measurement_cov =
-      1e-2 * (Eigen::Matrix<double, kDoF, 1>() << 0.1, 0.1, 0.1, 1.0, 1.0, 1.0)
-                 .finished()
-                 .asDiagonal();
+      1e-2 *
+      Eigen::Matrix<double, kDoF, 1>{0.1, 0.1, 0.1, 1.0, 1.0, 1.0}.asDiagonal();
   const auto noise_model =
       gtsam::noiseModel::Gaussian::Covariance(measurement_cov);
 
-  Eigen::Matrix<double, kDoF, 1> q_psd_diag_fixed;
-  q_psd_diag_fixed << 0.008 * 0.1, 0.008 * 0.1, 0.008 * 0.1, 0.008 * 1.0,
-      0.008 * 1.0, 0.008 * 1.0;
+  Eigen::Matrix<double, kDoF, 1> q_psd_diag_fixed{0.008 * 0.1, 0.008 * 0.1,
+                                                  0.008 * 0.1, 0.008 * 1.0,
+                                                  0.008 * 1.0, 0.008 * 1.0};
   const gtsam::Vector q_psd_diag = q_psd_diag_fixed;
 
   // Generate ground truth trajectory at full interpolation rate.
@@ -182,8 +180,7 @@ int main() {
 
   // Create initial trajectory estimate using constant velocity assumption.
   // This provides a reasonable starting point for the optimizer.
-  const Velocity initial_twist =
-      (Velocity() << 0.0, 0.0, 0.0, -1.0, 0.0, 0.0).finished();
+  const Velocity initial_twist{0.0, 0.0, 0.0, -1.0, 0.0, 0.0};
   gtsam::Values values_init;
   Pose running_pose = values_gt.at<Pose>(estimated_states_vec.front().pose);
   values_init.insert(estimated_states_vec.front().pose, running_pose);

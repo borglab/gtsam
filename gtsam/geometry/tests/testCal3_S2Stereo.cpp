@@ -104,8 +104,7 @@ TEST(Cal3_S2Stereo, Retract) {
   EXPECT_LONGS_EQUAL(Cal3_S2Stereo::Dim(), 6);
   EXPECT_LONGS_EQUAL(expected.dim(), 6);
 
-  Vector6 d;
-  d << 1, 2, 3, 4, 5, 6;
+  Vector6 d{1, 2, 3, 4, 5, 6};
   Cal3_S2Stereo actual = K.retract(d);
   CHECK(assert_equal(expected, actual, 1e-7));
   CHECK(assert_equal(d, K.localCoordinates(actual), 1e-7));

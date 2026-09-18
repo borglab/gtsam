@@ -177,6 +177,8 @@ struct GTSAM_EXPORT UpdateImpl {
                          const KeySet& keysWithRemovedFactors,
                          KeySet* unusedKeys) const {
     gttic(computeUnusedKeys);
+    // Most incremental updates remove no factors, so no key can become unused.
+    if (keysWithRemovedFactors.empty()) return;
     KeySet removedAndEmpty;
     for (Key key : keysWithRemovedFactors) {
       if (variableIndex.empty(key))

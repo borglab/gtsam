@@ -1,4 +1,4 @@
-GTSAM was made possible by the efforts of many collaborators at Georgia Tech, listed below with their current afffiliation, if they left Tech:
+GTSAM was made possible by the efforts of many collaborators at Georgia Tech, listed below. Affiliations are historical and reflect the information recorded when each entry was added:
 
 * Jeremy Aguilon, Facebook
 * Sungtae An
@@ -10,7 +10,7 @@ GTSAM was made possible by the efforts of many collaborators at Georgia Tech, li
 * Alireza Fathi, Stanford
 * Eohan George
 * Alex Hagiopol
-* Viorela Ila, Czeck Republic
+* Viorela Ila, Czech Republic
 * Vadim Indelman, the Technion
 * David Jensen, GTRI
 * Yong-Dian Jian, Baidu

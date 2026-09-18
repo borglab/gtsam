@@ -29,9 +29,9 @@ namespace scalar_lp_examples {
 
 const Key x = Symbol('x', 0);
 
-Matrix Matrix1(double value) { return (Matrix(1, 1) << value).finished(); }
+Matrix Matrix1(double value) { return Matrix{{value}}; }
 
-Vector Vector1D(double value) { return (Vector(1) << value).finished(); }
+Vector Vector1D(double value) { return Vector{{value}}; }
 
 Values Values1(double value) {
   Values values;
@@ -94,24 +94,23 @@ const Key x = Symbol('x', 1);
 
 Values Values2(double first, double second) {
   Values values;
-  values.insert(x, (Vector(2) << first, second).finished());
+  values.insert(x, Vector{{first, second}});
   return values;
 }
 
 LpProblem CreateOldSimpleLP() {
   LpProblem problem;
-  problem.addCost(
-      JacobianFactor(x, (Matrix(1, 2) << -1.0, -1.0).finished(), Vector1(0.0)));
+  problem.addCost(JacobianFactor(x, Matrix{{-1.0, -1.0}}, Vector1(0.0)));
   problem.addConstraint(LinearConstraint::GreaterEqual(
-      JacobianFactor(x, (Matrix(1, 2) << 1.0, 0.0).finished(), Vector1(0.0))));
+      JacobianFactor(x, Matrix{{1.0, 0.0}}, Vector1(0.0))));
   problem.addConstraint(LinearConstraint::GreaterEqual(
-      JacobianFactor(x, (Matrix(1, 2) << 0.0, 1.0).finished(), Vector1(0.0))));
+      JacobianFactor(x, Matrix{{0.0, 1.0}}, Vector1(0.0))));
   problem.addConstraint(LinearConstraint::LessEqual(
-      JacobianFactor(x, (Matrix(1, 2) << 1.0, 2.0).finished(), Vector1(4.0))));
+      JacobianFactor(x, Matrix{{1.0, 2.0}}, Vector1(4.0))));
   problem.addConstraint(LinearConstraint::LessEqual(
-      JacobianFactor(x, (Matrix(1, 2) << 4.0, 2.0).finished(), Vector1(12.0))));
+      JacobianFactor(x, Matrix{{4.0, 2.0}}, Vector1(12.0))));
   problem.addConstraint(LinearConstraint::LessEqual(
-      JacobianFactor(x, (Matrix(1, 2) << -1.0, 1.0).finished(), Vector1(1.0))));
+      JacobianFactor(x, Matrix{{-1.0, 1.0}}, Vector1(1.0))));
   return problem;
 }
 
@@ -120,44 +119,40 @@ TEST(ActiveSetSolver, Bounded2DLP) {
   const Values result =
       ActiveSetSolver(CreateOldSimpleLP()).optimize(Values2(0.0, 0.0));
 
-  EXPECT(assert_equal((Vector(2) << 8.0 / 3.0, 2.0 / 3.0).finished(),
-                      result.at<Vector>(x), 1e-7));
+  EXPECT(
+      assert_equal(Vector{{8.0 / 3.0, 2.0 / 3.0}}, result.at<Vector>(x), 1e-7));
 }
 
 // Verifies equality-constrained LPs project onto the equality surface.
 TEST(ActiveSetSolver, EqualityConstrainedLP) {
   LpProblem problem;
-  problem.addCost(
-      JacobianFactor(x, (Matrix(1, 2) << 1.0, 0.0).finished(), Vector1(0.0)));
+  problem.addCost(JacobianFactor(x, Matrix{{1.0, 0.0}}, Vector1(0.0)));
   problem.addConstraint(LinearConstraint::Equal(
-      JacobianFactor(x, (Matrix(1, 2) << 1.0, 1.0).finished(), Vector1(1.0))));
+      JacobianFactor(x, Matrix{{1.0, 1.0}}, Vector1(1.0))));
   problem.addConstraint(LinearConstraint::GreaterEqual(
-      JacobianFactor(x, (Matrix(1, 2) << 1.0, 0.0).finished(), Vector1(0.0))));
+      JacobianFactor(x, Matrix{{1.0, 0.0}}, Vector1(0.0))));
   problem.addConstraint(LinearConstraint::GreaterEqual(
-      JacobianFactor(x, (Matrix(1, 2) << 0.0, 1.0).finished(), Vector1(0.0))));
+      JacobianFactor(x, Matrix{{0.0, 1.0}}, Vector1(0.0))));
 
   const Values result = ActiveSetSolver(problem).optimize(Values2(0.5, 0.5));
 
-  EXPECT(assert_equal((Vector(2) << 0.0, 1.0).finished(), result.at<Vector>(x),
-                      1e-7));
+  EXPECT(assert_equal(Vector{{0.0, 1.0}}, result.at<Vector>(x), 1e-7));
 }
 
 // Verifies equality rows are handled by sparse phase-I initialization.
 TEST(ActiveSetSolver, EqualityConstrainedNoInitialLP) {
   LpProblem problem;
-  problem.addCost(
-      JacobianFactor(x, (Matrix(1, 2) << 1.0, 0.0).finished(), Vector1(0.0)));
+  problem.addCost(JacobianFactor(x, Matrix{{1.0, 0.0}}, Vector1(0.0)));
   problem.addConstraint(LinearConstraint::Equal(
-      JacobianFactor(x, (Matrix(1, 2) << 1.0, 1.0).finished(), Vector1(1.0))));
+      JacobianFactor(x, Matrix{{1.0, 1.0}}, Vector1(1.0))));
   problem.addConstraint(LinearConstraint::GreaterEqual(
-      JacobianFactor(x, (Matrix(1, 2) << 1.0, 0.0).finished(), Vector1(0.0))));
+      JacobianFactor(x, Matrix{{1.0, 0.0}}, Vector1(0.0))));
   problem.addConstraint(LinearConstraint::GreaterEqual(
-      JacobianFactor(x, (Matrix(1, 2) << 0.0, 1.0).finished(), Vector1(0.0))));
+      JacobianFactor(x, Matrix{{0.0, 1.0}}, Vector1(0.0))));
 
   const Values result = problem.optimize();
 
-  EXPECT(assert_equal((Vector(2) << 0.0, 1.0).finished(), result.at<Vector>(x),
-                      1e-7));
+  EXPECT(assert_equal(Vector{{0.0, 1.0}}, result.at<Vector>(x), 1e-7));
 }
 
 // Verifies inequalities can enter and leave the active set during LP solve.
@@ -165,8 +160,8 @@ TEST(ActiveSetSolver, ActiveInequalityEnteringLeavingLP) {
   const auto [result, state] =
       ActiveSetSolver(CreateOldSimpleLP()).optimizeWithState(Values2(0.0, 0.0));
 
-  EXPECT(assert_equal((Vector(2) << 8.0 / 3.0, 2.0 / 3.0).finished(),
-                      result.at<Vector>(x), 1e-7));
+  EXPECT(
+      assert_equal(Vector{{8.0 / 3.0, 2.0 / 3.0}}, result.at<Vector>(x), 1e-7));
   CHECK(state.iterations > 1);
   CHECK_EQUAL(5, state.inequalityMultipliers.size());
 }

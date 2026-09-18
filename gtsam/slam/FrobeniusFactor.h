@@ -13,6 +13,8 @@
  * @file   FrobeniusFactor.h
  * @date   March 2019
  * @author Frank Dellaert
+ * @author Avinash Subramanian
+ * @author Frederike Dümbgen
  * @brief  Various factors that minimize some Frobenius norm
  */
 
@@ -20,11 +22,13 @@
 
 #include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/constrained/QpCost.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/SOn.h>
-#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 
 #include <memory>
 #include <stdexcept>
@@ -46,7 +50,7 @@ namespace gtsam {
  * is false, an exception is thrown.
  *
  * @param model The input noise model (possibly robust).
- * @param dimension The desired dimension for the isotropic model.
+ * @param n The desired dimension for the isotropic model.
  * @param defaultToUnit If true, fallback to unit if conversion is not possible.
  * @throws std::runtime_error if model not isotropic and defaultToUnit =false.
  * @return An isotropic (possibly robust) noise model.
@@ -60,8 +64,8 @@ GTSAM_EXPORT SharedNoiseModel ConvertNoiseModel(const SharedNoiseModel& model,
  *
  * If the model is already of dimension Dim, it is returned as-is.
  * Otherwise, ConvertNoiseModel is called to convert it.
- * Asserts that the model's dimension matches T's expected dimension before
- * conversion.
+ * Throws if the model's dimension does not match T's expected dimension
+ * before conversion.
  *
  * @tparam T The type whose dimension is checked.
  * @tparam Dim The required dimension.
@@ -83,16 +87,25 @@ inline SharedNoiseModel ConvertModel(const SharedNoiseModel& model) {
   return ConvertNoiseModel(model, Dim);
 }
 
+template <class T>
+using FrobeniusErrorVector = Eigen::Matrix<
+    double, T::LieAlgebra::RowsAtCompileTime * T::LieAlgebra::RowsAtCompileTime,
+    1>;
+
 /**
- * FrobeniusPrior calculates the Frobenius norm between a given matrix and an
- * element of SO(3) or SO(4).
+ * FrobeniusPrior calculates the Frobenius norm between a given matrix and a
+ * fixed-size matrix Lie group element.
  */
 template <class T>
 class FrobeniusPrior : public NoiseModelFactorN<T> {
   GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<T>);
   inline constexpr static auto N = T::LieAlgebra::RowsAtCompileTime;
   inline constexpr static auto Dim = N * N;
-  using MatrixNN = Eigen::Matrix<double, N, N>;
+
+ public:
+  using MatrixN = Eigen::Matrix<double, N, N>;
+
+ private:
   Eigen::Matrix<double, Dim, 1> vecM_;  ///< vectorized matrix to approximate
 
  public:
@@ -100,10 +113,15 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
   using NoiseModelFactor1<T>::evaluateError;
 
   /// Constructor
-  FrobeniusPrior(Key j, const MatrixNN& M,
+  FrobeniusPrior(Key j, const MatrixN& M,
                  const SharedNoiseModel& model = nullptr)
       : NoiseModelFactorN<T>(ConvertModel<T, Dim>(model), j) {
     vecM_ << Eigen::Map<const Matrix>(M.data(), Dim, 1);
+  }
+
+  /// Return the fixed ambient matrix targeted by this prior.
+  MatrixN priorMatrix() const {
+    return Eigen::Map<const MatrixN>(vecM_.data());
   }
 
   /// Error is just Frobenius norm between T element and vectorized matrix M.
@@ -115,9 +133,10 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
   /**
    * Add this Frobenius prior to the QCQP graph.
    *
-   * D=1 supports hard constrained Rot2 priors in the exact homogeneous lift.
-   * Matrix-form priors are not lowered because a fixed lifted target breaks
-   * the right-orthogonal gauge required by the Burer--Monteiro formulation.
+   * D=1 supports hard constrained Rot2, Rot3, Pose2, and Pose3 priors in their
+   * exact homogeneous lifts. Matrix-form priors are not lowered because a
+   * fixed lifted target breaks the right-orthogonal gauge required by the
+   * Burer--Monteiro formulation.
    */
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
@@ -136,8 +155,8 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
  private:
   /// D=1 constrained-noise prior in lifted vector form.
   /// The stored measurement is vecM_ = vec(M), where M is the matrix passed to
-  /// the FrobeniusPrior constructor. The lifted variable for the current value
-  /// is x = [1, vec(R)]^T, where R is the matrix represented by this key.
+  /// the FrobeniusPrior constructor. Pose lifts retain only the variable top
+  /// rows of M; Rot3 retains the full matrix and compact Rot2 retains c,s.
   void qcqpFactorsForVec(NonlinearFactorGraph* costs,
                          NonlinearEqualityConstraints* constraints) const {
     if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
@@ -146,22 +165,40 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
       throw std::runtime_error(
           "FrobeniusPrior::qcqpFactors requires QCQP variable traits for this "
           "type and column dimension 1.");
+    } else if constexpr (!(std::is_same_v<T, Rot2> || std::is_same_v<T, Rot3> ||
+                           std::is_same_v<T, Pose2> ||
+                           std::is_same_v<T, Pose3>)) {
+      (void)costs;
+      (void)constraints;
+      throw std::runtime_error(
+          "FrobeniusPrior::qcqpFactors D=1 is implemented only for Rot2, "
+          "Rot3, Pose2, and Pose3.");
     } else {
       (void)costs;
       if (this->noiseModel_->isConstrained()) {
         InsertQcqpConstraints<T, 1>(this->key(), constraints);
 
-        constexpr int LiftedDim = Dim + 1;
+        constexpr int LiftedDim = traits<T>::QcqpVectorDim;
         Vector target = Vector::Zero(LiftedDim);
         target(0) = 1.0;
-        target.tail(Dim) = vecM_;
+        if constexpr (std::is_same_v<T, Rot2>) {
+          // vec(R)=[c,s,-s,c], so the compact lift retains its first column.
+          target.segment<2>(1) = vecM_.template head<2>();
+        } else {
+          static_assert((LiftedDim - 1) % N == 0);
+          constexpr int M = (LiftedDim - 1) / N;
+          // Build the homogeneous target while omitting fixed pose-matrix rows.
+          for (int column = 0; column < N; ++column) {
+            target.segment<M>(1 + column * M) =
+                vecM_.template segment<M>(column * N);
+          }
+        }
 
-        constraints->push_back(LinearConstraint::Equal(
-                                   JacobianFactor(
-                                       this->key(),
-                                       Matrix::Identity(LiftedDim, LiftedDim),
-                                       target))
-                                   .createEqualityFactor());
+        constraints->push_back(
+            LinearConstraint::Equal(
+                JacobianFactor(this->key(),
+                               Matrix::Identity(LiftedDim, LiftedDim), target))
+                .createEqualityFactor());
       } else {
         throw std::runtime_error(
             "FrobeniusPrior::qcqpFactors D=1 non-constrained noise is not yet "
@@ -188,27 +225,30 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
 };
 
 /**
- * FrobeniusFactor calculates the Frobenius norm between rotation matrices.
- * The template argument can be any fixed-size SO<N>.
+ * FrobeniusFactor calculates the Frobenius norm between matrix Lie group
+ * elements.
  */
 template <class T>
-class FrobeniusFactor : public NoiseModelFactorN<T, T> {
+class FrobeniusFactor
+    : public NoiseModelFactorT<FrobeniusErrorVector<T>, T, T> {
   GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<T>);
   inline constexpr static auto N = T::LieAlgebra::RowsAtCompileTime;
   inline constexpr static auto Dim = N * N;
+  using Base = NoiseModelFactorT<FrobeniusErrorVector<T>, T, T>;
+  using VectorD = FrobeniusErrorVector<T>;
 
  public:
   // Provide access to the Matrix& version of evaluateError:
-  using NoiseModelFactor2<T, T>::evaluateError;
+  using Base::evaluateError;
 
   /// Constructor
   FrobeniusFactor(Key j1, Key j2, const SharedNoiseModel& model = nullptr)
-      : NoiseModelFactorN<T, T>(ConvertModel<T, Dim>(model), j1, j2) {}
+      : Base(ConvertModel<T, Dim>(model), j1, j2) {}
 
-  /// Error is just Frobenius norm between rotation matrices.
-  Vector evaluateError(const T& T1, const T& T2, OptionalMatrixType H1,
-                       OptionalMatrixType H2) const override {
-    Vector error = traits<T>::Vec(T2, H2) - traits<T>::Vec(T1, H1);
+  /// Error is the vectorized matrix difference between the two group elements.
+  VectorD evaluateError(const T& T1, const T& T2, OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
+    VectorD error = traits<T>::Vec(T2, H2) - traits<T>::Vec(T1, H1);
     if (H1) *H1 = -*H1;
     return error;
   }
@@ -216,9 +256,9 @@ class FrobeniusFactor : public NoiseModelFactorN<T, T> {
 
 /**
  * FrobeniusBetweenFactorNL is a BetweenFactor that evaluates the Frobenius
- * norm of the rotation error between measured and predicted (rather than the
+ * norm of the matrix error between measured and predicted (rather than the
  * Logmap of the error). This factor is only defined for fixed-dimension
- * types, that are matrix Lie groups.
+ * matrix Lie groups.
  *
  * This version is called NL, because it minimizes |inv(T2)*T1*T12_ - I|_F
  * as opposed to the (historically older) FrobeniusBetweenFactor, that
@@ -226,30 +266,34 @@ class FrobeniusFactor : public NoiseModelFactorN<T, T> {
  * ||T2 - T1*T12_||_F. This only holds for certain groups, e.g., not Sim(3).
  */
 template <class T>
-class FrobeniusBetweenFactorNL : public NoiseModelFactorN<T, T> {
+class FrobeniusBetweenFactorNL
+    : public NoiseModelFactorT<FrobeniusErrorVector<T>, T, T> {
   GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<T>);
   inline constexpr static auto N = T::LieAlgebra::RowsAtCompileTime;
   inline constexpr static auto Dim = N * N;
   static_assert(N > 0, "The Lie algebra dimension N must be greater than 0.");
 
  protected:
-  T T12_;  ///< measured rotation between T1 and T2
+  T T12_;  ///< measured transformation between T1 and T2
 
   using MatrixN = Eigen::Matrix<double, N, N>;
   using VectorD = Eigen::Matrix<double, Dim, 1>;
+  using Base = NoiseModelFactorT<VectorD, T, T>;
 
  public:
   // Provide access to the Matrix& version of evaluateError:
-  using NoiseModelFactor2<T, T>::evaluateError;
+  using Base::evaluateError;
 
   /// @name Constructor
   /// @{
 
-  /// Construct from two keys and measured rotation
+  /// Construct from two keys and a measured transformation.
   FrobeniusBetweenFactorNL(Key j1, Key j2, const T& T12,
                            const SharedNoiseModel& model = nullptr)
-      : NoiseModelFactorN<T, T>(ConvertModel<T, Dim>(model), j1, j2),
-        T12_(T12) {}
+      : Base(ConvertModel<T, Dim>(model), j1, j2), T12_(T12) {}
+
+  /// Return the measured transformation from the first key to the second.
+  const T& measured() const { return T12_; }
 
   /// @}
   /// @name Testable
@@ -268,8 +312,8 @@ class FrobeniusBetweenFactorNL : public NoiseModelFactorN<T, T> {
   /// assert equality up to a tolerance
   bool equals(const NonlinearFactor& expected,
               double tol = 1e-9) const override {
-    auto e = dynamic_cast<const FrobeniusBetweenFactorNL*>(&expected);
-    return e != nullptr && NoiseModelFactorN<T, T>::equals(*e, tol) &&
+    const auto* e = dynamic_cast<const FrobeniusBetweenFactorNL*>(&expected);
+    return e != nullptr && Base::equals(*e, tol) &&
            traits<T>::Equals(this->T12_, e->T12_, tol);
   }
 
@@ -278,28 +322,37 @@ class FrobeniusBetweenFactorNL : public NoiseModelFactorN<T, T> {
   /// @{
 
   /// Error is |inv(T2)*T1*T12_ - I|_F.
-  Vector evaluateError(const T& T1, const T& T2, OptionalMatrixType H1,
-                       OptionalMatrixType H2) const override {
-    // predict T2*T1
+  VectorD evaluateError(const T& T1, const T& T2, OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
+    const bool computeJacobians = H1 || H2;
+
+    // Compute the predicted inverse-relative transform inv(T2) * T1.
     typename T::Jacobian H_T21_T2;
-    const T hatT21 = traits<T>::Between(T2, T1, H1 ? &H_T21_T2 : nullptr);
+    const T hatT21 =
+        traits<T>::Between(T2, T1, computeJacobians ? &H_T21_T2 : nullptr);
 
-    // Calculate \hat T21 * T12_, which is predicted to be I_NxN
+    // Compose with the measurement; the result should be identity.
     typename T::Jacobian H_pred_hat = T::Jacobian::Zero();
-    const T pred = traits<T>::Compose(hatT21, T12_, H1 ? &H_pred_hat : nullptr);
+    const T pred = traits<T>::Compose(hatT21, T12_,
+                                      computeJacobians ? &H_pred_hat : nullptr);
 
-    // Move to constructor
-    const MatrixN I = MatrixN::Identity();
-    const VectorD vecI = Eigen::Map<const VectorD>(I.data());
+    // Cache the fixed-size vectorization of the identity matrix.
+    static const VectorD vecI = [] {
+      const MatrixN I = MatrixN::Identity();
+      return VectorD(Eigen::Map<const VectorD>(I.data()));
+    }();
 
-    // Calculate error
+    // Vectorize the residual and retain its derivative for the chain rule.
     Eigen::Matrix<double, Dim, T::dimension> H_vec_pred;
-    Vector error = traits<T>::Vec(pred, H1 ? &H_vec_pred : nullptr) - vecI;
+    VectorD error =
+        traits<T>::Vec(pred, computeJacobians ? &H_vec_pred : nullptr) - vecI;
 
-    // Do chain rule
-    const auto H_error_hat21 = H_vec_pred * H_pred_hat;
-    if (H1) *H1 = H_error_hat21;  // H_pred_T1 is identity
-    if (H2) *H2 = H_error_hat21 * H_T21_T2;
+    // Propagate derivatives through Between and Compose.
+    if (computeJacobians) {
+      const auto H_error_hat21 = H_vec_pred * H_pred_hat;
+      if (H1) *H1 = H_error_hat21;  // H_pred_T1 is identity
+      if (H2) *H2 = H_error_hat21 * H_T21_T2;
+    }
     return error;
   }
   /// @}
@@ -313,26 +366,29 @@ template <class T>
 class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   inline constexpr static auto N = T::LieAlgebra::RowsAtCompileTime;
   inline constexpr static auto Dim = N * N;
+  using Base = FrobeniusBetweenFactorNL<T>;
+  using MatrixN = typename Base::MatrixN;
+  using VectorD = FrobeniusErrorVector<T>;
 
   typename T::Jacobian T2hat_H_T1_;  ///< fixed derivative of T2hat wrpt T1
 
  public:
   // Provide access to the Matrix& version of evaluateError:
-  using NoiseModelFactor2<T, T>::evaluateError;
+  using Base::evaluateError;
 
-  /// Construct from two keys and measured rotation
+  /// Construct from two keys and a measured transformation.
   FrobeniusBetweenFactor(Key j1, Key j2, const T& T12,
                          const SharedNoiseModel& model = nullptr)
       : FrobeniusBetweenFactorNL<T>(j1, j2, T12, model),
         T2hat_H_T1_(traits<T>::AdjointMap(traits<T>::Inverse(T12))) {}
 
   /// Error is Frobenius norm between T1*T12 and T2.
-  Vector evaluateError(const T& T1, const T& T2, OptionalMatrixType H1,
-                       OptionalMatrixType H2) const override {
+  VectorD evaluateError(const T& T1, const T& T2, OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
     const T T2hat = traits<T>::Compose(T1, this->T12_);
     Eigen::Matrix<double, Dim, T::dimension> vec_H_T2hat;
-    Vector error = traits<T>::Vec(T2, H2) -
-                   traits<T>::Vec(T2hat, H1 ? &vec_H_T2hat : nullptr);
+    VectorD error = traits<T>::Vec(T2, H2) -
+                    traits<T>::Vec(T2hat, H1 ? &vec_H_T2hat : nullptr);
     if (H1) *H1 = -vec_H_T2hat * T2hat_H_T1_;
     return error;
   }
@@ -340,8 +396,9 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   /**
    * Add this Frobenius between factor as a QCQP cost when traits exist.
    *
-   * D=1 takes the exact homogeneous Rot2 form. D>=N takes the N-by-D
-   * row-Stiefel form, where N is the intrinsic rotation-matrix dimension.
+   * D=1 takes the exact homogeneous Rot2, Rot3, Pose2, or Pose3 form. For Rot2
+   * and Rot3, D>=N takes the N-by-D row-Stiefel form, where N is the intrinsic
+   * rotation-matrix dimension.
    */
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
@@ -358,20 +415,25 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   }
 
  private:
-  static Matrix RightProductMatrix(const Matrix& right) {
-    const Matrix I = Matrix::Identity(N, N);
-    Matrix result = Matrix::Zero(Dim, Dim);
-    for (int column = 0; column < N; ++column) {
-      for (int sourceColumn = 0; sourceColumn < N; ++sourceColumn) {
-        result.block(column * N, sourceColumn * N, N, N) =
-            right(sourceColumn, column) * I;
+  /// Compute a Kronecker product without depending on unsupported Eigen
+  /// modules.
+  static Matrix internalKroneckerProduct(const Matrix& left,
+                                         const Matrix& right) {
+    const DenseIndex resultRows = left.rows() * right.rows();
+    const DenseIndex resultColumns = left.cols() * right.cols();
+    Matrix result = Matrix::Zero(resultRows, resultColumns);
+
+    for (DenseIndex row = 0; row < left.rows(); ++row) {
+      for (DenseIndex column = 0; column < left.cols(); ++column) {
+        result.block(row * right.rows(), column * right.cols(), right.rows(),
+                     right.cols()) = left(row, column) * right;
       }
     }
     return result;
   }
 
-  /// Vec(R) form (D=1): build the full (N*N)x1 vec(R) cost first, then
-  /// embed its quadratic matrix in the lifted coordinate layout.
+  /// D=1 retained-row vector form: build the full Frobenius residual for
+  /// whitening, then embed its quadratic matrix in the lifted coordinates.
   void qcqpFactorsForVec(NonlinearFactorGraph* costs,
                          NonlinearEqualityConstraints* constraints) const {
     if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
@@ -380,12 +442,14 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       throw std::runtime_error(
           "FrobeniusBetweenFactor::qcqpFactors requires QCQP variable traits "
           "for this type and column dimension 1.");
-    } else if constexpr (!std::is_same_v<T, Rot2>) {
+    } else if constexpr (!(std::is_same_v<T, Rot2> || std::is_same_v<T, Rot3> ||
+                           std::is_same_v<T, Pose2> ||
+                           std::is_same_v<T, Pose3>)) {
       (void)costs;
       (void)constraints;
       throw std::runtime_error(
-          "FrobeniusBetweenFactor::qcqpFactors D=1 lifted Q embedding is "
-          "currently implemented only for Rot2.");
+          "FrobeniusBetweenFactor::qcqpFactors D=1 is implemented only for "
+          "Rot2, Rot3, Pose2, and Pose3.");
     } else {
       if (!costs) {
         throw std::invalid_argument(
@@ -398,27 +462,48 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
             "non-robust/non-hard quadratic noise model");
       }
 
-      const Matrix measurement = this->T12_.matrix();
-      const Matrix A = RightProductMatrix(measurement);
+      constexpr int LiftedDim = traits<T>::QcqpVectorDim;
+      Matrix Q_trunc_hom;
+      if constexpr (std::is_same_v<T, Rot2>) {
+        // vec(R)=L[c,s]' exactly. Since SO(2) is abelian,
+        // vec(R2-R1*M)=L(q2-M*q1).
+        Matrix L(4, 2);
+        L << 1.0, 0.0, 0.0, 1.0, 0.0, -1.0, 1.0, 0.0;
+        Matrix fullB = Matrix::Zero(4, 2 * LiftedDim);
+        fullB.block<4, 2>(0, 1) = -L * this->T12_.matrix();
+        fullB.block<4, 2>(0, LiftedDim + 1) = L;
+        const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
+        Q_trunc_hom = whitenedB.transpose() * whitenedB;
+      } else {
+        constexpr int MN = LiftedDim - 1;
+        static_assert(MN % N == 0);
+        constexpr int M = MN / N;
+        using MatrixM = Eigen::Matrix<double, M, M>;
 
-      Matrix B = Matrix::Zero(Dim, 2 * Dim);
-      B.block(0, 0, Dim, Dim) = -A;
-      B.block(0, Dim, Dim, Dim) =
-          Matrix::Identity(Dim, Dim);
+        const MatrixN measurement = this->T12_.matrix();
+        const MatrixM I_M = MatrixM::Identity();
+        // Column-major vec(XM) = (M.transpose() kron I) vec(X).
+        const Matrix A = internalKroneckerProduct(measurement.transpose(), I_M);
 
-      const Matrix whitenedB = this->noiseModel_->Whiten(B);
-      const Matrix Q = whitenedB.transpose() * whitenedB;
+        Matrix B = Matrix::Zero(MN, 2 * MN);
+        B.block<MN, MN>(0, 0) = -A;
+        B.block<MN, MN>(0, MN).setIdentity();
 
-      // Homogenize and truncate according to the Rot2 lift.
-      constexpr int LiftedDim = Dim + 1;  // First entry is homogeneous.
-      Matrix Q_trunc_hom = Matrix::Zero(2 * LiftedDim, 2 * LiftedDim);
-      Q_trunc_hom.block(1, 1, Dim, Dim) = Q.block(0, 0, Dim, Dim);
-      Q_trunc_hom.block(1, LiftedDim + 1, Dim, Dim) =
-          Q.block(0, Dim, Dim, Dim);
-      Q_trunc_hom.block(LiftedDim + 1, 1, Dim, Dim) =
-          Q.block(Dim, 0, Dim, Dim);
-      Q_trunc_hom.block(LiftedDim + 1, LiftedDim + 1, Dim, Dim) =
-          Q.block(Dim, Dim, Dim, Dim);
+        Matrix fullB = Matrix::Zero(Dim, 2 * MN);
+        for (int column = 0; column < N; ++column) {
+          fullB.block<M, 2 * MN>(column * N, 0) =
+              B.block<M, 2 * MN>(column * M, 0);
+        }
+
+        const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
+        const Matrix Q = whitenedB.transpose() * whitenedB;
+        Q_trunc_hom = Matrix::Zero(2 * LiftedDim, 2 * LiftedDim);
+        Q_trunc_hom.block<MN, MN>(1, 1) = Q.block<MN, MN>(0, 0);
+        Q_trunc_hom.block<MN, MN>(1, LiftedDim + 1) = Q.block<MN, MN>(0, MN);
+        Q_trunc_hom.block<MN, MN>(LiftedDim + 1, 1) = Q.block<MN, MN>(MN, 0);
+        Q_trunc_hom.block<MN, MN>(LiftedDim + 1, LiftedDim + 1) =
+            Q.block<MN, MN>(MN, MN);
+      }
 
       InsertQcqpConstraints<T, 1>(this->key1(), constraints);
       InsertQcqpConstraints<T, 1>(this->key2(), constraints);
@@ -468,18 +553,212 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       InsertQcqpConstraints<T, N>(this->key1(), constraints);
       InsertQcqpConstraints<T, N>(this->key2(), constraints);
 
-      const Matrix measurement = this->T12_.matrix();
-      const Matrix I = Matrix::Identity(N, N);
+      const MatrixN measurement = this->T12_.matrix();
+      const MatrixN I = MatrixN::Identity();
       const double weight = 1.0 / (isotropic->sigma() * isotropic->sigma());
 
+      // Build B = [-M' I] and its isotropically weighted Hessian.
       Matrix B = Matrix::Zero(N, 2 * N);
-      B.block(0, 0, N, N) = -measurement.transpose();
-      B.block(0, N, N, N) = I;
+      B.block<N, N>(0, 0) = -measurement.transpose();
+      B.block<N, N>(0, N) = I;
 
       const Matrix Q = weight * B.transpose() * B;
       const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{N, N}, Q);
       costs->push_back(std::make_shared<QpCost>(
           KeyVector{this->key1(), this->key2()}, blockQ, columnDimension));
+    }
+  }
+};
+
+/**
+ * FrobeniusLeftBetweenFactor uses ||iTw - iTj*jTw||_F, where measured iTj
+ * maps frame j into frame i.
+ *
+ * See `gtsam/slam/doc/FrobeniusFactor.ipynb` for the factor family and its use
+ * with inverse-state certifiable localization.
+ */
+template <class T>
+class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
+  inline constexpr static auto N = T::LieAlgebra::RowsAtCompileTime;
+  inline constexpr static auto Dim = N * N;
+  using Base = FrobeniusBetweenFactorNL<T>;
+  using This = FrobeniusLeftBetweenFactor<T>;
+  using MatrixN = typename Base::MatrixN;
+  using VectorD = FrobeniusErrorVector<T>;
+
+ public:
+  // Provide access to the Matrix& version of evaluateError:
+  using Base::evaluateError;
+
+  /**
+   * Construct from two keys and a measured left-composed transformation.
+   * @param iTj Measured transform from frame j to frame i.
+   */
+  FrobeniusLeftBetweenFactor(Key j1, Key j2, const T& iTj,
+                             const SharedNoiseModel& model = nullptr)
+      : Base(j1, j2, iTj, ConvertLeftModel(model)) {}
+
+  NonlinearFactor::shared_ptr clone() const override {
+    return std::make_shared<This>(*this);
+  }
+
+  /// Print the factor and its measured transformation.
+  void print(const std::string& s, const KeyFormatter& keyFormatter =
+                                       DefaultKeyFormatter) const override {
+    std::cout << s << "FrobeniusLeftBetweenFactor<"
+              << demangle(typeid(T).name()) << ">("
+              << keyFormatter(this->key1()) << "," << keyFormatter(this->key2())
+              << ")\n";
+    traits<T>::Print(this->T12_, "  measured iTj: ");
+    this->noiseModel_->print("  noise model: ");
+  }
+
+  /// Check equality with another left-composed factor.
+  bool equals(const NonlinearFactor& expected,
+              double tol = 1e-9) const override {
+    const auto* e = dynamic_cast<const FrobeniusLeftBetweenFactor*>(&expected);
+    return e != nullptr && Base::equals(*e, tol);
+  }
+
+  /**
+   * Evaluate iTw - iTj*jTw.
+   * @param iTw Transform from the world frame to frame i.
+   * @param jTw Transform from the world frame to frame j.
+   */
+  VectorD evaluateError(const T& iTw, const T& jTw, OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
+    typename T::Jacobian predicted_H_jTw;
+    const T predicted_iTw = traits<T>::Compose(this->T12_, jTw, {},
+                                               H2 ? &predicted_H_jTw : nullptr);
+
+    Eigen::Matrix<double, Dim, T::dimension> vec_H_predicted;
+    VectorD error =
+        traits<T>::Vec(iTw, H1) -
+        traits<T>::Vec(predicted_iTw, H2 ? &vec_H_predicted : nullptr);
+    if (H2) *H2 = -vec_H_predicted * predicted_H_jTw;
+    return error;
+  }
+
+  /**
+   * Add the exact D=1 homogeneous left-composed between cost to a QCQP.
+   */
+  void qcqpFactors(NonlinearFactorGraph* costs,
+                   NonlinearEqualityConstraints* constraints,
+                   size_t columnDimension = 1) const override {
+    if (columnDimension != 1) {
+      throw std::invalid_argument(
+          "FrobeniusLeftBetweenFactor::qcqpFactors only supports column "
+          "dimension 1");
+    }
+    qcqpFactorsForVec(costs, constraints);
+  }
+
+ private:
+  static SharedNoiseModel ConvertLeftModel(const SharedNoiseModel& model) {
+    if (!model || model->dim() != T::dimension) return model;
+
+    try {
+      return ConvertNoiseModel(model, Dim, false);
+    } catch (const std::runtime_error&) {
+      throw std::invalid_argument(
+          "FrobeniusLeftBetweenFactor cannot convert an anisotropic "
+          "manifold-dimensional noise model to the ambient residual");
+    }
+  }
+
+  /// Compute a Kronecker product without unsupported Eigen modules.
+  static Matrix internalKroneckerProduct(const Matrix& left,
+                                         const Matrix& right) {
+    const DenseIndex resultRows = left.rows() * right.rows();
+    const DenseIndex resultColumns = left.cols() * right.cols();
+    Matrix result = Matrix::Zero(resultRows, resultColumns);
+
+    for (DenseIndex row = 0; row < left.rows(); ++row) {
+      for (DenseIndex column = 0; column < left.cols(); ++column) {
+        result.block(row * right.rows(), column * right.cols(), right.rows(),
+                     right.cols()) = left(row, column) * right;
+      }
+    }
+    return result;
+  }
+
+  /// Build the exact retained-row D=1 homogeneous QCQP cost.
+  void qcqpFactorsForVec(NonlinearFactorGraph* costs,
+                         NonlinearEqualityConstraints* constraints) const {
+    if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
+      (void)costs;
+      (void)constraints;
+      throw std::runtime_error(
+          "FrobeniusLeftBetweenFactor::qcqpFactors requires QCQP variable "
+          "traits for this type and column dimension 1.");
+    } else if constexpr (!(std::is_same_v<T, Rot2> || std::is_same_v<T, Rot3> ||
+                           std::is_same_v<T, Pose2> ||
+                           std::is_same_v<T, Pose3>)) {
+      (void)costs;
+      (void)constraints;
+      throw std::runtime_error(
+          "FrobeniusLeftBetweenFactor::qcqpFactors D=1 is implemented only "
+          "for Rot2, Rot3, Pose2, and Pose3.");
+    } else {
+      if (!costs) {
+        throw std::invalid_argument(
+            "FrobeniusLeftBetweenFactor::qcqpFactors costs is null");
+      }
+      if (std::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_) ||
+          this->noiseModel_->isConstrained()) {
+        throw std::runtime_error(
+            "FrobeniusLeftBetweenFactor::qcqpFactors requires a "
+            "non-robust/non-hard quadratic noise model");
+      }
+
+      constexpr int LiftedDim = traits<T>::QcqpVectorDim;
+      Matrix Q;
+      if constexpr (std::is_same_v<T, Rot2>) {
+        Matrix L(4, 2);
+        L << 1.0, 0.0, 0.0, 1.0, 0.0, -1.0, 1.0, 0.0;
+        Matrix fullB = Matrix::Zero(4, 2 * LiftedDim);
+        fullB.block<4, 2>(0, 1) = L;
+        fullB.block<4, 2>(0, LiftedDim + 1) = -L * this->T12_.matrix();
+        const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
+        Q = whitenedB.transpose() * whitenedB;
+      } else {
+        constexpr int MN = LiftedDim - 1;
+        static_assert(MN % N == 0);
+        constexpr int M = MN / N;
+        using MatrixM = Eigen::Matrix<double, M, M>;
+
+        const MatrixN iTj = this->T12_.matrix();
+        const MatrixM linearPart = iTj.template topLeftCorner<M, M>();
+        const Matrix leftAction =
+            internalKroneckerProduct(MatrixN::Identity(), linearPart);
+
+        Vector offset = Vector::Zero(MN);
+        if constexpr (M < N) {
+          offset.segment((N - 1) * M, M) = iTj.block(0, N - 1, M, 1);
+        }
+
+        Matrix retainedB = Matrix::Zero(MN, 2 * LiftedDim);
+        retainedB.block(0, 1, MN, MN).setIdentity();
+        retainedB.col(LiftedDim) = -offset;
+        retainedB.block(0, LiftedDim + 1, MN, MN) = -leftAction;
+
+        Matrix fullB = Matrix::Zero(Dim, 2 * LiftedDim);
+        for (int column = 0; column < N; ++column) {
+          fullB.block(column * N, 0, M, 2 * LiftedDim) =
+              retainedB.block(column * M, 0, M, 2 * LiftedDim);
+        }
+
+        const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
+        Q = whitenedB.transpose() * whitenedB;
+      }
+
+      InsertQcqpConstraints<T, 1>(this->key1(), constraints);
+      InsertQcqpConstraints<T, 1>(this->key2(), constraints);
+
+      const SymmetricBlockMatrix blockQ(
+          std::vector<DenseIndex>{LiftedDim, LiftedDim}, Q);
+      costs->push_back(std::make_shared<QpCost>(
+          KeyVector{this->key1(), this->key2()}, blockQ));
     }
   }
 };

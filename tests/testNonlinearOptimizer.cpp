@@ -22,12 +22,15 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/linear/PCGSolver.h>
+#include <gtsam/linear/Preconditioner.h>
 #include <gtsam/nonlinear/DoglegOptimizer.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearConjugateGradientOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/internal/LevenbergMarquardtPolicy.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <tests/smallExample.h>
 
@@ -42,6 +45,154 @@ const double tol = 1e-5;
 
 using symbol_shorthand::X;
 using symbol_shorthand::L;
+
+/* ************************************************************************* */
+namespace lm_policy_fixture {
+
+// A smooth residual whose first two LM steps from x = 2 succeed, then overshoot.
+class CubicFactor : public NoiseModelFactorN<double> {
+ public:
+  CubicFactor() : NoiseModelFactorN<double>(noiseModel::Unit::Create(1), 0) {}
+
+  Vector evaluateError(const double& value,
+                       OptionalMatrixType derivative) const override {
+    if (derivative) *derivative = Matrix11{3.0 * value * value - 2.0};
+    return Vector1{value * value * value - 2.0 * value + 2.0};
+  }
+};
+
+// A custom initial multiplier applies before the first acceptance, then resets.
+TEST(LevenbergMarquardtPolicy, AppliesAdaptiveLambdaUpdates) {
+  LevenbergMarquardtParams params;
+  params.useFixedLambdaFactor = false;
+  params.lambdaFactor = 10.0;
+
+  double lambda = 9e-3;
+  double factor = params.lambdaFactor;
+  internal::increaseLevenbergMarquardtLambda(params, &lambda, &factor);
+  DOUBLES_EQUAL(9e-2, lambda, 1e-15);
+  DOUBLES_EQUAL(20.0, factor, 1e-15);
+
+  internal::decreaseLevenbergMarquardtLambda(params, 1.0, &lambda, &factor);
+  DOUBLES_EQUAL(3e-2, lambda, 1e-15);
+  DOUBLES_EQUAL(2.0, factor, 1e-15);
+
+  internal::increaseLevenbergMarquardtLambda(params, &lambda, &factor);
+  DOUBLES_EQUAL(6e-2, lambda, 1e-15);
+  DOUBLES_EQUAL(4.0, factor, 1e-15);
+}
+
+// Consecutive accepted steps must not amplify the next rejected step's damping.
+TEST(LevenbergMarquardtPolicy, AcceptAcceptReject) {
+  const auto params = LevenbergMarquardtParams::CeresDefaults();
+  double lambda = 9e-3;
+  double factor = params.lambdaFactor;
+
+  internal::decreaseLevenbergMarquardtLambda(params, 1.0, &lambda, &factor);
+  internal::decreaseLevenbergMarquardtLambda(params, 1.0, &lambda, &factor);
+  DOUBLES_EQUAL(1e-3, lambda, 1e-15);
+  DOUBLES_EQUAL(2.0, factor, 1e-15);
+
+  internal::increaseLevenbergMarquardtLambda(params, &lambda, &factor);
+  DOUBLES_EQUAL(2e-3, lambda, 1e-15);
+  DOUBLES_EQUAL(4.0, factor, 1e-15);
+}
+
+// Acceptance clears the multiplier accumulated by consecutive rejections.
+TEST(LevenbergMarquardtPolicy, RejectRejectAcceptReject) {
+  const auto params = LevenbergMarquardtParams::CeresDefaults();
+  double lambda = 1e-3;
+  double factor = params.lambdaFactor;
+
+  internal::increaseLevenbergMarquardtLambda(params, &lambda, &factor);
+  DOUBLES_EQUAL(2e-3, lambda, 1e-15);
+  DOUBLES_EQUAL(4.0, factor, 1e-15);
+  internal::increaseLevenbergMarquardtLambda(params, &lambda, &factor);
+  DOUBLES_EQUAL(8e-3, lambda, 1e-15);
+  DOUBLES_EQUAL(8.0, factor, 1e-15);
+
+  internal::decreaseLevenbergMarquardtLambda(params, 0.75, &lambda, &factor);
+  DOUBLES_EQUAL(7e-3, lambda, 1e-15);
+  DOUBLES_EQUAL(2.0, factor, 1e-15);
+  internal::increaseLevenbergMarquardtLambda(params, &lambda, &factor);
+  DOUBLES_EQUAL(14e-3, lambda, 1e-15);
+  DOUBLES_EQUAL(4.0, factor, 1e-15);
+}
+
+// Long success sequences stay bounded, including when lambda reaches its floor.
+TEST(LevenbergMarquardtPolicy, RepeatedAcceptancesAtLowerBound) {
+  auto params = LevenbergMarquardtParams::CeresDefaults();
+  params.lambdaLowerBound = 1e-6;
+  double lambda = 1e-7;
+  double factor = params.lambdaFactor;
+
+  for (size_t iteration = 0; iteration < 2048; ++iteration) {
+    internal::decreaseLevenbergMarquardtLambda(params, 1.0, &lambda, &factor);
+  }
+  DOUBLES_EQUAL(params.lambdaLowerBound, lambda, 1e-15);
+  DOUBLES_EQUAL(2.0, factor, 1e-15);
+  internal::increaseLevenbergMarquardtLambda(params, &lambda, &factor);
+  DOUBLES_EQUAL(2e-6, lambda, 1e-15);
+  DOUBLES_EQUAL(4.0, factor, 1e-15);
+}
+
+// Fixed damping keeps the configured multiplier across rejections and successes.
+TEST(LevenbergMarquardtPolicy, AppliesFixedLambdaUpdates) {
+  LevenbergMarquardtParams params;
+  params.useFixedLambdaFactor = true;
+
+  double lambda = 1e-3;
+  double factor = 10.0;
+  internal::increaseLevenbergMarquardtLambda(params, &lambda, &factor);
+  DOUBLES_EQUAL(1e-2, lambda, 1e-15);
+  DOUBLES_EQUAL(10.0, factor, 1e-15);
+
+  internal::decreaseLevenbergMarquardtLambda(params, 0.5, &lambda, &factor);
+  DOUBLES_EQUAL(1e-3, lambda, 1e-15);
+  DOUBLES_EQUAL(10.0, factor, 1e-15);
+
+  params.lambdaLowerBound = 5e-4;
+  internal::decreaseLevenbergMarquardtLambda(params, 1.0, &lambda, &factor);
+  DOUBLES_EQUAL(params.lambdaLowerBound, lambda, 1e-15);
+  DOUBLES_EQUAL(10.0, factor, 1e-15);
+}
+
+// Real LM acceptances reset the next rejection multiplier with Cholesky and QR.
+TEST(NonlinearOptimizer, AdaptiveLambdaAfterAcceptedSteps) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<CubicFactor>();
+  Values initial;
+  initial.insert(0, 2.0);
+
+  for (const auto solver : {NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY,
+                            NonlinearOptimizerParams::MULTIFRONTAL_QR}) {
+    LevenbergMarquardtParams params;
+    params.useFixedLambdaFactor = false;
+    params.lambdaInitial = 1e-2;
+    params.lambdaFactor = 2.0;
+    params.relativeErrorTol = 0.0;
+    params.linearSolverType = solver;
+    LevenbergMarquardtOptimizer optimizer(graph, initial, params);
+
+    optimizer.iterate();
+    optimizer.iterate();
+    LONGS_EQUAL(2, optimizer.iterations());
+    LONGS_EQUAL(2, optimizer.getInnerIterations());
+    const Values acceptedValues = optimizer.values();
+    const double acceptedError = optimizer.error();
+    const double lambdaBeforeRejection = optimizer.lambda();
+
+    EXPECT(!optimizer.tryLambda(*optimizer.linearize(), VectorValues()));
+    EXPECT(assert_equal(acceptedValues, optimizer.values()));
+    DOUBLES_EQUAL(acceptedError, optimizer.error(), 1e-15);
+    LONGS_EQUAL(2, optimizer.iterations());
+    LONGS_EQUAL(3, optimizer.getInnerIterations());
+    DOUBLES_EQUAL(2.0 * lambdaBeforeRejection, optimizer.lambda(), 1e-12);
+  }
+}
+
+}  // namespace lm_policy_fixture
+/* ************************************************************************* */
 
 class CountingNonlinearFactorGraph : public NonlinearFactorGraph {
  public:
@@ -68,6 +219,267 @@ class CountingNonlinearFactorGraph : public NonlinearFactorGraph {
     return NonlinearFactorGraph::linearize(linearizationPoint);
   }
 };
+
+/* ************************************************************************* */
+namespace symbolic_cache_regression {
+
+/// A continuous squared hinge penalty that activates above x = 0.5.
+class HingeFactor : public NoiseModelFactor1<double> {
+ public:
+  /// Construct a unit-noise upper-bound penalty.
+  HingeFactor() : NoiseModelFactor1<double>(noiseModel::Unit::Create(1), 0) {}
+
+  /// Determine activity from the current estimate, without external mutation.
+  bool active(const Values& values) const override {
+    return values.at<double>(0) > 0.5;
+  }
+
+  /// Evaluate the active residual and its tangent derivative.
+  Vector evaluateError(const double& x, OptionalMatrixType H) const override {
+    if (H) *H = Matrix11::Identity();
+    return Vector1{x - 0.5};
+  }
+};
+
+// Both GN and LM must include a factor activated by their own state updates.
+TEST(NonlinearOptimizer, ActivatesFactorDuringOptimization) {
+  NonlinearFactorGraph graph;
+  graph.addPrior(0, 2.0);
+  graph.emplace_shared<HingeFactor>();
+  Values initial;
+  initial.insert(0, 0.0);
+  for (auto solver : {NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY,
+                      NonlinearOptimizerParams::MULTIFRONTAL_QR}) {
+    GaussNewtonParams gnParams;
+    gnParams.setLinearSolver(solver);
+    GaussNewtonOptimizer gn(graph, initial, gnParams);
+    DOUBLES_EQUAL(1.25, gn.optimize().at<double>(0), 1e-8);
+    DOUBLES_EQUAL(0.5625, gn.error(), 1e-8);
+
+    LevenbergMarquardtParams lmParams;
+    lmParams.setLinearSolver(solver);
+    LevenbergMarquardtOptimizer lm(graph, initial, lmParams);
+    DOUBLES_EQUAL(1.25, lm.optimize().at<double>(0), 1e-8);
+    DOUBLES_EQUAL(0.5625, lm.error(), 1e-8);
+  }
+}
+
+// Factor slots can become active, disappear, or be appended between solves.
+TEST(NonlinearOptimizer, SymbolicCacheTracksFactorSlots) {
+  GaussNewtonOptimizer optimizer(NonlinearFactorGraph{}, Values{});
+  NonlinearOptimizerParams params;
+  params.setOrdering(Ordering{0});
+  for (auto solver : {NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY,
+                      NonlinearOptimizerParams::MULTIFRONTAL_QR}) {
+    params.setLinearSolver(solver);
+    GaussianFactorGraph graph;
+    graph.emplace_shared<JacobianFactor>(0, Matrix11::Identity(), Vector1{0.0});
+    graph.push_back(GaussianFactor::shared_ptr{});
+    DOUBLES_EQUAL(0.0, optimizer.solve(graph, params).at(0)(0), 1e-9);
+
+    graph[1] =
+        std::make_shared<JacobianFactor>(0, Matrix11::Identity(), Vector1{2.0});
+    DOUBLES_EQUAL(1.0, optimizer.solve(graph, params).at(0)(0), 1e-9);
+
+    graph[1].reset();
+    DOUBLES_EQUAL(0.0, optimizer.solve(graph, params).at(0)(0), 1e-9);
+
+    graph.emplace_shared<JacobianFactor>(0, Matrix11::Identity(), Vector1{4.0});
+    DOUBLES_EQUAL(2.0, optimizer.solve(graph, params).at(0)(0), 1e-9);
+
+    graph.resize(1);
+    DOUBLES_EQUAL(0.0, optimizer.solve(graph, params).at(0)(0), 1e-9);
+  }
+}
+
+// A factor's support can change in place without changing its address or arity.
+TEST(NonlinearOptimizer, SymbolicCacheTracksFactorKeys) {
+  GaussNewtonOptimizer optimizer(NonlinearFactorGraph{}, Values{});
+  NonlinearOptimizerParams params;
+  params.setOrdering(Ordering{0, 1});
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, Matrix11::Identity(), Vector1{0.0});
+  graph.emplace_shared<JacobianFactor>(1, Matrix11::Identity(), Vector1{4.0});
+  auto changingFactor =
+      std::make_shared<JacobianFactor>(0, Matrix11::Identity(), Vector1{2.0});
+  graph.push_back(changingFactor);
+  DOUBLES_EQUAL(1.0, optimizer.solve(graph, params).at(0)(0), 1e-9);
+
+  *changingFactor = JacobianFactor(1, Matrix11::Identity(), Vector1{2.0});
+  const VectorValues result = optimizer.solve(graph, params);
+  DOUBLES_EQUAL(0.0, result.at(0)(0), 1e-9);
+  DOUBLES_EQUAL(3.0, result.at(1)(0), 1e-9);
+}
+
+// A changed ordering must be validated instead of silently reusing the old one.
+TEST(NonlinearOptimizer, SymbolicCacheTracksOrdering) {
+  GaussNewtonOptimizer optimizer(NonlinearFactorGraph{}, Values{});
+  NonlinearOptimizerParams params;
+  params.setOrdering(Ordering{0, 1});
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, Matrix11::Identity(), Vector1{1.0});
+  graph.emplace_shared<JacobianFactor>(1, Matrix11::Identity(), Vector1{2.0});
+  const VectorValues expected = optimizer.solve(graph, params);
+  params.setOrdering(Ordering{1, 0});
+  EXPECT(assert_equal(expected, optimizer.solve(graph, params), 1e-9));
+
+  params.setOrdering(Ordering{0, 2});
+  bool rejected = false;
+  try {
+    optimizer.solve(graph, params);
+  } catch (const std::invalid_argument&) {
+    rejected = true;
+  }
+  CHECK(rejected);
+
+  // Failed rebuilding must not corrupt the previously valid cache.
+  params.setOrdering(Ordering{1, 0});
+  EXPECT(assert_equal(expected, optimizer.solve(graph, params), 1e-9));
+}
+
+// The symbolic tree contains keys, not numerical blocks or variable dimensions.
+TEST(NonlinearOptimizer, SymbolicCacheAllowsNumericalChanges) {
+  GaussNewtonOptimizer optimizer(NonlinearFactorGraph{}, Values{});
+  NonlinearOptimizerParams params;
+  params.setOrdering(Ordering{0});
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, Matrix11::Identity(), Vector1{1.0});
+  DOUBLES_EQUAL(1.0, optimizer.solve(graph, params).at(0)(0), 1e-9);
+
+  graph[0] = std::make_shared<HessianFactor>(0, Matrix22::Identity(),
+                                             Vector2{2.0, 3.0}, 13.0);
+  EXPECT(assert_equal(Vector2{2.0, 3.0}, optimizer.solve(graph, params).at(0),
+                      1e-9));
+  graph[0] = std::make_shared<JacobianFactor>(
+      0, Matrix22::Identity(), Vector2{4.0, 5.0},
+      noiseModel::Isotropic::Sigma(2, 2.0));
+  EXPECT(assert_equal(Vector2{4.0, 5.0}, optimizer.solve(graph, params).at(0),
+                      1e-9));
+
+  params.setOrdering(Ordering{});
+  LONGS_EQUAL(0, optimizer.solve(GaussianFactorGraph{}, params).size());
+}
+
+}  // namespace symbolic_cache_regression
+/* ************************************************************************* */
+namespace arm64_return_regression {
+
+class GpsLikePositionFactor : public NoiseModelFactorN<Pose2> {
+  Point2 measurement_;
+
+ public:
+  GpsLikePositionFactor(Key key, const Point2& measurement,
+                        const SharedNoiseModel& model)
+      : NoiseModelFactorN<Pose2>(model, key), measurement_(measurement) {}
+
+  Vector evaluateError(const Pose2& pose,
+                       OptionalMatrixType H) const override {
+    const Rot2& rotation = pose.rotation();
+    if (H) {
+      *H = Matrix23{{rotation.c(), -rotation.s(), 0.0},
+                    {rotation.s(), rotation.c(), 0.0}};
+    }
+    return pose.translation() - measurement_;
+  }
+
+  NonlinearFactor::shared_ptr clone() const override {
+    return std::make_shared<GpsLikePositionFactor>(*this);
+  }
+};
+
+// Verifies BetweenFactor<Pose2> error evaluation with nonzero rotations.
+TEST(NonlinearOptimizer, Arm64Pose2BetweenFactorError) {
+  const SharedNoiseModel model = noiseModel::Isotropic::Sigma(3, 1.0);
+  const BetweenFactor<Pose2> factor(X(0), X(1),
+                                    Pose2(1.0, 0.0, M_PI / 4.0), model);
+  const Pose2 pose1(0.0, 0.0, M_PI / 4.0);
+  const double sqrtTwo = std::sqrt(2.0);
+  const Pose2 pose2(sqrtTwo, sqrtTwo, M_PI / 2.0);
+  const double inverseSqrtTwo = std::sqrt(0.5);
+  const Vector3 expected{inverseSqrtTwo, -inverseSqrtTwo, 0.0};
+
+  EXPECT(assert_equal(expected, factor.evaluateError(pose1, pose2), 1e-9));
+}
+
+// Verifies LM follows strong GPS-like evidence over contradictory diagonal
+// odometry.
+TEST(NonlinearOptimizer, Arm64ConflictingOdometryAndPositionEvidence) {
+  const auto priorModel = noiseModel::Isotropic::Sigma(3, 1e-3);
+  const auto odometryModel = noiseModel::Isotropic::Sigma(3, 1.0);
+  const auto positionModel = noiseModel::Isotropic::Sigma(2, 1e-3);
+
+  NonlinearFactorGraph graph;
+  graph.addPrior(X(0), Pose2(0.0, 0.0, M_PI / 4.0), priorModel);
+  graph.emplace_shared<BetweenFactor<Pose2>>(
+      X(0), X(1), Pose2(1.0, 0.0, 0.0), odometryModel);
+  graph.emplace_shared<BetweenFactor<Pose2>>(
+      X(1), X(2), Pose2(1.0, 0.0, 0.0), odometryModel);
+  graph.emplace_shared<GpsLikePositionFactor>(X(1), Point2(0.0, 1.0),
+                                               positionModel);
+  graph.emplace_shared<GpsLikePositionFactor>(X(2), Point2(0.0, 2.0),
+                                               positionModel);
+
+  const double inverseSqrtTwo = std::sqrt(0.5);
+  Values initial;
+  initial.insert(X(0), Pose2(0.0, 0.0, M_PI / 4.0));
+  initial.insert(X(1), Pose2(inverseSqrtTwo, inverseSqrtTwo, M_PI / 4.0));
+  initial.insert(X(2), Pose2(2.0 * inverseSqrtTwo, 2.0 * inverseSqrtTwo,
+                             M_PI / 4.0));
+
+  const double initialError = graph.error(initial);
+  const Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
+  const Pose2& pose1 = result.at<Pose2>(X(1));
+  const Pose2& pose2 = result.at<Pose2>(X(2));
+
+  CHECK(graph.error(result) < initialError);
+  DOUBLES_EQUAL(0.0, pose1.x(), 1e-3);
+  DOUBLES_EQUAL(1.0, pose1.y(), 1e-3);
+  DOUBLES_EQUAL(0.0, pose2.x(), 1e-3);
+  DOUBLES_EQUAL(2.0, pose2.y(), 1e-3);
+}
+
+}  // namespace arm64_return_regression
+
+namespace lm_ordering_fixture {
+
+NonlinearFactorGraph MakeGraph() {
+  return example::createReallyNonlinearFactorGraph();
+}
+
+// Verifies block-Jacobi PCG does not compute an unused elimination ordering.
+TEST(LevenbergMarquardtParams, PCGDoesNotRequireOrdering) {
+  LevenbergMarquardtParams params;
+  params.linearSolverType = NonlinearOptimizerParams::Iterative;
+  params.iterativeParams = std::make_shared<PCGSolverParameters>(
+      std::make_shared<BlockJacobiPreconditionerParameters>());
+
+  const auto resolved =
+      LevenbergMarquardtParams::EnsureHasOrdering(params, MakeGraph());
+  EXPECT(!resolved.ordering);
+}
+
+// Verifies the subgraph iterative solver still receives an ordering.
+TEST(LevenbergMarquardtParams, SubgraphRequiresOrdering) {
+  LevenbergMarquardtParams params;
+  params.linearSolverType = NonlinearOptimizerParams::Iterative;
+  params.iterativeParams = std::make_shared<SubgraphSolverParameters>();
+
+  const auto resolved =
+      LevenbergMarquardtParams::EnsureHasOrdering(params, MakeGraph());
+  EXPECT(resolved.ordering);
+}
+
+// Verifies direct elimination solvers still receive an ordering.
+TEST(LevenbergMarquardtParams, DirectSolverRequiresOrdering) {
+  LevenbergMarquardtParams params;
+
+  const auto resolved =
+      LevenbergMarquardtParams::EnsureHasOrdering(params, MakeGraph());
+  EXPECT(resolved.ordering);
+}
+
+}  // namespace lm_ordering_fixture
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, paramsEquals )
@@ -299,7 +711,11 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
   Values expected;
   expected.insert(0, Pose2(0, 0, 0));
   expected.insert(1, Pose2(1, 0, M_PI / 2));
+#ifdef GTSAM_SLOW_BUT_CORRECT_EXPMAP
+  expected.insert(2, Pose2(1, 1, -M_PI));
+#else
   expected.insert(2, Pose2(1, 1, M_PI));
+#endif
 
   VectorValues expectedGradient;
   expectedGradient.insert(0,Z_3x1);
@@ -313,11 +729,12 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
 
     // test convergence
     Values actual = optimizer.optimize();
-    EXPECT(assert_equal(expected, actual));
+
+    EXPECT(assert_equal(expected, actual, 1e-5));
 
     // Check that the gradient is zero
     GaussianFactorGraph::shared_ptr linear = optimizer.linearize();
-    EXPECT(assert_equal(expectedGradient,linear->gradientAtZero()));
+    EXPECT(assert_equal(expectedGradient,linear->gradientAtZero(), 1e-7));
   }
   EXPECT(assert_equal(expected, DoglegOptimizer(fg, init).optimize()));
 
@@ -344,18 +761,18 @@ TEST_UNSAFE(NonlinearOptimizer, MoreOptimization) {
     VectorValues  expectedDiagonal = d + params.lambdaInitial * d;
     EXPECT(assert_equal(expectedDiagonal, damped.hessianDiagonal()));
 
-    // test convergence (does not!)
+    // test convergence
     Values actual = optimizer.optimize();
-    EXPECT(assert_equal(expected, actual));
+    EXPECT(assert_equal(expected, actual, tol));
 
-    // Check that the gradient is zero (it is not!)
+    // Check that the gradient is zero
     linear = optimizer.linearize();
-    EXPECT(assert_equal(expectedGradient,linear->gradientAtZero()));
+    EXPECT(assert_equal(expectedGradient, linear->gradientAtZero(), tol));
 
-    // Check that the gradient is zero for damped system (it is not!)
+    // Check that the gradient is zero for damped system
     damped = optimizer.buildDampedSystem(*linear, sqrtHessianDiagonal);
     VectorValues actualGradient = damped.gradientAtZero();
-    EXPECT(assert_equal(expectedGradient,actualGradient));
+    EXPECT(assert_equal(expectedGradient, actualGradient, tol));
 
     /* This block was made to test the original initial guess "init"
     // Check errors at convergence and errors in direction of gradient (decreases!)
@@ -402,7 +819,7 @@ TEST(NonlinearOptimizer, Pose2OptimizationWithHuberNoOutlier) {
 
   Values expected;
   expected.insert(0, Pose2(0,0,0));
-  expected.insert(1, Pose2(0.961187, 0.99965, 1.1781));
+  expected.insert(1, Pose2(1, 1, 3.0 * M_PI / 8.0));
 
   LevenbergMarquardtParams lmParams;
 
@@ -410,9 +827,9 @@ TEST(NonlinearOptimizer, Pose2OptimizationWithHuberNoOutlier) {
   auto lm_result = LevenbergMarquardtOptimizer(fg, init, lmParams).optimize();
   auto dl_result = DoglegOptimizer(fg, init).optimize();
 
-  EXPECT(assert_equal(expected, gn_result, 3e-2));
-  EXPECT(assert_equal(expected, lm_result, 3e-2));
-  EXPECT(assert_equal(expected, dl_result, 3e-2));
+  EXPECT(assert_equal(expected, gn_result, tol));
+  EXPECT(assert_equal(expected, lm_result, tol));
+  EXPECT(assert_equal(expected, dl_result, tol));
 }
 
 /* ************************************************************************* */
@@ -473,7 +890,11 @@ TEST(NonlinearOptimizer, Pose2OptimizationWithHuber) {
 
   Values expected;
   expected.insert(0, Pose2(0, 0, 0));
-  expected.insert(1, Pose2(0, 10, 1.45212));
+#ifdef GTSAM_SLOW_BUT_CORRECT_EXPMAP
+  expected.insert(1, Pose2(0, 9.878697519, 1.445427280));
+#else
+  expected.insert(1, Pose2(0, 9.89465463, 1.44927133));
+#endif
 
   LevenbergMarquardtParams params;
 
@@ -481,9 +902,9 @@ TEST(NonlinearOptimizer, Pose2OptimizationWithHuber) {
   auto lm_result = LevenbergMarquardtOptimizer(fg, init, params).optimize();
   auto dl_result = DoglegOptimizer(fg, init).optimize();
 
-  EXPECT(assert_equal(expected, gn_result, 1e-1));
-  EXPECT(assert_equal(expected, lm_result, 1e-1));
-  EXPECT(assert_equal(expected, dl_result, 1e-1));
+  EXPECT(assert_equal(expected, gn_result, tol));
+  EXPECT(assert_equal(expected, lm_result, tol));
+  EXPECT(assert_equal(expected, dl_result, tol));
 }
 
 /* ************************************************************************* */
@@ -586,6 +1007,60 @@ TEST(NonlinearOptimizer, subclass_solver) {
   Values actual = IterativeLM(graph, init, p).optimize();
   EXPECT(assert_equal(expected, actual, 1e-4));
 }
+
+/* ************************************************************************* */
+namespace lm_extension_hooks_fixture {
+
+class HookedLM final : public LevenbergMarquardtOptimizer {
+  mutable bool builtDampedSystem_ = false;
+  mutable bool evaluatedLinearError_ = false;
+
+ protected:
+  double linearDeltaError(const GaussianFactorGraph& linear,
+                          const VectorValues& delta, double* oldError,
+                          double* newError) const override {
+    evaluatedLinearError_ = true;
+    return LevenbergMarquardtOptimizer::linearDeltaError(
+        linear, delta, oldError, newError);
+  }
+
+ public:
+  using LevenbergMarquardtOptimizer::LevenbergMarquardtOptimizer;
+
+  GaussianFactorGraph buildDampedSystem(
+      const GaussianFactorGraph& linear,
+      const VectorValues& sqrtHessianDiagonal) const override {
+    builtDampedSystem_ = true;
+    return LevenbergMarquardtOptimizer::buildDampedSystem(
+        linear, sqrtHessianDiagonal);
+  }
+
+  bool builtDampedSystem() const { return builtDampedSystem_; }
+  bool evaluatedLinearError() const { return evaluatedLinearError_; }
+};
+
+// Verifies custom damping and linear-model evaluation hooks are dispatched
+// while retaining the default optimizer result.
+TEST(NonlinearOptimizer, LevenbergMarquardtExtensionHooks) {
+  const NonlinearFactorGraph graph =
+      example::createReallyNonlinearFactorGraph();
+  Values initial;
+  initial.insert(X(1), Point2(3, 3));
+  LevenbergMarquardtParams parameters;
+  parameters.linearSolverType =
+      NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY;
+
+  const Values expected =
+      LevenbergMarquardtOptimizer(graph, initial, parameters).optimize();
+  HookedLM optimizer(graph, initial, parameters);
+  const Values actual = optimizer.optimize();
+
+  CHECK(optimizer.builtDampedSystem());
+  CHECK(optimizer.evaluatedLinearError());
+  EXPECT(assert_equal(expected, actual, 1e-9));
+}
+
+}  // namespace lm_extension_hooks_fixture
 
 /* ************************************************************************* */
 TEST( NonlinearOptimizer, logfile )

@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file     ThreadSafeException.h
+ * @file     ThreadsafeException.h
  * @brief    Base exception type that uses tbb_allocator if GTSAM is compiled with TBB
  * @author   Richard Roberts
  * @date     Aug 21, 2010

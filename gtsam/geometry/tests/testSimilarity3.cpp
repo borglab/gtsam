@@ -127,11 +127,10 @@ TEST(Similarity3, HatAndVee) {
   EXPECT(assert_equal(v3, Similarity3::Vee(Similarity3::Hat(v3))));
 
   // Check the structure of the Lie Algebra element
-  Matrix4 expected;
-  expected << 0, -3, 2, 4,
-              3, 0, -1, 5,
-              -2, 1, 0, 6,
-              0, 0, 0, -7;
+  Matrix4 expected{{0, -3, 2, 4},  //
+                   {3, 0, -1, 5},
+                   {-2, 1, 0, 6},
+                   {0, 0, 0, -7}};
 
   EXPECT(assert_equal(expected, Similarity3::Hat(v1)));
 }
@@ -146,8 +145,10 @@ TEST(Similarity3, BruteForceExpmap) {
 //******************************************************************************
 TEST(Similarity3, inverse) {
   Similarity3 sim3(Rot3::Ypr(1, 2, 3).inverse(), Point3(4, 5, 6), 7);
-  Matrix3 Re; // some values from matlab
-  Re << -0.2248, 0.9024, -0.3676, -0.3502, -0.4269, -0.8337, -0.9093, -0.0587, 0.4120;
+
+  Matrix3 Re{{-0.2248, 0.9024, -0.3676},  // some values from matlab
+             {-0.3502, -0.4269, -0.8337},
+             {-0.9093, -0.0587, 0.4120}};
   Vector3 te(-9.8472, 59.7640, 10.2125);
   Similarity3 expected(Re, te, 1.0 / 7.0);
   EXPECT(assert_equal(expected, sim3.inverse(), 1e-4));
@@ -176,8 +177,9 @@ TEST(Similarity3, InverseMatrix) {
 TEST(Similarity3, Multiplication) {
   Similarity3 test1(Rot3::Ypr(1, 2, 3).inverse(), Point3(4, 5, 6), 7);
   Similarity3 test2(Rot3::Ypr(1, 2, 3).inverse(), Point3(8, 9, 10), 11);
-  Matrix3 re;
-  re << 0.0688, 0.9863, -0.1496, -0.5665, -0.0848, -0.8197, -0.8211, 0.1412, 0.5530;
+  Matrix3 re{{0.0688, 0.9863, -0.1496},
+             {-0.5665, -0.0848, -0.8197},
+             {-0.8211, 0.1412, 0.5530}};
   Vector3 te(-13.6797, 3.2441, -5.7794);
   Similarity3 expected(re, te, 77);
   EXPECT(assert_equal(expected, test1 * test2, 1e-2));
@@ -198,8 +200,7 @@ TEST(Similarity3, Manifold) {
   EXPECT(assert_equal(z, sim2.localCoordinates(sim)));
 
   Similarity3 sim3 = Similarity3(Rot3(), Point3(1, 2, 3), 1);
-  Vector v3(7);
-  v3 << 0, 0, 0, 1, 2, 3, 0;
+  Vector7 v3{0, 0, 0, 1, 2, 3, 0};
   EXPECT(assert_equal(v3, sim2.localCoordinates(sim3)));
 
   Similarity3 other = Similarity3(Rot3::Ypr(0.1, 0.2, 0.3), Point3(4, 5, 6), 1);
@@ -252,8 +253,7 @@ TEST(Similarity3, manifold_first_order) {
 //******************************************************************************
 // Return as a 4*4 Matrix
 TEST(Similarity3, Matrix) {
-  Matrix4 expected;
-  expected << 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0.5;
+  Matrix4 expected{{1, 0, 0, 1}, {0, 1, 0, 1}, {0, 0, 1, 0}, {0, 0, 0, 0.5}};
   Matrix4 actual = T6.matrix();
   EXPECT(assert_equal(expected, actual));
 }
@@ -261,13 +261,11 @@ TEST(Similarity3, Matrix) {
 //*****************************************************************************
 // Exponential and log maps
 TEST(Similarity3, ExpLogMap) {
-  Vector7 delta;
-  delta << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7;
+  Vector7 delta{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7};
   Vector7 actual = Similarity3::Logmap(Similarity3::Expmap(delta));
   EXPECT(assert_equal(delta, actual));
 
-  Vector7 zeros;
-  zeros << 0, 0, 0, 0, 0, 0, 0;
+  Vector7 zeros{0, 0, 0, 0, 0, 0, 0};
   Vector7 logIdentity = Similarity3::Logmap(Similarity3::Identity());
   EXPECT(assert_equal(zeros, logIdentity));
 
@@ -283,10 +281,8 @@ TEST(Similarity3, GroupAction) {
   EXPECT(assert_equal(Point3(4, 2, 0), T6 * Point3(1, 0, 0)));
 
   // Test group action on R^4 via matrix representation
-  Vector4 qh;
-  qh << 1, 0, 0, 1;
-  Vector4 ph;
-  ph << 2, 1, 0, 0.5; // equivalent to Point3(4, 2, 0)
+  Vector4 qh{1, 0, 0, 1};
+  Vector4 ph{2, 1, 0, 0.5};  // equivalent to Point3(4, 2, 0)
   EXPECT(assert_equal((Vector )ph, T6.matrix() * qh));
 
   // Test some more...
@@ -504,10 +500,10 @@ TEST(Similarity3, Optimization2) {
   //prior.print("Goal Transform");
   noiseModel::Isotropic::shared_ptr model = noiseModel::Isotropic::Sigma(7,
       0.01);
-  SharedDiagonal betweenNoise = noiseModel::Diagonal::Sigmas(
-      (Vector(7) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 10).finished());
-  SharedDiagonal betweenNoise2 = noiseModel::Diagonal::Sigmas(
-      (Vector(7) << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 1.0).finished());
+  SharedDiagonal betweenNoise =
+      noiseModel::Diagonal::Sigmas(Vector{{0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 10}});
+  SharedDiagonal betweenNoise2 =
+      noiseModel::Diagonal::Sigmas(Vector{{0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 1.0}});
   BetweenFactor<Similarity3> b1(X(1), X(2), m1, betweenNoise);
   BetweenFactor<Similarity3> b2(X(2), X(3), m2, betweenNoise);
   BetweenFactor<Similarity3> b3(X(3), X(4), m3, betweenNoise);

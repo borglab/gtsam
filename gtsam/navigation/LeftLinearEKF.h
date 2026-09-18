@@ -36,8 +36,8 @@ namespace gtsam {
  *
  * Discrete step: x⁺ = W · φ(x) · U, with W,U ∈ G and φ ∈ Aut(G).
  * For left-invariant error, the state-independent linearization is
- * A = Ad_{U^{-1}} · Φ where Φ := dφ|_e (right-trivialized). The left factor
- * W cancels in A and does not appear there.
+ * A = Ad_{U^{-1}} · Φ where Φ := dφ|_e. The left factor W cancels in A
+ * and does not appear there.
  */
 template <typename G>
 class LeftLinearEKF : public LieGroupEKF<G> {

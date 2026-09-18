@@ -151,23 +151,19 @@ class GTSAM_EXPORT Similarity3 : public MatrixLieGroup<Similarity3, 7, 4> {
   /** Log map at the identity
    * \f$ [R_x,R_y,R_z, t_x, t_y, t_z, \lambda] \f$
    */
-  static Vector7 Logmap(const Similarity3& s,  //
-                        OptionalJacobian<7, 7> Hm = {});
+  static Vector7 Logmap(const Similarity3& s);
 
   /** Exponential map at the identity
    */
-  static Similarity3 Expmap(const Vector7& v,  //
-                            OptionalJacobian<7, 7> Hm = {});
+  static Similarity3 Expmap(const Vector7& v);
 
   /// Chart at the origin
   struct ChartAtOrigin {
-    static Similarity3 Retract(const Vector7& v,
-                               ChartJacobian H = {}) {
-      return Similarity3::Expmap(v, H);
+    static Similarity3 Retract(const Vector7& v) {
+      return Similarity3::Expmap(v);
     }
-    static Vector7 Local(const Similarity3& other,
-                         ChartJacobian H = {}) {
-      return Similarity3::Logmap(other, H);
+    static Vector7 Local(const Similarity3& other) {
+      return Similarity3::Logmap(other);
     }
   };
 

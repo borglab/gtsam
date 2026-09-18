@@ -50,7 +50,8 @@ class InstantiatedGlobalFunction(parser.GlobalFunction):
                          self.return_type,
                          self.args,
                          self.template,
-                         parent=self.parent)
+                         parent=self.parent,
+                         force_pybind_lambda=original.force_pybind_lambda)
 
     def to_cpp(self):
         """Generate the C++ code for wrapping."""

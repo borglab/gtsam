@@ -11,9 +11,7 @@ public:
 
   Vector evaluateError(const Pose2& q, OptionalMatrixType H) const override {
     const Rot2& R = q.rotation();
-    if (H) (*H) = (gtsam::Matrix(2, 3) <<
-            R.c(), -R.s(), 0.0,
-            R.s(), R.c(), 0.0).finished();
-    return (Vector(2) << q.x() - mx_, q.y() - my_).finished();
+    if (H) (*H) = gtsam::Matrix23{{R.c(), -R.s(), 0.0}, {R.s(), R.c(), 0.0}};
+    return Vector{{q.x() - mx_, q.y() - my_}};
   }
 };

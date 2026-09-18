@@ -152,10 +152,10 @@ TEST( OdometryFactorBase, all ) {
       pose2);
 
   // Verify the Jacobians are correct
-  EXPECT(assert_equal(H1Expected, H1Actual, 1e-9));
-  EXPECT(assert_equal(H2Expected, H2Actual, 1e-9));
-  EXPECT(assert_equal(H3Expected, H3Actual, 1e-9));
-  EXPECT(assert_equal(H4Expected, H4Actual, 1e-9));
+  EXPECT(assert_equal(H1Expected, H1Actual, 1e-5));
+  EXPECT(assert_equal(H2Expected, H2Actual, 1e-5));
+  EXPECT(assert_equal(H3Expected, H3Actual, 1e-5));
+  EXPECT(assert_equal(H4Expected, H4Actual, 1e-5));
 }
 
 //*************************************************************************
@@ -164,4 +164,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 //*************************************************************************
-

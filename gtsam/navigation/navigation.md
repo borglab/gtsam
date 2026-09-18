@@ -14,6 +14,8 @@ The `navigation` module in GTSAM provides specialized tools for inertial navigat
 - **[LieGroupEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/LieGroupEKF.h)**: Implements an EKF for states that operate on a Lie group with state dependent dynamics.
 - **[InvariantEKF](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/InvariantEKF.h)**: Implements an EKF for states that operate on a Lie group with group composition (state independent) dynamics. See the [InvariantEKF user guide](doc/InvariantEKF.ipynb).
 
+- **[EquivariantFilter](doc/EquivariantFilter.ipynb)**: User guide to filtering with state actions, lifts, and covariance in reference error coordinates.
+
 ### Attitude Estimation
 
 - **[PreintegrationParams](doc/PreintegrationParams.ipynb)**: Parameters for IMU preintegration.
@@ -26,6 +28,16 @@ The `navigation` module in GTSAM provides specialized tools for inertial navigat
 - **[PreintegrationBase](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/PreintegrationBase.h)**: Base class for IMU preintegration classes.
 - **[ManifoldPreintegration](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/ManifoldPreintegration.h)**: Implements IMU preintegration using manifold-based methods as in the Forster et al paper.
 - **[TangentPreintegration](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/TangentPreintegration.h)**: Implements IMU preintegration using tangent space methods, developed at Skydio.
+- **LieGroupPreintegration**: Integrates IMU increments with the `NavState`
+  $SE_2(3)$ group exponential described by [Brossard, Barrau, and
+  Bonnabel](https://arxiv.org/abs/2007.14097).
+- **[GalileanImuFactor](doc/GalileanImuFactor.ipynb)**: Develops Galilean
+  IMU preintegration on a direct-product state, with left-invariant
+  errors and right-applied updates consistent with GTSAM conventions.
+- **[GalileanImuFactor NEES comparison](doc/GalileanImuFactorNEES.ipynb)**:
+  Compares Manifold, Tangent, Lie-group, and Galilean preintegration accuracy
+  and Logmap statistical consistency under identical high-dynamic IMU samples;
+  see the [executed results](doc/Logmap_IMU_NEES.md).
 - **[ImuFactor](doc/ImuFactor.ipynb)**: IMU factor.
 - **[CombinedImuFactor](doc/CombinedImuFactor.ipynb)**: IMU factor with built-in bias evolution.
 
@@ -34,6 +46,7 @@ The `navigation` module in GTSAM provides specialized tools for inertial navigat
 - **[GPSFactor](doc/GPSFactor.ipynb)**: Factor for incorporating GPS position measurements.
 - **[BarometricFactor](doc/BarometricFactor.ipynb)**: Incorporates barometric altitude measurements.
 - **[PseudorangeFactor](doc/PseudorangeFactor.ipynb)**: Precise GNSS positioning.
+- **[DopplerFactor](doc/DopplerFactor.ipynb)**: GNSS range-rate measurements for velocity and clock-drift estimation.
 
 ### Magnetic Field Integration
 
@@ -114,7 +127,6 @@ classDiagram
         +integrateMeasurement()*
         +biasCorrectedDelta()*
         +predict()
-        +computeError()
     }
 
     class ManifoldPreintegration {
@@ -129,17 +141,33 @@ classDiagram
     }
     TangentPreintegration --|> PreintegrationBase : implements
 
+    class LieGroupPreintegration {
+        +NavState deltaXij_
+        +update()
+    }
+    LieGroupPreintegration --|> ManifoldPreintegration : specializes
+
+    class GalileanPreintegration {
+        +Gal3 deltaXij_
+        +update()
+    }
+    GalileanPreintegration --|> PreintegrationBase : implements
+
     class PreintegratedImuMeasurements {
         +Matrix9 preintMeasCov_
     }
     PreintegratedImuMeasurements --|> ManifoldPreintegration : inherits
     PreintegratedImuMeasurements --|> TangentPreintegration : inherits
+    PreintegratedImuMeasurements --|> LieGroupPreintegration : inherits
+    PreintegratedImuMeasurements --|> GalileanPreintegration : inherits
 
     class PreintegratedCombinedMeasurements {
        +Matrix preintMeasCov_ (15x15)
     }
     PreintegratedCombinedMeasurements --|> ManifoldPreintegration : inherits
     PreintegratedCombinedMeasurements --|> TangentPreintegration : inherits
+    PreintegratedCombinedMeasurements --|> LieGroupPreintegration : inherits
+    PreintegratedCombinedMeasurements --|> GalileanPreintegration : inherits
 
     class ImuFactor {
         Pose3, Vector3, Pose3, Vector3, ConstantBias
@@ -154,7 +182,7 @@ classDiagram
 
 
     class CombinedImuFactor {
-        Pose3, Vector3, Pose3, Vector3, ConstantBias
+        Pose3, Vector3, Pose3, Vector3, ConstantBias, ConstantBias
          +evaluateError(...) Vector (15)
     }
     CombinedImuFactor ..> PreintegratedCombinedMeasurements : uses
@@ -196,20 +224,70 @@ The key components are:
 3.  **Preintegration Implementations**:
     *   `ManifoldPreintegration`: Concrete implementation of `PreintegrationBase`. Integrates directly on the `NavState` manifold, storing the result as a `NavState`. Corresponds to Forster et al. RSS 2015.
     *   `TangentPreintegration`: Concrete implementation of `PreintegrationBase`. Integrates increments in the 9D tangent space of `NavState`, storing the result as a `Vector9`.
+    *   `LieGroupPreintegration`: Specializes the manifold implementation by
+        applying increments with the `NavState` $SE_2(3)$ exponential and by
+        using the corresponding nonlinear group bias correction. It stores the
+        result as a `NavState`.
+    *   `GalileanPreintegration`: Integrates the IMU mean on `Gal3` and uses a
+        left-invariant Galilean error. The deterministic clock coordinate is
+        projected out when forming the public `(R,p,v)` covariance.
 
 4.  **Preintegrated Measurements Containers**:
-    *   `PreintegratedImuMeasurements`: Stores the result of standard IMU preintegration along with its 9x9 covariance (`preintMeasCov_`).
-    *   `PreintegratedCombinedMeasurements`: Similar, but designed for the `CombinedImuFactor`. Stores the larger 15x15 covariance matrix (`preintMeasCov_`) that includes correlations with the bias terms.
+    *   `PreintegratedImuMeasurements`: Stores the result of standard IMU preintegration along with its 9x9 covariance (`preintMeasCov_`). The named Galilean specialization is `PreintegratedImuMeasurementsG`.
+    *   `PreintegratedCombinedMeasurements`: Similar, but designed for the `CombinedImuFactor`. Stores the larger 15x15 covariance matrix (`preintMeasCov_`) that includes correlations with the bias terms. The named Galilean specialization is `PreintegratedCombinedMeasurementsG`.
 
 5.  **IMU Factors (`...Factor`)**:
     * [ImuFactor](doc/ImuFactor.ipynb): A 5-way factor connecting previous pose/velocity, current pose/velocity, and a single (constant during the interval) bias estimate. Does *not* model bias evolution between factors.
     * [ImuFactor2](doc/ImuFactor.ipynb): A 3-way factor connecting previous `NavState`, current `NavState`, and a single bias estimate. Functionally similar to `ImuFactor` but uses the combined `NavState` type.
-    * [CombinedImuFactor](doc/CombinedImuFactor.ipynb): A 6-way factor connecting previous pose/velocity, current pose/velocity, previous bias, and current bias. *Includes* a model for bias random walk evolution between the two bias states.
+    * [CombinedImuFactor](doc/CombinedImuFactor.ipynb): A 6-way factor connecting previous pose/velocity, current pose/velocity, previous bias, and current bias. *Includes* a model for bias random walk evolution between the two bias states. `GalileanCombinedImuFactor` provides the same model with Galilean preintegration.
 
 ### Important notes
-- Which implementation is used for the `DefaultPreintegrationType` used by `ImuFactor`s and `Preintegrated*Measurements` depends on the compile flag `GTSAM_TANGENT_PREINTEGRATION`, which is true by default.
-    - If false, `ManifoldPreintegration` is used. Please use this setting to get the exact implementation from {cite:t}`https://doi.org/10.1109/TRO.2016.2597321`.
-    - If true, `TangentPreintegration` is used. This does the integration on the tangent space of the NavState manifold.
-- If you wish to use any preintegration type other than the default, you must template your PIMs and factors on the desired preintegration type using the template-supporting classes `PreintegratedImuMeasurementsT`, `ImuFactorT`, `ImuFactor2T`, `PreintegratedCombinedMeasurementsT`, or `CombinedImuFactorT`.
+- The compiled `DefaultPreintegrationType` used by `ImuFactor`s and
+  `Preintegrated*Measurements` is selected by two CMake options:
+    - `GTSAM_LIEGROUP_PREINTEGRATION=ON` selects `LieGroupPreintegration` and
+      takes precedence if both options are enabled.
+    - Otherwise, `GTSAM_TANGENT_PREINTEGRATION=ON` (the default) selects
+      `TangentPreintegration`.
+    - With both options disabled, `ManifoldPreintegration` is used. Select this
+      backend for the implementation from
+      {cite:t}`https://doi.org/10.1109/TRO.2016.2597321`.
+- If you wish to use any preintegration type other than the default, you can
+  template your PIMs and factors on the desired preintegration type using the
+  template-supporting classes `PreintegratedImuMeasurementsT`, `ImuFactorT`,
+  `ImuFactor2T`, `PreintegratedCombinedMeasurementsT`, or
+  `CombinedImuFactorT`. Public named specializations are available for the
+  standard PIM backends, and the Galilean standard and Combined types are
+  available in C++, Python, and MATLAB.
+- `NavState` stores tangent blocks in `(R,p,v)` order, whereas Brossard et al.
+  write the $SE_2(3)$ matrix in `(R,v,p)` order. Translate the position and
+  velocity blocks when comparing equations.
+- `LieGroupPreintegration` applies IMU increments with `NavState::expmap` and
+  evaluates IMU-factor errors with the $SE_2(3)$ logarithm. This does not change
+  the chart used by optimization: `NavState::retract` and `localCoordinates`
+  retain GTSAM's component-wise chart for variable updates and for the other
+  preintegration backends.
+- `omegaCoriolis` is the angular velocity of the navigation frame, expressed
+  in navigation-frame coordinates in radians per second. When it is set,
+  `PreintegrationBase::predict` and AHRS prediction use the exact rotating-Earth
+  transition from Brossard, Barrau, and Bonnabel rather than an additive
+  Coriolis approximation. The covariance recursion is unchanged because Earth
+  rotation changes prediction and residual assembly, not the preintegrated IMU
+  measurement.
+- For $w=-\Omega\Delta t$, GTSAM evaluates the exact transition with stable
+  SO(3) kernels. In GTSAM's kernel conventions, Brossard's position term is
+  $\Gamma^p=(J_l(w)-\Gamma_{2,l}(w))g\Delta t^2$; using
+  `DexpFunctor::Gamma()` alone would have the wrong small-angle coefficients.
+  AHRS uses the corresponding exact attitude law
+  $R_j=\operatorname{Exp}(w)R_i\Delta R_{ij}$.
+- `use2ndOrderCoriolis` remains in `PreintegrationParams` and its serialized
+  layout for compatibility, but it is ignored: the exact model is used for
+  every nonzero `omegaCoriolis`. `NavState::coriolis`, `NavState::correctPIM`,
+  and `PreintegratedRotation::integrateCoriolis` are retained behind the GTSAM
+  4.3 deprecation guard and are no longer used internally. Use a concrete
+  PIM's `predict` method instead.
+- `n_gravity` must be the gravity vector consistent with the chosen
+  navigation-frame origin. If a local frame is translated, absorb the constant
+  centrifugal contribution associated with that origin shift into
+  `n_gravity`.
 - Using the combined IMU factor is not recommended. Typically biases evolve slowly, and hence a separate, lower frequency Markov chain on the bias is more appropriate.
 - For short-duration experiments it is even recommended to use a single constant bias. Bias estimation is notoriously hard to tune/debug, and also acts as a "sink" for any modeling errors. Hence, starting with a constant bias is a good idea to get the rest of the pipeline working.

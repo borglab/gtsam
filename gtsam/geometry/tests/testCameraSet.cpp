@@ -71,10 +71,9 @@ TEST(CameraSet, Pinhole) {
   ZZ measured;
   measured.push_back(Point2(1, 2));
   measured.push_back(Point2(3, 4));
-  Vector4 expectedV;
+  Vector4 expectedV{-1, -2, -3, -4};
 
   // reprojectionError
-  expectedV << -1, -2, -3, -4;
   Vector actualV = set.reprojectionError(p, measured);
   EXPECT(assert_equal(expectedV, actualV));
 
@@ -250,4 +249,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

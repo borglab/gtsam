@@ -436,7 +436,7 @@ class GTSAM_EXPORT Interpolator {
    * @brief Step 1 of interpolatePoseAndVelocity: form local state vectors and
    * optional local Jacobians.
    *
-   * Computes $(\xi_k, \dot\xi_k, \xi_{k+1}, \dot\xi_{k+1})$ used by
+   * Computes \f$(\xi_k, \dot\xi_k, \xi_{k+1}, \dot\xi_{k+1})\f$ used by
    * interpolation. Jacobian outputs are populated only when all Jacobian
    * pointers are non-null.
    *
@@ -465,7 +465,7 @@ class GTSAM_EXPORT Interpolator {
    * Lambda/Psi matrices.
    *
    * Retrieves (or reuses precomputed) Lambda/Psi and computes
-   * $(\xi_\tau, \dot\xi_\tau)$.
+   * \f$(\xi_\tau, \dot\xi_\tau)\f$.
    *
    * @param t_k Left border timestamp.
    * @param t_kp1 Right border timestamp.
@@ -473,9 +473,9 @@ class GTSAM_EXPORT Interpolator {
    * @param xi_dot_k Local velocity vector at the left border.
    * @param xi_kp1 Local position vector at the right border.
    * @param xi_dot_kp1 Local velocity vector at the right border.
-   * @param LambdaPsiPreComp Optional precomputed $(\Lambda, \Psi)$ pair.
-   * @param Lambda Output interpolation matrix $\Lambda$.
-   * @param Psi Output interpolation matrix $\Psi$.
+   * @param LambdaPsiPreComp Optional precomputed \f$(\Lambda, \Psi)\f$ pair.
+   * @param Lambda Output interpolation matrix \f$\Lambda\f$.
+   * @param Psi Output interpolation matrix \f$\Psi\f$.
    * @param xi_tau Output interpolated local position vector.
    * @param xidot_tau Output interpolated local velocity vector.
    * @return void
@@ -498,9 +498,10 @@ class GTSAM_EXPORT Interpolator {
    * @param xi_tau Interpolated local position vector.
    * @param xidot_tau Interpolated local velocity vector.
    * @param right_jac_tau Output right Jacobian of `Expmap(xi_tau)`.
-   * @param dTtau_dTk Optional output Jacobian of $T_\tau$ wrt $T_k$.
-   * @param dTtau_dxitau Optional output Jacobian of $T_\tau$ wrt $\xi_\tau$.
-   * @return PoseVel Interpolated pose and velocity pair at $t_\tau$.
+   * @param dTtau_dTk Optional output Jacobian of \f$T_\tau\f$ wrt \f$T_k\f$.
+   * @param dTtau_dxitau Optional output Jacobian of \f$T_\tau\f$ wrt
+   * \f$\xi_\tau\f$.
+   * @return PoseVel Interpolated pose and velocity pair at \f$t_\tau\f$.
    */
   PoseVel mapLocalStateToManifold_(const PoseType& T_k, const VectorN& xi_tau,
                                    const VectorN& xidot_tau,
@@ -512,12 +513,12 @@ class GTSAM_EXPORT Interpolator {
    * @brief Step 4 of interpolatePoseAndVelocity: compose full Jacobians with
    * chain rule.
    *
-   * @param Lambda Interpolation matrix $\Lambda$.
-   * @param Psi Interpolation matrix $\Psi$.
+   * @param Lambda Interpolation matrix \f$\Lambda\f$.
+   * @param Psi Interpolation matrix \f$\Psi\f$.
    * @param xidot_tau Interpolated local velocity vector.
    * @param right_jac_tau Right Jacobian of `Expmap(xi_tau)`.
-   * @param dTtau_dTk Jacobian of $T_\tau$ wrt $T_k$ from composition.
-   * @param dTtau_dxitau Jacobian of $T_\tau$ wrt $\xi_\tau$.
+   * @param dTtau_dTk Jacobian of \f$T_\tau\f$ wrt \f$T_k\f$ from composition.
+   * @param dTtau_dxitau Jacobian of \f$T_\tau\f$ wrt \f$\xi_\tau\f$.
    * @param jacs Jacobians for local state wrt bordering states.
    * @param H Output vector of Jacobian blocks to populate.
    * @return void
@@ -538,8 +539,8 @@ class GTSAM_EXPORT Interpolator {
    * @param tPoseVel_kp1 Timestamped right border state.
    * @param poseVel_tau Interpolated pose/velocity at query time.
    * @param t_tau Query timestamp.
-   * @param Lambda Interpolation matrix $\Lambda$.
-   * @param Psi Interpolation matrix $\Psi$.
+   * @param Lambda Interpolation matrix \f$\Lambda\f$.
+   * @param Psi Interpolation matrix \f$\Psi\f$.
    * @param mainSolveMarginalMatrix Optional covariance of bordering states.
    * @param covarianceOut Optional output covariance for interpolated state.
    * @return void

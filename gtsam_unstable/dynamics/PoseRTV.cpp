@@ -3,6 +3,10 @@
  * @author Alex Cunningham
  */
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam_unstable/dynamics/PoseRTV.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/base/Vector.h>
@@ -67,7 +71,7 @@ PoseRTV PoseRTV::planarDynamics(double vel_rate, double heading_rate,
   const Velocity3& v1 = v();
 
   // Update vehicle heading
-  Rot3 r2 = r1.retract((Vector(3) << 0.0, 0.0, heading_rate * dt).finished());
+  Rot3 r2 = r1.retract(Vector{{0.0, 0.0, heading_rate * dt}});
   const double yaw2 = r2.ypr()(0);
 
   // Update vehicle position
@@ -91,7 +95,7 @@ PoseRTV PoseRTV::flyingDynamics(
   const Velocity3& v1 = v();
 
   // Update vehicle heading (and normalise yaw)
-  Vector rot_rates = (Vector(3) << 0.0, pitch_rate, heading_rate).finished();
+  Vector rot_rates{{0.0, pitch_rate, heading_rate}};
   Rot3 r2 = r1.retract(rot_rates*dt);
 
   // Work out dynamics on platform
@@ -105,9 +109,11 @@ PoseRTV PoseRTV::flyingDynamics(
   Rot3 yaw_correction_bn = Rot3::Yaw(yaw2);
   Point3 forward(forward_accel, 0.0, 0.0);
   Vector Acc_n =
-      yaw_correction_bn.rotate(forward)              // applies locally forward force in the global frame
-      - drag * (Vector(3) << v1.x(), v1.y(), 0.0).finished()  // drag term dependent on v1
-      + Vector::Unit(3,2)*(loss_lift - lift_control);                // falling due to lift lost from pitch
+      yaw_correction_bn.rotate(
+          forward)  // applies locally forward force in the global frame
+      - drag * Vector{{v1.x(), v1.y(), 0.0}}  // drag term dependent on v1
+      + Vector::Unit(3, 2) *
+            (loss_lift - lift_control);  // falling due to lift lost from pitch
 
   // Update Vehicle Position and Velocity
   Velocity3 v2 = v1 + Velocity3(Acc_n * dt);
@@ -241,3 +247,5 @@ Matrix PoseRTV::RRTMnb(const Rot3& att) {
 
 /* ************************************************************************* */
 } // \namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

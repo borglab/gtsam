@@ -80,8 +80,8 @@ int main(int argc, char* argv[]) {
                  pointNoise);  // add directly to graph
 
   // Add a prior on the calibration.
-  auto calNoise = noiseModel::Diagonal::Sigmas(
-      (Vector(5) << 500, 500, 0.1, 100, 100).finished());
+  auto calNoise =
+      noiseModel::Diagonal::Sigmas(Vector{{500, 500, 0.1, 100, 100}});
   graph.addPrior(Symbol('K', 0), K, calNoise);
 
   // Create the initial estimate to the solution
@@ -102,4 +102,3 @@ int main(int argc, char* argv[]) {
 
   return 0;
 }
-

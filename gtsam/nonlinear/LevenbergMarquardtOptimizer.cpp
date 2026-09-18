@@ -100,6 +100,13 @@ GaussianFactorGraph LevenbergMarquardtOptimizer::buildDampedSystem(
 }
 
 /* ************************************************************************* */
+double LevenbergMarquardtOptimizer::linearDeltaError(
+    const GaussianFactorGraph& linear, const VectorValues& delta,
+    double* oldError, double* newError) const {
+  return linear.deltaError(delta, oldError, newError);
+}
+
+/* ************************************************************************* */
 // Log current error/lambda to file
 inline void LevenbergMarquardtOptimizer::writeLogFile(double currentError){
   auto currentState = static_cast<const State*>(state_.get());
@@ -152,7 +159,7 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
     }
     systemSolvedSuccessfully = true;
     // ========================================================================
-  } catch (const IndeterminantLinearSystemException&) {
+  } catch (const IndeterminateSystemException&) {
     systemSolvedSuccessfully = false;
   }
 
@@ -171,8 +178,8 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
       linearizedCostChange = nonlinearMultifrontalSolver_->deltaError(
           &oldLinearizedError, &newLinearizedError);
     } else {
-      linearizedCostChange =
-          linear.deltaError(delta, &oldLinearizedError, &newLinearizedError);
+      linearizedCostChange = linearDeltaError(
+          linear, delta, &oldLinearizedError, &newLinearizedError);
     }
 
     // cost change in the linearized system (old - new)

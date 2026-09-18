@@ -7,7 +7,7 @@ endif()
 set (GTSAM_VERSION_MAJOR 4)
 set (GTSAM_VERSION_MINOR 3)
 set (GTSAM_VERSION_PATCH 0)
-set (GTSAM_PRERELEASE_VERSION "a2")
+set (GTSAM_PRERELEASE_VERSION "")
 math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
 
 # Set the version string for the library. 
@@ -127,6 +127,8 @@ endif()
 include(cmake/HandleCCache.cmake)           # ccache
 include(cmake/HandleCPack.cmake)            # CPack
 include(cmake/HandleEigen.cmake)            # Eigen3
+include(cmake/HandleSpectra.cmake)          # Spectra
+include(cmake/HandleSuiteSparse.cmake)      # CCOLAMD and SuiteSparse_config
 include(cmake/HandleMetis.cmake)            # metis
 include(cmake/HandleCephes.cmake)           # cephes
 include(cmake/HandleMKL.cmake)              # MKL
@@ -151,6 +153,9 @@ add_subdirectory(CppUnitLite)
 # Build GTSAM library
 add_subdirectory(gtsam)
 
+# Find ceres for tests and timing dependencies
+find_package(Ceres CONFIG QUIET)
+
 # Build Tests
 add_subdirectory(tests)
 
@@ -172,6 +177,7 @@ if(GTSAM_BUILD_PYTHON OR GTSAM_INSTALL_MATLAB_TOOLBOX)
         CACHE STRING "The Python version to use for wrapping")
     # Set the include directory for matlab.h
     set(GTWRAP_INCLUDE_NAME "wrap")
+    set(GTWRAP_USE_SYSTEM_PYBIND ${GTSAM_USE_SYSTEM_PYBIND})
 
     # Copy matlab.h to the correct folder.
     configure_file(${PROJECT_SOURCE_DIR}/wrap/matlab.h

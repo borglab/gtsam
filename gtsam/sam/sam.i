@@ -21,7 +21,7 @@ virtual class RangeFactor : gtsam::NoiseModelFactor {
   // enabling serialization functionality
   void serialize() const;
 
-  const double measured() const;
+  const double& measured() const;
 };
 
 // between points:
@@ -58,7 +58,7 @@ virtual class RangeFactorWithTransform : gtsam::NoiseModelFactor {
   void serialize() const;
 
   // Use `double` instead of template since that is all we need.
-  const double measured() const;
+  const double& measured() const;
 };
 
 typedef gtsam::RangeFactorWithTransform<gtsam::Pose2, gtsam::Point2>
@@ -81,7 +81,7 @@ virtual class RangeFactorWithTransformBias : gtsam::NoiseModelFactor {
   // enabling serialization functionality
   void serialize() const;
 
-  const double measured() const;
+  const double& measured() const;
 };
 
 typedef gtsam::RangeFactorWithTransformBias<gtsam::Pose2, gtsam::Point2>
@@ -115,7 +115,7 @@ virtual class BearingRangeFactor : gtsam::NoiseModelFactor {
                      const BEARING& measuredBearing, const RANGE& measuredRange,
                      const gtsam::noiseModel::Base* noiseModel);
 
-  gtsam::BearingRange<POSE, POINT, BEARING, RANGE> measured() const;
+  const gtsam::BearingRange<POSE, POINT, BEARING, RANGE>& measured() const;
 
   // enabling serialization functionality
   void serialize() const;
@@ -133,5 +133,18 @@ typedef gtsam::BearingRangeFactor<gtsam::Pose3, gtsam::Point3, gtsam::Unit3,
 typedef gtsam::BearingRangeFactor<gtsam::Pose3, gtsam::Pose3, gtsam::Unit3,
                                   double>
     BearingRangeFactorPose3;
+
+#include <gtsam/sam/QuadraticRangeFactor.h>
+// Quadratic range measurement for certifiable range-aided SLAM, with d = 2 or
+// 3. The auxiliary direction is a Rot2 in 2D and a Unit3 in 3D, `range` is the
+// measured distance and `weight` is the measurement precision nu.
+template <d = {2, 3}>
+virtual class QuadraticRangeFactor : gtsam::NoiseModelFactor {
+  QuadraticRangeFactor(gtsam::Key translationKey, gtsam::Key targetKey,
+                       gtsam::Key unitVectorKey, double range, double weight);
+
+  double range() const;
+  double weight() const;
+};
 
 }  // namespace gtsam

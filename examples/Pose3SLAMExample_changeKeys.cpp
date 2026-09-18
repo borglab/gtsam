@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file Pose3SLAMExample_initializePose3.cpp
+ * @file Pose3SLAMExample_changeKeys.cpp
  * @brief A 3D Pose SLAM example that reads input from g2o, and initializes the Pose3 using InitializePose3
  * Syntax for the script is ./Pose3SLAMExample_changeKeys input.g2o rewritted.g2o
  * @date Aug 25, 2014

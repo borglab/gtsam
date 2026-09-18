@@ -40,7 +40,7 @@ int main(const int argc, const char* argv[]) {
 
   // Add prior on the first key
   auto priorModel = noiseModel::Diagonal::Variances(
-      (Vector(6) << 1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4).finished());
+      Vector{{1e-6, 1e-6, 1e-6, 1e-4, 1e-4, 1e-4}});
   Key firstKey = 0;
   for (const auto key : initial->keys()) {
     std::cout << "Adding prior to g2o file " << std::endl;

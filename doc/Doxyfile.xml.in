@@ -1,0 +1,41 @@
+# Minimal XML-only Doxygen configuration for Python docstring generation.
+#
+# Production wheels use Doxygen 1.8.5 on manylinux2014 and Doxygen 1.8.14 on
+# manylinux_2_28. Keep this file limited to options supported by Doxygen 1.8.5.
+# The full HTML documentation continues to use Doxyfile.in.
+
+PROJECT_NAME           = gtsam
+PROJECT_NUMBER         = @GTSAM_VERSION_MAJOR@.@GTSAM_VERSION_MINOR@.@GTSAM_VERSION_PATCH@
+OUTPUT_DIRECTORY       = @PROJECT_SOURCE_DIR@
+
+FULL_PATH_NAMES        = YES
+STRIP_FROM_PATH        = @PROJECT_SOURCE_DIR@
+
+QUIET                  = YES
+WARNINGS               = YES
+WARN_IF_UNDOCUMENTED   = NO
+WARN_IF_DOC_ERROR      = YES
+WARN_NO_PARAMDOC       = NO
+WARN_FORMAT            = "$file:$line: $text"
+
+INPUT                  = @GTSAM_DOXYGEN_INPUT_PATHS@
+EXCLUDE                = @GTSAM_DOXYGEN_EXCLUDE_PATHS@
+FILE_PATTERNS          = *.h \
+                         *.cpp
+RECURSIVE              = NO
+
+GENERATE_HTML          = NO
+GENERATE_LATEX         = NO
+GENERATE_XML           = YES
+XML_OUTPUT             = xml
+XML_PROGRAMLISTING     = NO
+
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+SEARCH_INCLUDES        = YES
+PREDEFINED             = __DOXYGEN
+EXPAND_AS_DEFINED      = Rot3
+SKIP_FUNCTION_MACROS   = YES
+
+HAVE_DOT               = NO

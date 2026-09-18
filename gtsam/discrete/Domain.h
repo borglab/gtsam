@@ -1,0 +1,117 @@
+/*
+ * Domain.h
+ * @brief Domain restriction constraint
+ * @date Feb 13, 2012
+ * @author Frank Dellaert
+ */
+
+#pragma once
+
+#include <gtsam/discrete/Constraint.h>
+#include <gtsam/discrete/DiscreteKey.h>
+
+#include <optional>
+
+namespace gtsam {
+
+/**
+ * The Domain class represents a constraint that restricts the possible values a
+ * particular variable, with given key, can take on.
+ */
+class GTSAM_EXPORT Domain : public Constraint {
+  size_t cardinality_;       /// Cardinality
+  std::set<size_t> values_;  /// allowed values
+
+ public:
+  typedef std::shared_ptr<Domain> shared_ptr;
+
+  /// Construct an all-allowed domain on a discrete key.
+  Domain(const DiscreteKey& dkey)
+      : Constraint(dkey.first), cardinality_(dkey.second) {
+    for (size_t v = 0; v < cardinality_; v++) values_.insert(v);
+  }
+
+  /// Construct a domain with one allowed value.
+  Domain(const DiscreteKey& dkey, size_t v)
+      : Constraint(dkey.first), cardinality_(dkey.second) {
+    values_.insert(v);
+  }
+
+  /// The one key
+  Key key() const { return keys_[0]; }
+
+  /// The associated discrete key.
+  DiscreteKey discreteKey() const { return DiscreteKey(key(), cardinality_); }
+
+  /// Insert a value, non const :-(
+  void insert(size_t value) { values_.insert(value); }
+
+  /// Erase a value, non const :-(
+  void erase(size_t value) { values_.erase(value); }
+
+  /// Return the number of allowed values.
+  uint64_t nrValues() const override { return values_.size(); }
+
+  /// Return whether the domain contains exactly one value.
+  bool isSingleton() const { return nrValues() == 1; }
+
+  /// Return the first allowed value.
+  size_t firstValue() const { return *values_.begin(); }
+
+  /// Print the domain.
+  void print(const std::string& s = "", const KeyFormatter& formatter =
+                                            DefaultKeyFormatter) const override;
+
+  /// Return whether another factor is an equal domain.
+  bool equals(const DiscreteFactor& other, double tol) const override {
+    if (!dynamic_cast<const Domain*>(&other))
+      return false;
+    else {
+      const Domain& f(static_cast<const Domain&>(other));
+      return (cardinality_ == f.cardinality_) && (values_ == f.values_);
+    }
+  }
+
+  /// Return a concise base-1 string, mostly to debug arc consistency.
+  std::string base1Str() const;
+
+  /// Check whether the domain contains a specific value.
+  bool contains(size_t value) const { return values_.count(value) > 0; }
+
+  /// Calculate value
+  double evaluate(const Assignment<Key>& values) const override;
+
+  /// Convert into a decisiontree
+  DecisionTreeFactor toDecisionTreeFactor() const override;
+
+  /// Multiply into a decisiontree
+  DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
+
+  /**
+   * Ensure Arc-consistency by checking every possible value of domain j.
+   * @param j domain to be checked
+   * @param (in/out) domains all domains, but only domains->at(j) will be
+   * checked.
+   * @return true if domains->at(j) was changed, false otherwise.
+   */
+  bool ensureArcConsistency(Key j, Domains* domains) const override;
+
+  /**
+   * Check for a value in domain that does not occur in any other connected
+   * domain. If found, return a a new singleton domain...
+   * Called in AllDiff::ensureArcConsistency
+   * @param keys Keys of domains connected through the AllDiff constraint.
+   * @param domains The other domains.
+   */
+  std::optional<Domain> checkAllDiff(const KeyVector keys,
+                                     const Domains& domains) const;
+
+  /// Partially apply known values
+  Constraint::shared_ptr partiallyApply(
+      const DiscreteValues& values) const override;
+
+  /// Partially apply known values, domain version
+  Constraint::shared_ptr partiallyApply(const Domains& domains) const override;
+};
+
+}  // namespace gtsam

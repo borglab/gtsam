@@ -28,7 +28,7 @@ public:
   SimPolygon2D() {}
 
   /** seed the random number generator - only needs to be done once */
-  static void seedGenerator(unsigned long seed);
+  static void seedGenerator(size_t seed);
 
   /** Named constructor for creating triangles */
   static SimPolygon2D createTriangle(const Point2& pA, const Point2& pB, const Point2& pC);
@@ -131,4 +131,3 @@ public:
 typedef std::vector<SimPolygon2D> SimPolygon2DVector;
 
 } //\namespace gtsam
-

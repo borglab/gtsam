@@ -174,8 +174,7 @@ TEST(AttitudeFactorSe23, ConstructorAndJacobian) {
   SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
   EXPECT(defaultMeasuredAxisMatches<AttitudeFactor<Se23>>(nDown, model));
 
-  Matrix32 x;
-  x << -5.0, 0.2, 8.0, -0.4, -11.0, 0.6;
+  Matrix32 x{{-5.0, 0.2}, {8.0, -0.4}, {-11.0, 0.6}};
   AttitudeFactor<Se23> factor(1, nDown, model);
   EXPECT(zeroResidualAndJacobianMatch(factor, makeSe23(x)));
 }
@@ -194,8 +193,7 @@ TEST(AttitudeFactorExtendedPose3d, ConstructorAndJacobian) {
   EXPECT(
       defaultMeasuredAxisMatches<AttitudeFactor<ExtendedPose3d>>(nDown, model));
 
-  Matrix x(3, 3);
-  x << -5.0, 0.2, 1.3, 8.0, -0.4, 2.1, -11.0, 0.6, -0.7;
+  Matrix x{{-5.0, 0.2, 1.3}, {8.0, -0.4, 2.1}, {-11.0, 0.6, -0.7}};
   AttitudeFactor<ExtendedPose3d> factor(1, nDown, model);
   EXPECT(
       zeroResidualAndJacobianMatchDynamic<12>(factor, makeExtendedPose3d(x)));

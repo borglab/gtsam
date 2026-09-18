@@ -24,11 +24,11 @@
 #include <gtsam/hybrid/HybridFactorGraph.h>
 #include <gtsam/hybrid/HybridGaussianFactor.h>
 #include <gtsam/inference/EliminateableFactorGraph.h>
+#include <gtsam/inference/FactorErrorPredicate.h>
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/VectorValues.h>
 
-#include <functional>
 #include <optional>
 
 namespace gtsam {
@@ -169,10 +169,9 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
       const HybridValues& values,
       const std::string& str = "HybridGaussianFactorGraph: ",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter,
-      const std::function<bool(const Factor* /*factor*/,
-                               double /*whitenedError*/, size_t /*index*/)>&
-          printCondition =
-              [](const Factor*, double, size_t) { return true; }) const;
+      const FactorErrorPredicate&
+          printCondition = FactorErrorPredicate{
+              [](const Factor*, double, size_t) { return true; }}) const;
 
   // bool equals(const This& fg, double tol = 1e-9) const override;
 

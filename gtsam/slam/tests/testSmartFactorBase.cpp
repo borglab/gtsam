@@ -64,11 +64,9 @@ TEST(SmartFactorBase, PinholeWithSensor) {
   Vector error = f.unwhitenedError<Point3>(cameras, p, Fs, E);
 
   Vector expectedError = Vector::Zero(2);
-  Matrix29 expectedFs;
-  expectedFs << -0.001, -1.00001, 0, -0.1, 0, -0.01, 0, 0, 0, 1, 0, 0, 0, -0.1,
-      0, 0, 0, 0;
-  Matrix23 expectedE;
-  expectedE << 0.1, 0, 0.01, 0, 0.1, 0;
+  Matrix29 expectedFs{{-0.001, -1.00001, 0, -0.1, 0, -0.01, 0, 0, 0},
+                      {1, 0, 0, 0, -0.1, 0, 0, 0, 0}};
+  Matrix23 expectedE{{0.1, 0, 0.01}, {0, 0.1, 0}};
 
   EXPECT(assert_equal(error, expectedError));
   // We only have the jacobian for the 1 camera

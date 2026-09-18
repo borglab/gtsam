@@ -27,6 +27,8 @@
 #include <cmath>
 #include <iostream>
 #include <limits>
+#include <map>
+#include <stdexcept>
 
 using namespace std;
 using namespace gtsam;
@@ -37,6 +39,16 @@ static const double kSigma = 2, kInverseSigma = 1.0 / kSigma,
 static const Matrix R = I_3x3 * kInverseSigma;
 static const Matrix kCovariance = I_3x3 * kVariance;
 static const Vector3 kSigmas(kSigma, kSigma, kSigma);
+
+/* ************************************************************************* */
+// Verifies sigmas for a correlated Gaussian square-root information matrix.
+TEST(NoiseModel, GaussianSigmasFromUpperTriangularInformation) {
+  const Matrix22 sqrtInformation{{2.0, 1.0}, {0.0, 4.0}};
+  const Vector2 expected{std::sqrt(17.0) / 8.0, 0.25};
+  const auto model = Gaussian::SqrtInformation(sqrtInformation, false);
+
+  EXPECT(assert_equal(expected, model->sigmas(), 1e-12));
+}
 
 /* ************************************************************************* */
 TEST(NoiseModel, constructors)
@@ -86,10 +98,10 @@ TEST(NoiseModel, constructors)
     EXPECT(assert_equal(kCovariance.inverse(),mi->information()));
 
   // test Whiten operator
-  Matrix H((Matrix(3, 4) <<
-      0.0, 0.0, 1.0, 1.0,
-      0.0, 1.0, 0.0, 1.0,
-      1.0, 0.0, 0.0, 1.0).finished());
+  Matrix H{//
+           {0.0, 0.0, 1.0, 1.0},
+           {0.0, 1.0, 0.0, 1.0},
+           {1.0, 0.0, 0.0, 1.0}};
   Matrix expected = kInverseSigma * H;
   for(Gaussian::shared_ptr mi: m)
     EXPECT(assert_equal(expected,mi->Whiten(H)));
@@ -241,8 +253,7 @@ TEST(NoiseModel, ConstrainedInformationFromA) {
   Vector2 sigmas(0.0, 2.0);
   Constrained::shared_ptr model = Constrained::MixedSigmas(sigmas);
 
-  Matrix A(2, 2);
-  A << 1.0, 0.0, 0.0, 2.0;
+  Matrix A{{1.0, 0.0}, {0.0, 2.0}};
 
   Matrix info = model->informationFromA(A);
 
@@ -252,8 +263,7 @@ TEST(NoiseModel, ConstrainedInformationFromA) {
   DOUBLES_EQUAL(1.0, info(1, 1), 1e-12);
 
   // Constrained row with support in multiple columns should mark cross-terms.
-  Matrix A_dense(2, 2);
-  A_dense << 1.0, 1.0, 0.0, 2.0;
+  Matrix A_dense{{1.0, 1.0}, {0.0, 2.0}};
 
   Matrix info_dense = model->informationFromA(A_dense);
 
@@ -266,21 +276,19 @@ TEST(NoiseModel, ConstrainedInformationFromA) {
 /* ************************************************************************* */
 namespace exampleQR {
   // create a matrix to eliminate
-  Matrix Ab = (Matrix(4, 7) <<
-      -1.,  0.,  1.,  0.,  0.,  0., -0.2,
-      0., -1.,  0.,  1.,  0.,  0.,  0.3,
-      1.,  0.,  0.,  0., -1.,  0.,  0.2,
-      0.,  1.,  0.,  0.,  0., -1., -0.1).finished();
-  Vector sigmas = (Vector(4) << 0.2, 0.2, 0.1, 0.1).finished();
+Matrix Ab{{-1., 0., 1., 0., 0., 0., -0.2},
+          {0., -1., 0., 1., 0., 0., 0.3},
+          {1., 0., 0., 0., -1., 0., 0.2},
+          {0., 1., 0., 0., 0., -1., -0.1}};
+Vector sigmas{{0.2, 0.2, 0.1, 0.1}};
 
-  // the matrix AB yields the following factorized version:
-  Matrix Rd = (Matrix(4, 7) <<
-      11.1803,   0.0,   -2.23607, 0.0,    -8.94427, 0.0,     2.23607,
-      0.0,   11.1803,    0.0,    -2.23607, 0.0,    -8.94427,-1.56525,
-      0.0,       0.0,    4.47214, 0.0,    -4.47214, 0.0,     0.0,
-      0.0,       0.0,   0.0,     4.47214, 0.0,    -4.47214, 0.894427).finished();
+// the matrix AB yields the following factorized version:
+Matrix Rd{{11.1803, 0.0, -2.23607, 0.0, -8.94427, 0.0, 2.23607},
+          {0.0, 11.1803, 0.0, -2.23607, 0.0, -8.94427, -1.56525},
+          {0.0, 0.0, 4.47214, 0.0, -4.47214, 0.0, 0.0},
+          {0.0, 0.0, 0.0, 4.47214, 0.0, -4.47214, 0.894427}};
 
-  SharedDiagonal diagonal = noiseModel::Diagonal::Sigmas(sigmas);
+SharedDiagonal diagonal = noiseModel::Diagonal::Sigmas(sigmas);
 }
 
 /* ************************************************************************* */
@@ -295,13 +303,12 @@ TEST( NoiseModel, QR )
   EXPECT(linear_dependent(exampleQR::Rd,Ab1,1e-4)); // Ab was modified in place !!!
 
   // Expected result for constrained version
-  Vector expectedSigmas = (Vector(4) << 0.0894427, 0.0894427, 0.223607, 0.223607).finished();
+  Vector expectedSigmas{{0.0894427, 0.0894427, 0.223607, 0.223607}};
   SharedDiagonal expectedModel = noiseModel::Diagonal::Sigmas(expectedSigmas);
-  Matrix expectedRd2 = (Matrix(4, 7) <<
-      1.,  0., -0.2,  0., -0.8, 0.,  0.2,
-      0.,  1.,  0.,-0.2,   0., -0.8,-0.14,
-      0.,  0.,  1.,   0., -1.,  0.,  0.0,
-      0.,  0.,  0.,   1.,  0., -1.,  0.2).finished();
+  Matrix expectedRd2{{1., 0., -0.2, 0., -0.8, 0., 0.2},
+                     {0., 1., 0., -0.2, 0., -0.8, -0.14},
+                     {0., 0., 1., 0., -1., 0., 0.0},
+                     {0., 0., 0., 1., 0., -1., 0.2}};
 
   // Call Constrained version
   SharedDiagonal constrained = noiseModel::Constrained::MixedSigmas(exampleQR::sigmas);
@@ -357,11 +364,11 @@ TEST( NoiseModel, MixedQR )
       0,0,1,1,0,0,  0, // w+x = 0
       0,1,0,0,0,0,  0, // v^2
       0,0,0,0,0,1,  0; // z^2
-  Vector mixed_sigmas = (Vector(5) << 0, 1, 0, 1, 1).finished();
+  Vector mixed_sigmas{{0, 1, 0, 1, 1}};
   SharedDiagonal constrained = noiseModel::Constrained::MixedSigmas(mixed_sigmas);
 
   // Expected result
-  Vector expectedSigmas = (Vector(5) << 0, 1, 0, 1, 1).finished();
+  Vector expectedSigmas{{0, 1, 0, 1, 1}};
   SharedDiagonal expectedModel = noiseModel::Diagonal::Sigmas(expectedSigmas);
   Matrix expectedRd(5, 6+1);
   expectedRd << 1, 0, 0, 0, 0, 1, 0,  //
@@ -426,10 +433,9 @@ TEST( NoiseModel, FullyConstrained )
 
   // Expected result
   SharedDiagonal expectedModel = noiseModel::Diagonal::Sigmas(Vector3 (0,0,0));
-  Matrix expectedRd(3, 7);
-  expectedRd << 1, 0, 0, 0, 0, 1, 2,  //
-                0, 1, 0, 1, 1, 1, 8,  //
-                0, 0, 1, 1, 0, 0, 4;  //
+  Matrix expectedRd{{1, 0, 0, 0, 0, 1, 2},   //
+                    {0, 1, 0, 1, 1, 1, 8},   //
+                    {0, 0, 1, 1, 0, 0, 4}};  //
 
   SharedDiagonal actual = constrained->QR(Ab);
   EXPECT(assert_equal(*expectedModel,*actual,1e-6));
@@ -441,10 +447,10 @@ TEST( NoiseModel, FullyConstrained )
 TEST(NoiseModel, QRNan )
 {
   SharedDiagonal constrained = noiseModel::Constrained::All(2);
-  Matrix Ab = (Matrix25() << 2, 4, 2, 4, 6,   2, 1, 2, 4, 4).finished();
+  Matrix Ab = Matrix25{{2, 4, 2, 4, 6}, {2, 1, 2, 4, 4}};
 
   SharedDiagonal expected = noiseModel::Constrained::All(2);
-  Matrix expectedAb = (Matrix25() << 1, 2, 1, 2, 3, 0, 1, 0, 0, 2.0/3).finished();
+  Matrix expectedAb = Matrix25{{1, 2, 1, 2, 3}, {0, 1, 0, 0, 2.0 / 3}};
 
   SharedDiagonal actual = constrained->QR(Ab);
   EXPECT(assert_equal(*expected,*actual));
@@ -623,6 +629,37 @@ TEST(NoiseModel, robustFunctionFair)
   DOUBLES_EQUAL(0.441961080151135, fair->loss(error4), 1e-8);
 }
 
+// All robust reweight overloads apply identical block and scalar weights.
+TEST(NoiseModel, RobustReweightOverloadEquivalence) {
+  for (const auto scheme : {mEstimator::Base::Block,
+                            mEstimator::Base::Scalar}) {
+    const auto model = mEstimator::Huber::Create(1.345, scheme);
+    const Matrix A1{{1.0, 2.0}, {3.0, 4.0}};
+    const Matrix A2{{5.0}, {6.0}};
+    const Matrix A3{{7.0, 8.0}, {9.0, 10.0}};
+    const Vector error{{2.0, -0.5}};
+
+    vector<Matrix> expectedMatrices{A1, A2, A3};
+    Vector expectedError = error;
+    model->reweight(expectedMatrices, expectedError);
+
+    Matrix actual1 = A1, actual2 = A2, actual3 = A3;
+    Vector actualError = error;
+    model->reweight(actual1, actual2, actual3, actualError);
+    EXPECT(assert_equal(expectedMatrices[0], actual1));
+    EXPECT(assert_equal(expectedMatrices[1], actual2));
+    EXPECT(assert_equal(expectedMatrices[2], actual3));
+    EXPECT(assert_equal(expectedError, actualError));
+
+    vector<Matrix> noMatrices;
+    Vector vectorExpected = error, vectorActual = error;
+    model->reweight(noMatrices, vectorExpected);
+    model->reweight(vectorActual);
+    EXPECT(assert_equal(vectorExpected, vectorActual));
+  }
+}
+
+/* ************************************************************************* */
 TEST(NoiseModel, robustFunctionHuber)
 {
   const double k = 5.0, error1 = 1.0, error2 = 10.0, error3 = -10.0, error4 = -1.0;
@@ -686,6 +723,73 @@ TEST(NoiseModel, robustFunctionGemanMcClure)
   DOUBLES_EQUAL(0.2500, gmc->loss(error4), 1e-8);
 }
 
+/* ************************************************************************* */
+TEST(NoiseModel, robustFunctionGemanMcClureGraduatedScaleInvariant) {
+  mEstimator::GemanMcClure::shared_ptr gmc = mEstimator::GemanMcClure::Create(
+      1.0, mEstimator::GemanMcClure::GradScheme::SCALE_INVARIANT);
+  // At r=zero, error is not dependent on mu
+  DOUBLES_EQUAL(0.0, gmc->graduatedLoss(0.0, 0.0), 1e-9);
+  DOUBLES_EQUAL(0.0, gmc->graduatedLoss(0.0, 0.5), 1e-9);
+  DOUBLES_EQUAL(0.0, gmc->graduatedLoss(0.0, 1.0), 1e-9);
+
+  // At mu=0.0, error is quadratic
+  DOUBLES_EQUAL(0.0025, gmc->graduatedLoss(0.1, 0.0), 1e-9);
+  DOUBLES_EQUAL(0.4225, gmc->graduatedLoss(1.3, 0.0), 1e-9);
+  DOUBLES_EQUAL(38.750625, gmc->graduatedLoss(12.45, 0.0), 1e-9);
+
+  // At mu>0.0, error depends on shape
+  DOUBLES_EQUAL(0.00454545454, gmc->graduatedLoss(0.1, 0.5), 1e-9);
+  DOUBLES_EQUAL(0.36739130434, gmc->graduatedLoss(1.3, 0.5), 1e-9);
+  DOUBLES_EQUAL(5.76217472119, gmc->graduatedLoss(12.45, 0.5), 1e-9);
+
+  // at mu=1.0, error depends is Geman-Mcclure
+  DOUBLES_EQUAL(gmc->loss(0.1), gmc->graduatedLoss(0.1, 1.0), 1e-9);
+  DOUBLES_EQUAL(gmc->loss(1.3), gmc->graduatedLoss(1.3, 1.0), 1e-9);
+  DOUBLES_EQUAL(gmc->loss(12.45), gmc->graduatedLoss(12.45, 1.0), 1e-9);
+
+  // At mu=0, weights are identical at 0.5
+  DOUBLES_EQUAL(0.5, gmc->graduatedWeight(0.1, 0.0), 1e-9);
+  DOUBLES_EQUAL(0.5, gmc->graduatedWeight(1.3, 0.0), 1e-9);
+  DOUBLES_EQUAL(0.5, gmc->graduatedWeight(12.45, 0.0), 1e-9);
+
+  // At mu=1, weights are higher for low error
+  DOUBLES_EQUAL(0.9802960494, gmc->graduatedWeight(0.1, 1.0), 1e-9);
+  DOUBLES_EQUAL(0.13819598955, gmc->graduatedWeight(1.3, 1.0), 1e-9);
+  DOUBLES_EQUAL(0.00004109007, gmc->graduatedWeight(12.45, 1.0), 1e-9);
+
+  // At mu=1, large residuals have ~0 weight
+  DOUBLES_EQUAL(0.0, gmc->graduatedWeight(2000.0, 1.0), 1e-9);
+
+  // Across mu, residual of 0 will have weight = 1
+  DOUBLES_EQUAL(1.0, gmc->graduatedWeight(0.0, 0.1), 1e-9);
+  DOUBLES_EQUAL(1.0, gmc->graduatedWeight(0.0, 0.5), 1e-9);
+  DOUBLES_EQUAL(1.0, gmc->graduatedWeight(0.0, 0.8), 1e-9);
+}
+
+/* ************************************************************************* */
+TEST(NoiseModel, GemanMcClureShapeParameterFromInfluenceThreshold) {
+  const double t = 0.1;
+  // Tabulated chi2 95th percentiles for dof 1, 2, 3, 6.
+  for (const auto& [dof, quantile] : std::map<size_t, double>{
+           {1, 3.841459}, {2, 5.991465}, {3, 7.814728}, {6, 12.591587}}) {
+    const double c =
+        mEstimator::GemanMcClure::ShapeParameterFromInfluenceThreshold(t, dof,
+                                                                       0.95);
+    const double r = std::sqrt(quantile);
+    EXPECT_DOUBLES_EQUAL(t, r * mEstimator::GemanMcClure::Weight(r * r, c * c),
+                         1e-5);
+    // The influence threshold must lie in (0, r).
+    CHECK_EXCEPTION(
+        mEstimator::GemanMcClure::ShapeParameterFromInfluenceThreshold(
+            1.1 * r, dof, 0.95),
+        std::invalid_argument);
+    CHECK_EXCEPTION(
+        mEstimator::GemanMcClure::ShapeParameterFromInfluenceThreshold(0.0, dof,
+                                                                       0.95),
+        std::invalid_argument);
+  }
+}
+
 TEST(NoiseModel, robustFunctionTLS)
 {
   const double k = 4.0, error1 = 0.5, error2 = 10.0, error3 = -10.0, error4 = -0.5;
@@ -733,6 +837,7 @@ TEST(NoiseModel, robustFunctionTukey)
   DOUBLES_EQUAL(0.480266666666667, tukey->loss(error4), 1e-8);
 }
 
+
 TEST(NoiseModel, robustFunctionAsymmetricTukey)
 {
   const double k = 5.0, error1 = 1.0, error2 = 10.0, error3 = -10.0, error4 = -1.0;
@@ -758,7 +863,7 @@ TEST(NoiseModel, robustFunctionDCS)
   DOUBLES_EQUAL(0.00039211, dcs->weight(error2), 1e-8);
 
   DOUBLES_EQUAL(0.5         , dcs->loss(error1), 1e-8);
-  DOUBLES_EQUAL(0.9900990099, dcs->loss(error2), 1e-8);
+  DOUBLES_EQUAL(1.4801980198, dcs->loss(error2), 1e-8);
 }
 
 TEST(NoiseModel, robustFunctionL2WithDeadZone)
@@ -785,7 +890,7 @@ TEST(NoiseModel, robustFunctionL2WithDeadZone)
 TEST(NoiseModel, robustNoiseHuber)
 {
   const double k = 10.0, error1 = 1.0, error2 = 100.0;
-  Matrix A = (Matrix(2, 2) << 1.0, 10.0, 100.0, 1000.0).finished();
+  Matrix A{{1.0, 10.0}, {100.0, 1000.0}};
   Vector b = Vector2(error1, error2);
   const Robust::shared_ptr robust = Robust::Create(
     mEstimator::Huber::Create(k, mEstimator::Huber::Scalar),
@@ -806,11 +911,13 @@ TEST(NoiseModel, robustNoiseGemanMcClure)
 {
   const double k = 1.0, error1 = 1.0, error2 = 100.0;
   const double a00 = 1.0, a01 = 10.0, a10 = 100.0, a11 = 1000.0;
-  Matrix A = (Matrix(2, 2) << a00, a01, a10, a11).finished();
+  Matrix A{{a00, a01}, {a10, a11}};
   Vector b = Vector2(error1, error2);
-  const Robust::shared_ptr robust = Robust::Create(
-    mEstimator::GemanMcClure::Create(k, mEstimator::GemanMcClure::Scalar),
-    Unit::Create(2));
+  const Robust::shared_ptr robust =
+      Robust::Create(mEstimator::GemanMcClure::Create(
+                         k, mEstimator::GemanMcClure::GradScheme::STANDARD,
+                         mEstimator::GemanMcClure::Scalar),
+                     Unit::Create(2));
 
   robust->WhitenSystem(A, b);
 
@@ -834,11 +941,13 @@ TEST(NoiseModel, robustNoiseTLS)
 {
   const double k = 1.0, error1 = 1.0, error2 = 100.0;
   const double a00 = 1.0, a01 = 10.0, a10 = 100.0, a11 = 1000.0;
-  Matrix A = (Matrix(2, 2) << a00, a01, a10, a11).finished();
+  Matrix A{{a00, a01}, {a10, a11}};
   Vector b = Vector2(error1, error2);
   const Robust::shared_ptr robust = Robust::Create(
-    mEstimator::TruncatedLeastSquares::Create(k, mEstimator::TruncatedLeastSquares::Scalar),
-    Unit::Create(2));
+      mEstimator::TruncatedLeastSquares::Create(
+          k, mEstimator::TruncatedLeastSquares::GradScheme::STANDARD,
+          mEstimator::TruncatedLeastSquares::Scalar),
+      Unit::Create(2));
 
   robust->WhitenSystem(A, b);
 
@@ -854,11 +963,38 @@ TEST(NoiseModel, robustNoiseTLS)
   DOUBLES_EQUAL(sqrt_weight_error2*a11, A(1,1), 1e-8);
 }
 
+// DCS must match the derivative of its loss, including graduation and clipping.
+TEST(NoiseModel, DCSLossDerivative) {
+  const double step = 1e-6;
+  for (double c : {0.5, 1.0, 5.0}) {
+    const auto dcs = mEstimator::DCS::Create(c);
+    for (double mu : {0.0, 0.2, 0.7, 1.0}) {
+      for (double residual : {-10.0, -2.0, -0.5, 0.0, 0.5, 2.0, 10.0}) {
+        const double derivative =
+            (dcs->graduatedLoss(residual + step, mu) -
+             dcs->graduatedLoss(residual - step, mu)) / (2 * step);
+        DOUBLES_EQUAL(residual * dcs->graduatedWeight(residual, mu),
+                     derivative, 1e-7);
+      }
+      if (mu > 0) {
+        const double threshold = std::sqrt(c / mu);
+        DOUBLES_EQUAL(0.5 * threshold * threshold,
+                     dcs->graduatedLoss(threshold, mu), 1e-12);
+        const double derivative =
+            (dcs->graduatedLoss(threshold + step, mu) -
+             dcs->graduatedLoss(threshold - step, mu)) / (2 * step);
+        DOUBLES_EQUAL(threshold, derivative, 2e-6);
+      }
+    }
+  }
+}
+
+// Checks DCS row weighting without changing the established IRLS weights.
 TEST(NoiseModel, robustNoiseDCS)
 {
   const double k = 1.0, error1 = 1.0, error2 = 100.0;
   const double a00 = 1.0, a01 = 10.0, a10 = 100.0, a11 = 1000.0;
-  Matrix A = (Matrix(2, 2) << a00, a01, a10, a11).finished();
+  Matrix A{{a00, a01}, {a10, a11}};
   Vector b = Vector2(error1, error2);
   const Robust::shared_ptr robust = Robust::Create(
     mEstimator::DCS::Create(k, mEstimator::DCS::Scalar),
@@ -895,7 +1031,7 @@ TEST(NoiseModel, robustNoiseL2WithDeadZone)
 /* ************************************************************************* */
 TEST(NoiseModel, robustNoiseCustomHuber) {
   const double k = 10.0, error1 = 1.0, error2 = 100.0;
-  Matrix A = (Matrix(2, 2) << 1.0, 10.0, 100.0, 1000.0).finished();
+  Matrix A{{1.0, 10.0}, {100.0, 1000.0}};
   Vector b = Vector2(error1, error2);
   const Robust::shared_ptr robust =
       Robust::Create(mEstimator::Custom::Create(
@@ -921,8 +1057,88 @@ TEST(NoiseModel, robustNoiseCustomHuber) {
   DOUBLES_EQUAL(sqrt(k / 100.0) * 1000.0, A(1, 1), 1e-8);
 }
 
-TEST(NoiseModel, lossFunctionAtZero)
-{
+TEST(NoiseModel, graduatedWeightLossAll) {
+  const double e1 = 1.0, e2 = 10.0, k = 5.0;
+  auto testWeight = [&](const mEstimator::Base::shared_ptr mest) -> void {
+    // Convex \mu = 0.0
+    DOUBLES_EQUAL(1.0, mest->graduatedWeight(e1, 0.0), 1e-5);
+    DOUBLES_EQUAL(1.0, mest->graduatedWeight(e2, 0.0), 1e-5);
+    // Standard for \mu = 1.0
+    DOUBLES_EQUAL(mest->weight(e1), mest->graduatedWeight(e1, 1.0), 1e-5);
+    DOUBLES_EQUAL(mest->weight(e2), mest->graduatedWeight(e2, 1.0), 1e-5);
+  };
+  auto testLoss = [&](const mEstimator::Base::shared_ptr mest) -> void {
+    // Convex for \mu = 0.0
+    DOUBLES_EQUAL(0.5 * e1 * e1, mest->graduatedLoss(e1, 0.0), 1e-5);
+    DOUBLES_EQUAL(0.5 * e2 * e2, mest->graduatedLoss(e2, 0.0), 1e-5);
+    // Standard for \mu = 1.0
+    DOUBLES_EQUAL(mest->loss(e1), mest->graduatedLoss(e1, 1.0), 1e-5);
+    DOUBLES_EQUAL(mest->loss(e2), mest->graduatedLoss(e2, 1.0), 1e-5);
+  };
+
+  auto huber = mEstimator::Huber::Create(k);
+  testWeight(huber);
+  testLoss(huber);
+  auto cauchy = mEstimator::Cauchy::Create(k);
+  testWeight(cauchy);
+  testLoss(cauchy);
+  auto gmc = mEstimator::GemanMcClure::Create(k);
+  testWeight(gmc);
+  testLoss(gmc);
+  auto welsch = mEstimator::Welsch::Create(k);
+  testWeight(welsch);
+  testLoss(welsch);
+  auto tukey = mEstimator::Tukey::Create(k);
+  testWeight(tukey);
+  testLoss(tukey);
+  auto dcs = mEstimator::DCS::Create(k);
+  testWeight(dcs);
+  testLoss(dcs);
+  auto tlsStandard = mEstimator::TruncatedLeastSquares::Create(
+      k, mEstimator::TruncatedLeastSquares::GradScheme::STANDARD);
+  testWeight(tlsStandard);
+  testLoss(tlsStandard);
+}
+
+TEST(NoiseModel, graduatedWeightLossNonStandard) {
+  const double e1 = 1.0, e2 = 10.0, k = 5.0;
+
+  auto tlsGncLinear = mEstimator::TruncatedLeastSquares::Create(
+      k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_LINEAR);
+  // Yang's theta -> 0 surrogate is degenerate (all weights vanish), so mu=0 is
+  // defined as the all-inlier least-squares initialization step.
+  DOUBLES_EQUAL(1.0, tlsGncLinear->graduatedWeight(e1, 0.0), 1e-8);
+  DOUBLES_EQUAL(1.0, tlsGncLinear->graduatedWeight(e2, 0.0), 1e-8);
+  DOUBLES_EQUAL(0.5 * e1 * e1, tlsGncLinear->graduatedLoss(e1, 0.0), 1e-8);
+  DOUBLES_EQUAL(0.5 * e2 * e2, tlsGncLinear->graduatedLoss(e2, 0.0), 1e-8);
+  // TLS Linear matches TLS for mu=1
+  DOUBLES_EQUAL(tlsGncLinear->weight(e1),
+                tlsGncLinear->graduatedWeight(e1, 1.0), 1e-8);
+  DOUBLES_EQUAL(tlsGncLinear->weight(e2),
+                tlsGncLinear->graduatedWeight(e2, 1.0), 1e-8);
+  DOUBLES_EQUAL(tlsGncLinear->loss(e1), tlsGncLinear->graduatedLoss(e1, 1.0),
+                1e-8);
+  DOUBLES_EQUAL(tlsGncLinear->loss(e2), tlsGncLinear->graduatedLoss(e2, 1.0),
+                1e-8);
+
+  auto tlsGncSuperlinear = mEstimator::TruncatedLeastSquares::Create(
+      k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR);
+  // TLS Super is never generally convex by construction and has no loss
+  DOUBLES_EQUAL(1.0, tlsGncSuperlinear->graduatedWeight(e1, 0.0), 1e-8);
+  DOUBLES_EQUAL(0.5, tlsGncSuperlinear->graduatedWeight(e2, 0.0), 1e-8);
+  DOUBLES_EQUAL(tlsGncSuperlinear->weight(e1),
+                tlsGncSuperlinear->graduatedWeight(e1, 1.0), 1e-8);
+  DOUBLES_EQUAL(tlsGncSuperlinear->weight(e2),
+                tlsGncSuperlinear->graduatedWeight(e2, 1.0), 1e-8);
+
+  auto gmcScaleInvariant = mEstimator::GemanMcClure::Create(
+      k, mEstimator::GemanMcClure::GradScheme::SCALE_INVARIANT);
+  // GM Scale Invariant, at mu=0.0 weight depends on shape param
+  DOUBLES_EQUAL(0.961538, gmcScaleInvariant->graduatedWeight(e1, 0.0), 1e-6);
+  DOUBLES_EQUAL(0.961538, gmcScaleInvariant->graduatedWeight(e2, 0.0), 1e-6);
+}
+
+TEST(NoiseModel, lossFunctionAtZero) {
   const double k = 5.0;
   auto fair = mEstimator::Fair::Create(k);
   DOUBLES_EQUAL(fair->loss(0), 0, 1e-8);
@@ -954,8 +1170,48 @@ TEST(NoiseModel, lossFunctionAtZero)
   auto assy_tukey = mEstimator::AsymmetricTukey::Create(k);
   DOUBLES_EQUAL(assy_tukey->loss(0), 0, 1e-8);
   DOUBLES_EQUAL(assy_tukey->weight(0), 1, 1e-8);
+  auto tls = mEstimator::TruncatedLeastSquares::Create(k);
+  DOUBLES_EQUAL(tls->loss(0), 0, 1e-8);
+  DOUBLES_EQUAL(tls->weight(0), 1, 1e-8);
 }
 
+TEST(NoiseModel, lossFunctionAtZeroGraduated) {
+  const double k = 5.0;
+  const double mu = 10;
+  auto huber = mEstimator::Huber::Create(k);
+  DOUBLES_EQUAL(huber->graduatedLoss(0, mu), 0, 1e-8);
+  DOUBLES_EQUAL(huber->graduatedWeight(0, mu), 1, 1e-8);
+  auto cauchy = mEstimator::Cauchy::Create(k);
+  DOUBLES_EQUAL(cauchy->graduatedLoss(0, mu), 0, 1e-8);
+  DOUBLES_EQUAL(cauchy->graduatedWeight(0, mu), 1, 1e-8);
+  auto gmc = mEstimator::GemanMcClure::Create(k);
+  DOUBLES_EQUAL(gmc->graduatedLoss(0, mu), 0, 1e-8);
+  DOUBLES_EQUAL(gmc->graduatedWeight(0, mu), 1, 1e-8);
+  auto gmcScaleInvariant = mEstimator::GemanMcClure::Create(
+      k, mEstimator::GemanMcClure::GradScheme::SCALE_INVARIANT);
+  DOUBLES_EQUAL(gmcScaleInvariant->graduatedLoss(0, 0.5), 0, 1e-8);
+  DOUBLES_EQUAL(gmcScaleInvariant->graduatedWeight(0, 0.5), 1, 1e-8);
+  auto welsch = mEstimator::Welsch::Create(k);
+  DOUBLES_EQUAL(welsch->graduatedLoss(0, mu), 0, 1e-8);
+  DOUBLES_EQUAL(welsch->graduatedWeight(0, mu), 1, 1e-8);
+  auto tukey = mEstimator::Tukey::Create(k);
+  DOUBLES_EQUAL(tukey->graduatedLoss(0, mu), 0, 1e-8);
+  DOUBLES_EQUAL(tukey->graduatedWeight(0, mu), 1, 1e-8);
+  auto dcs = mEstimator::DCS::Create(k);
+  DOUBLES_EQUAL(dcs->graduatedLoss(0, mu), 0, 1e-8);
+  DOUBLES_EQUAL(dcs->graduatedWeight(0, mu), 1, 1e-8);
+  auto tlsStandard = mEstimator::TruncatedLeastSquares::Create(
+      k, mEstimator::TruncatedLeastSquares::GradScheme::STANDARD);
+  DOUBLES_EQUAL(tlsStandard->graduatedLoss(0, mu), 0, 1e-8);
+  DOUBLES_EQUAL(tlsStandard->graduatedWeight(0, mu), 1, 1e-8);
+  auto tlsGncLinear = mEstimator::TruncatedLeastSquares::Create(
+      k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_LINEAR);
+  DOUBLES_EQUAL(tlsGncLinear->graduatedLoss(0, mu), 0, 1e-8);
+  DOUBLES_EQUAL(tlsGncLinear->graduatedWeight(0, mu), 1, 1e-8);
+  auto tlsGncSuperlinear = mEstimator::TruncatedLeastSquares::Create(
+      k, mEstimator::TruncatedLeastSquares::GradScheme::GNC_SUPERLINEAR);
+  DOUBLES_EQUAL(tlsGncSuperlinear->graduatedWeight(0, mu), 1, 1e-8);
+}
 
 /* ************************************************************************* */
 #define TEST_GAUSSIAN(gaussian)\
@@ -972,8 +1228,7 @@ TEST(NoiseModel, lossFunctionAtZero)
 
 TEST(NoiseModel, NonDiagonalGaussian)
 {
-  Matrix3 R;
-  R << 6, 5, 4, 0, 3, 2, 0, 0, 1;
+  Matrix3 R{{6, 5, 4}, {0, 3, 2}, {0, 0, 1}};
   const Matrix3 info = R.transpose() * R;
   const Matrix3 cov = info.inverse();
   const Vector3 e(1, 1, 1), white = R * e;
@@ -1005,8 +1260,7 @@ TEST(NoiseModel, NegLogNormalizationConstant1D) {
 
   // Gaussian
   {
-    Matrix11 R;
-    R << 1 / sigma;
+    Matrix11 R{{1 / sigma}};
     auto noise_model = Gaussian::SqrtInformation(R);
     double actual_value = noise_model->negLogConstant();
     EXPECT_DOUBLES_EQUAL(expected_value, actual_value, 1e-9);
@@ -1043,10 +1297,9 @@ TEST(NoiseModel, NegLogNormalizationConstant3D) {
 
   // Gaussian
   {
-    Matrix33 R;
-    R << 1 / sigma, 2, 3,  //
-        0, 1 / sigma, 4,   //
-        0, 0, 1 / sigma;
+    Matrix33 R{{1 / sigma, 2, 3},  //
+               {0, 1 / sigma, 4},  //
+               {0, 0, 1 / sigma}};
     auto noise_model = Gaussian::SqrtInformation(R);
     double actual_value = noise_model->negLogConstant();
     EXPECT_DOUBLES_EQUAL(expected_value, actual_value, 1e-9);

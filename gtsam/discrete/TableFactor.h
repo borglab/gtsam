@@ -213,6 +213,9 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// Convert into a decisiontree
   DecisionTreeFactor toDecisionTreeFactor() const override;
 
+  /// Return this sparse table representation.
+  TableFactor toTableFactor() const override { return *this; }
+
   /// Create a TableFactor that is a subset of this TableFactor
   TableFactor choose(const DiscreteValues parentAssignments,
                      DiscreteKeys parent_keys) const;
@@ -254,24 +257,6 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    * @param op a binary operator that operates on TableFactor
    */
   TableFactor apply(const TableFactor& f, Binary op) const;
-
-  /**
-   * Return keys in contract mode.
-   *
-   * Modes are each of the dimensions of a sparse tensor,
-   * and the contract modes represent which dimensions will
-   * be involved in contraction (aka tensor multiplication).
-   */
-  DiscreteKeys contractDkeys(const TableFactor& f) const;
-
-  /**
-   * @brief Return keys in free mode which are the dimensions
-   * not involved in the contraction operation.
-   */
-  DiscreteKeys freeDkeys(const TableFactor& f) const;
-
-  /// Return union of DiscreteKeys in two factors.
-  DiscreteKeys unionDkeys(const TableFactor& f) const;
 
   /// Create unique representation of union modes.
   uint64_t unionRep(const DiscreteKeys& keys, const DiscreteValues& assign,
@@ -378,6 +363,25 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   double error(const HybridValues& values) const override;
 
   /// @}
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  /// @name Deprecated scope helpers
+  /// @{
+
+  /// @deprecated Sort both discreteKeys() results, then use
+  /// std::set_intersection instead.
+  DiscreteKeys contractDkeys(const TableFactor& factor) const;
+
+  /// @deprecated Sort both discreteKeys() results, then use std::set_difference
+  /// instead.
+  DiscreteKeys freeDkeys(const TableFactor& factor) const;
+
+  /// @deprecated Sort both discreteKeys() results, then use std::set_union
+  /// instead.
+  DiscreteKeys unionDkeys(const TableFactor& factor) const;
+
+  /// @}
+#endif
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION

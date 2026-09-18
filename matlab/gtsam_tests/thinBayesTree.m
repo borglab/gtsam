@@ -1,6 +1,5 @@
 function bayesTree = thinBayesTree(depth, width)
-    import gtsam.*
     bayesNet = thinTreeBayesNet(depth, width);
-    fg = GaussianFactorGraph(bayesNet);
+    fg = gtsam.GaussianFactorGraph(bayesNet);
     bayesTree = fg.eliminateMultifrontal();
 end

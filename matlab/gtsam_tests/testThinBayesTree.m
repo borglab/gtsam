@@ -18,6 +18,5 @@
 %  */
 
 %% Run the tests
-import gtsam.*
 bayesTree = thinBayesTree(3,2);
-EQUALITY('7 = bayesTree.size', 4, bayesTree.size);
+gtsam.EQUALITY('7 = bayesTree.size', 4, bayesTree.size);

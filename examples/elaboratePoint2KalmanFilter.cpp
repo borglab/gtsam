@@ -259,7 +259,7 @@ int main() {
 
   // And update using z2 ...
   Point2 z2(2.0, 0.0);
-  SharedDiagonal R2 = noiseModel::Diagonal::Sigmas((gtsam::Vector2() << 0.25, 0.25).finished());
+  SharedDiagonal R2 = noiseModel::Diagonal::Sigmas(gtsam::Vector2{0.25, 0.25});
   PriorFactor<Point2> factor8(X(2), z2, R2);
 
   // Linearize the factor and add it to the linear factor graph

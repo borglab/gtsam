@@ -14,6 +14,7 @@ It includes classes for representing constraints, building constrained problems,
 ## Equality Constraints
 
 - [`NonlinearEqualityConstraint`](doc/NonlinearEqualityConstraint.ipynb): Base class for constraints of the form `h(x) = 0`.
+- [`NonlinearEquality`](doc/NonlinearEquality.ipynb): Pins a variable to a constant value or enforces equality between two variables.
 - [`ExpressionEqualityConstraint<T>`](doc/NonlinearEqualityConstraint.ipynb): Equality constraint from an expression and right-hand side.
 - [`ZeroCostConstraint`](doc/NonlinearEqualityConstraint.ipynb): Equality constraint that enforces zero residual on a cost factor.
 - [`NonlinearEqualityConstraints`](doc/NonlinearEqualityConstraint.ipynb): Container graph for equality constraints.
@@ -21,6 +22,7 @@ It includes classes for representing constraints, building constrained problems,
 ## Inequality Constraints
 
 - [`NonlinearInequalityConstraint`](doc/NonlinearInequalityConstraint.ipynb): Base class for constraints of the form `g(x) <= 0`.
+- [`BoundingConstraint`](https://github.com/borglab/gtsam/blob/develop/gtsam/constrained/BoundingConstraint.h): Base classes for unary and binary scalar bound constraints.
 - [`ScalarExpressionInequalityConstraint`](doc/NonlinearInequalityConstraint.ipynb): Scalar expression-based inequality constraint.
 - [`NonlinearInequalityConstraints`](doc/NonlinearInequalityConstraint.ipynb): Container graph for inequality constraints.
 - [`InequalityPenaltyFunction`](doc/InequalityPenaltyFunction.ipynb): Interface for ramp-like penalty mappings used with inequality constraints.
@@ -41,17 +43,21 @@ It includes classes for representing constraints, building constrained problems,
 - [`QuadraticConstraint`](doc/QcqpProblem.ipynb): Scalar quadratic constraint $\operatorname{tr}(X^\top A X) \sim b$, where $\sim$ is equal, less-equal, or greater-equal.
 - `QcqpProblem(graph, columnDim)`: Opt-in conversion hook for supported nonlinear factors that can populate `QpCost` objectives and `QuadraticConstraint` equalities over matrix-valued QCQP variables.
 - `InsertQcqpValue<T, D>` and `InsertQcqpConstraints<T, D>`: Helpers for inserting supported QCQP variable values and their equality constraints.
-- `ExtractQcqpValues<T, D>`: Best-effort projection of exact-shape matrix
-  slices back to rotations. Absolute results from unanchored matrix components
-  are gauge-dependent.
+- `ExtractQcqpValues<T, D>`: Projection of exact-shape D=1 homogeneous vectors
+  or matrix slices back to manifold values. Absolute results from unanchored
+  matrix components are gauge-dependent. Extraction is shape-only, so compact
+  D=1 Rot2 and Vector2 blocks (both 3-by-1) require key-directed recovery when
+  they appear in the same `Values` container.
 
 The leading factor of `1/2` in row-space `QpCost` construction is intentional:
 it follows GTSAM's standard factor-error convention. To represent a QCQP
 objective written without the `1/2`, pass twice the row-space `Q` blocks to
 `QpCost`.
 
-The rotation conversion has two tracks. Rot2 at `D=1` uses an exact homogeneous
-lift and supports a sign-pinning hard prior. At `D>=N`, Rot2 (`D>=2`) and Rot3
+The rotation conversion has two tracks. Rot2 at `D=1` uses the exact minimal
+homogeneous lift $[1,\cos\theta,\sin\theta]^\top$ and supports a sign-pinning
+hard prior. The identities $r_{01}=-r_{10}$ and $r_{11}=r_{00}$ are structural,
+so its SDP block has order 3 rather than 5. At `D>=N`, Rot2 (`D>=2`) and Rot3
 (`D>=3`) use row-Stiefel variables satisfying $XX^\top=I$. Between costs have a
 common right-$O(D)$ gauge. Matrix-form priors are intentionally unsupported: a
 fixed target $\|X-[M^\top\;0]\|_F^2$ breaks that gauge and cannot be represented
@@ -77,7 +83,10 @@ For a new user, it helps to think in two phases:
 
 Inequality constraints can use different smooth penalty shapes via
 `InequalityPenaltyFunction` (ramp, smooth polynomial ramps, or softplus),
-which controls behavior near the active constraint boundary.
+which controls behavior near the active constraint boundary in
+`PenaltyOptimizer`. `AugmentedLagrangianOptimizer` instead requires exact PHR
+inequality terms and rejects custom smooth penalties so its projected
+multiplier update remains mathematically consistent.
 
 ### 1) Build the Problem
 

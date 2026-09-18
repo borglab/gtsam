@@ -32,10 +32,8 @@ TEST(SparseEigen, sparseJacobianEigen) {
   GaussianFactorGraph gfg;
   SharedDiagonal model = noiseModel::Isotropic::Sigma(2, 0.5);
   const Key x123 = 0, x45 = 1;
-  gfg.add(x123, (Matrix(2, 3) << 1, 2, 3, 5, 6, 7).finished(),
-          Vector2(4, 8), model);
-  gfg.add(x123, (Matrix(2, 3) << 9, 10, 0, 0, 0, 0).finished(),
-          x45,  (Matrix(2, 2) << 11, 12, 14, 15.).finished(),
+  gfg.add(x123, Matrix{{1, 2, 3}, {5, 6, 7}}, Vector2(4, 8), model);
+  gfg.add(x123, Matrix{{9, 10, 0}, {0, 0, 0}}, x45, Matrix{{11, 12}, {14, 15.}},
           Vector2(13, 16), model);
 
   // Sparse Matrix

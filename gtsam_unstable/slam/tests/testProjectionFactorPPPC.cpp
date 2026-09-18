@@ -127,8 +127,9 @@ TEST( ProjectionFactorPPPC, Jacobian ) {
   factor.evaluateError(pose, Pose3(), point, *K1, H1Actual, H2Actual, H3Actual, H4Actual);
 
   // The expected Jacobians
-  Matrix H1Expected = (Matrix(2, 6) << 0., -554.256, 0., -92.376, 0., 0., 554.256, 0., 0., 0., -92.376, 0.).finished();
-  Matrix H3Expected = (Matrix(2, 3) << 92.376, 0., 0., 0., 92.376, 0.).finished();
+  Matrix H1Expected{{0., -554.256, 0., -92.376, 0., 0.},
+                    {554.256, 0., 0., 0., -92.376, 0.}};
+  Matrix H3Expected{{92.376, 0., 0.}, {0., 92.376, 0.}};
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
@@ -163,8 +164,9 @@ TEST( ProjectionFactorPPPC, JacobianWithTransform ) {
   factor.evaluateError(pose, body_P_sensor, point, *K1, H1Actual, H2Actual, H3Actual, H4Actual);
 
   // The expected Jacobians
-  Matrix H1Expected = (Matrix(2, 6) << -92.376, 0., 577.350, 0., 92.376, 0., -9.2376, -577.350, 0., 0., 0., 92.376).finished();
-  Matrix H3Expected = (Matrix(2, 3) << 0., -92.376, 0., 0., 0., -92.376).finished();
+  Matrix H1Expected{{-92.376, 0., 577.350, 0., 92.376, 0.},
+                    {-9.2376, -577.350, 0., 0., 0., 92.376}};
+  Matrix H3Expected{{0., -92.376, 0.}, {0., 0., -92.376}};
 
   // Verify the Jacobians are correct
   CHECK(assert_equal(H1Expected, H1Actual, 1e-3));

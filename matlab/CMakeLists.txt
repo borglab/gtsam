@@ -90,6 +90,10 @@ set(interface_files
     # matlab/custom.i lives outside the main gtsam/ tree, see comment below.
     ${GTSAM_SOURCE_DIR}/matlab/custom.i
 )
+if(GTSAM_USE_MOSEK)
+  list(APPEND interface_files
+       ${GTSAM_SOURCE_DIR}/gtsam/certifiable/certifiable_mosek.i)
+endif()
 # The fourth matlab_wrap() argument contains extra include directories for the
 # generated mex target. We point it at matlab/ because matlab/custom.i includes
 # MatlabCustomFactor.h from there.
@@ -100,7 +104,7 @@ matlab_wrap("${interface_files}" "gtsam" "${GTSAM_ADDITIONAL_LIBRARIES}"
 # lib directory so MATLAB can load it on macOS/Linux.
 set_target_properties(
   gtsam_matlab_wrapper
-  PROPERTIES BUILD_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
+  PROPERTIES BUILD_RPATH "${PROJECT_BINARY_DIR}/gtsam;${CMAKE_INSTALL_PREFIX}/lib"
              INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
              INSTALL_RPATH_USE_LINK_PATH TRUE)
 
@@ -117,7 +121,8 @@ if(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)
               "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}" "${ignore}" "${GTSAM_ENABLE_BOOST_SERIALIZATION}")
   set_target_properties(
     gtsam_unstable_matlab_wrapper
-    PROPERTIES BUILD_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
+    PROPERTIES BUILD_RPATH
+               "${PROJECT_BINARY_DIR}/gtsam_unstable;${PROJECT_BINARY_DIR}/gtsam;${CMAKE_INSTALL_PREFIX}/lib"
                INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
                INSTALL_RPATH_USE_LINK_PATH TRUE)
 endif(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)

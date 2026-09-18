@@ -25,6 +25,7 @@
 #include <gtsam/base/concepts.h>
 
 #include <type_traits>
+#include <utility>
 
 namespace gtsam {
 
@@ -52,6 +53,19 @@ struct manifold_tag {};
 template <typename T> struct traits;
 
 namespace internal {
+
+/// Probe for a class member localCoordinates implementation with Jacobians.
+template <class C, class ChartJacobian>
+using LocalCoordinatesWithJacobians = decltype(
+    std::declval<const C&>().localCoordinates(
+        std::declval<const C&>(), std::declval<ChartJacobian>(),
+        std::declval<ChartJacobian>()));
+
+/// Probe for a class member retract implementation with Jacobians.
+template <class C, class TangentVector, class ChartJacobian>
+using RetractWithJacobians = decltype(std::declval<const C&>().retract(
+    std::declval<const TangentVector&>(), std::declval<ChartJacobian>(),
+    std::declval<ChartJacobian>()));
 
 /// Requirements on type to pass it to Manifold template below
 template<class Class>
@@ -99,17 +113,44 @@ struct ManifoldTraits: GetDimensionImpl<Class, Class::dimension> {
   typedef Class ManifoldType;
   typedef manifold_tag structure_category;
   typedef Eigen::Matrix<double, dimension, 1> TangentVector;
+  typedef OptionalJacobian<dimension, dimension> ChartJacobian;
 
   // Local coordinates
   static TangentVector Local(const Class& origin, const Class& other) {
     return origin.localCoordinates(other);
   }
 
+  template <class C = Class,
+            class = LocalCoordinatesWithJacobians<C, ChartJacobian>>
+  static TangentVector Local(const Class& origin, const Class& other,
+                             ChartJacobian H1, ChartJacobian H2 = {}) {
+    return origin.localCoordinates(other, H1, H2);
+  }
+
   // Retraction back to manifold
   static Class Retract(const Class& origin, const TangentVector& v) {
     return origin.retract(v);
   }
+
+  template <class C = Class,
+            class = RetractWithJacobians<C, TangentVector, ChartJacobian>>
+  static Class Retract(const Class& origin, const TangentVector& v,
+                       ChartJacobian H1, ChartJacobian H2 = {}) {
+    return origin.retract(v, H1, H2);
+  }
 };
+
+/// Detect whether a traits type provides Local with Jacobians.
+template <class T, class = void>
+struct HasLocalJacobians : std::false_type {};
+
+template <class T>
+struct HasLocalJacobians<
+    T, std::void_t<decltype(traits<T>::Local(
+           std::declval<const T&>(), std::declval<const T&>(),
+           std::declval<typename traits<T>::ChartJacobian>(),
+           std::declval<typename traits<T>::ChartJacobian>()))>>
+    : std::true_type {};
 
 /// Both ManifoldTraits and Testable
 template<class Class> struct Manifold: ManifoldTraits<Class>, Testable<Class> {};

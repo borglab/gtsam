@@ -344,12 +344,9 @@ VioGroup Group3() {
   const Rot3 R = Rot3::RzRyRx(0.02, -0.03, 0.04);
   const Point3 t(0.05, -0.02, 0.03);
   const Vector3 w(0.01, -0.03, 0.02);
-  const SOT3 q1(SO3::Expmap((Vector3() << 0.03, -0.02, 0.01).finished()),
-                std::log(1.1));
-  const SOT3 q2(SO3::Expmap((Vector3() << -0.01, 0.04, -0.02).finished()),
-                std::log(0.95));
-  const SOT3 q3(SO3::Expmap((Vector3() << 0.02, 0.01, 0.03).finished()),
-                std::log(1.05));
+  const SOT3 q1(SO3::Expmap(Vector3{0.03, -0.02, 0.01}), std::log(1.1));
+  const SOT3 q2(SO3::Expmap(Vector3{-0.01, 0.04, -0.02}), std::log(0.95));
+  const SOT3 q3(SO3::Expmap(Vector3{0.02, 0.01, 0.03}), std::log(1.05));
   return makeVioGroup(
       Se23(R, w, t),
       Bias(Vector3(-0.02, 0.01, 0.0), Vector3(0.01, -0.01, 0.02)),
@@ -361,12 +358,9 @@ VioGroup Group3b() {
   const Rot3 R = Rot3::RzRyRx(-0.04, 0.01, -0.02);
   const Point3 t(-0.03, 0.04, -0.01);
   const Vector3 w(-0.02, 0.01, 0.03);
-  const SOT3 q1(SO3::Expmap((Vector3() << -0.02, 0.01, 0.04).finished()),
-                std::log(1.02));
-  const SOT3 q2(SO3::Expmap((Vector3() << 0.02, -0.03, 0.01).finished()),
-                std::log(0.98));
-  const SOT3 q3(SO3::Expmap((Vector3() << 0.01, 0.02, -0.02).finished()),
-                std::log(1.08));
+  const SOT3 q1(SO3::Expmap(Vector3{-0.02, 0.01, 0.04}), std::log(1.02));
+  const SOT3 q2(SO3::Expmap(Vector3{0.02, -0.03, 0.01}), std::log(0.98));
+  const SOT3 q3(SO3::Expmap(Vector3{0.01, 0.02, -0.02}), std::log(1.08));
   return makeVioGroup(
       Se23(R, w, t),
       Bias(Vector3(0.02, 0.01, -0.01), Vector3(-0.02, 0.03, -0.01)),

@@ -2,12 +2,17 @@
  * @file DynamicsPriors.h
  *
  * @brief Priors to be used with dynamic systems (Specifically PoseRTV)
+ * @deprecated These priors depend on the deprecated gtsam::PoseRTV state.
  *
  * @date Nov 22, 2011
  * @author Alex Cunningham
  */
 
 #pragma once
+
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 #include <gtsam_unstable/dynamics/PoseRTV.h>
 #include <gtsam_unstable/slam/PartialPriorFactor.h>
@@ -89,3 +94,5 @@ struct DGroundConstraint : public gtsam::PartialPriorFactor<PoseRTV> {
 };
 
 } // \namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

@@ -35,6 +35,7 @@ option(GTSAM_FORCE_SHARED_LIB               "Force gtsam to be a shared library,
 option(GTSAM_FORCE_STATIC_LIB               "Force gtsam to be a static library, overriding BUILD_SHARED_LIBS" OFF)
 option(GTSAM_USE_QUATERNIONS                "Enable/Disable using an internal Quaternion representation for rotations instead of rotation matrices. If enable, Rot3::EXPMAP is enforced by default." OFF)
 option(GTSAM_POSE3_EXPMAP                   "Enable/Disable using Pose3::EXPMAP as the default mode. If disabled, Pose3::FIRST_ORDER will be used." ON)
+option(GTSAM_NAVSTATE_EXPMAP                "Enable/Disable using the full NavState SE_2(3) Expmap/Logmap optimization chart. If disabled, the component-wise chart will be used." OFF)
 option(GTSAM_ROT3_EXPMAP                    "Ignore if GTSAM_USE_QUATERNIONS is OFF (Rot3::EXPMAP by default). Otherwise, enable Rot3::EXPMAP, or if disabled, use Rot3::CAYLEY." ON)
 option(GTSAM_DT_MERGING                     "Enable/Disable merging of equal leaf nodes in DecisionTrees. This leads to significant speed up and memory savings." ON)
 option(GTSAM_ENABLE_TIMING                  "Enable the timing tools (gttic/gttoc)" OFF)
@@ -47,12 +48,20 @@ option(GTSAM_WITH_EIGEN_MKL                 "Eigen will use Intel MKL if availab
 option(GTSAM_WITH_EIGEN_MKL_OPENMP          "Eigen, when using Intel MKL, will also use OpenMP for multithreading if available" OFF)
 option(GTSAM_THROW_CHEIRALITY_EXCEPTION     "Throw exception when a triangulated point is behind a camera" ON)
 option(GTSAM_BUILD_PYTHON                   "Enable/Disable building & installation of Python module with pybind11" OFF)
+option(GTSAM_USE_SYSTEM_PYBIND              "Find and use system-installed pybind11. If 'off', use the one bundled with GTSAM" OFF)
 option(GTSAM_INSTALL_MATLAB_TOOLBOX         "Enable/Disable installation of matlab toolbox"  OFF)
 option(GTSAM_ALLOW_DEPRECATED_SINCE_V43     "Allow use of methods/functions deprecated in GTSAM 4.3" ON)
 option(GTSAM_SUPPORT_NESTED_DISSECTION      "Support Metis-based nested dissection" ON)
 option(GTSAM_TANGENT_PREINTEGRATION         "Use new ImuFactor with integration on tangent space" ON)
-option(GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR "Use the slower but correct version of BetweenFactor" OFF)
-option(GTSAM_SLOW_BUT_CORRECT_EXPMAP        "Use slower but correct expmap for Pose2"  OFF)
+option(GTSAM_LIEGROUP_PREINTEGRATION        "Use NavState SE_2(3) Lie-group IMU preintegration by default (takes precedence over tangent preintegration)" OFF)
+option(GTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR
+       "Use Local Jacobians in BetweenFactor and PriorFactor when provided by traits" ON)
+option(GTSAM_SLOW_BUT_CORRECT_EXPMAP        "Use slower but correct expmap for Pose2"  ON)
+
+if (NOT GTSAM_SLOW_BUT_CORRECT_EXPMAP)
+    message(WARNING
+            "Disabling GTSAM_SLOW_BUT_CORRECT_EXPMAP is deprecated and will be removed in a future release.")
+endif()
 
 if (GTSAM_FORCE_SHARED_LIB AND GTSAM_FORCE_STATIC_LIB)
     message(FATAL_ERROR "GTSAM_FORCE_SHARED_LIB and GTSAM_FORCE_STATIC_LIB are both true. Please, to unambiguously select the desired library type to use to build GTSAM, set one of GTSAM_FORCE_SHARED_LIB=ON, GTSAM_FORCE_STATIC_LIB=ON, or BUILD_SHARED_LIBS={ON/OFF}")

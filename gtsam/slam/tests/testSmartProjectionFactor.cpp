@@ -161,8 +161,7 @@ TEST(SmartProjectionFactor, noisy ) {
       assert_equal(Point3(13.7587, 1.43851, -1.14274), *factor1->point(), 1e-4));
 
   // Check whitened errors
-  Vector expected(4);
-  expected << -7, 235, 58, -242;
+  Vector4 expected{-7, 235, 58, -242};
   SmartFactor::Cameras cameras1 = factor1->cameras(values);
   Point3 point1 = *factor1->point();
   Vector actual = factor1->whitenedError(cameras1, point1);
@@ -243,8 +242,7 @@ TEST(SmartProjectionFactor, perturbPoseAndOptimize ) {
           1e-4));
 
   // Check whitened errors
-  Vector expected(6);
-  expected << 256, 29, -26, 29, -206, -202;
+  Vector6 expected{256, 29, -26, 29, -206, -202};
   Point3 point1 = *smartFactor1->point();
   SmartFactor::Cameras cameras1 = smartFactor1->cameras(initial);
   Vector reprojectionError = cameras1.reprojectionError(point1,
@@ -788,9 +786,8 @@ TEST(SmartProjectionFactor, implicitJacobianFactor ) {
   Implicit9& implicitSchurFactor =
       dynamic_cast<Implicit9&>(*gaussianImplicitSchurFactor);
 
-  VectorValues x{
-      {c1, (Vector(9) << 1, 2, 3, 4, 5, 6, 7, 8, 9).finished()},
-      {c2, (Vector(9) << 11, 12, 13, 14, 15, 16, 17, 18, 19).finished()}};
+  VectorValues x{{c1, Vector{{1, 2, 3, 4, 5, 6, 7, 8, 9}}},
+                 {c2, Vector{{11, 12, 13, 14, 15, 16, 17, 18, 19}}}};
 
   VectorValues yExpected, yActual;
   double alpha = 1.0;
@@ -805,4 +802,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

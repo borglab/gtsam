@@ -1,0 +1,86 @@
+name: System Libraries CI
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: system-libraries-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Ubuntu 24.04 system libraries
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential \
+            cmake \
+            libboost-chrono-dev \
+            libboost-graph-dev \
+            libboost-program-options-dev \
+            libboost-random-dev \
+            libboost-serialization-dev \
+            libboost-timer-dev \
+            libeigen3-dev \
+            libgeographiclib-dev \
+            libmetis-dev \
+            libspectra-dev \
+            libsuitesparse-dev \
+            libtbb-dev \
+            ninja-build \
+            pybind11-dev \
+            python3-dev \
+            python3-numpy
+
+      - name: Configure with system libraries
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_DISABLE_FIND_PACKAGE_CHOLMOD=ON \
+            -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+            -DGTSAM_BUILD_PYTHON=ON \
+            -DGTSAM_BUILD_TESTS=ON \
+            -DGTSAM_BUILD_UNSTABLE=ON \
+            -DGTSAM_ENABLE_BOOST_SERIALIZATION=ON \
+            -DGTSAM_ENABLE_CUDA=OFF \
+            -DGTSAM_ENABLE_CUDSS=OFF \
+            -DGTSAM_ENABLE_GEOGRAPHICLIB=ON \
+            -DGTSAM_USE_BOOST_FEATURES=ON \
+            -DGTSAM_USE_SYSTEM_CCOLAMD=ON \
+            -DGTSAM_USE_SYSTEM_EIGEN=ON \
+            -DGTSAM_USE_SYSTEM_METIS=ON \
+            -DGTSAM_USE_SYSTEM_PYBIND=ON \
+            -DGTSAM_USE_SYSTEM_SPECTRA=ON \
+            -DGTSAM_WITH_EIGEN_MKL=OFF \
+            -DGTSAM_WITH_TBB=ON
+
+      - name: Verify system library selection
+        run: |
+          for option in \
+            GTSAM_USE_SYSTEM_CCOLAMD \
+            GTSAM_USE_SYSTEM_EIGEN \
+            GTSAM_USE_SYSTEM_METIS \
+            GTSAM_USE_SYSTEM_PYBIND \
+            GTSAM_USE_SYSTEM_SPECTRA
+          do
+            grep -q "^${option}:BOOL=ON$" build/CMakeCache.txt
+          done
+
+      - name: Build C++ libraries
+        run: |
+          cmake --build build --parallel 2 \
+            --target gtsam gtsam_unstable
+
+      - name: Run C++ tests
+        run: cmake --build build --parallel 2 --target check

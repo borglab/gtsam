@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file ImuFactorExample2
+ * @file ImuFactorsExample2.cpp
  * @brief Test example for using GTSAM ImuFactor and ImuCombinedFactor with ISAM2.
  * @author Robert Truax
  */
@@ -42,7 +42,6 @@ int main(int argc, char* argv[]) {
   params->setAccelerometerCovariance(I_3x3 * 0.1);
   params->setGyroscopeCovariance(I_3x3 * 0.1);
   params->setIntegrationCovariance(I_3x3 * 0.1);
-  params->setUse2ndOrderCoriolis(false);
   params->setOmegaCoriolis(Vector3(0, 0, 0));
 
   Pose3 delta(Rot3::Rodrigues(-0.1, 0.2, 0.25), Point3(0.05, -0.10, 0.20));
@@ -86,8 +85,7 @@ int main(int argc, char* argv[]) {
   initialEstimate.insert(biasKey, imuBias::ConstantBias());
   auto velnoise = noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.1, 0.1));
 
-  Vector n_velocity(3);
-  n_velocity << 0, angular_velocity * radius, 0;
+  Vector3 n_velocity{0, angular_velocity * radius, 0};
   newgraph.addPrior(V(0), n_velocity, velnoise);
 
   initialEstimate.insert(V(0), n_velocity);
@@ -113,8 +111,7 @@ int main(int argc, char* argv[]) {
         biasKey++;
         Symbol b1 = biasKey - 1;
         Symbol b2 = biasKey;
-        Vector6 covvec;
-        covvec << 0.1, 0.1, 0.1, 0.1, 0.1, 0.1;
+        Vector6 covvec{0.1, 0.1, 0.1, 0.1, 0.1, 0.1};
         auto cov = noiseModel::Diagonal::Variances(covvec);
         auto f = std::make_shared<BetweenFactor<imuBias::ConstantBias> >(
             b1, b2, imuBias::ConstantBias(), cov);

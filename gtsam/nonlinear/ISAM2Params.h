@@ -224,12 +224,13 @@ struct GTSAM_EXPORT ISAM2Params {
    * and landmark keys are of type TypedSymbol<'l',Point3>, then appropriate
    * entries would be added with:
    * \code
-     FastMap<char,Vector> thresholds;
-     thresholds['x'] = (Vector(6) << 0.1, 0.1, 0.1, 0.5, 0.5, 0.5).finished();
-   // 0.1 rad rotation threshold, 0.5 m translation threshold thresholds['l'] =
-   Vector3(1.0, 1.0, 1.0);                // 1.0 m landmark position threshold
-     params.relinearizeThreshold = thresholds;
-     \endcode
+   * FastMap<char, Vector> thresholds;
+   * // 0.1 rad rotation threshold, 0.5 m translation threshold
+   * thresholds['x'] = Vector{{0.1, 0.1, 0.1, 0.5, 0.5, 0.5}};
+   * // 1.0 m landmark position threshold
+   * thresholds['l'] = Vector3(1.0, 1.0, 1.0);
+   * params.relinearizeThreshold = thresholds;
+   * \endcode
    */
   RelinearizationThreshold relinearizeThreshold;
 
@@ -269,9 +270,10 @@ struct GTSAM_EXPORT ISAM2Params {
       keyFormatter;  ///< A KeyFormatter for when keys are printed during
                      ///< debugging (default: DefaultKeyFormatter)
 
-  bool enableDetailedResults;  ///< Whether to compute and return
-                               ///< ISAM2Result::detailedResults, this can
-                               ///< increase running time (default: false)
+  /** Compute per-variable details and ISAM2Result::treeNnz. The latter visits
+   * every clique, so enabling this can increase update time (default: false).
+   */
+  bool enableDetailedResults;
 
   /** Check variables for relinearization in tree-order, stopping the check once
    * a variable does not need to be relinearized (default: false). This can
@@ -393,10 +395,11 @@ struct GTSAM_EXPORT ISAM2Params {
   }
   KeyFormatter getKeyFormatter() const { return keyFormatter; }
 
-  void setOptimizationParams(OptimizationParams optimizationParams) {
+  void setOptimizationParams(const OptimizationParams& optimizationParams) {
     this->optimizationParams = optimizationParams;
   }
-  void setRelinearizeThreshold(RelinearizationThreshold relinearizeThreshold) {
+  void setRelinearizeThreshold(
+      const RelinearizationThreshold& relinearizeThreshold) {
     this->relinearizeThreshold = relinearizeThreshold;
   }
   void setFactorization(const std::string& factorization) {

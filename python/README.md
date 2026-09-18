@@ -48,6 +48,87 @@ For instructions on updating the version of the [wrap library](https://github.co
 
 - You can also directly run `make python-install` without running `make`, and it will compile all the dependencies accordingly.
 
+## CUDA Bindings
+
+The optional CUDA optimizers are exposed under `gtsam.cuda` only when the
+Python wrapper is built from source with CUDA enabled. Configure and build the
+module with:
+
+```bash
+cmake -S . -B build-cuda -DGTSAM_BUILD_PYTHON=ON \
+  -DGTSAM_ENABLE_CUDA=ON
+cmake --build build-cuda --target gtsam_py -j6
+```
+
+This is sufficient for the matrix-free PCG backend and CUDA SFM dense
+Cholesky. Add `-DGTSAM_ENABLE_CUDSS=ON` to enable the cuDSS sparse direct
+backend; cuDSS must be installed separately.
+
+When CUDA is disabled, `gtsam.cuda` is intentionally absent. See the
+[CUDA linear solver guide](../doc/CUDA_LINEAR_SOLVERS.md) for the General LM
+and SFM Python APIs, backend selection, and examples.
+
+### Graduated non-convexity with CUDA inner solvers
+
+GNC can use either CUDA LM optimizer through `gtsam.cuda.GncSparseLMOptimizer`
+or `gtsam.cuda.GncSfmLMOptimizer`. Construct the corresponding GNC parameter
+type to preserve the CUDA backend settings:
+
+```python
+import gtsam
+
+inner = gtsam.cuda.SparseLevenbergMarquardtParams()
+linear = gtsam.cuda.LinearSolverOptions()
+linear.backend = gtsam.cuda.LinearSolverType.Pcg
+inner.linear = linear
+inner.fallbackOnUnsupported = False
+params = gtsam.cuda.GncSparseLMParams(inner)
+params.setLossType(gtsam.GncLossType.TLS)  # GM is also supported
+params.setKnownInliers(prior_factor_indices)
+optimizer = gtsam.cuda.GncSparseLMOptimizer(graph, initial_values, params)
+optimizer.setInlierCostThresholdsAtProbability(0.99)
+result = optimizer.optimize()
+weights = optimizer.getWeights()
+```
+
+Here `graph`, `initial_values`, and `prior_factor_indices` describe your factor
+graph, starting estimate, and trusted factors. Known inlier/outlier indices and
+returned weights refer to **factor slots**, not variable keys. Scalar thresholds
+passed to `setInlierCostThresholds` are whitened factor costs
+`0.5 * r.T @ information @ r`, not pixel distances.
+
+For supported Bundler-camera bundle adjustment, select the specialized solver:
+
+```python
+inner = gtsam.cuda.SfmLevenbergMarquardtParams()
+inner.setLinearSolver(gtsam.cuda.LinearSolverType.DenseCholesky)
+params = gtsam.cuda.GncSfmLMParams(inner)
+optimizer = gtsam.cuda.GncSfmLMOptimizer(sfm_graph, initial_values, params)
+result = optimizer.optimize()
+weights = optimizer.getWeights()
+```
+
+For per-observation GNC, `sfm_graph` must contain individual
+`GeneralSFMFactorCal3Bundler` factors over `PinholeCameraCal3Bundler` cameras and
+`Point3` landmarks. Insert landmarks with
+`initial_values.insertPoint3(key, point)`: the generic NumPy-array `insert`
+overload stores a dynamic vector, which the specialized CUDA converter does not
+recognize as a `Point3`. The converter rejects arbitrary priors,
+Pose3 projection factors, and smart factors. Batched and smart factors are not
+reweighted by GNC; permitting non-noise-model factors does not enable their
+outlier rejection. Ensure enough observations remain after rejecting outliers.
+
+The GNC outer loop computes weights and rebuilds graphs on the CPU. General
+CUDA LM linearizes on the CPU and solves on the GPU; specialized CUDA SfM runs
+its inner LM iterations on the GPU. Each GNC iteration creates a fresh inner
+solver, so device setup is repeated. Passing a CUDA parameter object to the
+ordinary `GncLMParams` does **not** select a CUDA optimizer.
+
+The same generated classes are also available as `gtsam.GncCudaSparseLMParams`,
+`gtsam.GncCudaSparseLMOptimizer`, `gtsam.GncCudaSfmLMParams`, and
+`gtsam.GncCudaSfmLMOptimizer`. All of these CUDA GNC classes are absent in a
+build configured without CUDA.
+
 ## Windows Installation
 
 See Windows Installation in INSTALL.md in the root directory.

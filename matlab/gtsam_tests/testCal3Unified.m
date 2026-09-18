@@ -1,12 +1,12 @@
 % test Cal3Unified
-import gtsam.*;
+K = gtsam.Cal3Unified;
+gtsam.EXPECT('fx',K.fx()==1);
+gtsam.EXPECT('fy',K.fy()==1);
 
-K = Cal3Unified;
-EXPECT('fx',K.fx()==1);
-EXPECT('fy',K.fy()==1);
-
-params = PreintegrationParams.MakeSharedU(-9.81);
+params = gtsam.PreintegrationParams.MakeSharedU(-9.81);
 %params.getOmegaCoriolis()
 
+gtsam.EXPECT('getBodyPSensor default', isempty(params.getBodyPSensor()));
 expectedBodyPSensor = gtsam.Pose3(gtsam.Rot3(0, 0, 0, 0, 0, 0, 0, 0, 0), gtsam.Point3(0, 0, 0));
-EXPECT('getBodyPSensor', expectedBodyPSensor.equals(params.getBodyPSensor(), 1e-9));
+params.setBodyPSensor(expectedBodyPSensor);
+gtsam.EXPECT('getBodyPSensor set', expectedBodyPSensor.equals(params.getBodyPSensor(), 1e-9));

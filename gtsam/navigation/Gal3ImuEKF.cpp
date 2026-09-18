@@ -47,9 +47,8 @@ Gal3 Gal3ImuEKF::Dynamics(const Vector3& g_n, const Gal3& X,
 
   const Gal3 X_next = Base::Dynamics(W, X, U, A);
   if (A && mode == TRACK_TIME_WITH_COVARIANCE) {
-    // Extra column from state-dependent left factor W(t_k):
-    // right-trivialized increment at W due to δt is e_t := [0; 0; -g dt; 0] in
-    // the navigation frame
+    // Extra column from state-dependent left factor W(t_k): its local
+    // increment due to δt is e_t := [0; 0; -g dt; 0] in the navigation frame.
     Vector e_t(10);
     e_t.setZero();
     e_t.segment<3>(6) = -g_n * dt;  // p-block (indices 6..8)

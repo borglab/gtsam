@@ -21,7 +21,8 @@
 #include <Eigen/Eigenvalues>
 #include <algorithm>
 #include <cmath>
-#include <iostream>
+#include <cstdlib>
+#include <fstream>
 #include <set>
 #include <sstream>
 #include <stdexcept>
@@ -44,6 +45,77 @@ namespace {
 // Maps each pair of QCQP keys to its block in an SDP variable.
 using LiftedVariableXijToSDPVariableViewMap =
     std::map<std::pair<Key, Key>, mf::Variable::t>;
+
+// Recognize an exact, possibly scaled h^2=1 equality.
+bool isUnitHomogeneousConstraint(const QuadraticConstraint& constraint) {
+  const Matrix& A = constraint.A();
+  if (!constraint.isEquality() || A.size() == 0 || constraint.b() == 0.0 ||
+      !std::isfinite(constraint.b()) || A(0, 0) != constraint.b()) {
+    return false;
+  }
+  for (DenseIndex column = 0; column < A.cols(); ++column) {
+    for (DenseIndex row = 0; row < A.rows(); ++row) {
+      if ((row != 0 || column != 0) && A(row, column) != 0.0) return false;
+    }
+  }
+  return true;
+}
+
+// Custom QCQPs without explicit unit normalization retain the old formulation.
+bool canShareHomogeneousCoordinate(const QcqpProblem& problem,
+                                   const KeyVector& keys) {
+  KeySet normalized;
+  for (const auto& factor : problem.eConstraints()) {
+    const auto* quadratic =
+        dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
+    if (quadratic &&
+        isUnitHomogeneousConstraint(quadratic->quadraticConstraint())) {
+      normalized.insert(quadratic->quadraticConstraint().key());
+    }
+  }
+  return !keys.empty() && std::all_of(keys.begin(), keys.end(), [&](Key key) {
+    return normalized.count(key) != 0;
+  });
+}
+
+// Map original key coordinates to cone indices, optionally sharing index zero.
+std::map<Key, std::vector<int>> makeConeLayout(
+    const KeyVector& keys, const std::map<Key, DenseIndex>& dimensions,
+    bool shareHomogeneous, int* coneDimension) {
+  std::map<Key, std::vector<int>> layout;
+  *coneDimension = shareHomogeneous ? 1 : 0;
+  for (Key key : keys) {
+    auto& indices = layout[key];
+    for (DenseIndex row = 0; row < dimensions.at(key); ++row) {
+      indices.push_back(shareHomogeneous && row == 0 ? 0 : (*coneDimension)++);
+    }
+  }
+  return layout;
+}
+
+// Preserve original block shapes using logical views of the smaller PSD cone.
+mf::Variable::t makeBlockView(const mf::Variable::t& cone,
+                              const std::vector<int>& rows,
+                              const std::vector<int>& columns,
+                              bool shareHomogeneous) {
+  if (!shareHomogeneous) {
+    return cone->slice(
+        monty::new_array_ptr<int, 1>({rows.front(), columns.front()}),
+        monty::new_array_ptr<int, 1>({rows.back() + 1, columns.back() + 1}));
+  }
+  auto coordinates = monty::new_array_ptr<int, 2>(
+      monty::shape(rows.size() * columns.size(), 2));
+  size_t entry = 0;
+  for (int row : rows) {
+    for (int column : columns) {
+      (*coordinates)(entry, 0) = row;
+      (*coordinates)(entry++, 1) = column;
+    }
+  }
+  return cone->pick(coordinates)
+      ->reshape(static_cast<int>(rows.size()),
+                static_cast<int>(columns.size()));
+}
 
 // Stores the solver information exposed by the public result accessors.
 struct MosekSolveSummary {
@@ -80,11 +152,40 @@ MosekSolveSummary SolveMosekModel(
     M->setSolverParam(kv.first, kv.second);
   }
 
+  // Opt-in diagnostics preserve the model and solver parameters. Use a unique
+  // prefix per solve; the task, iteration log, and raw solution stay together.
+  const char* diagnosticPrefix = std::getenv("GTSAM_MOSEK_DIAGNOSTICS");
+  std::shared_ptr<std::ofstream> diagnosticLog;
+  if (diagnosticPrefix && *diagnosticPrefix) {
+    diagnosticLog = std::make_shared<std::ofstream>(
+        std::string(diagnosticPrefix) + ".log");
+    if (!*diagnosticLog) {
+      throw std::runtime_error("Cannot open MOSEK diagnostic log.");
+    }
+    M->setLogHandler([diagnosticLog](const std::string& message) {
+      *diagnosticLog << message;
+    });
+    M->writeTask(std::string(diagnosticPrefix) + ".task.gz");
+  }
+
   MosekSolveSummary summary;
   M->solve();
   summary.problemStatus = M->getProblemStatus();
   summary.optimizerTimeSeconds = M->getSolverDoubleInfo("optimizerTime");
   summary.solved = true;
+
+  if (diagnosticLog) {
+    *diagnosticLog << "\nGTSAM optimize response: "
+                   << M->getSolverIntInfo("optimizeResponse") << '\n';
+    const auto task = M->getTask();
+    if (MSK_analyzesolution(task, MSK_STREAM_LOG, MSK_SOL_ITR) != MSK_RES_OK ||
+        MSK_writejsonsol(task, (std::string(diagnosticPrefix) + ".solution.json")
+                                  .c_str()) != MSK_RES_OK) {
+      throw std::runtime_error("Cannot export MOSEK solution diagnostics.");
+    }
+    diagnosticLog->flush();
+    M->setLogHandler(nullptr);
+  }
 
   return summary;
 }
@@ -281,39 +382,41 @@ double ComputeBlockRankOneRatio(const Matrix& Xii) {
   return lambdaMax / lambdaSecond;
 }
 
-constexpr double kRecoveredBlockRankOneWarningThreshold = 1e5;
-
-// Recover the homogeneous lifted vector represented by the first Gram column.
-Vector RecoverLiftedVector(const Matrix& Xii) {
+// Recover the D=1 QCQP vector represented by the first Gram column.
+Vector RecoverQcqpVector(const Matrix& Xii) {
   if (Xii.rows() == 0 || Xii.cols() == 0 || std::abs(Xii(0, 0)) < 1e-9) {
     throw std::runtime_error(
-        "RecoverLiftedVector: homogenization entry is near zero.");
+        "RecoverQcqpVector: homogenization entry is near zero.");
   }
   return Xii.col(0);
 }
 
-// Recover every diagonal SDP block and record its rank-one metric.
-void RecoverLiftedVectors(const LiftedVariableXijToSDPVariableViewMap& XijMap,
-                          const KeyVector& orderedKeys,
-                          const std::map<Key, DenseIndex>& orderedKeyDims,
-                          std::vector<Vector>& recoveredLiftedVectors,
-                          std::vector<double>& recoveredVariableEVRs) {
-  const size_t variableCount = orderedKeys.size();
-  recoveredLiftedVectors.resize(variableCount);
-  recoveredVariableEVRs.resize(variableCount);
-
-  for (size_t index = 0; index < variableCount; ++index) {
-    const Key key = orderedKeys[index];
+// Recover one D=1 QCQP vector from every diagonal SDP block.
+Values RecoverQcqpValues(const LiftedVariableXijToSDPVariableViewMap& XijMap,
+                         const KeyVector& orderedKeys,
+                         const std::map<Key, DenseIndex>& orderedKeyDims) {
+  Values recoveredQcqpValues;
+  for (Key key : orderedKeys) {
     const Matrix Xii =
         ExtractSolvedMatrixBlock(XijMap.at({key, key}), orderedKeyDims.at(key));
-    recoveredVariableEVRs[index] = ComputeBlockRankOneRatio(Xii);
-    if (recoveredVariableEVRs[index] < kRecoveredBlockRankOneWarningThreshold) {
-      std::cerr << "WARNING: recovered lifted block for key "
-                << DefaultKeyFormatter(key) << " failed rank-1 check with EVR "
-                << recoveredVariableEVRs[index] << std::endl;
-    }
-    recoveredLiftedVectors[index] = RecoverLiftedVector(Xii);
+    recoveredQcqpValues.insert(key, Matrix(RecoverQcqpVector(Xii)));
   }
+  return recoveredQcqpValues;
+}
+
+// Compute one rank-one eigenvalue ratio per diagonal SDP block.
+std::vector<double> ComputeVariableEVRs(
+    const LiftedVariableXijToSDPVariableViewMap& XijMap,
+    const KeyVector& orderedKeys,
+    const std::map<Key, DenseIndex>& orderedKeyDims) {
+  std::vector<double> variableEVRs;
+  variableEVRs.reserve(orderedKeys.size());
+  for (Key key : orderedKeys) {
+    const Matrix Xii =
+        ExtractSolvedMatrixBlock(XijMap.at({key, key}), orderedKeyDims.at(key));
+    variableEVRs.push_back(ComputeBlockRankOneRatio(Xii));
+  }
+  return variableEVRs;
 }
 
 // Form one lifted objective term in the Hessian factor's local key order.
@@ -407,8 +510,17 @@ void AddLinearEqualityConstraint(
     const auto xi = Xii->slice(first, last)->asExpr();
     const Matrix A = J.getA(it);
     const Vector b = J.getb();
-    const auto lhs = mf::Expr::mul(convertToMosekDenseMatrix(A), xi);
-    M->constraint(lhs, mf::Domain::equalsTo(convertToMosekDenseMatrix(b)));
+
+    // Ax=b implies A*x*x'=b*x', hence A*X=b*x' after lifting X=x*x'.
+    // Since x is the first column of X and x(0)=1, x'=X(0,:).
+    // Enforcing only A*X(:,0)=b leaves unconstrained PSD slack in X.
+    const auto xTranspose =
+        Xii->slice(monty::new_array_ptr<int, 1>({0, 0}),
+                   monty::new_array_ptr<int, 1>({1, static_cast<int>(dim)}))
+            ->asExpr();
+    const auto lhs = mf::Expr::mul(convertToMosekDenseMatrix(A), Xii->asExpr());
+    const auto rhs = mf::Expr::mul(convertToMosekDenseMatrix(b), xTranspose);
+    M->constraint(mf::Expr::sub(lhs, rhs), mf::Domain::equalsTo(0.0));
   } else {
     throw std::runtime_error(
         "MonolithicSDP: only unary linear equality QCQP constraints are "
@@ -463,7 +575,8 @@ void AddChordalHomogenizationConsistencyConstraints(
 
 // Add all supported equality and inequality constraints to a Fusion model.
 void AddQcqpConstraints(const mf::Model::t& M, const QcqpProblem& problem,
-                        const LiftedVariableXijToSDPVariableViewMap& xijMap) {
+                        const LiftedVariableXijToSDPVariableViewMap& xijMap,
+                        bool shareHomogeneous) {
   // Equality factors may be quadratic or linear.
   for (const auto& factor : problem.eConstraints()) {
     if (!factor) {
@@ -473,6 +586,10 @@ void AddQcqpConstraints(const mf::Model::t& M, const QcqpProblem& problem,
     const auto* quadratic =
         dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
     if (quadratic) {
+      if (shareHomogeneous &&
+          isUnitHomogeneousConstraint(quadratic->quadraticConstraint())) {
+        continue;
+      }
       AddQuadraticConstraint(M, quadratic->quadraticConstraint(), xijMap);
       continue;
     }
@@ -520,48 +637,25 @@ struct LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::Impl {
   MosekSolveSummary lastSolveSummary;
   KeyVector orderedKeys;
   std::map<Key, DenseIndex> orderedKeyDims;
-  std::map<Key, std::pair<DenseIndex, DenseIndex>> orderedKeyToYSlice;
-  DenseIndex totalMonolithicDimension;
   LiftedVariableXijToSDPVariableViewMap liftedVariableXijToSDPVariableViewMap;
-  std::vector<Vector> recoveredLiftedVectors;
-  std::vector<double> recoveredVariableEVRs;
 
   ~Impl() {
-    recoveredLiftedVectors.clear();
-    recoveredVariableEVRs.clear();
     liftedVariableXijToSDPVariableViewMap.clear();
     DisposeMosekModel(M);
   }
 
-  // Compute the row and column range occupied by every key in the PSD matrix.
-  void computeMonolithicLayout() {
-    DenseIndex cumulativeIndex = 0;
-    orderedKeyToYSlice.clear();
-    for (Key key : orderedKeys) {
-      const DenseIndex start = cumulativeIndex;
-      const DenseIndex end = start + orderedKeyDims.at(key);
-      orderedKeyToYSlice[key] = {start, end};
-      cumulativeIndex = end;
-    }
-    totalMonolithicDimension = cumulativeIndex;
-  }
-
   // Cache a Fusion view for every block of the monolithic PSD matrix.
-  void populateXijMap(const mf::Variable::t& Y) {
+  void populateXijMap(const mf::Variable::t& Y,
+                      const std::map<Key, std::vector<int>>& layout,
+                      bool shareHomogeneous) {
     liftedVariableXijToSDPVariableViewMap.clear();
 
     for (Key key_i : orderedKeys) {
       for (Key key_j : orderedKeys) {
-        const auto [i_start, i_end] = orderedKeyToYSlice.at(key_i);
-        const auto [j_start, j_end] = orderedKeyToYSlice.at(key_j);
-
-        auto first = monty::new_array_ptr<int, 1>(
-            {static_cast<int>(i_start), static_cast<int>(j_start)});
-        auto last = monty::new_array_ptr<int, 1>(
-            {static_cast<int>(i_end), static_cast<int>(j_end)});
-
         liftedVariableXijToSDPVariableViewMap.emplace(
-            std::make_pair(key_i, key_j), Y->slice(first, last));
+            std::make_pair(key_i, key_j),
+            makeBlockView(Y, layout.at(key_i), layout.at(key_j),
+                          shareHomogeneous));
       }
     }
   }
@@ -573,13 +667,10 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
   KeyVector orderedKeys;
   std::map<Key, DenseIndex> orderedKeyDims;
   SymbolicBayesTree bayesTree_;
+  bool shareHomogeneous = false;
   LiftedVariableXijToSDPVariableViewMap liftedVariableXijToSDPVariableViewMap;
-  std::vector<Vector> recoveredLiftedVectors;
-  std::vector<double> recoveredVariableEVRs;
 
   ~Impl() {
-    recoveredLiftedVectors.clear();
-    recoveredVariableEVRs.clear();
     liftedVariableXijToSDPVariableViewMap.clear();
     DisposeMosekModel(M);
   }
@@ -627,29 +718,22 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
     KeyVector indices = clique->conditional()->keys();
     std::sort(indices.begin(), indices.end());
 
-    DenseIndex cliqueDimension = 0;
-    std::map<Key, std::pair<DenseIndex, DenseIndex>> keyToCliqueSlice;
-    for (Key key : indices) {
-      const DenseIndex start = cliqueDimension;
-      const DenseIndex end = start + orderedKeyDims.at(key);
-      keyToCliqueSlice[key] = {start, end};
-      cliqueDimension = end;
-    }
+    int cliqueDimension;
+    const auto layout = makeConeLayout(indices, orderedKeyDims,
+                                       shareHomogeneous, &cliqueDimension);
 
     if (!indices.empty()) {
       auto cliqueY =
           M->variable(makeCliqueVariableName(indices),
                       mf::Domain::inPSDCone(static_cast<int>(cliqueDimension)));
+      if (shareHomogeneous) {
+        M->constraint(cliqueY->index(0, 0), mf::Domain::equalsTo(1.0));
+      }
 
       for (Key key_i : indices) {
         for (Key key_j : indices) {
-          const auto [i_start, i_end] = keyToCliqueSlice.at(key_i);
-          const auto [j_start, j_end] = keyToCliqueSlice.at(key_j);
-          auto blockView = cliqueY->slice(
-              monty::new_array_ptr<int, 1>(
-                  {static_cast<int>(i_start), static_cast<int>(j_start)}),
-              monty::new_array_ptr<int, 1>(
-                  {static_cast<int>(i_end), static_cast<int>(j_end)}));
+          auto blockView = makeBlockView(cliqueY, layout.at(key_i),
+                                         layout.at(key_j), shareHomogeneous);
 
           const std::pair<Key, Key> key(key_i, key_j);
           auto [it, inserted] =
@@ -675,22 +759,31 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
 };
 
 LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
-    const QcqpProblem& problem)
+    const QcqpProblem& problem, bool shareHomogeneousCoordinates)
     : impl_(std::make_unique<Impl>()) {
   CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                             &impl_->orderedKeyDims);
-  impl_->computeMonolithicLayout();
+  const bool shareHomogeneous =
+      shareHomogeneousCoordinates &&
+      canShareHomogeneousCoordinate(problem, impl_->orderedKeys);
+  int coneDimension;
+  const auto layout = makeConeLayout(impl_->orderedKeys, impl_->orderedKeyDims,
+                                     shareHomogeneous, &coneDimension);
 
   // Represent the complete lifted matrix with one positive semidefinite cone.
   impl_->M = new mf::Model("MonolithicSDP_MosekSDPSolver");
-  auto Y = impl_->M->variable(
-      "Y",
-      mf::Domain::inPSDCone(static_cast<int>(impl_->totalMonolithicDimension)));
-  impl_->populateXijMap(Y);
+  auto Y = impl_->M->variable("Y", mf::Domain::inPSDCone(coneDimension));
+  impl_->populateXijMap(Y, layout, shareHomogeneous);
 
-  AddHomogenizationConsistencyConstraints(
-      impl_->M, impl_->orderedKeys,
-      impl_->liftedVariableXijToSDPVariableViewMap);
+  // PSD and X(hi,hi)=X(hj,hj)=X(hi,hj)=1 imply X*(e_hi-e_hj)=0.
+  // Thus homogeneous rows coincide even without rank one; views can alias them.
+  if (shareHomogeneous) {
+    impl_->M->constraint(Y->index(0, 0), mf::Domain::equalsTo(1.0));
+  } else {
+    AddHomogenizationConsistencyConstraints(
+        impl_->M, impl_->orderedKeys,
+        impl_->liftedVariableXijToSDPVariableViewMap);
+  }
 
   const auto objective =
       BuildObjective(problem, impl_->liftedVariableXijToSDPVariableViewMap);
@@ -698,7 +791,8 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
                       mf::Expr::mul(0.5, objective));
 
   AddQcqpConstraints(impl_->M, problem,
-                     impl_->liftedVariableXijToSDPVariableViewMap);
+                     impl_->liftedVariableXijToSDPVariableViewMap,
+                     shareHomogeneous);
 }
 
 LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::~LiftedSDPProblem() = default;
@@ -732,32 +826,23 @@ double LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::solveTimeSeconds()
   return impl_->lastSolveSummary.optimizerTimeSeconds;
 }
 
-void LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::recoverLiftedVectors() {
+Values LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::qcqpValues() const {
+  if (!impl_->lastSolveSummary.solved) {
+    throw std::runtime_error("qcqpValues: solve() has not been called.");
+  }
   impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
-  RecoverLiftedVectors(impl_->liftedVariableXijToSDPVariableViewMap,
-                       impl_->orderedKeys, impl_->orderedKeyDims,
-                       impl_->recoveredLiftedVectors,
-                       impl_->recoveredVariableEVRs);
+  return RecoverQcqpValues(impl_->liftedVariableXijToSDPVariableViewMap,
+                           impl_->orderedKeys, impl_->orderedKeyDims);
 }
 
-const std::vector<Vector>& LiftedSDPProblem<
-    MonolithicSDP, MosekSDPSolver>::getRecoveredLiftedVectors() const {
-  if (impl_->recoveredLiftedVectors.empty()) {
-    throw std::runtime_error(
-        "getRecoveredLiftedVectors: recoverLiftedVectors() must be called "
-        "first.");
+std::vector<double>
+LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::variableEVRs() const {
+  if (!impl_->lastSolveSummary.solved) {
+    throw std::runtime_error("variableEVRs: solve() has not been called.");
   }
-  return impl_->recoveredLiftedVectors;
-}
-
-const std::vector<double>& LiftedSDPProblem<
-    MonolithicSDP, MosekSDPSolver>::getRecoveredVariableEVRs() const {
-  if (impl_->recoveredVariableEVRs.empty()) {
-    throw std::runtime_error(
-        "getRecoveredVariableEVRs: recoverLiftedVectors() must be called "
-        "first.");
-  }
-  return impl_->recoveredVariableEVRs;
+  impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
+  return ComputeVariableEVRs(impl_->liftedVariableXijToSDPVariableViewMap,
+                             impl_->orderedKeys, impl_->orderedKeyDims);
 }
 
 const KeyVector& LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::orderedKeys()
@@ -771,18 +856,26 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::orderedKeyDims() const {
 }
 
 LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
-    const QcqpProblem& problem, ChordalOrderingType orderingType)
+    const QcqpProblem& problem, ChordalOrderingType orderingType,
+    bool shareHomogeneousCoordinates)
     : impl_(std::make_unique<Impl>()) {
   CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                             &impl_->orderedKeyDims);
   impl_->M = new mf::Model("ChordalSDP_MosekSDPSolver");
   impl_->bayesTree_ = BuildSymbolicBayesTree(problem, orderingType);
+  // Cost-edge consistency and PSD overlaps propagate the homogeneous row
+  // identity through each connected component, including chordal fill edges.
+  impl_->shareHomogeneous =
+      shareHomogeneousCoordinates &&
+      canShareHomogeneousCoordinate(problem, impl_->orderedKeys);
 
   // Use one positive semidefinite variable per symbolic clique.
   impl_->populateXijMap();
 
-  AddChordalHomogenizationConsistencyConstraints(
-      impl_->M, problem, impl_->liftedVariableXijToSDPVariableViewMap);
+  if (!impl_->shareHomogeneous) {
+    AddChordalHomogenizationConsistencyConstraints(
+        impl_->M, problem, impl_->liftedVariableXijToSDPVariableViewMap);
+  }
 
   const auto objective =
       BuildObjective(problem, impl_->liftedVariableXijToSDPVariableViewMap);
@@ -790,7 +883,8 @@ LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
                       mf::Expr::mul(0.5, objective));
 
   AddQcqpConstraints(impl_->M, problem,
-                     impl_->liftedVariableXijToSDPVariableViewMap);
+                     impl_->liftedVariableXijToSDPVariableViewMap,
+                     impl_->shareHomogeneous);
 }
 
 LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::~LiftedSDPProblem() = default;
@@ -823,32 +917,23 @@ double LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::solveTimeSeconds() const {
   return impl_->lastSolveSummary.optimizerTimeSeconds;
 }
 
-void LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::recoverLiftedVectors() {
+Values LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::qcqpValues() const {
+  if (!impl_->lastSolveSummary.solved) {
+    throw std::runtime_error("qcqpValues: solve() has not been called.");
+  }
   impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
-  RecoverLiftedVectors(impl_->liftedVariableXijToSDPVariableViewMap,
-                       impl_->orderedKeys, impl_->orderedKeyDims,
-                       impl_->recoveredLiftedVectors,
-                       impl_->recoveredVariableEVRs);
+  return RecoverQcqpValues(impl_->liftedVariableXijToSDPVariableViewMap,
+                           impl_->orderedKeys, impl_->orderedKeyDims);
 }
 
-const std::vector<Vector>& LiftedSDPProblem<
-    ChordalSDP, MosekSDPSolver>::getRecoveredLiftedVectors() const {
-  if (impl_->recoveredLiftedVectors.empty()) {
-    throw std::runtime_error(
-        "getRecoveredLiftedVectors: recoverLiftedVectors() must be called "
-        "first.");
+std::vector<double> LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::variableEVRs()
+    const {
+  if (!impl_->lastSolveSummary.solved) {
+    throw std::runtime_error("variableEVRs: solve() has not been called.");
   }
-  return impl_->recoveredLiftedVectors;
-}
-
-const std::vector<double>&
-LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::getRecoveredVariableEVRs() const {
-  if (impl_->recoveredVariableEVRs.empty()) {
-    throw std::runtime_error(
-        "getRecoveredVariableEVRs: recoverLiftedVectors() must be called "
-        "first.");
-  }
-  return impl_->recoveredVariableEVRs;
+  impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
+  return ComputeVariableEVRs(impl_->liftedVariableXijToSDPVariableViewMap,
+                             impl_->orderedKeys, impl_->orderedKeyDims);
 }
 
 const KeyVector& LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::orderedKeys()

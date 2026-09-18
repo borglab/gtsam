@@ -143,8 +143,7 @@ TEST(LieGroupEKF, StateAndControl) {
 // Namespace for dynamic Matrix LieGroupEKF test
 namespace exampleLieGroupDynamicMatrix {
 // Constant tangent vector for dynamics (same as "velocityTangent" in IEKF test)
-const Vector kFixedVelocityTangent =
-    (Vector(4) << 0.5, 0.1, -0.1, -0.5).finished();
+const Vector kFixedVelocityTangent = Vector{{0.5, 0.1, -0.1, -0.5}};
 
 // Dynamics function: xi = f(X, H_X)
 // Returns a constant tangent vector, so Df_DX = 0.
@@ -179,7 +178,7 @@ double h(const Matrix& p, OptionalJacobian<-1, -1> H = {}) {
 
 TEST(LieGroupEKF_DynamicMatrix, PredictAndUpdate) {
   // --- Setup ---
-  Matrix p0Matrix = (Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0).finished();
+  Matrix p0Matrix{{1.0, 2.0}, {3.0, 4.0}};
   Matrix p0Covariance = I_4x4 * 0.01;
   double dt = 0.1;
   // Continuous-time.
@@ -250,12 +249,11 @@ struct LinearDynamics {
   Matrix A;
   Vector xi;
   LinearDynamics() {
-    A = (Matrix(4, 4) << 0.1, -0.2, 0.0, 0.3,  //
-         0.05, 0.1, -0.15, 0.2,                //
-         -0.25, 0.0, 0.05, -0.1,               //
-         0.0, 0.2, -0.05, 0.15)
-            .finished();
-    xi = (Vector(4) << 0.4, -0.3, 0.2, 0.1).finished();
+    A = Matrix{{0.1, -0.2, 0.0, 0.3},
+               {0.05, 0.1, -0.15, 0.2},
+               {-0.25, 0.0, 0.05, -0.1},
+               {0.0, 0.2, -0.05, 0.15}};
+    xi = Vector{{0.4, -0.3, 0.2, 0.1}};
   }
 
   Vector operator()(
