@@ -23,6 +23,8 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/factorTesting.h>
 
+#include <Eigen/Eigenvalues>
+
 using namespace gtsam;
 
 /* ************************************************************************* */
@@ -378,6 +380,168 @@ TEST(GalileanImuFactor, ResetAndTimeValidation) {
   CHECK_EXCEPTION(
       pim.integrateMeasurement(Vector3::Zero(), Vector3::Zero(), 0.0),
       std::runtime_error);
+}
+
+// Synthetic dense covariance retains navigation--bias cross-covariance.
+Matrix15 DenseCovariance() {
+  Matrix15 a;
+  for (int i = 0; i < 15; ++i) {
+    for (int j = 0; j < 15; ++j) {
+      a(i, j) = std::sin(1.1 + i * 2.3 + j * 0.7);
+    }
+  }
+  return a * a.transpose() + Matrix15::Identity();
+}
+
+// Checks rotating-frame endpoint covariance, cross terms, and fixed factor
+// whitening for the Galilean standard and Combined factors.
+TEST(GalileanImuFactor, RotatingCovarianceAndWhitening) {
+  const NavState initial(Rot3::Expmap(Vector3(.4, -.3, .6)),
+                         Vector3(2., -3., 1.), Vector3(.5, 2., -.7));
+  const Bias bias(Vector3(.03, -.02, .01), Vector3(.01, .02, -.01));
+  for (const Vector3& rate : {Vector3::Zero().eval(),
+                              Vector3(0, 6.1e-5, 4e-5),
+                              Vector3(.2, -.3, .4)}) {
+    auto params =
+        std::make_shared<PreintegrationCombinedParams>(Vector3(0, 0, -9.81));
+    params->omegaCoriolis = rate;
+    params->setAccelerometerCovariance(0.02 * I_3x3);
+    params->setGyroscopeCovariance(0.01 * I_3x3);
+    params->setIntegrationCovariance(Z_3x3);
+    GalileanPreintegration base(params, bias);
+    const Matrix15 raw = DenseCovariance();
+    PIM pim(base, raw.topLeftCorner<9, 9>());
+    CombinedPIM combined(params, bias, raw);
+    for (int i = 0; i < 8; ++i) {
+      pim.integrateMeasurement(Vector3(.7, -.2, 2.),
+                               Vector3(.3, .2, -.4), .05);
+      combined.integrateMeasurement(Vector3(.7, -.2, 2.),
+                                    Vector3(.3, .2, -.4), .05);
+    }
+
+    const Matrix9 navigationRaw = pim.preintMeasCov();
+    const Matrix15 jointRaw = combined.preintMeasCov();
+    const NavState predicted = pim.predict(initial, bias);
+    EXPECT(
+        assert_equal(Vector(predicted.logmap(combined.predict(initial, bias))),
+                     Vector9::Zero(), 1e-12));
+
+    Matrix9 inverseLift = Matrix9::Identity();
+    const Matrix3 omega = skewSymmetric(rate), rotation = predicted.R();
+    inverseLift.block<3, 3>(6, 3) =
+        -rotation.transpose() * omega * rotation;
+    const NavState lifted(predicted.attitude(), predicted.position(),
+                          predicted.velocity() + omega * predicted.position());
+    auto project = [&](const NavState& y) {
+      return NavState(y.attitude(), y.position(),
+                      y.velocity() - omega * y.position());
+    };
+    // Full SE_2(3) Expmap perturbations, not component-wise Local.
+    auto stochastic = [&](const Vector9& d) -> Vector9 {
+      return project(lifted.expmap(d)).logmap(predicted);
+    };
+    const Matrix9 numeric = numericalDerivative11<Vector9, Vector9>(
+        stochastic, Vector9::Zero(), 1e-5);
+    EXPECT(assert_equal(Matrix(numeric), -inverseLift, 2e-7));
+
+    const Matrix9 expected =
+        inverseLift * navigationRaw * inverseLift.transpose();
+    EXPECT(assert_equal(pim.residualCovarianceAt(predicted.attitude()),
+                        expected, 1e-12));
+    Matrix15 combinedLift = Matrix15::Identity();
+    combinedLift.topLeftCorner<9, 9>() = inverseLift;
+    Matrix15 sign = Matrix15::Identity();
+    sign.bottomRightCorner<6, 6>() = -I_6x6;
+    const Matrix15 expectedCombined =
+        combinedLift * sign * jointRaw * sign * combinedLift.transpose();
+    EXPECT(assert_equal(combined.residualCovarianceAt(predicted.attitude()),
+                        expectedCombined, 1e-12));
+    EXPECT(assert_equal(Matrix(expectedCombined), expectedCombined.transpose(),
+                        1e-12));
+    EXPECT(Eigen::SelfAdjointEigenSolver<Matrix15>(expectedCombined)
+               .eigenvalues()
+               .minCoeff() >= -1e-12);
+    EXPECT(assert_equal(Matrix(expectedCombined.topRightCorner<9, 6>()),
+                        -inverseLift * jointRaw.topRightCorner<9, 6>(), 1e-12));
+    if (rate.isZero()) {
+      EXPECT(assert_equal(expected, navigationRaw, 1e-12));
+    }
+
+    // The compatibility API freezes prediction from identity at biasHat.
+    const Matrix3 defaultRotation = pim.predict(NavState(), bias).R();
+    Matrix9 defaultLift = Matrix9::Identity();
+    defaultLift.block<3, 3>(6, 3) =
+        -defaultRotation.transpose() * omega * defaultRotation;
+    EXPECT(assert_equal(Matrix(pim.residualCovariance()),
+                        defaultLift * navigationRaw * defaultLift.transpose(),
+                        1e-12));
+    Matrix15 defaultCombinedLift = Matrix15::Identity();
+    defaultCombinedLift.topLeftCorner<9, 9>() = defaultLift;
+    EXPECT(assert_equal(
+        combined.residualCovariance(),
+        defaultCombinedLift * sign * jointRaw * sign *
+            defaultCombinedLift.transpose(),
+        1e-12));
+
+    // Factor construction fixes covariance while the optimized states move.
+    GalileanImuFactor2 factor(1, 2, 3, pim, predicted.attitude());
+    EXPECT(assert_equal(
+        std::dynamic_pointer_cast<noiseModel::Gaussian>(factor.noiseModel())
+            ->covariance(),
+        expected, 1e-10));
+    const NavState endpoint = predicted.expmap(
+        (Vector9() << .2, -.1, .15, .1, .2, -.3, .2, -.1, .4).finished());
+    Matrix initialJacobian, endpointJacobian, biasJacobian;
+    factor.evaluateError(initial, endpoint, bias, initialJacobian,
+                         endpointJacobian, biasJacobian);
+    auto initialError = [&](const NavState& x) -> Vector9 {
+      return factor.evaluateError(x, endpoint, bias);
+    };
+    auto endpointError = [&](const NavState& x) -> Vector9 {
+      return factor.evaluateError(initial, x, bias);
+    };
+    auto biasError = [&](const Bias& x) -> Vector9 {
+      return factor.evaluateError(initial, endpoint, x);
+    };
+    EXPECT(assert_equal(
+        initialJacobian,
+        numericalDerivative11<Vector9, NavState>(initialError, initial), 2e-7));
+    EXPECT(assert_equal(
+        endpointJacobian,
+        numericalDerivative11<Vector9, NavState>(endpointError, endpoint),
+        2e-7));
+    EXPECT(assert_equal(biasJacobian,
+                        numericalDerivative11<Vector9, Bias>(biasError, bias),
+                        2e-7));
+    EXPECT(assert_equal(
+        std::dynamic_pointer_cast<noiseModel::Gaussian>(factor.noiseModel())
+            ->covariance(),
+        expected, 1e-10));
+
+    GalileanCombinedImuFactor combinedFactor(1, 2, 3, 4, 5, 6, combined,
+                                             predicted.attitude());
+    EXPECT(assert_equal(std::dynamic_pointer_cast<noiseModel::Gaussian>(
+                            combinedFactor.noiseModel())
+                            ->covariance(),
+                        expectedCombined, 1e-10));
+    Values values;
+    values.insert(1, initial.pose());
+    values.insert(2, initial.velocity());
+    values.insert(3, endpoint.pose());
+    values.insert(4, endpoint.velocity());
+    const Bias changedBias(Vector3(.04, -.01, .03),
+                           Vector3(.02, .01, -.03));
+    values.insert(5, changedBias);
+    values.insert(6, bias);
+    EXPECT(internal::testFactorJacobians("combined physical whitening",
+                                         combinedFactor, values, 1e-5, 2e-7));
+    Values ordinary;
+    ordinary.insert(1, initial);
+    ordinary.insert(2, endpoint);
+    ordinary.insert(3, changedBias);
+    EXPECT(internal::testFactorJacobians(
+        "ordinary physical whitening", factor, ordinary, 1e-5, 2e-7));
+  }
 }
 
 }  // namespace galilean_imu_factor

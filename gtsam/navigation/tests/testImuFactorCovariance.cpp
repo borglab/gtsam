@@ -471,6 +471,27 @@ TEST_PIM_WITH_COMBINED_BACKEND(ImuFactorErrorMode,
   }
 }
 
+// Missing params must not trigger prediction or suppress chart/sign conversion.
+TEST_PIM_WITH_COMBINED_BACKEND(ImuFactorCovariance, NoParams) {
+  using Backend = typename PimBackend<PIM>::Type;
+  const Backend backend(std::shared_ptr<PreintegrationParams>{},
+                        imuBias::ConstantBias());
+  const PIM pim(backend, I_9x9);
+  const Rot3 attitude = Rot3::RzRyRx(0.4, -0.3, 0.6);
+  EXPECT(assert_equal(Matrix(I_9x9), pim.residualCovariance(), 1e-12));
+  EXPECT(assert_equal(Matrix(I_9x9), pim.residualCovarianceAt(attitude), 1e-12));
+
+  Matrix15 covariance = Matrix15::Identity();
+  covariance(0, 9) = covariance(9, 0) = 0.2;
+  const CombinedPIM combined(std::shared_ptr<PreintegrationCombinedParams>{},
+                             imuBias::ConstantBias(), covariance);
+  Matrix15 expected = covariance;
+  expected(0, 9) = expected(9, 0) = -0.2;
+  EXPECT(assert_equal(Matrix(expected), combined.residualCovariance(), 1e-12));
+  EXPECT(assert_equal(Matrix(expected),
+                      combined.residualCovarianceAt(attitude), 1e-12));
+}
+
 // Checks optimized propagation against the original dense equation.
 TEST_PIM(ImuFactorCovariance, DensePropagationRegression) {
   EXPECT(matchesDensePropagation<PIM>(false));
@@ -656,6 +677,70 @@ Matrix15 monteCarloCombinedResidualCovariance(
   const Matrix15 covariance =
       sumOfProducts / static_cast<double>(kMonteCarloSamples - 1);
   return 0.5 * (covariance + covariance.transpose());
+}
+
+// Differentiates integration and prediction with respect to each IMU sample:
+// this reference does not use the covariance conversion or its Jacobian.
+TEST_PIM(ImuFactorCovariance, RotatingMeasurementSensitivity) {
+  const auto params = makeParams();
+  const imuBias::ConstantBias bias;
+  constexpr double dt = 0.1;
+  constexpr size_t count = 5;
+  Vector6 measurement;
+  measurement << kMeasuredAcceleration, kMeasuredAngularVelocity;
+  Matrix6 measurementCovariance = Matrix6::Zero();
+  measurementCovariance.topLeftCorner<3, 3>() =
+      params->accelerometerCovariance / dt;
+  measurementCovariance.bottomRightCorner<3, 3>() =
+      params->gyroscopeCovariance / dt;
+  PIM inertial(params, bias);
+  for (size_t i = 0; i < count; ++i) {
+    inertial.integrateMeasurement(measurement.head<3>(), measurement.tail<3>(), dt);
+  }
+  // Before the fix, omegaCoriolis was ignored by residualCovariance(), so its
+  // result was exactly this inertial covariance for every navigation frame.
+  const Matrix9 preFixCovariance = inertial.residualCovariance();
+
+  for (const Vector3& rate : {Vector3::Zero().eval(),
+                              Vector3(0, 6.1e-5, 4e-5),
+                              Vector3(.2, -.3, .4)}) {
+    params->omegaCoriolis = rate;
+    PIM nominal(params, bias);
+    for (size_t i = 0; i < count; ++i) {
+      nominal.integrateMeasurement(measurement.head<3>(),
+                                   measurement.tail<3>(), dt);
+    }
+    for (const NavState& initial :
+         {NavState(), NavState(Rot3::Expmap(Vector3(.4, -.3, .6)),
+                               Vector3(2., -3., 1.), Vector3(.5, 2., -.7))}) {
+      const NavState predicted = nominal.predict(initial, bias);
+      Matrix9 expected = Matrix9::Zero();
+      for (size_t sample = 0; sample < count; ++sample) {
+        auto error = [&](const Vector6& perturbed) -> Vector9 {
+          PIM noisy(params, bias);
+          for (size_t i = 0; i < count; ++i) {
+            const Vector6& input = i == sample ? perturbed : measurement;
+            noisy.integrateMeasurement(input.head<3>(), input.tail<3>(), dt);
+          }
+          return predicted.logmap(noisy.predict(initial, bias));
+        };
+        const Matrix96 sensitivity =
+            numericalDerivative11<Vector9, Vector6>(error, measurement, 1e-5);
+        expected += sensitivity * measurementCovariance * sensitivity.transpose();
+      }
+      const Matrix9 actual =
+          nominal.residualCovarianceAt(predicted.attitude());
+      EXPECT((actual - expected).norm() / expected.norm() < 1e-7);
+      if (!rate.isZero()) {
+        EXPECT((preFixCovariance - expected).norm() / expected.norm() > 1e-7);
+      }
+      if (initial.equals(NavState())) {
+        // This assertion also runs against the pre-fix, no-argument API.
+        EXPECT((nominal.residualCovariance() - expected).norm() /
+                   expected.norm() < 1e-7);
+      }
+    }
+  }
 }
 
 // Checks the covariance installed on each factor against its residual chart.

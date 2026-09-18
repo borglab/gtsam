@@ -248,6 +248,7 @@ class PreintegratedImuMeasurements {
 
   gtsam::Matrix preintMeasCov() const;
   gtsam::Matrix9 residualCovariance() const;
+  gtsam::Matrix9 residualCovarianceAt(const gtsam::Rot3& predictedAttitude) const;
   @pybind_lambda
   gtsam::Vector9 preintegrated() const;
   double deltaTij() const;
@@ -295,6 +296,7 @@ class PreintegratedImuMeasurementsT {
 
   gtsam::Matrix preintMeasCov() const;
   gtsam::Matrix9 residualCovariance() const;
+  gtsam::Matrix9 residualCovarianceAt(const gtsam::Rot3& predictedAttitude) const;
   @pybind_lambda
   gtsam::Vector9 preintegrated() const;
   double deltaTij() const;
@@ -330,6 +332,10 @@ virtual class ImuFactor: gtsam::NoiseModelFactor {
   ImuFactor(gtsam::Key pose_i, gtsam::Key vel_i, gtsam::Key pose_j, gtsam::Key vel_j,
       gtsam::Key bias,
       const gtsam::PreintegratedImuMeasurements& preintegratedMeasurements);
+  ImuFactor(gtsam::Key pose_i, gtsam::Key vel_i, gtsam::Key pose_j, gtsam::Key vel_j,
+      gtsam::Key bias,
+      const gtsam::PreintegratedImuMeasurements& preintegratedMeasurements,
+      const gtsam::Rot3& predictedAttitude);
 
   // Standard Interface
   const gtsam::PreintegratedImuMeasurements& preintegratedMeasurements() const;
@@ -352,6 +358,9 @@ virtual class ImuFactor2: gtsam::NoiseModelFactor {
   ImuFactor2(gtsam::Key state_i, gtsam::Key state_j,
       gtsam::Key bias,
       const gtsam::PreintegratedImuMeasurements& preintegratedMeasurements);
+  ImuFactor2(gtsam::Key state_i, gtsam::Key state_j, gtsam::Key bias,
+      const gtsam::PreintegratedImuMeasurements& preintegratedMeasurements,
+      const gtsam::Rot3& predictedAttitude);
 
   // Standard Interface
   const gtsam::PreintegratedImuMeasurements& preintegratedMeasurements() const;
@@ -372,6 +381,11 @@ virtual class GalileanImuFactor: gtsam::NoiseModelFactor {
       gtsam::Key pose_i, gtsam::Key vel_i, gtsam::Key pose_j,
       gtsam::Key vel_j, gtsam::Key bias,
       const gtsam::PreintegratedImuMeasurementsG& preintegratedMeasurements);
+  GalileanImuFactor(
+      gtsam::Key pose_i, gtsam::Key vel_i, gtsam::Key pose_j,
+      gtsam::Key vel_j, gtsam::Key bias,
+      const gtsam::PreintegratedImuMeasurementsG& preintegratedMeasurements,
+      const gtsam::Rot3& predictedAttitude);
 
   // Standard Interface
   const gtsam::PreintegratedImuMeasurementsG&
@@ -390,6 +404,10 @@ virtual class GalileanImuFactor2: gtsam::NoiseModelFactor {
   GalileanImuFactor2(
       gtsam::Key state_i, gtsam::Key state_j, gtsam::Key bias,
       const gtsam::PreintegratedImuMeasurementsG& preintegratedMeasurements);
+  GalileanImuFactor2(
+      gtsam::Key state_i, gtsam::Key state_j, gtsam::Key bias,
+      const gtsam::PreintegratedImuMeasurementsG& preintegratedMeasurements,
+      const gtsam::Rot3& predictedAttitude);
 
   // Standard Interface
   const gtsam::PreintegratedImuMeasurementsG&
@@ -508,6 +526,7 @@ class PreintegratedCombinedMeasurements {
 
   gtsam::Matrix preintMeasCov() const;
   gtsam::Matrix residualCovariance() const;
+  gtsam::Matrix residualCovarianceAt(const gtsam::Rot3& predictedAttitude) const;
   double deltaTij() const;
   gtsam::Rot3 deltaRij() const;
   gtsam::Vector3 deltaPij() const;
@@ -552,6 +571,7 @@ class PreintegratedCombinedMeasurementsT {
 
   gtsam::Matrix preintMeasCov() const;
   gtsam::Matrix residualCovariance() const;
+  gtsam::Matrix residualCovarianceAt(const gtsam::Rot3& predictedAttitude) const;
   @pybind_lambda
   gtsam::Vector9 preintegrated() const;
   double deltaTij() const;
@@ -576,6 +596,10 @@ virtual class CombinedImuFactor: gtsam::NoiseModelFactor {
   CombinedImuFactor(gtsam::Key pose_i, gtsam::Key vel_i, gtsam::Key pose_j, gtsam::Key vel_j,
       gtsam::Key bias_i, gtsam::Key bias_j,
       const gtsam::PreintegratedCombinedMeasurements& CombinedPreintegratedMeasurements);
+  CombinedImuFactor(gtsam::Key pose_i, gtsam::Key vel_i,
+      gtsam::Key pose_j, gtsam::Key vel_j, gtsam::Key bias_i, gtsam::Key bias_j,
+      const gtsam::PreintegratedCombinedMeasurements& preintegratedMeasurements,
+      const gtsam::Rot3& predictedAttitude);
 
   // Standard Interface
   const gtsam::PreintegratedCombinedMeasurements&
@@ -601,6 +625,10 @@ virtual class CombinedImuFactorT: gtsam::NoiseModelFactor {
   CombinedImuFactorT(gtsam::Key pose_i, gtsam::Key vel_i,
       gtsam::Key pose_j, gtsam::Key vel_j, gtsam::Key bias_i,
       gtsam::Key bias_j, const PIM& preintegratedMeasurements);
+  CombinedImuFactorT(gtsam::Key pose_i, gtsam::Key vel_i,
+      gtsam::Key pose_j, gtsam::Key vel_j, gtsam::Key bias_i,
+      gtsam::Key bias_j, const PIM& preintegratedMeasurements,
+      const gtsam::Rot3& predictedAttitude);
 
   const PIM& preintegratedMeasurements() const;
   gtsam::Vector evaluateError(const gtsam::Pose3& pose_i,

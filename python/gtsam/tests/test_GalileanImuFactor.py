@@ -64,6 +64,96 @@ class TestGalileanImuFactor(GtsamTestCase):
         self.assertEqual((15, 15), pim.preintMeasCov().shape)
         self.assertEqual((15, 15), pim.residualCovariance().shape)
 
+    def test_rotating_covariance_accessors(self):
+        """Every wrapped backend accepts a nominal endpoint attitude."""
+        initial = gtsam.NavState(gtsam.Rot3.RzRyRx(.4, -.3, .6),
+                                 np.array([2., -3., 1.]),
+                                 np.array([.5, 2., -.7]))
+        backends = (
+            gtsam.PreintegratedImuMeasurements,
+            gtsam.PreintegratedImuMeasurementsManifold,
+            gtsam.PreintegratedImuMeasurementsTangent,
+            gtsam.PreintegratedImuMeasurementsLieGroup,
+            gtsam.PreintegratedImuMeasurementsG,
+            gtsam.PreintegratedCombinedMeasurements,
+            gtsam.PreintegratedCombinedMeasurementsManifold,
+            gtsam.PreintegratedCombinedMeasurementsLieGroup,
+            gtsam.PreintegratedCombinedMeasurementsG,
+        )
+        bias = gtsam.imuBias.ConstantBias()
+        for backend in backends:
+            with self.subTest(backend=backend.__name__, params=None):
+                pim = backend(None, bias)
+                np.testing.assert_allclose(
+                    pim.residualCovariance(), pim.preintMeasCov(), atol=1e-12)
+                np.testing.assert_allclose(
+                    pim.residualCovarianceAt(initial.attitude()),
+                    pim.preintMeasCov(), atol=1e-12)
+            for omega in (None, np.zeros(3), np.array([.2, -.3, .4])):
+                with self.subTest(backend=backend.__name__, omega=omega):
+                    params = gtsam.PreintegrationCombinedParams.MakeSharedU(9.81)
+                    params.setAccelerometerCovariance(.02 * np.eye(3))
+                    params.setGyroscopeCovariance(.01 * np.eye(3))
+                    params.setIntegrationCovariance(np.zeros((3, 3)))
+                    if omega is not None:
+                        params.setOmegaCoriolis(omega)
+                    pim = backend(params, bias)
+                    for _ in range(8):
+                        pim.integrateMeasurement(np.array([.7, -.2, 2.]),
+                                                 np.array([.3, .2, -.4]), .05)
+                    attitude = pim.predict(initial, bias).attitude()
+                    covariance = pim.residualCovarianceAt(
+                        predictedAttitude=attitude)
+                    self.assertEqual(pim.preintMeasCov().shape, covariance.shape)
+                    fallback = pim.predict(gtsam.NavState(), bias).attitude()
+                    np.testing.assert_allclose(
+                        pim.residualCovarianceAt(fallback),
+                        pim.residualCovariance(), atol=1e-12)
+                    if omega is None or not np.any(omega):
+                        np.testing.assert_allclose(
+                            covariance, pim.residualCovariance(), atol=1e-12)
+                    else:
+                        self.assertGreater(np.linalg.norm(
+                            covariance - pim.residualCovariance()), 1e-5)
+
+    def test_rotating_factor_constructors(self):
+        """All six wrapped factor overloads freeze the requested covariance."""
+        params = gtsam.PreintegrationCombinedParams.MakeSharedU(9.81)
+        params.setOmegaCoriolis(np.array([.2, -.3, .4]))
+        params.setAccelerometerCovariance(.02 * np.eye(3))
+        params.setGyroscopeCovariance(.01 * np.eye(3))
+        params.setIntegrationCovariance(1e-8 * np.eye(3))
+        initial = gtsam.NavState(gtsam.Rot3.RzRyRx(.4, -.3, .6),
+                                 np.array([2., -3., 1.]),
+                                 np.array([.5, 2., -.7]))
+        bias = gtsam.imuBias.ConstantBias()
+        cases = (
+            (gtsam.PreintegratedImuMeasurements, gtsam.ImuFactor, 5),
+            (gtsam.PreintegratedImuMeasurements, gtsam.ImuFactor2, 3),
+            (gtsam.PreintegratedImuMeasurementsG, gtsam.GalileanImuFactor, 5),
+            (gtsam.PreintegratedImuMeasurementsG, gtsam.GalileanImuFactor2, 3),
+            (gtsam.PreintegratedCombinedMeasurements, gtsam.CombinedImuFactor, 6),
+            (gtsam.PreintegratedCombinedMeasurementsG,
+             gtsam.GalileanCombinedImuFactor, 6),
+        )
+        for backend, factor_type, key_count in cases:
+            with self.subTest(factor=factor_type.__name__):
+                pim = backend(params, bias)
+                for _ in range(8):
+                    pim.integrateMeasurement(np.array([.7, -.2, 2.]),
+                                             np.array([.3, .2, -.4]), .05)
+                attitude = pim.predict(initial, bias).attitude()
+                keys = range(key_count)
+                factor = factor_type(*keys, preintegratedMeasurements=pim,
+                                     predictedAttitude=attitude)
+                np.testing.assert_allclose(
+                    factor.noiseModel().covariance(),
+                    pim.residualCovarianceAt(attitude), atol=1e-10)
+                fallback = factor_type(*keys, pim)
+                np.testing.assert_allclose(
+                    fallback.noiseModel().covariance(),
+                    pim.residualCovariance(), atol=1e-10)
+
     @unittest.skipUnless(
         hasattr(gtsam.PreintegratedImuMeasurementsG, "serialize"),
         "Serialization not enabled")

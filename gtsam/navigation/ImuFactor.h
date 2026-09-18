@@ -159,19 +159,52 @@ public:
    * converted as \f$J P J^T\f$. The component-wise and \f$SE_2(3)\f$ Logmap
    * errors have the same first-order tangent at zero, so this covariance is
    * independent of ImuFactorErrorMode. The other backends already propagate
-   * covariance in this tangent and return it unchanged. This conversion does
-   * not alter the raw covariance returned by preintMeasCov().
+   * covariance in this tangent.
+   *
+   * When a nonzero omegaCoriolis is configured, the inverse rotating-frame
+   * lift is applied after the backend chart conversion. This no-argument
+   * overload uses the endpoint attitude predicted from identity at biasHat().
+   * Prefer residualCovarianceAt() when a nominal initial state is known. If
+   * omegaCoriolis is unset or zero, the attitude choice has no effect.
+   *
+   * Neither conversion alters the raw covariance returned by
+   * preintMeasCov().
    */
   Matrix9 residualCovariance() const {
+    // An endpoint attitude is needed only for the rotating-frame lift.
+    if (!this->params() || !this->p().omegaCoriolis ||
+        this->p().omegaCoriolis->isZero(0.0)) {
+      return residualCovarianceAt(Rot3());
+    }
+    return residualCovarianceAt(
+        this->predict(NavState(), this->biasHat()).attitude());
+  }
+
+  /**
+   * Physical endpoint covariance at a fixed nominal predicted attitude.
+   * With a nonzero omegaCoriolis, the inverse transported-velocity lift acts
+   * after the backend chart conversion. Freeze this covariance when
+   * constructing a factor; it is not differentiated with respect to
+   * subsequently optimized states. If omegaCoriolis is unset or zero,
+   * predictedAttitude has no effect.
+   */
+  Matrix9 residualCovarianceAt(const Rot3& predictedAttitude) const {
+    Eigen::Matrix<double, 9, 9> physicalChart =
+        Eigen::Matrix<double, 9, 9>::Identity();
+    if (this->params() && this->p().omegaCoriolis) {
+      const Matrix3 rotation = predictedAttitude.matrix();
+      physicalChart.template block<3, 3>(6, 3) =
+          -rotation.transpose() *
+          skewSymmetric(*this->p().omegaCoriolis) * rotation;
+    }
     if constexpr (std::is_same_v<PreintegrationType,
                                  TangentPreintegration>) {
       Matrix9 chartJacobian;
       internal::navStateComponentWiseRetract(
           NavState(), this->preintegrated_, {}, &chartJacobian);
-      return chartJacobian * preintMeasCov_ * chartJacobian.transpose();
-    } else {
-      return preintMeasCov_;
+      physicalChart *= chartJacobian;
     }
+    return physicalChart * preintMeasCov_ * physicalChart.transpose();
   }
 
   /// Merge in a different set of measurements and update bias derivatives accordingly
@@ -251,11 +284,42 @@ public:
    * @param bias   Previous bias key
    * @param preintegratedMeasurements The preintegreated measurements since the
    * last pose.
+   * @note With a nonzero omegaCoriolis, this compatibility overload freezes
+   * the covariance at the attitude predicted from identity at biasHat(). When
+   * a nominal initial state and bias are available, prefer the overload taking
+   * predictedAttitude. If omegaCoriolis is unset or zero, both overloads are
+   * equivalent.
    */
   ImuFactorT(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
       const PIM& preintegratedMeasurements)
       : Base(noiseModel::Gaussian::Covariance(
                  preintegratedMeasurements.residualCovariance()),
+             pose_i, vel_i, pose_j, vel_j, bias),
+        pim_(preintegratedMeasurements) {}
+
+  /**
+   * Construct a factor whose rotating-frame covariance is expressed at a
+   * supplied nominal endpoint attitude.
+   *
+   * This is the recommended overload when a nonzero omegaCoriolis is configured
+   * and an initial state is available while building the graph. Supply the
+   * attitude of
+   * `preintegratedMeasurements.predict(nominalState_i, nominalBias_i)`.
+   * Without it, the compatibility constructor uses prediction from identity at
+   * biasHat(). The choice affects only covariance whitening, not prediction or
+   * the nonlinear residual. If omegaCoriolis is unset or zero, both overloads
+   * are equivalent. The Gaussian noise model remains fixed during optimization.
+   *
+   * @param predictedAttitude Nominal endpoint attitude used to transport the
+   * propagated covariance into the physical factor-residual chart.
+   */
+  template <class Measurement = PIM>
+  ImuFactorT(Key pose_i, Key vel_i, Key pose_j, Key vel_j, Key bias,
+             const Measurement& preintegratedMeasurements,
+             const Rot3& predictedAttitude)
+      : Base(noiseModel::Gaussian::Covariance(
+                 preintegratedMeasurements.residualCovarianceAt(
+                     predictedAttitude)),
              pose_i, vel_i, pose_j, vel_j, bias),
         pim_(preintegratedMeasurements) {}
 
@@ -416,6 +480,11 @@ public:
    * @param state_i Previous state key
    * @param state_j Current state key
    * @param bias    Previous bias key
+   * @note With a nonzero omegaCoriolis, this compatibility overload freezes
+   * the covariance at the attitude predicted from identity at biasHat(). When
+   * a nominal initial state and bias are available, prefer the overload taking
+   * predictedAttitude. If omegaCoriolis is unset or zero, both overloads are
+   * equivalent.
    */
   ImuFactor2T(Key state_i, Key state_j, Key bias,
              const PIM& preintegratedMeasurements)
@@ -424,6 +493,31 @@ public:
              state_i, state_j, bias),
         pim_(preintegratedMeasurements) {}
 
+  /**
+   * Construct a NavState factor with rotating-frame covariance frozen at a
+   * supplied nominal endpoint attitude.
+   *
+   * This is the recommended overload when a nonzero omegaCoriolis is configured
+   * and an initial state is available while building the graph. Supply the
+   * attitude of
+   * `preintegratedMeasurements.predict(nominalState_i, nominalBias_i)`.
+   * Without it, the compatibility constructor uses prediction from identity at
+   * biasHat(). The choice affects only covariance whitening, not prediction or
+   * the nonlinear residual. If omegaCoriolis is unset or zero, both overloads
+   * are equivalent. The Gaussian noise model remains fixed during optimization.
+   *
+   * @param predictedAttitude Nominal endpoint attitude used to transport the
+   * propagated covariance into the physical factor-residual chart.
+   */
+  template <class Measurement = PIM>
+  ImuFactor2T(Key state_i, Key state_j, Key bias,
+              const Measurement& preintegratedMeasurements,
+              const Rot3& predictedAttitude)
+      : Base(noiseModel::Gaussian::Covariance(
+                 preintegratedMeasurements.residualCovarianceAt(
+                     predictedAttitude)),
+             state_i, state_j, bias),
+        pim_(preintegratedMeasurements) {}
 
   ~ImuFactor2T() override {
   }
