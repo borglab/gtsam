@@ -53,17 +53,25 @@ known Earth rate is supplied through `omegaCoriolis`.
 | Backend | Earth rate | Position RMS (m) | Velocity RMS (m/s) | Mean NEES |
 |---|---|---:|---:|---:|
 | Manifold | Not specified | 1.4079 | 0.8057 | 16.715 |
-| Manifold | Specified | 1.2364 | 0.6859 | 14.012 |
+| Manifold | Specified | 1.2364 | 0.6859 | 14.011 |
 | Tangent | Not specified | 1.4079 | 0.8057 | 16.715 |
-| Tangent | Specified | 1.2364 | 0.6859 | 14.012 |
+| Tangent | Specified | 1.2364 | 0.6859 | 14.011 |
 | Lie group | Not specified | 1.4079 | 0.8057 | 16.715 |
-| Lie group | Specified | 1.2364 | 0.6859 | 14.012 |
+| Lie group | Specified | 1.2364 | 0.6859 | 14.011 |
 | Galilean | Not specified | **0.8491** | **0.5317** | 9.663 |
 | Galilean | Specified | **0.8213** | **0.5070** | **9.090** |
 
 The expected mean-NEES interval is again [8.849, 9.152]. Correctly supplying
 Earth rate improves every backend. Galilean is the only backend inside the
 interval when Earth rate is specified.
+
+With nonzero `omegaCoriolis`, covariance is converted to physical endpoint
+error coordinates at each trial's predicted attitude using
+`pim.residualCovarianceAt(predicted.attitude())`. This accounts for the
+position–velocity coupling when projecting transported velocity back to
+physical velocity, with the navigation-frame rotation rate expressed in
+body-frame coordinates. The correction affects whitening, not the physical
+errors above.
 
 ## Long-horizon uncertainty with fixed nonzero bias
 

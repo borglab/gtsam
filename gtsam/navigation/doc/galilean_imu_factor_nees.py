@@ -312,7 +312,9 @@ def run_rotating_nees(
                 )
                 predicted = pim.predict(state_i, bias)
                 error = logmap_error(truth, predicted)
-                covariance = np.asarray(pim.residualCovariance())
+                covariance = np.asarray(
+                    pim.residualCovarianceAt(predicted.attitude())
+                )
                 errors[name][condition][trial] = error
                 physical[name][condition][trial] = physical_error(truth, predicted)
                 nees[name][condition][trial] = error @ np.linalg.solve(
