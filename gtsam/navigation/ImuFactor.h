@@ -171,6 +171,11 @@ public:
    * preintMeasCov().
    */
   Matrix9 residualCovariance() const {
+    // An endpoint attitude is needed only for the rotating-frame lift.
+    if (!this->params() || !this->p().omegaCoriolis ||
+        this->p().omegaCoriolis->isZero(0.0)) {
+      return residualCovarianceAt(Rot3());
+    }
     return residualCovarianceAt(
         this->predict(NavState(), this->biasHat()).attitude());
   }
@@ -186,7 +191,7 @@ public:
   Matrix9 residualCovarianceAt(const Rot3& predictedAttitude) const {
     Eigen::Matrix<double, 9, 9> physicalChart =
         Eigen::Matrix<double, 9, 9>::Identity();
-    if (this->p().omegaCoriolis) {
+    if (this->params() && this->p().omegaCoriolis) {
       const Matrix3 rotation = predictedAttitude.matrix();
       physicalChart.template block<3, 3>(6, 3) =
           -rotation.transpose() *

@@ -172,6 +172,11 @@ class GTSAM_EXPORT PreintegratedCombinedMeasurementsT : public PreintegrationTyp
    * omegaCoriolis is unset or zero, the attitude choice has no effect.
    */
   Matrix residualCovariance() const {
+    // An endpoint attitude is needed only for the rotating-frame lift.
+    if (!this->params() || !this->p().omegaCoriolis ||
+        this->p().omegaCoriolis->isZero(0.0)) {
+      return residualCovarianceAt(Rot3());
+    }
     return residualCovarianceAt(
         this->predict(NavState(), this->biasHat()).attitude());
   }
@@ -187,7 +192,7 @@ class GTSAM_EXPORT PreintegratedCombinedMeasurementsT : public PreintegrationTyp
   Matrix residualCovarianceAt(const Rot3& predictedAttitude) const {
     Eigen::Matrix<double, 15, 15> physicalChart =
         Eigen::Matrix<double, 15, 15>::Identity();
-    if (this->p().omegaCoriolis) {
+    if (this->params() && this->p().omegaCoriolis) {
       const Matrix3 rotation = predictedAttitude.matrix();
       physicalChart.template block<3, 3>(6, 3) =
           -rotation.transpose() *

@@ -82,6 +82,13 @@ class TestGalileanImuFactor(GtsamTestCase):
         )
         bias = gtsam.imuBias.ConstantBias()
         for backend in backends:
+            with self.subTest(backend=backend.__name__, params=None):
+                pim = backend(None, bias)
+                np.testing.assert_allclose(
+                    pim.residualCovariance(), pim.preintMeasCov(), atol=1e-12)
+                np.testing.assert_allclose(
+                    pim.residualCovarianceAt(initial.attitude()),
+                    pim.preintMeasCov(), atol=1e-12)
             for omega in (None, np.zeros(3), np.array([.2, -.3, .4])):
                 with self.subTest(backend=backend.__name__, omega=omega):
                     params = gtsam.PreintegrationCombinedParams.MakeSharedU(9.81)

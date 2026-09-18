@@ -471,6 +471,27 @@ TEST_PIM_WITH_COMBINED_BACKEND(ImuFactorErrorMode,
   }
 }
 
+// Missing params must not trigger prediction or suppress chart/sign conversion.
+TEST_PIM_WITH_COMBINED_BACKEND(ImuFactorCovariance, NoParams) {
+  using Backend = typename PimBackend<PIM>::Type;
+  const Backend backend(std::shared_ptr<PreintegrationParams>{},
+                        imuBias::ConstantBias());
+  const PIM pim(backend, I_9x9);
+  const Rot3 attitude = Rot3::RzRyRx(0.4, -0.3, 0.6);
+  EXPECT(assert_equal(Matrix(I_9x9), pim.residualCovariance(), 1e-12));
+  EXPECT(assert_equal(Matrix(I_9x9), pim.residualCovarianceAt(attitude), 1e-12));
+
+  Matrix15 covariance = Matrix15::Identity();
+  covariance(0, 9) = covariance(9, 0) = 0.2;
+  const CombinedPIM combined(std::shared_ptr<PreintegrationCombinedParams>{},
+                             imuBias::ConstantBias(), covariance);
+  Matrix15 expected = covariance;
+  expected(0, 9) = expected(9, 0) = -0.2;
+  EXPECT(assert_equal(Matrix(expected), combined.residualCovariance(), 1e-12));
+  EXPECT(assert_equal(Matrix(expected),
+                      combined.residualCovarianceAt(attitude), 1e-12));
+}
+
 // Checks optimized propagation against the original dense equation.
 TEST_PIM(ImuFactorCovariance, DensePropagationRegression) {
   EXPECT(matchesDensePropagation<PIM>(false));
