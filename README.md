@@ -117,13 +117,15 @@ We provide support for [MATLAB](matlab/README.md) and [Python](python/README.md)
 If you are using GTSAM for academic work, please use the following citation:
 
 ```bibtex
-@software{gtsam,
-  author    = {Frank Dellaert and GTSAM Contributors},
-  title     = {GTSAM},
-  year      = {2022},
-  publisher = {Zenodo},
-  doi       = {10.5281/zenodo.5794541},
-  url       = {https://doi.org/10.5281/zenodo.5794541}
+@software{Dellaert26zenodo_GTSAM_4_3,
+  author       = {Dellaert, Frank and GTSAM Contributors},
+  title        = {GTSAM 4.3.0},
+  month        = sep,
+  year         = 2026,
+  publisher    = {Zenodo},
+  version      = {4.3.0},
+  doi          = {10.5281/zenodo.22866773},
+  url          = {https://doi.org/10.5281/zenodo.22866773},
 }
 ```
 
