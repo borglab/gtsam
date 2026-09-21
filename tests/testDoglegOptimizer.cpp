@@ -195,6 +195,33 @@ TEST(DoglegOptimizer, IterateLineSearch) {
 }
 
 /* ************************************************************************* */
+// At the minimum of the linear model the Gauss-Newton step is zero, so there
+// is nothing to search: Iterate must return the zero step instead of reporting
+// an invalid configuration. A genuinely invalid configuration still throws.
+TEST(DoglegOptimizer, IterateLineSearchZeroGaussNewtonStep) {
+  NonlinearFactorGraph fg;
+  fg.addPrior(X(1), Point2(1.0, 2.0), noiseModel::Isotropic::Sigma(2, 0.1));
+  Values config;
+  config.insert(X(1), Point2(1.0, 2.0));  // already the minimum
+
+  auto gbn = fg.linearize(config)->eliminateSequential();
+  const VectorValues dx_u = gbn->optimizeGradientSearch();
+  const VectorValues dx_n = gbn->optimize();
+  DOUBLES_EQUAL(0.0, dx_n.norm(), 1e-12);
+
+  const DoglegOptimizerImpl::IterationResult result =
+      DoglegLineSearchImpl::Iterate({0.02, 0.5, 1.5, 1e-3, false}, dx_u, dx_n,
+                                    *gbn, fg, config);
+  DOUBLES_EQUAL(0.0, result.dx_d.norm(), 1e-12);
+  DOUBLES_EQUAL(fg.error(config), result.f_error, 1e-12);
+
+  // stepSize < 1 can never terminate the search: still a configuration error.
+  CHECK_EXCEPTION(DoglegLineSearchImpl::Iterate({0.02, 0.5, 0.5, 1e-3, false},
+                                                dx_u, dx_n, *gbn, fg, config),
+                  std::runtime_error);
+}
+
+/* ************************************************************************* */
 TEST(DoglegOptimizer, Constraint) {
   // Create a pose-graph graph with a constraint on the first pose
   NonlinearFactorGraph graph;
