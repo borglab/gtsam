@@ -4,6 +4,10 @@ GTSAM is a C++17 library for factor graphs and sensor fusion, with Python and
 MATLAB wrappers. Follow the existing code near your change and keep changes
 focused.
 
+When fixing additional build problems discovered during a task, establish the
+concrete failure and explain why each fix is necessary. Keep independently
+useful API or infrastructure redesigns in separate PRs.
+
 ## Public C++ APIs
 
 * All functions in header files should have Doxygen-style API documentation
@@ -18,6 +22,47 @@ focused.
   [`Using-GTSAM-EXPORT.md`](../Using-GTSAM-EXPORT.md), including its template
   specialization and header-only rules.
 
+### Deprecating C++ APIs
+
+* Use GTSAM's versioned deprecation mechanism rather than adding a standalone
+  `[[deprecated]]` attribute. For APIs deprecated since GTSAM 4.3, wrap their
+  declarations, definitions, and any tests in
+  `#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43`.
+* Add a Doxygen `@deprecated` comment that names the supported replacement or
+  migration path.
+* Verify the normal configuration with deprecated APIs disabled. When changing
+  compatibility code itself, also verify a build with the corresponding
+  `GTSAM_ALLOW_DEPRECATED_SINCE_*` option enabled.
+
+### Moving functionality between directories
+
+* When relocating functionality between directories, move every associated
+  `.h` and `.cpp` file with `git mv`. This applies both to promotions from
+  `gtsam_unstable/` to `gtsam/` and to moves between directories within
+  `gtsam/`; do not copy the implementation to its destination while modifying
+  the original headers in place.
+* When an old include path must remain available for backward compatibility,
+  first move the original header to its canonical destination with `git mv`,
+  then add a new forwarding header at the old path. Keep forwarding headers
+  minimal: document the replacement, apply the appropriate versioned
+  deprecation guard, and include the canonical header.
+* Update build manifests, internal includes, tests, wrappers, and documentation
+  to use the canonical destination. The old path should remain only as the
+  compatibility surface.
+* When moving classes, also move their corresponding notebooks from the old
+  `doc/` directory to the destination's `doc/` directory with `git mv`. Update
+  the relevant documentation indices so they list and link to the notebooks at
+  their canonical locations. Review path-dependent links inside each moved
+  notebook as well: in particular, update its "Open in Colab" button and links
+  to source files when their targets changed.
+* Review export directives whenever a move changes the library that owns the
+  functionality. Use the destination library's export macro consistently on
+  public declarations and any exported definitions; for example, replace
+  `GTSAM_UNSTABLE_EXPORT` with `GTSAM_EXPORT` when promoting functionality from
+  `gtsam_unstable/` into `gtsam/`. Follow
+  [`Using-GTSAM-EXPORT.md`](../Using-GTSAM-EXPORT.md) for the applicable
+  platform and template rules.
+
 ## C++ style
 
 * Classes and types are `UpperCamelCase`; methods and functions are
@@ -29,6 +74,36 @@ focused.
   functions.
 * When reviewing changes, flag overly complex or long functions and recommend
   breaking them into smaller functions.
+
+### Eigen Fixed-Size and Dynamic Storage
+
+Use fixed-size types such as `Matrix3`, `Matrix23`, and `Vector6` when
+dimensions are known at compile time, especially for `OptionalJacobian`
+outputs. Fixed-size types store their coefficients inline and avoid unnecessary
+dynamic allocation and fixed/dynamic conversions.
+
+Use `Matrix` and `Vector` when dimensions are determined at runtime or when an
+existing API explicitly requires a dynamic type.
+
+When assigning to a fixed-size Jacobian, prefer writing directly to it or using
+a fixed-size temporary:
+
+```cpp
+if (H) {
+  *H = Matrix3{{1.0, 0.0, 0.0},
+               {0.0, 1.0, 0.0},
+               {0.0, 0.0, 1.0}};
+}
+```
+
+Use flat initializer lists for vectors and nested initializer lists for
+matrices:
+
+```cpp
+Vector3 vector{1.0, 2.0, 3.0};
+Matrix23 matrix{{1.0, 2.0, 3.0},
+                {4.0, 5.0, 6.0}};
+```
 
 ## Wrappers and vendored code
 
@@ -50,6 +125,30 @@ focused.
 * Do not edit files under `gtsam/3rdparty/`. These are vendored third-party
   libraries, including Eigen; direct changes make upstream updates difficult.
 
+### Shared Python and MATLAB interfaces
+
+* Keep declarations for the same C++ API in shared `.i` files.
+  When an optional dependency controls availability, have both wrappers
+  include the same interface conditionally. Use language-specific files
+  only for genuinely language-specific APIs, such as MATLAB callbacks.
+* Before adding container bindings, inspect existing precedents such as
+  KeyVector, Point2Vector, and FixedLagSmootherKeyTimestampMap. Check the
+  Python ignore list and compatibility aliases as well as the `.i` files.
+  Shared declarations may produce MATLAB proxy classes while Python
+  uses native lists and dictionaries.
+* Before proposing a wrapper-generator change, demonstrate why existing
+  interface declarations and configuration cannot express the required
+  binding. Distinguish missing functionality from a preferred conversion
+  or naming convention. Keep broader generator improvements separate.
+* Validate wrapper changes through actual calls in both languages.
+  Successful generation or compilation alone does not establish that
+  arguments, returned containers, or object lifetimes work. Exercise
+  parameter maps, container access, repeated retrieval, and 64-bit keys
+  where relevant. Check optional-dependency configurations too.
+* When an investigation reveals a simpler supported approach, remove
+  the superseded scaffolding and rewrite the PR description around the
+  final implementation.
+
 ## Tests
 
 * Run validation relevant to the files changed.
@@ -61,6 +160,40 @@ focused.
   `cmake --build build --target python-test-unstable`, as appropriate.
 * Documentation-only changes do not require unrelated C++ tests, but should
   still pass applicable documentation checks and `git diff --check`.
+
+## Debugging indeterminate linear systems
+
+* Use the correctly spelled `IndeterminateSystemException`. The former
+  `IndeterminantLinearSystemException` name is available only through the
+  GTSAM 4.3 deprecation machinery.
+* Treat `nearbyVariable()` as the key where elimination detected the problem,
+  not necessarily its source; the reported key depends on graph structure and
+  elimination ordering.
+* Remember that the exception also protects against nearly indeterminate
+  systems. A mathematically full-rank graph can trigger it when elimination
+  produces a Cholesky pivot that is very small relative to its original
+  diagonal entry. This test is invariant to diagonal changes of variable units
+  but still depends on elimination ordering. For example, a very strong finite
+  prior combined with much looser measurement noise can expose a weakly
+  observed direction, although the raw weight ratio alone may only reflect
+  different variable units and is not sufficient evidence.
+* Preserve the failing nonlinear graph, values, and ordering. Linearize at
+  those values, request the Jacobian with an explicit ordering, and inspect its
+  singular spectrum and null space. Prefer Jacobian rank analysis over a
+  determinant or Hessian rank analysis because forming the Hessian squares the
+  condition number.
+* Check for missing gauge constraints, unused or accidental keys, disconnected
+  components, degenerate geometry or motion, lost observability after
+  marginalization, inconsistent units or noise scales, and negative curvature
+  introduced by custom Hessian factors.
+* Use a temporary, physically meaningful prior to test an observability
+  hypothesis, then recompute rank. If the intended prior fixes a gauge exactly,
+  prefer a hard constraint such as `noiseModel::Constrained::All(dimension)`;
+  it expresses that intent without choosing an arbitrary extreme finite weight.
+  Do not present damping or a dense solve as a fix unless the model itself
+  becomes observable and well conditioned.
+* See `gtsam/linear/doc/IndeterminateSystemException.ipynb` for a runnable
+  Python example and a full diagnostic checklist.
 
 ## C++ test organization
 
@@ -97,3 +230,6 @@ Notebooks in `*/doc/*.ipynb` and `*/examples/*.ipynb` should use this preamble:
 
 Use the existing `remove-cell` metadata convention so documentation builds and
 Colab behavior stay consistent.
+
+For graphs and other notebook visualizations, always prefer Plotly when
+possible so figures are interactive.

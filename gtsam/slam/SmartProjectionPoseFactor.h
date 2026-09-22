@@ -19,7 +19,7 @@
 
 #pragma once
 
-#include <gtsam/slam/SmartProjectionFactor.h>
+#include <gtsam/slam/SmartProjectionFactorBase.h>
 
 namespace gtsam {
 /**
@@ -43,10 +43,10 @@ namespace gtsam {
  */
 template <class CALIBRATION>
 class SmartProjectionPoseFactor
-    : public SmartProjectionFactor<PinholePose<CALIBRATION> > {
+    : public SmartProjectionFactorBase<PinholePose<CALIBRATION>> {
  private:
   typedef PinholePose<CALIBRATION> Camera;
-  typedef SmartProjectionFactor<Camera> Base;
+  typedef SmartProjectionFactorBase<Camera> Base;
   typedef SmartProjectionPoseFactor<CALIBRATION> This;
 
 protected:
@@ -111,17 +111,6 @@ public:
   bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
     const This *e = dynamic_cast<const This*>(&p);
     return e && Base::equals(p, tol);
-  }
-
-  /**
-   * error calculates the error of the factor.
-   */
-  double error(const Values& values) const override {
-    if (this->active(values)) {
-      return this->totalReprojectionError(cameras(values));
-    } else { // else of active flag
-      return 0.0;
-    }
   }
 
   /** return calibration shared pointers */

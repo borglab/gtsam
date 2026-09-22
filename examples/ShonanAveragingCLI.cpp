@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
   string datasetName;
   string inputFile;
   string outputFile;
-  int d, seed, pMin;
+  int d, pMin;
   bool useHuberLoss;
   po::options_description desc(
       "Shonan Rotation Averaging CLI reads a *pose* graph, extracts the "
@@ -65,9 +65,7 @@ int main(int argc, char* argv[]) {
       "useHuberLoss,h", po::value<bool>(&useHuberLoss)->default_value(false),
       "set True to use Huber loss")("pMin,p",
                                     po::value<int>(&pMin)->default_value(3),
-                                    "set to use desired rank pMin")(
-      "seed,s", po::value<int>(&seed)->default_value(42),
-      "Random seed for initial estimate");
+                                    "set to use desired rank pMin");
   po::variables_map vm;
   po::store(po::command_line_parser(argc, argv).options(desc).run(), vm);
   po::notify(vm);
@@ -87,9 +85,6 @@ int main(int argc, char* argv[]) {
     inputFile = findExampleDataFile(datasetName);
   }
 
-  // Seed random number generator
-  static std::mt19937 rng(seed);
-
   NonlinearFactorGraph::shared_ptr inputGraph;
   Values::shared_ptr posesInFile;
   Values poses;
@@ -98,9 +93,10 @@ int main(int argc, char* argv[]) {
     cout << "Running Shonan averaging for SO(2) on " << inputFile << endl;
     ShonanAveraging2::Parameters parameters(lmParams);
     parameters.setUseHuber(useHuberLoss);
+    parameters.setCertifyOptimality(!useHuberLoss);
     ShonanAveraging2 shonan(inputFile, parameters);
-    auto initial = shonan.initializeRandomly(rng);
-    auto result = shonan.run(initial, pMin);
+    auto result =
+        useHuberLoss ? shonan.run(pMin, pMin) : shonan.run(pMin);
 
     // Parse file again to set up translation problem, adding a prior
     std::tie(inputGraph, posesInFile) = load2D(inputFile);
@@ -114,9 +110,10 @@ int main(int argc, char* argv[]) {
     cout << "Running Shonan averaging for SO(3) on " << inputFile << endl;
     ShonanAveraging3::Parameters parameters(lmParams);
     parameters.setUseHuber(useHuberLoss);
+    parameters.setCertifyOptimality(!useHuberLoss);
     ShonanAveraging3 shonan(inputFile, parameters);
-    auto initial = shonan.initializeRandomly(rng);
-    auto result = shonan.run(initial, pMin);
+    auto result =
+        useHuberLoss ? shonan.run(pMin, pMin) : shonan.run(pMin);
 
     // Parse file again to set up translation problem, adding a prior
     std::tie(inputGraph, posesInFile) = load3D(inputFile);

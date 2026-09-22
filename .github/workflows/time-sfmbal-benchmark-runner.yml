@@ -49,7 +49,7 @@ jobs:
 
       - name: Restore BAL dataset archive cache
         id: dataset_cache_restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: examples/Data/problem-135-90642-pre.txt.bz2
           key: bal-problem-135-90642-pre-txt-bz2-v1
@@ -63,7 +63,7 @@ jobs:
 
       - name: Save BAL dataset archive cache
         if: steps.dataset_cache_restore.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         continue-on-error: true
         with:
           path: examples/Data/problem-135-90642-pre.txt.bz2
@@ -85,6 +85,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
+            -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
             -DGTSAM_BUILD_UNSTABLE=ON \
             -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
             -DGTSAM_BUILD_TIMING_ALWAYS=ON \
@@ -107,7 +108,7 @@ jobs:
           cp benchmark-results-tbbON.json "benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbON-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json"
 
       - name: Save benchmark cache (TBB=ON)
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         continue-on-error: true
         with:
           path: benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbON-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json
@@ -123,6 +124,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
+            -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
             -DGTSAM_BUILD_UNSTABLE=ON \
             -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
             -DGTSAM_BUILD_TIMING_ALWAYS=ON \
@@ -145,7 +147,7 @@ jobs:
           cp benchmark-results-tbbOFF.json "benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbOFF-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json"
 
       - name: Save benchmark cache (TBB=OFF)
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         continue-on-error: true
         with:
           path: benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbOFF-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json
@@ -163,7 +165,7 @@ jobs:
 
       - name: Restore BAL dataset archive cache
         id: dataset_cache_restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: examples/Data/problem-135-90642-pre.txt.bz2
           key: bal-problem-135-90642-pre-txt-bz2-v1
@@ -177,7 +179,7 @@ jobs:
 
       - name: Save BAL dataset archive cache
         if: steps.dataset_cache_restore.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         continue-on-error: true
         with:
           path: examples/Data/problem-135-90642-pre.txt.bz2
@@ -199,6 +201,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
+            -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
             -DGTSAM_BUILD_UNSTABLE=ON \
             -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
             -DGTSAM_BUILD_TIMING_ALWAYS=ON \
@@ -221,7 +224,7 @@ jobs:
           cp benchmark-results-tbbON.json "benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbON-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json"
 
       - name: Save benchmark cache (TBB=ON)
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         continue-on-error: true
         with:
           path: benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbON-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json
@@ -237,6 +240,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
+            -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
             -DGTSAM_BUILD_UNSTABLE=ON \
             -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
             -DGTSAM_BUILD_TIMING_ALWAYS=ON \
@@ -259,7 +263,7 @@ jobs:
           cp benchmark-results-tbbOFF.json "benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbOFF-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json"
 
       - name: Save benchmark cache (TBB=OFF)
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         continue-on-error: true
         with:
           path: benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbOFF-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json
@@ -277,7 +281,7 @@ jobs:
 
       - name: Restore BAL dataset archive cache
         id: dataset_cache_restore
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: examples/Data/problem-135-90642-pre.txt.bz2
           key: bal-problem-135-90642-pre-txt-bz2-v1
@@ -291,7 +295,7 @@ jobs:
 
       - name: Save BAL dataset archive cache
         if: steps.dataset_cache_restore.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         continue-on-error: true
         with:
           path: examples/Data/problem-135-90642-pre.txt.bz2
@@ -311,6 +315,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
+            -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
             -DGTSAM_BUILD_UNSTABLE=ON \
             -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
             -DGTSAM_BUILD_TIMING_ALWAYS=ON \
@@ -333,7 +338,7 @@ jobs:
           cp benchmark-results-tbbON.json "benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbON-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json"
 
       - name: Save benchmark cache (TBB=ON)
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         continue-on-error: true
         with:
           path: benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbON-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json
@@ -349,6 +354,7 @@ jobs:
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
+            -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
             -DGTSAM_BUILD_UNSTABLE=ON \
             -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
             -DGTSAM_BUILD_TIMING_ALWAYS=ON \
@@ -371,7 +377,7 @@ jobs:
           cp benchmark-results-tbbOFF.json "benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbOFF-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json"
 
       - name: Save benchmark cache (TBB=OFF)
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         continue-on-error: true
         with:
           path: benchmark-cache/${{ inputs.os_name }}-${{ inputs.arch }}-tbbOFF-${{ inputs.target_sha }}-${{ inputs.orchestrator_run_id }}.json

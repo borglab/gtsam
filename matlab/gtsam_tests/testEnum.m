@@ -1,12 +1,10 @@
 % test Enum
-import gtsam.*;
+params = gtsam.GncLMParams();
 
-params = GncLMParams();
+gtsam.EXPECT('Get lossType',params.lossType==gtsam.GncLossType.TLS);
 
-EXPECT('Get lossType',params.lossType==GncLossType.TLS);
+params.lossType = gtsam.GncLossType.GM;
+gtsam.EXPECT('Set lossType',params.lossType==gtsam.GncLossType.GM);
 
-params.lossType = GncLossType.GM;
-EXPECT('Set lossType',params.lossType==GncLossType.GM);
-
-params.setLossType(GncLossType.TLS);
-EXPECT('setLossType',params.lossType==GncLossType.TLS);
+params.setLossType(gtsam.GncLossType.TLS);
+gtsam.EXPECT('setLossType',params.lossType==gtsam.GncLossType.TLS);

@@ -103,9 +103,10 @@ inline std::array<Eigen::Vector4d, 3> fetzer_ds(const Eigen::Matrix3d& G) {
  * Variables are the two focal lengths, each a scalar double. Principal points are
  * constant for the edge and live in the constructor, not in the optimized state.
  */
-class SelfCalibrationFactor : public NoiseModelFactorN<double, double> {
+class SelfCalibrationFactor
+    : public NoiseModelFactorT<Vector2, double, double> {
  public:
-  using Base = NoiseModelFactorN<double, double>;
+  using Base = NoiseModelFactorT<Vector2, double, double>;
   using This = SelfCalibrationFactor;
 
  private:
@@ -145,9 +146,9 @@ class SelfCalibrationFactor : public NoiseModelFactorN<double, double> {
   }
 
   /// 2-vector essential-matrix deviation; Jacobians are 2x1 each.
-  Vector evaluateError(const double& fi, const double& fj,
-                       OptionalMatrixType H1 = nullptr,
-                       OptionalMatrixType H2 = nullptr) const override {
+  Vector2 evaluateError(const double& fi, const double& fj,
+                        OptionalMatrixType H1 = nullptr,
+                        OptionalMatrixType H2 = nullptr) const override {
     // Floor the focal magnitude so a (near-)zero focal can't divide to inf/NaN; for any
     // realistic focal this is identical to the raw input.
     constexpr double kMinFocal = 1e-6;
@@ -188,7 +189,7 @@ class SelfCalibrationFactor : public NoiseModelFactorN<double, double> {
       (*H2)(1, 0) = 2.0 * (1.0 - r1) / fj0;
     }
 
-    return (Vector(2) << r0, r1).finished();
+    return Vector{{r0, r1}};
   }
 };
 

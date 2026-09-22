@@ -1,5 +1,23 @@
-#include <gtsam/base/cuda/CudaContext.h>
-#include <gtsam/base/cuda/CudaDeviceArray.h>
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file    testCudaBase.cpp
+ * @brief   Unit tests for the CUDA context, array, and error utilities
+ * @author  Ruogu Li
+ * @date    Jun 16, 2026
+ */
+
+#include <gtsam/base/cuda/Context.h>
+#include <gtsam/base/cuda/DeviceArray.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -8,11 +26,12 @@
 
 using namespace gtsam::cuda;
 
-TEST(CudaDeviceArray, UploadDownloadRoundTrip) {
-  CudaContext context;
+// Verifies DeviceArray::UploadDownloadRoundTrip.
+TEST(DeviceArray, UploadDownloadRoundTrip) {
+  Context context;
   std::vector<double> host = {1.0, 2.0, 3.5, -4.0};
 
-  CudaDeviceArray<double> device;
+  DeviceArray<double> device;
   device.upload(host, context.stream());
 
   std::vector<double> actual;
@@ -25,12 +44,13 @@ TEST(CudaDeviceArray, UploadDownloadRoundTrip) {
   }
 }
 
-TEST(CudaDeviceArray, ZeroesAndCopiesDeviceData) {
-  CudaContext context;
-  CudaDeviceArray<double> source;
+// Verifies DeviceArray::ZeroesAndCopiesDeviceData.
+TEST(DeviceArray, ZeroesAndCopiesDeviceData) {
+  Context context;
+  DeviceArray<double> source;
   source.upload(std::vector<double>{1.0, 2.0, 3.0}, context.stream());
 
-  CudaDeviceArray<double> target;
+  DeviceArray<double> target;
   target.copyFrom(source, context.stream());
 
   std::vector<double> actual;
@@ -52,13 +72,14 @@ TEST(CudaDeviceArray, ZeroesAndCopiesDeviceData) {
   DOUBLES_EQUAL(0.0, actual[2], 1e-12);
 }
 
-TEST(CudaDeviceArray, MoveTransfersOwnership) {
-  CudaContext context;
-  CudaDeviceArray<int> original(3);
+// Verifies DeviceArray::MoveTransfersOwnership.
+TEST(DeviceArray, MoveTransfersOwnership) {
+  Context context;
+  DeviceArray<int> original(3);
   std::vector<int> host = {4, 5, 6};
   original.upload(host, context.stream());
 
-  CudaDeviceArray<int> moved(std::move(original));
+  DeviceArray<int> moved(std::move(original));
   std::vector<int> actual;
   moved.download(&actual, context.stream());
   context.synchronize();

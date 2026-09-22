@@ -178,10 +178,13 @@ The **[NavStateImuEKF](NavStateImuEKF.ipynb)** is a left-invariant EKF specializ
 - Predict: `ekf.predict(omega_b, f_b, dt)` uses continuous-time process noise Q scaled by `dt` and composes the IMU-driven increment. Increments for position and velocity are expressed in the body frame, consistent with GTSAM.
 - Update: Use the standard EKF update with a measurement model `h(X)` or the vector bridge `updateWithVector(prediction, H, z, R)`. For a world-position measurement, the Jacobian in the EKF local coordinates `[δθ, δp_body, δv_body]` is `H = [0, R, 0]`.
 
-More: **[Full tutorial (with plots)](../../../python/gtsam/examples/NavStateImuExample.ipynb)**, Source: [NavStateImuEKF.h](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/NavStateImuEKF.h), [NavStateImuEKF.cpp](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/NavStateImuEKF.cpp)
+More: **[Full tutorial (with plots)](../../../python/gtsam/examples/navigation/NavStateImuExample.ipynb)**, Source: [NavStateImuEKF.h](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/NavStateImuEKF.h), [NavStateImuEKF.cpp](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/NavStateImuEKF.cpp)
 
 ## EquivariantFilter
+
 The **[EquivariantFilter](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/EquivariantFilter.h)** class implements the Equivariant Filter (EqF) for state estimation on Lie groups. It estimates a Lie group state $g \in G$ and a manifold state $\xi \in M$, using a symmetry principle where the error dynamics are autonomous in a specific frame. This class inherits from ```ManifoldEKF```.
+
+The overview below uses a **right group action**, as in ABC. Both action types are supported; see the **[EquivariantFilter user guide](EquivariantFilter.ipynb)** for left-action conventions, API choices, and the lift and equivariance requirements.
 
 ### EqF Predict Stage
 The prediction step involves lifting the manifold dynamics to the group using a lift $\Lambda(\xi, u)$.
@@ -194,7 +197,7 @@ The state on the manifold is then recovered via the group action $\phi$:
 ```
 
 ### EqF Update Stage
-The update step applies a correction in the tangent space of the manifold, which is then lifted to the group using the innovation lift matrix $(D\phi_0)^+$.
+The update step applies a correction in the tangent space at the reference, then lifts it to the group using the innovation lift matrix $(D\phi_0)^+$. Here $y_k=-\operatorname{Local}(z_k,\hat z_k)$, matching the implementation's negative predicted-minus-observed residual.
 ```math
 \delta \xi_k = K_k y_k
 ```
@@ -211,7 +214,7 @@ Below are four examples of these filters in action.
 1) **[IEKF_SE2Example](https://github.com/borglab/gtsam/blob/develop/examples/IEKF_SE2Example.cpp)**: implements ```InvariantEKF``` on a SE(2) Lie Group with odometry as a Lie group increment and a 2D GPS measurement update.
 2) **[IEKF_NavstateExample](https://github.com/borglab/gtsam/blob/develop/examples/IEKF_NavstateExample.cpp)**: implements ```InvariantEKF``` on a NavState Lie Group with a tangent space increment based on IMU measurements, and a 3D GPS measuremnt update.
 3) **[GEKF_Rot3Example](https://github.com/borglab/gtsam/blob/develop/examples/GEKF_Rot3Example.cpp)**: implements ```LieGroupEKF``` on a Rot3 Lie Group using a state dependent dynamics function and a magnetometer update.
-4) **[NavStateImuExample](https://github.com/borglab/gtsam/blob/develop/examples/NavStateImuExample.cpp)** and the accompanying notebooks: [user guide](NavStateImuEKF.ipynb) and a [full tutorial](../../../python/gtsam/examples/NavStateImuExample.ipynb) demonstrate the NavStateImuEKF.
+4) **[NavStateImuExample](https://github.com/borglab/gtsam/blob/develop/examples/NavStateImuExample.cpp)** and the accompanying notebooks: [user guide](NavStateImuEKF.ipynb) and a [full tutorial](../../../python/gtsam/examples/navigation/NavStateImuExample.ipynb) demonstrate the NavStateImuEKF.
 5) **[testEquivariantFilter](https://github.com/borglab/gtsam/blob/develop/gtsam/navigation/tests/testEquivariantFilter.cpp)**: implements ```EquivariantFilter``` on a SO(3) attitude-only system. A more complex **[ABC example](https://github.com/borglab/gtsam/blob/develop/examples/AbcEquivariantFilterExample.cpp)** is also available.
 
 
@@ -251,9 +254,7 @@ Pose2 U1(1.0, 1.0, 0.5), U2(1.0, 1.0, 0.0);
 ```
 Two GPS measurements are also created; 
 ```cpp
-  Vector2 z1, z2;
-  z1 << 1.0, 0.0;
-  z2 << 1.0, 1.0;
+  Vector2 z1{1.0, 0.0}, z2{1.0, 1.0};
 ```
 
 #### Running the EKF
@@ -312,17 +313,13 @@ For this example, assume constant process and observation covariances. Then,
 #### Defining IMU and GPS measurements
 Two IMU measurements and two GPS measurements are defined in this problem. The IMU measurements are given by
 ```cpp
-  Vector6 imu1;
-  imu1 << 0.1, 0, 0, 0, 0.2, 0;
-  Vector6 imu2;
-  imu2 << 0, 0.3, 0, 0.4, 0, 0;
+  Vector6 imu1{0.1, 0, 0, 0, 0.2, 0};
+  Vector6 imu2{0, 0.3, 0, 0.4, 0, 0};
 ```
 and the GPS measurements are given by
 ```cpp
-  Vector3 z1;
-  z1 << 0.3, 0, 0;
-  Vector3 z2;
-  z2 << 0.6, 0, 0;
+  Vector3 z1{0.3, 0, 0};
+  Vector3 z2{0.6, 0, 0};
 ```
 Since control vector inputs $u$ are used, a time interval $\Delta t$ is also needed. This is defined as 
 ```cpp
@@ -435,7 +432,7 @@ The right group action $\phi_\eta(Q) = Q^T \eta$ is used to relate the group ele
 The predicted measurement is a scaled version of the estimated direction:
 ```cpp
 Vector3 h(const Unit3& eta_hat, OptionalJacobian<3, 2> H = {}) {
-  if (H) *H = c_m * eta_hat.basis();
+  if (H) *H = c_m * etaf_hat.basis();
   return c_m * eta_hat.point3();
 }
 ```

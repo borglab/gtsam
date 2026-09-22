@@ -38,7 +38,7 @@ const Matrix26 F3 = 3 * Matrix26::Ones();
 const vector<Matrix26, Eigen::aligned_allocator<Matrix26> > FBlocks {F0, F1, F3};
 const KeyVector keys {0, 1, 3};
 // RHS and sigmas
-const Vector b = (Vector(6) << 1., 2., 3., 4., 5., 6.).finished();
+const Vector b{{1., 2., 3., 4., 5., 6.}};
 
 //*************************************************************************************
 TEST( regularImplicitSchurFactor, creation ) {
@@ -210,10 +210,8 @@ TEST(regularImplicitSchurFactor, hessianDiagonal)
       H = F' * (eye(6) - E * P * E') * F
       diag(H)
    */
-  Matrix E(6,3);
-  E.block<2,3>(0, 0) << 1,2,3,4,5,6;
-  E.block<2,3>(2, 0) << 1,2,3,4,5,6;
-  E.block<2,3>(4, 0) << 0.5,1,2,3,4,5;
+  Matrix63 E{{1, 2, 3}, {4, 5, 6}, {1, 2, 3},
+             {4, 5, 6}, {0.5, 1, 2}, {3, 4, 5}};
   Matrix3 P = (E.transpose() * E).inverse();
   RegularImplicitSchurFactor<CalibratedCamera> factor(keys, FBlocks, E, P, b);
 

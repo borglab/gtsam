@@ -18,7 +18,10 @@
 #include <gtsam/sfm/SfmData.h>
 #include <gtsam/slam/dataset.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
+#include <gtsam/slam/expressions.h>
+#include <gtsam/sam/RangeFactor.h>
 #include <gtsam/geometry/Point3.h>
+#include <gtsam/nonlinear/ExpressionFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
@@ -46,12 +49,22 @@ TEST(PinholeCamera, BAL) {
   SfmData db = SfmData::FromBalFile(filename);
 
   SharedNoiseModel unit2 = noiseModel::Unit::Create(2);
-  NonlinearFactorGraph graph;
+  ExpressionFactorGraph graph;
 
   for (size_t j = 0; j < db.numberTracks(); j++) {
     for (const SfmMeasurement& m: db.tracks[j].measurements)
       graph.emplace_shared<sfmFactor>(m.second, unit2, m.first, P(j));
   }
+
+  // Fix exactly the seven-dimensional similarity gauge without constraining
+  // the cameras' estimated calibration parameters.
+  Expression<SfmCamera> camera0(0);
+  Pose3_ pose0(&SfmCamera::getPose, camera0);
+  graph.addExpressionFactor(pose0, db.cameras[0].pose(),
+                            noiseModel::Constrained::All(6));
+  graph.emplace_shared<RangeFactor<SfmCamera>>(
+      0, 1, db.cameras[0].range(db.cameras[1]),
+      noiseModel::Constrained::All(1));
 
   Values initial = initialCamerasAndPointsEstimate(db);
 
@@ -59,7 +72,7 @@ TEST(PinholeCamera, BAL) {
 
   Values actual = lm.optimize();
   double actualError = graph.error(actual);
-  EXPECT_DOUBLES_EQUAL(0.0199833, actualError, 1e-5);
+  EXPECT_DOUBLES_EQUAL(0.020029, actualError, 1e-5);
 }
 
 /* ************************************************************************* */

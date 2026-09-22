@@ -30,6 +30,27 @@ Rot2 R(Rot2::fromAngle(0.1));
 Point2 P(0.2, 0.7);
 
 /* ************************************************************************* */
+namespace return_value_tests {
+
+// Verifies that normalized factory results remain valid through copy and group
+// operations.
+TEST(Rot2, NormalizedFactoryReturnValues) {
+  const Rot2 fromCosSin = Rot2::fromCosSin(3.0, 4.0);
+  DOUBLES_EQUAL(0.6, fromCosSin.c(), 1e-12);
+  DOUBLES_EQUAL(0.8, fromCosSin.s(), 1e-12);
+
+  const Rot2 fromAtan2 = Rot2::atan2(4.0, 3.0);
+  CHECK(assert_equal(fromCosSin, fromAtan2, 1e-12));
+
+  const Rot2 copied(fromCosSin);
+  CHECK(assert_equal(fromCosSin, copied, 1e-12));
+  CHECK(assert_equal(Rot2(), copied * copied.inverse(), 1e-12));
+}
+
+}  // namespace return_value_tests
+/* ************************************************************************* */
+
+/* ************************************************************************* */
 TEST( Rot2, constructors_and_angle)
 {
   double c=cos(0.1), s=sin(0.1);
@@ -99,7 +120,7 @@ TEST(Rot2, logmap)
 {
   Rot2 rot0(Rot2::fromAngle(M_PI/2.0));
   Rot2 rot(Rot2::fromAngle(M_PI));
-  Vector expected = (Vector(1) << M_PI/2.0).finished();
+  Vector expected{{M_PI / 2.0}};
   Vector actual = rot0.localCoordinates(rot);
   CHECK(assert_equal(expected, actual));
 }
@@ -107,9 +128,9 @@ TEST(Rot2, logmap)
 /* ************************************************************************* */
 TEST(Rot2, HatAndVee) {
   // Create a few test vectors
-  Vector1 v1 = (Vector1() << 1).finished();
-  Vector1 v2 = (Vector1() << 0.1).finished();
-  Vector1 v3 = (Vector1() << 0.0).finished();
+  Vector1 v1{1};
+  Vector1 v2{0.1};
+  Vector1 v3{0.0};
 
   // Test that Vee(Hat(v)) == v for various inputs
   EXPECT(assert_equal(v1, Rot2::Vee(Rot2::Hat(v1))));
@@ -117,8 +138,7 @@ TEST(Rot2, HatAndVee) {
   EXPECT(assert_equal(v3, Rot2::Vee(Rot2::Hat(v3))));
 
   // Check the structure of the Lie Algebra element
-  Matrix2 expected;
-  expected << 0., -1., 1., 0.;
+  Matrix2 expected{{0., -1.}, {1., 0.}};
 
   EXPECT(assert_equal(expected, Rot2::Hat(v1)));
 }
@@ -231,4 +251,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

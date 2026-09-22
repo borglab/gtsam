@@ -1,6 +1,15 @@
 ###############################################################################
 # Option for using system Eigen or GTSAM-bundled Eigen
-option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" OFF)
+# ROS packages declare Eigen as a dependency and must use that same Eigen in
+# GTSAM and downstream packages to avoid incompatible Eigen versions.  colcon
+# exports COLCON for every build subprocess, so use the system package by
+# default there while preserving the bundled-Eigen default elsewhere.
+if(DEFINED ENV{COLCON})
+  set(_gtsam_system_eigen_default ON)
+else()
+  set(_gtsam_system_eigen_default OFF)
+endif()
+option(GTSAM_USE_SYSTEM_EIGEN "Find and use system-installed Eigen. If 'off', use the one bundled with GTSAM" ${_gtsam_system_eigen_default})
 
 if(NOT GTSAM_USE_SYSTEM_EIGEN)
   # This option only makes sense if using the embedded copy of Eigen, it is
@@ -25,7 +34,11 @@ if(GTSAM_USE_SYSTEM_EIGEN)
         message(FATAL_ERROR "MKL does not work with Eigen 3.3.4 because of a bug in Eigen. See http://eigen.tuxfamily.org/bz/show_bug.cgi?id=1527. Disable GTSAM_USE_SYSTEM_EIGEN to use GTSAM's copy of Eigen, disable GTSAM_WITH_EIGEN_MKL, or upgrade/patch your installation of Eigen.")
     endif()
     
-    set(GTSAM_EIGEN_VERSION "${EIGEN3_VERSION}")
+    if(DEFINED Eigen3_VERSION)
+      set(GTSAM_EIGEN_VERSION "${Eigen3_VERSION}")
+    else()
+      set(GTSAM_EIGEN_VERSION "${EIGEN3_VERSION}")
+    endif()
 else()
     # Use bundled Eigen include path.
     # Clear any variables set by FindEigen3
@@ -35,7 +48,7 @@ else()
 
     # set full path to be used by external projects
     # this will be added to GTSAM_INCLUDE_DIR by gtsam_extra.cmake.in
-    set(GTSAM_EIGEN_INCLUDE_FOR_INSTALL "include/gtsam/3rdparty/Eigen/")
+    set(GTSAM_EIGEN_INCLUDE_FOR_INSTALL "${CMAKE_INSTALL_INCLUDEDIR}/gtsam/3rdparty/Eigen/")
 
     # The actual include directory (for BUILD cmake target interface):
     set(GTSAM_EIGEN_INCLUDE_FOR_BUILD "${GTSAM_SOURCE_DIR}/gtsam/3rdparty/Eigen")

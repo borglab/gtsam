@@ -1,3 +1,14 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
 /**
  *  @file   CarrierPhaseFactor.cpp
  *  @brief  Implementation file for GNSS Carrier Phase factors
@@ -42,7 +53,7 @@ bool CarrierPhaseFactor::equals(const NonlinearFactor& expected,
 }
 
 //***************************************************************************
-Vector CarrierPhaseFactor::evaluateError(
+Vector1 CarrierPhaseFactor::evaluateError(
     const Point3& receiverPosition, const double& receiverClockBias,
     const double& ambiguity, OptionalMatrixType HreceiverPos,
     OptionalMatrixType HreceiverClockBias,
@@ -78,7 +89,7 @@ UndifferencedCarrierPhaseFactor::UndifferencedCarrierPhaseFactor(
     const Key tropoZenithWetKey, const Key slantIonoKey, const Key ambiguityKey,
     const double measuredCarrierPhaseMeters, const Point3& satellitePosition,
     const double tropoWetMapping, const double ionoCoefficient,
-    const double lambda, const double satelliteClockBias,
+    const double lambda_, const double satelliteClockBias,
     const SharedNoiseModel& model)
     : Base(model, receiverPositionKey, receiverClockBiasKey, tropoZenithWetKey,
            slantIonoKey, ambiguityKey),
@@ -86,7 +97,7 @@ UndifferencedCarrierPhaseFactor::UndifferencedCarrierPhaseFactor(
                        satelliteClockBias},
       tropoMap_(tropoWetMapping),
       ionoCoeff_(ionoCoefficient),
-      lambda_(lambda) {}
+      lambda_(lambda_) {}
 
 //***************************************************************************
 void UndifferencedCarrierPhaseFactor::print(
@@ -146,7 +157,7 @@ UndifferencedCarrierPhaseFactorArm::UndifferencedCarrierPhaseFactorArm(
     const Key tropoZenithWetKey, const Key slantIonoKey, const Key ambiguityKey,
     const double measuredCarrierPhaseMeters, const Point3& satellitePosition,
     const Point3& leverArm, const double tropoWetMapping,
-    const double ionoCoefficient, const double lambda,
+    const double ionoCoefficient, const double lambda_,
     const double satelliteClockBias, const SharedNoiseModel& model)
     : Base(model, poseKey, receiverClockBiasKey, tropoZenithWetKey, slantIonoKey,
            ambiguityKey),
@@ -155,7 +166,7 @@ UndifferencedCarrierPhaseFactorArm::UndifferencedCarrierPhaseFactorArm(
       arm_(leverArm),
       tropoMap_(tropoWetMapping),
       ionoCoeff_(ionoCoefficient),
-      lambda_(lambda) {}
+      lambda_(lambda_) {}
 
 //***************************************************************************
 UndifferencedCarrierPhaseFactorArm::UndifferencedCarrierPhaseFactorArm(
@@ -164,7 +175,7 @@ UndifferencedCarrierPhaseFactorArm::UndifferencedCarrierPhaseFactorArm(
     const double measuredCarrierPhaseMeters, const Point3& satellitePosition,
     const Point3& leverArm, const Pose3& ecef_T_nav,
     const double tropoWetMapping, const double ionoCoefficient,
-    const double lambda, const double satelliteClockBias,
+    const double lambda_, const double satelliteClockBias,
     const SharedNoiseModel& model)
     : Base(model, poseKey, receiverClockBiasKey, tropoZenithWetKey, slantIonoKey,
            ambiguityKey),
@@ -173,7 +184,7 @@ UndifferencedCarrierPhaseFactorArm::UndifferencedCarrierPhaseFactorArm(
       arm_(leverArm, ecef_T_nav),
       tropoMap_(tropoWetMapping),
       ionoCoeff_(ionoCoefficient),
-      lambda_(lambda) {}
+      lambda_(lambda_) {}
 
 //***************************************************************************
 void UndifferencedCarrierPhaseFactorArm::print(
@@ -281,7 +292,7 @@ bool CarrierPhaseFactorArm::equals(const NonlinearFactor& expected,
 }
 
 //***************************************************************************
-Vector CarrierPhaseFactorArm::evaluateError(
+Vector1 CarrierPhaseFactorArm::evaluateError(
     const Pose3& pose, const double& receiverClockBias,
     const double& ambiguity, OptionalMatrixType H_pose,
     OptionalMatrixType HreceiverClockBias,
@@ -348,7 +359,7 @@ bool DoubleDifferenceCarrierPhaseFactor::equals(
 }
 
 //***************************************************************************
-Vector DoubleDifferenceCarrierPhaseFactor::evaluateError(
+Vector1 DoubleDifferenceCarrierPhaseFactor::evaluateError(
     const Point3& pos, const double& ambRef, const double& ambTarget,
     OptionalMatrixType Hpos, OptionalMatrixType HambRef,
     OptionalMatrixType HambTarget) const {
@@ -358,8 +369,8 @@ Vector DoubleDifferenceCarrierPhaseFactor::evaluateError(
       ddModel + lam_ * (ambRef - ambTarget) - dd_.observed();
 
   if (Hpos) *Hpos = H_pos;
-  if (HambRef) *HambRef = (Matrix(1, 1) << lam_).finished();
-  if (HambTarget) *HambTarget = (Matrix(1, 1) << -lam_).finished();
+  if (HambRef) *HambRef = Matrix{{lam_}};
+  if (HambTarget) *HambTarget = Matrix{{-lam_}};
 
   return Vector1(error);
 }
@@ -414,7 +425,7 @@ bool DoubleDifferenceCarrierPhaseFactorArm::equals(
 }
 
 //***************************************************************************
-Vector DoubleDifferenceCarrierPhaseFactorArm::evaluateError(
+Vector1 DoubleDifferenceCarrierPhaseFactorArm::evaluateError(
     const Pose3& pose, const double& ambRef, const double& ambTarget,
     OptionalMatrixType H_pose, OptionalMatrixType HambRef,
     OptionalMatrixType HambTarget) const {
@@ -429,8 +440,8 @@ Vector DoubleDifferenceCarrierPhaseFactorArm::evaluateError(
       ddModel + lam_ * (ambRef - ambTarget) - dd_.observed();
 
   if (H_pose) *H_pose = arm_.antennaPoseJacobian(H_antenna, frame);
-  if (HambRef) *HambRef = (Matrix(1, 1) << lam_).finished();
-  if (HambTarget) *HambTarget = (Matrix(1, 1) << -lam_).finished();
+  if (HambRef) *HambRef = Matrix{{lam_}};
+  if (HambTarget) *HambTarget = Matrix{{-lam_}};
 
   return Vector1(error);
 }

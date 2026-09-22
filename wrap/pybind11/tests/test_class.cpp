@@ -58,6 +58,13 @@ class ForwardClass;
 class Args : public py::args {};
 } // namespace pr5396_forward_declared_class
 
+struct ConvertibleFromAnything {
+    ConvertibleFromAnything() = default;
+    template <class T>
+    // NOLINTNEXTLINE(bugprone-forwarding-reference-overload,google-explicit-constructor)
+    ConvertibleFromAnything(T &&) {}
+};
+
 } // namespace test_class
 
 static_assert(py::detail::is_same_or_base_of<py::args, py::args>::value, "");
@@ -97,6 +104,10 @@ TEST_SUBMODULE(class_, m) {
         ~NoConstructorNew() { print_destroyed(this); }
     };
 
+    struct DynamicAttr {
+        DynamicAttr() = default;
+    };
+
     py::class_<NoConstructor>(m, "NoConstructor")
         .def_static("new_instance", &NoConstructor::new_instance, "Return an instance");
 
@@ -104,6 +115,8 @@ TEST_SUBMODULE(class_, m) {
         .def(py::init([]() { return nullptr; })) // Need a NOOP __init__
         .def_static("__new__",
                     [](const py::object &) { return NoConstructorNew::new_instance(); });
+
+    py::class_<DynamicAttr>(m, "DynamicAttr", py::dynamic_attr()).def(py::init<>());
 
     // test_pass_unique_ptr
     struct ToBeHeldByUniquePtr {};
@@ -521,6 +534,7 @@ TEST_SUBMODULE(class_, m) {
     // test_exception_rvalue_abort
     struct PyPrintDestructor {
         PyPrintDestructor() = default;
+        PyPrintDestructor(const PyPrintDestructor &) = default;
         ~PyPrintDestructor() { py::print("Print from destructor"); }
         void throw_something() { throw std::runtime_error("error"); }
     };
@@ -577,6 +591,11 @@ TEST_SUBMODULE(class_, m) {
     });
 
     test_class::pr4220_tripped_over_this::bind_empty0(m);
+
+    // Regression test for compiler error that showed up in #5866
+    m.def("return_universal_recipient", []() -> test_class::ConvertibleFromAnything {
+        return test_class::ConvertibleFromAnything{};
+    });
 }
 
 template <int N>

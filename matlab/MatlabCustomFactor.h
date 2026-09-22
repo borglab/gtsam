@@ -2,8 +2,28 @@
 
 #include <gtsam/nonlinear/CustomFactor.h>
 
+#include <stdexcept>
+
 #ifdef GTSAM_USE_TBB
 #include <tbb/global_control.h>
+#endif
+
+// On Apple LP64, size_t and uint64_t are distinct C++ types. The develop
+// MATLAB support omits unwrap<size_t> under __LP64__ on the assumption that
+// they are aliases, leaving size_t arguments without a caster on macOS.
+#if defined(__APPLE__) && defined(__LP64__)
+template <>
+mxArray* wrap<size_t>(const size_t& value) {
+  mxArray* result = scalar(mxUINT32OR64_CLASS);
+  *reinterpret_cast<size_t*>(mxGetData(result)) = value;
+  return result;
+}
+
+template <>
+size_t unwrap<size_t>(const mxArray* array) {
+  checkScalar(array, "unwrap<size_t>");
+  return myGetScalar<size_t>(array);
+}
 #endif
 
 namespace gtsam {
@@ -57,8 +77,21 @@ class MatlabCustomFactor : public CustomFactor {
     };
 
     mxArray* outputs[2] = {nullptr, nullptr};
-    mexCallMATLAB(jacobians ? 2 : 1, outputs, 4, args, "feval");
+    mxArray* callbackException = mexCallMATLABWithTrap(
+        jacobians ? 2 : 1, outputs, 4, args, "feval");
     destroyCallbackArgs(args, 4);
+
+    if (callbackException || !outputs[0] || (jacobians && !outputs[1])) {
+      const bool callbackFailed = callbackException != nullptr;
+      if (callbackException) {
+        mxDestroyArray(callbackException);
+      }
+      destroyCallbackArgs(outputs, 2);
+      throw std::runtime_error(
+          callbackFailed
+              ? "MATLAB CustomFactor callback invocation failed."
+              : "MATLAB CustomFactor callback returned missing outputs.");
+    }
 
     // The registry returns the residual as the first output in both calling
     // modes. Validate the dimension here so MATLAB callback bugs fail close to
@@ -130,11 +163,11 @@ class MatlabCustomFactor : public CustomFactor {
       : CustomFactor(
             noiseModel, keys,
             [callbackId](const CustomFactor& factor, const Values& values,
-                         const JacobianVector* jacobians) {
+                         OptionalJacobianVector jacobians) {
               const auto& matlabFactor =
                   static_cast<const MatlabCustomFactor&>(factor);
               return matlabFactor.invokeCallback(
-                  values, const_cast<JacobianVector*>(jacobians));
+                  values, jacobians ? &jacobians->get() : nullptr);
             }),
         callback_id_(callbackId)
 #ifdef GTSAM_USE_TBB

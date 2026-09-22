@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -17,7 +17,6 @@
 
 #include <gtsam/constrained/ActiveSetSolver.h>
 
-#include <chrono>
 #include <cstdlib>
 #include <iomanip>
 #include <iostream>
@@ -25,15 +24,17 @@
 #include <string>
 #include <vector>
 
+#include "internal/TimingUtils.h"
+
 using namespace gtsam;
 
 namespace {
 
 /* ************************************************************************* */
-Matrix Matrix1D(double value) { return (Matrix(1, 1) << value).finished(); }
+Matrix Matrix1D(double value) { return Matrix{{value}}; }
 
 /* ************************************************************************* */
-Vector Vector1D(double value) { return (Vector(1) << value).finished(); }
+Vector Vector1D(double value) { return Vector{{value}}; }
 
 /* ************************************************************************* */
 struct BenchmarkProblem {
@@ -92,12 +93,12 @@ BenchmarkProblem BuildQuadrotorAllocationQp() {
   constexpr double armLength = 0.25;
   constexpr double yawMomentScale = 0.05;
 
-  const Matrix allocation =
-      (Matrix(4, 4) << 1.0, 1.0, 1.0, 1.0, armLength, -armLength, armLength,
-       -armLength, armLength, armLength, -armLength, -armLength, yawMomentScale,
-       -yawMomentScale, -yawMomentScale, yawMomentScale)
-          .finished();
-  const Vector desiredWrench = (Vector(4) << 3.4, 0.15, 0.10, 0.0).finished();
+  const Matrix allocation{
+      {1.0, 1.0, 1.0, 1.0},
+      {armLength, -armLength, armLength, -armLength},
+      {armLength, armLength, -armLength, -armLength},
+      {yawMomentScale, -yawMomentScale, -yawMomentScale, yawMomentScale}};
+  const Vector desiredWrench{{3.4, 0.15, 0.10, 0.0}};
   problem.constrained.addCost(
       JacobianFactor(rotorThrustKey, allocation, desiredWrench));
 
@@ -119,12 +120,9 @@ BenchmarkProblem BuildQuadrotorAllocationQp() {
 /* ************************************************************************* */
 template <typename FUNCTION>
 double TimeSeconds(FUNCTION&& function, size_t repeats) {
-  const auto start = std::chrono::steady_clock::now();
-  for (size_t i = 0; i < repeats; ++i) {
-    function();
-  }
-  const auto end = std::chrono::steady_clock::now();
-  return std::chrono::duration<double>(end - start).count() /
+  return gtsam::timing::measureSeconds([&] {
+           for (size_t i = 0; i < repeats; ++i) function();
+         }) /
          static_cast<double>(repeats);
 }
 
@@ -231,16 +229,10 @@ void PrintTimingResult(const std::string& scenario, size_t variables,
 
 /* ************************************************************************* */
 std::vector<size_t> ParseSizes(int argc, char** argv) {
-  if (argc <= 1) {
-    return {32, 64, 128, 256, 512};
-  }
-
-  std::vector<size_t> sizes;
-  sizes.reserve(static_cast<size_t>(argc - 1));
-  for (int i = 1; i < argc; ++i) {
-    sizes.push_back(static_cast<size_t>(std::stoul(argv[i])));
-  }
-  return sizes;
+  gtsam::timing::Arguments arguments(argc, argv);
+  std::vector<size_t> sizes = arguments.sizePositionals();
+  arguments.validateAllConsumed();
+  return sizes.empty() ? std::vector<size_t>{32, 64, 128, 256, 512} : sizes;
 }
 
 /* ************************************************************************* */

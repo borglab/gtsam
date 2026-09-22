@@ -14,6 +14,7 @@ import numpy as np
 
 import gtsam
 from gtsam import Rot3
+from gtsam.utils.numerical_derivative import numericalDerivative11
 from gtsam.utils.test_case import GtsamTestCase
 
 
@@ -35,6 +36,21 @@ class TestExtendedPose3(GtsamTestCase):
             pose = cls()
             self.assertEqual(pose.k(), k)
             self.gtsamAssertEquals(pose, cls.Identity(), 1e-12)
+
+    def test_vec_optional_jacobian(self):
+        """The templated vec wrapper exposes its exact optional Jacobian."""
+        for k in (2, 3, 4, 6):
+            cls = self.class_for_k(k)
+            pose = cls.Expmap(np.linspace(0.01, 0.02, 3 + 3 * k))
+            expected = pose.vec()
+            H = np.zeros(((3 + k) ** 2, 3 + 3 * k))
+
+            actual = pose.vec(H)
+
+            np.testing.assert_allclose(actual, expected, atol=1e-12)
+            np.testing.assert_allclose(
+                H, numericalDerivative11(lambda x: x.vec(), pose), atol=1e-7
+            )
 
     def test_k6_lie_group_and_matrix_lie_group(self):
         """Test selected MatrixLieGroup operations on K=6."""

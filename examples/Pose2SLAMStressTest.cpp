@@ -15,7 +15,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/BetweenFactor.h>
@@ -33,17 +33,15 @@ void testGtsam(int numberNodes) {
 
   vector<Pose3> poses;
   for (int i = 0; i < numberNodes; ++i) {
-    Matrix4 M;
     double r = dist(e2);
     r = (r - 0.5) / 10 + i;
-    M << 1, 0, 0, r, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1;
+    Matrix4 M{{1, 0, 0, r}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
     poses.push_back(Pose3(M));
   }
 
   // prior factor for the first pose
   auto priorModel = noiseModel::Isotropic::Variance(6, 1e-4);
-  Matrix4 first_M;
-  first_M << 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1;
+  Matrix4 first_M{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
   Pose3 first = Pose3(first_M);
 
   NonlinearFactorGraph graph;
@@ -53,8 +51,7 @@ void testGtsam(int numberNodes) {
   auto VOCovarianceModel = noiseModel::Isotropic::Variance(6, 1e-3);
 
   // relative VO motion
-  Matrix4 vo_M;
-  vo_M << 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1;
+  Matrix4 vo_M{{1, 0, 0, 1}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
   Pose3 relativeMotion(vo_M);
   for (int i = 0; i < numberNodes - 1; ++i) {
     graph.add(

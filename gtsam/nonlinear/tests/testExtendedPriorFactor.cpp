@@ -18,6 +18,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Rot2.h>
 #include <gtsam/nonlinear/ExtendedPriorFactor.h>
 
 using namespace std;
@@ -36,7 +37,7 @@ TEST(ExtendedPriorFactor, ConstructorWithMean) {
   Key key(1);
   Pose2 origin(1, 2, 0.3);
   auto model = noiseModel::Isotropic::Sigma(3, 0.5);
-  Vector mean = (Vector(3) << 0.1, 0.2, 0.3).finished();
+  Vector mean{{0.1, 0.2, 0.3}};
   ExtendedPriorFactor<Pose2> factor(key, origin, mean, model);
 }
 
@@ -48,8 +49,7 @@ TEST(ExtendedPriorFactor, Error) {
   ExtendedPriorFactor<Pose2> factor(key, origin, model);
 
   Pose2 x(1.1, 2.2, 0.3);
-  Vector expected_error =
-      (Vector(3) << 0.15463769, 0.161515277, 0.0).finished();
+  Vector expected_error{{0.15463769, 0.161515277, 0.0}};
   Vector actual_error = factor.evaluateError(x);
   EXPECT(assert_equal(expected_error, actual_error, 1e-8));
 }
@@ -59,14 +59,28 @@ TEST(ExtendedPriorFactor, ErrorWithMean) {
   Key key(1);
   Pose2 origin(1, 2, 0.3);
   auto model = noiseModel::Isotropic::Sigma(3, 0.5);
-  Vector mean = (Vector(3) << 0.1, 0.2, 0.05).finished();
+  Vector mean{{0.1, 0.2, 0.05}};
   ExtendedPriorFactor<Pose2> factor(key, origin, mean, model);
 
   Pose2 x(1.1, 2.2, 0.3);
-  Vector expected_error =
-      (Vector(3) << 0.05463769, -0.038484723, -0.05).finished();
+  Vector expected_error{{0.05463769, -0.038484723, -0.05}};
   Vector actual_error = factor.evaluateError(x);
   EXPECT(assert_equal(expected_error, actual_error, 1e-8));
+}
+
+//******************************************************************************
+// Verifies the fixed-size Rot2 Local Jacobian is written to the dynamic output.
+TEST(ExtendedPriorFactor, Rot2Jacobian) {
+  const Rot2 origin = Rot2::fromAngle(0.3);
+  const auto model = noiseModel::Isotropic::Sigma(1, 0.5);
+  const ExtendedPriorFactor<Rot2> factor(1, origin, model);
+
+  Matrix actualH;
+  const Vector actualError =
+      factor.evaluateError(Rot2::fromAngle(0.5), actualH);
+
+  EXPECT(assert_equal(Vector1{0.2}, actualError, 1e-9));
+  EXPECT(assert_equal(Matrix1::Identity(), actualH, 1e-9));
 }
 
 //******************************************************************************
@@ -74,7 +88,7 @@ TEST(ExtendedPriorFactor, Likelihood) {
   Key key(1);
   Pose2 origin(1, 2, 0.3);
   auto model = noiseModel::Isotropic::Sigma(3, 1.0);
-  Vector mean = (Vector(3) << 0.1, 0.2, 0.05).finished();
+  Vector mean{{0.1, 0.2, 0.05}};
   ExtendedPriorFactor<Pose2> factor(key, origin, mean, model);
 
   Pose2 x = origin.retract(mean);

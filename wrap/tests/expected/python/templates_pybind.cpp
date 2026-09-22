@@ -30,21 +30,35 @@ using namespace std;
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(templates_py, m_) {
-    m_.doc() = "pybind11 wrapper of templates_py";
 
 
-    py::class_<TemplatedConstructor, std::shared_ptr<TemplatedConstructor>>(m_, "TemplatedConstructor")
+void gtwrap_declare_templates_py(py::module_ &m_) {
+
+    py::class_<TemplatedConstructor, std::shared_ptr<TemplatedConstructor>>(m_, "TemplatedConstructor");
+
+    py::class_<ScopedTemplate<Result>, std::shared_ptr<ScopedTemplate<Result>>>(m_, "ScopedTemplateResult");
+
+}
+
+void gtwrap_bind_templates_py(py::module_ &m_) {
+#include "python/specializations.h"
+
+    auto gtwrap_class_m__TemplatedConstructor = py::reinterpret_borrow<py::class_<TemplatedConstructor, std::shared_ptr<TemplatedConstructor>>>(m_.attr("TemplatedConstructor"));
+    gtwrap_class_m__TemplatedConstructor
         .def(py::init<>())
         .def(py::init<const string&>(), gtwrap::internal::py_arg<const string&>("arg"))
         .def(py::init<const int&>(), gtwrap::internal::py_arg<const int&>("arg"))
         .def(py::init<const double&>(), gtwrap::internal::py_arg<const double&>("arg"));
 
-    py::class_<ScopedTemplate<Result>, std::shared_ptr<ScopedTemplate<Result>>>(m_, "ScopedTemplateResult")
+    auto gtwrap_class_m__ScopedTemplateResult = py::reinterpret_borrow<py::class_<ScopedTemplate<Result>, std::shared_ptr<ScopedTemplate<Result>>>>(m_.attr("ScopedTemplateResult"));
+    gtwrap_class_m__ScopedTemplateResult
         .def(py::init<const Result::Value&>(), gtwrap::internal::py_arg<const Result::Value&>("arg"));
-
-
-#include "python/specializations.h"
 
 }
 
+PYBIND11_MODULE(templates_py, m_) {
+    m_.doc() = "pybind11 wrapper of templates_py";
+
+gtwrap_declare_templates_py(m_);
+gtwrap_bind_templates_py(m_);
+}

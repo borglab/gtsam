@@ -29,8 +29,8 @@ Matrix26 PinholeBase::Dpose(const Point2& pn, double d) {
   // optimized version of derivatives, see CalibratedCamera.nb
   const double u = pn.x(), v = pn.y();
   double uv = u * v, uu = u * u, vv = v * v;
-  Matrix26 Dpn_pose;
-  Dpn_pose << uv, -1 - uu, v, -d, 0, d * u, 1 + vv, -uv, -u, 0, -d, d * v;
+  Matrix26 Dpn_pose{{uv, -1 - uu, v, -d, 0, d * u},
+                    {1 + vv, -uv, -u, 0, -d, d * v}};
   return Dpn_pose;
 }
 
@@ -38,10 +38,10 @@ Matrix26 PinholeBase::Dpose(const Point2& pn, double d) {
 Matrix23 PinholeBase::Dpoint(const Point2& pn, double d, const Matrix3& Rt) {
   // optimized version of derivatives, see CalibratedCamera.nb
   const double u = pn.x(), v = pn.y();
-  Matrix23 Dpn_point;
-  Dpn_point << //
-      Rt(0, 0) - u * Rt(2, 0), Rt(0, 1) - u * Rt(2, 1), Rt(0, 2) - u * Rt(2, 2), //
-  /**/Rt(1, 0) - v * Rt(2, 0), Rt(1, 1) - v * Rt(2, 1), Rt(1, 2) - v * Rt(2, 2);
+  // clang-format off
+  Matrix23 Dpn_point{{Rt(0, 0) - u * Rt(2, 0), Rt(0, 1) - u * Rt(2, 1), Rt(0, 2) - u * Rt(2, 2)},
+                     {Rt(1, 0) - v * Rt(2, 0), Rt(1, 1) - v * Rt(2, 1), Rt(1, 2) - v * Rt(2, 2)}};
+  // clang-format on
   Dpn_point *= d;
   return Dpn_point;
 }
@@ -89,8 +89,7 @@ const Pose3& PinholeBase::getPose(OptionalJacobian<6, 6> H) const {
 Point2 PinholeBase::Project(const Point3& pc, OptionalJacobian<2, 3> Dpoint) {
   double d = 1.0 / pc.z();
   const double u = pc.x() * d, v = pc.y() * d;
-  if (Dpoint)
-    *Dpoint << d, 0.0, -u * d, 0.0, d, -v * d;
+  if (Dpoint) *Dpoint = Matrix23{{d, 0.0, -u * d}, {0.0, d, -v * d}};
   return Point2(u, v);
 }
 
@@ -167,10 +166,8 @@ Point2 PinholeBase::project2(const Unit3& pw, OptionalJacobian<2, 6> Dpose,
 /* ************************************************************************* */
 Point3 PinholeBase::BackprojectFromCamera(const Point2& p,
     const double depth, OptionalJacobian<3, 2> Dpoint, OptionalJacobian<3, 1> Ddepth) {
-  if (Dpoint)
-    *Dpoint << depth, 0, 0, depth, 0, 0;
-  if (Ddepth)
-    *Ddepth << p.x(), p.y(), 1;
+  if (Dpoint) *Dpoint = Matrix32{{depth, 0}, {0, depth}, {0, 0}};
+  if (Ddepth) *Ddepth = Matrix31{{p.x()}, {p.y()}, {1}};
   return Point3(p.x() * depth, p.y() * depth, depth);
 }
 

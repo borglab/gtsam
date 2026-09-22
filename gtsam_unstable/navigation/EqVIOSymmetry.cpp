@@ -84,15 +84,13 @@ Matrix23 E3ProjectSphereDiff(const Vector3& eta) {
   const double inv = 1.0 / denom;
   const double inv2 = inv * inv;
 
-  Matrix23 J;
-  J << inv, 0.0, eta.x() * inv2, 0.0, inv, eta.y() * inv2;
+  Matrix23 J{{inv, 0.0, eta.x() * inv2}, {0.0, inv, eta.y() * inv2}};
   return J;
 }
 
 /// Jacobian of inverse stereographic chart in closed form.
 Matrix32 E3ProjectSphereInvDiff(const Vector2& y) {
-  static const Matrix32 I32 =
-      (Matrix32() << 1.0, 0.0, 0.0, 1.0, 0.0, 0.0).finished();
+  static const Matrix32 I32{{1.0, 0.0}, {0.0, 1.0}, {0.0, 0.0}};
 
   const double s = y.squaredNorm() + 1.0;
   const double alpha = 2.0 / s;

@@ -50,7 +50,7 @@ TEST(TranslationFactor, ZeroError) {
   Vector actualError(factor.evaluateError(T1, T2));
 
   // Verify we get the expected error
-  Vector expected = (Vector3() << 0, 0, 0).finished();
+  Vector expected{{0, 0, 0}};
   EXPECT(assert_equal(expected, actualError, 1e-9));
 }
 
@@ -66,7 +66,7 @@ TEST(TranslationFactor, NonZeroError) {
   Vector actualError(factor.evaluateError(T1, T2));
 
   // verify we get the expected error
-  Vector expected = (Vector3() << -1, 1 / sqrt(2), 1 / sqrt(2)).finished();
+  Vector expected{{-1, 1 / sqrt(2), 1 / sqrt(2)}};
   EXPECT(assert_equal(expected, actualError, 1e-9));
 }
 
@@ -118,7 +118,7 @@ TEST(BilinearAngleTranslationFactor, ZeroError) {
   Vector actualError(factor.evaluateError(T1, T2, scale));
 
   // Verify we get the expected error
-  Vector expected = (Vector3() << 0, 0, 0).finished();
+  Vector expected{{0, 0, 0}};
   EXPECT(assert_equal(expected, actualError, 1e-9));
 }
 
@@ -135,7 +135,7 @@ TEST(BilinearAngleTranslationFactor, NonZeroError) {
   Vector actualError(factor.evaluateError(T1, T2, scale));
 
   // verify we get the expected error
-  Vector expected = (Vector3() << -1, 1 / sqrt(2), 1 / sqrt(2)).finished();
+  Vector expected{{-1, 1 / sqrt(2), 1 / sqrt(2)}};
   EXPECT(assert_equal(expected, actualError, 1e-9));
 }
 

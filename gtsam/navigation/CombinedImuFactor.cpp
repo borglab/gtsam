@@ -22,6 +22,8 @@
 
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/navigation/CombinedImuFactor.h>
+#include <gtsam/navigation/GalileanImuFactor.h>
+#include <gtsam/navigation/LieGroupPreintegration.h>
 #include <gtsam/navigation/ManifoldPreintegration.h>
 #include <gtsam/navigation/TangentPreintegration.h>
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
@@ -78,19 +80,158 @@ void PreintegratedCombinedMeasurementsT<PreintegrationType>::resetIntegration() 
   preintMeasCov_.setZero();
 }
 
-//------------------------------------------------------------------------------
-// sugar for derivative blocks
-#define D_R_R(H) (H)->block<3,3>(0,0)
-#define D_R_t(H) (H)->block<3,3>(0,3)
-#define D_R_v(H) (H)->block<3,3>(0,6)
-#define D_t_R(H) (H)->block<3,3>(3,0)
-#define D_t_t(H) (H)->block<3,3>(3,3)
-#define D_t_v(H) (H)->block<3,3>(3,6)
-#define D_v_R(H) (H)->block<3,3>(6,0)
-#define D_v_t(H) (H)->block<3,3>(6,3)
-#define D_v_v(H) (H)->block<3,3>(6,6)
-#define D_a_a(H) (H)->block<3,3>(9,9)
-#define D_g_g(H) (H)->block<3,3>(12,12)
+namespace {
+
+using Matrix15 = Eigen::Matrix<double, 15, 15>;
+
+/** Propagate Combined PIM covariance using its sparse 5-by-5 block form. */
+template <bool kTangentStructure, bool kFullGyroscopeStructure>
+void propagateCombinedCovariance(Matrix15* covariance, const Matrix9& A,
+                                 const Matrix93& B, const Matrix93& C,
+                                 const PreintegrationCombinedParams& params,
+                                 double dt, bool hasSensorPose) {
+  // State blocks are ordered R,p,v,b_a,b_g. The Combined transition is
+  //
+  //       [ A00   0    0    0   C0 ]
+  //       [ A10  A11  A12  B1   C1 ]
+  //   F = [ A20   0   A22  B2   C2 ] .
+  //       [  0    0    0    I    0 ]
+  //       [  0    0    0    0    I ]
+  // C1 and C2 are nonzero for Galilean preintegration and when a displaced
+  // sensor couples angular velocity into corrected acceleration.
+  const auto A00 = A.block<3, 3>(0, 0);
+  const auto A10 = A.block<3, 3>(3, 0);
+  const auto A11 = A.block<3, 3>(3, 3);
+  const auto A12 = A.block<3, 3>(3, 6);
+  const auto A20 = A.block<3, 3>(6, 0);
+  const auto A22 = A.block<3, 3>(6, 6);
+  const auto B1 = B.middleRows<3>(3);
+  const auto B2 = B.bottomRows<3>();
+  const auto C0 = C.topRows<3>();
+  const auto C1 = C.middleRows<3>(3);
+  const auto C2 = C.bottomRows<3>();
+  const bool useFullGyroscope = kFullGyroscopeStructure || hasSensorPose;
+
+  const Matrix15 oldCovariance = *covariance;
+  Matrix15 FP;
+  for (int column = 0; column < 5; ++column) {
+    const int offset = 3 * column;
+    FP.block<3, 3>(0, offset).noalias() =
+        A00 * oldCovariance.block<3, 3>(0, offset) +
+        C0 * oldCovariance.block<3, 3>(12, offset);
+    if constexpr (kTangentStructure) {
+      FP.block<3, 3>(3, offset).noalias() =
+          A10 * oldCovariance.block<3, 3>(0, offset) +
+          oldCovariance.block<3, 3>(3, offset) +
+          dt * oldCovariance.block<3, 3>(6, offset) +
+          B1 * oldCovariance.block<3, 3>(9, offset);
+      FP.block<3, 3>(6, offset).noalias() =
+          A20 * oldCovariance.block<3, 3>(0, offset) +
+          oldCovariance.block<3, 3>(6, offset) +
+          B2 * oldCovariance.block<3, 3>(9, offset);
+    } else {
+      FP.block<3, 3>(3, offset).noalias() =
+          A10 * oldCovariance.block<3, 3>(0, offset) +
+          A11 * oldCovariance.block<3, 3>(3, offset) +
+          A12 * oldCovariance.block<3, 3>(6, offset) +
+          B1 * oldCovariance.block<3, 3>(9, offset);
+      FP.block<3, 3>(6, offset).noalias() =
+          A20 * oldCovariance.block<3, 3>(0, offset) +
+          A22 * oldCovariance.block<3, 3>(6, offset) +
+          B2 * oldCovariance.block<3, 3>(9, offset);
+    }
+    if (useFullGyroscope) {
+      FP.block<3, 3>(3, offset).noalias() +=
+          C1 * oldCovariance.block<3, 3>(12, offset);
+      FP.block<3, 3>(6, offset).noalias() +=
+          C2 * oldCovariance.block<3, 3>(12, offset);
+    }
+    FP.block<3, 3>(9, offset) = oldCovariance.block<3, 3>(9, offset);
+    FP.block<3, 3>(12, offset) = oldCovariance.block<3, 3>(12, offset);
+  }
+
+  // Evaluate only the lower blocks of F*P*F'. Each loop corresponds to one
+  // sparse block row of F above.
+  for (int row = 0; row < 5; ++row) {
+    const int offset = 3 * row;
+    covariance->block<3, 3>(offset, 0).noalias() =
+        FP.block<3, 3>(offset, 0) * A00.transpose() +
+        FP.block<3, 3>(offset, 12) * C0.transpose();
+  }
+  for (int row = 1; row < 5; ++row) {
+    const int offset = 3 * row;
+    if constexpr (kTangentStructure) {
+      covariance->block<3, 3>(offset, 3).noalias() =
+          FP.block<3, 3>(offset, 0) * A10.transpose() +
+          FP.block<3, 3>(offset, 3) + dt * FP.block<3, 3>(offset, 6) +
+          FP.block<3, 3>(offset, 9) * B1.transpose();
+    } else {
+      covariance->block<3, 3>(offset, 3).noalias() =
+          FP.block<3, 3>(offset, 0) * A10.transpose() +
+          FP.block<3, 3>(offset, 3) * A11.transpose() +
+          FP.block<3, 3>(offset, 6) * A12.transpose() +
+          FP.block<3, 3>(offset, 9) * B1.transpose();
+    }
+    if (useFullGyroscope) {
+      covariance->block<3, 3>(offset, 3).noalias() +=
+          FP.block<3, 3>(offset, 12) * C1.transpose();
+    }
+  }
+  for (int row = 2; row < 5; ++row) {
+    const int offset = 3 * row;
+    if constexpr (kTangentStructure) {
+      covariance->block<3, 3>(offset, 6).noalias() =
+          FP.block<3, 3>(offset, 0) * A20.transpose() +
+          FP.block<3, 3>(offset, 6) +
+          FP.block<3, 3>(offset, 9) * B2.transpose();
+    } else {
+      covariance->block<3, 3>(offset, 6).noalias() =
+          FP.block<3, 3>(offset, 0) * A20.transpose() +
+          FP.block<3, 3>(offset, 6) * A22.transpose() +
+          FP.block<3, 3>(offset, 9) * B2.transpose();
+    }
+    if (useFullGyroscope) {
+      covariance->block<3, 3>(offset, 6).noalias() +=
+          FP.block<3, 3>(offset, 12) * C2.transpose();
+    }
+  }
+  covariance->block<3, 3>(9, 9) = FP.block<3, 3>(9, 9);
+  covariance->block<3, 3>(12, 9) = FP.block<3, 3>(12, 9);
+  covariance->block<3, 3>(12, 12) = FP.block<3, 3>(12, 12);
+
+  // Add continuous-time measurement and bias noise to the affected blocks.
+  const Matrix3 scaledAccelerometerCovariance =
+      params.accelerometerCovariance / dt;
+  const Matrix3 scaledGyroscopeCovariance = params.gyroscopeCovariance / dt;
+  const Matrix3 B1Covariance = B1 * scaledAccelerometerCovariance;
+  const Matrix3 B2Covariance = B2 * scaledAccelerometerCovariance;
+  covariance->block<3, 3>(0, 0).noalias() +=
+      C0 * scaledGyroscopeCovariance * C0.transpose();
+  covariance->block<3, 3>(3, 3).noalias() +=
+      B1Covariance * B1.transpose() + dt * params.integrationCovariance;
+  covariance->block<3, 3>(6, 3).noalias() += B2Covariance * B1.transpose();
+  covariance->block<3, 3>(6, 6).noalias() += B2Covariance * B2.transpose();
+  if (useFullGyroscope) {
+    const Matrix3 C1Covariance = C1 * scaledGyroscopeCovariance;
+    const Matrix3 C2Covariance = C2 * scaledGyroscopeCovariance;
+    covariance->block<3, 3>(3, 0).noalias() += C1Covariance * C0.transpose();
+    covariance->block<3, 3>(3, 3).noalias() += C1Covariance * C1.transpose();
+    covariance->block<3, 3>(6, 0).noalias() += C2Covariance * C0.transpose();
+    covariance->block<3, 3>(6, 3).noalias() += C2Covariance * C1.transpose();
+    covariance->block<3, 3>(6, 6).noalias() += C2Covariance * C2.transpose();
+  }
+  covariance->block<3, 3>(9, 9).noalias() += dt * params.biasAccCovariance;
+  covariance->block<3, 3>(12, 12).noalias() += dt * params.biasOmegaCovariance;
+
+  for (int row = 1; row < 5; ++row) {
+    for (int column = 0; column < row; ++column) {
+      covariance->block<3, 3>(3 * column, 3 * row) =
+          covariance->block<3, 3>(3 * row, 3 * column).transpose();
+    }
+  }
+}
+
+}  // namespace
 
 //------------------------------------------------------------------------------
 template <class PreintegrationType>
@@ -108,57 +249,13 @@ void PreintegratedCombinedMeasurementsT<
   Matrix93 B, C;  // Jacobian of state wrpt accel bias and omega bias.
   PreintegrationType::update(measuredAcc, measuredOmega, dt, &A, &B, &C);
 
-  // Update preintegrated measurements covariance: as in [2] we consider a first
-  // order propagation that can be seen as a prediction phase in an EKF
-  // framework. In this implementation, in contrast to [2], we consider the
-  // uncertainty of the bias selection and we keep correlation between biases
-  // and preintegrated measurements
-
-  // Single Jacobians to propagate covariance
-  Matrix3 theta_H_omega = C.topRows<3>();
-  Matrix3 pos_H_acc = B.middleRows<3>(3);
-  Matrix3 vel_H_acc = B.bottomRows<3>();
-
-  // overall Jacobian wrt preintegrated measurements (df/dx)
-  Eigen::Matrix<double, 15, 15> F;
-  F.setZero();
-  F.block<9, 9>(0, 0) = A;
-  F.block<3, 3>(0, 12) = theta_H_omega;
-  F.block<3, 3>(3, 9) = pos_H_acc;
-  F.block<3, 3>(6, 9) = vel_H_acc;
-  F.block<6, 6>(9, 9) = I_6x6;
-
-  // Update the uncertainty on the state (matrix F in [4]).
-  preintMeasCov_ = F * preintMeasCov_ * F.transpose();
-
-  // propagate uncertainty
-  // TODO(frank): use noiseModel routine so we can have arbitrary noise models.
-  const Matrix3& aCov = this->p().accelerometerCovariance;
-  const Matrix3& wCov = this->p().gyroscopeCovariance;
-  const Matrix3& iCov = this->p().integrationCovariance;
-
-  // first order uncertainty propagation
-  // Optimized matrix mult: (1/dt) * G * measurementCovariance * G.transpose()
-  Eigen::Matrix<double, 15, 15> G_measCov_Gt;
-  G_measCov_Gt.setZero(15, 15);
-
-  // BLOCK DIAGONAL TERMS
-  D_R_R(&G_measCov_Gt) =
-      (theta_H_omega * (wCov / dt) * theta_H_omega.transpose());
-
-  D_t_t(&G_measCov_Gt) =
-      (pos_H_acc * (aCov / dt) * pos_H_acc.transpose()) + (dt * iCov);
-
-  D_v_v(&G_measCov_Gt) = (vel_H_acc * (aCov / dt) * vel_H_acc.transpose());
-
-  D_a_a(&G_measCov_Gt) = dt * this->p().biasAccCovariance;
-  D_g_g(&G_measCov_Gt) = dt * this->p().biasOmegaCovariance;
-
-  // OFF BLOCK DIAGONAL TERMS
-  D_t_v(&G_measCov_Gt) = (pos_H_acc * (aCov / dt) * vel_H_acc.transpose());
-  D_v_t(&G_measCov_Gt) = (vel_H_acc * (aCov / dt) * pos_H_acc.transpose());
-
-  preintMeasCov_.noalias() += G_measCov_Gt;
+  constexpr bool kTangentStructure =
+      std::is_same_v<PreintegrationType, TangentPreintegration>;
+  constexpr bool kFullGyroscopeStructure =
+      std::is_same_v<PreintegrationType, GalileanPreintegration>;
+  propagateCombinedCovariance<kTangentStructure, kFullGyroscopeStructure>(
+      &preintMeasCov_, A, B, C, this->p(), dt,
+      static_cast<bool>(this->p().body_P_sensor));
 }
 
 //------------------------------------------------------------------------------
@@ -191,62 +288,9 @@ Vector CombinedImuFactorT<PIM>::evaluateError(const Pose3& pose_i,
     OptionalMatrixType H1, OptionalMatrixType H2,
     OptionalMatrixType H3, OptionalMatrixType H4,
     OptionalMatrixType H5, OptionalMatrixType H6) const {
-
-  // error wrt bias evolution model (random walk)
-  Matrix6 Hbias_i, Hbias_j;
-  Vector6 fbias = traits<imuBias::ConstantBias>::Between(bias_j, bias_i,
-      H6 ? &Hbias_j : 0, H5 ? &Hbias_i : 0).vector();
-
-  Matrix96 D_r_pose_i, D_r_pose_j, D_r_bias_i;
-  Matrix93 D_r_vel_i, D_r_vel_j;
-
-  // error wrt preintegrated measurements
-  Vector9 r_Rpv = pim_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j,
-      bias_i, H1 ? &D_r_pose_i : 0, H2 ? &D_r_vel_i : 0, H3 ? &D_r_pose_j : 0,
-      H4 ? &D_r_vel_j : 0, H5 ? &D_r_bias_i : 0);
-
-  // if we need the jacobians
-  if (H1) {
-    H1->resize(15, 6);
-    H1->block<9, 6>(0, 0) = D_r_pose_i;
-    // adding: [dBiasAcc/dPi ; dBiasOmega/dPi]
-    H1->block<6, 6>(9, 0).setZero();
-  }
-  if (H2) {
-    H2->resize(15, 3);
-    H2->block<9, 3>(0, 0) = D_r_vel_i;
-    // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
-    H2->block<6, 3>(9, 0).setZero();
-  }
-  if (H3) {
-    H3->resize(15, 6);
-    H3->block<9, 6>(0, 0) = D_r_pose_j;
-    // adding: [dBiasAcc/dPj ; dBiasOmega/dPj]
-    H3->block<6, 6>(9, 0).setZero();
-  }
-  if (H4) {
-    H4->resize(15, 3);
-    H4->block<9, 3>(0, 0) = D_r_vel_j;
-    // adding: [dBiasAcc/dVi ; dBiasOmega/dVi]
-    H4->block<6, 3>(9, 0).setZero();
-  }
-  if (H5) {
-    H5->resize(15, 6);
-    H5->block<9, 6>(0, 0) = D_r_bias_i;
-    // adding: [dBiasAcc/dBias_i ; dBiasOmega/dBias_i]
-    H5->block<6, 6>(9, 0) = Hbias_i;
-  }
-  if (H6) {
-    H6->resize(15, 6);
-    H6->block<9, 6>(0, 0).setZero();
-    // adding: [dBiasAcc/dBias_j ; dBiasOmega/dBias_j]
-    H6->block<6, 6>(9, 0) = Hbias_j;
-  }
-
-  // overall error
-  Vector r(15);
-  r << r_Rpv, fbias; // vector of size 15
-  return r;
+  return internal::combinedImuError(pim_, pose_i, vel_i, pose_j, vel_j,
+                                    bias_i, bias_j, pim_.params()->n_gravity,
+                                    H1, H2, H3, H4, H5, H6, nullptr);
 }
 
 //------------------------------------------------------------------------------
@@ -262,15 +306,31 @@ std::ostream& operator<<(std::ostream& os, const CombinedImuFactorT<PIM>& f) {
 //------------------------------------------------------------------------------
 template class GTSAM_EXPORT PreintegratedCombinedMeasurementsT<ManifoldPreintegration>;
 template class GTSAM_EXPORT PreintegratedCombinedMeasurementsT<TangentPreintegration>;
+template class GTSAM_EXPORT
+    PreintegratedCombinedMeasurementsT<LieGroupPreintegration>;
+template class GTSAM_EXPORT
+    PreintegratedCombinedMeasurementsT<GalileanPreintegration>;
 
 template class GTSAM_EXPORT CombinedImuFactorT<PreintegratedCombinedMeasurementsT<ManifoldPreintegration>>;
 template class GTSAM_EXPORT CombinedImuFactorT<PreintegratedCombinedMeasurementsT<TangentPreintegration>>;
+template class GTSAM_EXPORT CombinedImuFactorT<
+    PreintegratedCombinedMeasurementsT<LieGroupPreintegration>>;
+template class GTSAM_EXPORT
+    CombinedImuFactorT<PreintegratedCombinedMeasurementsG>;
 
 // Instantiate operator<<
 template GTSAM_EXPORT std::ostream& operator<<<PreintegratedCombinedMeasurementsT<ManifoldPreintegration>>(
     std::ostream& os, const CombinedImuFactorT<PreintegratedCombinedMeasurementsT<ManifoldPreintegration>>& f);
 template GTSAM_EXPORT std::ostream& operator<<<PreintegratedCombinedMeasurementsT<TangentPreintegration>>(
     std::ostream& os, const CombinedImuFactorT<PreintegratedCombinedMeasurementsT<TangentPreintegration>>& f);
-
+template GTSAM_EXPORT std::ostream&
+operator<< <PreintegratedCombinedMeasurementsT<LieGroupPreintegration>>(
+    std::ostream& os,
+    const CombinedImuFactorT<
+        PreintegratedCombinedMeasurementsT<LieGroupPreintegration>>& f);
+template GTSAM_EXPORT std::ostream&
+operator<< <PreintegratedCombinedMeasurementsG>(
+    std::ostream& os,
+    const CombinedImuFactorT<PreintegratedCombinedMeasurementsG>& f);
 
 }  // namespace gtsam

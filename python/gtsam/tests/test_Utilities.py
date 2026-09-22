@@ -80,6 +80,20 @@ class TestUtilities(GtsamTestCase):
             self.assertTrue(key in ks)
             self.assertEqual(I[i], key)
 
+    def test_KeySet_count_and_erase_return_sizes(self):
+        """KeySet count and erase expose their exact C++ size results."""
+        ks = gtsam.utilities.createKeySet([0, 1, 2])
+
+        count = ks.count(1)
+        erased = ks.erase(1)
+
+        self.assertIs(type(count), int)
+        self.assertIs(type(erased), int)
+        self.assertEqual(count, 1)
+        self.assertEqual(ks.count(3), 0)
+        self.assertEqual(erased, 1)
+        self.assertEqual(ks.erase(1), 0)
+
     def test_extractPoint2(self):
         """Test extractPoint2."""
         initial = gtsam.Values()
@@ -190,22 +204,24 @@ class TestUtilities(GtsamTestCase):
     def test_insertProjectionFactors(self):
         """Test insertProjectionFactors."""
         pixels = np.asarray([[20, 30], [20, 30]], dtype=float)
+        pose_key = gtsam.symbol("x", 0)
         graph = gtsam.NonlinearFactorGraph()
         gtsam.utilities.insertProjectionFactors(
-            graph, 0, [0, 1], np.array(pixels, order="C"),
+            graph, pose_key, [0, 1], np.array(pixels, order="C"),
             gtsam.noiseModel.Isotropic.Sigma(2, 0.1), gtsam.Cal3_S2())
         self.assertEqual(graph.size(), 2)
+        self.assertEqual(graph.at(0).keys()[0], pose_key)
 
         graph = gtsam.NonlinearFactorGraph()
         gtsam.utilities.insertProjectionFactors(
-            graph, 0, [0, 1], np.array(pixels, order="F"),
+            graph, pose_key, [0, 1], np.array(pixels, order="F"),
             gtsam.noiseModel.Isotropic.Sigma(2, 0.1), gtsam.Cal3_S2(),
             gtsam.Pose3(gtsam.Rot3(), gtsam.Point3(1, 0, 0)))
         self.assertEqual(graph.size(), 2)
 
         with self.assertRaises(TypeError):
             gtsam.utilities.insertProjectionFactors(
-                gtsam.NonlinearFactorGraph(), 0, [0, 1], pixels.tolist(),
+                gtsam.NonlinearFactorGraph(), pose_key, [0, 1], pixels.tolist(),
                 gtsam.noiseModel.Isotropic.Sigma(2, 0.1), gtsam.Cal3_S2())
 
     def test_reprojectionErrors(self):

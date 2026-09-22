@@ -1,3 +1,18 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file LocalOrientedPlane3Factor.h
+ */
+
 /*
  * @file LocalOrientedPlane3Factor.h
  * @brief LocalOrientedPlane3 Factor class
@@ -36,10 +51,10 @@ namespace gtsam {
  * optimized in x1 frame in the optimization.
  */
 class GTSAM_UNSTABLE_EXPORT LocalOrientedPlane3Factor
-    : public NoiseModelFactorN<Pose3, Pose3, OrientedPlane3> {
+    : public NoiseModelFactorT<Vector3, Pose3, Pose3, OrientedPlane3> {
  protected:
   OrientedPlane3 measured_p_;
-  typedef NoiseModelFactorN<Pose3, Pose3, OrientedPlane3> Base;
+  typedef NoiseModelFactorT<Vector3, Pose3, Pose3, OrientedPlane3> Base;
 public:
 
   // Provide access to the Matrix& version of evaluateError:
@@ -88,10 +103,10 @@ public:
     * Note: The optimized plane is represented in anchor frame, a, not the
     * world frame.
     */
-  Vector evaluateError(const Pose3& wTwi, const Pose3& wTwa,
-      const OrientedPlane3& a_plane, OptionalMatrixType H1, 
-	  OptionalMatrixType H2, OptionalMatrixType H3) const override;
+  Vector3 evaluateError(const Pose3& wTwi, const Pose3& wTwa,
+                        const OrientedPlane3& a_plane, OptionalMatrixType H1,
+                        OptionalMatrixType H2,
+                        OptionalMatrixType H3) const override;
 };
 
 }  // namespace gtsam
-

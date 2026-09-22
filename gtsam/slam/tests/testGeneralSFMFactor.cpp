@@ -21,12 +21,15 @@
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/PinholeCamera.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/FixedJacobianFactor.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/Testable.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/SphericalCamera.h>
 
 #include <memory>
 #include <CppUnitLite/TestHarness.h>
@@ -84,19 +87,13 @@ static const double baseline = 5.;
 /* ************************************************************************* */
 static vector<Point3> genPoint3() {
   const double z = 5;
-  vector<Point3> landmarks;
-  landmarks.push_back(Point3(-1., -1., z));
-  landmarks.push_back(Point3(-1., 1., z));
-  landmarks.push_back(Point3(1., 1., z));
-  landmarks.push_back(Point3(1., -1., z));
-  landmarks.push_back(Point3(-1.5, -1.5, 1.5 * z));
-  landmarks.push_back(Point3(-1.5, 1.5, 1.5 * z));
-  landmarks.push_back(Point3(1.5, 1.5, 1.5 * z));
-  landmarks.push_back(Point3(1.5, -1.5, 1.5 * z));
-  landmarks.push_back(Point3(-2., -2., 2 * z));
-  landmarks.push_back(Point3(-2., 2., 2 * z));
-  landmarks.push_back(Point3(2., 2., 2 * z));
-  landmarks.push_back(Point3(2., -2., 2 * z));
+  vector<Point3> landmarks{
+      Point3(-1., -1., z),         Point3(-1., 1., z),
+      Point3(1., 1., z),           Point3(1., -1., z),
+      Point3(-1.5, -1.5, 1.5 * z), Point3(-1.5, 1.5, 1.5 * z),
+      Point3(1.5, 1.5, 1.5 * z),   Point3(1.5, -1.5, 1.5 * z),
+      Point3(-2., -2., 2 * z),     Point3(-2., 2., 2 * z),
+      Point3(2., 2., 2 * z),       Point3(2., -2., 2 * z)};
   return landmarks;
 }
 
@@ -303,13 +300,13 @@ TEST( GeneralSFMFactor, optimize_varK_FixLandmarks ) {
     if (i == 0) {
       values.insert(X(i), cameras[i]);
     } else {
-
-      Vector delta = (Vector(11) << rot_noise, rot_noise, rot_noise, // rotation
-      trans_noise, trans_noise, trans_noise, // translation
-      focal_noise, focal_noise, // f_x, f_y
-      skew_noise, // s
-      trans_noise, trans_noise // ux, uy
-          ).finished();
+      Vector delta{{
+          rot_noise, rot_noise, rot_noise,        // rotation
+          trans_noise, trans_noise, trans_noise,  // translation
+          focal_noise, focal_noise,               // f_x, f_y
+          skew_noise,                             // s
+          trans_noise, trans_noise                // ux, uy
+      }};
       values.insert(X(i), cameras[i].retract(delta));
     }
   }
@@ -436,7 +433,7 @@ TEST(GeneralSFMFactor, CalibratedCameraPoseRange) {
 
 /* ************************************************************************* */
 // Frank created these tests after switching to a custom LinearizedFactor
-TEST(GeneralSFMFactor, BinaryJacobianFactor) {
+TEST(GeneralSFMFactor, FixedJacobianFactor) {
   Point2 measurement(3., -1.);
 
   // Create Values
@@ -454,8 +451,10 @@ TEST(GeneralSFMFactor, BinaryJacobianFactor) {
     using namespace noiseModel;
     Rot2 R = Rot2::fromAngle(0.3);
     Matrix2 cov = R.matrix() * R.matrix().transpose();
+    const auto robust = Robust::Create(
+        mEstimator::Huber::Create(1.345), Isotropic::Sigma(2, 0.5));
     models = {SharedNoiseModel(), Unit::Create(2), Isotropic::Sigma(2, 0.5),
-              Constrained::All(2), Gaussian::Covariance(cov)};
+              Constrained::All(2), Gaussian::Covariance(cov), robust};
   }
 
   // Now loop over all these noise models
@@ -491,8 +490,51 @@ TEST(GeneralSFMFactor, BinaryJacobianFactor) {
 }
 
 /* ************************************************************************* */
-// Do a thorough test of BinaryJacobianFactor
-TEST( GeneralSFMFactor, BinaryJacobianFactor2 ) {
+namespace ternary_linearization {
+
+// Verifies variable-calibration SFM factors use equivalent ternary factors.
+TEST(GeneralSFMFactor2, TernaryLinearization) {
+  const Key poseKey = 1, pointKey = 2, calibrationKey = 3;
+  const Pose3 pose;
+  const Point3 point(0.2, -0.1, 4.0);
+  const Cal3_S2 calibration(500.0, 510.0, 0.1, 320.0, 240.0);
+  const Point2 measurement =
+      PinholeCamera<Cal3_S2>(pose, calibration).project(point);
+  const Values values{{poseKey, genericValue(pose)},
+                      {pointKey, genericValue(point)},
+                      {calibrationKey, genericValue(calibration)}};
+  const Matrix2 covariance{{1.0, 0.2}, {0.2, 2.0}};
+  const auto robust = noiseModel::Robust::Create(
+      noiseModel::mEstimator::Huber::Create(1.345),
+      noiseModel::Isotropic::Sigma(2, 0.5));
+  const std::vector<SharedNoiseModel> models{
+      SharedNoiseModel(),
+      noiseModel::Unit::Create(2),
+      noiseModel::Isotropic::Sigma(2, 0.5),
+      noiseModel::Diagonal::Sigmas(Vector2{0.5, 0.8}),
+      noiseModel::Gaussian::Covariance(covariance),
+      robust,
+      noiseModel::Constrained::All(2),
+  };
+
+  for (const SharedNoiseModel& model : models) {
+    const GeneralSFMFactor2<Cal3_S2> factor(
+        measurement, model, poseKey, pointKey, calibrationKey);
+    const auto expected = factor.NoiseModelFactor::linearize(values);
+    const auto actual = factor.linearize(values);
+    const bool isTernary = static_cast<bool>(
+        std::dynamic_pointer_cast<FixedJacobianFactor<2, 6, 3, 5>>(actual));
+    CHECK(isTernary);
+    EXPECT(assert_equal(*expected, *actual, 1e-9));
+  }
+}
+
+}  // namespace ternary_linearization
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+// Do a thorough test of FixedJacobianFactor.
+TEST(GeneralSFMFactor, FixedJacobianFactor2) {
 
   vector<Point3> landmarks = genPoint3();
   vector<GeneralCamera> cameras = genCameraVariableCalibration();
@@ -514,6 +556,65 @@ TEST( GeneralSFMFactor, BinaryJacobianFactor2 ) {
       EXPECT(
           assert_equal(factor->augmentedInformation(),
               jacobian.augmentedInformation(), 1e-9));
+    }
+  }
+}
+
+/* ************************************************************************* */
+// Checks the pointer and fixed-size Jacobian overloads and robust gradients.
+TEST(GeneralSFMFactor, SphericalRobustGradient) {
+  using namespace noiseModel;
+  const SphericalCamera camera(Pose3::Identity());
+  const Unit3 measured(2, -3, 1);
+  const auto gaussian = Gaussian::SqrtInformation(
+      Matrix2{{5.0, 0.7}, {0.0, 3.0}});
+  const std::vector<SharedNoiseModel> models{
+      gaussian,
+      Robust::Create(mEstimator::Huber::Create(0.5, mEstimator::Base::Block),
+                     gaussian),
+      Robust::Create(mEstimator::Huber::Create(0.5, mEstimator::Base::Scalar),
+                     gaussian),
+      Robust::Create(mEstimator::AsymmetricCauchy::Create(
+                         0.5, mEstimator::Base::Scalar), gaussian)};
+  for (const auto& model : models) {
+    const GeneralSFMFactor<SphericalCamera, Point3> factor(measured, model, 1, 0);
+    for (const Point3& point : {Point3(1, 2, 4), Point3(-1, -2, -4)}) {
+      const auto residual = [&factor](const SphericalCamera& c, const Point3& p) {
+        return factor.evaluateError(c, p, nullptr, nullptr);
+      };
+      Matrix Hcamera, Hpoint;
+      factor.evaluateError(camera, point, &Hcamera, &Hpoint);
+      EXPECT(assert_equal(
+          numericalDerivative21<Vector2, SphericalCamera, Point3>(
+              residual, camera, point), Hcamera, 1e-6));
+      EXPECT(assert_equal(
+          numericalDerivative22<Vector2, SphericalCamera, Point3>(
+              residual, camera, point), Hpoint, 1e-6));
+      Matrix26 fixedCamera;
+      Matrix23 fixedPoint;
+      EXPECT(assert_equal(residual(camera, point),
+                          factor.evaluateError(camera, point, fixedCamera,
+                                               fixedPoint), 1e-12));
+      EXPECT(assert_equal(Hcamera, fixedCamera, 1e-12));
+      EXPECT(assert_equal(Hpoint, fixedPoint, 1e-12));
+      const auto objective = [&factor](const SphericalCamera& c, const Point3& p) {
+        Values values;
+        values.insert(1, c);
+        values.insert(0, p);
+        return factor.error(values);
+      };
+      Values values;
+      values.insert(1, camera);
+      values.insert(0, point);
+      const auto gradient = factor.linearize(values)->gradientAtZero();
+      const Vector expectedCamera =
+          numericalDerivative21<double, SphericalCamera, Point3>(
+              objective, camera, point).transpose();
+      const Vector expectedPoint =
+          numericalDerivative22<double, SphericalCamera, Point3>(
+              objective, camera, point).transpose();
+      EXPECT(assert_equal(expectedCamera, gradient.at(1), 1e-6));
+      EXPECT(assert_equal(expectedPoint, gradient.at(0), 1e-6));
     }
   }
 }

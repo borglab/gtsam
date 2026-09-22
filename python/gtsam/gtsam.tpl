@@ -16,6 +16,7 @@
 #include <pybind11/operators.h>
 #include <pybind11/functional.h>
 #include <pybind11/iostream.h>
+#include "python/gtsam/optional_jacobian_pybind.h"
 #include "gtsam/config.h"
 #include "gtsam/base/serialization.h"
 #include "gtsam/base/utilities.h"  // for RedirectCout.
@@ -38,14 +39,35 @@ namespace py = pybind11;
 
 {submodules}
 
-{module_def} {{
-    m_.doc() = "pybind11 wrapper of {module_name}";
+{declaration_module_def} {{
+{wrapped_declarations}
+}}
 
+{binding_module_def} {{
 // Specializations for STL classes
 #include "python/gtsam/specializations/{module_name}.h"
 
-{submodules_init}
+{wrapped_bindings}
+}}
 
-{wrapped_namespace}
+{module_def} {{
+    m_.doc() = "pybind11 wrapper of {module_name}";
+
+{module_init}
+
+    // Give the configured PIM backend its explicit Python name without
+    // registering the same native C++ type twice with pybind11.
+    if (py::hasattr(m_, "PreintegratedImuMeasurements")) {{
+#if defined(GTSAM_LIEGROUP_PREINTEGRATION)
+        m_.attr("PreintegratedImuMeasurementsLieGroup") =
+            m_.attr("PreintegratedImuMeasurements");
+#elif defined(GTSAM_TANGENT_PREINTEGRATION)
+        m_.attr("PreintegratedImuMeasurementsTangent") =
+            m_.attr("PreintegratedImuMeasurements");
+#else
+        m_.attr("PreintegratedImuMeasurementsManifold") =
+            m_.attr("PreintegratedImuMeasurements");
+#endif
+    }}
 
 }}

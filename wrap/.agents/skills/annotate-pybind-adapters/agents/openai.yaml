@@ -1,0 +1,4 @@
+interface:
+  display_name: "Annotate Pybind Adapters"
+  short_description: "Annotate mismatched pybind callables safely"
+  default_prompt: "Use $annotate-pybind-adapters to diagnose this generated pybind compile failure and annotate only the mismatched callable."

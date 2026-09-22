@@ -30,8 +30,7 @@ static Point2 p(2.0, 3.0);
 /* ************************************************************************* */
 TEST(Cal3f, Vector) {
   Cal3f K(1.0, 0.0, 0.0);
-  Vector expected(1);
-  expected << 1.0;
+  Vector1 expected{1.0};
   CHECK(assert_equal(expected, K.vector()));
 }
 
@@ -96,8 +95,8 @@ TEST(Cal3f, DCalibrate) {
 /* ************************************************************************* */
 TEST(Cal3f, Manifold) {
   Cal3f K1(500.0, 1000.0, 2000.0);
-  Vector1 delta;
-  delta << 10.0;  // Increment focal length by 10
+  // Increment focal length by 10
+  Vector1 delta{10.0};
 
   Cal3f K2 = K1.retract(delta);
   CHECK(assert_equal(510.0, K2.fx(), 1e-9));

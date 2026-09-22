@@ -96,8 +96,7 @@ class TestShonanAveraging(GtsamTestCase):
         self.assertAlmostEqual(5, initialQ4.size())
 
     def test_run(self):
-        initial = self.shonan.initializeRandomly()
-        result, lambdaMin = self.shonan.run(initial, 5, 10)
+        result, lambdaMin = self.shonan.run(min_p=5, max_p=10)
         self.assertAlmostEqual(0, self.shonan.cost(result), places=2)
         self.assertAlmostEqual(-5.427688831332745e-07,
                                lambdaMin, places=3)  # Regression test
@@ -114,8 +113,7 @@ class TestShonanAveraging(GtsamTestCase):
         # Check graph building
         graph = shonan.buildGraphAt(2)
         self.assertAlmostEqual(6, graph.size())
-        initial = shonan.initializeRandomly()
-        result, lambdaMin = shonan.run(initial, 2, 10)
+        result, lambdaMin = shonan.run(min_p=2, max_p=10)
         self.assertAlmostEqual(0.0008211, shonan.cost(result), places=5)
         self.assertAlmostEqual(0, lambdaMin, places=9)  # certificate!
 

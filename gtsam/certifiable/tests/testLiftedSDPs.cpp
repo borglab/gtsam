@@ -22,10 +22,13 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot2.h>
+#include <gtsam/geometry/Unit3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/sam/QuadraticRangeFactor.h>
 #include <gtsam/slam/FrobeniusFactor.h>
+#include <gtsam/slam/RelativeTranslationFactor.h>
 
 #include <algorithm>
 #include <cmath>
@@ -123,9 +126,8 @@ std::vector<Pose3> PerturbedPose3Values(const std::vector<Pose3>& poses) {
   std::vector<Pose3> perturbed = poses;
   for (size_t i = 0; i < perturbed.size(); ++i) {
     const double scale = static_cast<double>(i);
-    Vector6 delta;
-    delta << 0.002 * scale, -0.001 * scale, 0.0015 * scale, 0.01 * scale,
-        -0.005 * scale, 0.004 * scale;
+    Vector6 delta{0.002 * scale, -0.001 * scale, 0.0015 * scale,
+                  0.01 * scale,  -0.005 * scale, 0.004 * scale};
     perturbed[i] = poses[i].retract(delta);
   }
   return perturbed;
@@ -390,6 +392,186 @@ TEST(LiftedSDPs, Pose3_MonolithicAndChordal) {
 }
 
 }  // namespace pose_ring_sdp_fixture
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace application_sdp_fixture {
+
+const Key kR0 = Symbol('R', 0), kR1 = Symbol('R', 1);
+const Key kT0 = Symbol('t', 0), kT1 = Symbol('t', 1);
+const Key kLandmark = Symbol('l', 0), kDirection = Symbol('u', 0);
+
+// Build a small exact graph containing the rotation, relative-translation,
+// landmark-observation, and quadratic-range terms used by PR #2713.
+QcqpProblem ApplicationQcqp() {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(kR0, kR1,
+                                                     Rot2::fromAngle(0.2));
+  graph.emplace_shared<RelativeTranslationFactor2>(kR0, kT0, kT1,
+                                                   Vector2(1.0, 0.0), 2.0);
+  graph.emplace_shared<RelativeTranslationFactor2>(kR0, kT0, kLandmark,
+                                                   Vector2(2.0, 1.0), 1.5);
+  graph.emplace_shared<QuadraticRangeFactor2>(kT1, kLandmark, kDirection,
+                                              std::sqrt(2.0), 3.0);
+
+  QcqpProblem problem(graph, 1);
+  Matrix rotationSelector = Matrix::Zero(2, traits<Rot2>::QcqpVectorDim);
+  rotationSelector.block<2, 2>(0, 1).setIdentity();
+  problem.addConstraint(LinearConstraint::Equal(
+      JacobianFactor(kR0, rotationSelector, Vector2(1.0, 0.0))));
+
+  Matrix pointSelector = Matrix::Zero(2, traits<Vector2>::QcqpVectorDim);
+  pointSelector.block(0, 1, 2, 2).setIdentity();
+  problem.addConstraint(LinearConstraint::Equal(
+      JacobianFactor(kT0, pointSelector, Vector2::Zero())));
+  return problem;
+}
+
+struct ApplicationSolution {
+  bool solved;
+  double objective;
+  size_t valueCount;
+  std::vector<double> evrs;
+};
+
+template <typename Solver>
+ApplicationSolution SolveApplication(Solver* solver) {
+  const std::map<std::string, double> params{{"optimizerMaxTime", 60.0}};
+  const bool solved = solver->solve(params);
+  return {solved, solver->objectiveValue(), solver->qcqpValues().size(),
+          solver->variableEVRs()};
+}
+
+// Both MOSEK formulations solve a D=1 graph containing every new QCQP factor
+// role added by PR #2713 and recover all six keyed variables.
+TEST(LiftedSDPs, Pr2713ApplicationFactorsMonolithicAndChordal) {
+  const QcqpProblem problem = ApplicationQcqp();
+  MosekMonolithicSDP monolithic(problem);
+  MosekChordalSDP chordal(problem, ChordalOrderingType::Metis);
+  const ApplicationSolution monolithicResult = SolveApplication(&monolithic);
+  const ApplicationSolution chordalResult = SolveApplication(&chordal);
+  for (const ApplicationSolution* result :
+       {&monolithicResult, &chordalResult}) {
+    EXPECT(result->solved);
+    EXPECT(result->objective < 1e-5);
+    EXPECT_LONGS_EQUAL(6, result->valueCount);
+    EXPECT_LONGS_EQUAL(6, result->evrs.size());
+    EXPECT(std::all_of(result->evrs.begin(), result->evrs.end(),
+                       [](double evr) { return evr > 1e3; }));
+  }
+}
+
+}  // namespace application_sdp_fixture
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace shared_homogeneous_fixture {
+
+// Sharing and opting out preserve the nonzero optimum, anchor, and recovery.
+TEST(LiftedSDPs, SharedHomogeneousNoisyRot2Ring) {
+  constexpr size_t count = 4;
+  constexpr double delta = 0.2;
+  QcqpProblem problem(lifted_sdp_tests::Rot2RingGraph(count, delta), 1);
+  problem.addConstraint(LinearConstraint::Equal(JacobianFactor(
+      Symbol('x', 0), Matrix{{0, 1, 0}, {0, 0, 1}}, Vector2(0.6, 0.8))));
+  // Each Frobenius edge costs 2*(1-cos(delta)); the total winding is zero.
+  const double expected = 2.0 * count * (1.0 - std::cos(delta));
+  auto check = [&](auto* solver) {
+    EXPECT(solver->solve());
+    EXPECT_DOUBLES_EQUAL(expected, solver->objectiveValue(), 1e-6);
+    const Values values = solver->qcqpValues();
+    EXPECT_DOUBLES_EQUAL(expected, problem.costs().error(values), 1e-6);
+    EXPECT(assert_equal(Vector3(1, 0.6, 0.8),
+                        Vector(values.at<Matrix>(Symbol('x', 0)).col(0)),
+                        1e-6));
+    EXPECT(assert_equal(values, solver->qcqpValues(), 1e-12));
+    for (double ratio : solver->variableEVRs()) EXPECT(ratio > 1e5);
+  };
+  for (bool shareHomogeneousCoordinates : {true, false}) {
+    MosekMonolithicSDP monolithic(problem, shareHomogeneousCoordinates);
+    check(&monolithic);
+    for (const auto ordering :
+         {ChordalOrderingType::Colamd, ChordalOrderingType::Metis}) {
+      MosekChordalSDP chordal(problem, ordering, shareHomogeneousCoordinates);
+      check(&chordal);
+      EXPECT_DOUBLES_EQUAL(monolithic.objectiveValue(), chordal.objectiveValue(),
+                           1e-6);
+    }
+  }
+}
+
+// Minimize half the squared norm with prescribed homogeneous squared norms.
+// Different block dimensions also exercise rectangular objective views.
+QcqpProblem NormProblem(size_t count, bool connected, double firstSquaredNorm) {
+  NonlinearFactorGraph costs;
+  if (connected) {
+    costs.emplace_shared<QpCost>(HessianFactor(
+        0, 1, Matrix2::Identity(), Matrix::Zero(2, 3), Vector2::Zero(),
+        Matrix3::Identity(), Vector3::Zero(), 0.0));
+  } else {
+    for (size_t key = 0; key < count; ++key) {
+      const size_t dimension = key + 2;
+      costs.emplace_shared<QpCost>(
+          HessianFactor(key, Matrix::Identity(dimension, dimension),
+                        Vector::Zero(dimension), 0.0));
+    }
+  }
+  NonlinearEqualityConstraints constraints;
+  for (size_t key = 0; key < count; ++key) {
+    const double scale = key == 0 ? -3.0 : 2.0;
+    Matrix A = Matrix::Zero(key + 2, key + 2);
+    A(0, 0) = scale;
+    constraints.push_back(
+        QuadraticConstraint::Equal(key, A,
+                                   scale * (key == 0 ? firstSquaredNorm : 1.0))
+            .createEqualityFactor());
+  }
+  return QcqpProblem(costs, constraints);
+}
+
+void CheckNormProblem(size_t count, bool connected, double firstSquaredNorm,
+                      TestResult& result_, const std::string& name_) {
+  const auto problem = NormProblem(count, connected, firstSquaredNorm);
+  const double expected = 0.5 * (firstSquaredNorm + count - 1);
+  auto check = [&](auto* solver) {
+    EXPECT(solver->solve());
+    EXPECT_DOUBLES_EQUAL(expected, solver->objectiveValue(), 1e-6);
+    const Values values = solver->qcqpValues();
+    EXPECT_LONGS_EQUAL(count, values.size());
+    for (size_t key = 0; key < count; ++key) {
+      Vector expectedColumn = Vector::Zero(key + 2);
+      expectedColumn(0) = key == 0 ? firstSquaredNorm : 1.0;
+      EXPECT_LONGS_EQUAL(key + 2, solver->orderedKeyDims().at(key));
+      EXPECT(assert_equal(expectedColumn, Vector(values.at<Matrix>(key).col(0)),
+                          1e-6));
+    }
+  };
+  MosekMonolithicSDP monolithic(problem);
+  check(&monolithic);
+  for (const auto ordering :
+       {ChordalOrderingType::Colamd, ChordalOrderingType::Metis}) {
+    MosekChordalSDP chordal(problem, ordering);
+    check(&chordal);
+  }
+}
+
+// Exact positive and negative multiples of h^2=1 permit coordinate sharing.
+TEST(LiftedSDPs, SharedHomogeneousScaledNormalization) {
+  CheckNormProblem(2, true, 1.0, result_, name_);
+}
+
+// A non-unit h^2=4 keeps the old formulation, including cross moment h0*h1=1.
+TEST(LiftedSDPs, SharedHomogeneousNonUnitFallback) {
+  CheckNormProblem(2, true, 4.0, result_, name_);
+}
+
+// One-key cones and separate components retain their original keyed results.
+TEST(LiftedSDPs, SharedHomogeneousSingleKeyAndDisconnected) {
+  CheckNormProblem(1, false, 1.0, result_, name_);
+  CheckNormProblem(2, false, 1.0, result_, name_);
+}
+
+}  // namespace shared_homogeneous_fixture
 /* ************************************************************************* */
 #endif
 

@@ -15,6 +15,8 @@ Author: Duy Nguyen Ta, Fan Jiang, Matthew Sklar, Varun Agrawal, and Frank Dellae
 from pyparsing import (ParseBaseException, ZeroOrMore, cpp_style_comment,  # type: ignore
                        string_end)
 
+from .annotations import (UNSUPPORTED_ANNOTATION,
+                          UNSUPPORTED_TEMPLATED_ANNOTATION)
 from .classes import Class
 from .declaration import ForwardDeclaration, Include
 from .enum import Enum
@@ -45,6 +47,8 @@ class Module:
                    ^ Enum.rule  #
                    ^ Variable.rule  #
                    ^ Namespace.rule  #
+                   ^ UNSUPPORTED_TEMPLATED_ANNOTATION  #
+                   ^ UNSUPPORTED_ANNOTATION  #
                    ).set_parse_action(lambda t: Namespace('', t.as_list())) +
         string_end)
 

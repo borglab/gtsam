@@ -28,6 +28,35 @@ namespace gtsam {
 static double intNoiseVar = 0.0000001;
 static const Matrix3 kIntegrationErrorCovariance = intNoiseVar * I_3x3;
 
+Vector3 ScenarioRunner::actualAngularVelocity(double t) const {
+  const Vector3 omega_b = scenario_.omega_b(t);
+  if (!p_->body_P_sensor) return omega_b;
+  return p_->body_P_sensor->rotation().unrotate(omega_b);
+}
+
+Vector3 ScenarioRunner::actualSpecificForce(double t) const {
+  const Vector3 gravity_b = scenario_.rotation(t).unrotate(gravity_n());
+  Vector3 specificForce_b = scenario_.acceleration_b(t) - gravity_b;
+
+  if (!p_->body_P_sensor) return specificForce_b;
+
+  const Pose3& body_P_sensor = *p_->body_P_sensor;
+  const Vector3 omega_b = scenario_.omega_b(t);
+  specificForce_b +=
+      omega_b.cross(omega_b.cross(body_P_sensor.translation()));
+  return body_P_sensor.rotation().unrotate(specificForce_b);
+}
+
+Vector3 ScenarioRunner::measuredAngularVelocity(double t) const {
+  return actualAngularVelocity(t) + estimatedBias_.gyroscope() +
+         gyroSampler_.sample() / sqrt_dt_;
+}
+
+Vector3 ScenarioRunner::measuredSpecificForce(double t) const {
+  return actualSpecificForce(t) + estimatedBias_.accelerometer() +
+         accSampler_.sample() / sqrt_dt_;
+}
+
 PreintegratedImuMeasurements ScenarioRunner::integrate(
     double T, const Bias& estimatedBias, bool corrupted) const {
   gttic_(integrate);

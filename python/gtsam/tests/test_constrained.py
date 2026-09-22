@@ -47,6 +47,16 @@ class TestConstrainedWrappers(unittest.TestCase):
         np.testing.assert_allclose(result.atVector(x), np.array([1.0]))
         self.assertAlmostEqual(problem.objective(result), -1.0)
 
+        params = gtsam.ActiveSetSolverParams()
+        params.maxIterations = 50
+        result_with_params = problem.optimize(initial, params)
+        np.testing.assert_allclose(result_with_params.atVector(x), np.array([1.0]))
+
+        result_with_automatic_initial = problem.optimize(params)
+        np.testing.assert_allclose(
+            result_with_automatic_initial.atVector(x), np.array([1.0])
+        )
+
     def test_qp_problem_wrapper(self):
         """Construct and solve a tiny QP."""
         x = X(0)
@@ -166,6 +176,17 @@ class TestConstrainedWrappers(unittest.TestCase):
         initial.insert(x, np.array([0.6, 0.2]))
 
         params = gtsam.AugmentedLagrangianParams()
+        self.assertEqual(
+            params.updatePolicy,
+            gtsam.AugmentedLagrangianUpdatePolicy.BCL,
+        )
+        self.assertEqual(params.bclInitialPenalty, 10.0)
+        self.assertEqual(params.bclPenaltyIncreaseRate, 100.0)
+        self.assertEqual(params.bclOmega0, 1.0)
+        self.assertEqual(params.bclEta0, 1.0)
+        self.assertEqual(params.bclGamma1, 0.1)
+        # Aggressive remains selectable through the wrapper.
+        params.updatePolicy = gtsam.AugmentedLagrangianUpdatePolicy.Aggressive
         params.maxIterations = 100
         params.absoluteViolationTolerance = 1e-8
         params.relativeViolationTolerance = 1e-8

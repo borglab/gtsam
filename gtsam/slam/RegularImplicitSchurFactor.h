@@ -8,6 +8,7 @@
 #pragma once
 
 #include <gtsam/geometry/CameraSet.h>
+#include <gtsam/linear/FlatGaussianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
 
@@ -36,7 +37,8 @@ namespace gtsam {
  * the full 6m*6m F matrix, but rather only it's m 6x6 diagonal blocks.
  */
 template<class CAMERA>
-class RegularImplicitSchurFactor: public GaussianFactor {
+class RegularImplicitSchurFactor: public GaussianFactor,
+                                  public FlatGaussianFactor {
 
 public:
   typedef RegularImplicitSchurFactor This; ///< Typedef to this class
@@ -53,12 +55,91 @@ protected:
 
   typedef Eigen::Matrix<double, ZDim, D> MatrixZD; ///< type of an F block
   typedef Eigen::Matrix<double, D, D> MatrixDD; ///< camera Hessian
+  typedef Eigen::Matrix<double, D, 1> DVector;
+  typedef Eigen::Matrix<double, ZDim, 1> ZVector;
   typedef std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> > FBlocks;
 
   FBlocks FBlocks_; ///< All ZDim*D F blocks (one for each camera)
   const Matrix PointCovariance_; ///< the 3*3 matrix P = inv(E'E) (2*2 if degenerate)
   const Matrix E_; ///< The 2m*3 E Jacobian with respect to the point
   const Vector b_; ///< 2m-dimensional RHS vector
+
+  /** Return one camera block of `F' * (I - E*P*E') * F`. */
+  MatrixDD cameraHessianBlock(size_t position) const {
+    const MatrixZD& cameraJacobian = FBlocks_[position];
+    const Matrix23 pointJacobian =
+        E_.block<ZDim, 3>(ZDim * position, 0);
+    return cameraJacobian.transpose() *
+           (cameraJacobian -
+            pointJacobian * PointCovariance_ * pointJacobian.transpose() *
+                cameraJacobian);
+  }
+
+  /** Return the diagonal of one camera Hessian block without forming it. */
+  DVector cameraHessianDiagonal(size_t position) const {
+    const MatrixZD& cameraJacobian = FBlocks_[position];
+    const Eigen::Matrix<double, D, 3> cameraPointInformation =
+        cameraJacobian.transpose() *
+        E_.block<ZDim, 3>(ZDim * position, 0);
+    DVector diagonal;
+    for (int column = 0; column < D; ++column) {
+      diagonal(column) = cameraJacobian.col(column).squaredNorm();
+      diagonal(column) -=
+          cameraPointInformation.row(column) * PointCovariance_ *
+          cameraPointInformation.row(column).transpose();
+    }
+    return diagonal;
+  }
+
+  /** Apply the Hessian using a caller-supplied scalar offset lookup. */
+  template <class OFFSET>
+  void multiplyHessianAddFlat(double alpha, const OFFSET& offset,
+                              const double* x, double* y) const {
+    typedef Eigen::Map<DVector> DMap;
+    typedef Eigen::Map<const DVector> ConstDMap;
+
+    Vector3 pointProjection = Vector3::Zero();
+    for (size_t position = 0; position < size(); ++position) {
+      const ZVector cameraError =
+          FBlocks_[position] * ConstDMap(x + offset(position));
+      pointProjection.noalias() +=
+          E_.block<ZDim, 3>(ZDim * position, 0).transpose() * cameraError;
+    }
+    const Vector3 pointCorrection = PointCovariance_ * pointProjection;
+
+    for (size_t position = 0; position < size(); ++position) {
+      const ZVector cameraError =
+          FBlocks_[position] * ConstDMap(x + offset(position));
+      const ZVector projectedError =
+          cameraError -
+          E_.block<ZDim, 3>(ZDim * position, 0) * pointCorrection;
+      DMap output(y + offset(position));
+      output.noalias() +=
+          alpha * FBlocks_[position].transpose() * projectedError;
+    }
+  }
+
+  /** Add the zero-point gradient using a scalar offset lookup. */
+  template <class OFFSET>
+  void gradientAtZeroAddFlat(const OFFSET& offset, double* gradient) const {
+    typedef Eigen::Map<DVector> DMap;
+
+    Vector3 pointProjection = Vector3::Zero();
+    for (size_t position = 0; position < size(); ++position) {
+      pointProjection.noalias() +=
+          E_.block<ZDim, 3>(ZDim * position, 0).transpose() *
+          b_.segment<ZDim>(ZDim * position);
+    }
+    const Vector3 pointCorrection = PointCovariance_ * pointProjection;
+
+    for (size_t position = 0; position < size(); ++position) {
+      const ZVector projectedRhs =
+          b_.segment<ZDim>(ZDim * position) -
+          E_.block<ZDim, 3>(ZDim * position, 0) * pointCorrection;
+      DMap output(gradient + offset(position));
+      output.noalias() -= FBlocks_[position].transpose() * projectedRhs;
+    }
+  }
 
 public:
 
@@ -180,28 +261,11 @@ public:
 
   /// Add the diagonal of the Hessian for this factor to existing VectorValues
   void hessianDiagonalAdd(VectorValues &d) const override {
-    // diag(Hessian) = diag(F' * (I - E * PointCov * E') * F);
-    for (size_t k = 0; k < size(); ++k) { // for each camera
-      Key j = keys_[k];
-
-      // Calculate Fj'*Ej for the current camera (observing a single point)
-      // D x 3 = (D x ZDim) * (ZDim x 3)
-      const MatrixZD& Fj = FBlocks_[k];
-      Eigen::Matrix<double, D, 3> FtE = Fj.transpose()
-                                        * E_.block<ZDim, 3>(ZDim * k, 0);
-
-      Eigen::Matrix<double, D, 1> dj;
-      for (int k = 0; k < D; ++k) { // for each diagonal element of the camera hessian
-        // Vector column_k_Fj = Fj.col(k);
-        dj(k) = Fj.col(k).squaredNorm(); // dot(column_k_Fj, column_k_Fj);
-        // Vector column_k_FtE = FtE.row(k);
-        // (1 x 1) = (1 x 3) * (3 * 3) * (3 x 1)
-        dj(k) -= FtE.row(k) * PointCovariance_ * FtE.row(k).transpose();
-      }
-
-      auto result = d.emplace(j, dj);
-      if(!result.second) {
-        result.first->second += dj;
+    for (size_t position = 0; position < size(); ++position) {
+      const DVector diagonal = cameraHessianDiagonal(position);
+      auto result = d.emplace(keys_[position], diagonal);
+      if (!result.second) {
+        result.first->second += diagonal;
       }
     }
   }
@@ -211,54 +275,33 @@ public:
    * d(output) = d(input) + deltaHessianFactor
    */
   void hessianDiagonal(double* d) const override {
-    // diag(Hessian) = diag(F' * (I - E * PointCov * E') * F);
-    // Use eigen magic to access raw memory
-    typedef Eigen::Matrix<double, D, 1> DVector;
     typedef Eigen::Map<DVector> DMap;
-
-    for (size_t pos = 0; pos < size(); ++pos) { // for each camera in the factor
-      Key j = keys_[pos];
-
-      // Calculate Fj'*Ej for the current camera (observing a single point)
-      // D x 3 = (D x ZDim) * (ZDim x 3)
-      const MatrixZD& Fj = FBlocks_[pos];
-      Eigen::Matrix<double, D, 3> FtE = Fj.transpose()
-          * E_.block<ZDim, 3>(ZDim * pos, 0);
-
-      DVector dj;
-      for (int k = 0; k < D; ++k) { // for each diagonal element of the camera hessian
-        dj(k) = Fj.col(k).squaredNorm();
-        // (1 x 1) = (1 x 3) * (3 * 3) * (3 x 1)
-        dj(k) -= FtE.row(k) * PointCovariance_ * FtE.row(k).transpose();
-      }
-      DMap(d + D * j) += dj;
+    for (size_t position = 0; position < size(); ++position) {
+      DMap(d + D * keys_[position]) += cameraHessianDiagonal(position);
     }
   }
 
   /// Return the block diagonal of the Hessian for this factor
   std::map<Key, Matrix> hessianBlockDiagonal() const override {
     std::map<Key, Matrix> blocks;
-    // F'*(I - E*P*E')*F
-    for (size_t pos = 0; pos < size(); ++pos) {
-      Key j = keys_[pos];
-      // F'*F - F'*E*P*E'*F  e.g. (9*2)*(2*9) - (9*2)*(2*3)*(3*3)*(3*2)*(2*9)
-      const MatrixZD& Fj = FBlocks_[pos];
-      //      Eigen::Matrix<double, D, 3> FtE = Fj.transpose()
-      //          * E_.block<ZDim, 3>(ZDim * pos, 0);
-      //      blocks[j] = Fj.transpose() * Fj
-      //          - FtE * PointCovariance_ * FtE.transpose();
-
-      const Matrix23& Ej = E_.block<ZDim, 3>(ZDim * pos, 0);
-      blocks[j] = Fj.transpose()
-          * (Fj - Ej * PointCovariance_ * Ej.transpose() * Fj);
-
-      // F'*(I - E*P*E')*F, TODO: this should work, but it does not :-(
-      //      static const Eigen::Matrix<double, ZDim, ZDim> I2 = eye(ZDim);
-      //      Matrix2 Q = //
-      //          I2 - E_.block<ZDim, 3>(ZDim * pos, 0) * PointCovariance_ * E_.block<ZDim, 3>(ZDim * pos, 0).transpose();
-      //      blocks[j] = Fj.transpose() * Q * Fj;
+    for (size_t position = 0; position < size(); ++position) {
+      blocks[keys_[position]] = cameraHessianBlock(position);
     }
     return blocks;
+  }
+
+  void hessianBlockDiagonalAdd(
+      const std::vector<size_t>& blockSlots,
+      std::vector<Matrix>* diagonalBlocks) const override {
+    if (blockSlots.size() != size()) {
+      throw std::invalid_argument(
+          "RegularImplicitSchurFactor::hessianBlockDiagonalAdd: block slot "
+          "count mismatch");
+    }
+    for (size_t position = 0; position < size(); ++position) {
+      diagonalBlocks->at(blockSlots[position]).noalias() +=
+          cameraHessianBlock(position);
+    }
   }
 
   GaussianFactor::shared_ptr clone() const override {
@@ -378,7 +421,7 @@ public:
       e2[k] = e1[k] - E_.block<ZDim, 3>(ZDim * k, 0) * d2;
   }
 
-  /// Scratch space for multiplyHessianAdd
+  /// Scratch space for keyed compatibility methods.
   mutable Error2s e1, e2;
 
   /**
@@ -386,33 +429,20 @@ public:
    * RAW memory access! Assumes keys start at 0 and go to M-1, and x and and y are laid out that way
    */
   void multiplyHessianAdd(double alpha, const double* x, double* y) const {
-
-    // Use eigen magic to access raw memory
-    typedef Eigen::Matrix<double, D, 1> DVector;
-    typedef Eigen::Map<DVector> DMap;
-    typedef Eigen::Map<const DVector> ConstDMap;
-
-    // resize does not do malloc if correct size
-    e1.resize(size());
-    e2.resize(size());
-
-    // e1 = F * x = (2m*dm)*dm
-    for (size_t k = 0; k < size(); ++k) {
-      Key key = keys_[k];
-      e1[k] = FBlocks_[k] * ConstDMap(x + D * key);
-    }
-
-    projectError(e1, e2);
-
-    // y += F.transpose()*e2 = (2d*2m)*2m
-    for (size_t k = 0; k < size(); ++k) {
-      Key key = keys_[k];
-      DMap(y + D * key) += FBlocks_[k].transpose() * alpha * e2[k];
-    }
+    multiplyHessianAddFlat(
+        alpha, [&](size_t position) { return D * keys_[position]; }, x, y);
   }
 
-  void multiplyHessianAdd(double alpha, const double* x, double* y,
-      std::vector<size_t> keys) const {
+  void multiplyHessianAdd(
+      double alpha, const std::vector<size_t>& scalarOffsets,
+      const double* x, double* y) const override {
+    if (scalarOffsets.size() != size()) {
+      throw std::invalid_argument(
+          "RegularImplicitSchurFactor::multiplyHessianAdd: offset count "
+          "mismatch");
+    }
+    multiplyHessianAddFlat(
+        alpha, [&](size_t position) { return scalarOffsets[position]; }, x, y);
   }
 
   /**
@@ -481,26 +511,23 @@ public:
     return g;
   }
 
+  void gradientAtZeroAdd(const std::vector<size_t>& scalarOffsets,
+                         double* gradient) const override {
+    if (scalarOffsets.size() != size()) {
+      throw std::invalid_argument(
+          "RegularImplicitSchurFactor::gradientAtZeroAdd: offset count "
+          "mismatch");
+    }
+    gradientAtZeroAddFlat(
+        [&](size_t position) { return scalarOffsets[position]; }, gradient);
+  }
+
   /**
    * Calculate gradient, which is -F'Q*b, see paper - RAW MEMORY ACCESS
    */
   void gradientAtZero(double* d) const override {
-
-    // Use eigen magic to access raw memory
-    typedef Eigen::Matrix<double, D, 1> DVector;
-    typedef Eigen::Map<DVector> DMap;
-
-    // calculate Q*b
-    e1.resize(size());
-    e2.resize(size());
-    for (size_t k = 0; k < size(); k++)
-      e1[k] = b_.segment<ZDim>(ZDim * k);
-    projectError(e1, e2);
-
-    for (size_t k = 0; k < size(); ++k) { // for each camera in the factor
-      Key j = keys_[k];
-      DMap(d + D * j) += -FBlocks_[k].transpose() * e2[k];
-    }
+    gradientAtZeroAddFlat(
+        [&](size_t position) { return D * keys_[position]; }, d);
   }
 
   /// Gradient wrt a key at any values
@@ -524,4 +551,3 @@ template<class CAMERA> struct traits<RegularImplicitSchurFactor<CAMERA> > : publ
 };
 
 }
-

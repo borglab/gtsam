@@ -101,10 +101,10 @@ double ParseDouble(const std::string& token, const std::string& sourceName,
 }
 
 /* ************************************************************************* */
-Matrix ScalarMatrix(double value) { return (Matrix(1, 1) << value).finished(); }
+Matrix ScalarMatrix(double value) { return Matrix{{value}}; }
 
 /* ************************************************************************* */
-Vector ScalarVector(double value) { return (Vector(1) << value).finished(); }
+Vector ScalarVector(double value) { return Vector{{value}}; }
 
 /* ************************************************************************* */
 bool IsSectionName(const std::string& token) {

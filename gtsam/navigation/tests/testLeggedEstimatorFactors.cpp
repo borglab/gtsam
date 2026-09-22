@@ -32,7 +32,7 @@ NavState sampleNavState() {
 }
 
 Matrix sampleFootholds() {
-  return (Matrix(3, 2) << 1.2, -0.3, 0.4, 0.8, -0.5, 0.1).finished();
+  return Matrix{{1.2, -0.3}, {0.4, 0.8}, {-0.5, 0.1}};
 }
 
 ExtendedPose3d sampleExtendedPoseState() {

@@ -1,13 +1,15 @@
-/*
- * Preconditioner.h
+/**
+ * @file Preconditioner.h
  *
- *  Created on: Jun 2, 2014
- *      Author: Yong-Dian Jian
- *      Author: Sungtae An
+ * Created on: Jun 2, 2014
+ * @author Yong-Dian Jian
+ * @author Sungtae An
+ * @author Fan Jiang
  */
 
 #pragma once
 
+#include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
 #include <memory>
 #include <iosfwd>
@@ -17,6 +19,7 @@
 namespace gtsam {
 
 class GaussianFactorGraph;
+class GaussianFactorGraphSystem;
 class KeyInfo;
 class VectorValues;
 
@@ -129,6 +132,8 @@ struct GTSAM_EXPORT BlockJacobiPreconditionerParameters : public PreconditionerP
 
 /*******************************************************************************************/
 class GTSAM_EXPORT BlockJacobiPreconditioner : public Preconditioner {
+  friend class GaussianFactorGraphSystem;
+
 public:
   typedef Preconditioner Base;
   BlockJacobiPreconditioner() ;
@@ -143,11 +148,29 @@ public:
     const std::map<Key,Vector> &lambda
     ) override;
 
+  /**
+   * Build and factorize block diagonals already arranged in KeyInfo ordering.
+   *
+   * This avoids keyed maps when a compiled linear operator has already
+   * accumulated the blocks.
+   *
+   * @param blocks Square Hessian diagonal blocks in `info.ordering()` order.
+   * @param info Expected block ordering and dimensions.
+   * @throws std::invalid_argument if block count or dimensions do not match.
+   */
+  void build(const std::vector<Matrix>& blocks, const KeyInfo& info);
+
 protected:
 
   void clean() ;
 
+  /** Apply a triangular solve to a contiguous range of independent blocks. */
+  void solveInPlaceRange(Vector& x, size_t begin, size_t end,
+                         bool transpose) const;
+
   std::vector<size_t> dims_;
+  std::vector<size_t> scalarOffsets_;
+  std::vector<size_t> bufferOffsets_;
   double *buffer_;
   size_t bufferSize_;
   size_t nnz_;
@@ -158,5 +181,3 @@ protected:
 std::shared_ptr<Preconditioner> createPreconditioner(const std::shared_ptr<PreconditionerParameters> parameters);
 
 }
-
-

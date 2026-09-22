@@ -52,6 +52,7 @@ private:
 
 public:
 
+  inline constexpr static auto calibration_dimension = DimK;
   inline constexpr static auto dimension = 6 + DimK; ///< Dimension depends on calibration
 
   /// @name Standard Constructors
@@ -144,6 +145,11 @@ public:
   bool equals(const Base &camera, double tol = 1e-9) const {
     const PinholeCamera* e = dynamic_cast<const PinholeCamera*>(&camera);
     return Base::equals(camera, tol) && K_.equals(e->calibration(), tol);
+  }
+
+  /// Compare with another camera of the same concrete type.
+  bool equals(const PinholeCamera& camera, double tol = 1e-9) const {
+    return Base::equals(camera, tol) && K_.equals(camera.calibration(), tol);
   }
 
   /// print
@@ -287,7 +293,7 @@ public:
   double range(const PinholeCamera<CalibrationB>& camera,
       OptionalJacobian<1, dimension> Dcamera = {},
       OptionalJacobian<1, 6 + CalibrationB::dimension> Dother = {}) const {
-    Matrix16 Dcamera_, Dother_;
+    Matrix16 Dcamera_ = Matrix16::Zero(), Dother_ = Matrix16::Zero();
     double result = this->pose().range(camera.pose(), Dcamera ? &Dcamera_ : 0,
         Dother ? &Dother_ : 0);
     if (Dcamera) {

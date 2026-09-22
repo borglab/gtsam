@@ -168,6 +168,9 @@ ALL_BASIC_TESTS_PLUS_INTENTIONAL_DEADLOCK = (*ALL_BASIC_TESTS, _intentional_dead
 
 
 def _run_in_process(target, *args, **kwargs):
+    if env.ANDROID or env.IOS or sys.platform.startswith("emscripten"):
+        pytest.skip("Requires subprocess support")
+
     test_fn = target if len(args) == 0 else args[0]
     # Do not need to wait much, 10s should be more than enough.
     timeout = 0.1 if test_fn is _intentional_deadlock else 10
@@ -199,8 +202,14 @@ def _run_in_process(target, *args, **kwargs):
         if process.exitcode is None:
             assert t_delta > 0.9 * timeout
             msg = "DEADLOCK, most likely, exactly what this test is meant to detect."
-            if env.PYPY and env.WIN:
-                pytest.skip(msg)
+            soabi = sysconfig.get_config_var("SOABI")
+            if env.WIN and env.PYPY:
+                pytest.xfail(f"[TEST-GIL-SCOPED] {soabi} PyPy: " + msg)
+            if env.MACOS:
+                if not env.sys_is_gil_enabled():
+                    pytest.xfail(f"[TEST-GIL-SCOPED] {soabi} with GIL disabled: " + msg)
+                if env.PY_GIL_DISABLED:
+                    pytest.xfail(f"[TEST-GIL-SCOPED] {soabi}: " + msg)
             raise RuntimeError(msg)
         return process.exitcode
     finally:

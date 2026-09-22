@@ -210,10 +210,7 @@ Matrix2 Similarity2::GetV(double theta, double lambda) {
       A = 1.0 - theta2 / 6.0;
       B = 0.5 - theta2 / 24.0;
     }
-    Matrix2 V;
-    V << A, -theta * B,
-      theta* B, A;
-    return V;
+    return Matrix2{{A, -theta * B}, {theta * B, A}};
   }
 
   // general Sim(2) case
@@ -238,32 +235,22 @@ Matrix2 Similarity2::GetV(double theta, double lambda) {
   const double X = alpha * (1 - s_inv) / lambda + (1 - alpha) * (A - lambda * B);
   const double Y = alpha * (s_inv - 1 + lambda) / lambda2 + (1 - alpha) * (B - lambda * C);
 
-  Matrix2 V;
-  V << X, -theta * Y, theta* Y, X;
-  return V;
+  return Matrix2{{X, -theta * Y}, {theta * Y, X}};
 }
 
-Vector4 Similarity2::Logmap(const Similarity2& S,  //
-                            OptionalJacobian<4, 4> Hm) {
+Vector4 Similarity2::Logmap(const Similarity2& S) {
   const Vector1 w = Rot2::Logmap(S.R_);
   const double lambda = log(S.s_);
   // In Expmap, t = V * u -> in Logmap, u = V^{-1} * t
   Vector4 result;
   result << GetV(w[0], lambda).inverse() * S.t_, w, lambda;
-  if (Hm) {
-    throw std::runtime_error("Similarity2::Logmap: derivative not implemented");
-  }
   return result;
 }
 
-Similarity2 Similarity2::Expmap(const Vector4& v,  //
-                                OptionalJacobian<4, 4> Hm) {
+Similarity2 Similarity2::Expmap(const Vector4& v) {
   const Vector2 u = v.head<2>();
   const double theta = v[2];
   const double lambda = v[3];
-  if (Hm) {
-    throw std::runtime_error("Similarity2::Expmap: derivative not implemented");
-  }
   const Matrix2 V = GetV(theta, lambda);
   return Similarity2(Rot2::Expmap(v.segment<1>(2)), V * u, exp(lambda));
 }
@@ -294,11 +281,9 @@ Matrix3 Similarity2::Hat(const Vector4 &xi) {
   const auto w = xi[2];
   const auto u = xi.head<2>();
   const double lambda = xi[3];
-  Matrix3 W;
-  W << 0, -w, u[0],
-       w,  0, u[1],
-       0,  0, -lambda;
-  return W;
+  return Matrix3{{0, -w, u[0]},  //
+                 {w, 0, u[1]},
+                 {0, 0, -lambda}};
 }
 
 Vector4 Similarity2::Vee(const Matrix3 &Xi) {

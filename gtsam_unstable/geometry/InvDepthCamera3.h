@@ -135,19 +135,15 @@ public:
         double H34 = 0;
         double H35 = cos_phi/rho;
 
-        *H2 = J2 * (Matrix(3, 5) <<
-            H11, H12, H13, H14, H15,
-            H21, H22, H23, H24, H25,
-            H31, H32, H33, H34, H35).finished();
+        *H2 = J2 * Matrix{{H11, H12, H13, H14, H15},
+                          {H21, H22, H23, H24, H25},
+                          {H31, H32, H33, H34, H35}};
       }
       if(H3) {
         double H16 = -cos_phi*cos_theta/rho2;
         double H26 = -cos_phi*sin_theta/rho2;
         double H36 = -sin_phi/rho2;
-        *H3 = J2 * (Matrix(3, 1) <<
-            H16,
-            H26,
-            H36).finished();
+        *H3 = J2 * Matrix{{H16}, {H26}, {H36}};
       }
       return uv;
     }
@@ -167,8 +163,8 @@ public:
     gtsam::Point3 ray = pw - pt;
     double theta = atan2(ray.y(), ray.x()); // longitude
     double phi = atan2(ray.z(), sqrt(ray.x()*ray.x()+ray.y()*ray.y()));
-    return std::make_pair((Vector5() << pt.x(),pt.y(),pt.z(), theta, phi).finished(),
-        double(1./depth));
+    return std::make_pair(Vector5{pt.x(), pt.y(), pt.z(), theta, phi},
+                          double(1. / depth));
   }
 
 private:

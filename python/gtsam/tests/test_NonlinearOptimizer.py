@@ -98,7 +98,7 @@ class TestScenario(GtsamTestCase):
         for s in (
             "lossType",
             "maxIterations",
-            "muStep",
+            "lambdaStep",
             "relativeCostTol",
             "weightsTol",
             "verbosity",
@@ -112,9 +112,9 @@ class TestScenario(GtsamTestCase):
         for max_iter in (1, 10, 100):
             params.setMaxIterations(max_iter)
             self.assertEqual(params.maxIterations, max_iter)
-        for mu_step in (1.1, 1.2, 1.5):
-            params.setMuStep(mu_step)
-            self.assertEqual(params.muStep, mu_step)
+        for lambda_step in (1.1, 1.2, 1.5):
+            params.setLambdaStep(lambda_step)
+            self.assertEqual(params.lambdaStep, lambda_step)
         for rel_cost_tol in (1e-5, 1e-6, 1e-7):
             params.setRelativeCostTol(rel_cost_tol)
             self.assertEqual(params.relativeCostTol, rel_cost_tol)

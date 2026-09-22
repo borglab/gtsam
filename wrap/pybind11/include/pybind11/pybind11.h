@@ -43,6 +43,12 @@ PYBIND11_WARNING_DISABLE_CLANG("-Wgnu-zero-variadic-macro-arguments")
 #    include <cxxabi.h>
 #endif
 
+#if defined(__cpp_if_constexpr) && __cpp_if_constexpr >= 201606
+#    define PYBIND11_MAYBE_CONSTEXPR constexpr
+#else
+#    define PYBIND11_MAYBE_CONSTEXPR
+#endif
+
 PYBIND11_NAMESPACE_BEGIN(PYBIND11_NAMESPACE)
 
 /* https://stackoverflow.com/questions/46798456/handling-gccs-noexcept-type-warning
@@ -120,7 +126,8 @@ inline std::string generate_function_signature(const char *type_caster_name_fiel
         const auto c = *pc;
         if (c == '{') {
             // Write arg name for everything except *args and **kwargs.
-            is_starred = *(pc + 1) == '*';
+            // Detect {@*args...} or {@**kwargs...}
+            is_starred = *(pc + 1) == '@' && *(pc + 2) == '*';
             if (is_starred) {
                 continue;
             }
@@ -158,7 +165,7 @@ inline std::string generate_function_signature(const char *type_caster_name_fiel
                 pybind11_fail("Internal error while parsing type signature (1)");
             }
             if (auto *tinfo = detail::get_type_info(*t)) {
-                handle th((PyObject *) tinfo->type);
+                handle th(reinterpret_cast<PyObject *>(tinfo->type));
                 signature += th.attr("__module__").cast<std::string>() + "."
                              + th.attr("__qualname__").cast<std::string>();
             } else if (auto th = detail::global_internals_native_enum_type_map_get_item(*t)) {
@@ -248,6 +255,49 @@ inline std::string generate_type_signature() {
 #    define PYBIND11_COMPAT_STRDUP strdup
 #endif
 
+#define PYBIND11_READABLE_FUNCTION_SIGNATURE_EXPR                                                 \
+    detail::const_name("(") + cast_in::arg_names + detail::const_name(") -> ") + cast_out::name
+
+// We factor out readable function signatures to a specific template
+// so that they don't get duplicated across different instantiations of
+// cpp_function::initialize (which is templated on more types).
+template <typename cast_in, typename cast_out>
+class ReadableFunctionSignature {
+public:
+    using sig_type = decltype(PYBIND11_READABLE_FUNCTION_SIGNATURE_EXPR);
+
+private:
+    // We have to repeat PYBIND11_READABLE_FUNCTION_SIGNATURE_EXPR in decltype()
+    // because C++11 doesn't allow functions to return `auto`. (We don't
+    // know the type because it's some variant of detail::descr<N> with
+    // unknown N.)
+    static constexpr sig_type sig() { return PYBIND11_READABLE_FUNCTION_SIGNATURE_EXPR; }
+
+public:
+    static constexpr sig_type kSig = sig();
+    // We can only stash the result of detail::descr::types() in a
+    // constexpr variable if we aren't on MSVC (see
+    // PYBIND11_DESCR_CONSTEXPR).
+#if !defined(_MSC_VER)
+    using types_type = decltype(sig_type::types());
+    static constexpr types_type kTypes = sig_type::types();
+#endif
+};
+#undef PYBIND11_READABLE_FUNCTION_SIGNATURE_EXPR
+
+// Prior to C++17, we don't have inline variables, so we have to
+// provide an out-of-line definition of the class member.
+#if !defined(PYBIND11_CPP17)
+template <typename cast_in, typename cast_out>
+constexpr typename ReadableFunctionSignature<cast_in, cast_out>::sig_type
+    ReadableFunctionSignature<cast_in, cast_out>::kSig;
+#    if !defined(_MSC_VER)
+template <typename cast_in, typename cast_out>
+constexpr typename ReadableFunctionSignature<cast_in, cast_out>::types_type
+    ReadableFunctionSignature<cast_in, cast_out>::kTypes;
+#    endif
+#endif
+
 PYBIND11_NAMESPACE_END(detail)
 
 /// Wraps an arbitrary C++ function/method/lambda function/.. into a callable Python object
@@ -318,6 +368,96 @@ public:
                    (Return (*)(const Class *, Arg...)) nullptr,
                    extra...);
     }
+
+    /// Construct a cpp_function from a class method (non-const, rvalue ref-qualifier)
+    template <typename Return, typename Class, typename... Arg, typename... Extra>
+    // NOLINTNEXTLINE(google-explicit-constructor)
+    cpp_function(Return (Class::*f)(Arg...) &&, const Extra &...extra) {
+        initialize(
+            [f](Class *c, Arg... args) -> Return {
+                return (std::move(*c).*f)(std::forward<Arg>(args)...);
+            },
+            (Return (*)(Class *, Arg...)) nullptr,
+            extra...);
+    }
+
+    /// Construct a cpp_function from a class method (const, rvalue ref-qualifier)
+    template <typename Return, typename Class, typename... Arg, typename... Extra>
+    // NOLINTNEXTLINE(google-explicit-constructor)
+    cpp_function(Return (Class::*f)(Arg...) const &&, const Extra &...extra) {
+        initialize(
+            [f](const Class *c, Arg... args) -> Return {
+                return (std::move(*c).*f)(std::forward<Arg>(args)...);
+            },
+            (Return (*)(const Class *, Arg...)) nullptr,
+            extra...);
+    }
+
+#ifdef __cpp_noexcept_function_type
+    /// Construct a cpp_function from a class method (non-const, no ref-qualifier, noexcept)
+    template <typename Return, typename Class, typename... Arg, typename... Extra>
+    // NOLINTNEXTLINE(google-explicit-constructor)
+    cpp_function(Return (Class::*f)(Arg...) noexcept, const Extra &...extra) {
+        initialize(
+            [f](Class *c, Arg... args) -> Return { return (c->*f)(std::forward<Arg>(args)...); },
+            (Return (*)(Class *, Arg...)) nullptr,
+            extra...);
+    }
+
+    /// Construct a cpp_function from a class method (non-const, lvalue ref-qualifier, noexcept)
+    template <typename Return, typename Class, typename... Arg, typename... Extra>
+    // NOLINTNEXTLINE(google-explicit-constructor)
+    cpp_function(Return (Class::*f)(Arg...) & noexcept, const Extra &...extra) {
+        initialize(
+            [f](Class *c, Arg... args) -> Return { return (c->*f)(std::forward<Arg>(args)...); },
+            (Return (*)(Class *, Arg...)) nullptr,
+            extra...);
+    }
+
+    /// Construct a cpp_function from a class method (const, no ref-qualifier, noexcept)
+    template <typename Return, typename Class, typename... Arg, typename... Extra>
+    // NOLINTNEXTLINE(google-explicit-constructor)
+    cpp_function(Return (Class::*f)(Arg...) const noexcept, const Extra &...extra) {
+        initialize([f](const Class *c,
+                       Arg... args) -> Return { return (c->*f)(std::forward<Arg>(args)...); },
+                   (Return (*)(const Class *, Arg...)) nullptr,
+                   extra...);
+    }
+
+    /// Construct a cpp_function from a class method (const, lvalue ref-qualifier, noexcept)
+    template <typename Return, typename Class, typename... Arg, typename... Extra>
+    // NOLINTNEXTLINE(google-explicit-constructor)
+    cpp_function(Return (Class::*f)(Arg...) const & noexcept, const Extra &...extra) {
+        initialize([f](const Class *c,
+                       Arg... args) -> Return { return (c->*f)(std::forward<Arg>(args)...); },
+                   (Return (*)(const Class *, Arg...)) nullptr,
+                   extra...);
+    }
+
+    /// Construct a cpp_function from a class method (non-const, rvalue ref-qualifier, noexcept)
+    template <typename Return, typename Class, typename... Arg, typename... Extra>
+    // NOLINTNEXTLINE(google-explicit-constructor)
+    cpp_function(Return (Class::*f)(Arg...) && noexcept, const Extra &...extra) {
+        initialize(
+            [f](Class *c, Arg... args) -> Return {
+                return (std::move(*c).*f)(std::forward<Arg>(args)...);
+            },
+            (Return (*)(Class *, Arg...)) nullptr,
+            extra...);
+    }
+
+    /// Construct a cpp_function from a class method (const, rvalue ref-qualifier, noexcept)
+    template <typename Return, typename Class, typename... Arg, typename... Extra>
+    // NOLINTNEXTLINE(google-explicit-constructor)
+    cpp_function(Return (Class::*f)(Arg...) const && noexcept, const Extra &...extra) {
+        initialize(
+            [f](const Class *c, Arg... args) -> Return {
+                return (std::move(*c).*f)(std::forward<Arg>(args)...);
+            },
+            (Return (*)(const Class *, Arg...)) nullptr,
+            extra...);
+    }
+#endif
 
     /// Return the function name
     object name() const { return attr("__name__"); }
@@ -481,9 +621,14 @@ protected:
 
         /* Generate a readable signature describing the function's arguments and return
            value types */
-        static constexpr auto signature
-            = const_name("(") + cast_in::arg_names + const_name(") -> ") + cast_out::name;
-        PYBIND11_DESCR_CONSTEXPR auto types = decltype(signature)::types();
+        static constexpr const auto &signature
+            = detail::ReadableFunctionSignature<cast_in, cast_out>::kSig;
+#if !defined(_MSC_VER)
+        static constexpr const auto &types
+            = detail::ReadableFunctionSignature<cast_in, cast_out>::kTypes;
+#else
+        PYBIND11_DESCR_CONSTEXPR auto types = std::decay<decltype(signature)>::type::types();
+#endif
 
         /* Register the function with Python from generic (non-templated) code */
         // Pass on the ownership over the `unique_rec` to `initialize_generic`. `rec` stays valid.
@@ -593,7 +738,7 @@ protected:
 
         rec->signature = guarded_strdup(signature.c_str());
         rec->args.shrink_to_fit();
-        rec->nargs = (std::uint16_t) args;
+        rec->nargs = static_cast<std::uint16_t>(args);
 
         if (rec->sibling && PYBIND11_INSTANCE_METHOD_CHECK(rec->sibling.ptr())) {
             rec->sibling = PYBIND11_INSTANCE_METHOD_GET_FUNCTION(rec->sibling.ptr());
@@ -629,10 +774,10 @@ protected:
             rec->def->ml_name = rec->name;
             rec->def->ml_meth
                 = reinterpret_cast<PyCFunction>(reinterpret_cast<void (*)()>(dispatcher));
-            rec->def->ml_flags = METH_VARARGS | METH_KEYWORDS;
+            rec->def->ml_flags = METH_FASTCALL | METH_KEYWORDS;
 
             object py_func_rec = detail::function_record_PyObject_New();
-            ((detail::function_record_PyObject *) py_func_rec.ptr())->cpp_func_rec
+            (reinterpret_cast<detail::function_record_PyObject *>(py_func_rec.ptr()))->cpp_func_rec
                 = unique_rec.release();
             guarded_strdup.release();
 
@@ -666,8 +811,8 @@ protected:
                 // chain.
                 chain_start = rec;
                 rec->next = chain;
-                auto *py_func_rec
-                    = (detail::function_record_PyObject *) PyCFunction_GET_SELF(m_ptr);
+                auto *py_func_rec = reinterpret_cast<detail::function_record_PyObject *>(
+                    PyCFunction_GET_SELF(m_ptr));
                 py_func_rec->cpp_func_rec = unique_rec.release();
                 guarded_strdup.release();
             } else {
@@ -727,7 +872,7 @@ protected:
             }
         }
 
-        auto *func = (PyCFunctionObject *) m_ptr;
+        auto *func = reinterpret_cast<PyCFunctionObject *>(m_ptr);
         // Install docstring if it's non-empty (when at least one option is enabled)
         auto *doc = signatures.empty() ? nullptr : PYBIND11_COMPAT_STRDUP(signatures.c_str());
         std::free(const_cast<char *>(PYBIND11_PYCFUNCTION_GET_DOC(func)));
@@ -762,9 +907,9 @@ protected:
             // so they cannot be freed. Once the function has been created, they can.
             // Check `make_function_record` for more details.
             if (free_strings) {
-                std::free((char *) rec->name);
-                std::free((char *) rec->doc);
-                std::free((char *) rec->signature);
+                std::free(rec->name);
+                std::free(rec->doc);
+                std::free(rec->signature);
                 for (auto &arg : rec->args) {
                     std::free(const_cast<char *>(arg.name));
                     std::free(const_cast<char *>(arg.descr));
@@ -792,7 +937,8 @@ protected:
     }
 
     /// Main dispatch logic for calls to functions bound using pybind11
-    static PyObject *dispatcher(PyObject *self, PyObject *args_in, PyObject *kwargs_in) {
+    static PyObject *
+    dispatcher(PyObject *self, PyObject *const *args_in_arr, size_t nargsf, PyObject *kwnames_in) {
         using namespace detail;
         const function_record *overloads = function_record_ptr_from_PyObject(self);
         assert(overloads != nullptr);
@@ -802,9 +948,9 @@ protected:
 
         /* Need to know how many arguments + keyword arguments there are to pick the right
            overload */
-        const auto n_args_in = (size_t) PyTuple_GET_SIZE(args_in);
+        const auto n_args_in = static_cast<size_t>(PyVectorcall_NARGS(nargsf));
 
-        handle parent = n_args_in > 0 ? PyTuple_GET_ITEM(args_in, 0) : nullptr,
+        handle parent = n_args_in > 0 ? args_in_arr[0] : nullptr,
                result = PYBIND11_TRY_NEXT_OVERLOAD;
 
         auto self_value_and_holder = value_and_holder();
@@ -816,7 +962,8 @@ protected:
                 return nullptr;
             }
 
-            auto *const tinfo = get_type_info((PyTypeObject *) overloads->scope.ptr());
+            auto *const tinfo
+                = get_type_info(reinterpret_cast<PyTypeObject *>(overloads->scope.ptr()));
             auto *const pi = reinterpret_cast<instance *>(parent.ptr());
             self_value_and_holder = pi->get_value_and_holder(tinfo, true);
 
@@ -892,7 +1039,7 @@ protected:
                         self_value_and_holder.type->dealloc(self_value_and_holder);
                     }
 
-                    call.init_self = PyTuple_GET_ITEM(args_in, 0);
+                    call.init_self = args_in_arr[0];
                     call.args.emplace_back(reinterpret_cast<PyObject *>(&self_value_and_holder));
                     call.args_convert.push_back(false);
                     ++args_copied;
@@ -903,17 +1050,24 @@ protected:
                 for (; args_copied < args_to_copy; ++args_copied) {
                     const argument_record *arg_rec
                         = args_copied < func.args.size() ? &func.args[args_copied] : nullptr;
-                    if (kwargs_in && arg_rec && arg_rec->name
-                        && dict_getitemstring(kwargs_in, arg_rec->name)) {
+
+                    /* if the argument is listed in the call site's kwargs, but the argument is
+                    also fulfilled positionally, then the call can't match this overload. for
+                    example, the call site is: foo(0, key=1) but our overload is foo(key:int) then
+                    this call can't be for us, because it would be invalid.
+                    */
+                    if (kwnames_in && arg_rec && arg_rec->name
+                        && keyword_index(kwnames_in, arg_rec->name) >= 0) {
                         bad_arg = true;
                         break;
                     }
 
-                    handle arg(PyTuple_GET_ITEM(args_in, args_copied));
+                    handle arg(args_in_arr[args_copied]);
                     if (arg_rec && !arg_rec->none && arg.is_none()) {
                         bad_arg = true;
                         break;
                     }
+
                     call.args.push_back(arg);
                     call.args_convert.push_back(arg_rec ? arg_rec->convert : true);
                 }
@@ -925,20 +1079,12 @@ protected:
                 // to copy the rest into a py::args argument.
                 size_t positional_args_copied = args_copied;
 
-                // We'll need to copy this if we steal some kwargs for defaults
-                dict kwargs = reinterpret_borrow<dict>(kwargs_in);
-
                 // 1.5. Fill in any missing pos_only args from defaults if they exist
                 if (args_copied < func.nargs_pos_only) {
                     for (; args_copied < func.nargs_pos_only; ++args_copied) {
                         const auto &arg_rec = func.args[args_copied];
-                        handle value;
-
                         if (arg_rec.value) {
-                            value = arg_rec.value;
-                        }
-                        if (value) {
-                            call.args.push_back(value);
+                            call.args.push_back(arg_rec.value);
                             call.args_convert.push_back(arg_rec.convert);
                         } else {
                             break;
@@ -951,46 +1097,42 @@ protected:
                 }
 
                 // 2. Check kwargs and, failing that, defaults that may help complete the list
+                small_vector<bool, arg_vector_small_size> used_kwargs(
+                    kwnames_in ? static_cast<size_t>(PyTuple_GET_SIZE(kwnames_in)) : 0, false);
+                size_t used_kwargs_count = 0;
                 if (args_copied < num_args) {
-                    bool copied_kwargs = false;
-
                     for (; args_copied < num_args; ++args_copied) {
                         const auto &arg_rec = func.args[args_copied];
 
                         handle value;
-                        if (kwargs_in && arg_rec.name) {
-                            value = dict_getitemstring(kwargs.ptr(), arg_rec.name);
+                        if (kwnames_in && arg_rec.name) {
+                            ssize_t i = keyword_index(kwnames_in, arg_rec.name);
+                            if (i >= 0) {
+                                value = args_in_arr[n_args_in + static_cast<size_t>(i)];
+                                used_kwargs.set(static_cast<size_t>(i), true);
+                                used_kwargs_count++;
+                            }
                         }
 
-                        if (value) {
-                            // Consume a kwargs value
-                            if (!copied_kwargs) {
-                                kwargs = reinterpret_steal<dict>(PyDict_Copy(kwargs.ptr()));
-                                copied_kwargs = true;
-                            }
-                            if (PyDict_DelItemString(kwargs.ptr(), arg_rec.name) == -1) {
-                                throw error_already_set();
-                            }
-                        } else if (arg_rec.value) {
+                        if (!value) {
                             value = arg_rec.value;
+                            if (!value) {
+                                break;
+                            }
                         }
 
                         if (!arg_rec.none && value.is_none()) {
                             break;
                         }
 
-                        if (value) {
-                            // If we're at the py::args index then first insert a stub for it to be
-                            // replaced later
-                            if (func.has_args && call.args.size() == func.nargs_pos) {
-                                call.args.push_back(none());
-                            }
-
-                            call.args.push_back(value);
-                            call.args_convert.push_back(arg_rec.convert);
-                        } else {
-                            break;
+                        // If we're at the py::args index then first insert a stub for it to be
+                        // replaced later
+                        if (func.has_args && call.args.size() == func.nargs_pos) {
+                            call.args.push_back(none());
                         }
+
+                        call.args.push_back(value);
+                        call.args_convert.push_back(arg_rec.convert);
                     }
 
                     if (args_copied < num_args) {
@@ -1000,47 +1142,50 @@ protected:
                 }
 
                 // 3. Check everything was consumed (unless we have a kwargs arg)
-                if (kwargs && !kwargs.empty() && !func.has_kwargs) {
+                if (!func.has_kwargs && used_kwargs_count < used_kwargs.size()) {
                     continue; // Unconsumed kwargs, but no py::kwargs argument to accept them
                 }
 
                 // 4a. If we have a py::args argument, create a new tuple with leftovers
                 if (func.has_args) {
-                    tuple extra_args;
-                    if (args_to_copy == 0) {
-                        // We didn't copy out any position arguments from the args_in tuple, so we
-                        // can reuse it directly without copying:
-                        extra_args = reinterpret_borrow<tuple>(args_in);
-                    } else if (positional_args_copied >= n_args_in) {
-                        extra_args = tuple(0);
+                    if (positional_args_copied >= n_args_in) {
+                        call.args_ref = tuple(0);
                     } else {
                         size_t args_size = n_args_in - positional_args_copied;
-                        extra_args = tuple(args_size);
+                        tuple extra_args(args_size);
                         for (size_t i = 0; i < args_size; ++i) {
-                            extra_args[i] = PyTuple_GET_ITEM(args_in, positional_args_copied + i);
+                            extra_args[i] = args_in_arr[positional_args_copied + i];
                         }
+                        call.args_ref = std::move(extra_args);
                     }
                     if (call.args.size() <= func.nargs_pos) {
-                        call.args.push_back(extra_args);
+                        call.args.push_back(call.args_ref);
                     } else {
-                        call.args[func.nargs_pos] = extra_args;
+                        call.args[func.nargs_pos] = call.args_ref;
                     }
                     call.args_convert.push_back(false);
-                    call.args_ref = std::move(extra_args);
                 }
 
                 // 4b. If we have a py::kwargs, pass on any remaining kwargs
                 if (func.has_kwargs) {
-                    if (!kwargs.ptr()) {
-                        kwargs = dict(); // If we didn't get one, send an empty one
+                    dict kwargs;
+                    for (size_t i = 0; i < used_kwargs.size(); ++i) {
+                        if (!used_kwargs[i]) {
+                            // Cast values into handles before indexing into kwargs to ensure
+                            // well-defined evaluation order (MSVC C4866).
+                            handle arg_in_arr = args_in_arr[n_args_in + i],
+                                   kwname = PyTuple_GET_ITEM(kwnames_in, i);
+                            kwargs[kwname] = arg_in_arr;
+                        }
                     }
                     call.args.push_back(kwargs);
                     call.args_convert.push_back(false);
                     call.kwargs_ref = std::move(kwargs);
                 }
 
-// 5. Put everything in a vector.  Not technically step 5, we've been building it
-// in `call.args` all along.
+                // 5. Put everything in a vector.  Not technically step 5, we've been building it
+                // in `call.args` all along.
+
 #if defined(PYBIND11_DETAILED_ERROR_MESSAGES)
                 if (call.args.size() != func.nargs || call.args_convert.size() != func.nargs) {
                     pybind11_fail("Internal error: function call dispatcher inserted wrong number "
@@ -1048,13 +1193,14 @@ protected:
                 }
 #endif
 
-                std::vector<bool> second_pass_convert;
+                args_convert_vector<arg_vector_small_size> second_pass_convert;
                 if (overloaded) {
                     // We're in the first no-convert pass, so swap out the conversion flags for a
                     // set of all-false flags.  If the call fails, we'll swap the flags back in for
                     // the conversion-allowed call below.
-                    second_pass_convert.resize(func.nargs, false);
-                    call.args_convert.swap(second_pass_convert);
+                    second_pass_convert = std::move(call.args_convert);
+                    call.args_convert
+                        = args_convert_vector<arg_vector_small_size>(func.nargs, false);
                 }
 
                 // 6. Call the function.
@@ -1170,40 +1316,37 @@ protected:
                 msg += '\n';
             }
             msg += "\nInvoked with: ";
-            auto args_ = reinterpret_borrow<tuple>(args_in);
             bool some_args = false;
-            for (size_t ti = overloads->is_constructor ? 1 : 0; ti < args_.size(); ++ti) {
+            for (size_t ti = overloads->is_constructor ? 1 : 0; ti < n_args_in; ++ti) {
                 if (!some_args) {
                     some_args = true;
                 } else {
                     msg += ", ";
                 }
                 try {
-                    msg += pybind11::repr(args_[ti]);
+                    msg += pybind11::repr(args_in_arr[ti]);
                 } catch (const error_already_set &) {
                     msg += "<repr raised Error>";
                 }
             }
-            if (kwargs_in) {
-                auto kwargs = reinterpret_borrow<dict>(kwargs_in);
-                if (!kwargs.empty()) {
-                    if (some_args) {
-                        msg += "; ";
+            if (kwnames_in && PyTuple_GET_SIZE(kwnames_in) > 0) {
+                if (some_args) {
+                    msg += "; ";
+                }
+                msg += "kwargs: ";
+                bool first = true;
+                for (size_t i = 0; i < static_cast<size_t>(PyTuple_GET_SIZE(kwnames_in)); ++i) {
+                    if (first) {
+                        first = false;
+                    } else {
+                        msg += ", ";
                     }
-                    msg += "kwargs: ";
-                    bool first = true;
-                    for (const auto &kwarg : kwargs) {
-                        if (first) {
-                            first = false;
-                        } else {
-                            msg += ", ";
-                        }
-                        msg += pybind11::str("{}=").format(kwarg.first);
-                        try {
-                            msg += pybind11::repr(kwarg.second);
-                        } catch (const error_already_set &) {
-                            msg += "<repr raised Error>";
-                        }
+                    msg += reinterpret_borrow<pybind11::str>(PyTuple_GET_ITEM(kwnames_in, i));
+                    msg += '=';
+                    try {
+                        msg += pybind11::repr(args_in_arr[n_args_in + i]);
+                    } catch (const error_already_set &) {
+                        msg += "<repr raised Error>";
                     }
                 }
             }
@@ -1238,6 +1381,28 @@ protected:
         }
         return result.ptr();
     }
+
+    static ssize_t keyword_index(PyObject *haystack, char const *needle) {
+        /* kwargs is usually very small (<= 5 entries).  The arg strings are typically interned.
+         * CPython itself implements the search this way, first comparing all pointers ... which is
+         * cheap and will work if the strings are interned.  If it fails, then it falls back to a
+         * second lexicographic check. This is wildly expensive for huge argument lists, but those
+         * are incredibly rare so we optimize for the vastly common case of just a couple of args.
+         */
+        auto n = PyTuple_GET_SIZE(haystack);
+        auto s = reinterpret_steal<pybind11::str>(PyUnicode_InternFromString(needle));
+        for (ssize_t i = 0; i < n; ++i) {
+            if (PyTuple_GET_ITEM(haystack, i) == s.ptr()) {
+                return i;
+            }
+        }
+        for (ssize_t i = 0; i < n; ++i) {
+            if (PyUnicode_Compare(PyTuple_GET_ITEM(haystack, i), s.ptr()) == 0) {
+                return i;
+            }
+        }
+        return -1;
+    }
 };
 
 PYBIND11_NAMESPACE_BEGIN(detail)
@@ -1246,9 +1411,15 @@ PYBIND11_NAMESPACE_BEGIN(function_record_PyTypeObject_methods)
 
 // This implementation needs the definition of `class cpp_function`.
 inline void tp_dealloc_impl(PyObject *self) {
-    auto *py_func_rec = (function_record_PyObject *) self;
+    // Save type before PyObject_Free invalidates self.
+    auto *type = Py_TYPE(self);
+    auto *py_func_rec = reinterpret_cast<function_record_PyObject *>(self);
     cpp_function::destruct(py_func_rec->cpp_func_rec);
     py_func_rec->cpp_func_rec = nullptr;
+    // PyObject_New increments the heap type refcount and allocates via
+    // PyObject_Malloc; balance both here
+    PyObject_Free(self);
+    Py_DECREF(type);
 }
 
 PYBIND11_NAMESPACE_END(function_record_PyTypeObject_methods)
@@ -1619,7 +1790,7 @@ protected:
 
         /* Register supplemental type information in C++ dict */
         auto *tinfo = new detail::type_info();
-        tinfo->type = (PyTypeObject *) m_ptr;
+        tinfo->type = reinterpret_cast<PyTypeObject *>(m_ptr);
         tinfo->cpptype = rec.type;
         tinfo->type_size = rec.type_size;
         tinfo->type_align = rec.type_align;
@@ -1636,10 +1807,14 @@ protected:
         with_internals([&](internals &internals) {
             auto tindex = std::type_index(*rec.type);
             tinfo->direct_conversions = &internals.direct_conversions[tindex];
+            auto &local_internals = get_local_internals();
             if (rec.module_local) {
-                get_local_internals().registered_types_cpp[tindex] = tinfo;
+                local_internals.registered_types_cpp[rec.type] = tinfo;
             } else {
                 internals.registered_types_cpp[tindex] = tinfo;
+#if PYBIND11_INTERNALS_VERSION >= 12
+                internals.registered_types_cpp_fast[rec.type] = tinfo;
+#endif
             }
 
             PYBIND11_WARNING_PUSH
@@ -1650,7 +1825,7 @@ protected:
             PYBIND11_WARNING_DISABLE_GCC("-Warray-bounds")
             PYBIND11_WARNING_DISABLE_GCC("-Wstringop-overread")
 #endif
-            internals.registered_types_py[(PyTypeObject *) m_ptr] = {tinfo};
+            internals.registered_types_py[reinterpret_cast<PyTypeObject *>(m_ptr)] = {tinfo};
             PYBIND11_WARNING_POP
         });
 
@@ -1658,7 +1833,8 @@ protected:
             mark_parents_nonsimple(tinfo->type);
             tinfo->simple_ancestors = false;
         } else if (rec.bases.size() == 1) {
-            auto *parent_tinfo = get_type_info((PyTypeObject *) rec.bases[0].ptr());
+            auto *parent_tinfo
+                = get_type_info(reinterpret_cast<PyTypeObject *>(rec.bases[0].ptr()));
             assert(parent_tinfo != nullptr);
             bool parent_simple_ancestors = parent_tinfo->simple_ancestors;
             tinfo->simple_ancestors = parent_simple_ancestors;
@@ -1677,17 +1853,17 @@ protected:
     void mark_parents_nonsimple(PyTypeObject *value) {
         auto t = reinterpret_borrow<tuple>(value->tp_bases);
         for (handle h : t) {
-            auto *tinfo2 = get_type_info((PyTypeObject *) h.ptr());
+            auto *tinfo2 = get_type_info(reinterpret_cast<PyTypeObject *>(h.ptr()));
             if (tinfo2) {
                 tinfo2->simple_type = false;
             }
-            mark_parents_nonsimple((PyTypeObject *) h.ptr());
+            mark_parents_nonsimple(reinterpret_cast<PyTypeObject *>(h.ptr()));
         }
     }
 
     void install_buffer_funcs(buffer_info *(*get_buffer)(PyObject *, void *),
                               void *get_buffer_data) {
-        auto *type = (PyHeapTypeObject *) m_ptr;
+        auto *type = reinterpret_cast<PyHeapTypeObject *>(m_ptr);
         auto *tinfo = detail::get_type_info(&type->ht_type);
 
         if (!type->ht_type.tp_as_buffer) {
@@ -1709,8 +1885,8 @@ protected:
         const auto is_static = (rec_func != nullptr) && !(rec_func->is_method && rec_func->scope);
         const auto has_doc = (rec_func != nullptr) && (rec_func->doc != nullptr)
                              && pybind11::options::show_user_defined_docstrings();
-        auto property = handle(
-            (PyObject *) (is_static ? get_internals().static_property_type : &PyProperty_Type));
+        auto property = handle(reinterpret_cast<PyObject *>(
+            is_static ? get_internals().static_property_type : &PyProperty_Type));
         attr(name) = property(fget.ptr() ? fget : none(),
                               fset.ptr() ? fset : none(),
                               /*deleter*/ none(),
@@ -1779,29 +1955,89 @@ inline void add_class_method(object &cls, const char *name_, const cpp_function 
     }
 }
 
+/// Type trait to rebind a member function pointer's class to `Derived`, preserving all
+/// cv/ref/noexcept qualifiers. The primary template has no `type` member, providing SFINAE
+/// failure for unsupported member function pointer types. `source_class` holds the original
+/// class for use in `is_accessible_base_of` checks.
+template <typename Derived, typename T>
+struct rebind_member_ptr {};
+
+// Define one specialization per supported qualifier combination via a local macro.
+// The qualifiers argument appears in type position, not expression position, so
+// parenthesizing it would produce invalid C++.
+// The no-qualifier specialization is written out explicitly to avoid invoking the macro with an
+// empty argument, which triggers MSVC warning C4003.
+template <typename Derived, typename Return, typename Class, typename... Args>
+struct rebind_member_ptr<Derived, Return (Class::*)(Args...)> {
+    using type = Return (Derived::*)(Args...);
+    using source_class = Class;
+};
+// NOLINTBEGIN(bugprone-macro-parentheses)
+#define PYBIND11_REBIND_MEMBER_PTR(qualifiers)                                                    \
+    template <typename Derived, typename Return, typename Class, typename... Args>                \
+    struct rebind_member_ptr<Derived, Return (Class::*)(Args...) qualifiers> {                    \
+        using type = Return (Derived::*)(Args...) qualifiers;                                     \
+        using source_class = Class;                                                               \
+    }
+PYBIND11_REBIND_MEMBER_PTR(const);
+PYBIND11_REBIND_MEMBER_PTR(&);
+PYBIND11_REBIND_MEMBER_PTR(const &);
+PYBIND11_REBIND_MEMBER_PTR(&&);
+PYBIND11_REBIND_MEMBER_PTR(const &&);
+#ifdef __cpp_noexcept_function_type
+PYBIND11_REBIND_MEMBER_PTR(noexcept);
+PYBIND11_REBIND_MEMBER_PTR(const noexcept);
+PYBIND11_REBIND_MEMBER_PTR(& noexcept);
+PYBIND11_REBIND_MEMBER_PTR(const & noexcept);
+PYBIND11_REBIND_MEMBER_PTR(&& noexcept);
+PYBIND11_REBIND_MEMBER_PTR(const && noexcept);
+#endif
+#undef PYBIND11_REBIND_MEMBER_PTR
+// NOLINTEND(bugprone-macro-parentheses)
+
+/// Shared implementation body for all method_adaptor member-function-pointer overloads.
+/// Asserts Base is accessible from Derived, then casts the member pointer.
+template <typename Derived,
+          typename T,
+          typename Traits = rebind_member_ptr<Derived, T>,
+          typename Adapted = typename Traits::type>
+constexpr PYBIND11_ALWAYS_INLINE Adapted adapt_member_ptr(T pmf) {
+    static_assert(
+        detail::is_accessible_base_of<typename Traits::source_class, Derived>::value,
+        "Cannot bind an inaccessible base class method; use a lambda definition instead");
+    return pmf;
+}
+
 PYBIND11_NAMESPACE_END(detail)
 
 /// Given a pointer to a member function, cast it to its `Derived` version.
-/// Forward everything else unchanged.
-template <typename /*Derived*/, typename F>
-auto method_adaptor(F &&f) -> decltype(std::forward<F>(f)) {
+/// For all other callables (lambdas, function pointers, etc.), forward unchanged.
+///
+/// Two overloads cover all cases without explicit per-qualifier instantiations:
+///
+///  (1) Generic fallback — disabled for member function pointers so that (2) wins
+///      without any partial-ordering ambiguity.
+///  (2) MFP overload — SFINAE on rebind_member_ptr::type, which exists for every
+///      supported qualifier combination (const, &, &&, noexcept, ...).  A single
+///      template therefore covers all combinations that rebind_member_ptr handles.
+template <
+    typename /*Derived*/,
+    typename F,
+    detail::enable_if_t<!std::is_member_function_pointer<detail::remove_reference_t<F>>::value,
+                        int> = 0>
+constexpr auto method_adaptor(F &&f) -> decltype(std::forward<F>(f)) {
     return std::forward<F>(f);
 }
 
-template <typename Derived, typename Return, typename Class, typename... Args>
-auto method_adaptor(Return (Class::*pmf)(Args...)) -> Return (Derived::*)(Args...) {
-    static_assert(
-        detail::is_accessible_base_of<Class, Derived>::value,
-        "Cannot bind an inaccessible base class method; use a lambda definition instead");
-    return pmf;
-}
-
-template <typename Derived, typename Return, typename Class, typename... Args>
-auto method_adaptor(Return (Class::*pmf)(Args...) const) -> Return (Derived::*)(Args...) const {
-    static_assert(
-        detail::is_accessible_base_of<Class, Derived>::value,
-        "Cannot bind an inaccessible base class method; use a lambda definition instead");
-    return pmf;
+template <typename Derived,
+          typename T,
+          typename Adapted = typename detail::rebind_member_ptr<Derived, T>::type>
+constexpr Adapted method_adaptor(T pmf) {
+    // Expected to be redundant (SFINAE on rebind_member_ptr) but cheap and makes the intent
+    // explicit.
+    static_assert(std::is_member_function_pointer<T>::value,
+                  "method_adaptor: T must be a member function pointer");
+    return detail::adapt_member_ptr<Derived>(pmf);
 }
 
 PYBIND11_NAMESPACE_BEGIN(detail)
@@ -2137,10 +2373,18 @@ public:
 
         if (has_alias) {
             with_internals([&](internals &internals) {
-                auto &instances = record.module_local ? get_local_internals().registered_types_cpp
-                                                      : internals.registered_types_cpp;
-                instances[std::type_index(typeid(type_alias))]
-                    = instances[std::type_index(typeid(type))];
+                auto &local_internals = get_local_internals();
+                if (record.module_local) {
+                    local_internals.registered_types_cpp[&typeid(type_alias)]
+                        = local_internals.registered_types_cpp[&typeid(type)];
+                } else {
+                    type_info *const val
+                        = internals.registered_types_cpp[std::type_index(typeid(type))];
+                    internals.registered_types_cpp[std::type_index(typeid(type_alias))] = val;
+#if PYBIND11_INTERNALS_VERSION >= 12
+                    internals.registered_types_cpp_fast[&typeid(type_alias)] = val;
+#endif
+                }
             });
         }
         def("_pybind11_conduit_v1_", cpp_conduit_method);
@@ -2151,6 +2395,13 @@ public:
         rec.add_base(typeid(Base), [](void *src) -> void * {
             return static_cast<Base *>(reinterpret_cast<type *>(src));
         });
+        // Virtual inheritance means the base subobject is at a dynamic offset,
+        // so the reinterpret_cast shortcut in load_impl Case 2a is invalid.
+        // Force the MI path (implicit_casts) for correct pointer adjustment.
+        // Detection: static_cast<Derived*>(Base*) is ill-formed for virtual bases.
+        if PYBIND11_MAYBE_CONSTEXPR (!detail::is_static_downcastable<Base, type>::value) {
+            rec.multiple_inheritance = true;
+        }
     }
 
     template <typename Base, detail::enable_if_t<!is_base<Base>::value, int> = 0>
@@ -2251,6 +2502,40 @@ public:
     class_ &def_buffer(Return (Class::*func)(Args...) const) {
         return def_buffer([func](const type &obj) { return (obj.*func)(); });
     }
+
+    // Intentionally no &&/const&& overloads: buffer protocol callbacks are invoked on an
+    // existing Python object and should not move-from self.
+    template <typename Return, typename Class, typename... Args>
+    class_ &def_buffer(Return (Class::*func)(Args...) &) {
+        return def_buffer([func](type &obj) { return (obj.*func)(); });
+    }
+
+    template <typename Return, typename Class, typename... Args>
+    class_ &def_buffer(Return (Class::*func)(Args...) const &) {
+        return def_buffer([func](const type &obj) { return (obj.*func)(); });
+    }
+
+#ifdef __cpp_noexcept_function_type
+    template <typename Return, typename Class, typename... Args>
+    class_ &def_buffer(Return (Class::*func)(Args...) noexcept) {
+        return def_buffer([func](type &obj) { return (obj.*func)(); });
+    }
+
+    template <typename Return, typename Class, typename... Args>
+    class_ &def_buffer(Return (Class::*func)(Args...) const noexcept) {
+        return def_buffer([func](const type &obj) { return (obj.*func)(); });
+    }
+
+    template <typename Return, typename Class, typename... Args>
+    class_ &def_buffer(Return (Class::*func)(Args...) & noexcept) {
+        return def_buffer([func](type &obj) { return (obj.*func)(); });
+    }
+
+    template <typename Return, typename Class, typename... Args>
+    class_ &def_buffer(Return (Class::*func)(Args...) const & noexcept) {
+        return def_buffer([func](const type &obj) { return (obj.*func)(); });
+    }
+#endif
 
     template <typename C, typename D, typename... Extra>
     class_ &def_readwrite(const char *name, D C::*pm, const Extra &...extra) {
@@ -2368,23 +2653,51 @@ public:
                                 const Extra &...extra) {
         static_assert(0 == detail::constexpr_sum(std::is_base_of<arg, Extra>::value...),
                       "Argument annotations are not allowed for properties");
+        static_assert(0 == detail::constexpr_sum(detail::is_call_guard<Extra>::value...),
+                      "def_property family does not currently support call_guard. Use a "
+                      "py::cpp_function instead.");
+        static_assert(0 == detail::constexpr_sum(detail::is_keep_alive<Extra>::value...),
+                      "def_property family does not currently support keep_alive. Use a "
+                      "py::cpp_function instead.");
         auto rec_fget = get_function_record(fget), rec_fset = get_function_record(fset);
         auto *rec_active = rec_fget;
         if (rec_fget) {
             char *doc_prev = rec_fget->doc; /* 'extra' field may include a property-specific
                                                documentation string */
+            auto args_before = rec_fget->args.size();
             detail::process_attributes<Extra...>::init(extra..., rec_fget);
             if (rec_fget->doc && rec_fget->doc != doc_prev) {
                 std::free(doc_prev);
                 rec_fget->doc = PYBIND11_COMPAT_STRDUP(rec_fget->doc);
             }
+            // Args added by process_attributes (e.g. "self" via is_method + pos_only/kw_only)
+            // need their strings strdup'd: initialize_generic's strdup loop already ran during
+            // cpp_function construction, so it won't process these late additions. Without this,
+            // destruct() would call free() on string literals. See gh-5976.
+            for (auto i = args_before; i < rec_fget->args.size(); ++i) {
+                if (rec_fget->args[i].name) {
+                    rec_fget->args[i].name = PYBIND11_COMPAT_STRDUP(rec_fget->args[i].name);
+                }
+                if (rec_fget->args[i].descr) {
+                    rec_fget->args[i].descr = PYBIND11_COMPAT_STRDUP(rec_fget->args[i].descr);
+                }
+            }
         }
         if (rec_fset) {
             char *doc_prev = rec_fset->doc;
+            auto args_before = rec_fset->args.size();
             detail::process_attributes<Extra...>::init(extra..., rec_fset);
             if (rec_fset->doc && rec_fset->doc != doc_prev) {
                 std::free(doc_prev);
                 rec_fset->doc = PYBIND11_COMPAT_STRDUP(rec_fset->doc);
+            }
+            for (auto i = args_before; i < rec_fset->args.size(); ++i) {
+                if (rec_fset->args[i].name) {
+                    rec_fset->args[i].name = PYBIND11_COMPAT_STRDUP(rec_fset->args[i].name);
+                }
+                if (rec_fset->args[i].descr) {
+                    rec_fset->args[i].descr = PYBIND11_COMPAT_STRDUP(rec_fset->args[i].descr);
+                }
             }
             if (!rec_active) {
                 rec_active = rec_fset;
@@ -2418,8 +2731,7 @@ private:
     static void init_holder_from_existing(const detail::value_and_holder &v_h,
                                           const holder_type *holder_ptr,
                                           std::true_type /*is_copy_constructible*/) {
-        new (std::addressof(v_h.holder<holder_type>()))
-            holder_type(*reinterpret_cast<const holder_type *>(holder_ptr));
+        new (std::addressof(v_h.holder<holder_type>())) holder_type(*holder_ptr);
     }
 
     static void init_holder_from_existing(const detail::value_and_holder &v_h,
@@ -2631,8 +2943,9 @@ struct enum_base {
 
     PYBIND11_NOINLINE void init(bool is_arithmetic, bool is_convertible) {
         m_base.attr("__entries") = dict();
-        auto property = handle((PyObject *) &PyProperty_Type);
-        auto static_property = handle((PyObject *) get_internals().static_property_type);
+        auto property = handle(reinterpret_cast<PyObject *>(&PyProperty_Type));
+        auto static_property
+            = handle(reinterpret_cast<PyObject *>(get_internals().static_property_type));
 
         m_base.attr("__repr__") = cpp_function(
             [](const object &arg) -> str {
@@ -2663,7 +2976,7 @@ struct enum_base {
                     [](handle arg) -> std::string {
                         std::string docstring;
                         dict entries = arg.attr("__entries");
-                        if (((PyTypeObject *) arg.ptr())->tp_doc) {
+                        if ((reinterpret_cast<PyTypeObject *>(arg.ptr()))->tp_doc) {
                             docstring += std::string(
                                 reinterpret_cast<PyTypeObject *>(arg.ptr())->tp_doc);
                             docstring += "\n\n";
@@ -2789,7 +3102,7 @@ struct enum_base {
         dict entries = m_base.attr("__entries");
         str name(name_);
         if (entries.contains(name)) {
-            std::string type_name = (std::string) str(m_base.attr("__name__"));
+            std::string type_name = std::string(str(m_base.attr("__name__")));
             throw value_error(std::move(type_name) + ": element \"" + std::string(name_)
                               + "\" already exists!");
         }
@@ -2984,7 +3297,7 @@ all_type_info_get_cache(PyTypeObject *type) {
     if (res.second) {
         // New cache entry created; set up a weak reference to automatically remove it if the type
         // gets destroyed:
-        weakref((PyObject *) type, cpp_function([type](handle wr) {
+        weakref(reinterpret_cast<PyObject *>(type), cpp_function([type](handle wr) {
                     with_internals([type](internals &internals) {
                         internals.registered_types_py.erase(type);
 
@@ -3079,6 +3392,11 @@ iterator make_iterator_impl(Iterator first, Sentinel last, Extra &&...extra) {
     using state = detail::iterator_state<Access, Policy, Iterator, Sentinel, ValueType, Extra...>;
     // TODO: state captures only the types of Extra, not the values
 
+    // For Python < 3.14.0rc1, pycritical_section uses direct mutex locking (same as a unique
+    // lock), which may deadlock during type registration. See detail/internals.h for details.
+#if PY_VERSION_HEX >= 0x030E00C1 // 3.14.0rc1
+    PYBIND11_LOCK_INTERNALS(get_internals());
+#endif
     if (!detail::get_type_info(typeid(state), false)) {
         class_<state>(handle(), "iterator", pybind11::module_local())
             .def(
@@ -3200,13 +3518,10 @@ typing::Iterator<ValueType> make_value_iterator(Type &value, Extra &&...extra) {
 
 template <typename InputType, typename OutputType>
 void implicitly_convertible() {
-    static int tss_sentinel_pointee = 1; // arbitrary value
     struct set_flag {
-        thread_specific_storage<int> &flag;
-        explicit set_flag(thread_specific_storage<int> &flag_) : flag(flag_) {
-            flag = &tss_sentinel_pointee; // trick: the pointer itself is the sentinel
-        }
-        ~set_flag() { flag.reset(nullptr); }
+        bool &flag;
+        explicit set_flag(bool &flag_) : flag(flag_) { flag_ = true; }
+        ~set_flag() { flag = false; }
 
         // Prevent copying/moving to ensure RAII guard is used safely
         set_flag(const set_flag &) = delete;
@@ -3215,7 +3530,7 @@ void implicitly_convertible() {
         set_flag &operator=(set_flag &&) = delete;
     };
     auto implicit_caster = [](PyObject *obj, PyTypeObject *type) -> PyObject * {
-        static thread_specific_storage<int> currently_used;
+        thread_local bool currently_used = false;
         if (currently_used) { // implicit conversions are non-reentrant
             return nullptr;
         }
@@ -3225,7 +3540,7 @@ void implicitly_convertible() {
         }
         tuple args(1);
         args[0] = obj;
-        PyObject *result = PyObject_Call((PyObject *) type, args.ptr(), nullptr);
+        PyObject *result = PyObject_Call(reinterpret_cast<PyObject *>(type), args.ptr(), nullptr);
         if (result == nullptr) {
             PyErr_Clear();
         }
@@ -3441,7 +3756,7 @@ get_type_override(const void *this_ptr, const type_info *this_type, const char *
     if (frame != nullptr) {
         PyCodeObject *f_code = PyFrame_GetCode(frame);
         // f_code is guaranteed to not be NULL
-        if ((std::string) str(f_code->co_name) == name && f_code->co_argcount > 0) {
+        if (std::string(str(f_code->co_name)) == name && f_code->co_argcount > 0) {
 #        if PY_VERSION_HEX >= 0x030d0000
             PyObject *locals = PyEval_GetFrameLocals();
 #        else
@@ -3536,13 +3851,15 @@ function get_override(const T *this_ptr, const char *name) {
             auto o = override(__VA_ARGS__);                                                       \
             PYBIND11_WARNING_PUSH                                                                 \
             PYBIND11_WARNING_DISABLE_MSVC(4127)                                                   \
-            if (pybind11::detail::cast_is_temporary_value_reference<ret_type>::value              \
+            if PYBIND11_MAYBE_CONSTEXPR (                                                         \
+                pybind11::detail::cast_is_temporary_value_reference<ret_type>::value              \
                 && !pybind11::detail::is_same_ignoring_cvref<ret_type, PyObject *>::value) {      \
                 static pybind11::detail::override_caster_t<ret_type> caster;                      \
                 return pybind11::detail::cast_ref<ret_type>(std::move(o), caster);                \
+            } else {                                                                              \
+                return pybind11::detail::cast_safe<ret_type>(std::move(o));                       \
             }                                                                                     \
             PYBIND11_WARNING_POP                                                                  \
-            return pybind11::detail::cast_safe<ret_type>(std::move(o));                           \
         }                                                                                         \
     } while (false)
 

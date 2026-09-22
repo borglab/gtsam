@@ -1,4 +1,6 @@
-# Discrete Inference in GTSAM
+# Discrete
+
+> Discrete Inference in GTSAM
 
 The discrete module in GTSAM provides a comprehensive framework for probabilistic inference over discrete random variables. This module implements Bayesian networks, factor graphs, and efficient inference algorithms using decision trees and elimination methods.
 

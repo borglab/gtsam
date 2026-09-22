@@ -9,11 +9,19 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam_unstable/dllexport.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 namespace gtsam {
 
+/**
+ * Dummy factor used to make a graph appear connected.
+ * @deprecated This experimental utility has no maintained replacement.
+ */
 class GTSAM_UNSTABLE_EXPORT DummyFactor : public NonlinearFactor {
 protected:
 
@@ -71,6 +79,7 @@ public:
 
 } // \namespace gtsam
 
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 
 

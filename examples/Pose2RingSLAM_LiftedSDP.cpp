@@ -153,7 +153,7 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  MosekChordalSDP chordalSdp(problem, ChordalOrderingType::Metis);
+  MosekChordalSDP chordalSdp(problem, ChordalOrderingType::Colamd);
   if (!solveAndReport("Chordal", &chordalSdp, gt, mosekParams)) {
     return 1;
   }

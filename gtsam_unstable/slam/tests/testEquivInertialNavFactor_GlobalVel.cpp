@@ -15,13 +15,17 @@
  * @author  Vadim Indelman, Stephen Williams
  */
 
+#include <gtsam/config.h>
+#include <CppUnitLite/TestHarness.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam_unstable/slam/EquivInertialNavFactor_GlobalVel.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/inference/Key.h>
 
-#include <CppUnitLite/TestHarness.h>
 #include <iostream>
 
 using namespace std::placeholders;
@@ -61,6 +65,8 @@ TEST( EquivInertialNavFactor_GlobalVel, Constructor)
           g, rho, omega_earth, imu_model, Jacobian_wrt_t0_Overall, bias1);
 
 }
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
 
 /* ************************************************************************* */
   int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

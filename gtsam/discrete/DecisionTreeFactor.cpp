@@ -69,10 +69,9 @@ namespace gtsam {
       const DiscreteFactor::shared_ptr& f) const {
     DiscreteFactor::shared_ptr result;
     if (auto tf = std::dynamic_pointer_cast<TableFactor>(f)) {
-      // If f is a TableFactor, we convert `this` to a TableFactor since this
-      // conversion is cheaper than converting `f` to a DecisionTreeFactor. We
-      // then return a TableFactor.
-      result = std::make_shared<TableFactor>((*tf) * TableFactor(*this));
+      // If f is a TableFactor, use the virtual conversion so derived decision
+      // tree factors can provide their actual sparse representation.
+      result = std::make_shared<TableFactor>((*tf) * toTableFactor());
 
     } else if (auto dtf = std::dynamic_pointer_cast<DecisionTreeFactor>(f)) {
       // If `f` is a DecisionTreeFactor, simply call operator*.
@@ -86,6 +85,11 @@ namespace gtsam {
       result = std::make_shared<DecisionTreeFactor>(f->operator*(*this));
     }
     return result;
+  }
+
+  /* ************************************************************************ */
+  TableFactor DecisionTreeFactor::toTableFactor() const {
+    return TableFactor(*this);
   }
 
   /* ************************************************************************ */

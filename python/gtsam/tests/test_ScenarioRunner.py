@@ -42,6 +42,24 @@ class TestScenarioRunner(GtsamTestCase):
         np.testing.assert_almost_equal(
             np.array([0, 0, a + self.g]), runner.actualSpecificForce(t))
 
+    def test_sensor_frame_and_lever_arm(self):
+        omega_b = np.array([0.0, 0.0, 2.0])
+        scenario = gtsam.ConstantTwistScenario(omega_b, np.zeros(3))
+        params = gtsam.PreintegrationParams.MakeSharedU(self.g)
+        body_R_sensor = gtsam.Rot3.Yaw(math.pi / 2.0)
+        params.setBodyPSensor(
+            gtsam.Pose3(body_R_sensor, np.array([1.0, 0.0, 0.0])))
+        runner = gtsam.ScenarioRunner(
+            scenario, params, 0.01, gtsam.imuBias.ConstantBias())
+
+        np.testing.assert_allclose(
+            body_R_sensor.unrotate(omega_b),
+            runner.actualAngularVelocity(0.0))
+        expected_force_b = np.array([-4.0, 0.0, self.g])
+        np.testing.assert_allclose(
+            body_R_sensor.unrotate(expected_force_b),
+            runner.actualSpecificForce(0.0))
+
 
 if __name__ == '__main__':
     unittest.main()

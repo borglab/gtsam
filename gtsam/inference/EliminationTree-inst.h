@@ -98,7 +98,7 @@ namespace gtsam {
       for (size_t j = 0; j < n; j++)
       {
         // Retrieve the factors involving this variable and create the current node
-        const FactorIndices& factors = structure[order[j]];
+        const FactorIndices& factors = structure.at(order[j]);
         const sharedNode node = std::make_shared<Node>();
         node->key = order[j];
 
@@ -135,7 +135,7 @@ namespace gtsam {
         nodes[j] = node;
       }
     } catch(std::invalid_argument& e) {
-      // If this is thrown from structure[order[j]] above, it means that it was requested to
+      // If this is thrown from structure.at(order[j]) above, it means that it was requested to
       // eliminate a variable not present in the graph, so throw a more informative error message.
       (void)e; // Prevent unused variable warning
       throw std::invalid_argument("EliminationTree: given ordering contains variables that are not involved in the factor graph");

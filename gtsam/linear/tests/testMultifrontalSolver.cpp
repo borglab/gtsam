@@ -25,16 +25,84 @@
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
 #include <gtsam/linear/MultifrontalSolver.h>
+#include <gtsam/linear/internal/CompactLeafSchurKernel.h>
 #include <gtsam/nonlinear/Marginals.h>
 #include <tests/smallExample.h>
 
+#include <algorithm>
 #include <cmath>
 #include <functional>
 #include <limits>
 
 using namespace std;
 using namespace gtsam;
+using symbol_shorthand::L;
 using symbol_shorthand::X;
+
+/* ************************************************************************* */
+namespace compact_leaf_schur_kernel_fixture {
+
+// Verifies generic in-place factorization and non-contiguous mapped Schur
+// subtraction against dense reference calculations.
+TEST(CompactLeafSchurKernel, FactorAndScatter) {
+  const std::vector<size_t> sourceDimensions{2, 1, 2};
+  VerticalBlockMatrix rows(sourceDimensions, 2, true);
+  const Matrix Hff{{4.0, 1.0}, {1.0, 3.0}};
+  const Matrix retained{{0.5, -1.0, 2.0, 0.25}, {1.5, 0.75, -0.5, -0.125}};
+  rows.matrix() << Hff, retained;
+
+  Eigen::LLT<Matrix, Eigen::Upper> referenceFactorization(Hff);
+  Matrix expectedRows(2, 6);
+  expectedRows.leftCols(2) = referenceFactorization.matrixU();
+  expectedRows.rightCols(4) = retained;
+  referenceFactorization.matrixU().transpose().solveInPlace(
+      expectedRows.rightCols(4));
+
+  EXPECT(internal::CompactLeafSchurKernel::factorFrontalRows(&rows, 2));
+  EXPECT(assert_equal(expectedRows, rows.matrix(), 1e-12));
+
+  SymmetricBlockMatrix target(std::vector<size_t>{1, 2, 3, 2}, true);
+  target.setAllZero();
+  const std::vector<DenseIndex> blockOffsets{
+      target.blockScalarOffset(2), target.blockScalarOffset(0),
+      target.blockScalarOffset(target.nBlocks() - 1)};
+  const std::vector<DenseIndex> scalarOffsets =
+      internal::CompactLeafSchurKernel::expandScalarOffsets(
+          std::vector<size_t>{1, 2, 1}, blockOffsets);
+  internal::CompactLeafSchurKernel::subtractMappedOuterProduct(
+      rows, 2, scalarOffsets, &target);
+
+  Matrix expected = Matrix::Zero(target.rows(), target.cols());
+  const Matrix schur =
+      expectedRows.rightCols(4).transpose() * expectedRows.rightCols(4);
+  for (DenseIndex column = 0; column < 4; ++column) {
+    for (DenseIndex row = 0; row <= column; ++row) {
+      const DenseIndex targetRow = scalarOffsets[row];
+      const DenseIndex targetColumn = scalarOffsets[column];
+      expected(std::min(targetRow, targetColumn),
+               std::max(targetRow, targetColumn)) -= schur(row, column);
+    }
+  }
+  const Matrix expectedSymmetric = expected.selfadjointView<Eigen::Upper>();
+  const Matrix actualSymmetric = target.selfadjointView();
+  EXPECT(assert_equal(expectedSymmetric, actualSymmetric, 1e-12));
+}
+
+// Verifies indefinite and scale-normalized near-zero pivots are rejected.
+TEST(CompactLeafSchurKernel, RejectsInvalidPivots) {
+  const std::vector<size_t> dimensions{2};
+  VerticalBlockMatrix indefinite(dimensions, 2, true);
+  indefinite.matrix() << 1.0, 2.0, 0.0, 2.0, 1.0, 0.0;
+  EXPECT(!internal::CompactLeafSchurKernel::factorFrontalRows(&indefinite, 2));
+
+  VerticalBlockMatrix nearSingular(dimensions, 2, true);
+  nearSingular.matrix() << 1.0, 1.0, 0.0, 1.0, 1.0 + 1e-10, 0.0;
+  EXPECT(
+      !internal::CompactLeafSchurKernel::factorFrontalRows(&nearSingular, 2));
+}
+
+}  // namespace compact_leaf_schur_kernel_fixture
+/* ************************************************************************* */
 
 namespace {
 const Key x1 = 1, x2 = 2, x3 = 3, x4 = 4;
@@ -51,12 +119,932 @@ const Ordering chainOrdering{x2, x1, x3, x4};
 
 MultifrontalSolver::Parameters noMergeParams() {
   MultifrontalSolver::Parameters params;
-  params.mergeDimCap = 0;
   params.leafMergeDimCap = 0;
+  params.mergeDimCap = 0;
+  params.leafAggregationProblemSize = 0;
   return params;
 }
 
 }  // namespace
+
+/* ************************************************************************* */
+namespace partial_elimination_fixture {
+
+const Key point1 = L(1), point2 = L(2);
+const Key camera1 = X(1), camera2 = X(2);
+const Ordering pointOrdering{point1, point2};
+const Ordering cameraOrdering{camera1, camera2};
+const Ordering fullOrdering{point1, point2, camera1, camera2};
+
+GaussianFactorGraph createGraph(double rhsScale = 1.0) {
+  const auto model = noiseModel::Unit::Create(1);
+  return GaussianFactorGraph{
+      std::make_shared<JacobianFactor>(point1, I_1x1, camera1, -I_1x1,
+                                       Vector1(rhsScale), model),
+      std::make_shared<JacobianFactor>(point1, I_1x1, camera2, -I_1x1,
+                                       Vector1(2.0 * rhsScale), model),
+      std::make_shared<JacobianFactor>(point2, I_1x1, camera1, -I_1x1,
+                                       Vector1(3.0 * rhsScale), model),
+      std::make_shared<JacobianFactor>(point2, I_1x1, camera2, -I_1x1,
+                                       Vector1(4.0 * rhsScale), model),
+      std::make_shared<JacobianFactor>(camera1, I_1x1, Vector1(0.5 * rhsScale),
+                                       model)};
+}
+
+bool checkPartialElimination(MultifrontalSolver* solver,
+                             const GaussianFactorGraph& graph) {
+  solver->eliminatePartialInPlace(graph);
+  const GaussianFactorGraph actualRemaining = solver->remainingFactorGraph();
+  const auto [pointBayesTree, expectedRemaining] =
+      graph.eliminatePartialMultifrontal(pointOrdering);
+  (void)pointBayesTree;
+
+  const bool remainingFactorsAgree =
+      assert_equal(expectedRemaining->augmentedHessian(cameraOrdering),
+                   actualRemaining.augmentedHessian(cameraOrdering), 1e-9);
+  const bool cliquesAreAggregated =
+      actualRemaining.size() < expectedRemaining->size();
+
+  const VectorValues retainedSolution = actualRemaining.optimize();
+  const VectorValues& actualSolution = solver->updateSolution(retainedSolution);
+  const VectorValues expectedSolution = graph.optimize();
+  return remainingFactorsAgree && cliquesAreAggregated &&
+         assert_equal(expectedSolution, actualSolution, 1e-9);
+}
+
+// Partially eliminates point frontals, exports clique-level camera factors,
+// and reuses the symbolic structure after numerical values change.
+TEST(MultifrontalSolver, PartialElimination) {
+  const GaussianFactorGraph graph = createGraph();
+  MultifrontalSolver solver(graph, fullOrdering, pointOrdering.size(),
+                            noMergeParams());
+
+  EXPECT(checkPartialElimination(&solver, graph));
+  EXPECT(checkPartialElimination(&solver, createGraph(2.0)));
+}
+
+// Leaf aggregation changes only task scheduling, not clique structure or the
+// reduced system produced by partial elimination.
+TEST(MultifrontalSolver, PartialEliminationLeafAggregation) {
+  const GaussianFactorGraph graph = createGraph();
+
+  MultifrontalSolver::Parameters separateTasks = noMergeParams();
+  separateTasks.qrMode = MultifrontalParameters::QRMode::Off;
+  MultifrontalSolver solverSeparate(graph, fullOrdering, pointOrdering.size(),
+                                    separateTasks);
+  solverSeparate.eliminatePartialInPlace(graph);
+
+  const Matrix expected =
+      solverSeparate.remainingFactorGraph().augmentedHessian(cameraOrdering);
+  for (const auto mode : {MultifrontalParameters::LeafMode::Bounded,
+                          MultifrontalParameters::LeafMode::SameSeparator}) {
+    MultifrontalSolver::Parameters aggregatedTasks = noMergeParams();
+    aggregatedTasks.qrMode = MultifrontalParameters::QRMode::Off;
+    aggregatedTasks.leafAggregationProblemSize = 2048;
+    aggregatedTasks.leafMode = mode;
+    MultifrontalSolver solverAggregated(graph, fullOrdering,
+                                        pointOrdering.size(), aggregatedTasks);
+    solverAggregated.eliminatePartialInPlace(graph);
+
+    EXPECT_LONGS_EQUAL(solverSeparate.cliqueCount(),
+                       solverAggregated.cliqueCount());
+    EXPECT(
+        assert_equal(expected,
+                     solverAggregated.remainingFactorGraph().augmentedHessian(
+                         cameraOrdering),
+                     1e-9));
+  }
+}
+
+}  // namespace partial_elimination_fixture
+/* ************************************************************************* */
+
+namespace algebraic_leaf_merge_fixture {
+
+struct Problem {
+  GaussianFactorGraph graph;
+  Ordering pointOrdering;
+  Ordering cameraOrdering;
+  Ordering fullOrdering;
+};
+
+Problem createProblem(size_t pointCount, bool differentLastSeparator = false,
+                      double rhsScale = 1.0) {
+  Problem problem;
+  const KeyVector cameras{X(10), X(11), X(12)};
+  problem.cameraOrdering = Ordering(cameras.begin(), cameras.end());
+  const auto unit = noiseModel::Unit::Create(1);
+  for (size_t index = 0; index < pointCount; ++index) {
+    const Key point = L(10 + index);
+    const Key secondCamera = differentLastSeparator && index + 1 == pointCount
+                                 ? cameras[2]
+                                 : cameras[1];
+    problem.pointOrdering.push_back(point);
+    problem.graph.emplace_shared<JacobianFactor>(
+        point, I_1x1, cameras[0], I_1x1,
+        Vector1(rhsScale * (1.0 + static_cast<double>(index))), unit);
+    problem.graph.emplace_shared<JacobianFactor>(
+        point, I_1x1, secondCamera, -I_1x1,
+        Vector1(rhsScale * (2.0 + static_cast<double>(index))), unit);
+  }
+  for (const Key camera : cameras) {
+    problem.graph.emplace_shared<JacobianFactor>(camera, I_1x1, Vector1::Zero(),
+                                                 unit);
+  }
+  for (size_t first = 0; first < cameras.size(); ++first) {
+    for (size_t second = first + 1; second < cameras.size(); ++second) {
+      problem.graph.emplace_shared<JacobianFactor>(cameras[first], I_1x1,
+                                                   cameras[second], -I_1x1,
+                                                   Vector1::Zero(), unit);
+    }
+  }
+  problem.fullOrdering = problem.pointOrdering;
+  problem.fullOrdering.insert(problem.fullOrdering.end(), cameras.begin(),
+                              cameras.end());
+  return problem;
+}
+
+std::vector<KeyVector> leafFrontals(MultifrontalSolver* solver) {
+  std::vector<KeyVector> result;
+  solver->runTopDown([&result](MultifrontalClique& clique) {
+    if (!clique.children.empty()) return;
+    const auto frontalEnd = clique.orderedKeys().begin() + clique.numFrontals();
+    result.emplace_back(clique.orderedKeys().begin(), frontalEnd);
+  });
+  return result;
+}
+
+bool containsFrontals(const std::vector<KeyVector>& leaves,
+                      const KeyVector& expected) {
+  return std::find(leaves.begin(), leaves.end(), expected) != leaves.end();
+}
+
+// Compatible multi-factor leaves merge algebraically, while disabling the
+// dedicated cap leaves task aggregation free to operate on the original tree.
+TEST(MultifrontalSolver, AlgebraicLeafMergeAndTaskAggregationIndependent) {
+  const Problem problem = createProblem(2);
+  auto separate = noMergeParams();
+  MultifrontalSolver separateSolver(problem.graph, problem.fullOrdering,
+                                    separate);
+
+  auto tasksOnly = separate;
+  tasksOnly.leafAggregationProblemSize = 2048;
+  MultifrontalSolver taskSolver(problem.graph, problem.fullOrdering, tasksOnly);
+  EXPECT_LONGS_EQUAL(separateSolver.cliqueCount(), taskSolver.cliqueCount());
+
+  auto algebraic = separate;
+  algebraic.leafMergeDimCap = 256;
+  MultifrontalSolver mergedSolver(problem.graph, problem.fullOrdering,
+                                  algebraic);
+  EXPECT_LONGS_EQUAL(separateSolver.cliqueCount() - 1,
+                     mergedSolver.cliqueCount());
+  EXPECT(
+      containsFrontals(leafFrontals(&mergedSolver), KeyVector{L(10), L(11)}));
+}
+
+// The historical dimension cap splits same-separator leaves in stable order,
+// and leaves with a different separator stay outside the merged batch.
+TEST(MultifrontalSolver, AlgebraicLeafMergeCapAndSeparator) {
+  const Problem sameSeparator = createProblem(3);
+  auto capped = noMergeParams();
+  capped.leafMergeDimCap = 6;
+  MultifrontalSolver cappedSolver(sameSeparator.graph,
+                                  sameSeparator.fullOrdering, capped);
+  const std::vector<KeyVector> cappedLeaves = leafFrontals(&cappedSolver);
+  EXPECT(containsFrontals(cappedLeaves, KeyVector{L(10), L(11)}));
+  EXPECT(containsFrontals(cappedLeaves, KeyVector{L(12)}));
+
+  const Problem differentSeparator = createProblem(3, true);
+  capped.leafMergeDimCap = 256;
+  MultifrontalSolver separatedSolver(differentSeparator.graph,
+                                     differentSeparator.fullOrdering, capped);
+  const std::vector<KeyVector> separatedLeaves = leafFrontals(&separatedSolver);
+  EXPECT(containsFrontals(separatedLeaves, KeyVector{L(10), L(11)}));
+  EXPECT(containsFrontals(separatedLeaves, KeyVector{L(12)}));
+}
+
+// Merged ordinary leaves agree with generic full and partial elimination and
+// remain correct when compatible numerical values are loaded again.
+TEST(MultifrontalSolver, AlgebraicLeafMergeNumericsAndReload) {
+  const Problem problem = createProblem(3);
+  auto params = noMergeParams();
+  params.leafMergeDimCap = 256;
+  params.qrMode = MultifrontalParameters::QRMode::Off;
+
+  MultifrontalSolver fullSolver(problem.graph, problem.fullOrdering, params);
+  const VectorValues expected = problem.graph.optimize(problem.fullOrdering);
+  fullSolver.eliminateInPlace(problem.graph);
+  EXPECT(assert_equal(expected, fullSolver.updateSolution(), 1e-9));
+
+  const Problem changed = createProblem(3, false, 2.0);
+  const VectorValues changedExpected =
+      changed.graph.optimize(changed.fullOrdering);
+  fullSolver.eliminateInPlace(changed.graph);
+  EXPECT(assert_equal(changedExpected, fullSolver.updateSolution(), 1e-9));
+
+  MultifrontalSolver partialSolver(problem.graph, problem.fullOrdering,
+                                   problem.pointOrdering.size(), params);
+  partialSolver.eliminatePartialInPlace(problem.graph);
+  const Matrix actual = partialSolver.remainingFactorGraph().augmentedHessian(
+      problem.cameraOrdering);
+  const Matrix partialExpected =
+      problem.graph.eliminatePartialMultifrontal(problem.pointOrdering)
+          .second->augmentedHessian(problem.cameraOrdering);
+  EXPECT(assert_equal(partialExpected, actual, 1e-9));
+}
+
+constexpr size_t kParallelChildCount = 1025;
+
+size_t maximumChildren(MultifrontalSolver* solver) {
+  size_t result = 0;
+  solver->runTopDown([&result](MultifrontalClique& clique) {
+    result = std::max(result, clique.children.size());
+  });
+  return result;
+}
+
+MultifrontalSolver::Parameters threadedParams(
+    MultifrontalSolver::Parameters params, size_t threads) {
+  params.numThreads = threads;
+  return params;
+}
+
+// More than 1,024 overlapping ordinary children exercise the parallel gather,
+// including partial elimination and a reload with changed numerical values.
+TEST(MultifrontalSolver, ParallelParentOrdinaryReloadAndPartial) {
+  const Problem problem = createProblem(kParallelChildCount);
+  auto params = noMergeParams();
+  params.qrMode = MultifrontalParameters::QRMode::Off;
+  params.compactCholeskySeparatorDimThreshold =
+      std::numeric_limits<size_t>::max();
+
+  MultifrontalSolver single(problem.graph, problem.fullOrdering,
+                            threadedParams(params, 1));
+  MultifrontalSolver parallel(problem.graph, problem.fullOrdering,
+                              threadedParams(params, 4));
+  EXPECT(maximumChildren(&parallel) > 1024);
+  single.eliminateInPlace(problem.graph);
+  parallel.eliminateInPlace(problem.graph);
+  EXPECT(
+      assert_equal(single.updateSolution(), parallel.updateSolution(), 1e-8));
+
+  const Problem changed = createProblem(kParallelChildCount, false, 0.5);
+  single.eliminateInPlace(changed.graph);
+  parallel.eliminateInPlace(changed.graph);
+  EXPECT(
+      assert_equal(single.updateSolution(), parallel.updateSolution(), 1e-8));
+
+  MultifrontalSolver singlePartial(problem.graph, problem.fullOrdering,
+                                   problem.pointOrdering.size(),
+                                   threadedParams(params, 1));
+  MultifrontalSolver parallelPartial(problem.graph, problem.fullOrdering,
+                                     problem.pointOrdering.size(),
+                                     threadedParams(params, 4));
+  singlePartial.eliminatePartialInPlace(problem.graph);
+  parallelPartial.eliminatePartialInPlace(problem.graph);
+  EXPECT(assert_equal(singlePartial.remainingFactorGraph().augmentedHessian(
+                          problem.cameraOrdering),
+                      parallelPartial.remainingFactorGraph().augmentedHessian(
+                          problem.cameraOrdering),
+                      1e-8));
+}
+
+// Forced QR agrees across thread counts for overlapping siblings, reloads,
+// and partial elimination.
+TEST(MultifrontalSolver, ParallelParentForcedQr) {
+  const Problem problem = createProblem(kParallelChildCount);
+  auto params = noMergeParams();
+  params.qrMode = MultifrontalParameters::QRMode::Force;
+  MultifrontalSolver single(problem.graph, problem.fullOrdering,
+                            threadedParams(params, 1));
+  MultifrontalSolver parallel(problem.graph, problem.fullOrdering,
+                              threadedParams(params, 4));
+  EXPECT(maximumChildren(&parallel) > 1024);
+  single.eliminateInPlace(problem.graph);
+  parallel.eliminateInPlace(problem.graph);
+  EXPECT(
+      assert_equal(single.updateSolution(), parallel.updateSolution(), 1e-8));
+
+  const Problem changed = createProblem(kParallelChildCount, false, 0.5);
+  single.eliminateInPlace(changed.graph);
+  parallel.eliminateInPlace(changed.graph);
+  EXPECT(
+      assert_equal(single.updateSolution(), parallel.updateSolution(), 1e-8));
+
+  MultifrontalSolver singlePartial(problem.graph, problem.fullOrdering,
+                                   problem.pointOrdering.size(),
+                                   threadedParams(params, 1));
+  MultifrontalSolver parallelPartial(problem.graph, problem.fullOrdering,
+                                     problem.pointOrdering.size(),
+                                     threadedParams(params, 4));
+  singlePartial.eliminatePartialInPlace(problem.graph);
+  parallelPartial.eliminatePartialInPlace(problem.graph);
+  EXPECT(assert_equal(singlePartial.remainingFactorGraph().augmentedHessian(
+                          problem.cameraOrdering),
+                      parallelPartial.remainingFactorGraph().augmentedHessian(
+                          problem.cameraOrdering),
+                      1e-8));
+}
+
+// Compact Cholesky leaves agree across thread counts.
+TEST(MultifrontalSolver, ParallelParentCompactCholesky) {
+  const Problem problem = createProblem(kParallelChildCount);
+  auto params = noMergeParams();
+  params.qrMode = MultifrontalParameters::QRMode::Off;
+  params.compactCholeskySeparatorDimThreshold = 2;
+  MultifrontalSolver single(problem.graph, problem.fullOrdering,
+                            threadedParams(params, 1));
+  MultifrontalSolver parallel(problem.graph, problem.fullOrdering,
+                              threadedParams(params, 4));
+  EXPECT(maximumChildren(&parallel) > 1024);
+  single.eliminateInPlace(problem.graph);
+  parallel.eliminateInPlace(problem.graph);
+  EXPECT(
+      assert_equal(single.updateSolution(), parallel.updateSolution(), 1e-8));
+}
+
+}  // namespace algebraic_leaf_merge_fixture
+/* ************************************************************************* */
+
+namespace compact_leaf_fixture {
+
+constexpr size_t kCameraCount = 3;
+
+struct Problem {
+  GaussianFactorGraph graph;
+  Ordering pointOrdering;
+  Ordering cameraOrdering;
+  Ordering fullOrdering;
+};
+
+Problem createProblem(bool addFallbackFactor = false,
+                      bool addSeparatorFallback = false,
+                      bool addSecondBatchFactor = false) {
+  Problem problem;
+  const Key point = L(0);
+  problem.pointOrdering.push_back(point);
+  problem.fullOrdering.push_back(point);
+
+  KeyVector batchKeys{point};
+  for (size_t i = 0; i < kCameraCount; ++i) {
+    const Key camera = X(i);
+    batchKeys.push_back(camera);
+    problem.cameraOrdering.push_back(camera);
+    problem.fullOrdering.push_back(camera);
+  }
+
+  // The point sees two cameras. A third camera forms a larger parent clique,
+  // keeping the point conditional as a separate Bayes-tree leaf.
+  batchKeys.resize(3);
+  using PointCameraBatch = BatchJacobianFactor<1, 1, 1, 1>;
+  auto observations = std::make_shared<PointCameraBatch>(
+      batchKeys, std::vector<size_t>{1, 1, 1});
+  observations->addRow({0, 1, 2}, {I_1x1, I_1x1, -I_1x1}, Vector1(0.25));
+  problem.graph.push_back(observations);
+
+  if (addSecondBatchFactor) {
+    auto secondObservations = std::make_shared<PointCameraBatch>(
+        batchKeys, std::vector<size_t>{1, 1, 1});
+    secondObservations->addRow({0, 1, 2}, {2.0 * I_1x1, -I_1x1, I_1x1},
+                               Vector1(-0.5));
+    problem.graph.push_back(secondObservations);
+  }
+
+  if (addFallbackFactor) {
+    problem.graph.emplace_shared<JacobianFactor>(point, I_1x1, Vector1(0.125),
+                                                 noiseModel::Unit::Create(1));
+  }
+
+  if (addSeparatorFallback) {
+    problem.graph.emplace_shared<JacobianFactor>(
+        point, I_1x1, problem.cameraOrdering.front(), -I_1x1, Vector1(0.375),
+        noiseModel::Unit::Create(1));
+  }
+
+  const auto unit = noiseModel::Unit::Create(1);
+  for (size_t i = 0; i < kCameraCount; ++i) {
+    problem.graph.emplace_shared<JacobianFactor>(problem.cameraOrdering[i],
+                                                 I_1x1, Vector1(0.0), unit);
+  }
+  for (size_t i = 0; i < kCameraCount; ++i) {
+    for (size_t j = i + 1; j < kCameraCount; ++j) {
+      problem.graph.emplace_shared<JacobianFactor>(
+          problem.cameraOrdering[i], I_1x1, problem.cameraOrdering[j], -I_1x1,
+          Vector1(0.0), unit);
+    }
+  }
+  return problem;
+}
+
+Problem createSameSeparatorProblem() {
+  Problem problem;
+  const KeyVector points{L(0), L(1)};
+  const KeyVector cameras{X(0), X(1), X(2)};
+  problem.pointOrdering = Ordering(points.begin(), points.end());
+  problem.cameraOrdering = Ordering(cameras.begin(), cameras.end());
+  problem.fullOrdering = problem.pointOrdering;
+  problem.fullOrdering.insert(problem.fullOrdering.end(), cameras.begin(),
+                              cameras.end());
+
+  using PointCameraBatch = BatchJacobianFactor<1, 1, 1, 1>;
+  for (size_t index = 0; index < points.size(); ++index) {
+    const KeyVector keys{points[index], cameras[0], cameras[1]};
+    auto observations =
+        std::make_shared<PointCameraBatch>(keys, std::vector<size_t>{1, 1, 1});
+    observations->addRow({0, 1, 2}, {I_1x1, I_1x1, -I_1x1},
+                         Vector1(0.25 + static_cast<double>(index)));
+    problem.graph.push_back(observations);
+  }
+
+  const auto unit = noiseModel::Unit::Create(1);
+  for (const Key camera : cameras) {
+    problem.graph.emplace_shared<JacobianFactor>(camera, I_1x1, Vector1::Zero(),
+                                                 unit);
+  }
+  for (size_t first = 0; first < cameras.size(); ++first) {
+    for (size_t second = first + 1; second < cameras.size(); ++second) {
+      problem.graph.emplace_shared<JacobianFactor>(cameras[first], I_1x1,
+                                                   cameras[second], -I_1x1,
+                                                   Vector1::Zero(), unit);
+    }
+  }
+  return problem;
+}
+
+Problem createLargeFusedProblem(size_t pointCount) {
+  Problem problem;
+  const KeyVector cameras{X(0), X(1), X(2)};
+  problem.cameraOrdering = Ordering(cameras.begin(), cameras.end());
+  problem.fullOrdering.reserve(pointCount + cameras.size());
+  using PointCameraBatch = BatchJacobianFactor<1, 1, 1, 1>;
+  for (size_t index = 0; index < pointCount; ++index) {
+    const Key point = L(index);
+    problem.pointOrdering.push_back(point);
+    problem.fullOrdering.push_back(point);
+    const KeyVector keys{point, cameras[0], cameras[1]};
+    auto observations =
+        std::make_shared<PointCameraBatch>(keys, std::vector<size_t>{1, 1, 1});
+    const double scale = 1.0 + 0.001 * static_cast<double>(index);
+    observations->addRow({0, 1, 2}, {scale * I_1x1, I_1x1, -I_1x1},
+                         Vector1(0.25 * scale));
+    problem.graph.push_back(observations);
+  }
+  problem.fullOrdering.insert(problem.fullOrdering.end(), cameras.begin(),
+                              cameras.end());
+  const auto unit = noiseModel::Unit::Create(1);
+  for (const Key camera : cameras) {
+    problem.graph.emplace_shared<JacobianFactor>(camera, I_1x1, Vector1::Zero(),
+                                                 unit);
+  }
+  for (size_t first = 0; first < cameras.size(); ++first) {
+    for (size_t second = first + 1; second < cameras.size(); ++second) {
+      problem.graph.emplace_shared<JacobianFactor>(cameras[first], I_1x1,
+                                                   cameras[second], -I_1x1,
+                                                   Vector1::Zero(), unit);
+    }
+  }
+  return problem;
+}
+
+Problem createLargeMixedProblem(size_t ordinaryCount, size_t fusedCount,
+                                double rhsScale = 1.0) {
+  Problem problem;
+  const KeyVector cameras{X(0), X(1), X(2)};
+  // Deliberately differ from KeySet order so child-to-parent mappings permute.
+  problem.cameraOrdering = Ordering{cameras[1], cameras[0], cameras[2]};
+  problem.fullOrdering.reserve(ordinaryCount + fusedCount + cameras.size());
+  const auto unit = noiseModel::Unit::Create(1);
+
+  for (size_t index = 0; index < ordinaryCount + fusedCount; ++index) {
+    const Key point = L(index);
+    problem.pointOrdering.push_back(point);
+    problem.fullOrdering.push_back(point);
+    const double scale = 1.0 + 0.001 * static_cast<double>(index);
+    const double rhs = rhsScale * (0.25 + 0.0001 * index);
+    if (index < ordinaryCount) {
+      problem.graph.emplace_shared<JacobianFactor>(
+          point, scale * I_1x1, cameras[0], I_1x1, Vector1(rhs), unit);
+      problem.graph.emplace_shared<JacobianFactor>(
+          point, -scale * I_1x1, cameras[1], I_1x1, Vector1(-2.0 * rhs), unit);
+    } else {
+      using PointCameraBatch = BatchJacobianFactor<1, 1, 1, 1>;
+      auto observations = std::make_shared<PointCameraBatch>(
+          KeyVector{point, cameras[0], cameras[1]},
+          std::vector<size_t>{1, 1, 1});
+      observations->addRow({0, 1, 2}, {scale * I_1x1, I_1x1, -I_1x1},
+                           Vector1(rhs));
+      problem.graph.push_back(observations);
+    }
+  }
+
+  problem.fullOrdering.insert(problem.fullOrdering.end(),
+                              problem.cameraOrdering.begin(),
+                              problem.cameraOrdering.end());
+  for (const Key camera : cameras) {
+    problem.graph.emplace_shared<JacobianFactor>(camera, I_1x1, Vector1::Zero(),
+                                                 unit);
+  }
+  for (size_t first = 0; first < cameras.size(); ++first) {
+    for (size_t second = first + 1; second < cameras.size(); ++second) {
+      problem.graph.emplace_shared<JacobianFactor>(cameras[first], I_1x1,
+                                                   cameras[second], -I_1x1,
+                                                   Vector1::Zero(), unit);
+    }
+  }
+  return problem;
+}
+
+Problem createSingleJacobianProblem() {
+  Problem problem = createProblem();
+  problem.graph[0] = std::make_shared<JacobianFactor>(
+      L(0), I_1x1, X(0), I_1x1, X(1), -I_1x1, Vector1(0.25),
+      noiseModel::Unit::Create(1));
+  return problem;
+}
+
+Problem createIneligibleBatchProblem() {
+  Problem problem = createProblem();
+  problem.graph.emplace_shared<JacobianFactor>(X(0), I_1x1, Vector1::Zero(),
+                                               noiseModel::Constrained::All(1));
+  return problem;
+}
+
+MultifrontalSolver::Parameters compactParams() {
+  auto params = noMergeParams();
+  params.qrMode = MultifrontalParameters::QRMode::Off;
+  params.compactCholeskySeparatorDimThreshold = 2;
+  return params;
+}
+
+MultifrontalSolver::Parameters fusedStarParams() {
+  auto params = noMergeParams();
+  params.qrMode = MultifrontalParameters::QRMode::Off;
+  return params;
+}
+
+size_t compactCliqueCount(MultifrontalSolver* solver) {
+  size_t count = 0;
+  solver->runTopDown([&](MultifrontalClique& clique) {
+    if (clique.useCompactCholesky()) ++count;
+  });
+  return count;
+}
+
+MultifrontalClique* compactClique(MultifrontalSolver* solver) {
+  MultifrontalClique* result = nullptr;
+  solver->runTopDown([&](MultifrontalClique& clique) {
+    if (clique.useCompactCholesky()) result = &clique;
+  });
+  return result;
+}
+
+MultifrontalClique* pointLeaf(MultifrontalSolver* solver) {
+  MultifrontalClique* result = nullptr;
+  solver->runTopDown([&](MultifrontalClique& clique) {
+    if (clique.children.empty() && clique.separatorDim > 0) result = &clique;
+  });
+  return result;
+}
+
+}  // namespace compact_leaf_fixture
+
+// A large-separator batch leaf forms the same reduced factor without
+// materializing C, including through the fused load/eliminate overload.
+TEST(MultifrontalSolver, CompactLeafPartialElimination) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createProblem();
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering,
+                            problem.pointOrdering.size(), compactParams());
+  EXPECT_LONGS_EQUAL(1, compactCliqueCount(&solver));
+
+  solver.eliminatePartialInPlace(problem.graph);
+  EXPECT_LONGS_EQUAL(0, compactClique(&solver)->Ab().rows());
+  const GaussianFactorGraph actual = solver.remainingFactorGraph();
+  const auto [unusedBayesTree, expected] =
+      problem.graph.eliminatePartialMultifrontal(problem.pointOrdering);
+  (void)unusedBayesTree;
+  EXPECT(assert_equal(expected->augmentedHessian(problem.cameraOrdering),
+                      actual.augmentedHessian(problem.cameraOrdering), 1e-9));
+}
+
+// The same compact leaf path feeds an ordinary parent clique in a complete
+// multifrontal solve.
+TEST(MultifrontalSolver, CompactLeafFullElimination) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createProblem();
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering,
+                            compactParams());
+  EXPECT_LONGS_EQUAL(1, compactCliqueCount(&solver));
+
+  solver.eliminateInPlace(problem.graph);
+  const VectorValues& actual = solver.updateSolution();
+  const VectorValues expected =
+      problem.graph.eliminateMultifrontal(problem.fullOrdering)->optimize();
+  EXPECT(assert_equal(expected, actual, 1e-8));
+}
+
+// A compact leaf packs only the Jacobian fallback row and reuses that storage
+// across loads while preserving the retained Hessian.
+TEST(MultifrontalSolver, CompactLeafMixedFallbackStorageReuse) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createProblem(true);
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering,
+                            problem.pointOrdering.size(), compactParams());
+  MultifrontalClique* clique = compactClique(&solver);
+  EXPECT(clique != nullptr);
+
+  solver.load(problem.graph);
+  EXPECT_LONGS_EQUAL(1, clique->Ab().rows());
+  const double* storage = clique->Ab().matrix().data();
+  solver.eliminatePartialInPlace();
+  const Matrix expected =
+      problem.graph.eliminatePartialMultifrontal(problem.pointOrdering)
+          .second->augmentedHessian(problem.cameraOrdering);
+  EXPECT(assert_equal(
+      expected,
+      solver.remainingFactorGraph().augmentedHessian(problem.cameraOrdering),
+      1e-9));
+
+  solver.eliminatePartialInPlace(problem.graph);
+  EXPECT(storage == clique->Ab().matrix().data());
+  EXPECT_LONGS_EQUAL(1, clique->Ab().rows());
+  EXPECT(assert_equal(
+      expected,
+      solver.remainingFactorGraph().augmentedHessian(problem.cameraOrdering),
+      1e-9));
+}
+
+// An eligible one-frontal-block star bypasses the default compact separator
+// threshold while retaining only its unary fallback rows.
+TEST(MultifrontalSolver, FusedStarBypassesCompactThreshold) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createProblem(true);
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering,
+                            problem.pointOrdering.size(), fusedStarParams());
+  solver.load(problem.graph);
+  MultifrontalClique* clique = compactClique(&solver);
+  EXPECT(clique != nullptr);
+  EXPECT_LONGS_EQUAL(0, clique->info().nBlocks());
+  EXPECT_LONGS_EQUAL(1, clique->Ab().rows());
+
+  solver.eliminatePartialInPlace();
+  const Matrix expected =
+      problem.graph.eliminatePartialMultifrontal(problem.pointOrdering)
+          .second->augmentedHessian(problem.cameraOrdering);
+  EXPECT(assert_equal(
+      expected,
+      solver.remainingFactorGraph().augmentedHessian(problem.cameraOrdering),
+      1e-9));
+}
+
+// Automatic QR defers a sole direct batch observation to the fused star path
+// and preserves that choice and its row-free storage across repeated loads.
+TEST(MultifrontalSolver, AutoQrSingleBatchUsesFusedStar) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createProblem();
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering,
+                            noMergeParams());
+  MultifrontalClique* leaf = pointLeaf(&solver);
+  EXPECT(leaf != nullptr);
+  EXPECT(leaf->useQR());
+
+  solver.load(problem.graph);
+  EXPECT(!leaf->useQR());
+  EXPECT(leaf->useCompactCholesky());
+  EXPECT_LONGS_EQUAL(0, leaf->Ab().rows());
+  EXPECT_LONGS_EQUAL(0, leaf->info().nBlocks());
+  solver.eliminateInPlace();
+  const VectorValues expected =
+      problem.graph.eliminateMultifrontal(problem.fullOrdering)->optimize();
+  EXPECT(assert_equal(expected, solver.updateSolution(), 1e-9));
+
+  solver.eliminateInPlace(problem.graph);
+  EXPECT(!leaf->useQR());
+  EXPECT_LONGS_EQUAL(0, leaf->Ab().rows());
+  EXPECT(assert_equal(expected, solver.updateSolution(), 1e-9));
+}
+
+// A sole ordinary Jacobian keeps the existing automatic QR selection.
+TEST(MultifrontalSolver, AutoQrSingleJacobianRemainsQr) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createSingleJacobianProblem();
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering,
+                            noMergeParams());
+  MultifrontalClique* leaf = pointLeaf(&solver);
+  EXPECT(leaf != nullptr);
+  solver.load(problem.graph);
+  EXPECT(leaf->useQR());
+  solver.eliminateInPlace();
+  const VectorValues expected =
+      problem.graph.eliminateMultifrontal(problem.fullOrdering, EliminateQR)
+          ->optimize();
+  EXPECT(assert_equal(expected, solver.updateSolution(), 1e-9));
+}
+
+// A sole batch factor without direct-update support remains on automatic QR.
+TEST(MultifrontalSolver, AutoQrIneligibleBatchRemainsQr) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createIneligibleBatchProblem();
+  auto params = noMergeParams();
+  params.qrAspectRatio = 1.0;
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering, params);
+  MultifrontalClique* leaf = pointLeaf(&solver);
+  EXPECT(leaf != nullptr);
+  solver.load(problem.graph);
+  EXPECT(leaf->useQR());
+}
+
+// Multiple batch factors retain the existing automatic QR behavior.
+TEST(MultifrontalSolver, AutoQrMultipleBatchFactorsRemainQr) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createProblem(false, false, true);
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering,
+                            noMergeParams());
+  MultifrontalClique* leaf = pointLeaf(&solver);
+  EXPECT(leaf != nullptr);
+  solver.load(problem.graph);
+  EXPECT(leaf->useQR());
+}
+
+// A batch factor mixed with a Jacobian retains automatic QR behavior.
+TEST(MultifrontalSolver, AutoQrMixedFactorsRemainQr) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createProblem(true);
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering,
+                            noMergeParams());
+  MultifrontalClique* leaf = pointLeaf(&solver);
+  EXPECT(leaf != nullptr);
+  solver.load(problem.graph);
+  EXPECT(leaf->useQR());
+}
+
+// Explicit Force overrides the sole direct batch-factor exception.
+TEST(MultifrontalSolver, ForcedQrSingleBatchRemainsQr) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createProblem();
+  auto params = noMergeParams();
+  params.qrMode = MultifrontalParameters::QRMode::Force;
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering, params);
+  MultifrontalClique* leaf = pointLeaf(&solver);
+  EXPECT(leaf != nullptr);
+  solver.load(problem.graph);
+  EXPECT(leaf->useQR());
+}
+
+// A separator-bearing conventional Jacobian makes a small star candidate use
+// ordinary Cholesky, preserving the generic fallback behavior.
+TEST(MultifrontalSolver, FusedStarRejectsSeparatorJacobian) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createProblem(false, true);
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering,
+                            problem.pointOrdering.size(), fusedStarParams());
+  solver.load(problem.graph);
+  EXPECT_LONGS_EQUAL(0, compactCliqueCount(&solver));
+
+  solver.eliminatePartialInPlace();
+  const Matrix expected =
+      problem.graph.eliminatePartialMultifrontal(problem.pointOrdering)
+          .second->augmentedHessian(problem.cameraOrdering);
+  EXPECT(assert_equal(
+      expected,
+      solver.remainingFactorGraph().augmentedHessian(problem.cameraOrdering),
+      1e-9));
+}
+
+// Multiple direct batch factors sharing retained blocks are accumulated before
+// one mapped Schur subtraction.
+TEST(MultifrontalSolver, FusedStarMultipleBatchFactors) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createProblem(false, false, true);
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering,
+                            problem.pointOrdering.size(), fusedStarParams());
+  solver.eliminatePartialInPlace(problem.graph);
+  EXPECT_LONGS_EQUAL(1, compactCliqueCount(&solver));
+  const Matrix expected =
+      problem.graph.eliminatePartialMultifrontal(problem.pointOrdering)
+          .second->augmentedHessian(problem.cameraOrdering);
+  EXPECT(assert_equal(
+      expected,
+      solver.remainingFactorGraph().augmentedHessian(problem.cameraOrdering),
+      1e-9));
+}
+
+// More than 1,024 deferred auto-QR leaves resolve to fused-star Cholesky and
+// agree across thread counts.
+TEST(MultifrontalSolver, ParallelParentFusedStar) {
+  using namespace compact_leaf_fixture;
+  constexpr size_t kChildren = 1025;
+  const Problem problem = createLargeFusedProblem(kChildren);
+  auto singleParams = fusedStarParams();
+  singleParams.qrMode = MultifrontalParameters::QRMode::Allow;
+  singleParams.numThreads = 1;
+  auto parallelParams = fusedStarParams();
+  parallelParams.qrMode = MultifrontalParameters::QRMode::Allow;
+  parallelParams.numThreads = 4;
+  MultifrontalSolver single(problem.graph, problem.fullOrdering, singleParams);
+  MultifrontalSolver parallel(problem.graph, problem.fullOrdering,
+                              parallelParams);
+  single.eliminateInPlace(problem.graph);
+  parallel.eliminateInPlace(problem.graph);
+  EXPECT_LONGS_EQUAL(kChildren, compactCliqueCount(&parallel));
+  EXPECT(
+      assert_equal(single.updateSolution(), parallel.updateSolution(), 1e-8));
+}
+
+// A single parent can combine column-owned ordinary updates with compute-once
+// fused updates, including permuted mappings, RHS terms, reload, and partial
+// elimination.
+TEST(MultifrontalSolver, ParallelParentMixedRepresentations) {
+  using namespace compact_leaf_fixture;
+  constexpr size_t kOrdinaryChildren = 513;
+  constexpr size_t kFusedChildren = 512;
+  const Problem problem =
+      createLargeMixedProblem(kOrdinaryChildren, kFusedChildren);
+  auto params = fusedStarParams();
+  params.compactCholeskySeparatorDimThreshold =
+      std::numeric_limits<size_t>::max();
+  auto singleParams = params;
+  singleParams.numThreads = 1;
+  auto parallelParams = params;
+  parallelParams.numThreads = 4;
+
+  MultifrontalSolver single(problem.graph, problem.fullOrdering, singleParams);
+  MultifrontalSolver parallel(problem.graph, problem.fullOrdering,
+                              parallelParams);
+  single.eliminateInPlace(problem.graph);
+  parallel.eliminateInPlace(problem.graph);
+  EXPECT_LONGS_EQUAL(kFusedChildren, compactCliqueCount(&parallel));
+  EXPECT(
+      assert_equal(single.updateSolution(), parallel.updateSolution(), 1e-8));
+
+  const Problem changed =
+      createLargeMixedProblem(kOrdinaryChildren, kFusedChildren, 0.5);
+  single.eliminateInPlace(changed.graph);
+  parallel.eliminateInPlace(changed.graph);
+  EXPECT(
+      assert_equal(single.updateSolution(), parallel.updateSolution(), 1e-8));
+
+  MultifrontalSolver singlePartial(problem.graph, problem.fullOrdering,
+                                   problem.pointOrdering.size(), singleParams);
+  MultifrontalSolver parallelPartial(problem.graph, problem.fullOrdering,
+                                     problem.pointOrdering.size(),
+                                     parallelParams);
+  singlePartial.eliminatePartialInPlace(problem.graph);
+  parallelPartial.eliminatePartialInPlace(problem.graph);
+  EXPECT(assert_equal(singlePartial.remainingFactorGraph().augmentedHessian(
+                          problem.cameraOrdering),
+                      parallelPartial.remainingFactorGraph().augmentedHessian(
+                          problem.cameraOrdering),
+                      1e-8));
+}
+
+// Same-separator leaf aggregation accepts fused children and preserves their
+// retained camera system.
+TEST(MultifrontalSolver, FusedStarSameSeparatorAggregation) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createSameSeparatorProblem();
+  auto params = fusedStarParams();
+  params.leafMode = MultifrontalParameters::LeafMode::SameSeparator;
+  params.leafAggregationProblemSize = 2048;
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering,
+                            problem.pointOrdering.size(), params);
+  solver.eliminatePartialInPlace(problem.graph);
+  EXPECT_LONGS_EQUAL(2, compactCliqueCount(&solver));
+  const Matrix expected =
+      problem.graph.eliminatePartialMultifrontal(problem.pointOrdering)
+          .second->augmentedHessian(problem.cameraOrdering);
+  EXPECT(assert_equal(
+      expected,
+      solver.remainingFactorGraph().augmentedHessian(problem.cameraOrdering),
+      1e-9));
+}
+
+// The default algebraic merge cap leaves single-factor siblings separate so
+// automatic QR can still resolve each direct batch leaf to fused Cholesky.
+TEST(MultifrontalSolver, AlgebraicMergePreservesSingleBatchLeaves) {
+  using namespace compact_leaf_fixture;
+  const Problem problem = createSameSeparatorProblem();
+  auto params = noMergeParams();
+  params.leafMergeDimCap = 256;
+  MultifrontalSolver solver(problem.graph, problem.fullOrdering, params);
+  solver.load(problem.graph);
+
+  size_t fusedPointLeaves = 0;
+  solver.runTopDown([&](MultifrontalClique& clique) {
+    if (clique.children.empty() && clique.separatorDim > 0) {
+      ++fusedPointLeaves;
+      EXPECT_LONGS_EQUAL(1, clique.numFrontals());
+      EXPECT(clique.useCompactCholesky());
+      EXPECT_LONGS_EQUAL(0, clique.Ab().rows());
+    }
+  });
+  EXPECT_LONGS_EQUAL(2, fusedPointLeaves);
+
+  solver.eliminateInPlace();
+  const VectorValues expected =
+      problem.graph.eliminateMultifrontal(problem.fullOrdering)->optimize();
+  EXPECT(assert_equal(expected, solver.updateSolution(), 1e-9));
+}
 
 /* ************************************************************************* */
 // Build the solver and validate initial structure and explicit load.
@@ -81,11 +1069,11 @@ TEST(MultifrontalSolver, Constructor) {
   // Verify initial load for childClique
   // Block 0 (x2):
   Matrix A0 = childClique->Ab()(0);  // 2x1
-  EXPECT(assert_equal((Matrix(2, 1) << 2., 1.).finished(), A0));
+  EXPECT(assert_equal(Matrix{{2.}, {1.}}, A0));
 
   // Block 3 (RHS):
   Matrix Ab = childClique->Ab()(3);  // 2x1
-  EXPECT(assert_equal((Matrix(2, 1) << 2., 1.).finished(), Ab));
+  EXPECT(assert_equal(Matrix{{2.}, {1.}}, Ab));
 }
 
 /* ************************************************************************* */
@@ -112,7 +1100,7 @@ TEST(MultifrontalSolver, ConstructorPrecomputed) {
 
   // Verify load for childClique
   Matrix A0 = childClique->Ab()(0);
-  EXPECT(assert_equal((Matrix(2, 1) << 2., 1.).finished(), A0));
+  EXPECT(assert_equal(Matrix{{2.}, {1.}}, A0));
 }
 
 /* ************************************************************************* */
@@ -140,7 +1128,7 @@ TEST(MultifrontalSolver, Load) {
 
   // Block 0 (x2) should now be doubled, then whitened.
   Matrix A0 = childClique->Ab()(0);
-  EXPECT(assert_equal((Matrix(2, 1) << 4., 2.).finished(), A0));
+  EXPECT(assert_equal(Matrix{{4.}, {2}}, A0));
 }
 
 /* ************************************************************************* */
@@ -188,10 +1176,8 @@ TEST(MultifrontalSolver, DeltaErrorMatchesGraph) {
 TEST(MultifrontalSolver, DeltaErrorMatchesGraphInconsistent) {
   const SharedDiagonal noise = noiseModel::Isotropic::Sigma(1, 1.0);
   GaussianFactorGraph graph;
-  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 1.0).finished(),
-                                       noise);
-  graph.emplace_shared<JacobianFactor>(x1, I_1x1,
-                                       (Vector(1) << -2.0).finished(), noise);
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{1.0}}, noise);
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{-2.0}}, noise);
   const Ordering ordering{x1};
   MultifrontalSolver solver(graph, ordering, noMergeParams());
   solver.eliminateInPlace(graph);
@@ -310,10 +1296,10 @@ TEST(MultifrontalSolver, ComputeBayesTreeMarginals) {
 // Compare marginals on a constrained chain against legacy marginals.
 TEST(MultifrontalSolver, ComputeBayesTreeMarginalsConstrainedChain) {
   const SharedDiagonal hardConstraint =
-      noiseModel::Constrained::MixedSigmas((Vector(1) << 0.0).finished());
+      noiseModel::Constrained::MixedSigmas(Vector{{0.0}});
   GaussianFactorGraph constrainedChain = chain;
-  constrainedChain.emplace_shared<JacobianFactor>(
-      x2, I_1x1, (Vector(1) << 0.0).finished(), hardConstraint);
+  constrainedChain.emplace_shared<JacobianFactor>(x2, I_1x1, Vector{{0.0}},
+                                                  hardConstraint);
 
   MultifrontalSolver solver(constrainedChain, chainOrdering, noMergeParams());
   solver.load(constrainedChain);
@@ -334,14 +1320,13 @@ TEST(MultifrontalSolver, ComputeBayesTreeMarginalsConstrainedChain) {
 // Verify feasible unary constrained factor clamps the update to zero.
 TEST(MultifrontalSolver, ConstrainedNoiseFeasible) {
   const SharedDiagonal hardConstraint =
-      noiseModel::Constrained::MixedSigmas((Vector(1) << 0.0).finished());
+      noiseModel::Constrained::MixedSigmas(Vector{{0.0}});
   const SharedDiagonal softNoise = noiseModel::Isotropic::Sigma(1, 10.0);
   GaussianFactorGraph graph;
   // Same setup as ConstrainedNoiseUnsupported, but feasible (b == 0).
-  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 0.0).finished(),
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{0.0}},
                                        hardConstraint);
-  graph.emplace_shared<JacobianFactor>(
-      x1, I_1x1, (Vector(1) << 100.0).finished(), softNoise);
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{100.0}}, softNoise);
   const Ordering ordering{x1};
 
   MultifrontalSolver solver(graph, ordering, noMergeParams());
@@ -356,13 +1341,12 @@ TEST(MultifrontalSolver, ConstrainedNoiseFeasible) {
 // Infeasible unary constrained factor is rejected.
 TEST(MultifrontalSolver, ConstrainedNoiseUnsupported) {
   const SharedDiagonal hardConstraint =
-      noiseModel::Constrained::MixedSigmas((Vector(1) << 0.0).finished());
+      noiseModel::Constrained::MixedSigmas(Vector{{0.0}});
   const SharedDiagonal softNoise = noiseModel::Isotropic::Sigma(1, 10.0);
   GaussianFactorGraph graph;
-  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 1.0).finished(),
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{1.0}},
                                        hardConstraint);
-  graph.emplace_shared<JacobianFactor>(
-      x1, I_1x1, (Vector(1) << 100.0).finished(), softNoise);
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{100.0}}, softNoise);
   const Ordering ordering{x1};
 
   CHECK_EXCEPTION(
@@ -376,10 +1360,9 @@ TEST(MultifrontalSolver, ConstrainedNoiseUnaryFeasible) {
   const SharedDiagonal hardConstraint = noiseModel::Constrained::All(1);
   const SharedDiagonal softNoise = noiseModel::Isotropic::Sigma(1, 1.0);
   GaussianFactorGraph graph;
-  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 0.0).finished(),
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{0.0}},
                                        hardConstraint);
-  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 5.0).finished(),
-                                       softNoise);
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{5.0}}, softNoise);
   const Ordering ordering{x1};
 
   MultifrontalSolver solver(graph, ordering, noMergeParams());
@@ -395,8 +1378,8 @@ TEST(MultifrontalSolver, ConstrainedNoiseUnaryFeasible) {
 TEST(MultifrontalSolver, ConstrainedNoiseMixedKeysUnsupported) {
   const SharedDiagonal hardConstraint = noiseModel::Constrained::All(1);
   GaussianFactorGraph graph;
-  graph.emplace_shared<JacobianFactor>(
-      x1, I_1x1, x2, I_1x1, (Vector(1) << 0.0).finished(), hardConstraint);
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, x2, I_1x1, Vector{{0.0}},
+                                       hardConstraint);
   const Ordering ordering{x1, x2};
 
   CHECK_EXCEPTION(
@@ -413,10 +1396,9 @@ TEST(MultifrontalSolver, WeightedScalarMeasurements) {
   const double sigma2 = std::sqrt(1.0 / w2);
 
   GaussianFactorGraph graph;
-  graph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 0.0).finished(),
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{0.0}},
                                        noiseModel::Isotropic::Sigma(1, sigma1));
-  graph.emplace_shared<JacobianFactor>(x1, I_1x1,
-                                       (Vector(1) << 10.0).finished(),
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{10.0}},
                                        noiseModel::Isotropic::Sigma(1, sigma2));
 
   const Ordering ordering{x1};
@@ -435,26 +1417,83 @@ TEST(MultifrontalSolver, BatchJacobianFactor) {
       KeyVector{x1, x2}, std::vector<size_t>{1, 1});
   batch->reserve(2);
   std::vector<Matrix> blocks{I_1x1, -I_1x1};
-  batch->addRow({0, 1}, blocks, (Vector(1) << 1.0).finished());
+  batch->addRow({0, 1}, blocks, Vector{{1.0}});
   blocks = {2.0 * I_1x1, I_1x1};
-  batch->addRow({0, 1}, blocks, (Vector(1) << 3.0).finished());
+  batch->addRow({0, 1}, blocks, Vector{{3.0}});
 
   GaussianFactorGraph batchGraph;
   batchGraph.push_back(batch);
 
   GaussianFactorGraph denseGraph;
   denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, x2, -I_1x1,
-                                            (Vector(1) << 1.0).finished());
+                                            Vector{{1.0}});
   denseGraph.emplace_shared<JacobianFactor>(x1, 2.0 * I_1x1, x2, I_1x1,
-                                            (Vector(1) << 3.0).finished());
+                                            Vector{{3.0}});
 
   const Ordering ordering{x1, x2};
   MultifrontalSolver solver(batchGraph, ordering, noMergeParams());
   solver.eliminateInPlace(batchGraph);
+  EXPECT(!solver.roots().front()->useQR());
+  EXPECT_LONGS_EQUAL(0, solver.roots().front()->Ab().rows());
   const VectorValues& actual = solver.updateSolution();
 
   const VectorValues expected = denseGraph.optimize(ordering);
   EXPECT(assert_equal(expected, actual, 1e-9));
+}
+
+/* ************************************************************************* */
+// A mixed Cholesky clique stores only its dense fallback row; direct batch
+// rows update the Hessian without occupying Ab.
+TEST(MultifrontalSolver, MixedBatchJacobianFallbackStorage) {
+  auto batch = std::make_shared<BatchJacobianFactor<1, 1, 1>>(
+      KeyVector{x1, x2}, std::vector<size_t>{1, 1});
+  batch->addRow({0, 1}, {I_1x1, -I_1x1}, Vector1(1.0));
+  batch->addRow({0, 1}, {2.0 * I_1x1, I_1x1}, Vector1(3.0));
+
+  GaussianFactorGraph graph{batch};
+  graph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector1(0.5));
+  GaussianFactorGraph denseGraph;
+  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, x2, -I_1x1,
+                                            Vector1(1.0));
+  denseGraph.emplace_shared<JacobianFactor>(x1, 2.0 * I_1x1, x2, I_1x1,
+                                            Vector1(3.0));
+  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector1(0.5));
+
+  const Ordering ordering{x1, x2};
+  MultifrontalSolver solver(graph, ordering, noMergeParams());
+  solver.eliminateInPlace(graph);
+  EXPECT(!solver.roots().front()->useQR());
+  EXPECT_LONGS_EQUAL(1, solver.roots().front()->Ab().rows());
+  EXPECT(assert_equal(denseGraph.optimize(ordering), solver.updateSolution(),
+                      1e-9));
+}
+
+/* ************************************************************************* */
+// Forced QR materializes every batch row and reserves one damping row per
+// frontal dimension.
+TEST(MultifrontalSolver, BatchJacobianFactorForcedQRStorage) {
+  auto batch = std::make_shared<BatchJacobianFactor<1, 1, 1>>(
+      KeyVector{x1, x2}, std::vector<size_t>{1, 1});
+  batch->addRow({0, 1}, {I_1x1, -I_1x1}, Vector1(1.0));
+  batch->addRow({0, 1}, {2.0 * I_1x1, I_1x1}, Vector1(3.0));
+  const GaussianFactorGraph graph{batch};
+
+  auto params = noMergeParams();
+  params.qrMode = MultifrontalParameters::QRMode::Force;
+  const Ordering ordering{x1, x2};
+  MultifrontalSolver solver(graph, ordering, params);
+  solver.load(graph);
+  EXPECT(solver.roots().front()->useQR());
+  EXPECT_LONGS_EQUAL(4, solver.roots().front()->Ab().rows());
+  solver.eliminateInPlace();
+
+  GaussianFactorGraph denseGraph;
+  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, x2, -I_1x1,
+                                            Vector1(1.0));
+  denseGraph.emplace_shared<JacobianFactor>(x1, 2.0 * I_1x1, x2, I_1x1,
+                                            Vector1(3.0));
+  EXPECT(assert_equal(denseGraph.optimize(ordering, EliminateQR),
+                      solver.updateSolution(), 1e-9));
 }
 
 /* ************************************************************************* */
@@ -464,18 +1503,18 @@ TEST(MultifrontalSolver, BatchJacobianFactorLegacyQR) {
       KeyVector{x1, x2}, std::vector<size_t>{1, 1});
   batch->reserve(2);
   std::vector<Matrix> blocks{I_1x1, -I_1x1};
-  batch->addRow({0, 1}, blocks, (Vector(1) << 1.0).finished());
+  batch->addRow({0, 1}, blocks, Vector{{1.0}});
   blocks = {2.0 * I_1x1, I_1x1};
-  batch->addRow({0, 1}, blocks, (Vector(1) << 3.0).finished());
+  batch->addRow({0, 1}, blocks, Vector{{3.0}});
 
   GaussianFactorGraph batchGraph;
   batchGraph.push_back(batch);
 
   GaussianFactorGraph denseGraph;
   denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, x2, -I_1x1,
-                                            (Vector(1) << 1.0).finished());
+                                            Vector{{1.0}});
   denseGraph.emplace_shared<JacobianFactor>(x1, 2.0 * I_1x1, x2, I_1x1,
-                                            (Vector(1) << 3.0).finished());
+                                            Vector{{3.0}});
 
   const Ordering ordering{x1, x2};
   const VectorValues actual = batchGraph.optimize(ordering, EliminateQR);
@@ -485,28 +1524,26 @@ TEST(MultifrontalSolver, BatchJacobianFactorLegacyQR) {
 }
 
 /* ************************************************************************* */
-// A batch factor with non-unit diagonal weights is equivalent to weighted dense factors.
+// A batch factor with non-unit diagonal weights is equivalent to weighted dense
+// factors.
 TEST(MultifrontalSolver, BatchJacobianFactorWeightedModel) {
-  auto nonUnitModel =
-      noiseModel::Diagonal::Sigmas((Vector(2) << 2.0, 0.5).finished());
+  auto nonUnitModel = noiseModel::Diagonal::Sigmas(Vector{{2.0, 0.5}});
   auto batch = std::make_shared<BatchJacobianFactor<1, 1, 1>>(
       KeyVector{x1, x2}, std::vector<size_t>{1, 1}, nonUnitModel);
   batch->reserve(2);
   std::vector<Matrix> blocks{I_1x1, -I_1x1};
-  batch->addRow({0, 1}, blocks, (Vector(1) << 1.0).finished());
+  batch->addRow({0, 1}, blocks, Vector{{1.0}});
   blocks = {2.0 * I_1x1, I_1x1};
-  batch->addRow({0, 1}, blocks, (Vector(1) << 3.0).finished());
+  batch->addRow({0, 1}, blocks, Vector{{3.0}});
 
   GaussianFactorGraph batchGraph;
   batchGraph.push_back(batch);
 
   GaussianFactorGraph denseGraph;
-  denseGraph.emplace_shared<JacobianFactor>(x1, (Matrix(1, 1) << 0.5).finished(), x2,
-                                           (Matrix(1, 1) << -0.5).finished(),
-                                           (Vector(1) << 0.5).finished());
-  denseGraph.emplace_shared<JacobianFactor>(x1, (Matrix(1, 1) << 4.0).finished(), x2,
-                                           (Matrix(1, 1) << 2.0).finished(),
-                                           (Vector(1) << 6.0).finished());
+  denseGraph.emplace_shared<JacobianFactor>(x1, Matrix{{0.5}}, x2,
+                                            Matrix{{-0.5}}, Vector{{0.5}});
+  denseGraph.emplace_shared<JacobianFactor>(x1, Matrix{{4.0}}, x2,
+                                            Matrix{{2.0}}, Vector{{6.0}});
 
   const Ordering ordering{x1, x2};
   const VectorValues actual = batchGraph.optimize(ordering);
@@ -515,37 +1552,36 @@ TEST(MultifrontalSolver, BatchJacobianFactorWeightedModel) {
 }
 
 /* ************************************************************************* */
-// A mixed stack of unit and non-unit batch models with a unary constrained factor.
+// A mixed stack of unit and non-unit batch models with a unary constrained
+// factor.
 TEST(MultifrontalSolver, BatchJacobianFactorMixedNoiseModels) {
   auto unitModel = noiseModel::Unit::Create(1);
   auto batchUnit = std::make_shared<BatchJacobianFactor<1, 1>>(
       KeyVector{x1}, std::vector<size_t>{1}, unitModel);
   batchUnit->reserve(1);
-  batchUnit->addRow({0}, {I_1x1}, (Vector(1) << 1.0).finished());
+  batchUnit->addRow({0}, {I_1x1}, Vector{{1.0}});
 
-  auto nonUnitModel =
-      noiseModel::Diagonal::Sigmas((Vector(1) << 2.0).finished());
+  auto nonUnitModel = noiseModel::Diagonal::Sigmas(Vector{{2.0}});
   auto batchNonUnit = std::make_shared<BatchJacobianFactor<1, 1>>(
       KeyVector{x1}, std::vector<size_t>{1}, nonUnitModel);
   batchNonUnit->reserve(1);
-  batchNonUnit->addRow({0}, {I_1x1}, (Vector(1) << 2.0).finished());
+  batchNonUnit->addRow({0}, {I_1x1}, Vector{{2.0}});
 
   auto constrainedModel = noiseModel::Constrained::All(1);
 
   GaussianFactorGraph batchGraph;
   batchGraph.push_back(batchUnit);
   batchGraph.push_back(batchNonUnit);
-  batchGraph.emplace_shared<JacobianFactor>(x2, I_1x1,
-                                           (Vector(1) << 0.0).finished(),
-                                           constrainedModel);
+  batchGraph.emplace_shared<JacobianFactor>(x2, I_1x1, Vector{{0.0}},
+                                            constrainedModel);
 
   GaussianFactorGraph denseGraph;
-  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 1.0).finished(),
-                                           unitModel);
-  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, (Vector(1) << 2.0).finished(),
-                                           nonUnitModel);
-  denseGraph.emplace_shared<JacobianFactor>(x2, I_1x1, (Vector(1) << 0.0).finished(),
-                                           constrainedModel);
+  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{1.0}},
+                                            unitModel);
+  denseGraph.emplace_shared<JacobianFactor>(x1, I_1x1, Vector{{2.0}},
+                                            nonUnitModel);
+  denseGraph.emplace_shared<JacobianFactor>(x2, I_1x1, Vector{{0.0}},
+                                            constrainedModel);
 
   const Ordering ordering{x1, x2};
   const VectorValues actual = batchGraph.optimize(ordering);
@@ -557,8 +1593,7 @@ TEST(MultifrontalSolver, BatchJacobianFactorMixedNoiseModels) {
 // Hessian factors are rejected by the multifrontal solver.
 TEST(MultifrontalSolver, HessianFactors) {
   GaussianFactorGraph graph;
-  graph.emplace_shared<HessianFactor>(x1, (Matrix(1, 1) << 4.0).finished(),
-                                      (Vector(1) << 8.0).finished(), 0.0);
+  graph.emplace_shared<HessianFactor>(x1, Matrix{{4.0}}, Vector{{8.0}}, 0.0);
 
   const Ordering ordering{x1};
   CHECK_EXCEPTION(
@@ -571,12 +1606,11 @@ TEST(MultifrontalSolver, HessianFactors) {
 TEST(MultifrontalSolver, LoadRejectsHessianFactor) {
   GaussianFactorGraph jacobianGraph;
   jacobianGraph.emplace_shared<JacobianFactor>(
-      x1, I_1x1, (Vector(1) << 2.0).finished(),
-      noiseModel::Isotropic::Sigma(1, 1.0));
+      x1, I_1x1, Vector{{2.0}}, noiseModel::Isotropic::Sigma(1, 1.0));
 
   GaussianFactorGraph hessianGraph;
-  hessianGraph.emplace_shared<HessianFactor>(
-      x1, (Matrix(1, 1) << 4.0).finished(), (Vector(1) << 8.0).finished(), 0.0);
+  hessianGraph.emplace_shared<HessianFactor>(x1, Matrix{{4.0}}, Vector{{8.0}},
+                                             0.0);
 
   const Ordering ordering{x1};
   auto data = MultifrontalSolver::Precompute(jacobianGraph, ordering);

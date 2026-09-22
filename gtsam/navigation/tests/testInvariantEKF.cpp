@@ -43,9 +43,7 @@ TEST(IEKF_Pose2, PredictUpdateSequence) {
 
   Pose2 U1(1.0, 1.0, 0.5), U2(1.0, 1.0, 0.0);
 
-  Vector2 z1, z2;
-  z1 << 1.0, 0.0;
-  z2 << 1.0, 1.0;
+  Vector2 z1{1.0, 0.0}, z2{1.0, 1.0};
 
   // Create the filter
   InvariantEKF<Pose2> ekf(X0, P0);
@@ -131,9 +129,9 @@ double h(const Matrix& p, OptionalJacobian<-1, -1> H = {}) {
 
 TEST(InvariantEKF_DynamicMatrix, PredictAndUpdate) {
   // --- Setup ---
-  Matrix p0Matrix = (Matrix(2, 2) << 1.0, 2.0, 3.0, 4.0).finished();
+  Matrix p0Matrix{{1.0, 2.0}, {3.0, 4.0}};
   Matrix p0Covariance = I_4x4 * 0.01;
-  Vector velocityTangent = (Vector(4) << 0.5, 0.1, -0.1, -0.5).finished();
+  Vector velocityTangent{{0.5, 0.1, -0.1, -0.5}};
   double dt = 0.1;
   // Continuous-time
   Matrix Qc = I_4x4 * 0.01;

@@ -107,7 +107,7 @@ class ConcentratedGaussian : public ExtendedPriorFactor<T> {
   /// @{
 
   /// Return T element corresponding to the mean, with optional Jacobian
-  T retractMean(Matrix* xHm = nullptr) const {
+  T retractMean(Matrix* xHm) const {
     const size_t n = this->dim();
     const bool zeroMean = !this->mean_;
     if (xHm && zeroMean) xHm->setIdentity(n, n);
@@ -115,6 +115,12 @@ class ConcentratedGaussian : public ExtendedPriorFactor<T> {
                ? this->origin_
                : traits<T>::Retract(this->origin_, *(this->mean_), {}, xHm);
   }
+
+  /// Return the mean without requesting its Jacobian.
+  T retractMean() const { return retractMean(nullptr); }
+
+  /// Return the mean and write its Jacobian into xHm.
+  T retractMean(Matrix& xHm) const { return retractMean(&xHm); }
 
   /**
    * Calculate the normalization constant for the density.

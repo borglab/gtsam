@@ -84,8 +84,7 @@ TEST(TOAFactor, WholeEnchilada) {
   // Create initial estimate
   Values initialEstimate;
   // Event estimatedEvent(timeOfEvent -10, 200 * cm, 150 * cm, 350 * cm);
-  Vector4 delta;
-  delta << 0.1, 0.1, -0.1, 0.1;
+  Vector4 delta{0.1, 0.1, -0.1, 0.1};
   Event estimatedEvent = groundTruthEvent.retract(delta);
   initialEstimate.insert(key, estimatedEvent);
 

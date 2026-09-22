@@ -108,9 +108,7 @@ Matrix oneFoot(const Vector3& foothold) {
   return footholds;
 }
 
-Matrix twoFootholds() {
-  return (Matrix(3, 2) << 1.0, -0.2, 0.3, 0.4, 0.5, -0.1).finished();
-}
+Matrix twoFootholds() { return Matrix{{1.0, -0.2}, {0.3, 0.4}, {0.5, -0.1}}; }
 
 Matrix fourFootholds() { return Matrix::Zero(3, 4); }
 
@@ -410,8 +408,7 @@ TEST(LeggedEstimator, MarginalizeFootPreservesRetainedSchurComplement) {
   LeggedEstimatorParams params = makeParams(true);
   params.footholdInitSigma = 0.3;
   const Matrix P0 = denseCorrelatedCovariance(numFeet);
-  const Matrix footholds =
-      (Matrix(3, 2) << 0.4, -0.2, 1.1, 0.7, -0.5, 0.3).finished();
+  const Matrix footholds{{0.4, -0.2}, {1.1, 0.7}, {-0.5, 0.3}};
   ExposedLeggedInvariantEKF estimator(identityState(), footholds, P0, params);
 
   estimator.marginalizeFoot(marginalizedFoot);

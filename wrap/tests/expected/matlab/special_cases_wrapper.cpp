@@ -105,8 +105,8 @@ void gtsamNonlinearFactorGraph_deconstructor_1(int nargout, mxArray *out[], int 
   item = collector_gtsamNonlinearFactorGraph.find(self);
   if(item != collector_gtsamNonlinearFactorGraph.end()) {
     collector_gtsamNonlinearFactorGraph.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void gtsamNonlinearFactorGraph_addPrior_2(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -137,8 +137,8 @@ void gtsamSfmTrack_deconstructor_4(int nargout, mxArray *out[], int nargin, cons
   item = collector_gtsamSfmTrack.find(self);
   if(item != collector_gtsamSfmTrack.end()) {
     collector_gtsamSfmTrack.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void gtsamSfmTrack_get_measurements_5(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -174,8 +174,8 @@ void gtsamPinholeCameraCal3Bundler_deconstructor_8(int nargout, mxArray *out[], 
   item = collector_gtsamPinholeCameraCal3Bundler.find(self);
   if(item != collector_gtsamPinholeCameraCal3Bundler.end()) {
     collector_gtsamPinholeCameraCal3Bundler.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void gtsamGeneralSFMFactorCal3Bundler_collectorInsertAndMakeBase_9(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -196,8 +196,8 @@ void gtsamGeneralSFMFactorCal3Bundler_deconstructor_10(int nargout, mxArray *out
   item = collector_gtsamGeneralSFMFactorCal3Bundler.find(self);
   if(item != collector_gtsamGeneralSFMFactorCal3Bundler.end()) {
     collector_gtsamGeneralSFMFactorCal3Bundler.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void gtsamGeneralSFMFactorCal3Bundler_get_verbosity_11(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -268,6 +268,7 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       break;
     }
   } catch(const std::exception& e) {
+    std::cout.rdbuf(outbuf);
     mexErrMsgTxt(("Exception from gtsam:\n" + std::string(e.what()) + "\n").c_str());
   }
 

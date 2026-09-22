@@ -90,7 +90,9 @@ struct ISAM2Result {
 
   /** Total number of nonzero entries in the Bayes tree (upper-triangular R and
    *  rectangular S blocks of every clique conditional).  Useful for monitoring
-   *  fill-in growth over long incremental sessions. */
+   *  fill-in growth over long incremental sessions. Computed only when
+   *  ISAM2Params::enableAdaptiveReorder or ISAM2Params::enableDetailedResults
+   *  is enabled; otherwise zero. Use ISAM2::treeNnz() for an explicit query. */
   size_t treeNnz;
 
   /** Whether a full batch reorder was triggered during this update, either by
@@ -203,6 +205,13 @@ struct ISAM2Result {
   bool getBatchReorderTriggered() const { return batchReorderTriggered; }
   double getErrorBefore() const { return errorBefore ? *errorBefore : std::nan(""); }
   double getErrorAfter() const { return errorAfter ? *errorAfter : std::nan(""); }
+  size_t getFactorsRecalculated() const { return factorsRecalculated; }
+  const KeySet& getUnusedKeys() const { return unusedKeys; }
+  const KeyVector& getObservedKeys() const { return observedKeys; }
+  const KeySet& getKeysWithRemovedFactors() const {
+    return keysWithRemovedFactors;
+  }
+  const KeySet& getMarkedKeys() const { return markedKeys; }
 };
 
 }  // namespace gtsam

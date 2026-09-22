@@ -43,12 +43,16 @@ namespace gtsam {
  * T is the measurement type, by default the same
  */
 template<class VALUE>
-class GaussMarkov1stOrderFactor: public NoiseModelFactorN<VALUE, VALUE> {
+class GaussMarkov1stOrderFactor
+    : public NoiseModelFactorT<typename traits<VALUE>::TangentVector, VALUE,
+                               VALUE> {
 
 private:
 
   typedef GaussMarkov1stOrderFactor<VALUE> This;
-  typedef NoiseModelFactorN<VALUE, VALUE> Base;
+  typedef NoiseModelFactorT<typename traits<VALUE>::TangentVector, VALUE, VALUE>
+      Base;
+  using ErrorVector = typename traits<VALUE>::TangentVector;
 
   double dt_;
   Vector tau_;
@@ -91,8 +95,9 @@ public:
   /** implement functions needed to derive from Factor */
 
   /** vector of errors */
-  Vector evaluateError(const VALUE& p1, const VALUE& p2,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override {
+  ErrorVector evaluateError(const VALUE& p1, const VALUE& p2,
+                            OptionalMatrixType H1,
+                            OptionalMatrixType H2) const override {
 
     Vector v1( traits<VALUE>::Logmap(p1) );
     Vector v2( traits<VALUE>::Logmap(p2) );

@@ -28,9 +28,9 @@ double norm2(const Point2& p, OptionalJacobian<1,2> H) {
   double r = std::sqrt(p.x() * p.x() + p.y() * p.y());
   if (H) {
     if (std::abs(r) > 1e-10)
-      *H << p.x() / r, p.y() / r;
+      *H = Matrix12{{p.x() / r, p.y() / r}};
     else
-      *H << 1, 1;  // really infinity, why 1 ?
+      *H = Matrix12{{1, 1}};  // really infinity, why 1 ?
   }
   return r;
 }

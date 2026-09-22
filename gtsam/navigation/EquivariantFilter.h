@@ -11,6 +11,7 @@
 
 #pragma once
 
+#include <gtsam/base/GroupAction.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/navigation/ManifoldEKF.h>
@@ -25,10 +26,22 @@ namespace gtsam {
  * It uses a symmetry principle where the error dynamics are autonomous in a
  * specific frame.
  *
- * This implementation supports two modes:
- * 1. **Automatic**: The filter calculates Jacobian A using the input orbit.
- * 2. **Explicit**: You provide the Jacobian A and the manifold covariance Qc
- *    directly.
+ * Both ActionType::Right and ActionType::Left symmetries are supported. The
+ * prediction increment acts at the current estimate, while the measurement
+ * correction acts at the reference. Their composition sides depend on the action.
+ *
+ * Prediction comes in three forms:
+ * 1. **Automatic**: predict() calculates the Jacobian A from the input orbit.
+ * 2. **Explicit A**: predictWithJacobian() takes a continuous-time A and
+ *    discretizes it.
+ * 3. **Explicit transition**: predictWithTransition() takes an already
+ *    discretized Phi and Qd, for models derived directly in discrete time.
+ *
+ * The filter propagates its error in **error coordinates**, the tangent space at
+ * the reference state xi_ref: the covariance P, the error dynamics matrix A and
+ * the process noise Qc all live there. Use covariance() to obtain the covariance
+ * in the tangent space at the current state estimate, and actionDifferential()
+ * for the map between the two frames.
  *
  * @tparam M Manifold type for the physical state.
  * @tparam Symmetry Functor encoding the group action on the state.
@@ -94,6 +107,45 @@ class EquivariantFilter : public ManifoldEKF<M> {
   /// Access current reference state used as the EqF chart origin.
   const M& referenceState() const { return xi_ref_; }
 
+  /**
+   * Evaluate the lift at the reference with input u_origin = psi_u(X^-1).
+   * Used by automatic error linearization.
+   */
+  template <typename Lift, typename InputOrbit>
+  TangentG liftAtOrigin(const InputOrbit& psi_u,
+                        OptionalJacobian<DimG, DimM> D_lift = {}) const {
+    Lift lift_u_origin(psi_u(g_.inverse()));
+    return lift_u_origin(xi_ref_, D_lift);
+  }
+
+  /**
+   * Advance using a lift evaluated at the current estimate and propagate
+   * covariance with an already-discretized transition and process noise.
+   * Commit g_ after the base class validates the matrix dimensions and updates
+   * the manifold state and covariance.
+   */
+  void propagate(const TangentG& increment, const MatrixM& Phi,
+                 const CovarianceM& Qd) {
+    const G step = traits<G>::Expmap(increment);
+    const G g_next = Symmetry::type == ActionType::Left
+                         ? traits<G>::Compose(step, g_)
+                         : traits<G>::Compose(g_, step);
+    Base::predict(act_on_ref_(g_next), Phi, Qd);
+    g_ = g_next;
+  }
+
+  /**
+   * Apply an innovation correction, which lives in error coordinates at the
+   * reference state, on the opposite side from the prediction increment.
+   */
+  void applyCorrection(const TangentG& delta_x) {
+    const G step = traits<G>::Expmap(delta_x);
+    g_ = Symmetry::type == ActionType::Left
+             ? traits<G>::Compose(g_, step)
+             : traits<G>::Compose(step, g_);
+    this->X_ = act_on_ref_(g_);
+  }
+
  public:
   /**
    * @brief Initialize the Equivariant Filter.
@@ -120,15 +172,36 @@ class EquivariantFilter : public ManifoldEKF<M> {
   /// errorCovariance that returns P_, on the equivariant filter error
   const typename Base::Covariance& errorCovariance() const { return this->P_; }
 
-  /// Covariance in the tangent space at the current state.
-  CovarianceM covariance() const {
+  /**
+   * @brief Differential of the group action at the reference state.
+   *
+   * J = D phi_g|_{xi_ref} maps error coordinates, which live in the tangent
+   * space at the reference state, to tangent vectors at the current state
+   * estimate. The filter propagates its error in the former frame, so J is the
+   * bridge to anything expressed at the current state.
+   */
+  MatrixM actionDifferential() const {
     MatrixM J;
     if constexpr (MatrixM::RowsAtCompileTime == Eigen::Dynamic) {
       J.resize(this->n_, this->n_);
     }
     const typename Symmetry::Diffeomorphism action_at_g(g_);
     action_at_g(xi_ref_, &J);
-    return J.transpose() * this->P_ * J;
+    return J;
+  }
+
+  /**
+   * @brief Covariance in the tangent space at the current state.
+   *
+   * P_ is the covariance of the error coordinates in the tangent space at the
+   * reference state xi_ref. The true state is recovered as xi = phi_g(e) with
+   * e = Retract(xi_ref, epsilon), so a perturbation epsilon at the reference
+   * appears at the current state as J * epsilon. The covariance therefore
+   * pushes forward as J * P_ * J^T.
+   */
+  CovarianceM covariance() const {
+    const MatrixM J = actionDifferential();
+    return J * this->P_ * J.transpose();
   }
 
   /// @return Current group estimate.
@@ -142,7 +215,7 @@ class EquivariantFilter : public ManifoldEKF<M> {
    *
    * Concept requirements:
    * - `Lift` must be callable as `Lift(u_origin)(xi_ref, D_lift)` where
-   *   D_lift is an OptionalJacobian of shape DimM x DimG.
+   *   D_lift is an OptionalJacobian of shape DimG x DimM.
    * - `InputOrbit` must be a group action on the input space with operator()
    *   that accepts the current group estimate X and returns the mapped input
    *   (no other methods are required by the filter).
@@ -151,17 +224,20 @@ class EquivariantFilter : public ManifoldEKF<M> {
    * @tparam InputOrbit Functor for the input orbit ψ_u.
    * @param psi_u Input Orbit instance.
    * @return MatrixM The calculated error dynamics matrix A.
+   *
+   * The lift must reproduce the physical dynamics through the state action.
+   * Automatic linearization additionally requires equivariance:
+   * Lambda(phi_X(xi), psi_X(u)) = Ad_X Lambda(xi,u) for a left action,
+   * or Ad_{X^-1} Lambda(xi,u) for a right action. These are separate
+   * requirements, especially for actions with nontrivial stabilizers.
+   * See the user guide doc/EquivariantFilter.ipynb for derivations
+   * and examples. Explicit prediction accepts a caller-supplied error model
+   * without requiring lift equivariance.
    */
   template <typename Lift, typename InputOrbit>
   MatrixM computeErrorDynamicsMatrix(const InputOrbit& psi_u) const {
     MatrixGM D_lift;
-    // Map current input to origin: u_origin = psi_u(X^-1)
-    auto u_origin = psi_u(g_.inverse());
-
-    // Lift at origin: D_lift = d(Lambda(xi_ref, u_origin))/dxi
-    Lift lift_u_origin(u_origin);
-    lift_u_origin(xi_ref_, &D_lift);
-
+    liftAtOrigin<Lift>(psi_u, &D_lift);
     return Dphi0_ * D_lift;
   }
 
@@ -184,12 +260,14 @@ class EquivariantFilter : public ManifoldEKF<M> {
   /**
    * @brief Propagate the filter state (Automatic).
    *
-   * Automatically computes the error dynamics matrix A.
+   * Automatically computes the error dynamics matrix A. Requires the lift
+   * equivariance condition documented in computeErrorDynamicsMatrix().
+   * The supplied lift is also evaluated at the current estimate for the mean.
    *
    * Concept requirements:
    * - `Lift` is used as `Lift(u_origin)(xi_ref_, D_lift)` to obtain the lift
    *   and its Jacobian w.r.t. the manifold state.
-   * - `InputOrbit` is only used via `psi_u(X_.inverse())` to map the current
+   * - `InputOrbit` is only used via `psi_u(g_.inverse())` to map the current
    *   input to the origin; no other methods are needed.
    *
    * @tparam K Truncation order for discretization (1 = first order Euler,
@@ -198,29 +276,32 @@ class EquivariantFilter : public ManifoldEKF<M> {
    * @tparam InputOrbit Functor for the input orbit ψ_u.
    * @param lift_u Lift functor for the current input.
    * @param psi_u Input Orbit for the current input.
-   * @param A Error dynamics matrix (DimM x DimM).
    * @param Qc Process noise covariance on the manifold (continuous-time).
    * @param dt Time step.
    */
   template <size_t K = 1, typename Lift, typename InputOrbit>
   void predict(const Lift& lift_u, const InputOrbit& psi_u, const MatrixM& Qc,
                double dt) {
-    // 1. Compute A automatically
-    MatrixM A = computeErrorDynamicsMatrix<Lift>(psi_u);
-
-    // 2. Delegate to explicit predict with manifold Qc
+    const MatrixM A = computeErrorDynamicsMatrix<Lift>(psi_u);
     predictWithJacobian<K>(lift_u, A, Qc, dt);
   }
 
   /**
    * @brief Propagate the filter state (Explicit).
    *
-   * Uses provided Jacobian A and manifold covariance Qc. This allows `psi_u`
-   * to be a pure Orbit without needing to implement `inputMatrixB`.
+   * Uses the provided error Jacobian A and process covariance Qc.
    *
    * Concept requirements:
    * - `Lift` is only used via `Lift(xi_est)` to produce a tangent vector.
    *   No additional methods are needed for this overload.
+   *
+   * The lift is evaluated at the current estimate and must generate the
+   * physical dynamics through the declared state action. Prediction composes
+   * Exp(Lambda dt) on the left for a left action and on the right for a right
+   * action. Equivariance and an input orbit are not required when A is supplied.
+   * A and Qc must be expressed in error coordinates at the reference state.
+   * Left-action callers that previously supplied body-frame increments for
+   * right multiplication must convert their lift to the declared action.
    *
    * @tparam Lift Functor for the lift Λ(ξ, u).
    * @param lift_u Lift functor for the current input.
@@ -231,20 +312,30 @@ class EquivariantFilter : public ManifoldEKF<M> {
   template <size_t K = 1, typename Lift>
   void predictWithJacobian(const Lift& lift_u, const MatrixM& A,
                            const MatrixM& Qc, double dt) {
-    // 1. Mean Propagation on Group
-    M xi_est = this->state();          // Pure action
-    TangentG Lambda = lift_u(xi_est);  // Pure lift
+    const TangentG Lambda = lift_u(this->state());
+    propagate(Lambda * dt, transitionMatrix<K>(A, dt), CovarianceM(Qc * dt));
+  }
 
-    g_ = traits<G>::Compose(g_, traits<G>::Expmap(Lambda * dt));
-    M xi_next = act_on_ref_(g_);
-
-    // 2. Covariance Propagation on Manifold
-    MatrixM Phi = transitionMatrix<K>(A, dt);
-
-    // Qc is manifold continuous-time covariance: Q_M = Qc * dt
-    CovarianceM Q_manifold = Qc * dt;
-
-    Base::predict(xi_next, Phi, Q_manifold);
+  /**
+   * @brief Propagate with an already-discretized transition and process noise.
+   *
+   * For models derived directly in discrete time, or where a closed-form
+   * exp(A dt) is available, this avoids the truncated-series discretization of
+   * transitionMatrix(), which is only first order at the default K = 1.
+   *
+   * The lift has the same contract as predictWithJacobian(): it is evaluated
+   * at the current estimate and generates motion through the state action.
+   * No input orbit or equivariance condition is required.
+   *
+   * @param lift_u Lift functor for the current input.
+   * @param Phi Discrete transition matrix over dt (DimM x DimM).
+   * @param Qd Discrete process noise over dt, in error coordinates.
+   * @param dt Time step, used for the mean only.
+   */
+  template <typename Lift>
+  void predictWithTransition(const Lift& lift_u, const MatrixM& Phi,
+                             const CovarianceM& Qd, double dt) {
+    propagate(lift_u(this->state()) * dt, Phi, Qd);
   }
 
   /**
@@ -283,8 +374,7 @@ class EquivariantFilter : public ManifoldEKF<M> {
 
     // Lift correction to Group tangent space
     TangentG delta_x = InnovationLift_ * delta_xi;
-    g_ = traits<G>::Compose(traits<G>::Expmap(delta_x), g_);
-    this->X_ = act_on_ref_(g_);
+    applyCorrection(delta_x);
 
     // Update covariance on Manifold using Joseph form
     this->JosephUpdate(K, H, R);
@@ -322,8 +412,7 @@ class EquivariantFilter : public ManifoldEKF<M> {
     const TangentM delta_xi = -K * innovation;
     const TangentG delta_x = innovationLift(delta_xi);
 
-    g_ = traits<G>::Compose(traits<G>::Expmap(delta_x), g_);
-    this->X_ = act_on_ref_(g_);
+    applyCorrection(delta_x);
     this->JosephUpdate(K, H, R);
   }
 };

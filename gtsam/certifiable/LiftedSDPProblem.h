@@ -63,6 +63,9 @@ class LiftedSDPProblem;
  *
  * The problem owns its MOSEK model. Call solve() before querying solver
  * results or recovered variables.
+ * Set GTSAM_MOSEK_DIAGNOSTICS to a unique output path prefix before solve()
+ * to export a .task.gz model, .log iteration/feasibility analysis, and
+ * .solution.json raw solution without changing the solver parameters.
  */
 template <>
 class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
@@ -71,8 +74,11 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
    * Construct the monolithic SDP relaxation of a QCQP problem.
    *
    * @param problem QCQP to relax.
+   * @param shareHomogeneousCoordinates Share homogeneous coordinates when every
+   * key has explicit unit normalization; false retains the original cones.
    */
-  explicit LiftedSDPProblem(const QcqpProblem& problem);
+  explicit LiftedSDPProblem(const QcqpProblem& problem,
+                            bool shareHomogeneousCoordinates = true);
 
   /// Dispose of the owned MOSEK model.
   ~LiftedSDPProblem();
@@ -116,6 +122,9 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
  *
  * The problem owns its MOSEK model. Call solve() before querying solver
  * results or recovered variables.
+ * Set GTSAM_MOSEK_DIAGNOSTICS to a unique output path prefix before solve()
+ * to export a .task.gz model, .log iteration/feasibility analysis, and
+ * .solution.json raw solution without changing the solver parameters.
  */
 template <>
 class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
@@ -125,9 +134,12 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
    *
    * @param problem QCQP to relax.
    * @param orderingType Ordering used for symbolic elimination.
+   * @param shareHomogeneousCoordinates Share homogeneous coordinates when every
+   * key has explicit unit normalization; false retains the original cones.
    */
   LiftedSDPProblem(const QcqpProblem& problem,
-                   ChordalOrderingType orderingType);
+                   ChordalOrderingType orderingType,
+                   bool shareHomogeneousCoordinates = true);
 
   /// Dispose of the owned MOSEK model.
   ~LiftedSDPProblem();

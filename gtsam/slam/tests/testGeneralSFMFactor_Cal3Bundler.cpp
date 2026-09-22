@@ -19,7 +19,7 @@
 #include <gtsam/slam/GeneralSFMFactor.h>
 #include <gtsam/sam/RangeFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/linear/VectorValues.h>
@@ -309,11 +309,9 @@ TEST( GeneralSFMFactor_Cal3Bundler, optimize_varK_FixLandmarks ) {
     if (i == 0) {
       values.insert(X(i), cameras[i]);
     } else {
-
-      Vector delta = (Vector(9) << rot_noise, rot_noise, rot_noise, // rotation
-      trans_noise, trans_noise, trans_noise, // translation
-      focal_noise, distort_noise, distort_noise // f, k1, k2
-          ).finished();
+      Vector9 delta{rot_noise,   rot_noise,     rot_noise,       // rotation
+                    trans_noise, trans_noise,   trans_noise,     // translation
+                    focal_noise, distort_noise, distort_noise};  // f, k1, k2
       values.insert(X(i), cameras[i].retract(delta));
     }
   }

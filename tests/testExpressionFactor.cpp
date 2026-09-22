@@ -119,9 +119,7 @@ TEST(ExpressionFactor, Unary) {
   Values values;
   values.insert(2, Point3(0, 0, 1));
 
-  JacobianFactor expected( //
-      2, (Matrix(2, 3) << 1, 0, 0, 0, 1, 0).finished(), //
-      Vector2(-17, 30));
+  JacobianFactor expected(2, Matrix{{1, 0, 0}, {0, 1, 0}}, Vector2(-17, 30));
 
   // Create leaves
   Point3_ p(2);
@@ -198,10 +196,8 @@ TEST(ExpressionFactor, Binary) {
   // trace.print();
 
   // Expected Jacobians
-  Matrix25 expected25;
-  expected25 << 0, 0, 0, 1, 0, 0, 0, 0, 0, 1;
-  Matrix2 expected22;
-  expected22 << 1, 0, 0, 1;
+  Matrix25 expected25{{0, 0, 0, 1, 0}, {0, 0, 0, 0, 1}};
+  Matrix2 expected22{{1, 0}, {0, 1}};
 
   // Check matrices
   std::optional<Binary::Record*> r = trace.record<Binary::Record>();
@@ -250,8 +246,7 @@ TEST(ExpressionFactor, Shallow) {
   // trace.print();
 
   // Expected Jacobians
-  Matrix23 expected23;
-  expected23 << 1, 0, 0, 0, 1, 0;
+  Matrix23 expected23{{1, 0, 0}, {0, 1, 0}};
 
   // Check matrices
   std::optional<Unary::Record*> r = trace.record<Unary::Record>();
@@ -481,8 +476,8 @@ struct Combine {
   Combine(double a, double b) : a(a), b(b) {}
   double operator()(const double& x, const double& y, OptionalJacobian<1, 1> H1,
                     OptionalJacobian<1, 1> H2) {
-    if (H1) (*H1) << a;
-    if (H2) (*H2) << b;
+    if (H1) *H1 = Matrix1{{a}};
+    if (H2) *H2 = Matrix1{{b}};
     return a * x + b * y;
   }
 };
@@ -533,9 +528,9 @@ TEST(Expression, testMultipleCompositions) {
 static double combine3(const double& x, const double& y, const double& z,
                         OptionalJacobian<1, 1> H1, OptionalJacobian<1, 1> H2,
                         OptionalJacobian<1, 1> H3) {
-  if (H1) (*H1) << 1.0;
-  if (H2) (*H2) << 2.0;
-  if (H3) (*H3) << 3.0;
+  if (H1) *H1 = Matrix1{{1.0}};
+  if (H2) *H2 = Matrix1{{2.0}};
+  if (H3) *H3 = Matrix1{{3.0}};
   return x + 2.0 * y + 3.0 * z;
 }
 
@@ -598,7 +593,7 @@ Vector3 f(const Point2& a, const Vector3& b, OptionalJacobian<3, 2> H1,
   A(0, 1) = a.x();
   A(0, 2) = a.y();
   A(1, 0) = a.x();
-  if (H1) *H1 << b.y(), b.z(), b.x(), 0, 0, 0;
+  if (H1) *H1 = Matrix32{{b.y(), b.z()}, {b.x(), 0}, {0, 0}};
   if (H2) *H2 = A;
   return A * b;
 }
@@ -780,4 +775,3 @@ int main() {
   return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

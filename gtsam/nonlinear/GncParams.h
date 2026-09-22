@@ -16,12 +16,19 @@
  * @author  Luca Carlone
  * @author  Frank Dellaert
  *
- * Implementation of the paper: Yang, Antonante, Tzoumas, Carlone, "Graduated Non-Convexity for Robust Spatial Perception:
- * From Non-Minimal Solvers to Global Outlier Rejection", ICRA/RAL, 2020. (arxiv version: https://arxiv.org/pdf/1909.08605.pdf)
+ * Implementation of the paper: Yang, Antonante, Tzoumas, Carlone, "Graduated
+ * Non-Convexity for Robust Spatial Perception: From Non-Minimal Solvers to
+ * Global Outlier Rejection", ICRA/RAL, 2020. (arxiv version:
+ * https://arxiv.org/pdf/1909.08605.pdf)
  *
  * See also:
- * Antonante, Tzoumas, Yang, Carlone, "Outlier-Robust Estimation: Hardness, Minimally-Tuned Algorithms, and Applications",
- * arxiv: https://arxiv.org/pdf/2007.15109.pdf, 2020.
+ * Antonante, Tzoumas, Yang, Carlone, "Outlier-Robust Estimation: Hardness,
+ * Minimally-Tuned Algorithms, and Applications", arxiv:
+ * https://arxiv.org/pdf/2007.15109.pdf, 2020.
+ *
+ * Note: To adhere to GTSAM's definition of the control parameter $\mu$ we
+ * redefine the publications (above) parameter of $\mu$ as $\lambda$ in this
+ * implementation.
  */
 
 #pragma once
@@ -55,9 +62,15 @@ class GncParams {
   enum Verbosity {
     SILENT = 0,
     SUMMARY,
-    MU,
+    LAMBDA,
     WEIGHTS,
-    VALUES
+    VALUES,
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+    /// @deprecated: use LAMBDA. GNC's unbounded control parameter is named
+    /// lambda so that `mu` keeps its GTSAM meaning of normalized graduation
+    /// progress in [0, 1].
+    MU = LAMBDA,
+#endif
   };
 
   /// Constructor.
@@ -76,12 +89,12 @@ class GncParams {
   GncLossType lossType = TLS;  ///< Default loss
   GncScheduler scheduler = GncScheduler::Linear;  ///< Default scheduler
   size_t maxIterations = 100;  ///<  Maximum number of iterations
-  double muStep = 1.4;  ///< Multiplicative factor to reduce/increase the mu in gnc
+  double lambdaStep = 1.4;  ///< Multiplicative factor to reduce/increase the lambda in gnc
   double relativeCostTol = 1e-5;  ///< If relative cost change is below this threshold, stop iterating
   double weightsTol = 1e-4;  ///< If the weights are within weightsTol from being binary, stop iterating (only for TLS)
-  double muMax = 1e16;  ///< Maximum value of mu in GNC, acts as a cap (only for TLS)
+  double lambdaMax = 1e16;  ///< Maximum value of lambda in GNC, acts as a cap (only for TLS)
   Verbosity verbosity = SILENT;  ///< Verbosity level
-  bool allowNonNoiseModelFactors = false;  ///< If true, factors without noise model are not reweighted and not not included in mu calculation
+  bool allowNonNoiseModelFactors = false;  ///< If true, factors without noise model are not reweighted and not not included in lambda calculation
 
   /// Use IndexVector for inliers and outliers since it is fast
   using IndexVector = FastVector<uint64_t>;
@@ -108,12 +121,12 @@ class GncParams {
     maxIterations = maxIter;
   }
 
-  /// Set the graduated non-convexity step: at each GNC iteration, mu is updated as mu <- mu * muStep.
-  void setMuStep(const double step) {
-    muStep = step;
+  /// Set the graduated non-convexity step: at each GNC iteration, lambda is updated as lambda <- lambda * lambdaStep.
+  void setLambdaStep(const double step) {
+    lambdaStep = step;
   }
 
-  /// Set the maximum relative difference in mu values to stop iterating.
+  /// Set the maximum relative difference in lambda values to stop iterating.
   void setRelativeCostTol(double value) {
     relativeCostTol = value;
   }
@@ -156,11 +169,17 @@ class GncParams {
     allowNonNoiseModelFactors = allow;
   }
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  /// @deprecated: use setLambdaStep. The quantity GNC steps multiplicatively
+  /// is the unbounded lambda, not the normalized mu in [0, 1].
+  void setMuStep(const double step) { setLambdaStep(step); }
+#endif
+
   /// Equals.
   bool equals(const GncParams& other, double tol = 1e-9) const {
     return baseOptimizerParams.equals(other.baseOptimizerParams)
         && lossType == other.lossType && maxIterations == other.maxIterations
-        && std::fabs(muStep - other.muStep) <= tol
+        && std::fabs(lambdaStep - other.lambdaStep) <= tol
         && scheduler == other.scheduler
         && verbosity == other.verbosity && knownInliers == other.knownInliers
         && knownOutliers == other.knownOutliers
@@ -191,7 +210,7 @@ class GncParams {
         throw std::runtime_error("GncParams::print: unknown scheduler type.");
     }
     std::cout << "maxIterations: " << maxIterations << "\n";
-    std::cout << "muStep: " << muStep << "\n";
+    std::cout << "lambdaStep: " << lambdaStep << "\n";
     std::cout << "relativeCostTol: " << relativeCostTol << "\n";
     std::cout << "weightsTol: " << weightsTol << "\n";
     std::cout << "verbosity: " << verbosity << "\n";

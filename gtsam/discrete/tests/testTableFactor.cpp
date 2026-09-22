@@ -23,6 +23,7 @@
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/discrete/Signature.h>
+#include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/discrete/TableFactor.h>
 
 #include <chrono>
@@ -174,6 +175,16 @@ TEST(TableFactor, Conversion) {
   TableFactor tf(dtf.discreteKeys(), dtf);
 
   EXPECT(assert_equal(dtf, tf.toDecisionTreeFactor()));
+  EXPECT(assert_equal(tf,
+                      static_cast<const DiscreteFactor&>(dtf).toTableFactor()));
+  EXPECT(
+      assert_equal(tf, static_cast<const DiscreteFactor&>(tf).toTableFactor()));
+
+  const DiscreteKey distributionKey(3, 2);
+  const TableDistribution distribution(distributionKey, "1 3");
+  EXPECT(assert_equal(
+      distribution.table(),
+      static_cast<const DiscreteFactor&>(distribution).toTableFactor()));
 
   // Test for correct construction when keys are not in reverse order.
   // This is possible in conditionals e.g. P(x1 | x0)
@@ -189,6 +200,26 @@ TEST(TableFactor, Conversion) {
   // Check for ADT equality since the order of keys is irrelevant
   EXPECT(assert_equal<AlgebraicDecisionTree<Key>>(dtf2,
                                                   tf2.toDecisionTreeFactor()));
+}
+
+/* ************************************************************************* */
+// Check multiplication with a TableDistribution in both operand orders.
+TEST(TableFactor, TableDistributionMultiplication) {
+  const DiscreteKey key(0, 3);
+  const auto table =
+      std::make_shared<TableFactor>(key, std::vector<double>{2.0, 3.0, 4.0});
+  const auto distribution = std::make_shared<TableDistribution>(key, "1 2 3");
+  const TableFactor expected(key, std::vector<double>{1.0 / 3.0, 1.0, 2.0});
+
+  const auto tableFirst =
+      std::dynamic_pointer_cast<TableFactor>(table->multiply(distribution));
+  const auto distributionFirst =
+      std::dynamic_pointer_cast<TableFactor>(distribution->multiply(table));
+
+  CHECK(tableFirst);
+  CHECK(distributionFirst);
+  EXPECT(assert_equal(expected, *tableFirst));
+  EXPECT(assert_equal(expected, *distributionFirst));
 }
 
 /* ************************************************************************* */

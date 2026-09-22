@@ -15,6 +15,10 @@
  * @author  Vadim Indelman, Stephen Williams
  */
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <iostream>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam_unstable/slam/InertialNavFactor_GlobalVelocity.h>
@@ -106,3 +110,5 @@ int main() {
 }
 
 /* ************************************************************************* */
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

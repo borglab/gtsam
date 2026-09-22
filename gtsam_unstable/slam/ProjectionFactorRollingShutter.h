@@ -42,7 +42,7 @@ namespace gtsam {
  */
 
 class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
-    : public NoiseModelFactorN<Pose3, Pose3, Point3> {
+    : public NoiseModelFactorT<Vector2, Pose3, Pose3, Point3> {
  protected:
   // Keep a copy of measurement and calibration for I/O
   Point2 measured_;  ///< 2D measurement
@@ -60,7 +60,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
 
  public:
   /// shorthand for base class type
-  typedef NoiseModelFactor3<Pose3, Pose3, Point3> Base;
+  typedef NoiseModelFactorT<Vector2, Pose3, Pose3, Point3> Base;
 
   // Provide access to the Matrix& version of evaluateError:
   using Base::evaluateError;
@@ -175,7 +175,7 @@ class GTSAM_UNSTABLE_EXPORT ProjectionFactorRollingShutter
   }
 
   /// Evaluate error h(x)-z and optionally derivatives
-  Vector evaluateError(
+  Vector2 evaluateError(
       const Pose3& pose_a, const Pose3& pose_b, const Point3& point,
       OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3) const override;
 

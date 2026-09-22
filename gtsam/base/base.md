@@ -3,16 +3,26 @@
 The base module provides fundamental data structures, utilities, and mathematical operations that form the foundation of GTSAM. Here are the key header files:
 
 ## Core Mathematical Concepts
+
 Utilities to define group, manifold, and Lie group classes, as well as concept checks for them.
+
 - [Manifold.h](Manifold.h) - Defines the concept for differentiable manifolds with retract/local operations. See [Manifold](doc/Manifold.md) docs.
 - [Lie.h](Lie.h) - Implements the Lie group concept combining group operations with manifold structure. See [LieGroup](doc/LieGroup.md) docs.
 - [MatrixLieGroup.h](MatrixLieGroup.h) - Base class for matrix Lie groups (SO(n), SE(n), SL(n), etc.) with Hat/Vee operators. See [MatrixLieGroup](doc/MatrixLieGroup.md) docs.
 
 And, less common:
+
 - [Group.h](Group.h) - Defines the group concept with identity, inverse, and composition operations. See [Group](doc/Group.md) docs.
 - [VectorSpace.h](VectorSpace.h) - Defines the vector space concept. See [VectorSpace](doc/VectorSpace.md) docs.
-- [ProductLieGroup.h](ProductLieGroup.h) - Cartesian products of Lie groups
 - [lieProxies.h](lieProxies.h) - Proxy functions for testing
+
+## Constructed Lie Groups
+
+These templates build larger Lie groups from existing group types while preserving GTSAM's traits, tangent-vector ordering, and optional-Jacobian conventions:
+
+- [ProductLieGroup.h](ProductLieGroup.h) constructs independent direct products `G × H`. See the [ProductLieGroup guide](doc/ProductLieGroup.md) for its componentwise operations, adjoints, and dynamic-dimension behavior.
+- [SemidirectLieGroup.h](SemidirectLieGroup.h) constructs action-coupled products `G ⋉ H`. See the [SemidirectLieGroup guide](doc/SemidirectLieGroup.md) for action requirements, matrix-function kernels, and coupled Jacobians.
+- [TangentLieGroup.h](TangentLieGroup.h) constructs the tangent group `TG = G ⋉ 𝔤`, where `G` acts on its algebra through the adjoint action. See the [TangentLieGroup guide](doc/TangentLieGroup.md) for its structured Jacobians, recursive use, and optimized SO(3) specialization.
 
 ## Linear Algebra
 Linear algebra operations optimized for robotics applications. `Vector` and `Matrix` are essentially typedefs and wrappers for Eigen:
@@ -66,4 +76,3 @@ These are used in Jacobian and Hessian factors:
 ## Template Metaprogramming
 - [treeTraversal-inst.h](treeTraversal-inst.h) - Template instantiations for tree traversal algorithms
 - [concepts.h](concepts.h) - SFINAE utilities and type trait helpers
-

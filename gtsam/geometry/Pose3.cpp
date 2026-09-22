@@ -45,16 +45,15 @@ Pose3 Pose3::Create(const Rot3& R, const Point3& t, OptionalJacobian<6, 3> HR,
 }
 
 // Pose2 constructor Jacobian is always the same.
-static const Matrix63 Hpose2 = (Matrix63() << //
-    0., 0., 0., //
-    0., 0., 0.,//
-    0., 0., 1.,//
-    1., 0., 0.,//
-    0., 1., 0.,//
-    0., 0., 0.).finished();
+static const Matrix63 Hpose2 = Matrix63{{0., 0., 0.},  //
+                                        {0., 0., 0.},  //
+                                        {0., 0., 1.},  //
+                                        {1., 0., 0.},  //
+                                        {0., 1., 0.},  //
+                                        {0., 0., 0.}};
 
 Pose3 Pose3::FromPose2(const Pose2& p, OptionalJacobian<6, 3> H) {
-  if (H) *H << Hpose2;
+  if (H) *H = Hpose2;
   return Pose3(p);
 }
 
@@ -111,27 +110,14 @@ Pose3 Pose3::Expmap(const Vector6& xi, OptionalJacobian<6, 6> Hxi) {
   const Rot3 R(local.expmap());
 #endif
 
-  // The translation t = local.Jacobian().left() * v.
-  // Here we call local.Jacobian().applyLeft, which is faster if you don't need
-  // Jacobians, and returns Jacobian of t with respect to w if asked.
+  // The translation is t = J_l(w)*v. DexpFunctor::tangentExpmap shares this
+  // lifted exponential and its complete right Jacobian with TSO(3).
   // NOTE(Frank): this does the same as the intuitive formulas:
   //   t_parallel = w * w.dot(v);  // translation parallel to axis
   //   w_cross_v = w.cross(v);     // translation orthogonal to axis
   //   t = (w_cross_v - Rot3::Expmap(w) * w_cross_v + t_parallel) / theta2;
-  // but Local does not need R, deals automatically with the case where theta2
-  // is near zero, and also gives us the machinery for the Jacobians.
-  Matrix3 H;
-  const so3::Kernel jacobian = local.Jacobian();
-  const Vector3 t = jacobian.applyLeft(v, Hxi ? &H : nullptr);
-
-  if (Hxi) {
-    // The Jacobian of expmap is given by the right Jacobian of SO(3):
-    const Matrix3 Jr = jacobian.right();
-    // Chain H with R^T, the Jacobian of Pose3::Create with respect to t.
-    const Matrix3 Rt = R.transpose();
-    *Hxi << Jr, Z_3x3,  // Jr here *is* the Jacobian of expmap
-        Rt * H, Jr;     // Jr = R^T * Jl, with Jl Jacobian of t in v.
-  }
+  // but the kernel handles the zero-angle case and analytic derivatives.
+  const Vector3 t = local.tangentExpmap(v, R.matrix(), Hxi);
 
   return Pose3(R, t);
 }

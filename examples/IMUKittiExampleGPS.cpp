@@ -160,11 +160,9 @@ int main(int argc, char* argv[]) {
   vector<GpsMeasurement> gps_measurements;
   loadKittiData(kitti_calibration, imu_measurements, gps_measurements);
 
-  Vector6 BodyP =
-      (Vector6() << kitti_calibration.body_ptx, kitti_calibration.body_pty,
-       kitti_calibration.body_ptz, kitti_calibration.body_prx,
-       kitti_calibration.body_pry, kitti_calibration.body_prz)
-          .finished();
+  Vector6 BodyP{kitti_calibration.body_ptx, kitti_calibration.body_pty,
+                kitti_calibration.body_ptz, kitti_calibration.body_prx,
+                kitti_calibration.body_pry, kitti_calibration.body_prz};
   auto body_T_imu = Pose3::Expmap(BodyP);
   if (!body_T_imu.equals(Pose3(), 1e-5)) {
     printf(

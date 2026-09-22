@@ -118,39 +118,34 @@ TEST(SOn, Random) {
 
 //******************************************************************************
 TEST(SOn, HatVee) {
-  Vector10 v;
-  v << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10;
+  Vector10 v{1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
 
-  Matrix expected2(2, 2);
-  expected2 << 0, -1, 1, 0;
+  Matrix expected2{{0, -1}, {1, 0}};
   const auto actual2 = SOn::Hat(v.head<1>());
   EXPECT(assert_equal(expected2, actual2));
   EXPECT(assert_equal((Vector)v.head<1>(), SOn::Vee(actual2)));
 
-  Matrix expected3(3, 3);
-  expected3 << 0, -3, 2, //
-      3, 0, -1,          //
-      -2, 1, 0;
+  Matrix expected3{{0, -3, 2},  //
+                   {3, 0, -1},
+                   {-2, 1, 0}};
   const auto actual3 = SOn::Hat(v.head<3>());
   EXPECT(assert_equal(expected3, actual3));
   EXPECT(assert_equal(skewSymmetric(1, 2, 3), actual3));
   EXPECT(assert_equal((Vector)v.head<3>(), SOn::Vee(actual3)));
 
-  Matrix expected4(4, 4);
-  expected4 << 0, -6, 5, 3, //
-      6, 0, -4, -2,         //
-      -5, 4, 0, 1,          //
-      -3, 2, -1, 0;
+  Matrix expected4{{0, -6, 5, 3},  //
+                   {6, 0, -4, -2},
+                   {-5, 4, 0, 1},
+                   {-3, 2, -1, 0}};
   const auto actual4 = SOn::Hat(v.head<6>());
   EXPECT(assert_equal(expected4, actual4));
   EXPECT(assert_equal((Vector)v.head<6>(), SOn::Vee(actual4)));
 
-  Matrix expected5(5, 5);
-  expected5 << 0, -10, 9, 7, -4, //
-      10, 0, -8, -6, 3,          //
-      -9, 8, 0, 5, -2,           //
-      -7, 6, -5, 0, 1,           //
-      4, -3, 2, -1, 0;
+  Matrix expected5{{0, -10, 9, 7, -4},
+                   {10, 0, -8, -6, 3},
+                   {-9, 8, 0, 5, -2},
+                   {-7, 6, -5, 0, 1},
+                   {4, -3, 2, -1, 0}};
   const auto actual5 = SOn::Hat(v);
   EXPECT(assert_equal(expected5, actual5));
   EXPECT(assert_equal((Vector)v, SOn::Vee(actual5)));
@@ -158,9 +153,9 @@ TEST(SOn, HatVee) {
 
 //******************************************************************************
 TEST(SOn, RetractLocal) {
-  Vector6 v1 = (Vector(6) << 0, 0, 0, 1, 0, 0).finished() / 10000;
-  Vector6 v2 = (Vector(6) << 0, 0, 0, 1, 2, 3).finished() / 10000;
-  Vector6 v3 = (Vector(6) << 3, 2, 1, 1, 2, 3).finished() / 10000;
+  Vector6 v1 = Vector6{0, 0, 0, 1, 0, 0} / 10000;
+  Vector6 v2 = Vector6{0, 0, 0, 1, 2, 3} / 10000;
+  Vector6 v3 = Vector6{3, 2, 1, 1, 2, 3} / 10000;
 
   // Check that Cayley yields the same as Expmap for small values
   SOn id(4);
@@ -200,8 +195,7 @@ TEST(SOn, RetractJacobian) {
 
 //******************************************************************************
 TEST(SOn, vec) {
-  Vector10 v;
-  v << 0, 0, 0, 0, 1, 2, 3, 4, 5, 6;
+  Vector10 v{0, 0, 0, 0, 1, 2, 3, 4, 5, 6};
   SOn Q = SOn::ChartAtOrigin::Retract(v);
   Matrix actualH;
   const Vector actual = Q.vec(actualH);

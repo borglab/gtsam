@@ -13,6 +13,7 @@
  * @file    testDataset.cpp
  * @brief   Unit test for dataset.cpp
  * @author  Richard Roberts, Luca Carlone
+ * @author  Frank Dellaert
  */
 
 
@@ -21,6 +22,7 @@
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/sam/BearingRangeFactor.h>
 
 #include <CppUnitLite/TestHarness.h>
 
@@ -291,6 +293,91 @@ TEST(dataSet, readG2oLandmarks) {
   auto graphAndValues = load3D(g2oFile);
   EXPECT(graphAndValues.second->exists(L(0)));
 }
+
+/* ************************************************************************* */
+namespace edge_se3_trackxyz_dataset {
+
+const Point3 kP{2.0, 1.0, 3.0};
+const Unit3 bearing = Unit3::FromPoint3(kP);
+const double range = kP.norm();
+const Matrix3 pointInformation =
+    100.0 * I_3x3 -
+    96.0 * bearing.unitVector() * bearing.unitVector().transpose();
+
+Matrix3 bearingRangeJacobian() {
+  Matrix32 DkP_dbearing;
+  Matrix31 DkP_drange;
+  bearing.scaled(range, DkP_dbearing, DkP_drange);
+  Matrix3 J;
+  J.leftCols<2>() = DkP_dbearing;
+  J.rightCols<1>() = DkP_drange;
+  return J;
+}
+
+// Verifies edge parsing, frame conventions, information conversion, and that
+// an unreferenced nonidentity offset is accepted.
+TEST(dataSet, load3DEdgeSE3TrackXYZ) {
+  const string filename = findExampleDataFile("edge_se3_trackxyz_example");
+  const auto [graph, initial] = load3D(filename);
+
+  EXPECT_LONGS_EQUAL(1, graph->size());
+  EXPECT_LONGS_EQUAL(2, initial->size());
+  const auto factor = graph->at<BearingRangeFactor<Pose3, Point3>>(0);
+  EXPECT_LONGS_EQUAL(7, factor->key<1>());
+  EXPECT_LONGS_EQUAL(L(9), factor->key<2>());
+
+  const auto &measured = factor->measured();
+  EXPECT(assert_equal(kP, measured.bearing().scaled(measured.range()), 1e-9));
+
+  const auto model =
+      std::dynamic_pointer_cast<noiseModel::Gaussian>(factor->noiseModel());
+  EXPECT(model);
+  if (model) {
+    const Matrix3 J = bearingRangeJacobian();
+    EXPECT(assert_equal(J.transpose() * pointInformation * J,
+                        model->information(), 1e-8));
+  }
+
+  EXPECT(assert_equal(Vector3::Zero(), factor->unwhitenedError(*initial),
+                      1e-9));
+}
+
+// Verifies that track measurements round-trip through writeG2o.
+TEST(dataSet, writeG2oEdgeSE3TrackXYZ) {
+  const string filename = findExampleDataFile("edge_se3_trackxyz_example");
+  const auto [expectedGraph, expectedValues] = load3D(filename);
+  const string rewritten = createRewrittenFileName(filename);
+
+  writeG2o(*expectedGraph, *expectedValues, rewritten);
+  const auto [actualGraph, actualValues] = load3D(rewritten);
+
+  EXPECT(assert_equal(*expectedValues, *actualValues, 1e-4));
+  EXPECT(assert_equal(*expectedGraph, *actualGraph, 1e-4));
+}
+
+// Verifies that the loader does not synthesize a missing landmark vertex.
+TEST(dataSet, load3DEdgeSE3TrackXYZMissingVertex) {
+  const string filename =
+      findExampleDataFile("edge_se3_trackxyz_missing_vertex");
+  CHECK_EXCEPTION(load3D(filename), std::invalid_argument);
+}
+
+// Verifies that a zero-range track measurement is rejected.
+TEST(dataSet, load3DEdgeSE3TrackXYZZeroRange) {
+  const string filename =
+      findExampleDataFile("edge_se3_trackxyz_zero_range");
+  CHECK_EXCEPTION(load3D(filename), std::invalid_argument);
+}
+
+// Verifies that only offsets referenced by track measurements must be identity.
+TEST(dataSet, load3DEdgeSE3TrackXYZNonidentityOffset) {
+  const string filename =
+      findExampleDataFile("edge_se3_trackxyz_nonidentity_offset");
+  CHECK_EXCEPTION(load3D(filename), std::invalid_argument);
+}
+
+}  // namespace edge_se3_trackxyz_dataset
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 static NonlinearFactorGraph expectedGraph(const SharedNoiseModel& model) {

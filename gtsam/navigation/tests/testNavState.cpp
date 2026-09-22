@@ -23,7 +23,9 @@
 #include <gtsam/base/lieProxies.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/base/testLie.h>
+#include <gtsam/geometry/SO3.h>
 #include <gtsam/navigation/NavState.h>
+#include <gtsam/navigation/TangentPreintegration.h>
 
 #include <cmath>
 
@@ -166,15 +168,18 @@ TEST( NavState, Manifold ) {
   EXPECT(assert_equal(kState1, kState1.retract(kZeroXi)));
   EXPECT(assert_equal(kZeroXi, kState1.localCoordinates(kState1)));
 
-  // Check definition of retract as operating on components separately
-  Vector9 xi;
-  xi << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3;
+  // Check definition of the configured optimization chart.
+  Vector9 xi{0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3};
+#ifdef GTSAM_NAVSTATE_EXPMAP
+  NavState state2 = kState1.expmap(xi);
+#else
   Rot3 drot = Rot3::Expmap(xi.head<3>());
   Point3 dt = Point3(xi.segment<3>(3));
   Velocity3 dvel = Velocity3(-0.1, -0.2, -0.3);
   NavState state2 = NavState(kState1.attitude() * drot,
                              kState1.position() + kState1.attitude() * dt,
                              kState1.velocity() + kState1.attitude() * dvel);
+#endif
   EXPECT(assert_equal(state2, kState1.retract(xi)));
   EXPECT(assert_equal(xi, kState1.localCoordinates(state2)));
 
@@ -211,6 +216,56 @@ TEST( NavState, Manifold ) {
   state2.localCoordinates(kIdentity, aH1, aH2);
   EXPECT(assert_equal(numericalDerivative21(local, state2, kIdentity), aH1));
   EXPECT(assert_equal(numericalDerivative22(local, state2, kIdentity), aH2));
+}
+
+/* ************************************************************************* */
+TEST(NavState, ComponentWiseChart) {
+  const Vector9 xi{0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3};
+  const Rot3 drot = Rot3::Expmap(xi.head<3>());
+  const Point3 dt = Point3(xi.segment<3>(3));
+  const Velocity3 dvel = Velocity3(-0.1, -0.2, -0.3);
+  const NavState expected(kState1.attitude() * drot,
+                          kState1.position() + kState1.attitude() * dt,
+                          kState1.velocity() + kState1.attitude() * dvel);
+
+  Matrix9 actualH1, actualH2;
+  const NavState actual = internal::navStateComponentWiseRetract(
+      kState1, xi, actualH1, actualH2);
+  EXPECT(assert_equal(expected, actual));
+  EXPECT(assert_equal(
+      numericalDerivative21<NavState, NavState, Vector9>(
+          [](const NavState& state, const Vector9& delta) {
+            return internal::navStateComponentWiseRetract(state, delta);
+          },
+          kState1, xi),
+      actualH1));
+  EXPECT(assert_equal(
+      numericalDerivative22<NavState, NavState, Vector9>(
+          [](const NavState& state, const Vector9& delta) {
+            return internal::navStateComponentWiseRetract(state, delta);
+          },
+          kState1, xi),
+      actualH2));
+
+  const Vector9 local = internal::navStateComponentWiseLocalCoordinates(
+      kState1, actual, actualH1, actualH2);
+  EXPECT(assert_equal(xi, local));
+  EXPECT(assert_equal(
+      numericalDerivative21<Vector9, NavState, NavState>(
+          [](const NavState& state, const NavState& other) {
+            return internal::navStateComponentWiseLocalCoordinates(state,
+                                                                     other);
+          },
+          kState1, actual),
+      actualH1));
+  EXPECT(assert_equal(
+      numericalDerivative22<Vector9, NavState, NavState>(
+          [](const NavState& state, const NavState& other) {
+            return internal::navStateComponentWiseLocalCoordinates(state,
+                                                                     other);
+          },
+          kState1, actual),
+      actualH2));
 }
 
 /* ************************************************************************* */
@@ -351,7 +406,9 @@ TEST(NavState, interpolate) {
 }
 
 /* ************************************************************************* */
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 static const double dt = 2.0;
+
 auto coriolis = std::bind(&NavState::coriolis, std::placeholders::_1, dt, kOmegaCoriolis,
               std::placeholders::_2, nullptr);
 
@@ -442,19 +499,190 @@ TEST(NavState, Coriolis4) {
 
 /* ************************************************************************* */
 TEST(NavState, CorrectPIM) {
-  Vector9 xi;
-  xi << 0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3;
+  Vector9 xi{0.1, 0.1, 0.1, 0.2, 0.3, 0.4, -0.1, -0.2, -0.3};
   double dt = 0.5;
   Matrix9 aH1, aH2;
+  Matrix93 aH3;
   auto correctPIM = std::bind(&NavState::correctPIM, std::placeholders::_1,
                 std::placeholders::_2, dt, kGravity, kOmegaCoriolis, false,
-                nullptr, nullptr);
-  kState1.correctPIM(xi, dt, kGravity, kOmegaCoriolis, false, aH1, aH2);
+                nullptr, nullptr, nullptr);
+  kState1.correctPIM(xi, dt, kGravity, kOmegaCoriolis, false, aH1, aH2, aH3);
   EXPECT(assert_equal(numericalDerivative21(correctPIM, kState1, xi), aH1));
   EXPECT(assert_equal(numericalDerivative22(correctPIM, kState1, xi), aH2));
+
+  // Check the Jacobian wrt the gravity vector:
+  auto correctPIMGravity = [&](const Vector3& gravity) {
+    return kState1.correctPIM(xi, dt, gravity, kOmegaCoriolis, false);
+  };
+  EXPECT(assert_equal(
+      numericalDerivative11<Vector9, Vector3>(correctPIMGravity, kGravity),
+      Matrix(aH3)));
+
+  // The gravity Jacobian must also be correct with coriolis disabled:
+  Matrix93 aH3NoCoriolis;
+  kState1.correctPIM(xi, dt, kGravity, {}, false, {}, {}, aH3NoCoriolis);
+  auto correctPIMNoCoriolis = [&](const Vector3& gravity) {
+    return kState1.correctPIM(xi, dt, gravity, {}, false);
+  };
+  EXPECT(assert_equal(
+      numericalDerivative11<Vector9, Vector3>(correctPIMNoCoriolis, kGravity),
+      Matrix(aH3NoCoriolis)));
 }
+#endif
 
 /* ************************************************************************* */
+namespace rotating_earth_fixture {
+
+/** Test adapter that supplies a chosen bias-corrected tangent PIM. */
+class RawTangentPIM : public TangentPreintegration {
+ public:
+  RawTangentPIM(const std::shared_ptr<Params>& params, const Vector9& pim,
+                double dt)
+      : TangentPreintegration(params) {
+    preintegrated_ = pim;
+    deltaTij_ = dt;
+  }
+};
+
+NavState predict(const NavState& initial, const Vector9& pim, double dt,
+                 const Vector3& gravity, const std::optional<Vector3>& omega,
+                 bool useSecondOrder = false) {
+  auto params = std::make_shared<PreintegrationParams>(gravity);
+  params->omegaCoriolis = omega;
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  params->setUse2ndOrderCoriolis(useSecondOrder);
+#else
+  (void)useSecondOrder;
+#endif
+  return RawTangentPIM(params, pim, dt).predict(initial, {});
+}
+
+NavState exactEquation(const NavState& initial, const Vector9& pim, double dt,
+                       const Vector3& gravity, const Vector3& omega) {
+  const so3::DexpFunctor earthRotation(-omega * dt);
+  const Matrix3 gammaRotation = earthRotation.Rodrigues().left();
+  const Matrix3 gammaVelocity = earthRotation.Jacobian().left();
+  const Matrix3 gammaPosition = gammaVelocity - earthRotation.Gamma().left();
+  const Matrix3 initialRotation = initial.R();
+  const Matrix3 omegaCross = skewSymmetric(omega);
+  const Point3 position =
+      gammaPosition * gravity * (dt * dt) +
+      gammaRotation *
+          (initial.position() +
+           (initial.velocity() + omegaCross * initial.position()) * dt +
+           initialRotation * NavState::dP(pim));
+  const Velocity3 velocity =
+      gammaVelocity * gravity * dt +
+      gammaRotation * (initial.velocity() + omegaCross * initial.position() +
+                       initialRotation * NavState::dV(pim)) -
+      omegaCross * position;
+  const Rot3 rotation(gammaRotation * initialRotation *
+                      Rot3::Expmap(NavState::dR(pim)).matrix());
+  return NavState(rotation, position, velocity);
+}
+
+struct PositionVelocity {
+  Point3 position;
+  Velocity3 velocity;
+};
+
+PositionVelocity derivative(const PositionVelocity& state,
+                            const Vector3& gravity, const Vector3& omega) {
+  return {state.velocity, gravity - 2.0 * omega.cross(state.velocity) -
+                              omega.cross(omega.cross(state.position))};
+}
+
+PositionVelocity addScaled(const PositionVelocity& state,
+                           const PositionVelocity& increment, double scale) {
+  return {state.position + scale * increment.position,
+          state.velocity + scale * increment.velocity};
+}
+
+NavState integrateReference(const NavState& initial, double duration,
+                            const Vector3& gravity, const Vector3& omega) {
+  constexpr double kStep = 1e-3;
+  const size_t steps = static_cast<size_t>(std::round(duration / kStep));
+  const double step = duration / static_cast<double>(steps);
+  PositionVelocity state{initial.position(), initial.velocity()};
+  for (size_t index = 0; index < steps; ++index) {
+    const PositionVelocity k1 = derivative(state, gravity, omega);
+    const PositionVelocity k2 =
+        derivative(addScaled(state, k1, 0.5 * step), gravity, omega);
+    const PositionVelocity k3 =
+        derivative(addScaled(state, k2, 0.5 * step), gravity, omega);
+    const PositionVelocity k4 =
+        derivative(addScaled(state, k3, step), gravity, omega);
+    state.position += (step / 6.0) * (k1.position + 2.0 * k2.position +
+                                      2.0 * k3.position + k4.position);
+    state.velocity += (step / 6.0) * (k1.velocity + 2.0 * k2.velocity +
+                                      2.0 * k3.velocity + k4.velocity);
+  }
+  return NavState(Rot3::Expmap(-omega * duration).compose(initial.attitude()),
+                  state.position, state.velocity);
+}
+
+// Verifies Brossard's exact transition for arbitrary state and PIM values.
+TEST(NavState, ExactRotatingEarthEquation) {
+  const NavState initial(Rot3::Ypr(0.4, -0.3, 0.2), Point3(120.0, -35.0, 18.0),
+                         Vector3(12.0, -4.0, 2.0));
+  const Vector9 pim{0.08, -0.04, 0.03, 1.2, -0.7, 0.4, 0.5, -0.2, 0.1};
+  const Vector3 gravity{0.2, -0.1, 9.78};
+  const Vector3 omega{0.002, -0.003, 0.004};
+  EXPECT(assert_equal(exactEquation(initial, pim, 2.5, gravity, omega),
+                      predict(initial, pim, 2.5, gravity, omega), 1e-12));
+}
+
+// Verifies the legacy second-order flag no longer changes rotating prediction.
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+TEST(NavState, ExactRotatingEarthIgnoresSecondOrderFlag) {
+  const Vector9 pim{0.08, -0.04, 0.03, 1.2, -0.7, 0.4, 0.5, -0.2, 0.1};
+  EXPECT(assert_equal(
+      predict(kState1, pim, 2.5, kGravity, kOmegaCoriolis),
+      predict(kState1, pim, 2.5, kGravity, kOmegaCoriolis, true), 1e-12));
+}
+#endif
+
+// Verifies absent and exactly zero Earth rates recover the fast inertial path.
+TEST(NavState, ExactRotatingEarthZeroLimit) {
+  const Vector9 pim{0.08, -0.04, 0.03, 1.2, -0.7, 0.4, 0.5, -0.2, 0.1};
+  const NavState noRotation = predict(kState1, pim, 2.5, kGravity, {});
+  EXPECT(assert_equal(noRotation,
+                      predict(kState1, pim, 2.5, kGravity, Vector3::Zero()),
+                      1e-12));
+}
+
+// Verifies the exact transition against an independent long-duration RK4 solve.
+TEST(NavState, ExactRotatingEarthLongDurationReference) {
+  const NavState initial(Rot3::Ypr(0.4, -0.3, 0.2), Point3(120.0, -35.0, 18.0),
+                         Vector3(12.0, -4.0, 2.0));
+  const Vector3 gravity{0.2, -0.1, 9.78};
+  const Vector3 omega{0.01, -0.006, 0.008};
+  constexpr double kDuration = 50.0;
+  const NavState reference =
+      integrateReference(initial, kDuration, gravity, omega);
+  const NavState exact =
+      predict(initial, Vector9::Zero(), kDuration, gravity, omega);
+  const double exactError = (exact.position() - reference.position()).norm() +
+                            (exact.velocity() - reference.velocity()).norm();
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  const Vector9 inertial =
+      initial.correctPIM(Vector9::Zero(), kDuration, gravity, {});
+  const NavState approximate =
+      initial.retract(inertial + initial.coriolis(kDuration, omega, true));
+  const double approximateError =
+      (approximate.position() - reference.position()).norm() +
+      (approximate.velocity() - reference.velocity()).norm();
+#endif
+  EXPECT(exactError < 1e-8);
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+  EXPECT(approximateError > 1e-2);
+#endif
+}
+
+}  // namespace rotating_earth_fixture
+/* ************************************************************************* */
+
 TEST(NavState, Stream)
 {
   NavState state;
@@ -482,7 +710,7 @@ TEST(NavState, Print) {
 }
 
 /* ************************************************************************* */
-#ifndef GTSAM_POSE3_EXPMAP
+#ifndef GTSAM_NAVSTATE_EXPMAP
 TEST(NavState, Retract_first_order) {
   NavState id;
   Vector v = Z_9x1;
@@ -530,8 +758,8 @@ TEST(NavState, Expmap_A_Full) {
 /* ************************************************************************* */
 TEST(NavState, Expmap_b) {
   NavState p1(Rot3(), Point3(-100, 0, 0), Point3(100, 0, 0));
-  NavState p2 = p1.retract(
-      (Vector(9) << 0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0).finished());
+  NavState p2 =
+      p1.retract(Vector{{0.0, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}});
   NavState expected(Rot3::Rodrigues(0.0, 0.0, 0.1), Point3(-100.0, 0.0, 0.0),
                     Point3(100.0, 0.0, 0.0));
   EXPECT(assert_equal(expected, p2));
@@ -541,7 +769,7 @@ TEST(NavState, Expmap_b) {
 // test case for screw motion in the plane
 namespace screwNavState {
 double a = 0.3, c = cos(a), s = sin(a), w = 0.3;
-Vector xi = (Vector(9) << 0.0, 0.0, w, w, 0.0, 1.0, w, 0.0, 1.0).finished();
+Vector xi{{0.0, 0.0, w, w, 0.0, 1.0, w, 0.0, 1.0}};
 Rot3 expectedR(c, -s, 0, s, c, 0, 0, 0, 1);
 Point3 expectedV(0.29552, 0.0446635, 1);
 Point3 expectedP(0.29552, 0.0446635, 1);
@@ -578,8 +806,7 @@ TEST(NavState, Adjoint_compose_full) {
   // To debug derivatives of compose, assert that
   // T1*T2*exp(Adjoint(inv(T2),x) = T1*exp(x)*T2
   const NavState& T1 = T;
-  Vector9 x;
-  x << 0.1, 0.1, 0.1, 0.4, 0.2, 0.8, 0.4, 0.2, 0.8;
+  Vector9 x{0.1, 0.1, 0.1, 0.4, 0.2, 0.8, 0.4, 0.2, 0.8};
   NavState expected = T1 * NavState::Expmap(x) * T2;
   Vector y = T2.inverse().Adjoint(x);
   NavState actual = T1 * T2 * NavState::Expmap(y);
@@ -590,13 +817,12 @@ TEST(NavState, Adjoint_compose_full) {
 TEST(NavState, ExpmapsGaloreFull) {
   Vector xi;
   NavState actual;
-  xi = (Vector(9) << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9).finished();
+  xi = Vector{{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9}};
   actual = NavState::Expmap(xi);
   EXPECT(assert_equal(expm<NavState>(xi), actual, 1e-6));
   EXPECT(assert_equal(xi, NavState::Logmap(actual), 1e-6));
 
-  xi = (Vector(9) << 0.1, -0.2, 0.3, -0.4, 0.5, -0.6, -0.7, -0.8, -0.9)
-           .finished();
+  xi = Vector{{0.1, -0.2, 0.3, -0.4, 0.5, -0.6, -0.7, -0.8, -0.9}};
   for (double theta = 1.0; 0.3 * theta <= M_PI; theta *= 2) {
     Vector txi = xi * theta;
     actual = NavState::Expmap(txi);
@@ -607,8 +833,7 @@ TEST(NavState, ExpmapsGaloreFull) {
   }
 
   // Works with large v as well, but expm needs 10 iterations!
-  xi =
-      (Vector(9) << 0.2, 0.3, -0.8, 100.0, 120.0, -60.0, 12, 14, 45).finished();
+  xi = Vector{{0.2, 0.3, -0.8, 100.0, 120.0, -60.0, 12, 14, 45}};
   actual = NavState::Expmap(xi);
   EXPECT(assert_equal(expm<NavState>(xi, 10), actual, 1e-5));
   EXPECT(assert_equal(xi, NavState::Logmap(actual), 1e-9));
@@ -627,12 +852,11 @@ TEST(NavState, HatAndVee) {
   EXPECT(assert_equal(v3, NavState::Vee(NavState::Hat(v3))));
 
   // Check the structure of the Lie Algebra element
-  Matrix5 expected;
-  expected << 0, -3, 2, 4, 7,
-    3, 0, -1, 5, 8,
-    -2, 1, 0, 6, 9,
-    0, 0, 0, 0, 0,
-    0, 0, 0, 0, 0;
+  Matrix5 expected{{0, -3, 2, 4, 7},
+                   {3, 0, -1, 5, 8},
+                   {-2, 1, 0, 6, 9},
+                   {0, 0, 0, 0, 0},
+                   {0, 0, 0, 0, 0}};
 
   EXPECT(assert_equal(expected, NavState::Hat(v1)));
 }
@@ -673,8 +897,7 @@ TEST(NavState, Adjoint_hat)
 
 /* ************************************************************************* */
 TEST(NavState, Retract_LocalCoordinates) {
-  Vector9 d;
-  d << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  Vector9 d{1, 2, 3, 4, 5, 6, 7, 8, 9};
   d /= 10;
   const Rot3 R = Rot3::Retract(d.head<3>());
   NavState t = NavState::Retract(d);
@@ -682,8 +905,7 @@ TEST(NavState, Retract_LocalCoordinates) {
 }
 /* ************************************************************************* */
 TEST(NavState, retract_localCoordinates) {
-  Vector9 d12;
-  d12 << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  Vector9 d12{1, 2, 3, 4, 5, 6, 7, 8, 9};
   d12 /= 10;
   NavState t1 = T, t2 = t1.retract(d12);
   EXPECT(assert_equal(d12, t1.localCoordinates(t2)));
@@ -724,8 +946,7 @@ TEST(NavState, manifold_expmap) {
 TEST(NavState, subgroups) {
   // Frank - Below only works for correct "Agrawal06iros style expmap
   // lines in canonical coordinates correspond to Abelian subgroups in SE(3)
-  Vector9 d;
-  d << 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9;
+  Vector9 d{{0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9}};
   // exp(-d)=inverse(exp(d))
   EXPECT(assert_equal(NavState::Expmap(-d), NavState::Expmap(d).inverse()));
   // exp(5d)=exp(2*d+3*d)=exp(2*d)exp(3*d)=exp(3*d)exp(2*d)
@@ -753,8 +974,7 @@ TEST(NavState, adjointMap) {
 /* ************************************************************************* */
 TEST(NavState, ExpmapDerivative1) {
   Matrix9 actualH;
-  Vector9 w;
-  w << 0.1, 0.2, 0.3, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0;
+  Vector9 w{0.1, 0.2, 0.3, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0};
   NavState::Expmap(w, actualH);
 
   [[maybe_unused]] auto f = [](const Vector9& w) {
@@ -769,8 +989,7 @@ TEST(NavState, ExpmapDerivative1) {
 /* ************************************************************************* */
 TEST(NavState, LogmapDerivative) {
   Matrix9 actualH;
-  Vector9 w;
-  w << 0.1, 0.2, 0.3, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0;
+  Vector9 w{0.1, 0.2, 0.3, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0};
   NavState p = NavState::Expmap(w);
   EXPECT(assert_equal(w, NavState::Logmap(p, actualH), 1e-5));
 

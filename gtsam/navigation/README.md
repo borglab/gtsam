@@ -12,6 +12,9 @@ current time step), and the bias estimate.
 Following the preintegration
 scheme proposed in [2], the `ImuFactor` includes many IMU measurements, which
 are "summarized" using the PreintegratedIMUMeasurements class.
+For details on the additional position-integration uncertainty represented by
+`PreintegrationParams::integrationCovariance`, see
+[IMU integration covariance](doc/IMUIntegrationCovariance.md).
 The figure above, courtesy of [Mathworks' navigation toolbox](https://www.mathworks.com/help/nav/index.html), which are also using our work, shows the factor graph fragment for two time slices.
 
 Note that this factor does not model "temporal consistency" of the biases

@@ -5,10 +5,12 @@ on:
   push:
     # Runs on pushes targeting the develop branch
     branches: [develop]
-    # Only trigger redeploy if Markdown files, notebooks, or config changes
+    # Only trigger redeploy if documentation source or config changes
     paths:
       - '**.md'
-      - '**.ipynb' 
+      - '**.ipynb'
+      - '**.css'
+      - 'doc/images/gtsam-manifold-optimization-*.png'
       - 'myst.yml'
 env:
   # `BASE_URL` determines the website is served from, including CSS & JS assets
@@ -34,18 +36,20 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Setup Pages
-        uses: actions/configure-pages@v3
-      - uses: actions/setup-node@v4
+        uses: actions/configure-pages@v6
+      - uses: actions/setup-node@v6
         with:
-          node-version: 18.x
+          node-version: 24.x
       - name: Install MyST Markdown
         run: npm install -g mystmd
       - name: Build HTML Assets
         run: myst build --html
+      - name: Copy theme-aware splash image
+        run: cp doc/images/gtsam-manifold-optimization-dark.png _build/html/
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: './_build/html'
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

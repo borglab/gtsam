@@ -85,16 +85,14 @@ def run(args):
         shonan = gtsam.ShonanAveraging2(input_file)
         if shonan.nrUnknowns() == 0:
             raise ValueError("No 2D pose constraints found, try -d 3.")
-        initial = shonan.initializeRandomly()
-        rotations, _ = shonan.run(initial, 2, 10)
+        rotations, _ = shonan.run(2, 10)
         factors = gtsam.parse2DFactors(input_file)
     elif args.dimension == 3:
         print("Running Shonan averaging for SO(3) on ", input_file)
         shonan = gtsam.ShonanAveraging3(input_file)
         if shonan.nrUnknowns() == 0:
             raise ValueError("No 3D pose constraints found, try -d 2.")
-        initial = shonan.initializeRandomly()
-        rotations, _ = shonan.run(initial, 3, 10)
+        rotations, _ = shonan.run(3, 10)
         factors = gtsam.parse3DFactors(input_file)
     else:
         raise ValueError("Can only run SO(2) or SO(3) averaging")

@@ -9,6 +9,10 @@
 
  * -------------------------------------------------------------------------- */
 
+/**
+ * @file ReferenceFrameFactor.h
+ */
+
 /*
  * @file ReferenceFrameFactor.h
  * @brief A constraint for combining graphs by common landmarks and a transform node
@@ -54,13 +58,18 @@ P transform_point(
  * specific classes of landmarks
  */
 template<class POINT, class TRANSFORM>
-class ReferenceFrameFactor : public NoiseModelFactorN<POINT, TRANSFORM, POINT> {
+class ReferenceFrameFactor
+    : public NoiseModelFactorT<typename traits<POINT>::TangentVector, POINT,
+                               TRANSFORM, POINT> {
 protected:
   /** default constructor for serialization only */
   ReferenceFrameFactor() {}
 
 public:
-  typedef NoiseModelFactorN<POINT, TRANSFORM, POINT> Base;
+  typedef NoiseModelFactorT<typename traits<POINT>::TangentVector, POINT,
+                            TRANSFORM, POINT>
+      Base;
+  using ErrorVector = typename traits<POINT>::TangentVector;
   typedef ReferenceFrameFactor<POINT, TRANSFORM> This;
 
   // Provide access to the Matrix& version of evaluateError:
@@ -80,7 +89,8 @@ public:
    * each degree of freedom.
    */
   ReferenceFrameFactor(double mu, Key globalKey, Key transKey, Key localKey)
-  : Base(globalKey, transKey, localKey, Point().dim(), mu) {}
+      : Base(noiseModel::Constrained::All(Point().dim(), mu), globalKey,
+             transKey, localKey) {}
 
   /**
    * Simple soft constraint constructor for frame of reference, with equal weighting for
@@ -97,9 +107,10 @@ public:
         NonlinearFactor::shared_ptr(new This(*this))); }
 
   /** Combined cost and derivative function using boost::optional */
-  Vector evaluateError(const Point& _global, const Transform& trans, const Point& local,
-        OptionalMatrixType Dforeign, OptionalMatrixType Dtrans,
-        OptionalMatrixType Dlocal) const override {
+  ErrorVector evaluateError(const Point& _global, const Transform& trans,
+                            const Point& local, OptionalMatrixType Dforeign,
+                            OptionalMatrixType Dtrans,
+                            OptionalMatrixType Dlocal) const override {
     Point newlocal = transform_point<Transform,Point>(trans, _global, Dtrans, Dforeign);
     if (Dlocal) {
       *Dlocal = -1* Matrix::Identity(traits<Point>::dimension, traits<Point>::dimension);

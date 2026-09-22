@@ -117,8 +117,9 @@ bool GPSFactorArmCalib::equals(const NonlinearFactor& expected, double tol) cons
 }
 
 //***************************************************************************
-Vector GPSFactorArmCalib::evaluateError(const Pose3& nTb, const Point3& bL,
-    OptionalMatrixType H1, OptionalMatrixType H2) const {
+Vector3 GPSFactorArmCalib::evaluateError(const Pose3& nTb, const Point3& bL,
+                                         OptionalMatrixType H1,
+                                         OptionalMatrixType H2) const {
   const Matrix3 nRb = nTb.rotation().matrix();
   if (H1) {
     H1->resize(3, 6);
@@ -200,8 +201,10 @@ bool GPSFactor2ArmCalib::equals(const NonlinearFactor& expected, double tol) con
 }
 
 //***************************************************************************
-Vector GPSFactor2ArmCalib::evaluateError(const NavState& nTb, const Point3& bL,
-    OptionalMatrixType H1, OptionalMatrixType H2) const {
+Vector3 GPSFactor2ArmCalib::evaluateError(const NavState& nTb,
+                                          const Point3& bL,
+                                          OptionalMatrixType H1,
+                                          OptionalMatrixType H2) const {
   const Matrix3 nRb = nTb.attitude().matrix();
   if (H1) {
     H1->resize(3, 9);

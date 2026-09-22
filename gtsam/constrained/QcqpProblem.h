@@ -132,7 +132,10 @@ void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
  *
  * D=1 accepts the exact homogenized vector dimension defined by T. D>1 accepts
  * exact N-by-D matrix slices, where N is the intrinsic matrix row dimension
- * of T. Canonical lifts and solutions whose connected component has been
+ * of T. Selection is shape-only: types with identical lift dimensions (for
+ * example, compact Rot2 and Vector2 at D=1) cannot be distinguished in a
+ * mixed Values container; recover those variables using their known keys.
+ * Canonical lifts and solutions whose connected component has been
  * explicitly gauge-aligned have meaningful absolute rotations. An unaligned
  * D>1 component has a common right-O(D) gauge, so its independently extracted
  * absolute rotations are intentionally best-effort and gauge-dependent.
@@ -234,17 +237,7 @@ class GTSAM_EXPORT QcqpProblem : public ConstrainedOptProblem {
 
   /** Convert a supported nonlinear factor graph into QCQP costs/constraints. */
   explicit QcqpProblem(const NonlinearFactorGraph& graph,
-                       size_t columnDimension = 1) {
-    if (columnDimension == 0) {
-      throw std::invalid_argument(
-          "QcqpProblem: columnDimension must be positive.");
-    }
-    for (const auto& factor : graph) {
-      if (factor) {
-        factor->qcqpFactors(&costs_, &eqConstraints_, columnDimension);
-      }
-    }
-  }
+                       size_t columnDimension = 1);
 
   /** Add a quadratic cost. */
   void addCost(const QpCost& cost) { costs_.emplace_shared<QpCost>(cost); }

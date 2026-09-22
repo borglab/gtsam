@@ -60,9 +60,9 @@ bool ManifoldPreintegration::equals(const ManifoldPreintegration& other,
 
 //------------------------------------------------------------------------------
 void ManifoldPreintegration::update(const Vector3& measuredAcc,
-    const Vector3& measuredOmega, const double dt, Matrix9* A, Matrix93* B,
-    Matrix93* C) {
-
+                                    const Vector3& measuredOmega,
+                                    const double dt, Matrix9* A, Matrix93* B,
+                                    Matrix93* C) {
   // Correct for bias in the sensor frame
   Vector3 acc = biasHat_.correctAccelerometer(measuredAcc);
   Vector3 omega = biasHat_.correctGyroscope(measuredOmega);
@@ -75,39 +75,65 @@ void ManifoldPreintegration::update(const Vector3& measuredAcc,
         D_correctedOmega_omega);
   }
 
-  // Save current rotation for updating Jacobians
-  const Rot3 oldRij = deltaXij_.attitude();
+  const Rot3 oldRotation = deltaXij_.attitude();
 
-  // Do update
+  // Do update. The transition and measurement Jacobians are also needed to
+  // propagate the accumulated bias Jacobians, even if the caller omits them.
+  Matrix9 stateTransition;
+  Matrix93 accelerationJacobian, omegaJacobian;
+  Matrix9* stateTransitionOutput = A ? A : &stateTransition;
+  Matrix93* accelerationOutput = B ? B : &accelerationJacobian;
+  Matrix93* omegaOutput = C ? C : &omegaJacobian;
   deltaTij_ += dt;
-  deltaXij_ = deltaXij_.update(acc, omega, dt, A, B, C); // functional
+  updateFactor(acc, omega, dt, stateTransitionOutput, accelerationOutput,
+               omegaOutput);
 
   if (p().body_P_sensor) {
     // More complicated derivatives in case of non-trivial sensor pose
-    *C *= D_correctedOmega_omega;
+    *omegaOutput *= D_correctedOmega_omega;
     if (!p().body_P_sensor->translation().isZero())
-      *C += *B * D_correctedAcc_omega;
-    *B *= D_correctedAcc_acc; // NOTE(frank): needs to be last
+      *omegaOutput += *accelerationOutput * D_correctedAcc_omega;
+    *accelerationOutput *= D_correctedAcc_acc;  // Must be last.
   }
 
-  // Update Jacobians
-  // TODO(frank): Try same simplification as in new approach
-  Matrix3 D_acc_R;
-  oldRij.rotate(acc, D_acc_R);
-  const Matrix3 D_acc_biasOmega = D_acc_R * delRdelBiasOmega_;
+  updateBiasJacobians(oldRotation, acc, omega, dt, *stateTransitionOutput,
+                      *accelerationOutput, *omegaOutput);
+}
 
-  const Vector3 integratedOmega = omega * dt;
-  Matrix3 D_incrR_integratedOmega;
-  const Rot3 incrR = Rot3::Expmap(integratedOmega, D_incrR_integratedOmega); // expensive !!
-  const Matrix3 incrRt = incrR.transpose();
-  delRdelBiasOmega_ = incrRt * delRdelBiasOmega_ - D_incrR_integratedOmega * dt;
+//------------------------------------------------------------------------------
+void ManifoldPreintegration::updateFactor(const Vector3& bodyAcceleration,
+                                          const Vector3& bodyOmega, double dt,
+                                          OptionalJacobian<9, 9> F,
+                                          OptionalJacobian<9, 3> G1,
+                                          OptionalJacobian<9, 3> G2) {
+  deltaXij_ = deltaXij_.update(bodyAcceleration, bodyOmega, dt, F, G1, G2);
+}
 
-  double dt22 = 0.5 * dt * dt;
-  const Matrix3 dRij = oldRij.matrix(); // expensive
-  delPdelBiasAcc_ += delVdelBiasAcc_ * dt - dt22 * dRij;
-  delPdelBiasOmega_ += dt * delVdelBiasOmega_ + dt22 * D_acc_biasOmega;
-  delVdelBiasAcc_ += -dRij * dt;
-  delVdelBiasOmega_ += D_acc_biasOmega * dt;
+//------------------------------------------------------------------------------
+void ManifoldPreintegration::updateBiasJacobians(
+    const Rot3& oldRotation, const Vector3& bodyAcceleration,
+    const Vector3& bodyOmega, double dt, const Matrix9& /*stateTransition*/,
+    const Matrix93& /*accelerationJacobian*/,
+    const Matrix93& /*omegaJacobian*/) {
+  Matrix3 acceleration_H_rotation;
+  oldRotation.rotate(bodyAcceleration, acceleration_H_rotation);
+  const Matrix3 acceleration_H_biasOmega =
+      acceleration_H_rotation * delRdelBiasOmega_;
+
+  const Vector3 integratedOmega = bodyOmega * dt;
+  Matrix3 incrementRotation_H_integratedOmega;
+  const Rot3 incrementRotation =
+      Rot3::Expmap(integratedOmega, incrementRotation_H_integratedOmega);
+  delRdelBiasOmega_ = incrementRotation.transpose() * delRdelBiasOmega_ -
+                      incrementRotation_H_integratedOmega * dt;
+
+  const double halfDtSquared = 0.5 * dt * dt;
+  const Matrix3 oldR = oldRotation.matrix();
+  delPdelBiasAcc_ += delVdelBiasAcc_ * dt - halfDtSquared * oldR;
+  delPdelBiasOmega_ +=
+      dt * delVdelBiasOmega_ + halfDtSquared * acceleration_H_biasOmega;
+  delVdelBiasAcc_ -= oldR * dt;
+  delVdelBiasOmega_ += acceleration_H_biasOmega * dt;
 }
 
 //------------------------------------------------------------------------------

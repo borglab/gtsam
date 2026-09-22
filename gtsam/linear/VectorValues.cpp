@@ -225,17 +225,37 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
-  namespace internal
-  {
-    bool structureCompareOp(const VectorValues::value_type& a, const VectorValues::value_type& b)
-    {
-      return a.first == b.first && a.second.size() == b.second.size();
+  namespace {
+  bool structureCompareOp(const VectorValues::value_type& a,
+                          const VectorValues::value_type& b) {
+    return a.first == b.first && a.second.size() == b.second.size();
+  }
+
+  void validateSameStructure(const VectorValues& a, const VectorValues& b,
+                             const char* message) {
+    if (a.size() != b.size()) throw std::invalid_argument(message);
+    for (const auto& [key, value] : a) {
+      const auto found = b.find(key);
+      if (found == b.end() || value.size() != found->second.size()) {
+        throw std::invalid_argument(message);
+      }
     }
   }
 
+  template <class Operation>
+  VectorValues binaryTransform(const VectorValues& a, const VectorValues& b,
+                               const char* message, Operation operation) {
+    validateSameStructure(a, b, message);
+    VectorValues result;
+    for (const auto& [key, value] : a) {
+      result.emplace(key, operation(value, b.find(key)->second));
+    }
+    return result;
+  }
+  }  // namespace
+
   /* ************************************************************************ */
-  bool VectorValues::hasSameStructure(const VectorValues other) const
-  {
+  bool VectorValues::hasSameStructure(const VectorValues other) const {
     if (this->size() != other.size()) return false;
 
     // Compare in key-sorted order so structure comparison is
@@ -246,7 +266,7 @@ namespace gtsam {
     auto it1 = thisOrdered.begin();
     auto it2 = otherOrdered.begin();
     for (; it1 != thisOrdered.end(); ++it1, ++it2) {
-      if (!internal::structureCompareOp(*it1, *it2)) return false;
+      if (!structureCompareOp(*it1, *it2)) return false;
     }
     return true;
   }
@@ -254,23 +274,11 @@ namespace gtsam {
   /* ************************************************************************ */
   double VectorValues::dot(const VectorValues& v) const
   {
-    if (this->size() != v.size())
-      throw std::invalid_argument(
-          "VectorValues::dot called with a VectorValues of different "
-          "structure");
-
+    constexpr const char* message =
+        "VectorValues::dot called with a VectorValues of different structure";
+    validateSameStructure(*this, v, message);
     double result = 0.0;
-    for (const auto& [key, value] : *this) {
-      const auto it = v.find(key);
-      assert_throw(it != v.end(), std::invalid_argument(
-                                      "VectorValues::dot called with a "
-                                      "VectorValues of different structure"));
-      assert_throw(
-          value.size() == it->second.size(),
-          std::invalid_argument("VectorValues::dot called with a VectorValues "
-                                "of different structure"));
-      result += value.dot(it->second);
-    }
+    for (const auto& [key, value] : *this) result += value.dot(v.find(key)->second);
     return result;
   }
 
@@ -291,29 +299,9 @@ namespace gtsam {
   /* ************************************************************************ */
   VectorValues VectorValues::operator+(const VectorValues& c) const
   {
-    if (this->size() != c.size())
-      throw std::invalid_argument(
-          "VectorValues::operator+ called with different vector sizes");
-
-    VectorValues result;
-    for (const auto& [key, value] : *this) {
-      const auto it = c.find(key);
-      assert_throw(
-          it != c.end(),
-          std::invalid_argument(
-              "VectorValues::operator+ called with different vector sizes"));
-      assert_throw(
-          value.size() == it->second.size(),
-          std::invalid_argument(
-              "VectorValues::operator+ called with different vector sizes"));
-#ifdef TBB_GREATER_EQUAL_2020
-      result.values_.emplace(key, value + it->second);
-#else
-      result.values_.insert({key, value + it->second});
-#endif
-    }
-
-    return result;
+    return binaryTransform(
+        *this, c, "VectorValues::operator+ called with different vector sizes",
+        [](const Vector& a, const Vector& b) { return a + b; });
   }
 
   /* ************************************************************************ */
@@ -325,23 +313,10 @@ namespace gtsam {
   /* ************************************************************************ */
   VectorValues& VectorValues::operator+=(const VectorValues& c)
   {
-    if (this->size() != c.size())
-      throw std::invalid_argument(
-          "VectorValues::operator+= called with different vector sizes");
-
-    for (auto& [key, value] : *this) {
-      const auto it = c.find(key);
-      assert_throw(
-          it != c.end(),
-          std::invalid_argument(
-              "VectorValues::operator+= called with different vector sizes"));
-      assert_throw(
-          value.size() == it->second.size(),
-          std::invalid_argument(
-              "VectorValues::operator+= called with different vector sizes"));
-      value += it->second;
-    }
-
+    validateSameStructure(
+        *this, c,
+        "VectorValues::operator+= called with different vector sizes");
+    for (auto& [key, value] : *this) value += c.find(key)->second;
     return *this;
   }
 
@@ -367,29 +342,9 @@ namespace gtsam {
   /* ************************************************************************ */
   VectorValues VectorValues::operator-(const VectorValues& c) const
   {
-    if (this->size() != c.size())
-      throw std::invalid_argument(
-          "VectorValues::operator- called with different vector sizes");
-
-    VectorValues result;
-    for (const auto& [key, value] : *this) {
-      const auto it = c.find(key);
-      assert_throw(
-          it != c.end(),
-          std::invalid_argument(
-              "VectorValues::operator- called with different vector sizes"));
-      assert_throw(
-          value.size() == it->second.size(),
-          std::invalid_argument(
-              "VectorValues::operator- called with different vector sizes"));
-#ifdef TBB_GREATER_EQUAL_2020
-      result.values_.emplace(key, value - it->second);
-#else
-      result.values_.insert({key, value - it->second});
-#endif
-    }
-
-    return result;
+    return binaryTransform(
+        *this, c, "VectorValues::operator- called with different vector sizes",
+        [](const Vector& a, const Vector& b) { return a - b; });
   }
 
   /* ************************************************************************ */

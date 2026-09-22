@@ -19,7 +19,9 @@
  *  @author Frank Dellaert
  **/
 
+#include <gtsam/navigation/GalileanImuFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
+#include <gtsam/navigation/LieGroupPreintegration.h>
 #include <gtsam/navigation/ManifoldPreintegration.h>
 #include <gtsam/navigation/TangentPreintegration.h>
 
@@ -30,6 +32,133 @@
 namespace gtsam {
 
 using namespace std;
+
+namespace {
+
+/** Propagate the symmetric PIM covariance using its fixed block sparsity. */
+template <bool kTangentStructure>
+void propagatePreintegratedCovariance(Matrix9* covariance, const Matrix9& A,
+                                      const Matrix93& B, const Matrix93& C,
+                                      const Matrix3& accelerometerCovariance,
+                                      const Matrix3& gyroscopeCovariance,
+                                      const Matrix3& integrationCovariance,
+                                      double dt, bool hasSensorPose) {
+  // Every PIM backend has the same transition sparsity in NavState ordering:
+  //
+  //                       [ A00   0    0  ]
+  //                   A = [ A10  A11  A12 ] .
+  //                       [ A20   0   A22 ]
+  //
+  // Form A*P by 3x3 blocks, skipping those structural zeros.
+  Matrix9 AP;
+  const Matrix9 oldCovariance = *covariance;
+  const auto A00 = A.block<3, 3>(0, 0);
+  const auto A10 = A.block<3, 3>(3, 0);
+  const auto A11 = A.block<3, 3>(3, 3);
+  const auto A12 = A.block<3, 3>(3, 6);
+  const auto A20 = A.block<3, 3>(6, 0);
+  const auto A22 = A.block<3, 3>(6, 6);
+  for (int column = 0; column < 3; ++column) {
+    const int offset = 3 * column;
+    AP.block<3, 3>(0, offset).noalias() =
+        A00 * oldCovariance.block<3, 3>(0, offset);
+    if constexpr (kTangentStructure) {
+      // Tangent uses A11=A22=I and A12=dt*I exactly.
+      AP.block<3, 3>(3, offset).noalias() =
+          A10 * oldCovariance.block<3, 3>(0, offset) +
+          oldCovariance.block<3, 3>(3, offset) +
+          dt * oldCovariance.block<3, 3>(6, offset);
+      AP.block<3, 3>(6, offset).noalias() =
+          A20 * oldCovariance.block<3, 3>(0, offset) +
+          oldCovariance.block<3, 3>(6, offset);
+    } else {
+      AP.block<3, 3>(3, offset).noalias() =
+          A10 * oldCovariance.block<3, 3>(0, offset) +
+          A11 * oldCovariance.block<3, 3>(3, offset) +
+          A12 * oldCovariance.block<3, 3>(6, offset);
+      AP.block<3, 3>(6, offset).noalias() =
+          A20 * oldCovariance.block<3, 3>(0, offset) +
+          A22 * oldCovariance.block<3, 3>(6, offset);
+    }
+  }
+
+  // P is symmetric, so evaluate only the six blocks on and below its diagonal.
+  covariance->block<3, 3>(0, 0).noalias() =
+      AP.block<3, 3>(0, 0) * A00.transpose();
+  covariance->block<3, 3>(3, 0).noalias() =
+      AP.block<3, 3>(3, 0) * A00.transpose();
+  covariance->block<3, 3>(6, 0).noalias() =
+      AP.block<3, 3>(6, 0) * A00.transpose();
+  if constexpr (kTangentStructure) {
+    covariance->block<3, 3>(3, 3).noalias() =
+        AP.block<3, 3>(3, 0) * A10.transpose() + AP.block<3, 3>(3, 3) +
+        dt * AP.block<3, 3>(3, 6);
+    covariance->block<3, 3>(6, 3).noalias() =
+        AP.block<3, 3>(6, 0) * A10.transpose() + AP.block<3, 3>(6, 3) +
+        dt * AP.block<3, 3>(6, 6);
+    covariance->block<3, 3>(6, 6).noalias() =
+        AP.block<3, 3>(6, 0) * A20.transpose() + AP.block<3, 3>(6, 6);
+  } else {
+    covariance->block<3, 3>(3, 3).noalias() =
+        AP.block<3, 3>(3, 0) * A10.transpose() +
+        AP.block<3, 3>(3, 3) * A11.transpose() +
+        AP.block<3, 3>(3, 6) * A12.transpose();
+    covariance->block<3, 3>(6, 3).noalias() =
+        AP.block<3, 3>(6, 0) * A10.transpose() +
+        AP.block<3, 3>(6, 3) * A11.transpose() +
+        AP.block<3, 3>(6, 6) * A12.transpose();
+    covariance->block<3, 3>(6, 6).noalias() =
+        AP.block<3, 3>(6, 0) * A20.transpose() +
+        AP.block<3, 3>(6, 6) * A22.transpose();
+  }
+
+  // Acceleration has no direct rotation component, so its measurement noise
+  // only touches the position/velocity covariance blocks.
+  const Matrix3 scaledAccelerometerCovariance = accelerometerCovariance / dt;
+  const auto B1 = B.middleRows<3>(3);
+  const auto B2 = B.bottomRows<3>();
+  Matrix3 B1Covariance, B2Covariance;
+  B1Covariance.noalias() = B1 * scaledAccelerometerCovariance;
+  B2Covariance.noalias() = B2 * scaledAccelerometerCovariance;
+  covariance->block<3, 3>(3, 3).noalias() += B1Covariance * B1.transpose();
+  covariance->block<3, 3>(6, 3).noalias() += B2Covariance * B1.transpose();
+  covariance->block<3, 3>(6, 6).noalias() += B2Covariance * B2.transpose();
+
+  const Matrix3 scaledGyroscopeCovariance = gyroscopeCovariance / dt;
+  const auto C0 = C.topRows<3>();
+  const auto C1 = C.middleRows<3>(3);
+  const auto C2 = C.bottomRows<3>();
+  Matrix3 C0Covariance;
+  C0Covariance.noalias() = C0 * scaledGyroscopeCovariance;
+  covariance->block<3, 3>(0, 0).noalias() += C0Covariance * C0.transpose();
+  const auto addLowerGyroscopeNoise = [&] {
+    Matrix3 C1Covariance, C2Covariance;
+    C1Covariance.noalias() = C1 * scaledGyroscopeCovariance;
+    C2Covariance.noalias() = C2 * scaledGyroscopeCovariance;
+    covariance->block<3, 3>(3, 0).noalias() += C1Covariance * C0.transpose();
+    covariance->block<3, 3>(3, 3).noalias() += C1Covariance * C1.transpose();
+    covariance->block<3, 3>(6, 0).noalias() += C2Covariance * C0.transpose();
+    covariance->block<3, 3>(6, 3).noalias() += C2Covariance * C1.transpose();
+    covariance->block<3, 3>(6, 6).noalias() += C2Covariance * C2.transpose();
+  };
+  if constexpr (kTangentStructure) {
+    // A sensor pose can couple angular velocity into acceleration, making the
+    // lower two gyroscope Jacobian blocks nonzero on this rare path.
+    if (hasSensorPose) addLowerGyroscopeNoise();
+  } else {
+    addLowerGyroscopeNoise();
+  }
+
+  covariance->block<3, 3>(3, 3).noalias() += integrationCovariance * dt;
+
+  // Mirror the computed lower off-diagonal blocks rather than accumulating
+  // cross-block round-off asymmetry over many samples.
+  covariance->block<3, 3>(0, 3) = covariance->block<3, 3>(3, 0).transpose();
+  covariance->block<3, 3>(0, 6) = covariance->block<3, 3>(6, 0).transpose();
+  covariance->block<3, 3>(3, 6) = covariance->block<3, 3>(6, 3).transpose();
+}
+
+}  // namespace
 
 //------------------------------------------------------------------------------
 // Inner class PreintegratedImuMeasurementsT
@@ -69,41 +198,14 @@ void PreintegratedImuMeasurementsT<PreintegrationType>::integrateMeasurement(
   Matrix93 B, C;  // Jacobian of state wrpt accel bias and omega bias respectively.
   PreintegrationType::update(measuredAcc, measuredOmega, dt, &A, &B, &C);
 
-  // first order covariance propagation:
-  // as in [2] we consider a first order propagation that can be seen as a
-  // prediction phase in EKF
-
-  // propagate uncertainty
-  // TODO(frank): use noiseModel routine so we can have arbitrary noise models.
-  const Matrix3& aCov = this->p().accelerometerCovariance;
-  const Matrix3& wCov = this->p().gyroscopeCovariance;
-  const Matrix3& iCov = this->p().integrationCovariance;
-
-  // (1/dt) allows to pass from continuous time noise to discrete time noise
-  // Update the uncertainty on the state (matrix A in [4]).
-  preintMeasCov_ = A * preintMeasCov_ * A.transpose();
-  // These 2 updates account for uncertainty on the IMU measurement (matrix B in [4]).
-  preintMeasCov_.noalias() += B * (aCov / dt) * B.transpose();
-  preintMeasCov_.noalias() += C * (wCov / dt) * C.transpose();
-
-  // NOTE(frank): (Gi*dt)*(C/dt)*(Gi'*dt), with Gi << Z_3x3, I_3x3, Z_3x3 (9x3 matrix)
-  preintMeasCov_.block<3, 3>(3, 3).noalias() += iCov * dt;
-}
-
-//------------------------------------------------------------------------------
-template <class PreintegrationType>
-void PreintegratedImuMeasurementsT<PreintegrationType>::integrateMeasurements(
-    const Matrix& measuredAccs, const Matrix& measuredOmegas,
-    const Matrix& dts) {
-  assert(
-      measuredAccs.rows() == 3 && measuredOmegas.rows() == 3 && dts.rows() == 1);
-  assert(dts.cols() >= 1);
-  assert(measuredAccs.cols() == dts.cols());
-  assert(measuredOmegas.cols() == dts.cols());
-  size_t n = static_cast<size_t>(dts.cols());
-  for (size_t j = 0; j < n; j++) {
-    integrateMeasurement(measuredAccs.col(j), measuredOmegas.col(j), dts(0, j));
-  }
+  // First-order EKF covariance propagation. The fixed NavState block structure
+  // is shared by every backend, even though their nonzero blocks differ.
+  constexpr bool kTangentStructure =
+      std::is_same_v<PreintegrationType, TangentPreintegration>;
+  propagatePreintegratedCovariance<kTangentStructure>(
+      &preintMeasCov_, A, B, C, this->p().accelerometerCovariance,
+      this->p().gyroscopeCovariance, this->p().integrationCovariance, dt,
+      static_cast<bool>(this->p().body_P_sensor));
 }
 
 //------------------------------------------------------------------------------
@@ -137,13 +239,13 @@ bool ImuFactorT<PIM>::equals(const NonlinearFactor& other, double tol) const {
 
 //------------------------------------------------------------------------------
 template <class PIM>
-Vector ImuFactorT<PIM>::evaluateError(const Pose3& pose_i, const Vector3& vel_i,
-    const Pose3& pose_j, const Vector3& vel_j,
-    const imuBias::ConstantBias& bias_i, OptionalMatrixType H1,
-    OptionalMatrixType H2, OptionalMatrixType H3,
+Vector9 ImuFactorT<PIM>::evaluateError(
+    const Pose3& pose_i, const Vector3& vel_i, const Pose3& pose_j,
+    const Vector3& vel_j, const imuBias::ConstantBias& bias_i,
+    OptionalMatrixType H1, OptionalMatrixType H2, OptionalMatrixType H3,
     OptionalMatrixType H4, OptionalMatrixType H5) const {
-  return pim_.computeErrorAndJacobians(pose_i, vel_i, pose_j, vel_j, bias_i,
-      H1, H2, H3, H4, H5);
+  return internal::preintegrationErrorAndJacobians(
+      pim_, pose_i, vel_i, pose_j, vel_j, bias_i, H1, H2, H3, H4, H5);
 }
 
 //------------------------------------------------------------------------------
@@ -177,12 +279,13 @@ bool ImuFactor2T<PIM>::equals(const NonlinearFactor& other, double tol) const {
 
 //------------------------------------------------------------------------------
 template <class PIM>
-Vector ImuFactor2T<PIM>::evaluateError(const NavState& state_i,
+Vector9 ImuFactor2T<PIM>::evaluateError(const NavState& state_i,
     const NavState& state_j,
     const imuBias::ConstantBias& bias_i, //
     OptionalMatrixType H1, OptionalMatrixType H2,
     OptionalMatrixType H3) const {
-  return pim_.computeError(state_i, state_j, bias_i, H1, H2, H3);
+  return internal::preintegrationError(pim_, state_i, state_j, bias_i, H1, H2,
+                                       H3);
 }
 
 //------------------------------------------------------------------------------
@@ -190,25 +293,49 @@ Vector ImuFactor2T<PIM>::evaluateError(const NavState& state_i,
 //------------------------------------------------------------------------------
 template class GTSAM_EXPORT PreintegratedImuMeasurementsT<ManifoldPreintegration>;
 template class GTSAM_EXPORT PreintegratedImuMeasurementsT<TangentPreintegration>;
+template class GTSAM_EXPORT
+    PreintegratedImuMeasurementsT<LieGroupPreintegration>;
+template class GTSAM_EXPORT
+    PreintegratedImuMeasurementsT<GalileanPreintegration>;
 
 // ImuFactorT instantiations
 template class GTSAM_EXPORT ImuFactorT<PreintegratedImuMeasurementsT<ManifoldPreintegration>>;
 template class GTSAM_EXPORT ImuFactorT<PreintegratedImuMeasurementsT<TangentPreintegration>>;
+template class GTSAM_EXPORT
+    ImuFactorT<PreintegratedImuMeasurementsT<LieGroupPreintegration>>;
+template class GTSAM_EXPORT ImuFactorT<PreintegratedImuMeasurementsG>;
 
 // ImuFactor2T instantiations
 template class GTSAM_EXPORT ImuFactor2T<PreintegratedImuMeasurementsT<ManifoldPreintegration>>;
 template class GTSAM_EXPORT ImuFactor2T<PreintegratedImuMeasurementsT<TangentPreintegration>>;
+template class GTSAM_EXPORT
+    ImuFactor2T<PreintegratedImuMeasurementsT<LieGroupPreintegration>>;
+template class GTSAM_EXPORT ImuFactor2T<PreintegratedImuMeasurementsG>;
 
 // operator<< instantiations
 template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsT<ManifoldPreintegration>>(
     std::ostream& os, const ImuFactorT<PreintegratedImuMeasurementsT<ManifoldPreintegration>>& f);
 template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsT<TangentPreintegration>>(
     std::ostream& os, const ImuFactorT<PreintegratedImuMeasurementsT<TangentPreintegration>>& f);
+template GTSAM_EXPORT std::ostream&
+operator<< <PreintegratedImuMeasurementsT<LieGroupPreintegration>>(
+    std::ostream& os,
+    const ImuFactorT<PreintegratedImuMeasurementsT<LieGroupPreintegration>>& f);
+template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsG>(
+    std::ostream& os,
+    const ImuFactorT<PreintegratedImuMeasurementsG>& f);
 
 template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsT<ManifoldPreintegration>>(
     std::ostream& os, const ImuFactor2T<PreintegratedImuMeasurementsT<ManifoldPreintegration>>& f);
 template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsT<TangentPreintegration>>(
     std::ostream& os, const ImuFactor2T<PreintegratedImuMeasurementsT<TangentPreintegration>>& f);
-
+template GTSAM_EXPORT std::ostream&
+operator<< <PreintegratedImuMeasurementsT<LieGroupPreintegration>>(
+    std::ostream& os,
+    const ImuFactor2T<PreintegratedImuMeasurementsT<LieGroupPreintegration>>&
+        f);
+template GTSAM_EXPORT std::ostream& operator<<<PreintegratedImuMeasurementsG>(
+    std::ostream& os,
+    const ImuFactor2T<PreintegratedImuMeasurementsG>& f);
 }
 // namespace gtsam

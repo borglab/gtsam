@@ -63,8 +63,8 @@ TEST( MultiProjectionFactor, create ){
   Symbol x3('X',  3);
 
   Symbol l1('l',  1);
-  Vector n_measPixel(6); // Pixel measurements from 3 cameras observing landmark 1
-  n_measPixel << 10, 10, 10, 10, 10, 10;
+  // Pixel measurements from 3 cameras observing landmark 1
+  Vector n_measPixel{{10, 10, 10, 10, 10, 10}};
   const SharedDiagonal noiseProjection = noiseModel::Isotropic::Sigma(2, 1);
 
   KeySet views;
@@ -189,8 +189,8 @@ TEST( MultiProjectionFactor, create ){
 //  factor.evaluateError(pose, point, H1Actual, H2Actual);
 //
 //  // The expected Jacobians
-//  Matrix H1Expected = (Matrix(2, 6) <<  0., -554.256, 0., -92.376, 0., 0., 554.256, 0., 0., 0., -92.376, 0.).finished();
-//  Matrix H2Expected = (Matrix(2, 3) <<  92.376, 0., 0., 0., 92.376, 0.).finished();
+//  Matrix26 H1Expected{{0., -554.256, 0., -92.376, 0., 0.}, {554.256, 0., 0., 0., -92.376, 0.};
+//  Matrix23 H2Expected{{92.376, 0., 0.}, {0., 92.376, 0.}};
 //
 //  // Verify the Jacobians are correct
 //  CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
@@ -215,8 +215,8 @@ TEST( MultiProjectionFactor, create ){
 //  factor.evaluateError(pose, point, H1Actual, H2Actual);
 //
 //  // The expected Jacobians
-//  Matrix H1Expected = (Matrix(2, 6) <<  -92.376, 0., 577.350, 0., 92.376, 0., -9.2376, -577.350, 0., 0., 0., 92.376).finished();
-//  Matrix H2Expected = (Matrix(2, 3) <<  0., -92.376, 0., 0., 0., -92.376).finished();
+//  Matrix26 H1Expected{{-92.376, 0., 577.350, 0., 92.376, 0.}, {-9.2376, -577.350, 0., 0., 0., 92.376}};
+//  Matrix23 H2Expected{{0., -92.376, 0.}, {0., 0., -92.376}};
 //
 //  // Verify the Jacobians are correct
 //  CHECK(assert_equal(H1Expected, H1Actual, 1e-3));
@@ -226,4 +226,3 @@ TEST( MultiProjectionFactor, create ){
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr); }
 /* ************************************************************************* */
-

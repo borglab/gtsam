@@ -35,12 +35,7 @@ def staircase_params(initial_rank):
     """Return deterministic parameters for the small wrapper test problems."""
     alm_params = gtsam.AugmentedLagrangianParams()
     alm_params.maxIterations = 100
-    alm_params.initialMuEq = 10.0
-    alm_params.muEqIncreaseRate = 2.0
     alm_params.absoluteViolationTolerance = 1e-8
-    alm_params.relativeViolationTolerance = 1e-8
-    alm_params.absoluteCostTolerance = 1e-10
-    alm_params.relativeCostTolerance = 1e-10
 
     params = gtsam.RiemannianStaircaseParams()
     params.pMin = initial_rank
@@ -86,7 +81,7 @@ class TestCertifiableWrappers(unittest.TestCase):
         """Reject negative wrapper ranks before they reach Eigen allocation."""
         values = gtsam.Values()
         values.insert(X(0), np.eye(2))
-        with self.assertRaises(ValueError):
+        with self.assertRaises(TypeError):
             gtsam.RiemannianStaircaseOptimizer.padInitialValues(values, -1)
 
         params = gtsam.RiemannianStaircaseParams()
@@ -176,6 +171,9 @@ class TestCertifiableWrappers(unittest.TestCase):
         self.assertTrue(result.hasRoundedSolution())
         self.assertGreaterEqual(result.totalTime, 0.0)
         ranks = result.getRanksVisited()
+        self.assertEqual(
+            len(ranks), len(result.getQcqpBuildTimePerLevel())
+        )
         self.assertEqual(len(ranks), len(result.getNlpTimePerLevel()))
         self.assertEqual(
             len(ranks), len(result.getVerifyTimePerLevel())
@@ -205,10 +203,12 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
         expected_keys = [X(index) for index in range(len(ground_truth))]
         self.assertEqual(list(solver.orderedKeys()), expected_keys)
         ordered_key_dims = solver.orderedKeyDims()
+        self.assertIsInstance(ordered_key_dims, dict)
         self.assertEqual(set(ordered_key_dims), set(expected_keys))
-        self.assertTrue(all(dimension == 5 for dimension in ordered_key_dims.values()))
+        self.assertTrue(all(dimension == 3 for dimension in ordered_key_dims.values()))
 
         variable_evrs = solver.variableEVRs()
+        self.assertIsInstance(variable_evrs, list)
         qcqp_values = solver.qcqpValues()
         repeated_qcqp_values = solver.qcqpValues()
         repeated_variable_evrs = solver.variableEVRs()
@@ -217,7 +217,7 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
         self.assertTrue(all(np.isfinite(evr) for evr in variable_evrs))
         np.testing.assert_allclose(variable_evrs, repeated_variable_evrs)
         for key in expected_keys:
-            self.assertEqual(qcqp_values.atMatrix(key).shape, (5, 1))
+            self.assertEqual(qcqp_values.atMatrix(key).shape, (3, 1))
             np.testing.assert_allclose(
                 qcqp_values.atMatrix(key), repeated_qcqp_values.atMatrix(key)
             )
@@ -234,6 +234,7 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
         self.assertEqual(recovered_poses.size(), len(ground_truth))
         self.assertEqual(len(pose_errors), len(ground_truth))
         self.assertLess(max(pose_errors), 1e-5)
+        self.assertTrue(solver.solve({"intpntCoTolRelGap": 1e-8}))
 
     def test_monolithic_rot2_ring(self):
         """Solve and recover a small Rot2 ring with the monolithic SDP."""
@@ -247,6 +248,15 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
         solver = MosekChordalSDP(problem, ChordalOrderingType.Colamd)
         self.assertGreater(solver.bayesTree().size(), 0)
         self.assert_solver_solution(solver, ground_truth)
+
+    def test_unshared_homogeneous_coordinates(self):
+        """Opt out through both constructor bindings and retain pose recovery."""
+        problem, ground_truth = rot2_ring_qcqp()
+        monolithic = MosekMonolithicSDP(problem, shareHomogeneousCoordinates=False)
+        chordal = MosekChordalSDP(problem, ChordalOrderingType.Colamd, False)
+        for solver in (monolithic, chordal):
+            with self.subTest(solver=type(solver).__name__):
+                self.assert_solver_solution(solver, ground_truth)
 
 
 if __name__ == "__main__":

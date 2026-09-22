@@ -34,12 +34,14 @@ int main(int argc, char *argv[]) {
 
   // read graph
   string inputFile = findExampleDataFile("w10000");
-  auto model = noiseModel::Diagonal::Sigmas((Vector(3) << 0.05, 0.05, 5.0 * M_PI / 180.0).finished());
+  auto model =
+      noiseModel::Diagonal::Sigmas(Vector{{0.05, 0.05, 5.0 * M_PI / 180.0}});
   const auto [g, solution] = load2D(inputFile, model);
 
   // add noise to create initial estimate
   Values initial;
-  auto noise = noiseModel::Diagonal::Sigmas((Vector(3) << 0.5, 0.5, 15.0 * M_PI / 180.0).finished());
+  auto noise =
+      noiseModel::Diagonal::Sigmas(Vector{{0.5, 0.5, 15.0 * M_PI / 180.0}});
   Sampler sampler(noise);
   for(const auto& [key,pose]: solution->extract<Pose2>())
     initial.insert(key, sampler.perturb(pose));

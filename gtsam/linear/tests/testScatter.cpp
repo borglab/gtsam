@@ -26,21 +26,16 @@ using symbol_shorthand::X;
 
 /* ************************************************************************* */
 TEST(HessianFactor, CombineAndEliminate) {
-  static const size_t m = 3, n = 3;
-  Matrix A01 =
-      (Matrix(m, n) << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0).finished();
+  Matrix3 A01{{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}};
   Vector3 b0(1.5, 1.5, 1.5);
   Vector3 s0(1.6, 1.6, 1.6);
 
-  Matrix A10 =
-      (Matrix(m, n) << 2.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 2.0).finished();
-  Matrix A11 = (Matrix(m, n) << -2.0, 0.0, 0.0, 0.0, -2.0, 0.0, 0.0, 0.0, -2.0)
-                   .finished();
+  Matrix3 A10{{2.0, 0.0, 0.0}, {0.0, 2.0, 0.0}, {0.0, 0.0, 2.0}};
+  Matrix3 A11{{-2.0, 0.0, 0.0}, {0.0, -2.0, 0.0}, {0.0, 0.0, -2.0}};
   Vector3 b1(2.5, 2.5, 2.5);
   Vector3 s1(2.6, 2.6, 2.6);
 
-  Matrix A21 =
-      (Matrix(m, n) << 3.0, 0.0, 0.0, 0.0, 3.0, 0.0, 0.0, 0.0, 3.0).finished();
+  Matrix3 A21{{3.0, 0.0, 0.0}, {0.0, 3.0, 0.0}, {0.0, 0.0, 3.0}};
   Vector3 b2(3.5, 3.5, 3.5);
   Vector3 s2(3.6, 3.6, 3.6);
 
@@ -53,8 +48,8 @@ TEST(HessianFactor, CombineAndEliminate) {
   EXPECT_LONGS_EQUAL(2, scatter.size());
   EXPECT(assert_equal(X(0), scatter.at(0).key));
   EXPECT(assert_equal(X(1), scatter.at(1).key));
-  EXPECT_LONGS_EQUAL(n, scatter.at(0).dimension);
-  EXPECT_LONGS_EQUAL(n, scatter.at(1).dimension);
+  EXPECT_LONGS_EQUAL(3, scatter.at(0).dimension);
+  EXPECT_LONGS_EQUAL(3, scatter.at(1).dimension);
 }
 
 /* ************************************************************************* */

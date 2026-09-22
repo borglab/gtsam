@@ -21,6 +21,7 @@
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/geometry/Rot3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/FunctorizedFactor.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -268,6 +269,50 @@ TEST(FunctorizedFactor, Lambda2) {
 
   EXPECT(assert_equal(Vector::Zero(3), error, 1e-9));
 }
+
+/* ************************************************************************* */
+namespace manifold_output {
+
+const auto model = noiseModel::Isotropic::Sigma(3, 1.0);
+
+// Verifies the Local Jacobian is chained onto a unary projection Jacobian.
+TEST(FunctorizedFactor, UnaryManifoldOutputJacobian) {
+  const Rot3 measurement = Rot3::Expmap(Vector3(-0.3, 0.1, 0.2));
+  const Rot3 value = Rot3::Expmap(Vector3(0.4, -0.2, 0.1));
+  auto identity = [](const Rot3& rotation,
+                     OptionalJacobian<3, 3> H = {}) {
+    if (H) *H = I_3x3;
+    return rotation;
+  };
+  const auto factor =
+      MakeFunctorizedFactor<Rot3>(key, measurement, model, identity);
+
+  Values values;
+  values.insert<Rot3>(key, value);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
+
+// Verifies the Local Jacobian is chained onto both binary projection Jacobians.
+TEST(FunctorizedFactor, BinaryManifoldOutputJacobians) {
+  const Rot3 measurement = Rot3::Expmap(Vector3(-0.2, 0.3, 0.1));
+  const Rot3 value1 = Rot3::Expmap(Vector3(0.4, -0.1, 0.2));
+  const Rot3 value2 = Rot3::Expmap(Vector3(-0.1, 0.2, -0.3));
+  auto compose = [](const Rot3& rotation1, const Rot3& rotation2,
+                    OptionalJacobian<3, 3> H1 = {},
+                    OptionalJacobian<3, 3> H2 = {}) {
+    return rotation1.compose(rotation2, H1, H2);
+  };
+  const auto factor = MakeFunctorizedFactor2<Rot3, Rot3>(
+      keyA, keyx, measurement, model, compose);
+
+  Values values;
+  values.insert<Rot3>(keyA, value1);
+  values.insert<Rot3>(keyx, value2);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
+
+}  // namespace manifold_output
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 int main() {

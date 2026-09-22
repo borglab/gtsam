@@ -26,7 +26,7 @@
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Cal3_S2Stereo.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/NonlinearEquality.h>
+#include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/StereoFactor.h>

@@ -1,0 +1,106 @@
+fgz 1
+style node_size=9mm factor_size=3mm label_sep=0.2pt label_font=scriptsize
+
+r = a_2
+b0 = a_1
+b1 = a_1
+b2 = a_1
+x01 = a_0
+x02 = a_0
+x10 = a_0
+x12 = a_0
+x20 = a_0
+x21 = a_0
+z00 = 0
+z010 = 0
+z011 = 0
+z012 = 1
+z020 = 0
+z021 = 1
+z022 = 0
+z100 = 0
+z101 = 0
+z102 = 1
+z11 = 0
+z120 = 1
+z121 = 0
+z122 = 0
+z200 = 0
+z201 = 1
+z202 = 0
+z210 = 1
+z211 = 0
+z212 = 0
+z22 = 0
+
+node r {} (14.8, 10) color=orange!20
+
+node b0 {r} (4.8, 7) color=orange!20
+node b1 {r} (14.8, 7) color=orange!20
+node b2 {r} (24.8, 7) color=orange!20
+
+known_node z00 {b0} (1.2, 3.7) size=8mm font=scriptsize color=gray!15
+node x01 {b0} (4.8, 3.7) color=orange!20
+node x02 {b0} (8.4, 3.7) color=orange!20
+
+node x10 {b1} (11.2, 3.7) color=orange!20
+known_node z11 {b1} (14.8, 3.7) size=8mm font=scriptsize color=gray!15
+node x12 {b1} (18.4, 3.7) color=orange!20
+
+node x20 {b2} (21.2, 3.7) color=orange!20
+node x21 {b2} (24.8, 3.7) color=orange!20
+known_node z22 {b2} (28.4, 3.7) size=8mm font=scriptsize color=gray!15
+
+known_node z010 {x01} (3.9, 0) size=8mm font=scriptsize color=gray!15
+known_node z011 {x01} (4.8, 0) size=8mm font=scriptsize color=gray!15
+known_node z012 {x01} (5.7, 0) size=8mm font=scriptsize color=gray!15
+known_node z020 {x02} (7.5, 0) size=8mm font=scriptsize color=gray!15
+known_node z021 {x02} (8.4, 0) size=8mm font=scriptsize color=gray!15
+known_node z022 {x02} (9.3, 0) size=8mm font=scriptsize color=gray!15
+
+known_node z100 {x10} (10.3, 0) size=8mm font=scriptsize color=gray!15
+known_node z101 {x10} (11.2, 0) size=8mm font=scriptsize color=gray!15
+known_node z102 {x10} (12.1, 0) size=8mm font=scriptsize color=gray!15
+known_node z120 {x12} (17.5, 0) size=8mm font=scriptsize color=gray!15
+known_node z121 {x12} (18.4, 0) size=8mm font=scriptsize color=gray!15
+known_node z122 {x12} (19.3, 0) size=8mm font=scriptsize color=gray!15
+
+known_node z200 {x20} (20.3, 0) size=8mm font=scriptsize color=gray!15
+known_node z201 {x20} (21.2, 0) size=8mm font=scriptsize color=gray!15
+known_node z202 {x20} (22.1, 0) size=8mm font=scriptsize color=gray!15
+known_node z210 {x21} (23.9, 0) size=8mm font=scriptsize color=gray!15
+known_node z211 {x21} (24.8, 0) size=8mm font=scriptsize color=gray!15
+known_node z212 {x21} (25.7, 0) size=8mm font=scriptsize color=gray!15
+
+edge r -> b0 label=0 label_side=left label_pos=0.55
+edge r -> b1 label=1 label_side=left label_pos=0.55
+edge r -> b2 label=2 label_side=left label_pos=0.55
+
+edge b0 -> z00 label=0 label_side=left label_pos=0.55
+edge b0 -> x01 label=1 label_side=left label_pos=0.55
+edge b0 -> x02 label=2 label_side=left label_pos=0.55
+edge b1 -> x10 label=0 label_side=left label_pos=0.55
+edge b1 -> z11 label=1 label_side=left label_pos=0.55
+edge b1 -> x12 label=2 label_side=left label_pos=0.55
+edge b2 -> x20 label=0 label_side=left label_pos=0.55
+edge b2 -> x21 label=1 label_side=left label_pos=0.55
+edge b2 -> z22 label=2 label_side=left label_pos=0.55
+
+edge x01 -> z010 label=0 label_side=left label_pos=0.55
+edge x01 -> z011 label=1 label_side=left label_pos=0.55
+edge x01 -> z012 label=2 label_side=left label_pos=0.55
+edge x02 -> z020 label=0 label_side=left label_pos=0.55
+edge x02 -> z021 label=1 label_side=left label_pos=0.55
+edge x02 -> z022 label=2 label_side=left label_pos=0.55
+edge x10 -> z100 label=0 label_side=left label_pos=0.55
+edge x10 -> z101 label=1 label_side=left label_pos=0.55
+edge x10 -> z102 label=2 label_side=left label_pos=0.55
+edge x12 -> z120 label=0 label_side=left label_pos=0.55
+edge x12 -> z121 label=1 label_side=left label_pos=0.55
+edge x12 -> z122 label=2 label_side=left label_pos=0.55
+edge x20 -> z200 label=0 label_side=left label_pos=0.55
+edge x20 -> z201 label=1 label_side=left label_pos=0.55
+edge x20 -> z202 label=2 label_side=left label_pos=0.55
+edge x21 -> z210 label=0 label_side=left label_pos=0.55
+edge x21 -> z211 label=1 label_side=left label_pos=0.55
+edge x21 -> z212 label=2 label_side=left label_pos=0.55

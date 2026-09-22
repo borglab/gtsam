@@ -51,7 +51,7 @@ TEST(Rot3 , Concept) {
 /* ************************************************************************* */
 TEST( Rot3, chart)
 {
-  Matrix R = (Matrix(3, 3) << 0, 1, 0, 1, 0, 0, 0, 0, -1).finished();
+  Matrix R{{0, 1, 0}, {1, 0, 0}, {0, 0, -1}};
   Rot3 rot3(R);
 }
 
@@ -67,7 +67,7 @@ TEST( Rot3, constructor)
 /* ************************************************************************* */
 TEST( Rot3, constructor2)
 {
-  Matrix R = (Matrix(3, 3) << 0, 1, 0, 1, 0, 0, 0, 0, -1).finished();
+  Matrix R{{0, 1, 0}, {1, 0, 0}, {0, 0, -1}};
   Rot3 actual(R);
   Rot3 expected(0, 1, 0, 1, 0, 0, 0, 0, -1);
   CHECK(assert_equal(actual,expected));
@@ -134,15 +134,21 @@ TEST( Rot3, AxisAngle2)
   // convert Rot3 to quaternion using GTSAM
   const auto [actualAxis, actualAngle] = R1.axisAngle();
   
+  // Regression guard for BOTH #886 and #1233: this matrix is real data rounded
+  // to 6 digits (orthogonality defect ~4e-6) at an angle 2e-3 away from pi, so
+  // it exercises the near-pi branch on non-orthogonal input. 1e-5 was loose
+  // enough to only catch the gross #886 failure; 1e-7 also catches the #1233
+  // accuracy loss. The residual 4.8e-8 is the truncation of the literal below,
+  // not the implementation (60-digit reference: 3.1396582476).
   double expectedAngle = 3.1396582;
-  CHECK(assert_equal(expectedAngle, actualAngle, 1e-5));
+  CHECK(assert_equal(expectedAngle, actualAngle, 1e-7));
 }
 
 /* ************************************************************************* */
 TEST( Rot3, Rodrigues)
 {
   Rot3 R1 = Rot3::Rodrigues(epsilon, 0, 0);
-  Vector w = (Vector(3) << epsilon, 0., 0.).finished();
+  Vector w{{epsilon, 0., 0.}};
   Rot3 R2 = slow_but_correct_Rodrigues(w);
   CHECK(assert_equal(R2,R1));
 }
@@ -255,9 +261,9 @@ TEST( Rot3, log) {
   Vector w;
   Rot3 R;
 
-#define CHECK_OMEGA(X, Y, Z)             \
-  w = (Vector(3) << (X), (Y), (Z)).finished(); \
-  R = Rot3::Rodrigues(w);                \
+#define CHECK_OMEGA(X, Y, Z)   \
+  w = Vector{{(X), (Y), (Z)}}; \
+  R = Rot3::Rodrigues(w);      \
   EXPECT(assert_equal(w, Rot3::Logmap(R), 1e-12));
 
   // Check zero
@@ -289,7 +295,7 @@ TEST( Rot3, log) {
 
   // Windows and Linux have flipped sign in quaternion mode
 //#if !defined(__APPLE__) && defined(GTSAM_USE_QUATERNIONS)
-  w = (Vector(3) << x * PI, y * PI, z * PI).finished();
+  w = Vector{{x * PI, y * PI, z * PI}};
   R = Rot3::Rodrigues(w);
   EXPECT(assert_equal(Vector(-w), Rot3::Logmap(R), 1e-12));
 //#else
@@ -297,9 +303,9 @@ TEST( Rot3, log) {
 //#endif
 
   // Check 360 degree rotations
-#define CHECK_OMEGA_ZERO(X, Y, Z)        \
-  w = (Vector(3) << (X), (Y), (Z)).finished(); \
-  R = Rot3::Rodrigues(w);                \
+#define CHECK_OMEGA_ZERO(X, Y, Z) \
+  w = Vector{{(X), (Y), (Z)}};    \
+  R = Rot3::Rodrigues(w);         \
   EXPECT(assert_equal((Vector)Z_3x1, Rot3::Logmap(R)));
 
   CHECK_OMEGA_ZERO(2.0 * PI, 0, 0)
@@ -313,18 +319,15 @@ TEST( Rot3, log) {
              -0.03997006, -0.88835923, 0.45740671,   //
              -0.16293753, 0.45743998, 0.87418537);
 
-  // Rot3's Logmap returns different, but equivalent compacted
-  // axis-angle vectors depending on whether Rot3 is implemented
-  // by Quaternions or SO3.
-#if defined(GTSAM_USE_QUATERNIONS)
-  // Quaternion bounds angle to [-pi, pi] resulting in ~179.9 degrees
-  EXPECT(assert_equal(Vector3(0.264451979, -0.742197651, -3.04098211),
+  // This matrix is 179.9887 degrees from identity, so it lands in the near-pi
+  // branch. Both backends now agree here to machine precision, so the two
+  // expectations that used to be split on GTSAM_USE_QUATERNIONS have been
+  // merged: the SO3 path was fixed in #1233, and the quaternion path no longer
+  // assumes unit norm (the quaternion Rot3Q builds from these nine doubles has
+  // norm 1.000000082). The value below is the exact Logmap of this matrix,
+  // verified against a 60-digit reference.
+  EXPECT(assert_equal(Vector3(0.264451957511, -0.74219758996, -3.04098186076),
                       (Vector)Rot3::Logmap(Rlund), 1e-8));
-#else
-  // SO3 will be approximate because of the non-orthogonality
-  EXPECT(assert_equal(Vector3(0.264452, -0.742197708, -3.04098184),
-                        (Vector)Rot3::Logmap(Rlund), 1e-8));
-#endif
 }
 
 /* ************************************************************************* */
@@ -395,10 +398,9 @@ TEST(Rot3, HatAndVee) {
   EXPECT(assert_equal(v3, Rot3::Vee(Rot3::Hat(v3))));
 
   // Check the structure of the Lie Algebra element
-  Matrix3 expected;
-  expected << 0, -3, 2,
-    3, 0, -1,
-    -2, 1, 0;
+  Matrix3 expected{{0, -3, 2},  //
+                   {3, 0, -1},
+                   {-2, 1, 0}};
 
   EXPECT(assert_equal(expected, Rot3::Hat(v1)));
 }
@@ -508,10 +510,10 @@ TEST( Rot3, between )
   Rot3 r1 = Rot3::Rz(M_PI/3.0);
   Rot3 r2 = Rot3::Rz(2.0*M_PI/3.0);
 
-  Matrix expectedr1 = (Matrix(3, 3) <<
-      0.5, -sqrt(3.0)/2.0, 0.0,
-      sqrt(3.0)/2.0, 0.5, 0.0,
-      0.0, 0.0, 1.0).finished();
+  Matrix expectedr1{//
+                    {0.5, -sqrt(3.0) / 2.0, 0.0},
+                    {sqrt(3.0) / 2.0, 0.5, 0.0},
+                    {0.0, 0.0, 1.0}};
   EXPECT(assert_equal(expectedr1, r1.matrix()));
 
   Rot3 R = Rot3::Rodrigues(0.1, 0.4, 0.2);
@@ -609,7 +611,7 @@ TEST( Rot3, RQ)
   CHECK(assert_equal((Vector)Vector3(0.0,0.0,0.1),Rot3::Roll (0.1).ypr()));
 
   // Try RQ to recover calibration from 3*3 sub-block of projection matrix
-  Matrix K = (Matrix(3, 3) << 500.0, 0.0, 320.0, 0.0, 500.0, 240.0, 0.0, 0.0, 1.0).finished();
+  Matrix K{{500.0, 0.0, 320.0}, {0.0, 500.0, 240.0}, {0.0, 0.0, 1.0}};
   Matrix A = K * R.matrix();
   const auto [actualK2, actual2] = RQ(A);
   CHECK(assert_equal(K, actualK2));
@@ -622,9 +624,10 @@ TEST( Rot3, expmapStability ) {
   double theta = w.norm();
   double theta2 = theta*theta;
   Rot3 actualR = Rot3::Expmap(w);
-  Matrix W = (Matrix(3, 3) << 0.0, -w(2), w(1),
-                          w(2), 0.0, -w(0),
-                          -w(1), w(0), 0.0 ).finished();
+  Matrix W{//
+           {0.0, -w(2), w(1)},
+           {w(2), 0.0, -w(0)},
+           {-w(1), w(0), 0.0}};
   Matrix W2 = W*W;
   Matrix Rmat = I_3x3 + (1.0-theta2/6.0 + theta2*theta2/120.0
       - theta2*theta2*theta2/5040.0)*W + (0.5 - theta2/24.0 + theta2*theta2/720.0)*W2 ;
@@ -712,7 +715,7 @@ Matrix Cayley(const Matrix& A) {
 TEST( Rot3, Cayley ) {
   Matrix A = skewSymmetric(1,2,-3);
   Matrix Q = Cayley(A);
-  EXPECT(assert_equal((Matrix)I_3x3, trans(Q)*Q));
+  EXPECT(assert_equal((Matrix)I_3x3, Q.transpose() * Q));
   EXPECT(assert_equal(A, Cayley(Q)));
 }
 
@@ -782,15 +785,13 @@ TEST(Rot3, ChartDerivatives) {
 
 /* ************************************************************************* */
 TEST(Rot3, ClosestTo) {
-  Matrix3 M;
-  M << 0.79067393, 0.6051136, -0.0930814,   //
-      0.4155925, -0.64214347, -0.64324489,  //
-      -0.44948549, 0.47046326, -0.75917576;
+  Matrix3 M{{0.79067393, 0.6051136, -0.0930814},
+            {0.4155925, -0.64214347, -0.64324489},
+            {-0.44948549, 0.47046326, -0.75917576}};
 
-  Matrix expected(3, 3);
-  expected << 0.790687, 0.605096, -0.0931312,  //
-      0.415746, -0.642355, -0.643844,          //
-      -0.449411, 0.47036, -0.759468;
+  Matrix3 expected{{0.790687, 0.605096, -0.0931312},
+                   {0.415746, -0.642355, -0.643844},
+                   {-0.449411, 0.47036, -0.759468}};
 
   auto actual = Rot3::ClosestTo(3*M);
   EXPECT(assert_equal(expected, actual.matrix(), 1e-6));
@@ -1045,8 +1046,7 @@ TEST(Rot3, determinant) {
 /* ************************************************************************* */
 TEST(Rot3, ExpmapChainRule) {
   // Multiply with an arbitrary matrix and exponentiate
-  Matrix3 M;
-  M << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  Matrix3 M{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
   auto g = [&](const Vector3& omega) {
     return Rot3::Expmap(M*omega);
   };
@@ -1065,8 +1065,7 @@ TEST(Rot3, ExpmapChainRule) {
 TEST(Rot3, expmapChainRule) {
   // Multiply an arbitrary rotation with exp(M*x)
   // Perhaps counter-intuitively, this has the same derivatives as above
-  Matrix3 M;
-  M << 1, 2, 3, 4, 5, 6, 7, 8, 9;
+  Matrix3 M{{1, 2, 3}, {4, 5, 6}, {7, 8, 9}};
   const Rot3 R = Rot3::Expmap({1, 2, 3});
   auto g = [&](const Vector3& omega) {
     return R.expmap(M*omega);

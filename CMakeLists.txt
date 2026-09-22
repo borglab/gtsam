@@ -6,20 +6,20 @@ endif()
 # Set the version number for the library
 set (GTSAM_VERSION_MAJOR 4)
 set (GTSAM_VERSION_MINOR 3)
-set (GTSAM_VERSION_PATCH 0)
-set (GTSAM_PRERELEASE_VERSION "a2")
+set (GTSAM_VERSION_PATCH 1)
+set (GTSAM_PRERELEASE_VERSION "")
 math (EXPR GTSAM_VERSION_NUMERIC "10000 * ${GTSAM_VERSION_MAJOR} + 100 * ${GTSAM_VERSION_MINOR} + ${GTSAM_VERSION_PATCH}")
 
 # Set the version string for the library. 
 #
 # If the environment variable DEVELOP is set, then the version string will be
-# "MAJOR.MINORprerelease.devTIMESTAMP". TIMESTAMP is another environment variable that should be set to the current
+# "MAJOR.MINOR.PATCHprerelease.devTIMESTAMP". TIMESTAMP is another environment variable that should be set to the current
 # datetime. See build-cibw.yaml for example usage.
 #
 # If the prerelease version is empty, then the version string will be "MAJOR.MINOR.PATCH". Otherwise, the version
 # string will be "MAJOR.MINORprerelease".
 if (DEFINED ENV{DEVELOP})
-    set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}${GTSAM_PRERELEASE_VERSION}.dev$ENV{TIMESTAMP}")
+    set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}${GTSAM_PRERELEASE_VERSION}.dev$ENV{TIMESTAMP}")
     set (SETUP_NAME "gtsam-develop")
 elseif ("${GTSAM_PRERELEASE_VERSION}" STREQUAL "")
     set (GTSAM_VERSION_STRING "${GTSAM_VERSION_MAJOR}.${GTSAM_VERSION_MINOR}.${GTSAM_VERSION_PATCH}")
@@ -127,6 +127,8 @@ endif()
 include(cmake/HandleCCache.cmake)           # ccache
 include(cmake/HandleCPack.cmake)            # CPack
 include(cmake/HandleEigen.cmake)            # Eigen3
+include(cmake/HandleSpectra.cmake)          # Spectra
+include(cmake/HandleSuiteSparse.cmake)      # CCOLAMD and SuiteSparse_config
 include(cmake/HandleMetis.cmake)            # metis
 include(cmake/HandleCephes.cmake)           # cephes
 include(cmake/HandleMKL.cmake)              # MKL
@@ -151,6 +153,9 @@ add_subdirectory(CppUnitLite)
 # Build GTSAM library
 add_subdirectory(gtsam)
 
+# Find ceres for tests and timing dependencies
+find_package(Ceres CONFIG QUIET)
+
 # Build Tests
 add_subdirectory(tests)
 
@@ -172,6 +177,7 @@ if(GTSAM_BUILD_PYTHON OR GTSAM_INSTALL_MATLAB_TOOLBOX)
         CACHE STRING "The Python version to use for wrapping")
     # Set the include directory for matlab.h
     set(GTWRAP_INCLUDE_NAME "wrap")
+    set(GTWRAP_USE_SYSTEM_PYBIND ${GTSAM_USE_SYSTEM_PYBIND})
 
     # Copy matlab.h to the correct folder.
     configure_file(${PROJECT_SOURCE_DIR}/wrap/matlab.h

@@ -1,6 +1,6 @@
 /* ----------------------------------------------------------------------------
 
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
@@ -27,7 +27,6 @@
 #include <gtsam/slam/dataset.h>
 
 #include <algorithm>
-#include <chrono>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -40,6 +39,8 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
+
+#include "internal/TimingUtils.h"
 
 using namespace gtsam;
 using namespace std;
@@ -243,8 +244,8 @@ Values solveSequentiallyWithISAM2(const NonlinearFactorGraph& graph,
   parameters.relinearizeThreshold = 0.01;
   ISAM2 isam2(parameters);
 
-  const auto priorNoise = noiseModel::Diagonal::Sigmas(
-      (Vector(3) << 1e-6, 1e-6, 1e-6).finished());
+  const auto priorNoise =
+      noiseModel::Diagonal::Sigmas(Vector{{1e-6, 1e-6, 1e-6}});
   size_t nextFactor = 0;
 
   for (size_t stepIndex = 0; stepIndex < allPoseKeys.size(); ++stepIndex) {
@@ -254,7 +255,8 @@ Values solveSequentiallyWithISAM2(const NonlinearFactorGraph& graph,
 
     if (stepIndex == 0) {
       newTheta.insert(currentKey, initial.at<Pose2>(currentKey));
-      newFactors.addPrior(currentKey, initial.at<Pose2>(currentKey), priorNoise);
+      newFactors.addPrior(currentKey, initial.at<Pose2>(currentKey),
+                          priorNoise);
     }
 
     optional<Pose2> predictedPose;
@@ -281,7 +283,8 @@ Values solveSequentiallyWithISAM2(const NonlinearFactorGraph& graph,
       newFactors.push_back(factor);
       if (stepIndex > 0) {
         const Key previousKey = allPoseKeys[stepIndex - 1];
-        const auto between = dynamic_pointer_cast<const BetweenFactor<Pose2>>(factor);
+        const auto between =
+            dynamic_pointer_cast<const BetweenFactor<Pose2>>(factor);
         if (between && isam2.valueExists(previousKey)) {
           if (between->key1() == previousKey && between->key2() == currentKey) {
             predictedPose = isam2.calculateEstimate<Pose2>(previousKey) *
@@ -367,8 +370,7 @@ shared_ptr<CLIQUE> findLowestCommonAncestor(const shared_ptr<CLIQUE>& lhs,
 /// Estimate support size and clique-width statistics for a query.
 template <class BAYESTREE>
 SupportStats analyzeSupport(const BAYESTREE& bayesTree,
-                            const KeyVector& queryKeys,
-                            const Values& values) {
+                            const KeyVector& queryKeys, const Values& values) {
   using Clique = typename BAYESTREE::Clique;
   vector<shared_ptr<Clique>> queryCliques;
   unordered_set<shared_ptr<Clique>> seen;
@@ -588,40 +590,10 @@ string orderingName(Ordering::OrderingType orderingType) {
   return orderingType == Ordering::METIS ? "METIS" : "COLAMD";
 }
 
-/// Compute the median of a small sample vector.
-double median(vector<double> values) {
-  if (values.empty()) {
-    return 0.0;
-  }
-  sort(values.begin(), values.end());
-  const size_t mid = values.size() / 2;
-  if (values.size() % 2 == 0) {
-    return 0.5 * (values[mid - 1] + values[mid]);
-  }
-  return values[mid];
-}
-
-/// Compute the arithmetic mean of a sample vector.
-double mean(const vector<double>& values) {
-  if (values.empty()) {
-    return 0.0;
-  }
-  const double sum = accumulate(values.begin(), values.end(), 0.0);
-  return sum / static_cast<double>(values.size());
-}
-
-/// Compute the population standard deviation of a sample vector.
-double stddev(const vector<double>& values) {
-  if (values.size() < 2) {
-    return 0.0;
-  }
-  const double sampleMean = mean(values);
-  double sumSquares = 0.0;
-  for (double value : values) {
-    const double delta = value - sampleMean;
-    sumSquares += delta * delta;
-  }
-  return sqrt(sumSquares / static_cast<double>(values.size()));
+/// Summarize samples using the covariance benchmark's historical median.
+gtsam::timing::TimingSummary summarize(const vector<double>& values) {
+  return gtsam::timing::summarizeSamples(
+      values, gtsam::timing::MedianPolicy::kAverageMiddle);
 }
 
 /// Sample evenly spaced starting indices across a valid range.
@@ -817,22 +789,27 @@ RawResult benchmarkQuery(const string& datasetName, const string& orderingLabel,
       analyzeSupport(bayesTree, orderedKeys, values);
 
   if (orderedKeys.size() == 1) {
-    const auto reductionStart = chrono::steady_clock::now();
-    const auto marginalFactor =
-        bayesTree.marginalFactor(orderedKeys.front(), EliminatePreferCholesky);
-    const Matrix information = marginalFactor->information();
-    const auto reductionEnd = chrono::steady_clock::now();
+    Matrix information;
+    const double reductionMs =
+        1000.0 * gtsam::timing::measureSeconds([&] {
+          const auto marginalFactor = bayesTree.marginalFactor(
+              orderedKeys.front(), EliminatePreferCholesky);
+          information = marginalFactor->information();
+        });
 
-    const auto extractionStart = chrono::steady_clock::now();
     Matrix recovered;
-    if (variant == Variant::LegacyDense || variant == Variant::SteinerDense) {
-      recovered = information.inverse();
-    } else {
-      Eigen::LLT<Matrix> llt(information.selfadjointView<Eigen::Upper>());
-      recovered = Matrix::Identity(information.rows(), information.cols());
-      llt.solveInPlace(recovered);
-    }
-    const auto extractionEnd = chrono::steady_clock::now();
+    const double extractionMs =
+        1000.0 * gtsam::timing::measureSeconds([&] {
+          if (variant == Variant::LegacyDense ||
+              variant == Variant::SteinerDense) {
+            recovered = information.inverse();
+          } else {
+            Eigen::LLT<Matrix> llt(information.selfadjointView<Eigen::Upper>());
+            recovered =
+                Matrix::Identity(information.rows(), information.cols());
+            llt.solveInPlace(recovered);
+          }
+        });
 
     volatile double checksum = recovered.sum();
     (void)checksum;
@@ -847,11 +824,8 @@ RawResult benchmarkQuery(const string& datasetName, const string& orderingLabel,
     result.queryIndex = queryIndex;
     result.repeatIndex = repeatIndex;
     result.sampleStart = query.sampleStart;
-    result.reductionMs =
-        chrono::duration<double, milli>(reductionEnd - reductionStart).count();
-    result.extractionMs =
-        chrono::duration<double, milli>(extractionEnd - extractionStart)
-            .count();
+    result.reductionMs = reductionMs;
+    result.extractionMs = extractionMs;
     result.totalMs = result.reductionMs + result.extractionMs;
     result.supportCliques = 1;
     result.compressedCliques = 1;
@@ -861,57 +835,64 @@ RawResult benchmarkQuery(const string& datasetName, const string& orderingLabel,
     return result;
   }
 
-  const auto reductionStart = chrono::steady_clock::now();
-  GaussianFactorGraph reducedGraph =
-      orderedKeys.size() == 2
-          ? pairReducedFactorGraph(bayesTree, orderedKeys)
-          : ((variant == Variant::LegacyDense ||
-              variant == Variant::LegacySolve)
-                 ? legacyReducedFactorGraph(linearGraph, fullOrdering,
-                                            orderedKeys)
-                 : steinerReducedFactorGraph(bayesTree, orderedKeys));
-  const auto reductionEnd = chrono::steady_clock::now();
+  GaussianFactorGraph reducedGraph;
+  const double reductionMs =
+      1000.0 * gtsam::timing::measureSeconds([&] {
+        reducedGraph =
+            orderedKeys.size() == 2
+                ? pairReducedFactorGraph(bayesTree, orderedKeys)
+                : ((variant == Variant::LegacyDense ||
+                    variant == Variant::LegacySolve)
+                       ? legacyReducedFactorGraph(linearGraph, fullOrdering,
+                                                  orderedKeys)
+                       : steinerReducedFactorGraph(bayesTree, orderedKeys));
+      });
 
-  const auto extractionStart = chrono::steady_clock::now();
-  GaussianBayesNet reducedBayesNet = queryBayesNet(reducedGraph, orderedKeys);
-  const vector<size_t> dims = dimsForKeys(orderedKeys, values);
+  GaussianBayesNet reducedBayesNet;
+  vector<size_t> dims;
   Matrix recovered;
-  if (query.crossCovariance) {
-    const FastMap<Key, size_t> keyIndex = Ordering(orderedKeys).invert();
-    vector<size_t> rightBlocks;
-    rightBlocks.reserve(query.right.size());
-    for (Key key : query.right) {
-      rightBlocks.push_back(keyIndex.at(key));
-    }
+  const double extractionMs =
+      1000.0 * gtsam::timing::measureSeconds([&] {
+        reducedBayesNet = queryBayesNet(reducedGraph, orderedKeys);
+        dims = dimsForKeys(orderedKeys, values);
+        if (query.crossCovariance) {
+          const FastMap<Key, size_t> keyIndex = Ordering(orderedKeys).invert();
+          vector<size_t> rightBlocks;
+          rightBlocks.reserve(query.right.size());
+          for (Key key : query.right) {
+            rightBlocks.push_back(keyIndex.at(key));
+          }
 
-    Matrix selectedColumns;
-    if (variant == Variant::LegacyDense || variant == Variant::SteinerDense) {
-      const auto [R, rhs] = reducedBayesNet.matrix(Ordering(orderedKeys));
-      (void)rhs;
-      const Matrix information = R.transpose() * R;
-      const Matrix covariance = information.inverse();
-      recovered = extractDenseCrossBlock(covariance, orderedKeys, dims,
-                                         query.left, query.right);
-    } else {
-      selectedColumns =
-          covarianceColumns(reducedBayesNet, orderedKeys, dims, rightBlocks);
-      recovered = extractPackedCrossBlock(selectedColumns, orderedKeys, dims,
-                                          query.left, query.right);
-    }
-  } else {
-    if (variant == Variant::LegacyDense || variant == Variant::SteinerDense) {
-      const auto [R, rhs] = reducedBayesNet.matrix(Ordering(orderedKeys));
-      (void)rhs;
-      const Matrix information = R.transpose() * R;
-      recovered = information.inverse();
-    } else {
-      vector<size_t> allBlocks(orderedKeys.size());
-      iota(allBlocks.begin(), allBlocks.end(), 0);
-      recovered =
-          covarianceColumns(reducedBayesNet, orderedKeys, dims, allBlocks);
-    }
-  }
-  const auto extractionEnd = chrono::steady_clock::now();
+          Matrix selectedColumns;
+          if (variant == Variant::LegacyDense ||
+              variant == Variant::SteinerDense) {
+            const auto [R, rhs] = reducedBayesNet.matrix(Ordering(orderedKeys));
+            (void)rhs;
+            const Matrix information = R.transpose() * R;
+            const Matrix covariance = information.inverse();
+            recovered = extractDenseCrossBlock(covariance, orderedKeys, dims,
+                                               query.left, query.right);
+          } else {
+            selectedColumns = covarianceColumns(reducedBayesNet, orderedKeys,
+                                                dims, rightBlocks);
+            recovered = extractPackedCrossBlock(selectedColumns, orderedKeys,
+                                                dims, query.left, query.right);
+          }
+        } else {
+          if (variant == Variant::LegacyDense ||
+              variant == Variant::SteinerDense) {
+            const auto [R, rhs] = reducedBayesNet.matrix(Ordering(orderedKeys));
+            (void)rhs;
+            const Matrix information = R.transpose() * R;
+            recovered = information.inverse();
+          } else {
+            vector<size_t> allBlocks(orderedKeys.size());
+            iota(allBlocks.begin(), allBlocks.end(), 0);
+            recovered = covarianceColumns(reducedBayesNet, orderedKeys, dims,
+                                          allBlocks);
+          }
+        }
+      });
 
   volatile double checksum = recovered.sum();
   (void)checksum;
@@ -926,10 +907,8 @@ RawResult benchmarkQuery(const string& datasetName, const string& orderingLabel,
   result.queryIndex = queryIndex;
   result.repeatIndex = repeatIndex;
   result.sampleStart = query.sampleStart;
-  result.reductionMs =
-      chrono::duration<double, milli>(reductionEnd - reductionStart).count();
-  result.extractionMs =
-      chrono::duration<double, milli>(extractionEnd - extractionStart).count();
+  result.reductionMs = reductionMs;
+  result.extractionMs = extractionMs;
   result.totalMs = result.reductionMs + result.extractionMs;
   result.supportCliques = supportStats.supportCliques;
   result.compressedCliques = supportStats.compressedCliques;
@@ -942,7 +921,7 @@ RawResult benchmarkQuery(const string& datasetName, const string& orderingLabel,
 /// Write per-query timing results to CSV.
 void writeRawCsv(const filesystem::path& path,
                  const vector<RawResult>& results) {
-  ofstream os(path);
+  ofstream os = gtsam::timing::openOutputFile(path.string());
   os << "dataset,ordering,query_family,mode,variant,query_size,query_index,"
         "repeat_index,sample_start,"
         "total_ms,reduction_ms,extraction_ms,support_cliques,compressed_"
@@ -954,10 +933,10 @@ void writeRawCsv(const filesystem::path& path,
        << ',' << result.mode << ',' << result.variant << ',' << result.querySize
        << ',' << result.queryIndex << ',' << result.repeatIndex << ','
        << result.sampleStart << ',' << result.totalMs << ','
-       << result.reductionMs << ','
-       << result.extractionMs << ',' << result.supportCliques << ','
-       << result.compressedCliques << ',' << result.reducedStateDim << ','
-       << result.maxFrontalDim << ',' << result.maxSeparatorDim << '\n';
+       << result.reductionMs << ',' << result.extractionMs << ','
+       << result.supportCliques << ',' << result.compressedCliques << ','
+       << result.reducedStateDim << ',' << result.maxFrontalDim << ','
+       << result.maxSeparatorDim << '\n';
   }
 }
 
@@ -1006,15 +985,18 @@ vector<PerQueryResult> aggregatePerQueryResults(
     result.queryIndex = key.queryIndex;
     result.repeats = value.totalMs.size();
     result.sampleStart = value.sampleStart;
-    result.meanTotalMs = mean(value.totalMs);
-    result.meanReductionMs = mean(value.reductionMs);
-    result.meanExtractionMs = mean(value.extractionMs);
-    result.medianTotalMs = median(value.totalMs);
-    result.medianReductionMs = median(value.reductionMs);
-    result.medianExtractionMs = median(value.extractionMs);
-    result.stddevTotalMs = stddev(value.totalMs);
-    result.stddevReductionMs = stddev(value.reductionMs);
-    result.stddevExtractionMs = stddev(value.extractionMs);
+    const auto totalSummary = summarize(value.totalMs);
+    const auto reductionSummary = summarize(value.reductionMs);
+    const auto extractionSummary = summarize(value.extractionMs);
+    result.meanTotalMs = totalSummary.mean;
+    result.meanReductionMs = reductionSummary.mean;
+    result.meanExtractionMs = extractionSummary.mean;
+    result.medianTotalMs = totalSummary.median;
+    result.medianReductionMs = reductionSummary.median;
+    result.medianExtractionMs = extractionSummary.median;
+    result.stddevTotalMs = totalSummary.standardDeviation;
+    result.stddevReductionMs = reductionSummary.standardDeviation;
+    result.stddevExtractionMs = extractionSummary.standardDeviation;
     result.supportCliques = value.supportCliques;
     result.compressedCliques = value.compressedCliques;
     result.reducedStateDim = value.reducedStateDim;
@@ -1028,9 +1010,10 @@ vector<PerQueryResult> aggregatePerQueryResults(
 /// Write per-query aggregated timing results to CSV.
 void writePerQueryCsv(const filesystem::path& path,
                       const vector<PerQueryResult>& results) {
-  ofstream os(path);
+  ofstream os = gtsam::timing::openOutputFile(path.string());
   os << "dataset,ordering,query_family,mode,variant,query_size,query_index,"
-        "repeats,sample_start,mean_total_ms,mean_reduction_ms,mean_extraction_ms,"
+        "repeats,sample_start,mean_total_ms,mean_reduction_ms,mean_extraction_"
+        "ms,"
         "median_total_ms,median_reduction_ms,median_extraction_ms,"
         "stddev_total_ms,stddev_reduction_ms,stddev_extraction_ms,"
         "support_cliques,compressed_cliques,reduced_state_dim,max_frontal_dim,"
@@ -1041,13 +1024,13 @@ void writePerQueryCsv(const filesystem::path& path,
        << ',' << result.mode << ',' << result.variant << ',' << result.querySize
        << ',' << result.queryIndex << ',' << result.repeats << ','
        << result.sampleStart << ',' << result.meanTotalMs << ','
-       << result.meanReductionMs << ','
-       << result.meanExtractionMs << ',' << result.medianTotalMs << ','
-       << result.medianReductionMs << ',' << result.medianExtractionMs << ','
-       << result.stddevTotalMs << ',' << result.stddevReductionMs << ','
-       << result.stddevExtractionMs << ',' << result.supportCliques << ','
-       << result.compressedCliques << ',' << result.reducedStateDim << ','
-       << result.maxFrontalDim << ',' << result.maxSeparatorDim << '\n';
+       << result.meanReductionMs << ',' << result.meanExtractionMs << ','
+       << result.medianTotalMs << ',' << result.medianReductionMs << ','
+       << result.medianExtractionMs << ',' << result.stddevTotalMs << ','
+       << result.stddevReductionMs << ',' << result.stddevExtractionMs << ','
+       << result.supportCliques << ',' << result.compressedCliques << ','
+       << result.reducedStateDim << ',' << result.maxFrontalDim << ','
+       << result.maxSeparatorDim << '\n';
   }
 }
 
@@ -1073,7 +1056,7 @@ void writeSummaryCsv(const filesystem::path& path,
     value.repeats = result.repeats;
   }
 
-  ofstream os(path);
+  ofstream os = gtsam::timing::openOutputFile(path.string());
   os << "dataset,ordering,query_family,mode,variant,query_size,queries,repeats,"
         "median_total_ms,sum_query_mean_total_ms,median_reduction_ms,"
         "median_extraction_ms,support_cliques,compressed_cliques,"
@@ -1085,32 +1068,15 @@ void writeSummaryCsv(const filesystem::path& path,
     os << key.dataset << ',' << key.ordering << ',' << key.family << ','
        << key.mode << ',' << key.variant << ',' << key.querySize << ','
        << value.queryMeanTotalMs.size() << ',' << value.repeats << ','
-       << median(value.queryMeanTotalMs) << ',' << totalTime << ','
-       << median(value.queryMeanReductionMs) << ','
-       << median(value.queryMeanExtractionMs) << ','
-       << median(value.supportCliques) << ',' << median(value.compressedCliques)
-       << ',' << median(value.reducedStateDim) << ','
-       << median(value.maxFrontalDim) << ','
-       << median(value.maxSeparatorDim) << '\n';
+       << summarize(value.queryMeanTotalMs).median << ',' << totalTime << ','
+       << summarize(value.queryMeanReductionMs).median << ','
+       << summarize(value.queryMeanExtractionMs).median << ','
+       << summarize(value.supportCliques).median << ','
+       << summarize(value.compressedCliques).median << ','
+       << summarize(value.reducedStateDim).median << ','
+       << summarize(value.maxFrontalDim).median << ','
+       << summarize(value.maxSeparatorDim).median << '\n';
   }
-}
-
-/// Read a string argument from argv or return a default value.
-string argumentOrDefault(char** begin, char** end, const string& flag,
-                         const string& defaultValue) {
-  for (auto it = begin; it != end; ++it) {
-    if (string(*it) == flag && it + 1 != end) {
-      return *(it + 1);
-    }
-  }
-  return defaultValue;
-}
-
-/// Read an unsigned integer argument from argv or return a default value.
-size_t sizeTArgumentOrDefault(char** begin, char** end, const string& flag,
-                              size_t defaultValue) {
-  return static_cast<size_t>(
-      stoull(argumentOrDefault(begin, end, flag, to_string(defaultValue))));
 }
 
 /// Split a comma-separated argument into individual values.
@@ -1132,14 +1098,15 @@ vector<string> splitCommaSeparated(const string& input) {
 }  // namespace
 
 int main(int argc, char** argv) {
-  const filesystem::path outputDir = argumentOrDefault(
-      argv, argv + argc, "--output-dir",
+  gtsam::timing::Arguments arguments(argc, argv);
+  const filesystem::path outputDir = arguments.stringValue(
+      "--output-dir",
       (filesystem::path("timing") / "results" / "bayes_tree_covariance")
           .string());
-  const vector<string> datasets = splitCommaSeparated(argumentOrDefault(
-      argv, argv + argc, "--datasets", "w100.graph,w10000.graph,w20000.txt"));
-  const size_t repeats =
-      sizeTArgumentOrDefault(argv, argv + argc, "--repeats", 10);
+  const vector<string> datasets = splitCommaSeparated(arguments.stringValue(
+      "--datasets", "w100.graph,w10000.graph,w20000.txt"));
+  const size_t repeats = arguments.sizeValue("--repeats", 10);
+  arguments.validateAllConsumed();
 
   filesystem::create_directories(outputDir);
 
@@ -1153,10 +1120,9 @@ int main(int argc, char** argv) {
     Values result = solveSequentiallyWithISAM2(*graphPtr, *initialPtr);
     const KeyVector anchoredPoseKeys = poseKeys(result);
     if (!anchoredPoseKeys.empty()) {
-      graphPtr->addPrior(anchoredPoseKeys.front(),
-                         result.at<Pose2>(anchoredPoseKeys.front()),
-                         noiseModel::Diagonal::Sigmas(
-                             (Vector(3) << 1e-6, 1e-6, 1e-6).finished()));
+      graphPtr->addPrior(
+          anchoredPoseKeys.front(), result.at<Pose2>(anchoredPoseKeys.front()),
+          noiseModel::Diagonal::Sigmas(Vector{{1e-6, 1e-6, 1e-6}}));
     }
     GaussianFactorGraph linearGraph = *graphPtr->linearize(result);
     const KeyVector poseKeyList = poseKeys(result);

@@ -109,7 +109,7 @@ def _make_perturbed_bal_like_data(measured_data):
 
 
 @unittest.skipIf(cuda is None, "GTSAM was not built with CUDA")
-class TestCudaSfm(unittest.TestCase):
+class TestSfm(unittest.TestCase):
 
     def _run_or_skip_unavailable_runtime(self, func):
         try:
@@ -127,20 +127,31 @@ class TestCudaSfm(unittest.TestCase):
             raise
 
     def test_cuda_sfm_params_are_wrapped(self):
-        params = cuda.CudaSfmLevenbergMarquardtParams.CeresDefaults()
-        params.setLinearSolver("dense-schur")
+        params = cuda.SfmLevenbergMarquardtParams.ceresDefaults()
+        params.setLinearSolver(cuda.LinearSolverType.DenseCholesky)
+        params.setEliminationMode(gtsam.SfmEliminationMode.Schur)
 
-        self.assertEqual("dense-schur", params.getLinearSolver())
-        self.assertEqual(cuda.CudaSfmLinearSolverType.DenseSchur,
-                         params.linearSolver)
+        self.assertEqual(cuda.LinearSolverType.DenseCholesky,
+                         params.getLinearSolver())
+        self.assertEqual(gtsam.SfmEliminationMode.Schur,
+                         params.getEliminationMode())
+
+    def test_cuda_full_mode_is_exposed_but_reserved(self):
+        data = _make_zero_error_sfm_data()
+        params = cuda.SfmLevenbergMarquardtParams()
+        params.setEliminationMode(gtsam.SfmEliminationMode.Full)
+        with self.assertRaisesRegex(
+                (ValueError, RuntimeError),
+                "Full elimination mode is not implemented"):
+            cuda.optimizeSfm(data, params)
 
     def test_optimize_cuda_sfm_runs_from_python(self):
         data = _make_zero_error_sfm_data()
-        params = cuda.CudaSfmLevenbergMarquardtParams()
-        params.maxIterations = 0
+        params = cuda.SfmLevenbergMarquardtParams()
+        params.setMaxIterations(0)
 
         result = self._run_or_skip_unavailable_runtime(
-            lambda: cuda.OptimizeCudaSfm(data, params))
+            lambda: cuda.optimizeSfm(data, params))
 
         self.assertEqual(0, result.iterations)
         self.assertGreaterEqual(result.initialError, 0.0)
@@ -150,13 +161,13 @@ class TestCudaSfm(unittest.TestCase):
 
     def test_optimize_cuda_sfm_matches_cpp_tiny_bal_behavior(self):
         data = _make_perturbed_bal_like_data(_make_true_bal_like_data())
-        params = cuda.CudaSfmLevenbergMarquardtParams()
-        params.maxIterations = 5
-        params.relativeErrorTol = 1e-12
-        params.lambdaInitial = 1e-3
+        params = cuda.SfmLevenbergMarquardtParams()
+        params.setMaxIterations(5)
+        params.setRelativeErrorTol(1e-12)
+        params.setlambdaInitial(1e-3)
 
         result = self._run_or_skip_unavailable_runtime(
-            lambda: cuda.OptimizeCudaSfm(data, params))
+            lambda: cuda.optimizeSfm(data, params))
 
         self.assertGreater(result.iterations, 0)
         self.assertGreater(result.acceptedSteps, 0)

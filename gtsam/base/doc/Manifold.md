@@ -35,8 +35,13 @@ To create a new class `MyManifold`, you must provide the following components. N
 3.  **Core Manifold Methods**:
     *   `Dim()` returns positive integer or Eigen::Dynamic
     *   `dim()` returns fixed-size or dynamic size, if dimension==Eigen::Dynamic
-    *   `MyManifold retract(const TangentVector& v, ChartJacobian H_this = {}, ChartJacobian H_v = {}) const;`
-    *   `TangentVector localCoordinates(const MyManifold& other, ChartJacobian H_this = {}, ChartJacobian H_other = {}) const;`
+    *   `MyManifold retract(const TangentVector& v) const;`
+    *   `TangentVector localCoordinates(const MyManifold& other) const;`
+
+    A manifold may additionally overload these operations with
+    `ChartJacobian H_this, ChartJacobian H_other` arguments. The traits adapter
+    exposes Jacobian-bearing `Retract` and `Local` overloads only when the
+    corresponding class overload exists.
 
 4.  **`Testable` Concept Utilities**:
     *   The `Manifold` concept requires the `Testable` concept. You must implement:

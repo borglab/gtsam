@@ -60,6 +60,21 @@ public:
    * @param keysToRetain    keys that should not be marginalized until released
    * @param keysToRelease   keys to remove from the retained set; if outside the
    *                        lag window they are marginalized in this update
+   *
+   * Every key in timestamps must name a value already held by the smoother or
+   * supplied in newTheta, even if no factor references it yet. Accepted
+   * timestamps participate in the smoother clock normally. Timestamp-before-
+   * value is not supported; a retry must supply the timestamp again along with
+   * its value.
+   *
+   * Removal indices must be within the factor graph at update entry, including
+   * empty slots; adding factors cannot make an invalid index valid. Removal
+   * indices are checked before timestamp keys. Either validation failure leaves
+   * the smoother unchanged, with no part of the update applied.
+   *
+   * @throws std::out_of_range identifying a removal index outside the graph.
+   * @throws std::invalid_argument identifying a timestamp key with no value in
+   * the smoother or newTheta.
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
                 const Values& newTheta = Values(),
@@ -74,6 +89,11 @@ public:
    */
   Values calculateEstimate() const override {
     return theta_.retract(delta_);
+  }
+
+  /** Compute estimates for a set of variables only, one retract per key. */
+  Values calculateEstimate(const KeyVector& keys) const override {
+    return theta_.retract(delta_, keys);
   }
 
   /** Compute an estimate for a single variable using its incomplete linear delta computed

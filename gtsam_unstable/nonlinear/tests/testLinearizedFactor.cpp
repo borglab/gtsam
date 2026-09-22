@@ -16,13 +16,17 @@
  * @date    Jan 16, 2012
  */
 
+#include <gtsam/config.h>
+#include <CppUnitLite/TestHarness.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam_unstable/nonlinear/LinearizedFactor.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/BetweenFactor.h>
-#include <CppUnitLite/TestHarness.h>
 
 using namespace gtsam;
 
@@ -289,9 +293,10 @@ TEST( LinearizedFactor, add_hessian )
 //}
 
 /* ************************************************************************* */
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 int main()
 {
     TestResult tr; return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-

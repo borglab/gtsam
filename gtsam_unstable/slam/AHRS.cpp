@@ -5,6 +5,10 @@
  *      Author: cbeall3
  */
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include "AHRS.h"
 
 #include <gtsam/base/VectorConstants.h>
@@ -14,7 +18,7 @@
 using namespace std;
 
 namespace gtsam {
-// Can't use macros because we need to take a pointer to the matrices
+// Fixed matrices used throughout the filter equations.
 static const Eigen::MatrixBase<Matrix3>::IdentityReturnType I3x3 =
     Matrix3::Identity();
 static const Eigen::MatrixBase<Matrix9>::IdentityReturnType I9x9 =
@@ -27,7 +31,7 @@ Matrix3 AHRS::Cov(const Vector3s& m) {
   const double num_observations = m.cols();
   const Vector3 mean = m.rowwise().sum() / num_observations;
   Vector3s D = m.colwise() - mean;
-  return D * trans(D) / (num_observations - 1);
+  return D * D.transpose() / (num_observations - 1);
 }
 
 /* ************************************************************************* */
@@ -65,7 +69,7 @@ AHRS::AHRS(const Matrix& stationaryU, const Matrix& stationaryF, double g_e,
   sigmas_v_a_ = (T * Pa_.diagonal()).cwiseSqrt();
 
   // gravity in nav frame
-  n_g_ = (Vector(3) << 0.0, 0.0, g_e).finished();
+  n_g_ = Vector{{0.0, 0.0, g_e}};
   n_g_cross_ = skewSymmetric(n_g_);  // nav frame has Z down !!!
 }
 
@@ -77,7 +81,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   double sp = sin(mech0_.bRn().inverse().pitch());
   double cy = cos(0.0);
   double sy = sin(0.0);
-  Matrix Omega_T = (Matrix(3, 3) << cy * cp, -sy, 0.0, sy * cp, cy, 0.0, -sp, 0.0, 1.0).finished();
+  Matrix Omega_T{{cy * cp, -sy, 0.0}, {sy * cp, cy, 0.0}, {-sp, 0.0, 1.0}};
 
   // Calculate Jacobian of roll/pitch/yaw wrpt (g1,g2,g3), see doc/ypr.nb
   Vector b_g = mech0_.b_g(g_e);
@@ -87,14 +91,14 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   double g23 = g2 * g2 + g3 * g3;
   double g123 = g1 * g1 + g23;
   double f = 1 / (std::sqrt(g23) * g123);
-  Matrix H_g = (Matrix(3, 3) <<
-      0.0, g3 / g23, -(g2 / g23),                            // roll
-      std::sqrt(g23) / g123, -f * (g1 * g2), -f * (g1 * g3), // pitch
-      0.0, 0.0, 0.0).finished();                             // we don't know anything on yaw
+  Matrix H_g{{0.0, g3 / g23, -(g2 / g23)},                             // roll
+             {std::sqrt(g23) / g123, -f * (g1 * g2), -f * (g1 * g3)},  // pitch
+             {0.0, 0.0, 0.0}};  // we don't know anything on yaw
 
   // Calculate the initial covariance matrix for the error state dx, Farrell08book eq. 10.66
   Matrix Pa = 0.025 * 0.025 * I3x3;
-  Matrix P11 = Omega_T * (H_g * (Pa + Pa_) * trans(H_g)) * trans(Omega_T);
+  Matrix P11 =
+      Omega_T * (H_g * (Pa + Pa_) * H_g.transpose()) * Omega_T.transpose();
   P11(2, 2) = 0.0001;
   Matrix P12 = -Omega_T * H_g * Pa;
 
@@ -107,7 +111,7 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::initialize(double g_e) 
   P_plus_k2.block<3,3>(3, 3) = Pg_;
   P_plus_k2.block<3,3>(3, 6) = Z3x3;
 
-  P_plus_k2.block<3,3>(6, 0) = trans(P12);
+  P_plus_k2.block<3, 3>(6, 0) = P12.transpose();
   P_plus_k2.block<3,3>(6, 3) = Z3x3;
   P_plus_k2.block<3,3>(6, 6) = Pa;
 
@@ -179,9 +183,11 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
   Vector z;
   if (Farrell) {
     // calculate residual gravity measurement
-    z = n_g_ - trans(bRn) * measured_b_g;
-    H = collect(3, &n_g_cross_, &Z3x3, &bRn);
-    R = trans(bRn) * ((Vector3) sigmas_v_a_.array().square()).asDiagonal() * bRn;
+    z = n_g_ - bRn.transpose() * measured_b_g;
+    H.resize(3, 9);
+    H << n_g_cross_, Z3x3, bRn;
+    R = bRn.transpose() * ((Vector3)sigmas_v_a_.array().square()).asDiagonal() *
+        bRn;
   } else {
     // my measurement prediction (in body frame):
     // F(:,k) = bias - b_g
@@ -194,7 +200,8 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aid(
     z = bRn * n_g_ - measured_b_g;
     // Now the Jacobian H
     Matrix b_g = bRn * n_g_cross_;
-    H = collect(3, &b_g, &Z3x3, &I3x3);
+    H.resize(3, 9);
+    H << b_g, Z3x3, I3x3;
     // And the measurement noise, TODO: should be created once where sigmas_v_a is given
     R = ((Vector3) sigmas_v_a_.array().square()).asDiagonal();
   }
@@ -224,9 +231,10 @@ std::pair<Mechanization_bRn2, KalmanFilter::State> AHRS::aidGeneral(
   Vector z = f - increment * f_previous;
   //Vector z = increment * f_previous - f;
   Matrix b_g = skewSymmetric(increment* f_previous);
-  Matrix H = collect(3, &b_g, &I3x3, &Z3x3);
-//  Matrix R = diag(emul(sigmas_v_a_, sigmas_v_a_));
-//  Matrix R = diag(Vector3(1.0, 0.2, 1.0)); // good for L_twice
+  Matrix H(3, 9);
+  H << b_g, I3x3, Z3x3;
+  //  Matrix R = diag(emul(sigmas_v_a_, sigmas_v_a_));
+  //  Matrix R = diag(Vector3(1.0, 0.2, 1.0)); // good for L_twice
   Matrix R = Vector3(0.01, 0.0001, 0.01).asDiagonal();
 
 // update the Kalman filter
@@ -265,3 +273,5 @@ AHRS::~AHRS() {
 /* ************************************************************************* */
 
 } /* namespace gtsam */
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

@@ -101,8 +101,7 @@ int main(int argc, char* argv[]) {
 
   // Create a delta vector to perturb the ground truth
   // We can't really go far before convergence becomes problematic :-(
-  Vector7 delta;
-  delta << 1, 2, 3, 4, 5, 6, 7;
+  Vector7 delta{1, 2, 3, 4, 5, 6, 7};
   delta *= 1e-5;
 
   // Create the data structure to hold the initial estimate to the solution

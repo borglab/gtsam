@@ -21,6 +21,7 @@ set(INSTALL_BIN_DIR bin/${PROJECT_NAME})
 set(INSTALL_INCLUDE_DIR include/${PROJECT_NAME})
 
 option(GTWRAP_ADD_DOCSTRINGS "Whether to add docstrings to the Python bindings from Doxygen-generated XML located at {project_root}/xml" OFF)
+option(GTWRAP_USE_SYSTEM_PYBIND "Find and use system-installed pybind11 instead of installing the bundled copy" OFF)
 
 # ##############################################################################
 # Package Configuration
@@ -65,9 +66,11 @@ configure_file(${PROJECT_SOURCE_DIR}/templates/matlab_wrapper.tpl.in
 # for wrapping.
 install(DIRECTORY gtwrap DESTINATION "${GTWRAP_LIB_INSTALL_DIR}")
 
-# Install pybind11 directory to `CMAKE_INSTALL_PREFIX/lib/gtwrap/pybind11` This
-# will allow the gtwrapConfig.cmake file to load it later.
-install(DIRECTORY pybind11 DESTINATION "${GTWRAP_LIB_INSTALL_DIR}")
+# Install pybind11 so gtwrapConfig.cmake can load it when not using a system
+# installation.
+if(NOT GTWRAP_USE_SYSTEM_PYBIND)
+  install(DIRECTORY pybind11 DESTINATION "${GTWRAP_LIB_INSTALL_DIR}")
+endif()
 
 # Install wrapping scripts as binaries to `CMAKE_INSTALL_PREFIX/bin` so they can
 # be invoked for wrapping. We use DESTINATION (instead of TYPE) so we can

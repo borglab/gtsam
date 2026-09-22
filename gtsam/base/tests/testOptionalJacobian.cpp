@@ -58,7 +58,7 @@ TEST( OptionalJacobian, Constructors ) {
 }
 
 //******************************************************************************
-Matrix kTestMatrix = (Matrix23() << 11,12,13,21,22,23).finished();
+Matrix kTestMatrix = (Matrix23() << 11, 12, 13, 21, 22, 23).finished();
 
 void test(OptionalJacobian<2, 3> H = {}) {
   if (H)
@@ -149,8 +149,8 @@ TEST( OptionalJacobian, Dynamic) {
 }
 
 //******************************************************************************
-void test3(double add, OptionalJacobian<2,1> H = {}) {
-  if (H) *H << add + 10, add + 20;
+void test3(double add, OptionalJacobian<2, 1> H = {}) {
+  if (H) *H = Matrix21{{add + 10}, {add + 20}};
 }
 
 // This function calls the above function three times, one for each column

@@ -97,49 +97,41 @@ struct traits<QUATERNION_TYPE> {
 
   /// We use our own Logmap, as there is a slight bug in Eigen
   static TangentVector Logmap(const Q& q, ChartJacobian H = {}) {
-    using std::acos;
-    using std::sqrt;
+    using std::atan;
 
-    // define these compile time constants to avoid std::abs:
-    static const double twoPi = 2.0 * M_PI, NearlyOne = 1.0 - 1e-10,
-    NearlyNegativeOne = -1.0 + 1e-10;
+    // theta = 2 * atan2(|v|, w),  omega = theta * v / |v|
+    // (C. Hertzberg et al., Information Fusion, 2011), written with atan()
+    // because it is measurably cheaper than atan2() and w >= 0 is arranged
+    // below anyway. Both theta and v/|v| are invariant to a positive rescaling
+    // of (w, v), so this stays correct when q is not of unit norm -- which
+    // matters because Rot3Q builds its quaternion straight from a rotation
+    // matrix supplied by the caller and never renormalizes.
+    //
+    // This also removes the need for the two Taylor branches the previous
+    // acos-based form required: atan is accurate as |v| -> 0, so the only
+    // degenerate case left is |v| == 0 exactly, i.e. the identity.
+    const _Scalar qw = q.w();
+    const _Scalar n = q.vec().norm();
 
     TangentVector omega;
-
-    const _Scalar qw = q.w();
-    // See Quaternion-Logmap.nb in doc for Taylor expansions
-    if (qw > NearlyOne) {
-      // Taylor expansion of (angle / s) at 1
-      // (2 + 2 * (1-qw) / 3) * q.vec();
-      omega = ( 8. / 3. - 2. / 3. * qw) * q.vec();
-    } else if (qw < NearlyNegativeOne) {
-      // Taylor expansion of (angle / s) at -1
-      // (-2 - 2 * (1 + qw) / 3) * q.vec();
-      omega = (-8. / 3. - 2. / 3. * qw) * q.vec();
+    if (n == _Scalar(0)) {
+      omega = TangentVector::Zero();
     } else {
-      // Normal, away from zero case
-      if (qw > 0) {
-        _Scalar angle = 2 * acos(qw), s = sqrt(1 - qw * qw);
-        // Important:  convert to [-pi,pi] to keep error continuous
-        if (angle > M_PI)
-          angle -= twoPi;
-        else if (angle < -M_PI)
-          angle += twoPi;
-        omega = (angle / s) * q.vec();
-      } else {
-        // Make sure that we are using a canonical quaternion with w > 0
-        _Scalar angle = 2 * acos(-qw), s = sqrt(1 - qw * qw);
-        if (angle > M_PI)
-          angle -= twoPi;
-        else if (angle < -M_PI)
-          angle += twoPi;
-        omega = (angle / s) * -q.vec();
-      }
+      // Branch exactly as the previous implementation did, so that the sign
+      // chosen at qw == 0 (an exact pi rotation, where both signs are valid
+      // logs) is unchanged. Note !(qw > 0) rather than qw < 0.
+      const bool negate = !(qw > _Scalar(0));
+      const _Scalar w = negate ? -qw : qw;
+      const _Scalar theta = (w > n) ? _Scalar(2) * atan(n / w)
+                                    : _Scalar(M_PI) - _Scalar(2) * atan(w / n);
+      omega = (negate ? -theta / n : theta / n) * q.vec();
     }
 
-    if(H) *H = SO3::LogmapDerivative(omega.template cast<double>());
+    if (H) *H = SO3::LogmapDerivative(omega.template cast<double>());
     return omega;
   }
+
+
 
   static Matrix3 AdjointMap(const Q &g) {
     return g.toRotationMatrix();

@@ -10,8 +10,6 @@
 % @author Duy-Nguyen Ta
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-import gtsam.*
-
 % Data Options
 options.triangle = false;
 options.nrCameras = 20;
@@ -34,22 +32,24 @@ options.saveFigures = false;
 options.saveDotFiles = false;
 
 %% Generate data
-[data,truth] = VisualISAMGenerateData(options);
+[data,truth] = gtsam.VisualISAMGenerateData(options);
 
 %% Initialize iSAM with the first pose and points
-[noiseModels,isam,result,nextPose] = VisualISAMInitialize(data,truth,options);
+[noiseModels,isam,result,nextPose] = ...
+    gtsam.VisualISAMInitialize(data,truth,options);
 
 %% Main loop for iSAM: stepping through all poses
 for frame_i=3:options.nrCameras
-    [isam,result,nextPose] = VisualISAMStep(data,noiseModels,isam,result,truth,nextPose);
+    [isam,result,nextPose] = gtsam.VisualISAMStep( ...
+        data,noiseModels,isam,result,truth,nextPose);
 end
 
 for i=1:size(truth.cameras,2)
-    pose_i = result.atPose3(symbol('x',i));
-    CHECK('pose_i.equals(truth.cameras{i}.pose,1e-5)',pose_i.equals(truth.cameras{i}.pose,1e-5))
+    pose_i = result.atPose3(gtsam.symbol('x',i));
+    gtsam.CHECK('pose_i.equals(truth.cameras{i}.pose,1e-5)',pose_i.equals(truth.cameras{i}.pose,1e-5))
 end
 
 for j=1:size(truth.points,2)
-    point_j = result.atPoint3(symbol('l',j));
-    CHECK('point_j.equals(truth.points{j},1e-5)',norm(point_j - truth.points{j}) < 1e-5)
+    point_j = result.atPoint3(gtsam.symbol('l',j));
+    gtsam.CHECK('point_j.equals(truth.points{j},1e-5)',norm(point_j - truth.points{j}) < 1e-5)
 end

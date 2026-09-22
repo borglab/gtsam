@@ -24,6 +24,8 @@
 #include <gtsam/nonlinear/ISAM2.h>
 #include "gtsam/dllexport.h"
 
+#include <functional>
+
 namespace gtsam {
 
 /**
@@ -64,6 +66,28 @@ public:
    * @param keysToRetain    keys that should not be marginalized until released
    * @param keysToRelease   keys to remove from the retained set; if outside the
    *                        lag window they are marginalized in this update
+   *
+   * Every key in @p timestamps must name a value the smoother already holds or
+   * one supplied in @p newTheta in this update; otherwise the update throws
+   * std::invalid_argument identifying the key, before any state is mutated, so
+   * a rejected update leaves the smoother unchanged. Timestamp-before-value is
+   * not supported. A timestamp for an existing value is accepted whether or
+   * not a factor references the key yet, and participates in the smoother
+   * clock normally.
+   *
+   * If this validation fails, no timestamp is retained and no part of the
+   * update is applied. A caller that later supplies the value must supply its
+   * timestamp again; until timestamped, that value is not eligible for
+   * fixed-lag expiration.
+   *
+   * Removal indices must be within the factor graph at update entry, including
+   * empty slots; adding factors cannot make an invalid index valid. Removal
+   * indices are checked before timestamp keys. Either validation failure leaves
+   * the smoother unchanged, with no part of the update applied.
+   *
+   * @throws std::out_of_range identifying a removal index outside the graph.
+   * @throws std::invalid_argument if a key in @p timestamps has no value in
+   * the smoother or in @p newTheta.
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
                 const Values& newTheta = Values(),
@@ -78,6 +102,11 @@ public:
    */
   Values calculateEstimate() const override {
     return isam_.calculateEstimate();
+  }
+
+  /** Compute estimates for a set of variables only, one retract per key. */
+  Values calculateEstimate(const KeyVector& keys) const override {
+    return isam_.calculateEstimate(keys);
   }
 
   /** Compute an estimate for a single variable using its incomplete linear delta computed
@@ -142,7 +171,9 @@ protected:
   void eraseKeysBefore(double timestamp);
 
   /** Fill in an iSAM2 ConstrainedKeys structure such that the provided keys are eliminated before all others */
-  void createOrderingConstraints(const KeyVector& marginalizableKeys,
+  void createOrderingConstraints(
+      const KeyVector& marginalizableKeys,
+      const std::function<bool(Key)>& isActive,
       std::optional<FastMap<Key, int> >& constrainedKeys) const;
 
 private:

@@ -87,6 +87,16 @@ class TestWnoaMotionFactor(GtsamTestCase):
 
         np.testing.assert_allclose(error, expected, rtol=1e-4, atol=1e-6)
 
+        jacobians = [np.zeros((12, 6)) for _ in range(4)]
+        error_with_jacobians = factor.evaluateError(
+            p0, v0, p1, v1, *jacobians
+        )
+        np.testing.assert_allclose(
+            error_with_jacobians, expected, rtol=1e-4, atol=1e-6
+        )
+        for jacobian in jacobians:
+            self.assertTrue(np.any(jacobian))
+
 
 class TestWnoaInterpFactorPose3(GtsamTestCase):
     """Test WnoaInterpFactorPose3 class."""

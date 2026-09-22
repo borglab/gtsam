@@ -2,9 +2,39 @@
 
 ## Coding Conventions
 
-* Classes are Uppercase, methods and functions lowerMixedCase.
+* Classes and types use `UpperCamelCase`; methods and functions use `lowerCamelCase`.
 * Apart from those naming conventions, we adopt Google C++ style.
 * Use meaningful variable names, e.g. `measurement` not `msm`, avoid abbreviations.
+
+### Eigen Fixed-Size and Dynamic Storage
+
+Use fixed-size types such as `Matrix3`, `Matrix23`, and `Vector6` when
+dimensions are known at compile time, especially for `OptionalJacobian`
+outputs. Fixed-size types store their coefficients inline and avoid unnecessary
+dynamic allocation and fixed/dynamic conversions.
+
+Use `Matrix` and `Vector` when dimensions are determined at runtime or when an
+existing API explicitly requires a dynamic type.
+
+When assigning to a fixed-size Jacobian, prefer writing directly to it or using
+a fixed-size temporary:
+
+```cpp
+if (H) {
+  *H = Matrix3{{1.0, 0.0, 0.0},
+               {0.0, 1.0, 0.0},
+               {0.0, 0.0, 1.0}};
+}
+```
+
+Use flat initializer lists for vectors and nested initializer lists for
+matrices:
+
+```cpp
+Vector3 vector{1.0, 2.0, 3.0};
+Matrix23 matrix{{1.0, 2.0, 3.0},
+                {4.0, 5.0, 6.0}};
+```
 
 ### Header-Wrapper Parameter Name Matching
 
@@ -31,18 +61,23 @@ The Python wrapper for a class is defined in the `*.i` interface file present in
 
 ### Possible remaining issues
 
-- If the source compiled fine, any build issues will be a consequence of errors in your new wrapper code. Look closely for missing namespaces, semicolons, types, etc. See the [wrap docs](https://github.com/borglab/wrap/blob/master/DOCS.md) for syntax guidelines.
+- If the C++ library compiled before the interface change but generated wrapper code does not, first check the new declaration for missing namespaces, semicolons, and unsupported types. Also verify that CMake selected the intended Python interpreter and that stale generated output is not being reused. See the [wrap docs](https://github.com/borglab/wrap/blob/master/DOCS.md) for syntax guidelines.
 - If the new function won't show up in Python, make sure you have properly reinstalled the Python package. You might need to `pip uninstall` before reinstalling. On Windows, you might need to recopy the `.pyd` files and then rebuild as mentioned in the Windows installation instructions.
 
 ## Windows
 
-On Windows it is necessary to explicitly export all functions from the library which should be externally accessible. To do this, include the macro `GTSAM_EXPORT` in your class or function definition.
+Windows shared-library builds require public symbols with out-of-line definitions
+to use the export macro for the library that owns them. Use `GTSAM_EXPORT` for
+the stable `gtsam` library and `GTSAM_UNSTABLE_EXPORT` for `gtsam_unstable`.
 
 For example:
+
 ```cpp
 class GTSAM_EXPORT MyClass { ... };
+GTSAM_EXPORT ReturnType myFunction();
 
-GTSAM_EXPORT return_type myFunction();
+class GTSAM_UNSTABLE_EXPORT MyUnstableClass { ... };
 ```
 
-More details [here](Using-GTSAM-EXPORT.md).
+Header-only and template code has additional rules. See
+[Using-GTSAM-EXPORT.md](Using-GTSAM-EXPORT.md) before adding an export macro.

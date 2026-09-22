@@ -119,8 +119,8 @@ void gtsamPoint2_deconstructor_3(int nargout, mxArray *out[], int nargin, const 
   item = collector_gtsamPoint2.find(self);
   if(item != collector_gtsamPoint2.end()) {
     collector_gtsamPoint2.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void gtsamPoint2_argChar_4(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -263,8 +263,8 @@ void gtsamPoint3_deconstructor_20(int nargout, mxArray *out[], int nargin, const
   item = collector_gtsamPoint3.find(self);
   if(item != collector_gtsamPoint3.end()) {
     collector_gtsamPoint3.erase(item);
+    delete self;
   }
-  delete self;
 }
 
 void gtsamPoint3_norm_21(int nargout, mxArray *out[], int nargin, const mxArray *in[])
@@ -400,6 +400,7 @@ void mexFunction(int nargout, mxArray *out[], int nargin, const mxArray *in[])
       break;
     }
   } catch(const std::exception& e) {
+    std::cout.rdbuf(outbuf);
     mexErrMsgTxt(("Exception from gtsam:\n" + std::string(e.what()) + "\n").c_str());
   }
 

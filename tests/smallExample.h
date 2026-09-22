@@ -302,8 +302,8 @@ inline GaussianFactorGraph createGaussianFactorGraph() {
  */
 inline GaussianBayesNet createSmallGaussianBayesNet() {
   using namespace impl;
-  Matrix R11 = (Matrix(1, 1) << 1.0).finished(), S12 = (Matrix(1, 1) << 1.0).finished();
-  Matrix R22 = (Matrix(1, 1) << 1.0).finished();
+  Matrix R11{{1.0}}, S12{{1.0}};
+  Matrix R22{{1.0}};
   Vector d1(1), d2(1);
   d1(0) = 9;
   d2(0) = 5;
@@ -328,9 +328,7 @@ inline Point2 h(const Point2& v) {
 }
 
 inline Matrix H(const Point2& v) {
-  return (Matrix(2, 2) <<
-      -sin(v.x()), 0.0,
-      0.0, cos(v.y())).finished();
+  return Matrix{{-sin(v.x()), 0.0}, {0.0, cos(v.y())}};
 }
 
 struct UnaryFactor: public gtsam::NoiseModelFactorN<Point2> {

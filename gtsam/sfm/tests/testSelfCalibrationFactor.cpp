@@ -39,11 +39,10 @@ const Vector2 kPpI(640.0, 480.0);
 const Vector2 kPpJ(600.0, 512.0);
 
 Matrix3 fundamentalMatrix() {
-  return (Matrix3() <<                                                       //
-          6.542596836638142e-07, 2.152812306321877e-06, -0.00010645321401584966,
-          -1.6601544719750939e-06, 5.97568997068656e-07, 0.003719199236179684,
-          -0.0015826359339192358, -0.0039029900113792815, 1.0)
-      .finished();
+  return Matrix3{
+      {6.542596836638142e-07, 2.152812306321877e-06, -0.00010645321401584966},
+      {-1.6601544719750939e-06, 5.97568997068656e-07, 0.003719199236179684},
+      {-0.0015826359339192358, -0.0039029900113792815, 1.0}};
 }
 
 SelfCalibrationFactor makeFactor() {
@@ -77,8 +76,7 @@ TEST(SelfCalibrationFactor, NonZeroError) {
   SelfCalibrationFactor factor = makeFactor();
   double fi = 1050.0, fj = 965.0;
   Vector actual = factor.evaluateError(fi, fj);
-  Vector expected =
-      (Vector(2) << 0.09297405130946702, -0.0738601361584992).finished();
+  Vector expected{{0.09297405130946702, -0.0738601361584992}};
   EXPECT(assert_equal(expected, actual, 1e-9));
 }
 

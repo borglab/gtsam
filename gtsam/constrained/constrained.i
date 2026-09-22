@@ -3,6 +3,89 @@
 //*************************************************************************
 namespace gtsam {
 
+#include <gtsam/geometry/Cal3Bundler.h>
+#include <gtsam/geometry/Cal3Fisheye.h>
+#include <gtsam/geometry/Cal3Unified.h>
+#include <gtsam/geometry/Cal3_S2.h>
+#include <gtsam/geometry/CalibratedCamera.h>
+#include <gtsam/geometry/Gal3.h>
+#include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/geometry/Rot2.h>
+#include <gtsam/geometry/Rot3.h>
+#include <gtsam/geometry/SL4.h>
+#include <gtsam/geometry/SO3.h>
+#include <gtsam/geometry/SO4.h>
+#include <gtsam/geometry/SOn.h>
+#include <gtsam/geometry/Similarity2.h>
+#include <gtsam/geometry/Similarity3.h>
+#include <gtsam/geometry/SphericalCamera.h>
+#include <gtsam/geometry/StereoPoint2.h>
+#include <gtsam/navigation/ImuBias.h>
+#include <gtsam/constrained/NonlinearEquality.h>
+template <T = {gtsam::Point2,
+               gtsam::StereoPoint2,
+               gtsam::Point3,
+               gtsam::Rot2,
+               gtsam::SO3,
+               gtsam::SO4,
+               gtsam::SOn,
+               gtsam::SL4,
+               gtsam::Rot3,
+               gtsam::Pose2,
+               gtsam::Gal3,
+               gtsam::Pose3,
+               gtsam::Similarity2,
+               gtsam::Similarity3,
+               gtsam::Cal3_S2,
+               gtsam::CalibratedCamera,
+               gtsam::PinholeCamera<gtsam::Cal3_S2>,
+               gtsam::PinholeCamera<gtsam::Cal3Bundler>,
+               gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
+               gtsam::PinholeCamera<gtsam::Cal3Unified>,
+               gtsam::SphericalCamera,
+               gtsam::imuBias::ConstantBias}>
+virtual class NonlinearEquality : gtsam::NoiseModelFactor {
+  // Constructor - forces exact evaluation
+  NonlinearEquality(gtsam::Key j, const T& feasible);
+  // Constructor - allows inexact evaluation
+  NonlinearEquality(gtsam::Key j, const T& feasible, double error_gain);
+
+  // enabling serialization functionality
+  void serialize() const;
+};
+
+template <T = {gtsam::Point2,
+               gtsam::StereoPoint2,
+               gtsam::Point3,
+               gtsam::Rot2,
+               gtsam::Gal3,
+               gtsam::SO3,
+               gtsam::SO4,
+               gtsam::SOn,
+               gtsam::SL4,
+               gtsam::Rot3,
+               gtsam::Pose2,
+               gtsam::Pose3,
+               gtsam::Similarity2,
+               gtsam::Similarity3,
+               gtsam::Cal3_S2,
+               gtsam::CalibratedCamera,
+               gtsam::PinholeCamera<gtsam::Cal3_S2>,
+               gtsam::PinholeCamera<gtsam::Cal3Bundler>,
+               gtsam::PinholeCamera<gtsam::Cal3Fisheye>,
+               gtsam::PinholeCamera<gtsam::Cal3Unified>,
+               gtsam::imuBias::ConstantBias}>
+virtual class NonlinearEquality2 : gtsam::NoiseModelFactor {
+  NonlinearEquality2(gtsam::Key key1, gtsam::Key key2, double mu = 1e4);
+  gtsam::Vector evaluateError(const T& x1, const T& x2,
+                              gtsam::OptionalMatrixType H1 = nullptr,
+                              gtsam::OptionalMatrixType H2 = nullptr) const;
+};
+
 #include <gtsam/constrained/ConstrainedOptProblem.h>
 class ConstrainedOptProblem {
   ConstrainedOptProblem();
@@ -73,6 +156,22 @@ class QuadraticConstraint {
   double sigma() const;
 };
 
+#include <gtsam/constrained/ActiveSetSolver.h>
+class ActiveSetSolverParams {
+  enum class QpSubproblemSolver { Sparse, Dense };
+
+  ActiveSetSolverParams();
+
+  size_t maxIterations;
+  double activeTolerance;
+  double stepTolerance;
+  double feasibilityTolerance;
+  double multiplierTolerance;
+  double regularization;
+  double phaseOneFeasibilityTolerance;
+  gtsam::ActiveSetSolverParams::QpSubproblemSolver qpSubproblemSolver;
+};
+
 #include <gtsam/constrained/LpProblem.h>
 class LpCost {
   LpCost(const gtsam::JacobianFactor& factor);
@@ -89,11 +188,11 @@ class LpProblem : gtsam::ConstrainedOptProblem {
   void addConstraint(const gtsam::LinearConstraint& constraint);
 
   double objective(const gtsam::Values& values) const;
-  gtsam::Values optimize(const gtsam::Values& initialValues) const;
-  gtsam::Values optimize() const;
-  std::tuple<double, double, double> evaluate(
-      const gtsam::Values& values) const;
-  std::tuple<size_t, size_t, size_t> dim() const;
+  gtsam::Values optimize(
+      const gtsam::Values& initialValues,
+      std::shared_ptr<gtsam::ActiveSetSolverParams> params = nullptr) const;
+  gtsam::Values optimize(
+      std::shared_ptr<gtsam::ActiveSetSolverParams> params = nullptr) const;
 };
 
 #include <gtsam/constrained/QpCost.h>
@@ -105,12 +204,6 @@ virtual class QpCost : gtsam::NonlinearFactor {
          size_t columnDim = 1);
 
   const gtsam::HessianFactor& hessianFactor() const;
-  void print(const std::string& s = "",
-             const gtsam::KeyFormatter& formatter =
-                 gtsam::DefaultKeyFormatter) const;
-  bool equals(const gtsam::NonlinearFactor& other, double tol = 1e-9) const;
-  double error(const gtsam::Values& values) const;
-  size_t dim() const;
 };
 
 #include <gtsam/constrained/QpProblem.h>
@@ -129,9 +222,6 @@ class QpProblem : gtsam::ConstrainedOptProblem {
       gtsam::QpSolverType solverType = gtsam::QpSolverType::Sparse) const;
   gtsam::Values optimize(
       gtsam::QpSolverType solverType = gtsam::QpSolverType::Sparse) const;
-  std::tuple<double, double, double> evaluate(
-      const gtsam::Values& values) const;
-  std::tuple<size_t, size_t, size_t> dim() const;
 };
 
 #include <gtsam/constrained/QcqpProblem.h>
@@ -144,9 +234,6 @@ class QcqpProblem : gtsam::ConstrainedOptProblem {
   void addConstraint(const gtsam::LinearConstraint& constraint);
   void addConstraint(const gtsam::QuadraticConstraint& constraint);
 
-  std::tuple<double, double, double> evaluate(
-      const gtsam::Values& values) const;
-  std::tuple<size_t, size_t, size_t> dim() const;
 };
 
 #include <gtsam/geometry/Pose2.h>
@@ -193,14 +280,27 @@ class PenaltyOptimizerParams : gtsam::ConstrainedOptimizerParams {
 };
 
 #include <gtsam/constrained/AugmentedLagrangianOptimizer.h>
+enum class AugmentedLagrangianUpdatePolicy { Aggressive, BCL };
+
 class AugmentedLagrangianParams : gtsam::PenaltyOptimizerParams {
   AugmentedLagrangianParams();
 
+  gtsam::AugmentedLagrangianUpdatePolicy updatePolicy;
   double maxDualStepSizeEq;
   double maxDualStepSizeIneq;
   double dualStepSizeFactorEq;
   double dualStepSizeFactorIneq;
   double muIncreaseThreshold;
+  double absoluteStationarityTolerance;
+  double bclInitialPenalty;
+  double bclPenaltyIncreaseRate;
+  double bclOmega0;
+  double bclEta0;
+  double bclGamma1;
+  double bclAlphaOmega;
+  double bclBetaOmega;
+  double bclAlphaEta;
+  double bclBetaEta;
 };
 
 virtual class AugmentedLagrangianOptimizer {

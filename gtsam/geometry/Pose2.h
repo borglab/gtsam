@@ -100,11 +100,6 @@ public:
   /// @name Advanced Constructors
   /// @{
 
-  /** Construct from canonical coordinates \f$ [T_x,T_y,\theta] \f$ (Lie algebra) */
-  Pose2(const Vector& v) : Pose2() {
-    *this = Expmap(v);
-  }
-
   /**
    *  Create Pose2 by aligning two point pairs
    *  A pose aTb is estimated between pairs (a_point, b_point) such that 
@@ -170,8 +165,22 @@ public:
   /// Derivative of Expmap
   static Matrix3 ExpmapDerivative(const Vector3& v);
 
-  /// Derivative of Logmap
-  static Matrix3 LogmapDerivative(const Pose2& v);
+  /**
+   * Inverse right Jacobian of the exponential map evaluated at a pose.
+   *
+   * @param pose Pose whose tangent coordinates determine the evaluation point.
+   * @return The 3-by-3 inverse right Jacobian at Logmap(pose).
+   */
+  static Matrix3 LogmapDerivative(const Pose2& pose);
+
+  /**
+   * Inverse right Jacobian of the exponential map evaluated at tangent
+   * coordinates xi = (dx, dy, dtheta).
+   *
+   * @param xi Tangent coordinates at which to evaluate the Jacobian.
+   * @return The 3-by-3 inverse right Jacobian at xi.
+   */
+  static Matrix3 LogmapDerivative(const Vector3& xi);
 
   // Chart at origin, depends on compile-time flag SLOW_BUT_CORRECT_EXPMAP
   struct GTSAM_EXPORT ChartAtOrigin {
@@ -250,7 +259,7 @@ public:
 
   /// rotation
   inline const Rot2&   rotation(OptionalJacobian<1, 3> Hself={}) const {
-    if (Hself) *Hself << 0, 0, 1;
+    if (Hself) *Hself = Matrix13{{0, 0, 1}};
     return r_;
   }
 
@@ -326,6 +335,12 @@ public:
   /// @deprecated: use Hat
   static inline Matrix3 wedge(double vx, double vy, double w) {
     return Hat(TangentVector(vx, vy, w));
+  }
+
+  /// @deprecated: use Expmap. This is the exponential map, not componentwise
+  /// construction: use Pose2(x, y, theta) for that.
+  Pose2(const Vector& v) : Pose2() {
+    *this = Expmap(v);
   }
 #endif
   /// @}

@@ -158,8 +158,7 @@ TEST(Expression, NullaryMethod) {
   // Check all
   const double norm = sqrt(3*3 + 4*4 + 5*5);
   EXPECT(actual == norm)
-  Matrix expected(1, 3);
-  expected << 3.0 / norm, 4.0 / norm, 5.0 / norm;
+  Matrix13 expected{{3.0 / norm, 4.0 / norm, 5.0 / norm}};
   EXPECT(assert_equal(expected, H[0]))
 }
 

@@ -27,11 +27,11 @@ namespace gtsam {
 /**
  * DeltaFactor: relative 2D measurement between Pose2 and Point2
  */
-class DeltaFactor: public NoiseModelFactorN<Pose2, Point2> {
+class DeltaFactor : public NoiseModelFactorT<Vector2, Pose2, Point2> {
 
 public:
   typedef DeltaFactor This;
-  typedef NoiseModelFactorN<Pose2, Point2> Base;
+  typedef NoiseModelFactorT<Vector2, Pose2, Point2> Base;
   typedef std::shared_ptr<This> shared_ptr;
 
 private:
@@ -49,8 +49,9 @@ public:
   }
 
   /// Evaluate measurement error h(x)-z
-  Vector evaluateError(const Pose2& pose, const Point2& point,
-      OptionalMatrixType H1, OptionalMatrixType H2) const override {
+  Vector2 evaluateError(const Pose2& pose, const Point2& point,
+                        OptionalMatrixType H1,
+                        OptionalMatrixType H2) const override {
     return pose.transformTo(point, H1, H2) - measured_;
   }
 };
@@ -148,15 +149,14 @@ public:
       Pose2 pose2_g = base2.compose(pose2, D_pose2_g_base2, D_pose2_g_pose2);
       Matrix D_e_pose1_g, D_e_pose2_g;
       Pose2 d = pose1_g.between(pose2_g, D_e_pose1_g, D_e_pose2_g);
-      if (H1)
-        *H1 = D_e_pose1_g * D_pose1_g_base1;
-      if (H2)
-        *H2 = D_e_pose1_g * D_pose1_g_pose1;
-      if (H3)
-        *H3 = D_e_pose2_g * D_pose2_g_base2;
-      if (H4)
-        *H4 = D_e_pose2_g * D_pose2_g_pose2;
-      return measured_.localCoordinates(d);
+      Matrix3 localJacobian;
+      const Vector error =
+          measured_.localCoordinates(d, nullptr, localJacobian);
+      if (H1) *H1 = localJacobian * D_e_pose1_g * D_pose1_g_base1;
+      if (H2) *H2 = localJacobian * D_e_pose1_g * D_pose1_g_pose1;
+      if (H3) *H3 = localJacobian * D_e_pose2_g * D_pose2_g_base2;
+      if (H4) *H4 = localJacobian * D_e_pose2_g * D_pose2_g_pose2;
+      return error;
     } else {
       Pose2 pose1_g = base1.compose(pose1);
       Pose2 pose2_g = base2.compose(pose2);
@@ -167,4 +167,3 @@ public:
 };
 
 }
-

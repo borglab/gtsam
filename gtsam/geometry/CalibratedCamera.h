@@ -255,6 +255,11 @@ public:
 
   inline constexpr static auto dimension = 6;
 
+  /// Compare with another calibrated camera.
+  bool equals(const CalibratedCamera& camera, double tol = 1e-9) const {
+    return PinholeBase::equals(camera, tol);
+  }
+
   /// @name Standard Constructors
   /// @{
 
@@ -274,8 +279,7 @@ public:
   // Create CalibratedCamera, with derivatives
   static CalibratedCamera Create(const Pose3& pose,
                                  OptionalJacobian<dimension, 6> H1 = {}) {
-    if (H1)
-      *H1 << I_6x6;
+    if (H1) *H1 = I_6x6;
     return CalibratedCamera(pose);
   }
 

@@ -73,10 +73,9 @@ TEST(Similarity2, HatAndVee) {
   EXPECT(assert_equal(v3, Similarity2::Vee(Similarity2::Hat(v3))));
 
   // Check the structure of the Lie Algebra element
-  Matrix3 expected;
-  expected << 0, -3, 1,
-    3, 0, 2,
-    0, 0, -4;
+  Matrix3 expected{{0, -3, 1},  //
+                   {3, 0, 2},
+                   {0, 0, -4}};
 
   EXPECT(assert_equal(expected, Similarity2::Hat(v1)));
 }
@@ -204,11 +203,10 @@ TEST(Similarity2, Vec) {
   const Similarity2 sim(R_test, t_test, s_test);
 
   // 1. Test the Value
-  Vector9 expected_vec;
   const double c = cos(theta), si = sin(theta);
-  expected_vec << c, si, 0,               // First column
-    -si, c, 0,                            // Second column
-    t_test.x(), t_test.y(), 1.0 / s_test; // Third column
+  Vector9 expected_vec{c,          si,         0,              // First column
+                       -si,        c,          0,              // Second column
+                       t_test.x(), t_test.y(), 1.0 / s_test};  // Third column
   Vector9 actual_vec = sim.vec();
   EXPECT(assert_equal(expected_vec, actual_vec, 1e-9));
 

@@ -78,6 +78,11 @@ public:
   Vector3  deltaPij() const override { return deltaXij_.position(); }
   Vector3  deltaVij() const override { return deltaXij_.velocity(); }
 
+  /// Return the preintegrated measurements as NavState tangent coordinates.
+  Vector9 preintegrated() const {
+    return NavState().localCoordinates(deltaXij_);
+  }
+
   Matrix3  delRdelBiasOmega() const { return delRdelBiasOmega_; }
   Matrix3  delPdelBiasAcc() const { return delPdelBiasAcc_; }
   Matrix3  delPdelBiasOmega() const { return delPdelBiasOmega_; }
@@ -112,7 +117,23 @@ public:
 
   /// @}
 
-private:
+ protected:
+  /** Apply one unbiased body-frame IMU increment to deltaXij_. */
+  virtual void updateFactor(const Vector3& bodyAcceleration,
+                            const Vector3& bodyOmega, double dt,
+                            OptionalJacobian<9, 9> F = {},
+                            OptionalJacobian<9, 3> G1 = {},
+                            OptionalJacobian<9, 3> G2 = {});
+
+  /** Update accumulated bias Jacobians after applying one IMU increment. */
+  virtual void updateBiasJacobians(const Rot3& oldRotation,
+                                   const Vector3& bodyAcceleration,
+                                   const Vector3& bodyOmega, double dt,
+                                   const Matrix9& stateTransition,
+                                   const Matrix93& accelerationJacobian,
+                                   const Matrix93& omegaJacobian);
+
+ private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
   /** Serialization function */
   friend class boost::serialization::access;

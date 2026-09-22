@@ -49,24 +49,21 @@ class TestableEqVIOFilter : public EqVIOFilter {
 State State0() {
   return State(Se23(Rot3::RzRyRx(0.1, -0.05, 0.2), Vector3(0.2, -0.1, 0.05),
                     Point3(0.3, -0.4, 1.2)),
-               Bias((Vector3() << 0.01, -0.02, 0.03).finished(),
-                    (Vector3() << 0.04, -0.01, 0.02).finished()),
+               Bias(Vector3{0.01, -0.02, 0.03}, Vector3{0.04, -0.01, 0.02}),
                Pose3(Rot3::RzRyRx(-0.02, 0.03, -0.01), Point3(0.1, 0.02, 0.08)),
                {});
 }
 State State1() {
   return State(Se23(Rot3::RzRyRx(0.1, -0.05, 0.2), Vector3(0.2, -0.1, 0.05),
                     Point3(0.3, -0.4, 1.2)),
-               Bias((Vector3() << 0.01, -0.02, 0.03).finished(),
-                    (Vector3() << 0.04, -0.01, 0.02).finished()),
+               Bias(Vector3{0.01, -0.02, 0.03}, Vector3{0.04, -0.01, 0.02}),
                Pose3(Rot3::RzRyRx(-0.02, 0.03, -0.01), Point3(0.1, 0.02, 0.08)),
                {{Point3(0.8, -0.2, 4.5)}});
 }
 State State3() {
   return State(Se23(Rot3::RzRyRx(0.1, -0.05, 0.2), Vector3(0.2, -0.1, 0.05),
                     Point3(0.3, -0.4, 1.2)),
-               Bias((Vector3() << 0.01, -0.02, 0.03).finished(),
-                    (Vector3() << 0.04, -0.01, 0.02).finished()),
+               Bias(Vector3{0.01, -0.02, 0.03}, Vector3{0.04, -0.01, 0.02}),
                Pose3(Rot3::RzRyRx(-0.02, 0.03, -0.01), Point3(0.1, 0.02, 0.08)),
                {{Point3(0.8, -0.2, 4.5)},
                 {Point3(-0.6, 0.3, 3.8)},
@@ -75,28 +72,22 @@ State State3() {
 
 VioGroup Group0() { return makeVioGroupIdentity(0); }
 VioGroup Group1() {
-  const SOT3 q1(SO3::Expmap((Vector3() << 0.02, -0.01, 0.03).finished()),
-                std::log(1.1));
+  const SOT3 q1(SO3::Expmap(Vector3{0.02, -0.01, 0.03}), std::log(1.1));
   return makeVioGroup(
       Se23(Rot3::RzRyRx(0.03, -0.02, 0.01), Vector3(0.01, -0.02, 0.03),
            Point3(0.05, -0.01, 0.02)),
-      Bias((Vector3() << 0.01, 0.0, -0.01).finished(),
-           (Vector3() << 0.02, -0.01, 0.03).finished()),
+      Bias(Vector3{0.01, 0.0, -0.01}, Vector3{0.02, -0.01, 0.03}),
       Pose3(Rot3::RzRyRx(-0.01, 0.02, -0.03), Point3(0.02, 0.01, -0.01)),
       LandmarkGroup({q1}));
 }
 VioGroup Group3() {
-  const SOT3 q1(SO3::Expmap((Vector3() << 0.02, -0.01, 0.03).finished()),
-                std::log(1.1));
-  const SOT3 q2(SO3::Expmap((Vector3() << -0.01, 0.03, -0.02).finished()),
-                std::log(0.95));
-  const SOT3 q3(SO3::Expmap((Vector3() << 0.01, 0.02, 0.01).finished()),
-                std::log(1.05));
+  const SOT3 q1(SO3::Expmap(Vector3{0.02, -0.01, 0.03}), std::log(1.1));
+  const SOT3 q2(SO3::Expmap(Vector3{-0.01, 0.03, -0.02}), std::log(0.95));
+  const SOT3 q3(SO3::Expmap(Vector3{0.01, 0.02, 0.01}), std::log(1.05));
   return makeVioGroup(
       Se23(Rot3::RzRyRx(0.03, -0.02, 0.01), Vector3(0.01, -0.02, 0.03),
            Point3(0.05, -0.01, 0.02)),
-      Bias((Vector3() << 0.01, 0.0, -0.01).finished(),
-           (Vector3() << 0.02, -0.01, 0.03).finished()),
+      Bias(Vector3{0.01, 0.0, -0.01}, Vector3{0.02, -0.01, 0.03}),
       Pose3(Rot3::RzRyRx(-0.01, 0.02, -0.03), Point3(0.02, 0.01, -0.01)),
       LandmarkGroup({q1, q2, q3}));
 }
@@ -234,18 +225,17 @@ TEST(EqVIOFilter, InitAndPropagation) {
 TEST(EqVIOFilter, InitializeFromIMUAttitudeRegression) {
   const std::vector<std::pair<Vector3, Matrix3>> cases = {
       {Vector3(0.0, 0.0, 9.81),
-       (Matrix3() << 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
-           .finished()},
+       Matrix3{{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}}},
       {Vector3(1.0, 0.0, 9.81),
-       (Matrix3() << 0.99484458772060658, 0.0, -0.10141127295826777,
-        0.0, 1.0, 0.0, 0.10141127295826777, 0.0, 0.99484458772060658)
-           .finished()},
+       Matrix3{{0.99484458772060658, 0.0, -0.10141127295826777},
+               {0.0, 1.0, 0.0},
+               {0.10141127295826777, 0.0, 0.99484458772060658}}},
       {Vector3(0.5, -0.3, 9.0),
-       (Matrix3() << 0.99846163144506261, 0.00092302113296245279,
-        -0.055439323264738057, 0.00092302113296245279, 0.9994461873202225,
-        0.033263593958842839, 0.055439323264738057, -0.033263593958842839,
-        0.99790781876528512)
-           .finished()}};
+       Matrix3{
+           {0.99846163144506261, 0.00092302113296245279, -0.055439323264738057},
+           {0.00092302113296245279, 0.9994461873202225, 0.033263593958842839},
+           {0.055439323264738057, -0.033263593958842839,
+            0.99790781876528512}}}};
 
   for (const auto& testCase : cases) {
     TestableEqVIOFilter filter{EqVIOFilterParams()};

@@ -1,5 +1,36 @@
 project(gtsam LANGUAGES CXX)
 
+if(GTSAM_ENABLE_CUDA)
+  include(CheckCXXSourceCompiles)
+  include(CMakePushCheckState)
+  cmake_push_check_state(RESET)
+  set(CMAKE_REQUIRED_INCLUDES ${CUDAToolkit_INCLUDE_DIRS})
+  set(CMAKE_REQUIRED_LIBRARIES CUDA::cusparse)
+  check_cxx_source_compiles([[
+    #include <cusparse.h>
+    int main() {
+      using WorkEstimation =
+          decltype(&cusparseSpGEMMreuse_workEstimation);
+      using Nnz = decltype(&cusparseSpGEMMreuse_nnz);
+      using Copy = decltype(&cusparseSpGEMMreuse_copy);
+      using Compute = decltype(&cusparseSpGEMMreuse_compute);
+      WorkEstimation volatile workEstimation =
+          &cusparseSpGEMMreuse_workEstimation;
+      Nnz volatile nnz = &cusparseSpGEMMreuse_nnz;
+      Copy volatile copy = &cusparseSpGEMMreuse_copy;
+      Compute volatile compute = &cusparseSpGEMMreuse_compute;
+      return workEstimation && nnz && copy && compute ? 0 : 1;
+    }
+  ]] GTSAM_CUSPARSE_HAS_SPGEMM_REUSE)
+  cmake_pop_check_state()
+
+  if(GTSAM_CUSPARSE_HAS_SPGEMM_REUSE)
+    set(GTSAM_CUSPARSE_HAS_SPGEMM_REUSE_VALUE 1)
+  else()
+    set(GTSAM_CUSPARSE_HAS_SPGEMM_REUSE_VALUE 0)
+  endif()
+endif()
+
 # We split the library in to separate subfolders, each containing
 # tests, timing, and an optional convenience library.
 # The following variable is the master list of subdirs to add
@@ -27,10 +58,27 @@ set(gtsam_srcs)
 message(STATUS "Building 3rdparty")
 add_subdirectory(3rdparty)
 
-set (3rdparty_srcs
- ${eigen_headers} # Set by 3rdparty/CMakeLists.txt
- ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Source/ccolamd.c
- ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/SuiteSparse_config/SuiteSparse_config.c)
+set(3rdparty_srcs ${eigen_headers}) # Set by 3rdparty/CMakeLists.txt
+if(NOT GTSAM_USE_SYSTEM_CCOLAMD)
+  set(gtsam_suitesparse_vendor_srcs
+    ${CMAKE_CURRENT_SOURCE_DIR}/inference/internal/ccolamd_vendor.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/inference/internal/suitesparse_config_vendor.c)
+  list(APPEND 3rdparty_srcs ${gtsam_suitesparse_vendor_srcs})
+  set_property(SOURCE ${gtsam_suitesparse_vendor_srcs}
+    APPEND PROPERTY INCLUDE_DIRECTORIES
+      ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Include
+      ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/SuiteSparse_config)
+  # The bundled ccolamd.h includes SuiteSparse_config.h by basename.
+  set_property(SOURCE ${CMAKE_CURRENT_SOURCE_DIR}/inference/Ordering.cpp
+    APPEND PROPERTY INCLUDE_DIRECTORIES
+      ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/SuiteSparse_config)
+  set_property(SOURCE ${gtsam_suitesparse_vendor_srcs} PROPERTY
+    SKIP_UNITY_BUILD_INCLUSION ON)
+  if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+    set_property(SOURCE ${gtsam_suitesparse_vendor_srcs} APPEND PROPERTY
+      COMPILE_OPTIONS -fvisibility=hidden)
+  endif()
+endif()
 gtsam_assign_source_folders("${3rdparty_srcs}") # Create MSVC structure
 
 # To exclude a source from the library build (in any subfolder)
@@ -138,11 +186,35 @@ message(STATUS "Building GTSAM - as a ${GTSAM_LIBRARY_TYPE} library")
 add_library(gtsam ${GTSAM_LIBRARY_TYPE} ${gtsam_srcs})
 target_link_libraries(gtsam PUBLIC ${GTSAM_BOOST_LIBRARIES})
 target_link_libraries(gtsam PUBLIC ${GTSAM_ADDITIONAL_LIBRARIES})
+if(GTSAM_USE_SYSTEM_CCOLAMD)
+  target_compile_definitions(gtsam PRIVATE GTSAM_USE_SYSTEM_CCOLAMD)
+  target_link_libraries(gtsam PRIVATE SuiteSparse::CCOLAMD)
+endif()
+if(GTSAM_ENABLE_CHOLMOD)
+  target_compile_definitions(gtsam PRIVATE GTSAM_ENABLE_CHOLMOD=1)
+  target_link_libraries(gtsam PRIVATE SuiteSparse::CHOLMOD)
+endif()
 if(GTSAM_ENABLE_CUDA)
   target_link_libraries(gtsam PUBLIC CUDA::cudart)
   target_link_libraries(gtsam PUBLIC CUDA::cusolver)
+  target_link_libraries(gtsam PUBLIC CUDA::cusparse)
+  target_compile_definitions(gtsam PRIVATE
+    GTSAM_CUSPARSE_HAS_SPGEMM_REUSE=${GTSAM_CUSPARSE_HAS_SPGEMM_REUSE_VALUE})
+  if(TARGET testCudaSparseJacobian)
+    target_compile_definitions(testCudaSparseJacobian PRIVATE
+      GTSAM_TEST_EXPECT_SPGEMM_REUSE=${GTSAM_CUSPARSE_HAS_SPGEMM_REUSE_VALUE})
+  elseif(TARGET check_nonlinear_program)
+    target_compile_definitions(check_nonlinear_program PRIVATE
+      GTSAM_TEST_EXPECT_SPGEMM_REUSE=${GTSAM_CUSPARSE_HAS_SPGEMM_REUSE_VALUE})
+  endif()
   if(GTSAM_ENABLE_CUDSS)
     target_link_libraries(gtsam PUBLIC cudss::cudss)
+    # The Debian and tarball layouts keep libcudss outside the loader's default
+    # directories, so record where it was found the way MOSEK does below.
+    # Without this an installed libgtsam links but cannot resolve libcudss.so.0.
+    get_filename_component(GTSAM_CUDSS_LIBRARY_DIR "${CUDSS_LIBRARY}" DIRECTORY)
+    set_property(TARGET gtsam APPEND PROPERTY INSTALL_RPATH
+      "${GTSAM_CUDSS_LIBRARY_DIR}")
   endif()
 endif()
 if(GTSAM_USE_MOSEK)
@@ -169,6 +241,10 @@ set_target_properties(gtsam PROPERTIES
 # system-eigen, or GTSAM eigen path
 target_link_libraries(gtsam PUBLIC Eigen3::Eigen)
 
+if(GTSAM_USE_SYSTEM_SPECTRA)
+  target_link_libraries(gtsam PRIVATE $<BUILD_INTERFACE:Spectra::Spectra>)
+endif()
+
 # MKL include dir:
 if (GTSAM_USE_EIGEN_MKL)
   target_include_directories(gtsam PUBLIC ${MKL_INCLUDE_DIR})
@@ -184,7 +260,7 @@ endif()
 target_include_directories(gtsam BEFORE PUBLIC
   # main gtsam includes:
   $<BUILD_INTERFACE:${GTSAM_SOURCE_DIR}>
-  $<INSTALL_INTERFACE:include/>
+  $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
   # config.h
   $<BUILD_INTERFACE:${GTSAM_BINARY_DIR}>
   # unit tests:
@@ -193,15 +269,14 @@ target_include_directories(gtsam BEFORE PUBLIC
 # 3rdparty libraries: use the "system" flag so they are included via "-isystem"
 # and warnings (and warnings-considered-errors) in those headers are not
 # reported as warnings/errors in our targets:
+set(gtsam_spectra_include)
+if(NOT GTSAM_USE_SYSTEM_SPECTRA)
+  set(gtsam_spectra_include
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty>)
+endif()
 target_include_directories(gtsam SYSTEM BEFORE PUBLIC
-  # SuiteSparse_config
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/SuiteSparse_config>
-  $<INSTALL_INTERFACE:include/gtsam/3rdparty/SuiteSparse_config>
   # Spectra
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/Spectra>
-  # CCOLAMD
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/CCOLAMD/Include>
-  $<INSTALL_INTERFACE:include/gtsam/3rdparty/CCOLAMD>
+  ${gtsam_spectra_include}
 )
 
 if(WIN32) # Add 'lib' prefix to static library to avoid filename collision with shared library
@@ -228,15 +303,16 @@ install(
 list(APPEND GTSAM_EXPORTED_TARGETS gtsam)
 set(GTSAM_EXPORTED_TARGETS "${GTSAM_EXPORTED_TARGETS}" PARENT_SCOPE)
 
-# Make sure that ccolamd compiles even in face of warnings
-# and suppress all warnings from 3rd party code if Release build
-if(WIN32)
-  set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "/w")
-else()
-  if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
-    # Suppress all warnings from 3rd party sources.
-    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-w -Wno-everything")
+# Suppress warnings from third-party code.
+if(3rdparty_srcs)
+  if(WIN32)
+    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "/w")
   else()
-    set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-Wno-error")
+    if("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
+      # Suppress all warnings from 3rd party sources.
+      set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-w -Wno-everything")
+    else()
+      set_source_files_properties(${3rdparty_srcs} PROPERTIES COMPILE_FLAGS "-Wno-error")
+    endif()
   endif()
 endif()

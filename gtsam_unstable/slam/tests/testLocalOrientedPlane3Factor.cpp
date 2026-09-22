@@ -231,7 +231,7 @@ TEST(LocalOrientedPlane3Factor, Issue561Simplified) {
     EXPECT(x0.equals(result.at<Pose3>(X(0))));
     EXPECT(p1_in_x1.equals(result.at<Plane>(P(1))));
     EXPECT(p2_in_x1.equals(result.at<Plane>(P(2))));
-  } catch (const IndeterminantLinearSystemException &e) {
+  } catch (const IndeterminateSystemException &e) {
     cerr << "CAPTURED THE EXCEPTION: "
       << DefaultKeyFormatter(e.nearbyVariable()) << endl;
     EXPECT(false);  // fail if this happens
