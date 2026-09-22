@@ -597,10 +597,10 @@ TEST( IncrementalFixedLagSmoother, ExampleWithFactorRemoval )
 }
 
 /* ************************************************************************* */
-// Test that frozen keys are NOT marginalized while frozen, and ARE marginalized
-// immediately once unfrozen (matching the example: lag=10, frozen key stamped
-// at t=2.0 survives past t=50, then is marginalized when unfrozen).
-TEST(IncrementalFixedLagSmoother, FreezeAndUnfreeze) {
+// Test that retained keys are NOT marginalized while retained, and ARE marginalized
+// immediately once released (matching the example: lag=10, retained key stamped
+// at t=2.0 survives past t=50, then is marginalized when released).
+TEST(IncrementalFixedLagSmoother, RetainAndRelease) {
   const double lag = 10.0;
   const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
 
@@ -619,7 +619,7 @@ TEST(IncrementalFixedLagSmoother, FreezeAndUnfreeze) {
     smoother.update(factors, values, timestamps);
   }
 
-  // --- Step 2: add X(1) at t=2, connected to X(0), and freeze it ---
+  // --- Step 2: add X(1) at t=2, connected to X(0), and retain it ---
   {
     NonlinearFactorGraph factors;
     Values values;
@@ -631,12 +631,12 @@ TEST(IncrementalFixedLagSmoother, FreezeAndUnfreeze) {
                     KeySet{X(1)}, KeySet{});
   }
 
-  // X(1) is now frozen
-  EXPECT(smoother.frozenKeys().count(X(1)) == 1);
+  // X(1) is now retained
+  EXPECT(smoother.retainedKeys().count(X(1)) == 1);
 
   // --- Step 3: advance to t=50 in steps to push X(0) and other keys far
   //     outside the lag window. X(1) should stay in the smoother despite
-  //     being way outside the lag window because it is frozen. ---
+  //     being way outside the lag window because it is retained. ---
   for (int i = 2; i <= 25; ++i) {
     NonlinearFactorGraph factors;
     Values values;
@@ -648,20 +648,20 @@ TEST(IncrementalFixedLagSmoother, FreezeAndUnfreeze) {
   }
 
   // X(1) must still be accessible (not marginalized) at t=50
-  EXPECT(smoother.frozenKeys().count(X(1)) == 1);
+  EXPECT(smoother.retainedKeys().count(X(1)) == 1);
   EXPECT(smoother.timestamps().count(X(1)) == 1);
   // calculateEstimate should not throw
-  Point2 frozenEstimate = smoother.calculateEstimate<Point2>(X(1));
-  EXPECT(assert_equal(Point2(1, 0), frozenEstimate, 1e-2));
+  Point2 retainedEstimate = smoother.calculateEstimate<Point2>(X(1));
+  EXPECT(assert_equal(Point2(1, 0), retainedEstimate, 1e-2));
 
-  // --- Step 4: unfreeze X(1) — it is far outside the lag, so it should be
+  // --- Step 4: release X(1) — it is far outside the lag, so it should be
   //     marginalized in this very update call ---
   FixedLagSmoother::Result result = smoother.update(
       NonlinearFactorGraph(), Values(), Timestamps(), FactorIndices(),
       KeySet{}, KeySet{X(1)});
 
-  // X(1) is no longer frozen
-  EXPECT(smoother.frozenKeys().count(X(1)) == 0);
+  // X(1) is no longer retained
+  EXPECT(smoother.retainedKeys().count(X(1)) == 0);
   // X(1) should have been marginalized: absent from timestamps and from
   // the linearization point
   EXPECT(smoother.timestamps().count(X(1)) == 0);

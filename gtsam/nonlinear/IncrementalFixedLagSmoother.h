@@ -61,16 +61,16 @@ public:
    * @param newTheta        new values for new variables only
    * @param timestamps      an (optional) map from keys to real time stamps
    * @param factorsToRemove an (optional) list of factors to remove
-   * @param keysToFreeze    keys that should not be marginalized until unfrozen
-   * @param keysToUnfreeze  keys to remove from the frozen set; if outside the
+   * @param keysToRetain    keys that should not be marginalized until released
+   * @param keysToRelease   keys to remove from the retained set; if outside the
    *                        lag window they are marginalized in this update
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
                 const Values& newTheta = Values(),
                 const KeyTimestampMap& timestamps = KeyTimestampMap(),
                 const FactorIndices& factorsToRemove = FactorIndices(),
-                const KeySet& keysToFreeze = KeySet(),
-                const KeySet& keysToUnfreeze = KeySet()) override;
+                const KeySet& keysToRetain = KeySet(),
+                const KeySet& keysToRelease = KeySet()) override;
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
