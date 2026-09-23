@@ -6,11 +6,13 @@ name: Conda build
 # the combination that tends to surface portability problems, so catching them
 # here avoids discovering them at release time in
 # https://github.com/conda-forge/gtsam-feedstock.
+#
+# Called from the nightly CI rather than on pull requests: the Windows job
+# alone takes a few hours, which is too slow to sit in the PR path. Run it on
+# demand with workflow_dispatch when a change is likely to affect it.
 
 on:
-  push:
-    branches: [develop]
-  pull_request:
+  workflow_call:
   workflow_dispatch:
 
 concurrency:
