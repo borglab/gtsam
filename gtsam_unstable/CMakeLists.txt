@@ -22,13 +22,13 @@ add_custom_target(check.unstable COMMAND ${CMAKE_CTEST_COMMAND} --output-on-fail
 # To exclude a source from the library build (in any subfolder)
 # Add the full name to this list, as in the following example
 # Sources to remove from builds
-# set (excluded_sources # "")
-#     "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.cpp"
-# )
+set (excluded_sources # "")
+    "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.cpp"
+)
 
-# set (excluded_headers # "")
-#     "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.h"
-# )
+set (excluded_headers # "")
+    "${CMAKE_CURRENT_SOURCE_DIR}/slam/serialization.h"
+)
 
 # if GTSAM_USE_BOOST_FEATURES is not set, then we need to exclude the following:
 if(NOT GTSAM_USE_BOOST_FEATURES)

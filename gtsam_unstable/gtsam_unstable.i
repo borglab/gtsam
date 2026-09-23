@@ -559,35 +559,6 @@ virtual class ProjectionFactorRollingShutter : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
-#include <gtsam_unstable/slam/serialization.h>
-
-// Graph serialization  
-std::string serializeGraph(const gtsam::NonlinearFactorGraph& graph);  
-gtsam::NonlinearFactorGraph::shared_ptr deserializeGraph(const std::string& serialized_graph);  
-  
-std::string serializeGraphXML(const gtsam::NonlinearFactorGraph& graph, const std::string& name = "graph");  
-gtsam::NonlinearFactorGraph::shared_ptr deserializeGraphXML(const std::string& serialized_graph, const std::string& name = "graph");  
-  
-
-bool serializeGraphToFile(const gtsam::NonlinearFactorGraph& graph, const std::string& fname);  
-bool serializeGraphToXMLFile(const gtsam::NonlinearFactorGraph& graph, const std::string& fname, const std::string& name = "graph");  
-  
-gtsam::NonlinearFactorGraph::shared_ptr deserializeGraphFromFile(const std::string& fname);  
-gtsam::NonlinearFactorGraph::shared_ptr deserializeGraphFromXMLFile(const std::string& fname, const std::string& name = "graph");  
-
-// Values serialization  
-std::string serializeValues(const gtsam::Values& values);  
-gtsam::Values::shared_ptr deserializeValues(const std::string& serialized_values);  
-  
-std::string serializeValuesXML(const gtsam::Values& values, const std::string& name = "values");  
-gtsam::Values::shared_ptr deserializeValuesXML(const std::string& serialized_values, const std::string& name = "values");  
-  
-bool serializeValuesToFile(const gtsam::Values& values, const std::string& fname);  
-bool serializeValuesToXMLFile(const gtsam::Values& values, const std::string& fname, const std::string& name = "values");  
-  
-gtsam::Values::shared_ptr deserializeValuesFromFile(const std::string& fname);  
-gtsam::Values::shared_ptr deserializeValuesFromXMLFile(const std::string& fname, const std::string& name = "values");  
-
 //*************************************************************************
 // navigation (EqVIO)
 //*************************************************************************

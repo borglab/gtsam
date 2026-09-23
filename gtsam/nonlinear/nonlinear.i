@@ -997,39 +997,18 @@ virtual class FixedLagSmoother {
   const gtsam::FixedLagSmootherKeyTimestampMap& timestamps() const;
   double smootherLag() const;
   void setSmootherLag(double smootherLag);
-  gtsam::KeySet retainedKeys() const;
+  const gtsam::KeySet& retainedKeys() const;
 
   gtsam::FixedLagSmootherResult update(
-<<<<<<< HEAD
-      const gtsam::NonlinearFactorGraph& newFactors,
-      const gtsam::Values& newTheta,
-      const gtsam::FixedLagSmootherKeyTimestampMap& timestamps);
-  gtsam::FixedLagSmootherResult update(
-      const gtsam::NonlinearFactorGraph& newFactors,
-      const gtsam::Values& newTheta,
-      const gtsam::FixedLagSmootherKeyTimestampMap& timestamps,
-      const gtsam::FactorIndices& factorsToRemove);
-  gtsam::FixedLagSmootherResult update(
-      const gtsam::NonlinearFactorGraph& newFactors,
-      const gtsam::Values& newTheta,
-      const gtsam::FixedLagSmootherKeyTimestampMap& timestamps,
-      const gtsam::FactorIndices& factorsToRemove,
-      const gtsam::KeySet& keysToRetain);
-  gtsam::FixedLagSmootherResult update(
-      const gtsam::NonlinearFactorGraph& newFactors,
-      const gtsam::Values& newTheta,
-      const gtsam::FixedLagSmootherKeyTimestampMap& timestamps,
-      const gtsam::FactorIndices& factorsToRemove,
-      const gtsam::KeySet& keysToRetain,
-      const gtsam::KeySet& keysToRelease);
-=======
       const gtsam::NonlinearFactorGraph& newFactors =
           gtsam::NonlinearFactorGraph(),
       const gtsam::Values& newTheta = gtsam::Values(),
       const gtsam::FixedLagSmootherKeyTimestampMap& timestamps =
           gtsam::FixedLagSmootherKeyTimestampMap(),
-      const gtsam::FactorIndices& factorsToRemove = gtsam::FactorIndices());
->>>>>>> develop
+      const gtsam::FactorIndices& factorsToRemove = gtsam::FactorIndices(),
+      const gtsam::KeySet& keysToRetain = gtsam::KeySet(),
+      const gtsam::KeySet& keysToRelease = gtsam::KeySet());
+      
   gtsam::Values calculateEstimate() const;
   gtsam::Values calculateEstimate(const gtsam::KeyVector& keys) const;
 };

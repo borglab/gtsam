@@ -5,7 +5,7 @@
  * @author Alex Cunningham
  */
 
-#include <gtsam_unstable/slam/serialization.h>
+#include <gtsam/slam/serialization.h>
 #include <gtsam/base/serialization.h>
 
 //#include <gtsam/nonlinear/AntiFactor.h>
@@ -20,7 +20,7 @@
 #include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianISAM.h>
-// #include <gtsam/linear/GaussianMultifrontalSolver.h>
+#include <gtsam/linear/GaussianMultifrontalSolver.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/SL4.h>
@@ -42,7 +42,7 @@ typedef PriorFactor<SL4>                  PriorFactorSL4;
 typedef PriorFactor<Cal3_S2>              PriorFactorCal3_S2;
 typedef PriorFactor<Cal3DS2>              PriorFactorCal3DS2;
 typedef PriorFactor<CalibratedCamera>     PriorFactorCalibratedCamera;
-// typedef PriorFactor<PinholeCameraCal3_S2> PriorFactorPinholeCameraCal3_S2;
+typedef PriorFactor<PinholeCameraCal3_S2> PriorFactorPinholeCameraCal3_S2;
 typedef PriorFactor<StereoCamera>         PriorFactorStereoCamera;
 
 typedef BetweenFactor<Point2>          BetweenFactorPoint2;
@@ -63,7 +63,7 @@ typedef NonlinearEquality<Pose3>                  NonlinearEqualityPose3;
 typedef NonlinearEquality<Cal3_S2>                NonlinearEqualityCal3_S2;
 typedef NonlinearEquality<Cal3DS2>                NonlinearEqualityCal3DS2;
 typedef NonlinearEquality<CalibratedCamera>       NonlinearEqualityCalibratedCamera;
-// typedef NonlinearEquality<PinholeCameraCal3_S2>   NonlinearEqualityPinholeCameraCal3_S2;
+typedef NonlinearEquality<PinholeCameraCal3_S2>   NonlinearEqualityPinholeCameraCal3_S2;
 typedef NonlinearEquality<StereoCamera>           NonlinearEqualityStereoCamera;
 
 typedef RangeFactor<Pose2, Point2>                              RangeFactor2D;
@@ -71,9 +71,9 @@ typedef RangeFactor<Pose3, Point3>                              RangeFactor3D;
 typedef RangeFactor<Pose2, Pose2>                               RangeFactorPose2;
 typedef RangeFactor<Pose3, Pose3>                               RangeFactorPose3;
 typedef RangeFactor<CalibratedCamera, Point3>                   RangeFactorCalibratedCameraPoint;
-// typedef RangeFactor<PinholeCameraCal3_S2, Point3>               RangeFactorPinholeCameraCal3_S2Point;
+typedef RangeFactor<PinholeCameraCal3_S2, Point3>               RangeFactorPinholeCameraCal3_S2Point;
 typedef RangeFactor<CalibratedCamera, CalibratedCamera>         RangeFactorCalibratedCamera;
-// typedef RangeFactor<PinholeCameraCal3_S2, PinholeCameraCal3_S2> RangeFactorPinholeCameraCal3_S2;
+typedef RangeFactor<PinholeCameraCal3_S2, PinholeCameraCal3_S2> RangeFactorPinholeCameraCal3_S2;
 
 typedef BearingRangeFactor<Pose2, Point2>  BearingRangeFactor2D;
 typedef BearingRangeFactor<Pose3, Point3>  BearingRangeFactor3D;
@@ -81,8 +81,8 @@ typedef BearingRangeFactor<Pose3, Point3>  BearingRangeFactor3D;
 typedef GenericProjectionFactor<Pose3, Point3, Cal3_S2> GenericProjectionFactorCal3_S2;
 typedef GenericProjectionFactor<Pose3, Point3, Cal3DS2> GenericProjectionFactorCal3DS2;
 
-// typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3_S2, gtsam::Point3> GeneralSFMFactorCal3_S2;
-// typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3_S2, gtsam::Point3> GeneralSFMFactorCal3_S2;
+typedef gtsam::GeneralSFMFactor<gtsam::PinholeCameraCal3DS2, gtsam::Point3> GeneralSFMFactorCal3DS2;
 typedef gtsam::GeneralSFMFactor<gtsam::SphericalCamera, gtsam::Point3>
     GeneralSFMFactorSphericalCamera;
 
@@ -121,7 +121,7 @@ GTSAM_VALUE_EXPORT(gtsam::Cal3_S2);
 GTSAM_VALUE_EXPORT(gtsam::Cal3DS2);
 GTSAM_VALUE_EXPORT(gtsam::Cal3_S2Stereo);
 GTSAM_VALUE_EXPORT(gtsam::CalibratedCamera);
-// GTSAM_VALUE_EXPORT(gtsam::PinholeCameraCal3_S2);
+GTSAM_VALUE_EXPORT(gtsam::PinholeCameraCal3_S2);
 GTSAM_VALUE_EXPORT(gtsam::StereoCamera);
 
 /* Create GUIDs for factors */
@@ -174,14 +174,14 @@ BOOST_CLASS_EXPORT_GUID(BearingRangeFactor2D, "gtsam::BearingRangeFactor2D");
 BOOST_CLASS_EXPORT_GUID(GenericProjectionFactorCal3_S2, "gtsam::GenericProjectionFactorCal3_S2");
 BOOST_CLASS_EXPORT_GUID(GenericProjectionFactorCal3DS2, "gtsam::GenericProjectionFactorCal3DS2");
 
-// BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorCal3_S2, "gtsam::GeneralSFMFactorCal3_S2");
-// BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorCal3DS2, "gtsam::GeneralSFMFactorCal3DS2");
-// BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorSphericalCamera,
-//                         "gtsam::GeneralSFMFactorSphericalCamera");
+BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorCal3_S2, "gtsam::GeneralSFMFactorCal3_S2");
+BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorCal3DS2, "gtsam::GeneralSFMFactorCal3DS2");
+BOOST_CLASS_EXPORT_GUID(GeneralSFMFactorSphericalCamera,
+                        "gtsam::GeneralSFMFactorSphericalCamera");
 
-// BOOST_CLASS_EXPORT_GUID(GeneralSFMFactor2Cal3_S2, "gtsam::GeneralSFMFactor2Cal3_S2");
+BOOST_CLASS_EXPORT_GUID(GeneralSFMFactor2Cal3_S2, "gtsam::GeneralSFMFactor2Cal3_S2");
 
-// BOOST_CLASS_EXPORT_GUID(GenericStereoFactor3D, "gtsam::GenericStereoFactor3D");
+BOOST_CLASS_EXPORT_GUID(GenericStereoFactor3D, "gtsam::GenericStereoFactor3D");
 
 /* ************************************************************************* */
 // Actual implementations of functions
