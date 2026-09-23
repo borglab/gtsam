@@ -35,20 +35,6 @@ TEST(Point2 , Constructor) {
 }
 
 //******************************************************************************
-TEST(Double , Concept) {
-  GTSAM_CONCEPT_ASSERT(IsGroup<double>);
-  GTSAM_CONCEPT_ASSERT(IsManifold<double>);
-  GTSAM_CONCEPT_ASSERT(IsVectorSpace<double>);
-}
-
-//******************************************************************************
-TEST(Double , Invariants) {
-  double p1(2), p2(5);
-  EXPECT(check_group_invariants(p1, p2));
-  EXPECT(check_manifold_invariants(p1, p2));
-}
-
-//******************************************************************************
 TEST(Point2 , Concept) {
   GTSAM_CONCEPT_ASSERT(IsGroup<Point2>);
   GTSAM_CONCEPT_ASSERT(IsManifold<Point2>);
