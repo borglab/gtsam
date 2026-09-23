@@ -1,0 +1,40 @@
+name: Update pixi lockfile
+
+# Re-solves pixi.lock against the current conda-forge packages and opens a PR.
+# conda-forge moves faster than GTSAM releases, so this is what surfaces a new
+# Eigen/Boost/TBB/metis breaking the build before the feedstock runs into it.
+
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  update-lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: prefix-dev/setup-pixi@v0.10.2
+        with:
+          pixi-version: v0.81.0
+          run-install: false
+
+      - name: Update the lockfile
+        run: |
+          pixi update --json | pixi exec pixi-diff-to-markdown >> diff.md
+
+      - uses: peter-evans/create-pull-request@v8
+        with:
+          title: Update pixi lockfile
+          commit-message: Update pixi lockfile
+          body-path: diff.md
+          branch: update-pixi
+          base: develop
+          labels: pixi
+          delete-branch: true
+          add-paths: pixi.lock

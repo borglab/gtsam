@@ -1,0 +1,161 @@
+[workspace]
+name = "gtsam"
+description = "Conda build of GTSAM against conda-forge dependencies"
+channels = ["conda-forge"]
+platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
+preview = ["pixi-build"]
+
+# ---------------------------------------------------------------------------
+# Conda package, built with `pixi build`.
+#
+# This builds GTSAM the way conda-forge does: against the system Eigen, metis,
+# TBB, Boost and SuiteSparse rather than the bundled copies. That combination
+# is what tends to surface portability problems, so building it on every PR
+# catches them before they reach the feedstock.
+# ---------------------------------------------------------------------------
+[package]
+name = "gtsam"
+# Kept in step with CMakeLists.txt by `pixi run -e test check-version`.
+version = "4.3.1"
+
+[package.build]
+backend = { name = "pixi-build-cmake", version = "0.*" }
+
+[package.build.config]
+# cephes (gtsam/3rdparty/cephes) is C, the rest is C++.
+compilers = ["c", "cxx"]
+# The GTSAM options live in cmake/CondaDefaults.cmake, shared with the test
+# environment below so the packaged build and the tested build cannot drift
+# apart. CMAKE_PROJECT_TOP_LEVEL_INCLUDES resolves relative to the source tree,
+# unlike `cmake -C`, which resolves against the working directory -- this
+# backend runs cmake from a build directory far away from the sources.
+extra-args = [
+  "-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/CondaDefaults.cmake",
+  "-DGTSAM_PYTHON_INSTALL_INTO_PREFIX=ON",
+]
+# `pixi build` builds the default target, which includes the pybind11 wrappers.
+# Those need several GB each, so compiling two at once is killed on a 16 GB CI
+# runner. There is no way to serialize just that step here, so cap the whole
+# package build.
+env = { CMAKE_BUILD_PARALLEL_LEVEL = "1" }
+
+# Run on the build machine, so they are build dependencies: cmake and ninja
+# drive the build, ccache makes repeat builds cheap. The backend adds cmake and
+# ninja implicitly; spelling them out keeps the build/host split explicit.
+[package.build-dependencies]
+cmake = ">=3.24"
+ninja = "*"
+ccache = "*"
+
+# Linked against or imported, so they belong to the host platform. Their
+# run-exports supply the matching runtime requirements automatically. The
+# lower bounds only keep the solver away from very old builds; the exact
+# versions are whatever conda-forge currently ships, which is the point.
+[package.host-dependencies]
+libboost-devel = ">=1.82"
+eigen = ">=3.4"
+geographiclib-cpp = ">=2.3"
+metis = ">=5.1"
+suitesparse = ">=7"
+tbb-devel = ">=2021"
+python = "*"
+pybind11 = "*"
+numpy = "*"
+pyparsing = "*"
+pip = "*"
+setuptools = "*"
+
+[package.run-dependencies]
+pyparsing = "*"
+
+# ---------------------------------------------------------------------------
+# Test environment: configure, build everything including the unit tests, and
+# run them. `pixi build` only builds the install target, so it never compiles
+# the test binaries, and the test suite is where dependency-version
+# regressions actually surface.
+# ---------------------------------------------------------------------------
+[feature.test.dependencies]
+c-compiler = "*"
+cxx-compiler = "*"
+cmake = ">=3.24"
+ninja = "*"
+ccache = "*"
+libboost-devel = ">=1.82"
+eigen = ">=3.4"
+geographiclib-cpp = ">=2.3"
+metis = ">=5.1"
+suitesparse = ">=7"
+tbb-devel = ">=2021"
+python = "*"
+pybind11 = "*"
+numpy = "*"
+pyparsing = "*"
+pip = "*"
+setuptools = "*"
+pytest = "*"
+
+# CMake and ccache pick these up from the environment, so one task works
+# everywhere.
+[feature.test.activation.env]
+CMAKE_PREFIX_PATH = "$CONDA_PREFIX"
+CCACHE_DIR = "$PIXI_PROJECT_ROOT/.ccache"
+CCACHE_BASEDIR = "$PIXI_PROJECT_ROOT"
+CCACHE_NOHASHDIR = "1"
+# Five platforms share a 10 GB per-repository cache limit on GitHub.
+CCACHE_MAXSIZE = "1G"
+
+# conda-forge puts headers and libraries under <prefix>/Library on Windows.
+[feature.test.target.win-64.dependencies]
+sccache = "*"
+
+# GTSAM never launches ccache under MSVC, so Windows recompiles everything on
+# every run. sccache does support cl.exe, and GTSAM's Release flags are /MD /O2
+# with no /Zi, which sccache cannot cache.
+[feature.test.target.win-64.activation.env]
+CMAKE_PREFIX_PATH = "$CONDA_PREFIX\\Library"
+CMAKE_C_COMPILER_LAUNCHER = "sccache"
+CMAKE_CXX_COMPILER_LAUNCHER = "sccache"
+# SCCACHE_DIR is deliberately not set here: this table is not interpolated on
+# Windows, so it would be taken literally. CI sets it; locally sccache's own
+# default is fine.
+
+[feature.test.tasks.configure]
+cmd = [
+  "cmake", "-G", "Ninja", "-S", ".", "-B", "build",
+  "-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/CondaDefaults.cmake",
+]
+inputs = ["CMakeLists.txt", "cmake/**"]
+
+[feature.test.tasks.build]
+cmd = ["cmake", "--build", "build", "--target", "gtsam", "gtsam_unstable"]
+depends-on = ["configure"]
+
+# Each pybind11 translation unit needs several GB to compile, and two at once
+# exhausts a 16 GB CI runner: the job is killed with SIGTERM part way through
+# python/CMakeFiles/gtsam_py.dir. The library and the tests are made of much
+# smaller translation units and build fine in parallel, so only the wrappers
+# are serialized.
+[feature.test.tasks.build-python]
+cmd = ["cmake", "--build", "build", "--target", "gtsam_py", "gtsam_unstable_py", "--parallel", "1"]
+depends-on = ["build"]
+
+[feature.test.tasks.build-tests]
+cmd = ["cmake", "--build", "build", "--target", "all.tests"]
+depends-on = ["configure"]
+
+[feature.test.tasks.test]
+cmd = ["ctest", "--test-dir", "build", "--output-on-failure"]
+depends-on = ["build-tests"]
+
+[feature.test.tasks.python-test]
+cmd = ["cmake", "--build", "build", "--target", "python-test"]
+depends-on = ["build-python"]
+
+# pixi cannot read the version out of CMakeLists.txt yet
+# (prefix-dev/pixi#2946), so check the two agree rather than letting them
+# drift silently.
+[feature.test.tasks.check-version]
+cmd = ["python", "scripts/check_pixi_version.py"]
+
+[environments]
+test = { features = ["test"], no-default-feature = true }
