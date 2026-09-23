@@ -374,6 +374,34 @@ TEST(ISAM2, SlamlikeSolutionDoglegLineSearchQr) {
 }
 
 /* ************************************************************************* */
+// Initial values that already satisfy the factors give a zero Gauss-Newton
+// step. That is a valid state, not a bad line-search configuration:
+// calculateEstimate() must return the values rather than throw.
+TEST(ISAM2, DoglegLineSearchZeroGaussNewtonStep) {
+  NonlinearFactorGraph graph;
+  graph.addPrior(0, Pose2(1.0, 2.0, 0.3), noiseModel::Isotropic::Sigma(3, 0.1));
+  Values initial;
+  initial.insert(0, Pose2(1.0, 2.0, 0.3));  // exact
+
+  ISAM2 isam(ISAM2Params{ISAM2DoglegLineSearchParams{}});
+  isam.update(graph, initial);
+  // Threw "Would cause infinite search" before the fix; the test harness
+  // reports an uncaught exception as a failure.
+  Values estimate = isam.calculateEstimate();
+  EXPECT(assert_equal(initial, estimate));
+
+  // A later update that is also already consistent must not throw either.
+  NonlinearFactorGraph odometry;
+  odometry.emplace_shared<BetweenFactor<Pose2>>(
+      0, 1, Pose2(1.0, 0.0, 0.0), noiseModel::Isotropic::Sigma(3, 0.1));
+  Values next;
+  next.insert(1, Pose2(1.0, 2.0, 0.3).compose(Pose2(1.0, 0.0, 0.0)));
+  isam.update(odometry, next);
+  estimate = isam.calculateEstimate();
+  EXPECT(assert_equal(next.at<Pose2>(1), estimate.at<Pose2>(1)));
+}
+
+/* ************************************************************************* */
 TEST(ISAM2, clone) {
 
   ISAM2 clone1;

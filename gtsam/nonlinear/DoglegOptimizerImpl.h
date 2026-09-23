@@ -331,9 +331,13 @@ typename DoglegOptimizerImpl::IterationResult DoglegLineSearchImpl::Iterate(
     std::cout << "Initial Step Error: " << result.f_error << std::endl;
 
   // Validate Step size will terminate search
-  if (step < 1e-12 || params.stepSize < 1.0)
+  if (params.stepSize <= 1.0)
     throw std::runtime_error(
         "Invalid DoglegLineSearch configuration. Would cause infinite search.");
+
+  // A zero Gauss-Newton step means x0 already minimizes the linear model, so
+  // there is nothing to search.
+  if (step < 1e-12) return result;
 
   // Search Increase delta
   double eps = std::numeric_limits<double>::epsilon();
