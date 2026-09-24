@@ -279,9 +279,9 @@ double Unit3::distance(const Unit3& q, OptionalJacobian<1, 2> H) const {
 }
 
 /* ************************************************************************* */
-Unit3 Unit3::retract(const Vector2& v, OptionalJacobian<2,2> H) const {
-  const Matrix32& tangentBasis = basis();
-  const Vector3 tangent = tangentBasis * v;
+Unit3 Unit3::retract(const Vector2& v, OptionalJacobian<2, 2> H) const {
+  const Matrix32& B = basis();
+  const Vector3 tangent = B * v;
   // The tangent basis is orthonormal, so ||B v|| = ||v||.
   const double thetaSquared = v.squaredNorm();
   const double theta = std::sqrt(thetaSquared);
@@ -294,15 +294,16 @@ Unit3 Unit3::retract(const Vector2& v, OptionalJacobian<2,2> H) const {
 
   Matrix23 H_from_point;
   const Unit3 result = Unit3::FromPoint3(cosine * p_ + sinc * tangent,
-                                       H ? &H_from_point : nullptr);
+                                         H ? &H_from_point : nullptr);
   if (H) {
     // (cos(theta) - sinc(theta)) / theta^2 tends to -1/3 at zero.
     const double radialScale =
-        nearZero ? -1.0 / 3.0 + thetaSquared * (1.0 / 30.0 - thetaSquared / 840.0)
-                 : (cosine - sinc) / thetaSquared;
+        nearZero
+            ? -1.0 / 3.0 + thetaSquared * (1.0 / 30.0 - thetaSquared / 840.0)
+            : (cosine - sinc) / thetaSquared;
     // Differentiate directly in the 2D tangent coordinates, using B^T B = I.
     const Vector3 radial = -sinc * p_ + radialScale * tangent;
-    Matrix32 derivative = sinc * tangentBasis;
+    Matrix32 derivative = sinc * B;
     derivative += radial * v.transpose();
     *H = H_from_point * derivative;
   }

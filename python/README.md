@@ -8,9 +8,10 @@ For instructions on updating the version of the [wrap library](https://github.co
 
 ## Requirements
 
-- Cmake >= 3.15
-- If you want to build the GTSAM python library for a specific python version (eg 3.6),
-  use the `-DGTSAM_PYTHON_VERSION=3.6` option when running `cmake` otherwise the default interpreter will be used.
+- CMake >= 3.16
+- The Python wrapper requires Python 3.8 or newer. To select a specific Python
+  version, use the `-DGTSAM_PYTHON_VERSION=<version>` option when running
+  `cmake`; otherwise, the default interpreter will be used.
 - This wrapper needs [pyparsing(>=2.4.2)](https://github.com/pyparsing/pyparsing), [pybind11-stubgen>=2.5.1](https://github.com/sizmailov/pybind11-stubgen) and [numpy(>=1.11.0)](https://numpy.org/).
 
   > **Note:** On systems that enforce [PEP 668](https://peps.python.org/pep-0668/) (Homebrew Python on macOS, and the system Python on Ubuntu 23.04+, Fedora, Arch, and other modern distros), bare `pip install` is blocked. Create and activate a virtual environment first:
@@ -34,9 +35,9 @@ For instructions on updating the version of the [wrap library](https://github.co
 
 ## Install
 
-- Run cmake with the `GTSAM_BUILD_PYTHON` cmake flag enabled to configure building the wrapper. The wrapped module will be built and copied to the directory `<PROJECT_BINARY_DIR>/python`. For example, if your local Python version is 3.6.10, then you should run:
+- Run cmake with the `GTSAM_BUILD_PYTHON` cmake flag enabled to configure building the wrapper. The wrapped module will be built and copied to the directory `<PROJECT_BINARY_DIR>/python`. For example, if your local Python version is 3.8.0, then you should run:
   ```bash
-  cmake .. -DGTSAM_BUILD_PYTHON=1 -DGTSAM_PYTHON_VERSION=3.6.10
+  cmake .. -DGTSAM_BUILD_PYTHON=1 -DGTSAM_PYTHON_VERSION=3.8.0
   ```
   If you do not have TBB installed, you should also provide the argument `-DGTSAM_WITH_TBB=OFF`.
 - Build GTSAM and the wrapper with `make` (or `ninja` if you use `-GNinja`).
