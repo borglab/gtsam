@@ -82,6 +82,7 @@ jobs:
       - name: Configure (TBB=ON)
         run: |
           cmake -B build -G Ninja \
+            -DGTSAM_BUILD_WITH_WERROR=ON \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
@@ -121,6 +122,7 @@ jobs:
       - name: Configure (TBB=OFF)
         run: |
           cmake -B build -G Ninja \
+            -DGTSAM_BUILD_WITH_WERROR=ON \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
@@ -198,6 +200,7 @@ jobs:
       - name: Configure (TBB=ON)
         run: |
           cmake -B build -G Ninja \
+            -DGTSAM_BUILD_WITH_WERROR=ON \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
@@ -237,6 +240,7 @@ jobs:
       - name: Configure (TBB=OFF)
         run: |
           cmake -B build -G Ninja \
+            -DGTSAM_BUILD_WITH_WERROR=ON \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
@@ -312,6 +316,7 @@ jobs:
       - name: Configure (TBB=ON)
         run: |
           cmake -B build -G Ninja \
+            -DGTSAM_BUILD_WITH_WERROR=ON \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
@@ -351,6 +356,7 @@ jobs:
       - name: Configure (TBB=OFF)
         run: |
           cmake -B build -G Ninja \
+            -DGTSAM_BUILD_WITH_WERROR=ON \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_CXX_FLAGS="-w" \
             -DGTSAM_BUILD_TESTS=OFF \
