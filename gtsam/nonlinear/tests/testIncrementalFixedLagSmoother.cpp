@@ -878,6 +878,78 @@ TEST( IncrementalFixedLagSmoother, ExampleWithFactorRemoval )
 }
 
 /* ************************************************************************* */
+// Test that retained keys are NOT marginalized while retained, and ARE marginalized
+// immediately once released (matching the example: lag=10, retained key stamped
+// at t=2.0 survives past t=50, then is marginalized when released).
+TEST(IncrementalFixedLagSmoother, RetainAndRelease) {
+  const double lag = 10.0;
+  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+
+  IncrementalFixedLagSmoother smoother(lag, ISAM2Params());
+
+  typedef IncrementalFixedLagSmoother::KeyTimestampMap Timestamps;
+
+  // --- Step 1: add a prior at t=0 ---
+  {
+    NonlinearFactorGraph factors;
+    Values values;
+    Timestamps timestamps;
+    factors.addPrior(X(0), Point2(0, 0), noise);
+    values.insert(X(0), Point2(0, 0));
+    timestamps[X(0)] = 0.0;
+    smoother.update(factors, values, timestamps);
+  }
+
+  // --- Step 2: add X(1) at t=2, connected to X(0), and retain it ---
+  {
+    NonlinearFactorGraph factors;
+    Values values;
+    Timestamps timestamps;
+    factors.emplace_shared<BetweenPoint2>(X(0), X(1), Point2(1, 0), noise);
+    values.insert(X(1), Point2(1, 0));
+    timestamps[X(1)] = 2.0;
+    smoother.update(factors, values, timestamps, FactorIndices(),
+                    KeySet{X(1)}, KeySet{});
+  }
+
+  // X(1) is now retained
+  EXPECT(smoother.retainedKeys().count(X(1)) == 1);
+
+  // --- Step 3: advance to t=50 in steps to push X(0) and other keys far
+  //     outside the lag window. X(1) should stay in the smoother despite
+  //     being way outside the lag window because it is retained. ---
+  for (int i = 2; i <= 25; ++i) {
+    NonlinearFactorGraph factors;
+    Values values;
+    Timestamps timestamps;
+    factors.emplace_shared<BetweenPoint2>(X(i - 1), X(i), Point2(1, 0), noise);
+    values.insert(X(i), Point2(double(i), 0));
+    timestamps[X(i)] = double(i) * 2.0;  // t = 4, 6, ..., 50
+    smoother.update(factors, values, timestamps);
+  }
+
+  // X(1) must still be accessible (not marginalized) at t=50
+  EXPECT(smoother.retainedKeys().count(X(1)) == 1);
+  EXPECT(smoother.timestamps().count(X(1)) == 1);
+  // calculateEstimate should not throw
+  Point2 retainedEstimate = smoother.calculateEstimate<Point2>(X(1));
+  EXPECT(assert_equal(Point2(1, 0), retainedEstimate, 1e-2));
+
+  // --- Step 4: release X(1) — it is far outside the lag, so it should be
+  //     marginalized in this very update call ---
+  FixedLagSmoother::Result result = smoother.update(
+      NonlinearFactorGraph(), Values(), Timestamps(), FactorIndices(),
+      KeySet{}, KeySet{X(1)});
+
+  // X(1) is no longer retained
+  EXPECT(smoother.retainedKeys().count(X(1)) == 0);
+  // X(1) should have been marginalized: absent from timestamps and from
+  // the linearization point
+  EXPECT(smoother.timestamps().count(X(1)) == 0);
+  EXPECT(!smoother.getLinearizationPoint().exists(X(1)));
+}
+
+/* ************************************************************************* */
 // A key can become unused without ever having had a timestamp: give it a value
 // and a factor but no timestamp, then remove the factor. ISAM2 reports it in
 // unusedKeys, which update() passes straight to eraseKeyTimestampMap. There is

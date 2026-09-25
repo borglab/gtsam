@@ -560,6 +560,9 @@ virtual class HessianFactor : gtsam::GaussianFactor {
   HessianFactor(gtsam::Key j1, gtsam::Key j2, gtsam::Key j3, gtsam::Matrix G11, gtsam::Matrix G12, gtsam::Matrix G13,
       gtsam::Vector g1, gtsam::Matrix G22, gtsam::Matrix G23, gtsam::Vector g2, gtsam::Matrix G33, gtsam::Vector g3,
       double f);
+  HessianFactor(const gtsam::KeyVector& js, const std::vector<gtsam::Matrix>& Gs, const std::vector<gtsam::Vector>& gs, 
+      double f);
+  HessianFactor(const gtsam::KeyVector& keys, const gtsam::SymmetricBlockMatrix& augmentedInformation);
   HessianFactor(const gtsam::GaussianFactorGraph& factors);
 
   //Standard Interface

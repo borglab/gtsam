@@ -46,7 +46,8 @@ bool IncrementalFixedLagSmoother::equals(const FixedLagSmoother& rhs,
 /* ************************************************************************* */
 FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
     const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove) {
+    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove,
+    const KeySet& keysToRetain, const KeySet& keysToRelease) {
 
   const bool debug = ISDEBUG("IncrementalFixedLagSmoother update");
 
@@ -91,13 +92,18 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
   // Update the Timestamps associated with the factor keys
   updateKeyTimestampMap(timestamps);
 
+  // Apply retain/release before computing marginalization candidates so that
+  // releasing takes effect immediately in this same update call
+  updateRetainedKeys(keysToRetain, keysToRelease);
+
   // Get current timestamp
   double current_timestamp = getCurrentTimestamp();
 
   if (debug)
     std::cout << "Current Timestamp: " << current_timestamp << std::endl;
 
-  // Find the set of variables to be marginalized out
+  // Find the set of variables to be marginalized out (retained keys are excluded
+  // inside findKeysBefore, so recently released keys are now eligible here)
   KeyVector marginalizableKeys = findKeysBefore(
       current_timestamp - smootherLag_);
 

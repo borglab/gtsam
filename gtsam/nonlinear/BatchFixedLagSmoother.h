@@ -57,6 +57,9 @@ public:
 
   /**
    * Add new factors, updating the solution and relinearizing as needed.
+   * @param keysToRetain    keys that should not be marginalized until released
+   * @param keysToRelease   keys to remove from the retained set; if outside the
+   *                        lag window they are marginalized in this update
    *
    * Every key in timestamps must name a value already held by the smoother or
    * supplied in newTheta, even if no factor references it yet. Accepted
@@ -76,7 +79,9 @@ public:
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
                 const Values& newTheta = Values(),
                 const KeyTimestampMap& timestamps = KeyTimestampMap(),
-                const FactorIndices& factorsToRemove = FactorIndices()) override;
+                const FactorIndices& factorsToRemove = FactorIndices(),
+                const KeySet& keysToRetain = KeySet(),
+                const KeySet& keysToRelease = KeySet()) override;
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only

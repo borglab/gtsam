@@ -54,7 +54,8 @@ Matrix BatchFixedLagSmoother::marginalCovariance(Key key) const {
 /* ************************************************************************* */
 FixedLagSmoother::Result BatchFixedLagSmoother::update(
     const NonlinearFactorGraph& newFactors, const Values& newTheta,
-    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove) {
+    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove,
+    const KeySet& keysToRetain, const KeySet& keysToRelease) {
 
   // Capture keys touched by explicit removals before adding new factors. They
   // are removed below only when no replacement factor still references them.
@@ -105,6 +106,10 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
   // reappear as a timestamp-only entry after its state is erased.
   updateKeyTimestampMap(timestamps);
 
+  // Apply retain/release before computing marginalization candidates so that
+  // releasing takes effect immediately in this same update call
+  updateRetainedKeys(keysToRetain, keysToRelease);
+
   // Preserve this update's cutoff even if the newest state is removed below.
   const double current_timestamp = getCurrentTimestamp();
 
@@ -120,7 +125,8 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
   }
   eraseKeys(unusedKeys);
 
-  // Find the set of variables to be marginalized out
+  // Find the set of variables to be marginalized out (retained keys are excluded
+  // inside findKeysBefore)
   KeyVector marginalizableKeys = findKeysBefore(
       current_timestamp - smootherLag_);
 

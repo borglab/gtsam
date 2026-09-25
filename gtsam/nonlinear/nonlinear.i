@@ -997,6 +997,7 @@ virtual class FixedLagSmoother {
   const gtsam::FixedLagSmootherKeyTimestampMap& timestamps() const;
   double smootherLag() const;
   void setSmootherLag(double smootherLag);
+  const gtsam::KeySet& retainedKeys() const;
 
   gtsam::FixedLagSmootherResult update(
       const gtsam::NonlinearFactorGraph& newFactors =
@@ -1004,7 +1005,10 @@ virtual class FixedLagSmoother {
       const gtsam::Values& newTheta = gtsam::Values(),
       const gtsam::FixedLagSmootherKeyTimestampMap& timestamps =
           gtsam::FixedLagSmootherKeyTimestampMap(),
-      const gtsam::FactorIndices& factorsToRemove = gtsam::FactorIndices());
+      const gtsam::FactorIndices& factorsToRemove = gtsam::FactorIndices(),
+      const gtsam::KeySet& keysToRetain = gtsam::KeySet(),
+      const gtsam::KeySet& keysToRelease = gtsam::KeySet());
+      
   gtsam::Values calculateEstimate() const;
   gtsam::Values calculateEstimate(const gtsam::KeyVector& keys) const;
 };
