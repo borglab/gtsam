@@ -130,6 +130,7 @@ jobs:
       - name: Run CMake
         run: |
           cmake -B build -G Ninja -DGTSAM_BUILD_PYTHON=1 \
+            -DGTSAM_BUILD_WITH_WERROR=ON \
             -DGTSAM_PYTHON_VERSION=${{ matrix.python_version }} \
             -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON
 

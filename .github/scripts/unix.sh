@@ -19,6 +19,7 @@ function configure()
   # CMAKE_CXX_FLAGS="-w": Suppress warnings to avoid IO latency in CI logs
   cmake $GITHUB_WORKSPACE \
       -B build -G Ninja \
+      -DGTSAM_BUILD_WITH_WERROR=ON \
       -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE:-Debug} \
       -DCMAKE_CXX_FLAGS="-w" \
       -DGTSAM_BUILD_TESTS=${GTSAM_BUILD_TESTS:-OFF} \

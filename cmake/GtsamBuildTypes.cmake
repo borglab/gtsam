@@ -86,12 +86,9 @@ mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE_RELEASE)
 mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE_PROFILING)
 mark_as_advanced(GTSAM_COMPILE_DEFINITIONS_PRIVATE_TIMING)
 
-if("${CMAKE_PROJECT_NAME}" STREQUAL "GTSAM")
-  set(GTSAM_BUILD_WITH_WERROR_DEFAULT ON)
-else()
-  set(GTSAM_BUILD_WITH_WERROR_DEFAULT OFF)
-endif()
-option(GTSAM_BUILD_WITH_WERROR "Enable warnings as errors when building GTSAM." ${GTSAM_BUILD_WITH_WERROR_DEFAULT})
+# Off by default: new compilers or system libraries may emit harmless warnings
+# that should not break distribution packages or user builds. CI enables it.
+option(GTSAM_BUILD_WITH_WERROR "Enable warnings as errors when building GTSAM." OFF)
 
 if(MSVC)
   # Common to all configurations:
