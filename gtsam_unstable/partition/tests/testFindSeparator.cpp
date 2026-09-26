@@ -15,6 +15,29 @@ using namespace std;
 using namespace gtsam;
 using namespace gtsam::partition;
 
+namespace {
+// METIS' initial partitioning draws from the platform libc RNG, so the two
+// islands can come back with their labels (or their A/B roles) swapped. Both
+// answers describe the same partition, so canonicalize before comparing.
+void canonicalize(partition::PartitionTable& table) {
+  for (const int label : table) {
+    if (label == 1) return;  // already canonical
+    if (label == 2) break;   // islands are swapped
+  }
+  for (int& label : table) {
+    if (label == 1)
+      label = 2;
+    else if (label == 2)
+      label = 1;
+  }
+}
+
+void canonicalize(MetisResult& result) {
+  if (!result.A.empty() && !result.B.empty() && result.A.front() > result.B.front())
+    result.A.swap(result.B);
+}
+}  // namespace
+
 /* ************************************************************************* */
 // x0 - x1 - x2
 // l3        l4
@@ -32,6 +55,7 @@ TEST ( Partition, separatorPartitionByMetis )
    workspace, true);
 
   CHECK(actual.has_value());
+  canonicalize(*actual);
   vector<size_t> A_expected{0, 3}; // frontal
   vector<size_t> B_expected{2, 4}; // frontal
   vector<size_t> C_expected{1};    // separator
@@ -57,6 +81,7 @@ TEST ( Partition, separatorPartitionByMetis2 )
    workspace, true);
 
   CHECK(actual.has_value());
+  canonicalize(*actual);
   vector<size_t> A_expected{1, 5}; // frontal
   vector<size_t> B_expected{3, 6}; // frontal
   vector<size_t> C_expected{2};    // separator
@@ -80,6 +105,7 @@ TEST ( Partition, edgePartitionByMetis )
    workspace, true);
 
   CHECK(actual.has_value());
+  canonicalize(*actual);
   vector<size_t> A_expected{0, 1}; // frontal
   vector<size_t> B_expected{2, 3}; // frontal
   vector<size_t> C_expected;    // separator
@@ -116,6 +142,7 @@ TEST ( Partition, edgePartitionByMetis2 )
   std::optional<MetisResult> actual = edgePartitionByMetis<GenericGraph3D>(graph, keys,
    workspace, true);
   CHECK(actual.has_value());
+  canonicalize(*actual);
   vector<size_t> A_expected{0, 1}; // frontal
   vector<size_t> B_expected{2, 3, 4}; // frontal
   vector<size_t> C_expected;    // separator
@@ -142,6 +169,7 @@ TEST ( Partition, findSeparator )
   int numSubmaps = findSeparator<GenericGraph2D>(graph, keys, minNodesPerMap, workspace,
     false, {}, reduceGraph, 0, 0);
   LONGS_EQUAL(2, numSubmaps);
+  canonicalize(workspace.partitionTable);
   LONGS_EQUAL(5, workspace.partitionTable.size());
   LONGS_EQUAL(1, workspace.partitionTable[0]);
   LONGS_EQUAL(0, workspace.partitionTable[1]);
@@ -168,6 +196,7 @@ TEST ( Partition, findSeparator2 )
   int numSubmaps = findSeparator<GenericGraph2D>(graph, keys, minNodesPerMap, workspace,
     false, {}, reduceGraph, 0, 0);
   LONGS_EQUAL(2, numSubmaps);
+  canonicalize(workspace.partitionTable);
   LONGS_EQUAL(8, workspace.partitionTable.size());
   LONGS_EQUAL(-1,workspace.partitionTable[0]);
   LONGS_EQUAL(1, workspace.partitionTable[1]);
@@ -216,6 +245,7 @@ TEST ( Partition, findSeparator3_with_reduced_camera )
   LONGS_EQUAL(2, numIsland);
 
   partition::PartitionTable& partitionTable = workspace.partitionTable;
+  canonicalize(partitionTable);
   for (int j=1; j<=8; j++)
     LONGS_EQUAL(1, partitionTable[j]);
   for (int j=9; j<=16; j++)
