@@ -16,7 +16,11 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/PriorityScheduler.h>
 
+#include <chrono>
+#include <future>
+#include <memory>
 #include <mutex>
+#include <thread>
 #include <vector>
 
 using namespace gtsam;
@@ -75,6 +79,23 @@ TEST(PriorityScheduler, VoidPriorityOrderingSingleWorker) {
       (executionOrder.at(0) == 1 && executionOrder.at(1) == 5 &&
        executionOrder.at(2) == 3);
   EXPECT(strictPriority || firstTaskRanImmediately || thirdTaskEnqueuedLate);
+}
+
+/* ************************************************************************* */
+// Workers must see the stop request even if it lands while they are about to
+// wait, or the destructor hangs joining them.
+TEST(PriorityScheduler, DestructorReturns) {
+  auto done = std::make_shared<std::promise<void>>();
+  std::future<void> finished = done->get_future();
+  std::thread([done] {
+    for (int i = 0; i < 10000; ++i) {
+      PriorityScheduler<int> scheduler(2);
+      scheduler.schedule(0, [] { return 1; }).get();
+    }
+    done->set_value();
+  }).detach();
+  EXPECT(finished.wait_for(std::chrono::seconds(60)) ==
+         std::future_status::ready);
 }
 
 /* ************************************************************************* */
