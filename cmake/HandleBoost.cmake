@@ -11,8 +11,12 @@
 ################################################################################
 
 if(MSVC)
-    # By default, Boost pre-compiled binaries for Windows are static libraries.
-    set(Boost_USE_STATIC_LIBS ON)
+    # By default, Boost pre-compiled binaries for Windows are static libraries,
+    # but respect an explicit choice from the caller (e.g. package managers that
+    # ship a shared Boost can configure with -DBoost_USE_STATIC_LIBS=OFF).
+    if(NOT DEFINED Boost_USE_STATIC_LIBS)
+        set(Boost_USE_STATIC_LIBS ON)
+    endif()
     # GTSAM links Boost through imported CMake targets, so disable Boost's
     # pragma-based auto-linking to avoid bare library names on the link line.
     list_append_cache(GTSAM_COMPILE_DEFINITIONS_PUBLIC BOOST_ALL_NO_LIB)

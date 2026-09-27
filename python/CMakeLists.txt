@@ -417,6 +417,30 @@ add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY}
         VERBATIM)
 
+# Package managers (conda-forge, pixi, spack) install into a prefix they own
+# and cannot use the `python-install` target above: outside a virtualenv it
+# passes --user, which installs to the user site instead of the prefix. Opt in
+# to installing the Python package into CMAKE_INSTALL_PREFIX as part of the
+# regular `install` target instead.
+option(GTSAM_PYTHON_INSTALL_INTO_PREFIX
+       "Install the Python package into CMAKE_INSTALL_PREFIX as part of `install`"
+       OFF)
+
+if(GTSAM_PYTHON_INSTALL_INTO_PREFIX)
+  install(CODE "
+    message(STATUS \"Installing the GTSAM Python package into \${CMAKE_INSTALL_PREFIX}\")
+    execute_process(
+      COMMAND \"${PYTHON_EXECUTABLE}\" -m pip install .
+              --no-deps --no-build-isolation --no-compile
+              --prefix \"\${CMAKE_INSTALL_PREFIX}\"
+      WORKING_DIRECTORY \"${GTSAM_PYTHON_BUILD_DIRECTORY}\"
+      RESULT_VARIABLE _gtsam_pip_result)
+    if(NOT _gtsam_pip_result EQUAL 0)
+      message(FATAL_ERROR \"Installing the GTSAM Python package failed\")
+    endif()
+  ")
+endif()
+
 # Custom make command to run all GTSAM Python tests
 add_custom_target(
         python-test
