@@ -233,7 +233,12 @@ class Scheduler {
    */
   ~Scheduler() {
     waitForAllTasks();
-    stop_.store(true, std::memory_order_release);
+    {
+      // Publish stop_ under the wait mutex so a worker cannot check the
+      // predicate, miss the store, and then sleep through the notification.
+      std::lock_guard<std::mutex> lock(waitMutex_);
+      stop_.store(true, std::memory_order_release);
+    }
     condition_.notify_all();
     for (std::thread& worker : workers_) {
       if (worker.joinable()) worker.join();
