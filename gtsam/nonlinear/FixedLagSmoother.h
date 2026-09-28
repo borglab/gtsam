@@ -106,24 +106,16 @@ public:
     return keyTimestampMap_;
   }
 
-  /** Access the set of keys that are retained (will not be auto-marginalized) */
+  /// Keys exempt from lag-based marginalization until they are released.
   const KeySet& retainedKeys() const {
     return retainedKeys_;
   }
 
-  /**
-   * Add new factors, updating the solution and relinearizing as needed.
-   * @param keysToRetain  Keys that should never be marginalized until explicitly released.
-   *                      These are added to an internal persistent set.
-   * @param keysToRelease Keys to remove from the retained set. Any such key that is
-   *                       already outside the lag window will be marginalized immediately.
-   */
+  /** Add new factors, updating the solution and relinearizing as needed. */
   virtual Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
                         const Values& newTheta = Values(),
                         const KeyTimestampMap& timestamps = KeyTimestampMap(),
-                        const FactorIndices& factorsToRemove = FactorIndices(),
-                        const KeySet& keysToRetain = KeySet(),
-                        const KeySet& keysToRelease = KeySet()) = 0;
+                        const FactorIndices& factorsToRemove = FactorIndices()) = 0;
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
@@ -151,26 +143,25 @@ protected:
   TimestampKeyMap timestampKeyMap_;
   KeyTimestampMap keyTimestampMap_;
 
-  /** Keys that are exempt from automatic lag-based marginalization */
+  /** Keys exempt from lag-based marginalization, excluded by findKeysBefore(). */
   KeySet retainedKeys_;
 
   /** Update the Timestamps associated with the keys */
   void updateKeyTimestampMap(const KeyTimestampMap& newTimestamps);
 
-  /** Erase keys from the Key-Timestamps database (also removes them from the retainedKeys_ set */
+  /** Erase keys from the Key-Timestamps database and the retained set. */
   void eraseKeyTimestampMap(const KeyVector& keys);
 
   /**
-   * Update the retainedKeys_ set: inserts keysToRetain, removes keysToRelease.
-   * Call this before computing marginalizableKeys so that releasing takes
-   * effect in the same update call.
+   * Insert keysToRetain into the retained set, then erase keysToRelease. Call
+   * this before findKeysBefore() so a release takes effect in the same update.
    */
   void updateRetainedKeys(const KeySet& keysToRetain, const KeySet& keysToRelease);
 
   /** Find the most recent timestamp of the system */
   double getCurrentTimestamp() const;
 
-  /** Find all of the keys associated with timestamps before the provided time */
+  /** Find the keys with timestamps before the provided time, skipping retained keys. */
   KeyVector findKeysBefore(double timestamp) const;
 
   /** Find all of the keys associated with timestamps before the provided time */

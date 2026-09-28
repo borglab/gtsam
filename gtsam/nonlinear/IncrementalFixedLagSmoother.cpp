@@ -46,6 +46,21 @@ bool IncrementalFixedLagSmoother::equals(const FixedLagSmoother& rhs,
 /* ************************************************************************* */
 FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
     const NonlinearFactorGraph& newFactors, const Values& newTheta,
+    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove) {
+  return updateImpl(newFactors, newTheta, timestamps, factorsToRemove, KeySet(), KeySet());
+}
+
+/* ************************************************************************* */
+FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
+    const NonlinearFactorGraph& newFactors, const Values& newTheta,
+    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove,
+    const KeySet& keysToRetain, const KeySet& keysToRelease) {
+  return updateImpl(newFactors, newTheta, timestamps, factorsToRemove, keysToRetain, keysToRelease);
+}
+
+/* ************************************************************************* */
+FixedLagSmoother::Result IncrementalFixedLagSmoother::updateImpl(
+    const NonlinearFactorGraph& newFactors, const Values& newTheta,
     const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove,
     const KeySet& keysToRetain, const KeySet& keysToRelease) {
 
@@ -86,6 +101,17 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::update(
           "IncrementalFixedLagSmoother::update: timestamp supplied for key '" +
           DefaultKeyFormatter(key) +
           "', but no value exists in the smoother or newTheta.");
+    }
+  }
+
+  // Retention names a variable, so it must be one the smoother holds or one
+  // arriving in this update. Validate before any state mutation.
+  for (const Key key : keysToRetain) {
+    if (!isam_.valueExists(key) && !newTheta.exists(key)) {
+      throw std::invalid_argument(
+          "IncrementalFixedLagSmoother::update: cannot retain key '" +
+          DefaultKeyFormatter(key) +
+          "', because no value exists in the smoother or newTheta.");
     }
   }
 

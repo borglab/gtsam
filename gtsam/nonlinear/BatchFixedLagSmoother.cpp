@@ -54,6 +54,21 @@ Matrix BatchFixedLagSmoother::marginalCovariance(Key key) const {
 /* ************************************************************************* */
 FixedLagSmoother::Result BatchFixedLagSmoother::update(
     const NonlinearFactorGraph& newFactors, const Values& newTheta,
+    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove) {
+  return updateImpl(newFactors, newTheta, timestamps, factorsToRemove, KeySet(), KeySet());
+}
+
+/* ************************************************************************* */
+FixedLagSmoother::Result BatchFixedLagSmoother::update(
+    const NonlinearFactorGraph& newFactors, const Values& newTheta,
+    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove,
+    const KeySet& keysToRetain, const KeySet& keysToRelease) {
+  return updateImpl(newFactors, newTheta, timestamps, factorsToRemove, keysToRetain, keysToRelease);
+}
+
+/* ************************************************************************* */
+FixedLagSmoother::Result BatchFixedLagSmoother::updateImpl(
+    const NonlinearFactorGraph& newFactors, const Values& newTheta,
     const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove,
     const KeySet& keysToRetain, const KeySet& keysToRelease) {
 
@@ -84,6 +99,17 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
           "BatchFixedLagSmoother::update: timestamp supplied for key '" +
           DefaultKeyFormatter(key) +
           "', but no value exists in the smoother or newTheta.");
+    }
+  }
+
+  // Retention names a variable, so it must be one the smoother holds or one
+  // arriving in this update. Validate before any state mutation.
+  for (const Key key : keysToRetain) {
+    if (!theta_.exists(key) && !newTheta.exists(key)) {
+      throw invalid_argument(
+          "BatchFixedLagSmoother::update: cannot retain key '" +
+          DefaultKeyFormatter(key) +
+          "', because no value exists in the smoother or newTheta.");
     }
   }
 
