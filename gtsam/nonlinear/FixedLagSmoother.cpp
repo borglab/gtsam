@@ -134,10 +134,16 @@ double FixedLagSmoother::getCurrentTimestamp() const {
 KeyVector FixedLagSmoother::findKeysBefore(double timestamp) const {
   KeyVector keys;
   TimestampKeyMap::const_iterator end = timestampKeyMap_.lower_bound(timestamp);
-  for(TimestampKeyMap::const_iterator iter = timestampKeyMap_.begin(); iter != end; ++iter) {
-    // Skip keys that have been retained — they are exempt from auto-marginalization
-    if (retainedKeys_.count(iter->second) == 0) {
+  if (retainedKeys_.empty()) {
+    for(TimestampKeyMap::const_iterator iter = timestampKeyMap_.begin(); iter != end; ++iter) {
       keys.push_back(iter->second);
+    }
+  } else {
+    for(TimestampKeyMap::const_iterator iter = timestampKeyMap_.begin(); iter != end; ++iter) {
+      // Skip keys that have been retained — they are exempt from auto-marginalization
+      if (retainedKeys_.count(iter->second) == 0) {
+        keys.push_back(iter->second);
+      }
     }
   }
   return keys;
