@@ -31,6 +31,9 @@ if(@GTSAM_USE_TBB@)
     find_dependency(TBB 4.4 COMPONENTS tbb tbbmalloc)
 endif()
 
+# gtsam links Threads::Threads publicly (std::thread on glibc < 2.34).
+find_dependency(Threads)
+
 if(@GTSAM_USE_SYSTEM_EIGEN@)
 find_dependency(Eigen3 REQUIRED)
 endif()
