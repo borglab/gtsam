@@ -186,6 +186,11 @@ message(STATUS "Building GTSAM - as a ${GTSAM_LIBRARY_TYPE} library")
 add_library(gtsam ${GTSAM_LIBRARY_TYPE} ${gtsam_srcs})
 target_link_libraries(gtsam PUBLIC ${GTSAM_BOOST_LIBRARIES})
 target_link_libraries(gtsam PUBLIC ${GTSAM_ADDITIONAL_LIBRARIES})
+# gtsam and its tests use std::thread (e.g. PriorityScheduler). On glibc older
+# than 2.34 the pthread symbols are not in libc, so they must be linked
+# explicitly; PUBLIC so tests and downstream consumers inherit it.
+find_package(Threads REQUIRED)
+target_link_libraries(gtsam PUBLIC Threads::Threads)
 if(GTSAM_USE_SYSTEM_CCOLAMD)
   target_compile_definitions(gtsam PRIVATE GTSAM_USE_SYSTEM_CCOLAMD)
   target_link_libraries(gtsam PRIVATE SuiteSparse::CCOLAMD)

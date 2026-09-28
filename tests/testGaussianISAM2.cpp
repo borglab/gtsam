@@ -374,6 +374,34 @@ TEST(ISAM2, SlamlikeSolutionDoglegLineSearchQr) {
 }
 
 /* ************************************************************************* */
+// Initial values that already satisfy the factors give a zero Gauss-Newton
+// step. That is a valid state, not a bad line-search configuration:
+// calculateEstimate() must return the values rather than throw.
+TEST(ISAM2, DoglegLineSearchZeroGaussNewtonStep) {
+  NonlinearFactorGraph graph;
+  graph.addPrior(0, Pose2(1.0, 2.0, 0.3), noiseModel::Isotropic::Sigma(3, 0.1));
+  Values initial;
+  initial.insert(0, Pose2(1.0, 2.0, 0.3));  // exact
+
+  ISAM2 isam(ISAM2Params{ISAM2DoglegLineSearchParams{}});
+  isam.update(graph, initial);
+  // Threw "Would cause infinite search" before the fix; the test harness
+  // reports an uncaught exception as a failure.
+  Values estimate = isam.calculateEstimate();
+  EXPECT(assert_equal(initial, estimate));
+
+  // A later update that is also already consistent must not throw either.
+  NonlinearFactorGraph odometry;
+  odometry.emplace_shared<BetweenFactor<Pose2>>(
+      0, 1, Pose2(1.0, 0.0, 0.0), noiseModel::Isotropic::Sigma(3, 0.1));
+  Values next;
+  next.insert(1, Pose2(1.0, 2.0, 0.3).compose(Pose2(1.0, 0.0, 0.0)));
+  isam.update(odometry, next);
+  estimate = isam.calculateEstimate();
+  EXPECT(assert_equal(next.at<Pose2>(1), estimate.at<Pose2>(1)));
+}
+
+/* ************************************************************************* */
 TEST(ISAM2, clone) {
 
   ISAM2 clone1;
@@ -941,6 +969,46 @@ TEST(ISAM2, marginalizeLeaves6)
     EXPECT(updateAndMarginalize({}, {}, marginalKeys, isam));
     estimate = isam.calculateBestEstimate();
   }
+}
+
+/* ************************************************************************* */
+// A marginalized leaf clique whose separator holds only kept variables, below a
+// parent clique that mixes marginalized and kept frontals.
+TEST(ISAM2, marginalizeLeaves7) {
+  ISAM2 isam;
+
+  NonlinearFactorGraph factors;
+  factors.addPrior(0, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(0, 1, 0.0, model);
+  factors.emplace_shared<BetweenFactor<double>>(1, 2, 0.0, model);
+  Values values;
+  values.insert(0, 0.0);
+  values.insert(1, 0.0);
+  values.insert(2, 0.0);
+  isam.update(factors, values);
+
+  NonlinearFactorGraph newFactors;
+  newFactors.emplace_shared<BetweenFactor<double>>(2, 3, 0.0, model);
+  Values newValues;
+  newValues.insert(3, 0.0);
+  FastMap<Key, int> constrainedKeys;
+  constrainedKeys.insert(make_pair(0, 0));
+  constrainedKeys.insert(make_pair(2, 0));
+  constrainedKeys.insert(make_pair(1, 1));
+  constrainedKeys.insert(make_pair(3, 1));
+  isam.update(newFactors, newValues, FactorIndices(), constrainedKeys, {},
+              KeyList{1, 2});
+
+  // P(2 3 1) with child P(0 | 1): 0 is a leaf, but its clique does not depend
+  // on 2, the marginalized frontal of its parent.
+  const ISAM2::sharedClique root = isam.roots().front();
+  EXPECT_LONGS_EQUAL(1, isam.roots().size());
+  EXPECT(root->conditional()->frontals() == (KeyVector{2, 3, 1}));
+  EXPECT(isam[0]->parent() == root);
+  EXPECT(isam[0]->conditional()->parents() == (KeyVector{1}));
+
+  FastList<Key> leafKeys {0, 2};
+  EXPECT(checkMarginalizeLeaves(isam, leafKeys));
 }
 
 /* ************************************************************************* */

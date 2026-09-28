@@ -1078,6 +1078,55 @@ TEST(IncrementalFixedLagSmoother, CalculateEstimateForKeys) {
 }
 
 /* ************************************************************************* */
+// Refreshing the timestamp of a variable keeps it in the window while both of
+// its neighbours on the chain are marginalized in the same update.
+TEST(IncrementalFixedLagSmoother, MarginalizeNeighborsOfRetainedKey) {
+  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  IncrementalFixedLagSmoother smoother(5.0);
+
+  NonlinearFactorGraph allFactors;
+  NonlinearFactorGraph factors;
+  Values values;
+  FixedLagSmoother::KeyTimestampMap timestamps;
+  factors.addPrior(X(0), Point2(0.0, 0.0), noise);
+  factors.emplace_shared<BetweenFactor<Point2>>(X(0), X(1), Point2(1.0, 0.2),
+                                                noise);
+  factors.emplace_shared<BetweenFactor<Point2>>(X(1), X(2), Point2(0.9, -0.1),
+                                                noise);
+  for (size_t i = 0; i < 3; ++i) {
+    values.insert(X(i), Point2(double(i), 0.0));
+    timestamps[X(i)] = 0.0;
+  }
+  smoother.update(factors, values, timestamps);
+  allFactors.push_back(factors);
+  Values allValues = values;
+
+  NonlinearFactorGraph newFactors;
+  newFactors.emplace_shared<BetweenFactor<Point2>>(X(2), X(3), Point2(1.1, 0.3),
+                                                   noise);
+  Values newValues;
+  newValues.insert(X(3), Point2(3.0, 0.0));
+  FixedLagSmoother::KeyTimestampMap newTimestamps;
+  newTimestamps[X(3)] = 10.0;
+  newTimestamps[X(1)] = 10.0;
+  smoother.update(newFactors, newValues, newTimestamps);
+  allFactors.push_back(newFactors);
+  allValues.insert(newValues);
+
+  // The problem is linear, so marginalization is exact and the smoother must
+  // agree with solving the full history.
+  const Values expected =
+      allValues.retract(allFactors.linearize(allValues)->optimize());
+  const Values actual = smoother.calculateEstimate();
+  LONGS_EQUAL(2, actual.size());
+  EXPECT(
+      assert_equal(expected.at<Point2>(X(1)), actual.at<Point2>(X(1)), 1e-9));
+  EXPECT(
+      assert_equal(expected.at<Point2>(X(3)), actual.at<Point2>(X(3)), 1e-9));
+  LONGS_EQUAL(2, smoother.timestamps().size());
+}
+
+/* ************************************************************************* */
 namespace removal_validation {
 
 // Invalid removal indices are diagnosed before additions or valid removals land.

@@ -105,6 +105,7 @@ jobs:
         shell: bash
         run: |
           cmake -B build -G Ninja \
+              -DGTSAM_BUILD_WITH_WERROR=ON \
               -DCMAKE_TOOLCHAIN_FILE=vcpkg/scripts/buildsystems/vcpkg.cmake \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache \

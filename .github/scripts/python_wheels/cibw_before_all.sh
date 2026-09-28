@@ -90,6 +90,7 @@ rm -rf CMakeCache.txt CMakeFiles
 # Build the Python wrapper module
 cmake $PROJECT_DIR \
     -B build \
+    -DGTSAM_BUILD_WITH_WERROR=ON \
     -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} \
     -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
     -DGTSAM_BUILD_TESTS=OFF \

@@ -10,11 +10,11 @@ include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/GtwrapUtils.cmake)
 gtwrap_get_python_version(${WRAP_PYTHON_VERSION})
 
 # Set the variables to be used for the cmake config file.
-if(WIN32 AND NOT CYGWIN)
-  set(INSTALL_CMAKE_DIR CMake/${PROJECT_NAME})
-else()
-  set(INSTALL_CMAKE_DIR lib/cmake/${PROJECT_NAME})
-endif()
+# lib/cmake/<name>/ is one of the locations find_package searches on every
+# platform. The Windows layout used previously, CMake/<name>/, is not: CMake
+# looks in <prefix>/CMake/ but not in a package subdirectory below it, so
+# find_package(gtwrap) could never succeed there.
+set(INSTALL_CMAKE_DIR lib/cmake/${PROJECT_NAME})
 
 set(INSTALL_LIB_DIR lib/${PROJECT_NAME})
 set(INSTALL_BIN_DIR bin/${PROJECT_NAME})

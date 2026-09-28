@@ -89,6 +89,7 @@ jobs:
           cmake -E remove_directory build
           if [ "${{ matrix.build_type }}" = "Release" ]; then
             cmake -B build -G Ninja \
+                  -DGTSAM_BUILD_WITH_WERROR=ON \
                   -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
                   -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
                   -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
@@ -102,6 +103,7 @@ jobs:
                   -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           else
             cmake -B build -G Ninja \
+                  -DGTSAM_BUILD_WITH_WERROR=ON \
                   -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
                   -DGTSAM_SLOW_BUT_CORRECT_BETWEENFACTOR=ON \
                   -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
