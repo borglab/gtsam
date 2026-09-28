@@ -606,10 +606,16 @@ void ISAM2::marginalizeLeaves(
         // Check if parent contains a marginalized leaf variable.  Only need to
         // check the first variable because it is the closest to the leaves.
         sharedClique parent = clique->parent();
-        if (leafKeys.exists(parent->conditional()->front()))
-          clique = parent;
-        else
+        if (!leafKeys.exists(parent->conditional()->front())) break;
+        // Processing the parent only removes (and summarizes) this clique if
+        // it depends on a marginalized variable. Otherwise, e.g. a leaf whose
+        // separator holds only kept variables below a parent that mixes
+        // marginalized and kept frontals, marginalize it here.
+        const auto parents = clique->conditional()->parents();
+        if (std::none_of(parents.begin(), parents.end(),
+                         [&](Key key) { return leafKeys.exists(key); }))
           break;
+        clique = parent;
       }
 
       // See if we should remove the whole clique
