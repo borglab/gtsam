@@ -107,10 +107,10 @@ double EssentialMatrix::error(const Vector3& vA, const Vector3& vB, //
     OptionalJacobian<1, 5> H) const {
   if (H) {
     // See math.lyx
-    Matrix13 HR = vA.transpose() * E_ * skewSymmetric(-vB);
-    Matrix12 HD = vA.transpose() * skewSymmetric(-rotation().matrix() * vB)
-        * direction().basis();
-    *H << HR, HD;
+    H->block<1, 3>(0, 0) = vA.transpose() * E_ * skewSymmetric(-vB);
+    H->block<1, 2>(0, 3) = vA.transpose() *
+                           skewSymmetric(-rotation().matrix() * vB) *
+                           direction().basis();
   }
   return dot(vA, E_ * vB);
 }
