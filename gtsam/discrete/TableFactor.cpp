@@ -23,7 +23,10 @@
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Ordering.h>
 
+#include <algorithm>
+#include <functional>
 #include <utility>
+#include <vector>
 
 using namespace std;
 
@@ -392,14 +395,48 @@ DecisionTreeFactor TableFactor::toDecisionTreeFactor() const {
     return DecisionTreeFactor(dkeys, tree);
   }
 
-  std::vector<double> table(sparse_table_.size(), 0.0);
+  // Build the tree from the nonzero entries only, so a sparse table over many
+  // keys (e.g. a pruned hybrid mode posterior) costs time in its nonzeros, not
+  // in the product of all cardinalities. Keys go from highest to lowest, the
+  // order a DecisionTree keeps from root to leaves.
+  DiscreteKeys ordered = dkeys;
+  std::sort(ordered.begin(), ordered.end(),
+            [](const DiscreteKey& a, const DiscreteKey& b) {
+              return a.first > b.first;
+            });
+  std::vector<std::pair<std::vector<size_t>, double>> entries;
+  entries.reserve(sparse_table_.nonZeros());
   for (SparseIt it(sparse_table_); it; ++it) {
-    table[it.index()] = it.value();
+    std::vector<size_t> values;
+    values.reserve(ordered.size());
+    for (const DiscreteKey& dkey : ordered) {
+      values.push_back(keyValueForIndex(dkey.first, it.index()));
+    }
+    entries.emplace_back(std::move(values), it.value());
   }
+  std::sort(entries.begin(), entries.end());
 
-  AlgebraicDecisionTree<Key> tree(dkeys, table);
-  DecisionTreeFactor f(dkeys, tree);
-  return f;
+  using Tree = DecisionTree<Key, double>;
+  std::function<Tree(size_t, size_t, size_t)> build =
+      [&](size_t level, size_t begin, size_t end) -> Tree {
+    if (begin == end) return Tree(0.0);
+    if (level == ordered.size()) return Tree(entries[begin].second);
+    std::vector<Tree> branches;
+    branches.reserve(ordered[level].second);
+    size_t first = begin;
+    for (size_t value = 0; value < ordered[level].second; ++value) {
+      size_t last = first;
+      while (last < end && entries[last].first[level] == value) ++last;
+      branches.push_back(build(level + 1, first, last));
+      first = last;
+    }
+    return Tree(branches.begin(), branches.end(), ordered[level].first);
+  };
+
+  // Re-creating the tree through a unary map merges identical branches.
+  AlgebraicDecisionTree<Key> tree(build(0, 0, entries.size()),
+                                  [](double y) { return y; });
+  return DecisionTreeFactor(dkeys, tree);
 }
 
 /* ************************************************************************ */
