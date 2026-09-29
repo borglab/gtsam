@@ -997,6 +997,7 @@ virtual class FixedLagSmoother {
   const gtsam::FixedLagSmootherKeyTimestampMap& timestamps() const;
   double smootherLag() const;
   void setSmootherLag(double smootherLag);
+  const gtsam::KeySet& retainedKeys() const;
 
   gtsam::FixedLagSmootherResult update(
       const gtsam::NonlinearFactorGraph& newFactors =
@@ -1023,6 +1024,22 @@ virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
   const gtsam::Ordering& getOrdering() const;
   const gtsam::VectorValues& getDelta() const;
 
+  gtsam::FixedLagSmootherResult update(
+      const gtsam::NonlinearFactorGraph& newFactors =
+          gtsam::NonlinearFactorGraph(),
+      const gtsam::Values& newTheta = gtsam::Values(),
+      const gtsam::FixedLagSmootherKeyTimestampMap& timestamps =
+          gtsam::FixedLagSmootherKeyTimestampMap(),
+      const gtsam::FactorIndices& factorsToRemove = gtsam::FactorIndices());
+
+  gtsam::FixedLagSmootherResult update(
+      const gtsam::NonlinearFactorGraph& newFactors,
+      const gtsam::Values& newTheta,
+      const gtsam::FixedLagSmootherKeyTimestampMap& timestamps,
+      const gtsam::FactorIndices& factorsToRemove,
+      const gtsam::KeySet& keysToRetain,
+      const gtsam::KeySet& keysToRelease = gtsam::KeySet());
+
   template <VALUE = {double, gtsam::Point2, gtsam::Rot2, gtsam::Pose2,
                      gtsam::Point3, gtsam::Rot3, gtsam::Pose3,
                      gtsam::NavState, gtsam::SL4, gtsam::Similarity2,
@@ -1047,6 +1064,22 @@ virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
   const gtsam::VectorValues& getDelta() const;
   const gtsam::ISAM2& getISAM2() const;
   const gtsam::ISAM2Result& getISAM2Result() const;
+
+  gtsam::FixedLagSmootherResult update(
+      const gtsam::NonlinearFactorGraph& newFactors =
+          gtsam::NonlinearFactorGraph(),
+      const gtsam::Values& newTheta = gtsam::Values(),
+      const gtsam::FixedLagSmootherKeyTimestampMap& timestamps =
+          gtsam::FixedLagSmootherKeyTimestampMap(),
+      const gtsam::FactorIndices& factorsToRemove = gtsam::FactorIndices());
+
+  gtsam::FixedLagSmootherResult update(
+      const gtsam::NonlinearFactorGraph& newFactors,
+      const gtsam::Values& newTheta,
+      const gtsam::FixedLagSmootherKeyTimestampMap& timestamps,
+      const gtsam::FactorIndices& factorsToRemove,
+      const gtsam::KeySet& keysToRetain,
+      const gtsam::KeySet& keysToRelease = gtsam::KeySet());
 
   // Mirrors gtsam::ISAM2::calculateEstimate<VALUE>, which this forwards to.
   template <VALUE = {double,
