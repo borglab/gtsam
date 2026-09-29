@@ -107,6 +107,33 @@ jobs:
           CCACHE_NOHASHDIR: "1"
           CCACHE_MAXSIZE: 1G
 
+      # Neither the test suite nor `pixi build` consumes GTSAM the way a user
+      # does: both use the build tree. Install the package just built into a
+      # fresh environment and build and run the example project against its
+      # GTSAMConfig.cmake, so that a broken exported config fails here.
+      - name: Build a CMake project against the conda package
+        shell: bash
+        run: |
+          prefix_path='$CONDA_PREFIX'
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            prefix_path='$CONDA_PREFIX/Library'
+          fi
+          pixi exec \
+            --spec dist/gtsam-*.conda \
+            --spec cmake \
+            --spec ninja \
+            --spec cxx-compiler \
+            --spec eigen \
+            --spec libboost-devel \
+            --spec tbb-devel \
+            -- bash -c "
+              set -e
+              cmake -G Ninja -S cmake/example_cmake_find_gtsam -B build-example \
+                -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=\"$prefix_path\"
+              cmake --build build-example
+              ./build-example/example
+            "
+
       - name: Package build cache statistics
         if: always()
         run: pixi exec --spec ccache ccache --show-stats
