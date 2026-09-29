@@ -80,7 +80,8 @@ Boost is optional. Two CMake flags govern its use:
 - `GTSAM_ENABLE_BOOST_SERIALIZATION=ON|OFF` controls Boost serialization of factor graphs, factors, and related types.
 
 Both options default to ON for ordinary CMake builds and OFF inside ROS 2
-`colcon` builds. If either option is ON, install
+builds (`colcon`, or an install prefix under `/opt/ros/`). If either option is
+ON, install
 [Boost](https://www.boost.org/users/download/) 1.70 or newer:
 
 - macOS: `brew install boost`

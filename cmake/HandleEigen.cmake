@@ -1,10 +1,10 @@
 ###############################################################################
 # Option for using system Eigen or GTSAM-bundled Eigen
 # ROS packages declare Eigen as a dependency and must use that same Eigen in
-# GTSAM and downstream packages to avoid incompatible Eigen versions.  colcon
-# exports COLCON for every build subprocess, so use the system package by
-# default there while preserving the bundled-Eigen default elsewhere.
-if(DEFINED ENV{COLCON})
+# GTSAM and downstream packages to avoid incompatible Eigen versions, so use
+# the system package by default there while preserving the bundled-Eigen
+# default elsewhere.
+if(GTSAM_BUILDING_FOR_ROS)
   set(_gtsam_system_eigen_default ON)
 else()
   set(_gtsam_system_eigen_default OFF)
