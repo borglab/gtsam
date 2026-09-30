@@ -433,9 +433,11 @@ DecisionTreeFactor TableFactor::toDecisionTreeFactor() const {
     return Tree(branches.begin(), branches.end(), ordered_keys[level].first);
   };
 
-  // Re-creating the tree through a unary map merges identical branches.
-  AlgebraicDecisionTree<Key> tree(build(0, 0, entries.size()),
-                                  [](double y) { return y; });
+  // Build the decision tree
+  const Tree built = build(0, 0, entries.size());
+  // Merge identical branches to reduce size of the tree
+  AlgebraicDecisionTree<Key> tree(Tree::Choice::Unique(built.root_));
+
   return DecisionTreeFactor(dkeys, tree);
 }
 
