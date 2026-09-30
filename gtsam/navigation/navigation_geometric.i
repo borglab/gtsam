@@ -1,5 +1,6 @@
 //*************************************************************************
-// navigation2: Separated to reduce build memory.
+// navigation_geometric: Lie-group and equivariant filters, kept separate from
+// navigation.i to reduce wrapper build memory.
 //*************************************************************************
 
 namespace gtsam {

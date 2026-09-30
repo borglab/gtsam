@@ -1,5 +1,6 @@
 //*************************************************************************
-// nonlinear2
+// nonlinear_continuous_time: Continuous-time Gaussian-process factors, kept
+// separate from nonlinear.i to reduce wrapper build memory.
 //*************************************************************************
 
 namespace gtsam {

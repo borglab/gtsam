@@ -1,5 +1,7 @@
 //*************************************************************************
-// slam2: Separated into 2 parts to reduce RAM consumption during wrapping.
+// slam_synchronization: Lie-group synchronization and averaging, plus smaller
+// SLAM factors and dataset I/O, kept separate from slam.i to reduce wrapper
+// build memory.
 //*************************************************************************
 
 namespace gtsam {

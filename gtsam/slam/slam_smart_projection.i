@@ -1,5 +1,6 @@
 //*************************************************************************
-// slam3: Smart projection factors, separated to reduce build memory.
+// slam_smart_projection: Smart projection factors, kept separate from slam.i
+// to reduce wrapper build memory.
 //*************************************************************************
 
 namespace gtsam {
