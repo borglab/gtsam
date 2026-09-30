@@ -149,6 +149,41 @@ Matrix23 matrix{{1.0, 2.0, 3.0},
   the superseded scaffolding and rewrite the PR description around the
   final implementation.
 
+### Splitting large interface files
+
+Each `.i` file listed in `python/CMakeLists.txt` becomes its own generated
+Python translation unit, and the largest ones set the peak compiler memory of
+a parallel build.
+
+* When a module needs too much memory to compile, split it by topic into a
+  sibling file named `<module>_<topic>.i`, such as `navigation_geometric.i`
+  or `nonlinear_continuous_time.i`. Name the file after what it contains; do
+  not use numeric suffixes such as `slam2.i`. Start the file with a comment
+  describing its contents and why it is separate.
+* List the new file immediately after its parent in both
+  `python/CMakeLists.txt` and `matlab/CMakeLists.txt`.
+* Add `python/gtsam/preamble/<name>.h` and
+  `python/gtsam/specializations/<name>.h`; wrapper generation fails without
+  them. Keep a binding such as `py::bind_vector` in the specializations
+  header of the module that owns the classes it depends on. Copying it to the
+  new module registers the type twice.
+* Each generated file includes only the headers listed in its own `.i` file.
+  Add the `#include` lines that the moved declarations need, including headers
+  that the parent module had listed elsewhere in the file.
+* Keep a wrapped base class in the same module as its derived classes or in a
+  module listed earlier. Python registers classes in list order, so the wrong
+  order compiles but fails at import.
+* Measure peak memory for each generated file with `/usr/bin/time -f %M`,
+  using the flags in `build/python/CMakeFiles/gtsam_py.dir/flags.make`.
+  Check that each compile succeeds; a failing compile reports misleadingly
+  low memory.
+* Splitting repeats header parsing in each new module, which increases total
+  build memory and time. Split only the modules that set the peak, and report
+  per-module memory before and after in the PR description.
+* Build `gtsam_py` and `gtsam_unstable_py`, run `python-test` and
+  `python-test-unstable`, and construct moved classes from Python to confirm
+  their base classes still resolve.
+
 ## Tests
 
 * Run validation relevant to the files changed.
