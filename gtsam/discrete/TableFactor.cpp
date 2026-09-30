@@ -399,8 +399,8 @@ DecisionTreeFactor TableFactor::toDecisionTreeFactor() const {
   // keys (e.g. a pruned hybrid mode posterior) costs time in its nonzeros, not
   // in the product of all cardinalities. Keys go from highest to lowest, the
   // order a DecisionTree keeps from root to leaves.
-  DiscreteKeys ordered = dkeys;
-  std::sort(ordered.begin(), ordered.end(),
+  DiscreteKeys ordered_keys = dkeys;
+  std::sort(ordered_keys.begin(), ordered_keys.end(),
             [](const DiscreteKey& a, const DiscreteKey& b) {
               return a.first > b.first;
             });
@@ -408,8 +408,8 @@ DecisionTreeFactor TableFactor::toDecisionTreeFactor() const {
   entries.reserve(sparse_table_.nonZeros());
   for (SparseIt it(sparse_table_); it; ++it) {
     std::vector<size_t> values;
-    values.reserve(ordered.size());
-    for (const DiscreteKey& dkey : ordered) {
+    values.reserve(ordered_keys.size());
+    for (const DiscreteKey& dkey : ordered_keys) {
       values.push_back(keyValueForIndex(dkey.first, it.index()));
     }
     entries.emplace_back(std::move(values), it.value());
@@ -420,17 +420,17 @@ DecisionTreeFactor TableFactor::toDecisionTreeFactor() const {
   std::function<Tree(size_t, size_t, size_t)> build =
       [&](size_t level, size_t begin, size_t end) -> Tree {
     if (begin == end) return Tree(0.0);
-    if (level == ordered.size()) return Tree(entries[begin].second);
+    if (level == ordered_keys.size()) return Tree(entries[begin].second);
     std::vector<Tree> branches;
-    branches.reserve(ordered[level].second);
+    branches.reserve(ordered_keys[level].second);
     size_t first = begin;
-    for (size_t value = 0; value < ordered[level].second; ++value) {
+    for (size_t value = 0; value < ordered_keys[level].second; ++value) {
       size_t last = first;
       while (last < end && entries[last].first[level] == value) ++last;
       branches.push_back(build(level + 1, first, last));
       first = last;
     }
-    return Tree(branches.begin(), branches.end(), ordered[level].first);
+    return Tree(branches.begin(), branches.end(), ordered_keys[level].first);
   };
 
   // Re-creating the tree through a unary map merges identical branches.
