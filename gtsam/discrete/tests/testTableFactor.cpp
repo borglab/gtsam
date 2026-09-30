@@ -26,7 +26,9 @@
 #include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/discrete/TableFactor.h>
 
+#include <algorithm>
 #include <chrono>
+#include <numeric>
 #include <random>
 
 using namespace std;
@@ -200,6 +202,60 @@ TEST(TableFactor, Conversion) {
   // Check for ADT equality since the order of keys is irrelevant
   EXPECT(assert_equal<AlgebraicDecisionTree<Key>>(dtf2,
                                                   tf2.toDecisionTreeFactor()));
+}
+
+/* ************************************************************************* */
+// toDecisionTreeFactor builds from the nonzero entries; check it against the
+// dense construction for random keys (not in label order), cardinalities, and
+// sparsity levels.
+TEST(TableFactor, ConversionMatchesDenseTable) {
+  std::mt19937 rng(42);
+  for (size_t trial = 0; trial < 300; trial++) {
+    const size_t nrKeys = 1 + rng() % 6;
+    std::vector<Key> labels(12);
+    std::iota(labels.begin(), labels.end(), 0);
+    std::shuffle(labels.begin(), labels.end(), rng);
+    DiscreteKeys dkeys;
+    size_t size = 1;
+    for (size_t i = 0; i < nrKeys; i++) {
+      dkeys.emplace_back(labels[i], 1 + rng() % 4);
+      size *= dkeys.back().second;
+    }
+    const double density = (rng() % 5) / 4.0;
+    std::vector<double> table(size, 0.0);
+    for (double& value : table) {
+      if ((rng() % 1000) < density * 1000) value = 1 + rng() % 9;
+    }
+
+    const TableFactor tf(dkeys, table);
+    EXPECT(assert_equal(DecisionTreeFactor(dkeys, table),
+                        tf.toDecisionTreeFactor()));
+  }
+}
+
+/* ************************************************************************* */
+// A sparse table over many keys converts without enumerating every assignment.
+TEST(TableFactor, ConversionOfSparseTableOverManyKeys) {
+  const size_t nrKeys = 26;
+  DiscreteKeys dkeys;
+  for (size_t i = 0; i < nrKeys; i++) dkeys.emplace_back(i, 2);
+
+  Eigen::SparseVector<double> table(size_t(1) << nrKeys);
+  table.insert(5) = 1.0;
+  table.insert(12345) = 2.0;
+  table.insert((size_t(1) << nrKeys) - 1) = 3.0;
+  const TableFactor tf(dkeys, table);
+
+  const DecisionTreeFactor dtf = tf.toDecisionTreeFactor();
+  EXPECT(dtf.nrLeaves() < 100);
+  for (const uint64_t index : {uint64_t(0), uint64_t(5), uint64_t(12345),
+                               (uint64_t(1) << nrKeys) - 1}) {
+    DiscreteValues values;
+    for (size_t i = 0; i < nrKeys; i++) {
+      values[dkeys[i].first] = (index >> (nrKeys - 1 - i)) & 1;
+    }
+    EXPECT_DOUBLES_EQUAL(tf(values), dtf(values), 1e-12);
+  }
 }
 
 /* ************************************************************************* */

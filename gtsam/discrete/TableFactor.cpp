@@ -23,7 +23,10 @@
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Ordering.h>
 
+#include <algorithm>
+#include <functional>
 #include <utility>
+#include <vector>
 
 using namespace std;
 
@@ -392,14 +395,50 @@ DecisionTreeFactor TableFactor::toDecisionTreeFactor() const {
     return DecisionTreeFactor(dkeys, tree);
   }
 
-  std::vector<double> table(sparse_table_.size(), 0.0);
+  // Build the tree from the nonzero entries only, so a sparse table over many
+  // keys (e.g. a pruned hybrid mode posterior) costs time in its nonzeros, not
+  // in the product of all cardinalities. Keys go from highest to lowest, the
+  // order a DecisionTree keeps from root to leaves.
+  DiscreteKeys orderedKeys = dkeys;
+  std::sort(orderedKeys.begin(), orderedKeys.end(),
+            [](const DiscreteKey& a, const DiscreteKey& b) {
+              return a.first > b.first;
+            });
+  std::vector<std::pair<std::vector<size_t>, double>> entries;
+  entries.reserve(sparse_table_.nonZeros());
   for (SparseIt it(sparse_table_); it; ++it) {
-    table[it.index()] = it.value();
+    std::vector<size_t> values;
+    values.reserve(orderedKeys.size());
+    for (const DiscreteKey& dkey : orderedKeys) {
+      values.push_back(keyValueForIndex(dkey.first, it.index()));
+    }
+    entries.emplace_back(std::move(values), it.value());
   }
+  std::sort(entries.begin(), entries.end());
 
-  AlgebraicDecisionTree<Key> tree(dkeys, table);
-  DecisionTreeFactor f(dkeys, tree);
-  return f;
+  using Tree = DecisionTree<Key, double>;
+  std::function<Tree(size_t, size_t, size_t)> build =
+      [&](size_t level, size_t begin, size_t end) -> Tree {
+    if (begin == end) return Tree(0.0);
+    if (level == orderedKeys.size()) return Tree(entries[begin].second);
+    std::vector<Tree> branches;
+    branches.reserve(orderedKeys[level].second);
+    size_t first = begin;
+    for (size_t value = 0; value < orderedKeys[level].second; ++value) {
+      size_t last = first;
+      while (last < end && entries[last].first[level] == value) ++last;
+      branches.push_back(build(level + 1, first, last));
+      first = last;
+    }
+    return Tree(branches.begin(), branches.end(), orderedKeys[level].first);
+  };
+
+  // Build the decision tree
+  const Tree built = build(0, 0, entries.size());
+  // Merge identical branches to reduce size of the tree
+  AlgebraicDecisionTree<Key> tree(Tree::Choice::Unique(built.root_));
+
+  return DecisionTreeFactor(dkeys, tree);
 }
 
 /* ************************************************************************ */
