@@ -203,4 +203,11 @@ template <class VALUE>
 struct traits<AttitudeFactor<VALUE>> : public Testable<AttitudeFactor<VALUE>> {
 };
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+/// @deprecated Use AttitudeFactor<Pose3> instead.
+using Pose3AttitudeFactor = AttitudeFactor<Pose3>;
+/// @deprecated Use AttitudeFactor<Rot3> instead.
+using Rot3AttitudeFactor = AttitudeFactor<Rot3>;
+#endif
+
 }  // namespace gtsam
