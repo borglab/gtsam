@@ -95,6 +95,25 @@ ExtendedPose3d makeExtendedPose3d(const Matrix& x) {
 
 }  // namespace
 
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+// Legacy C++ names must construct and evaluate like the supported templates.
+TEST(AttitudeFactor, LegacyAliases) {
+  static_assert(std::is_same<Pose3AttitudeFactor, AttitudeFactor<Pose3>>::value);
+  static_assert(std::is_same<Rot3AttitudeFactor, AttitudeFactor<Rot3>>::value);
+  const Unit3 direction(0, 0, 1);
+  const auto model = noiseModel::Isotropic::Sigma(2, 0.1);
+  const Rot3 rotation = Rot3::RzRyRx(0.1, -0.2, 0.3);
+  const Pose3 pose(rotation, Point3(1, 2, 3));
+  const Pose3AttitudeFactor poseFactor(1, direction, model);
+  const Rot3AttitudeFactor rotationFactor(1, direction, model);
+  Matrix poseH, rotationH;
+  EXPECT(assert_equal(rotationFactor.evaluateError(rotation, rotationH),
+                      poseFactor.evaluateError(pose, poseH)));
+  EXPECT(assert_equal(rotationH, poseH.leftCols(3)));
+  EXPECT(assert_equal(Matrix23::Zero().eval(), Matrix23(poseH.rightCols(3))));
+}
+#endif
+
 /* ************************************************************************* */
 TEST(AttitudeFactorRot3, ConstructorAndJacobian) {
   Unit3 nDown(0, 0, -1);
