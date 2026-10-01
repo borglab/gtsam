@@ -16,7 +16,7 @@ preview = ["pixi-build"]
 [package]
 name = "gtsam"
 # Kept in step with CMakeLists.txt by `pixi run -e test check-version`.
-version = "4.3.1"
+version = "4.3.2"
 
 [package.build]
 backend = { name = "pixi-build-cmake", version = "0.*" }
