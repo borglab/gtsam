@@ -240,7 +240,7 @@ TEST(TableFactor, ConversionOfSparseTableOverManyKeys) {
   DiscreteKeys dkeys;
   for (size_t i = 0; i < nrKeys; i++) dkeys.emplace_back(i, 2);
 
-  Eigen::SparseVector<double> table(size_t(1) << nrKeys);
+  SparseVector table(size_t(1) << nrKeys);
   table.insert(5) = 1.0;
   table.insert(12345) = 2.0;
   table.insert((size_t(1) << nrKeys) - 1) = 3.0;

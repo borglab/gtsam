@@ -70,7 +70,7 @@ TableFactor makeDenseTable(const DiscreteKeys& keys) {
   uint64_t cardinality = 1;
   for (const DiscreteKey& key : keys) cardinality *= key.second;
 
-  Eigen::SparseVector<double> values(cardinality);
+  SparseVector values(cardinality);
   values.reserve(cardinality);
   for (uint64_t index = 0; index < cardinality; ++index) {
     values.insert(index) = 1.0 + static_cast<double>(index % 17) / 17.0;
