@@ -411,6 +411,145 @@ TEST(DCSAM, SimpleSemanticSlam) {
   EXPECT(assert_equal(expectedValues, dcvals, 1e-5));
 }
 
+namespace selection_fixture {
+// x0 is pinned at 0, odometry says x1 = x0 + 1 with a tight (mode 0) or loose
+// (mode 1) model, and a direct measurement says x1 = 0.
+const Key x0 = X(0), x1 = X(1);
+const DiscreteKey mode(D(1), 2);
+auto tight = noiseModel::Isotropic::Sigma(1, 1.0);
+auto loose = noiseModel::Isotropic::Sigma(1, 10.0);
+
+HybridNonlinearFactorGraph Graph() {
+  HybridNonlinearFactorGraph graph;
+  graph.push_back(PriorFactor<double>(x0, 0.0,
+                                      noiseModel::Isotropic::Sigma(1, 1e-3)));
+  std::vector<NonlinearFactorValuePair> components{
+      {std::make_shared<BetweenFactor<double>>(x0, x1, 1.0, tight),
+       tight->negLogConstant()},
+      {std::make_shared<BetweenFactor<double>>(x0, x1, 1.0, loose),
+       loose->negLogConstant()}};
+  graph.push_back(HybridNonlinearFactor(mode, components));
+  graph.push_back(PriorFactor<double>(x1, 0.0, tight));
+  return graph;
+}
+}  // namespace selection_fixture
+
+/*
+ * Repeated updates must not add the selected component again: the odometry
+ * and the measurement have equal weight, so x1 stays at 0.5.
+ */
+TEST(DCSAM, RepeatedUpdatesKeepOneComponent) {
+  using namespace selection_fixture;
+  Values initial;
+  initial.insert(x0, 0.0);
+  initial.insert(x1, 1.0);
+
+  DCSAM dcsam;
+  dcsam.update(Graph(),
+               HybridValues(VectorValues(), DiscreteValues(), initial));
+  for (size_t i = 0; i < 5; i++) {
+    HybridValues estimate = dcsam.calculateEstimate();
+    EXPECT_LONGS_EQUAL(0, estimate.discrete().at(mode.first));
+    EXPECT_DOUBLES_EQUAL(0.5, estimate.nonlinear().at<double>(x1), 1e-6);
+    EXPECT_LONGS_EQUAL(3, dcsam.getNonlinearFactorGraph().nrFactors());
+    dcsam.update();
+  }
+}
+
+/*
+ * When the discrete estimate changes, the component of the old mode must be
+ * replaced, not kept alongside the new one.
+ */
+TEST(DCSAM, ModeChangeReplacesComponent) {
+  using namespace selection_fixture;
+  // Far from the measurement, so the first discrete solve picks the loose mode.
+  Values initial;
+  initial.insert(x0, 0.0);
+  initial.insert(x1, 10.0);
+
+  DCSAM dcsam;
+  dcsam.update(Graph(),
+               HybridValues(VectorValues(), DiscreteValues(), initial));
+  // With the loose odometry, x1 = (1/100) / (1/100 + 1).
+  EXPECT_DOUBLES_EQUAL(1.0 / 101.0,
+                       dcsam.calculateEstimate().nonlinear().at<double>(x1),
+                       1e-6);
+
+  // At that estimate the tight mode explains the data better.
+  dcsam.update();
+  dcsam.update();
+  HybridValues estimate = dcsam.calculateEstimate();
+  EXPECT_LONGS_EQUAL(0, estimate.discrete().at(mode.first));
+  EXPECT_DOUBLES_EQUAL(0.5, estimate.nonlinear().at<double>(x1), 1e-6);
+  EXPECT_LONGS_EQUAL(3, dcsam.getNonlinearFactorGraph().nrFactors());
+}
+
+/* ************************************************************************* */
+namespace slot_reuse_fixture {
+
+// Repeated mode switches reuse slots by default, allowing one spare slot because
+// ISAM2 adds the replacement before removing the previous component.
+TEST(DCSAM, DefaultReusesSlotsAcrossModeSwitches) {
+  using namespace selection_fixture;
+  DCSAM dcsam;
+  Values initial;
+  initial.insert(x0, 0.0);
+  initial.insert(x1, 1.0);
+  dcsam.update(Graph(), HybridValues(VectorValues(), DiscreteValues(), initial));
+  EXPECT_LONGS_EQUAL(3, dcsam.getNonlinearFactorGraph().size());
+
+  for (size_t i = 0; i < 12; ++i) {
+    const size_t selectedMode = (i + 1) % 2;
+    // Alternate the accumulated discrete odds between 1e-8 and 1e8, so
+    // the prior dominates the continuous likelihood in either mode.
+    const double small = i == 0 ? 1e-8 : 1e-16;
+    HybridNonlinearFactorGraph graph;
+    graph.push_back(DecisionTreeFactor(
+        mode, selectedMode ? std::vector<double>{small, 1.0}
+                           : std::vector<double>{1.0, small}));
+    dcsam.update(graph);
+    const auto estimate = dcsam.calculateEstimate();
+    EXPECT_LONGS_EQUAL(selectedMode, estimate.discrete().at(mode.first));
+    EXPECT_DOUBLES_EQUAL(selectedMode ? 1.0 / 101.0 : 0.5,
+                         estimate.nonlinear().at<double>(x1), 1e-6);
+    EXPECT_LONGS_EQUAL(3, dcsam.getNonlinearFactorGraph().nrFactors());
+    EXPECT_LONGS_EQUAL(4, dcsam.getNonlinearFactorGraph().size());
+  }
+}
+
+// Explicit parameters retain both enabled and disabled slot-reuse behavior,
+// and constructing DCSAM does not change the global ISAM2 default.
+TEST(DCSAM, ExplicitSlotReuseSettingIsPreserved) {
+  using namespace selection_fixture;
+  EXPECT(!ISAM2Params().findUnusedFactorSlots);
+  for (const bool reuse : {false, true}) {
+    ISAM2Params params;
+    params.findUnusedFactorSlots = reuse;
+    DCSAM dcsam(params);
+    Values initial;
+    initial.insert(x0, 0.0);
+    initial.insert(x1, 1.0);
+    dcsam.update(Graph(),
+                 HybridValues(VectorValues(), DiscreteValues(), initial));
+    for (size_t i = 0; i < 6; ++i) {
+      HybridNonlinearFactorGraph graph;
+      const double small = i == 0 ? 1e-8 : 1e-16;
+      graph.push_back(DecisionTreeFactor(
+          mode, i % 2 == 0 ? std::vector<double>{small, 1.0}
+                           : std::vector<double>{1.0, small}));
+      dcsam.update(graph);
+      EXPECT_LONGS_EQUAL(3, dcsam.getNonlinearFactorGraph().nrFactors());
+      EXPECT_LONGS_EQUAL(reuse ? 4 : 4 + i,
+                        dcsam.getNonlinearFactorGraph().size());
+    }
+    EXPECT(params.findUnusedFactorSlots == reuse);
+  }
+  EXPECT(!ISAM2Params().findUnusedFactorSlots);
+}
+
+}  // namespace slot_reuse_fixture
+/* ************************************************************************* */
+
 /* *************************************************************************
  */
 int main() {
