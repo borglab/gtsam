@@ -48,8 +48,11 @@ namespace gtsam {
  */
 class GTSAM_EXPORT DCSAM {
  private:
-  /// The factor graph for all continuous factors
-  NonlinearFactorGraph nfg_;
+  /// For each hybrid factor in `hfg_`, the component currently in iSAM2
+  std::vector<NoiseModelFactor::shared_ptr> selectedComponents_;
+
+  /// For each hybrid factor in `hfg_`, the iSAM2 index of that component
+  FactorIndices selectedIndices_;
   /// The factor graph for all discrete factors
   DiscreteFactorGraph dfg_;
   /// The factor graph for hybrid factors

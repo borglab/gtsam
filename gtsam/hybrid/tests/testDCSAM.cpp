@@ -411,6 +411,79 @@ TEST(DCSAM, SimpleSemanticSlam) {
   EXPECT(assert_equal(expectedValues, dcvals, 1e-5));
 }
 
+namespace selection_fixture {
+// x0 is pinned at 0, odometry says x1 = x0 + 1 with a tight (mode 0) or loose
+// (mode 1) model, and a direct measurement says x1 = 0.
+const Key x0 = X(0), x1 = X(1);
+const DiscreteKey mode(D(1), 2);
+auto tight = noiseModel::Isotropic::Sigma(1, 1.0);
+auto loose = noiseModel::Isotropic::Sigma(1, 10.0);
+
+HybridNonlinearFactorGraph Graph() {
+  HybridNonlinearFactorGraph graph;
+  graph.push_back(PriorFactor<double>(x0, 0.0,
+                                      noiseModel::Isotropic::Sigma(1, 1e-3)));
+  std::vector<NonlinearFactorValuePair> components{
+      {std::make_shared<BetweenFactor<double>>(x0, x1, 1.0, tight),
+       tight->negLogConstant()},
+      {std::make_shared<BetweenFactor<double>>(x0, x1, 1.0, loose),
+       loose->negLogConstant()}};
+  graph.push_back(HybridNonlinearFactor(mode, components));
+  graph.push_back(PriorFactor<double>(x1, 0.0, tight));
+  return graph;
+}
+}  // namespace selection_fixture
+
+/*
+ * Repeated updates must not add the selected component again: the odometry
+ * and the measurement have equal weight, so x1 stays at 0.5.
+ */
+TEST(DCSAM, RepeatedUpdatesKeepOneComponent) {
+  using namespace selection_fixture;
+  Values initial;
+  initial.insert(x0, 0.0);
+  initial.insert(x1, 1.0);
+
+  DCSAM dcsam;
+  dcsam.update(Graph(),
+               HybridValues(VectorValues(), DiscreteValues(), initial));
+  for (size_t i = 0; i < 5; i++) {
+    HybridValues estimate = dcsam.calculateEstimate();
+    EXPECT_LONGS_EQUAL(0, estimate.discrete().at(mode.first));
+    EXPECT_DOUBLES_EQUAL(0.5, estimate.nonlinear().at<double>(x1), 1e-6);
+    EXPECT_LONGS_EQUAL(3, dcsam.getNonlinearFactorGraph().nrFactors());
+    dcsam.update();
+  }
+}
+
+/*
+ * When the discrete estimate changes, the component of the old mode must be
+ * replaced, not kept alongside the new one.
+ */
+TEST(DCSAM, ModeChangeReplacesComponent) {
+  using namespace selection_fixture;
+  // Far from the measurement, so the first discrete solve picks the loose mode.
+  Values initial;
+  initial.insert(x0, 0.0);
+  initial.insert(x1, 10.0);
+
+  DCSAM dcsam;
+  dcsam.update(Graph(),
+               HybridValues(VectorValues(), DiscreteValues(), initial));
+  // With the loose odometry, x1 = (1/100) / (1/100 + 1).
+  EXPECT_DOUBLES_EQUAL(1.0 / 101.0,
+                       dcsam.calculateEstimate().nonlinear().at<double>(x1),
+                       1e-6);
+
+  // At that estimate the tight mode explains the data better.
+  dcsam.update();
+  dcsam.update();
+  HybridValues estimate = dcsam.calculateEstimate();
+  EXPECT_LONGS_EQUAL(0, estimate.discrete().at(mode.first));
+  EXPECT_DOUBLES_EQUAL(0.5, estimate.nonlinear().at<double>(x1), 1e-6);
+  EXPECT_LONGS_EQUAL(3, dcsam.getNonlinearFactorGraph().nrFactors());
+}
+
 /* *************************************************************************
  */
 int main() {
