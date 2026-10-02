@@ -78,6 +78,7 @@ set(interface_files
     ${GTSAM_SOURCE_DIR}/gtsam/geometry/cameras.i
     ${GTSAM_SOURCE_DIR}/gtsam/linear/linear.i
     ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
+    ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/nonlinear_continuous_time.i
     ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/values.i
     ${GTSAM_SOURCE_DIR}/gtsam/nonlinear/custom.i
     ${GTSAM_SOURCE_DIR}/gtsam/constrained/constrained.i
@@ -85,8 +86,11 @@ set(interface_files
     ${GTSAM_SOURCE_DIR}/gtsam/symbolic/symbolic.i
     ${GTSAM_SOURCE_DIR}/gtsam/sam/sam.i
     ${GTSAM_SOURCE_DIR}/gtsam/slam/slam.i
+    ${GTSAM_SOURCE_DIR}/gtsam/slam/slam_synchronization.i
+    ${GTSAM_SOURCE_DIR}/gtsam/slam/slam_smart_projection.i
     ${GTSAM_SOURCE_DIR}/gtsam/sfm/sfm.i
     ${GTSAM_SOURCE_DIR}/gtsam/navigation/navigation.i
+    ${GTSAM_SOURCE_DIR}/gtsam/navigation/navigation_geometric.i
     # matlab/custom.i lives outside the main gtsam/ tree, see comment below.
     ${GTSAM_SOURCE_DIR}/matlab/custom.i
 )
