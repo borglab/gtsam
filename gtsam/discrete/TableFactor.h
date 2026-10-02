@@ -37,6 +37,8 @@
 
 namespace gtsam {
 
+using SparseVector = Eigen::SparseVector<double, 0, int64_t>;
+
 class DiscreteConditional;
 class HybridValues;
 
@@ -51,7 +53,7 @@ class HybridValues;
 class GTSAM_EXPORT TableFactor : public DiscreteFactor {
  protected:
   /// SparseVector of nonzero probabilities.
-  Eigen::SparseVector<double> sparse_table_;
+  SparseVector sparse_table_;
 
  private:
   /// Map of Keys and their denominators used in keyValueForIndex.
@@ -112,18 +114,18 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    * Convert probability table given as doubles to SparseVector.
    * Example: {0, 1, 1, 0, 0, 1, 0} -> values: {1, 1, 1}, indices: {1, 2, 5}
    */
-  static Eigen::SparseVector<double> Convert(const DiscreteKeys& keys,
+  static SparseVector Convert(const DiscreteKeys& keys,
                                              const std::vector<double>& table);
 
   /// Convert probability table given as string to SparseVector.
-  static Eigen::SparseVector<double> Convert(const DiscreteKeys& keys,
+  static SparseVector Convert(const DiscreteKeys& keys,
                                              const std::string& table);
 
   // typedefs needed to play nice with gtsam
   typedef TableFactor This;
   typedef DiscreteFactor Base;  ///< Typedef to base class
   typedef std::shared_ptr<TableFactor> shared_ptr;
-  typedef Eigen::SparseVector<double>::InnerIterator SparseIt;
+  typedef SparseVector::InnerIterator SparseIt;
   typedef std::vector<std::pair<DiscreteValues, double>> AssignValList;
 
   /// @name Standard Constructors
@@ -137,7 +139,7 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
 
   /** Constructor from sparse_table */
   TableFactor(const DiscreteKeys& keys,
-              const Eigen::SparseVector<double>& table);
+              const SparseVector& table);
 
   /** Constructor from doubles */
   TableFactor(const DiscreteKeys& keys, const std::vector<double>& table)
@@ -183,7 +185,7 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   // /// @{
 
   /// Getter for the underlying sparse vector
-  Eigen::SparseVector<double> sparseTable() const { return sparse_table_; }
+  SparseVector sparseTable() const { return sparse_table_; }
 
   /// Evaluate probability distribution, is just look up in TableFactor.
   double evaluate(const Assignment<Key>& values) const override;
