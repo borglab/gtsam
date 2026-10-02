@@ -484,6 +484,72 @@ TEST(DCSAM, ModeChangeReplacesComponent) {
   EXPECT_LONGS_EQUAL(3, dcsam.getNonlinearFactorGraph().nrFactors());
 }
 
+/* ************************************************************************* */
+namespace slot_reuse_fixture {
+
+// Repeated mode switches reuse slots by default, allowing one spare slot because
+// ISAM2 adds the replacement before removing the previous component.
+TEST(DCSAM, DefaultReusesSlotsAcrossModeSwitches) {
+  using namespace selection_fixture;
+  DCSAM dcsam;
+  Values initial;
+  initial.insert(x0, 0.0);
+  initial.insert(x1, 1.0);
+  dcsam.update(Graph(), HybridValues(VectorValues(), DiscreteValues(), initial));
+  EXPECT_LONGS_EQUAL(3, dcsam.getNonlinearFactorGraph().size());
+
+  for (size_t i = 0; i < 12; ++i) {
+    const size_t selectedMode = (i + 1) % 2;
+    // Alternate the accumulated discrete odds between 1e-8 and 1e8, so
+    // the prior dominates the continuous likelihood in either mode.
+    const double small = i == 0 ? 1e-8 : 1e-16;
+    HybridNonlinearFactorGraph graph;
+    graph.push_back(DecisionTreeFactor(
+        mode, selectedMode ? std::vector<double>{small, 1.0}
+                           : std::vector<double>{1.0, small}));
+    dcsam.update(graph);
+    const auto estimate = dcsam.calculateEstimate();
+    EXPECT_LONGS_EQUAL(selectedMode, estimate.discrete().at(mode.first));
+    EXPECT_DOUBLES_EQUAL(selectedMode ? 1.0 / 101.0 : 0.5,
+                         estimate.nonlinear().at<double>(x1), 1e-6);
+    EXPECT_LONGS_EQUAL(3, dcsam.getNonlinearFactorGraph().nrFactors());
+    EXPECT_LONGS_EQUAL(4, dcsam.getNonlinearFactorGraph().size());
+  }
+}
+
+// Explicit parameters retain both enabled and disabled slot-reuse behavior,
+// and constructing DCSAM does not change the global ISAM2 default.
+TEST(DCSAM, ExplicitSlotReuseSettingIsPreserved) {
+  using namespace selection_fixture;
+  EXPECT(!ISAM2Params().findUnusedFactorSlots);
+  for (const bool reuse : {false, true}) {
+    ISAM2Params params;
+    params.findUnusedFactorSlots = reuse;
+    DCSAM dcsam(params);
+    Values initial;
+    initial.insert(x0, 0.0);
+    initial.insert(x1, 1.0);
+    dcsam.update(Graph(),
+                 HybridValues(VectorValues(), DiscreteValues(), initial));
+    for (size_t i = 0; i < 6; ++i) {
+      HybridNonlinearFactorGraph graph;
+      const double small = i == 0 ? 1e-8 : 1e-16;
+      graph.push_back(DecisionTreeFactor(
+          mode, i % 2 == 0 ? std::vector<double>{small, 1.0}
+                           : std::vector<double>{1.0, small}));
+      dcsam.update(graph);
+      EXPECT_LONGS_EQUAL(3, dcsam.getNonlinearFactorGraph().nrFactors());
+      EXPECT_LONGS_EQUAL(reuse ? 4 : 4 + i,
+                        dcsam.getNonlinearFactorGraph().size());
+    }
+    EXPECT(params.findUnusedFactorSlots == reuse);
+  }
+  EXPECT(!ISAM2Params().findUnusedFactorSlots);
+}
+
+}  // namespace slot_reuse_fixture
+/* ************************************************************************* */
+
 /* *************************************************************************
  */
 int main() {

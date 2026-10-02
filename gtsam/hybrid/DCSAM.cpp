@@ -22,7 +22,12 @@
 
 namespace gtsam {
 
-DCSAM::DCSAM() : isam_(ISAM2(ISAM2Params())) {}
+DCSAM::DCSAM()
+    : DCSAM([] {
+        ISAM2Params params;
+        params.findUnusedFactorSlots = true;
+        return params;
+      }()) {}
 
 DCSAM::DCSAM(const ISAM2Params& isam_params) : isam_(ISAM2(isam_params)) {}
 

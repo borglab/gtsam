@@ -69,8 +69,10 @@ class GTSAM_EXPORT DCSAM {
   DiscreteValues currDiscrete_;
 
  public:
+  /// Construct with ISAM2 defaults and reuse unused factor slots.
   DCSAM();
 
+  /// Construct with the supplied ISAM2 parameters unchanged.
   explicit DCSAM(const ISAM2Params &isam_params);
 
   /**
