@@ -149,40 +149,55 @@ Matrix23 matrix{{1.0, 2.0, 3.0},
   the superseded scaffolding and rewrite the PR description around the
   final implementation.
 
-### Splitting large interface files
+### Choosing an interface file for wrappers
 
-Each `.i` file listed in `python/CMakeLists.txt` becomes its own generated
-Python translation unit, and the largest ones set the peak compiler memory of
-a parallel build.
+Place new wrapper declarations in the shared `.i` file for their logical
+API group. Add methods, constructors, and overloads to the existing wrapped
+class declaration in its current file. For new classes and free functions,
+use the following split; inspect declarations rather than `#include` lines,
+since sibling files also include headers for dependencies.
 
-* When a module needs too much memory to compile, split it by topic into a
-  sibling file named `<module>_<topic>.i`, such as `navigation_geometric.i`
-  or `nonlinear_continuous_time.i`. Name the file after what it contains; do
-  not use numeric suffixes such as `slam2.i`. Start the file with a comment
-  describing its contents and why it is separate.
-* List the new file immediately after its parent in both
-  `python/CMakeLists.txt` and `matlab/CMakeLists.txt`.
-* Add `python/gtsam/preamble/<name>.h` and
-  `python/gtsam/specializations/<name>.h`; wrapper generation fails without
-  them. Keep a binding such as `py::bind_vector` in the specializations
-  header of the module that owns the classes it depends on. Copying it to the
-  new module registers the type twice.
-* Each generated file includes only the headers listed in its own `.i` file.
-  Add the `#include` lines that the moved declarations need, including headers
-  that the parent module had listed elsewhere in the file.
-* Keep a wrapped base class in the same module as its derived classes or in a
-  module listed earlier. Python registers classes in list order, so the wrong
-  order compiles but fails at import.
-* Measure peak memory for each generated file with `/usr/bin/time -f %M`,
-  using the flags in `build/python/CMakeFiles/gtsam_py.dir/flags.make`.
-  Check that each compile succeeds; a failing compile reports misleadingly
-  low memory.
-* Splitting repeats header parsing in each new module, which increases total
-  build memory and time. Split only the modules that set the peak, and report
-  per-module memory before and after in the PR description.
-* Build `gtsam_py` and `gtsam_unstable_py`, run `python-test` and
-  `python-test-unstable`, and construct moved classes from Python to confirm
-  their base classes still resolve.
+* `gtsam/slam/slam.i`: between factors, planar and ordinary projection
+  factors, and general SFM factors (`BetweenFactor`, `PlanarProjectionFactor`,
+  `GenericProjectionFactor`, `GeneralSFMFactor`, and `GeneralSFMFactor2`).
+* `gtsam/slam/slam_smart_projection.i`: smart projection factors, their
+  parameters and base classes, and the linear-factor specializations they
+  return (`SmartFactorBase`, `SmartProjectionParams`, `SmartProjectionFactor`,
+  `SmartProjectionPoseFactor`, `SmartProjectionRigFactor`,
+  `RegularHessianFactor`, and `JacobianFactorQ`).
+* `gtsam/slam/slam_synchronization.i`: Lie-group synchronization, averaging,
+  and initialization (`FastSync`, `KarcherMeanFactor`, Frobenius factors,
+  `WahbaFactor`, `RelativeTranslationFactor`, `InitializePose3`, and `lago`);
+  dataset I/O; and the smaller SLAM factors already grouped here (stereo,
+  reference-frame, rotation, oriented-plane, pose translation/rotation priors,
+  known-landmark, and triangulation factors). Extend each family here.
+* `gtsam/nonlinear/nonlinear.i`: core nonlinear factor and graph APIs,
+  marginals, linear-container factors, batch optimizers and their parameters,
+  and incremental optimization (`ISAM2` and `NonlinearISAM`).
+* `gtsam/nonlinear/nonlinear_continuous_time.i`: continuous-time
+  Gaussian-process APIs (`StateData`, `WnoaMotionFactor`, `WnoaInterpFactor`,
+  and `WnoaFactorGraph`, together with its `ExpressionFactorGraph` base);
+  prior factors (`PriorFactor`, `ExtendedPriorFactor`, and
+  `ConcentratedGaussian`), `VectorNormFactor`, fixed-lag smoothers and their
+  supporting types, and `ExtendedKalmanFilter`.
+* `gtsam/nonlinear/values.i`: `Values` and its typed accessors.
+  `gtsam/nonlinear/custom.i`: `CustomFactor`.
+* `gtsam/navigation/navigation.i`: navigation state and IMU bias,
+  preintegration and IMU/AHRS factors, navigation measurement factors (GPS,
+  pseudorange, carrier phase, Doppler, attitude, barometric, constant velocity,
+  and magnetic), and scenarios and scenario runners.
+* `gtsam/navigation/navigation_geometric.i`: manifold, Lie-group, invariant,
+  and equivariant filters (`ManifoldEKF`, `LieGroupEKF`, `LeftLinearEKF`,
+  `InvariantEKF`, and `AbcEquivariantFilter`), specialized IMU EKFs
+  (`NavStateImuEKF` and `Gal3ImuEKF`), and legged estimators and their contact
+  measurements and parameters, including the legged fixed-lag smoothers.
+
+For APIs outside these groups, follow the existing shared `.i` file for that
+subsystem. Keep related classes and functions together and use descriptive
+topic names when a new logical group needs its own interface file. Keep each
+file's required includes with its declarations, and preserve registration
+order in `python/CMakeLists.txt` and `matlab/CMakeLists.txt`: a wrapped base
+class belongs in the same file as its derived classes or in an earlier file.
 
 ## Tests
 
