@@ -40,7 +40,7 @@ class GTSAM_EXPORT TableDistribution : public DiscreteConditional {
  private:
   TableFactor table_;
 
-  typedef Eigen::SparseVector<double, 0, int64_t>::InnerIterator SparseIt;
+  typedef SparseVector::InnerIterator SparseIt;
 
  public:
   // typedefs needed to play nice with gtsam

@@ -37,6 +37,10 @@
 
 namespace gtsam {
 
+/**
+ * @brief Using Eigen::SparseVector with 64 bit indices to support large
+ * discrete factors. Fixes https://github.com/borglab/gtsam/issues/2831
+ */
 using SparseVector = Eigen::SparseVector<double, 0, int64_t>;
 
 class DiscreteConditional;
