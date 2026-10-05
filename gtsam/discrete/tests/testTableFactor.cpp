@@ -282,12 +282,16 @@ TEST(TableFactor, SparseTableBeyond32Keys) {
   table.insert(size - 1) = 3.0;
   const TableFactor tf(dkeys, table);
 
-  EXPECT_LONGS_EQUAL(size, tf.sparseTable().size());
+  // EXPECT_LONGS_EQUAL would truncate 2^40 to a 32-bit long on Windows.
+  EXPECT(tf.sparseTable().size() == static_cast<int64_t>(size));
   EXPECT_LONGS_EQUAL(3, tf.sparseTable().nonZeros());
   EXPECT_DOUBLES_EQUAL(1.0, tf(assignment(5)), 1e-12);
   EXPECT_DOUBLES_EQUAL(2.0, tf(assignment(largeIndex)), 1e-12);
   EXPECT_DOUBLES_EQUAL(3.0, tf(assignment(size - 1)), 1e-12);
   EXPECT_DOUBLES_EQUAL(0.0, tf(assignment(largeIndex + 1)), 1e-12);
+  // Indices that alias a stored entry modulo 2^32 must remain zero.
+  EXPECT_DOUBLES_EQUAL(0.0, tf(assignment(7)), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, tf(assignment((uint64_t(1) << 32) + 5)), 1e-12);
   EXPECT_DOUBLES_EQUAL(3.0, tf.max(), 1e-12);
 
   // Multiplying by a factor on the first key keeps the large indices intact.
