@@ -39,8 +39,8 @@ using std::vector;
 namespace gtsam {
 
 /// Normalize sparse_table
-static Eigen::SparseVector<double> normalizeSparseTable(
-    const Eigen::SparseVector<double>& sparse_table) {
+static SparseVector normalizeSparseTable(
+    const SparseVector& sparse_table) {
   return sparse_table / sparse_table.sum();
 }
 
@@ -127,7 +127,7 @@ DiscreteValues TableDistribution::argmax() const {
   uint64_t maxIdx = 0;
   double maxValue = 0.0;
 
-  Eigen::SparseVector<double> sparseTable = table_.sparseTable();
+  SparseVector sparseTable = table_.sparseTable();
 
   for (SparseIt it(sparseTable); it; ++it) {
     if (it.value() > maxValue) {

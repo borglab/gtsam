@@ -240,7 +240,7 @@ TEST(TableFactor, ConversionOfSparseTableOverManyKeys) {
   DiscreteKeys dkeys;
   for (size_t i = 0; i < nrKeys; i++) dkeys.emplace_back(i, 2);
 
-  Eigen::SparseVector<double> table(size_t(1) << nrKeys);
+  SparseVector table(size_t(1) << nrKeys);
   table.insert(5) = 1.0;
   table.insert(12345) = 2.0;
   table.insert((size_t(1) << nrKeys) - 1) = 3.0;
@@ -256,6 +256,50 @@ TEST(TableFactor, ConversionOfSparseTableOverManyKeys) {
     }
     EXPECT_DOUBLES_EQUAL(tf(values), dtf(values), 1e-12);
   }
+}
+
+/* ************************************************************************* */
+// A table over more than 32 binary keys has indices beyond the 32-bit range.
+TEST(TableFactor, SparseTableBeyond32Keys) {
+  const size_t nrKeys = 40;
+  DiscreteKeys dkeys;
+  for (size_t i = 0; i < nrKeys; i++) dkeys.emplace_back(i, 2);
+
+  // Convert a linear index into an assignment, first key most significant.
+  const auto assignment = [&](uint64_t index) {
+    DiscreteValues values;
+    for (size_t i = 0; i < nrKeys; i++) {
+      values[dkeys[i].first] = (index >> (nrKeys - 1 - i)) & 1;
+    }
+    return values;
+  };
+
+  const uint64_t size = uint64_t(1) << nrKeys;
+  const uint64_t largeIndex = (uint64_t(1) << 35) + 7;
+  SparseVector table(size);
+  table.insert(5) = 1.0;
+  table.insert(largeIndex) = 2.0;
+  table.insert(size - 1) = 3.0;
+  const TableFactor tf(dkeys, table);
+
+  // EXPECT_LONGS_EQUAL would truncate 2^40 to a 32-bit long on Windows.
+  EXPECT(tf.sparseTable().size() == static_cast<int64_t>(size));
+  EXPECT_LONGS_EQUAL(3, tf.sparseTable().nonZeros());
+  EXPECT_DOUBLES_EQUAL(1.0, tf(assignment(5)), 1e-12);
+  EXPECT_DOUBLES_EQUAL(2.0, tf(assignment(largeIndex)), 1e-12);
+  EXPECT_DOUBLES_EQUAL(3.0, tf(assignment(size - 1)), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, tf(assignment(largeIndex + 1)), 1e-12);
+  // Indices that alias a stored entry modulo 2^32 must remain zero.
+  EXPECT_DOUBLES_EQUAL(0.0, tf(assignment(7)), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, tf(assignment((uint64_t(1) << 32) + 5)), 1e-12);
+  EXPECT_DOUBLES_EQUAL(3.0, tf.max(), 1e-12);
+
+  // Multiplying by a factor on the first key keeps the large indices intact.
+  const TableFactor scale(dkeys[0], std::vector<double>{1.0, 10.0});
+  const TableFactor product = tf * scale;
+  EXPECT_DOUBLES_EQUAL(1.0, product(assignment(5)), 1e-12);
+  EXPECT_DOUBLES_EQUAL(2.0, product(assignment(largeIndex)), 1e-12);
+  EXPECT_DOUBLES_EQUAL(30.0, product(assignment(size - 1)), 1e-12);
 }
 
 /* ************************************************************************* */
