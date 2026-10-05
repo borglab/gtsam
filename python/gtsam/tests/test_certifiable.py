@@ -250,13 +250,12 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
         self.assert_solver_solution(solver, ground_truth)
 
     def test_unshared_homogeneous_coordinates(self):
-        """Opt out through both constructor bindings and retain pose recovery."""
-        problem, ground_truth = rot2_ring_qcqp()
-        monolithic = MosekMonolithicSDP(problem, shareHomogeneousCoordinates=False)
-        chordal = MosekChordalSDP(problem, ChordalOrderingType.Colamd, False)
-        for solver in (monolithic, chordal):
-            with self.subTest(solver=type(solver).__name__):
-                self.assert_solver_solution(solver, ground_truth)
+        """Both constructor bindings reject opting out of the shared coordinate."""
+        problem, _ = rot2_ring_qcqp()
+        with self.assertRaises(ValueError):
+            MosekMonolithicSDP(problem, shareHomogeneousCoordinates=False)
+        with self.assertRaises(ValueError):
+            MosekChordalSDP(problem, ChordalOrderingType.Colamd, False)
 
 
 if __name__ == "__main__":

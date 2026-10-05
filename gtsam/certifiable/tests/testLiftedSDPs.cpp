@@ -467,7 +467,7 @@ TEST(LiftedSDPs, Pr2713ApplicationFactorsMonolithicAndChordal) {
 /* ************************************************************************* */
 namespace shared_homogeneous_fixture {
 
-// Sharing and opting out preserve the nonzero optimum, anchor, and recovery.
+// The shared coordinate preserves the nonzero optimum, anchor, and recovery.
 TEST(LiftedSDPs, SharedHomogeneousNoisyRot2Ring) {
   constexpr size_t count = 4;
   constexpr double delta = 0.2;
@@ -487,17 +487,23 @@ TEST(LiftedSDPs, SharedHomogeneousNoisyRot2Ring) {
     EXPECT(assert_equal(values, solver->qcqpValues(), 1e-12));
     for (double ratio : solver->variableEVRs()) EXPECT(ratio > 1e5);
   };
-  for (bool shareHomogeneousCoordinates : {true, false}) {
-    MosekMonolithicSDP monolithic(problem, shareHomogeneousCoordinates);
-    check(&monolithic);
-    for (const auto ordering :
-         {ChordalOrderingType::Colamd, ChordalOrderingType::Metis}) {
-      MosekChordalSDP chordal(problem, ordering, shareHomogeneousCoordinates);
-      check(&chordal);
-      EXPECT_DOUBLES_EQUAL(monolithic.objectiveValue(), chordal.objectiveValue(),
-                           1e-6);
-    }
+  MosekMonolithicSDP monolithic(problem);
+  check(&monolithic);
+  for (const auto ordering :
+       {ChordalOrderingType::Colamd, ChordalOrderingType::Metis}) {
+    MosekChordalSDP chordal(problem, ordering);
+    check(&chordal);
+    EXPECT_DOUBLES_EQUAL(monolithic.objectiveValue(), chordal.objectiveValue(),
+                         1e-6);
   }
+}
+
+// Opting out of the shared homogeneous coordinate is rejected.
+TEST(LiftedSDPs, UnsharedHomogeneousCoordinatesRejected) {
+  const QcqpProblem problem(lifted_sdp_tests::Rot2RingGraph(3, 0.0), 1);
+  CHECK_EXCEPTION(MosekMonolithicSDP(problem, false), std::invalid_argument);
+  CHECK_EXCEPTION(MosekChordalSDP(problem, ChordalOrderingType::Colamd, false),
+                  std::invalid_argument);
 }
 
 // Minimize half the squared norm with prescribed homogeneous squared norms.
@@ -539,11 +545,19 @@ void CheckNormProblem(size_t count, bool connected, double firstSquaredNorm,
     const Values values = solver->qcqpValues();
     EXPECT_LONGS_EQUAL(count, values.size());
     for (size_t key = 0; key < count; ++key) {
-      Vector expectedColumn = Vector::Zero(key + 2);
-      expectedColumn(0) = key == 0 ? firstSquaredNorm : 1.0;
       EXPECT_LONGS_EQUAL(key + 2, solver->orderedKeyDims().at(key));
-      EXPECT(assert_equal(expectedColumn, Vector(values.at<Matrix>(key).col(0)),
-                          1e-6));
+      const Vector recovered = values.at<Matrix>(key).col(0);
+      if (key == 0 && firstSquaredNorm != 1.0) {
+        // The relaxation is sign-symmetric in a plain-vector key, so only
+        // |y_0| <= sqrt(X_00) and the zero tail are determined.
+        EXPECT(std::abs(recovered(0)) <= std::sqrt(firstSquaredNorm) + 1e-6);
+        EXPECT(assert_equal(Vector(Vector::Zero(key + 1)),
+                            Vector(recovered.tail(key + 1)), 1e-6));
+        continue;
+      }
+      Vector expectedColumn = Vector::Zero(key + 2);
+      expectedColumn(0) = 1.0;
+      EXPECT(assert_equal(expectedColumn, recovered, 1e-6));
     }
   };
   MosekMonolithicSDP monolithic(problem);
@@ -560,7 +574,7 @@ TEST(LiftedSDPs, SharedHomogeneousScaledNormalization) {
   CheckNormProblem(2, true, 1.0, result_, name_);
 }
 
-// A non-unit h^2=4 keeps the old formulation, including cross moment h0*h1=1.
+// A key with non-unit h^2=4 is lifted as a plain vector beside a shared key.
 TEST(LiftedSDPs, SharedHomogeneousNonUnitFallback) {
   CheckNormProblem(2, true, 4.0, result_, name_);
 }
@@ -569,6 +583,40 @@ TEST(LiftedSDPs, SharedHomogeneousNonUnitFallback) {
 TEST(LiftedSDPs, SharedHomogeneousSingleKeyAndDisconnected) {
   CheckNormProblem(1, false, 1.0, result_, name_);
   CheckNormProblem(2, false, 1.0, result_, name_);
+}
+
+// Linear and constant QpCost terms enter through the shared coordinate:
+// 1/2||t - h p||^2 + 1/2||t - q||^2 with h^2=1 has t=(p+q)/2.
+TEST(LiftedSDPs, SharedHomogeneousLinearAndConstantCost) {
+  const Vector2 p(1.0, 0.0), q(0.0, 1.0);
+  Matrix3 G = Matrix3::Zero();
+  G(0, 0) = p.squaredNorm();
+  G.block<1, 2>(0, 1) = -p.transpose();
+  G.block<2, 1>(1, 0) = -p;
+  G.block<2, 2>(1, 1) = 2.0 * Matrix2::Identity();
+  const Vector3 g(0.0, q(0), q(1));
+  NonlinearFactorGraph costs;
+  costs.emplace_shared<QpCost>(HessianFactor(0, G, g, q.squaredNorm()));
+  NonlinearEqualityConstraints constraints;
+  Matrix3 A = Matrix3::Zero();
+  A(0, 0) = 1.0;
+  constraints.push_back(
+      QuadraticConstraint::Equal(0, A, 1.0).createEqualityFactor());
+  const QcqpProblem problem(costs, constraints);
+
+  const double expected = 0.25 * (p - q).squaredNorm();
+  auto check = [&](auto* solver) {
+    EXPECT(solver->solve());
+    EXPECT_DOUBLES_EQUAL(expected, solver->objectiveValue(), 1e-6);
+    const Values values = solver->qcqpValues();
+    EXPECT(assert_equal(Vector3(1.0, 0.5, 0.5),
+                        Vector(values.at<Matrix>(0).col(0)), 1e-6));
+    EXPECT_DOUBLES_EQUAL(expected, problem.costs().error(values), 1e-6);
+  };
+  MosekMonolithicSDP monolithic(problem);
+  check(&monolithic);
+  MosekChordalSDP chordal(problem, ChordalOrderingType::Colamd);
+  check(&chordal);
 }
 
 }  // namespace shared_homogeneous_fixture

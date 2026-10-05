@@ -74,8 +74,10 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
    * Construct the monolithic SDP relaxation of a QCQP problem.
    *
    * @param problem QCQP to relax.
-   * @param shareHomogeneousCoordinates Share homogeneous coordinates when every
-   * key has explicit unit normalization; false retains the original cones.
+   * @param shareHomogeneousCoordinates Must be true: every PSD block carries one
+   * constant coordinate shared by all keys with explicit h^2=1 normalization,
+   * and other keys are lifted as plain vectors. False throws
+   * std::invalid_argument; the parameter remains for source compatibility.
    */
   explicit LiftedSDPProblem(const QcqpProblem& problem,
                             bool shareHomogeneousCoordinates = true);
@@ -134,8 +136,10 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
    *
    * @param problem QCQP to relax.
    * @param orderingType Ordering used for symbolic elimination.
-   * @param shareHomogeneousCoordinates Share homogeneous coordinates when every
-   * key has explicit unit normalization; false retains the original cones.
+   * @param shareHomogeneousCoordinates Must be true: every PSD block carries one
+   * constant coordinate shared by all keys with explicit h^2=1 normalization,
+   * and other keys are lifted as plain vectors. False throws
+   * std::invalid_argument; the parameter remains for source compatibility.
    */
   LiftedSDPProblem(const QcqpProblem& problem,
                    ChordalOrderingType orderingType,
