@@ -629,16 +629,21 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
     }
 
     if (key.first == key.second) {
-      const DenseIndex dim = orderedKeyDims.at(key.first);
-      for (DenseIndex r = 0; r < dim; ++r) {
-        for (DenseIndex c = 0; c <= r; ++c) {
-          M->constraint(
-              mf::Expr::sub(
-                  owner->index(static_cast<int>(r), static_cast<int>(c)),
-                  duplicate->index(static_cast<int>(r), static_cast<int>(c))),
-              mf::Domain::equalsTo(0.0));
+      // Each M->constraint call is expensive, so collect the lower-triangle
+      // entries first and tie them all with a single hoisted call.
+      const int dim = static_cast<int>(orderedKeyDims.at(key.first));
+      auto entries =
+          monty::new_array_ptr<int, 2>(monty::shape(dim * (dim + 1) / 2, 2));
+      int index = 0;
+      for (int r = 0; r < dim; ++r) {
+        for (int c = 0; c <= r; ++c) {
+          (*entries)(index, 0) = r;
+          (*entries)(index++, 1) = c;
         }
       }
+      M->constraint(
+          mf::Expr::sub(owner->pick(entries), duplicate->pick(entries)),
+          mf::Domain::equalsTo(0.0));
       return;
     }
   }
