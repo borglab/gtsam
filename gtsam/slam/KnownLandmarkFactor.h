@@ -167,8 +167,10 @@ class KnownLandmarkFactor2 : public NoiseModelFactorN<T> {
     static_assert(N == PointDim || N == PointDim + 1,
                   "Unsupported transform and point dimensions");
 
-    // The residual B x - measured_kP is affine in the pose lift x.
-    Matrix B = Matrix::Zero(PointDim, LiftedDim);
+    // The residual is B x - c with c = measured_kP. The final column of B holds
+    // c, so Q is the augmented information [G g; g' f].
+    Matrix B = Matrix::Zero(PointDim, LiftedDim + 1);
+    B.col(LiftedDim) = measured_kP_;
     for (int column = 0; column < N; ++column) {
       const double coefficient = column < PointDim ? wL_(column) : 1.0;
       B.block(0, column * PointDim, PointDim, PointDim)
@@ -176,10 +178,13 @@ class KnownLandmarkFactor2 : public NoiseModelFactorN<T> {
           .setConstant(coefficient);
     }
 
+    const Matrix whitenedB = this->noiseModel_->Whiten(B);
+    const Matrix Q = whitenedB.transpose() * whitenedB;
+
     InsertQcqpConstraints<T, 1>(this->key(), constraints);
+    const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{LiftedDim, 1}, Q);
     costs->push_back(std::make_shared<QpCost>(
-        JacobianFactor(this->key(), this->noiseModel_->Whiten(B),
-                       this->noiseModel_->whiten(measured_kP_))));
+        HessianFactor(KeyVector{this->key()}, blockQ)));
   }
 };
 

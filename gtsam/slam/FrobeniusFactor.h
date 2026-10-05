@@ -137,7 +137,6 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
    * exact vector lifts. Matrix-form priors are not lowered because a
    * fixed lifted target breaks the right-orthogonal gauge required by the
    * Burer--Monteiro formulation.
-   * Soft priors with a non-robust noise model become least-squares costs.
    */
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
@@ -154,7 +153,7 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
   }
 
  private:
-  /// D=1 prior in lifted vector form: a constraint if hard, a cost if soft.
+  /// D=1 constrained-noise prior in lifted vector form.
   /// The stored measurement is vecM_ = vec(M), where M is the matrix passed to
   /// the FrobeniusPrior constructor. Pose lifts retain only the variable top
   /// rows of M; Rot3 retains the full matrix and compact Rot2 retains c,s.
@@ -175,13 +174,15 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
           "FrobeniusPrior::qcqpFactors D=1 is implemented only for Rot2, "
           "Rot3, Pose2, and Pose3.");
     } else {
-      constexpr int LiftedDim = traits<T>::QcqpVectorDim;
-      InsertQcqpConstraints<T, 1>(this->key(), constraints);
+      (void)costs;
       if (this->noiseModel_->isConstrained()) {
+        InsertQcqpConstraints<T, 1>(this->key(), constraints);
+
+        constexpr int LiftedDim = traits<T>::QcqpVectorDim;
         Vector target = Vector::Zero(LiftedDim);
         if constexpr (std::is_same_v<T, Rot2>) {
           // vec(R)=[c,s,-s,c], so the compact lift retains its first column.
-          target = vecM_.template head<2>();
+          target.segment<2>(0) = vecM_.template head<2>();
         } else {
           static_assert(LiftedDim % N == 0);
           constexpr int M = LiftedDim / N;
@@ -198,32 +199,9 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
                                Matrix::Identity(LiftedDim, LiftedDim), target))
                 .createEqualityFactor());
       } else {
-        if (!costs) {
-          throw std::invalid_argument(
-              "FrobeniusPrior::qcqpFactors costs is null");
-        }
-        if (std::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_)) {
-          throw std::runtime_error(
-              "FrobeniusPrior::qcqpFactors requires a non-robust noise model");
-        }
-
-        // vec(T) = S x + offset recovers the full matrix from the lift x.
-        Matrix S = Matrix::Zero(Dim, LiftedDim);
-        Vector offset = Vector::Zero(Dim);
-        if constexpr (std::is_same_v<T, Rot2>) {
-          S << 1.0, 0.0, 0.0, 1.0, 0.0, -1.0, 1.0, 0.0;
-        } else {
-          constexpr int M = LiftedDim / N;
-          for (int column = 0; column < N; ++column) {
-            S.block<M, M>(column * N, column * M).setIdentity();
-          }
-          if constexpr (M < N) offset(Dim - 1) = 1.0;
-        }
-
-        // The whitened residual W(S x + offset - vec(M)) is affine in x.
-        costs->push_back(std::make_shared<QpCost>(JacobianFactor(
-            this->key(), this->noiseModel_->Whiten(S),
-            this->noiseModel_->whiten(Vector(vecM_) - offset))));
+        throw std::runtime_error(
+            "FrobeniusPrior::qcqpFactors D=1 non-constrained noise is not yet "
+            "implemented.");
       }
     }
   }
@@ -484,7 +462,7 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       }
 
       constexpr int LiftedDim = traits<T>::QcqpVectorDim;
-      Matrix Q;
+      Matrix Q_trunc;
       if constexpr (std::is_same_v<T, Rot2>) {
         // vec(R)=L[c,s]' exactly. Since SO(2) is abelian,
         // vec(R2-R1*M)=L(q2-M*q1).
@@ -494,7 +472,7 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
         fullB.block<4, 2>(0, 0) = -L * this->T12_.matrix();
         fullB.block<4, 2>(0, LiftedDim) = L;
         const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
-        Q = whitenedB.transpose() * whitenedB;
+        Q_trunc = whitenedB.transpose() * whitenedB;
       } else {
         constexpr int MN = LiftedDim;
         static_assert(MN % N == 0);
@@ -517,14 +495,14 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
         }
 
         const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
-        Q = whitenedB.transpose() * whitenedB;
+        Q_trunc = whitenedB.transpose() * whitenedB;
       }
 
       InsertQcqpConstraints<T, 1>(this->key1(), constraints);
       InsertQcqpConstraints<T, 1>(this->key2(), constraints);
 
       const SymmetricBlockMatrix blockQ(
-          std::vector<DenseIndex>{LiftedDim, LiftedDim}, Q);
+          std::vector<DenseIndex>{LiftedDim, LiftedDim}, Q_trunc);
       costs->push_back(std::make_shared<QpCost>(
           KeyVector{this->key1(), this->key2()}, blockQ));
     }
@@ -727,14 +705,18 @@ class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       }
 
       constexpr int LiftedDim = traits<T>::QcqpVectorDim;
-      // The ambient residual is fullB [x1; x2] + fullOffset.
-      Matrix fullB = Matrix::Zero(Dim, 2 * LiftedDim);
-      Vector fullOffset = Vector::Zero(Dim);
+      // The residual is B [x1; x2] - c. The final column of B holds c, so Q is
+      // the augmented information [G g; g' f] of 0.5 ||B [x1; x2] - c||^2.
+      constexpr int AugmentedDim = 2 * LiftedDim + 1;
+      Matrix Q;
       if constexpr (std::is_same_v<T, Rot2>) {
         Matrix L(4, 2);
         L << 1.0, 0.0, 0.0, 1.0, 0.0, -1.0, 1.0, 0.0;
+        Matrix fullB = Matrix::Zero(4, AugmentedDim);
         fullB.block<4, 2>(0, 0) = L;
         fullB.block<4, 2>(0, LiftedDim) = -L * this->T12_.matrix();
+        const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
+        Q = whitenedB.transpose() * whitenedB;
       } else {
         constexpr int MN = LiftedDim;
         static_assert(MN % N == 0);
@@ -751,25 +733,28 @@ class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
           offset.segment((N - 1) * M, M) = iTj.block(0, N - 1, M, 1);
         }
 
-        Matrix retainedB = Matrix::Zero(MN, 2 * LiftedDim);
+        Matrix retainedB = Matrix::Zero(MN, AugmentedDim);
         retainedB.block(0, 0, MN, MN).setIdentity();
         retainedB.block(0, LiftedDim, MN, MN) = -leftAction;
+        retainedB.col(2 * LiftedDim) = offset;
 
+        Matrix fullB = Matrix::Zero(Dim, AugmentedDim);
         for (int column = 0; column < N; ++column) {
-          fullB.block(column * N, 0, M, 2 * LiftedDim) =
-              retainedB.block(column * M, 0, M, 2 * LiftedDim);
-          fullOffset.segment(column * N, M) = -offset.segment(column * M, M);
+          fullB.block(column * N, 0, M, AugmentedDim) =
+              retainedB.block(column * M, 0, M, AugmentedDim);
         }
+
+        const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
+        Q = whitenedB.transpose() * whitenedB;
       }
 
       InsertQcqpConstraints<T, 1>(this->key1(), constraints);
       InsertQcqpConstraints<T, 1>(this->key2(), constraints);
 
-      const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
-      costs->push_back(std::make_shared<QpCost>(JacobianFactor(
-          this->key1(), whitenedB.leftCols(LiftedDim), this->key2(),
-          whitenedB.rightCols(LiftedDim),
-          -this->noiseModel_->whiten(fullOffset))));
+      const SymmetricBlockMatrix blockQ(
+          std::vector<DenseIndex>{LiftedDim, LiftedDim, 1}, Q);
+      costs->push_back(std::make_shared<QpCost>(
+          HessianFactor(KeyVector{this->key1(), this->key2()}, blockQ)));
     }
   }
 };

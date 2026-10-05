@@ -629,47 +629,16 @@ TEST(QcqpProblem, HardFrobeniusPriorPose3D1) {
   EXPECT_DOUBLES_EQUAL(0.0, result.violation, 1e-12);
 }
 
-// A soft prior at a different value has the manifold error as its QCQP cost.
-template <typename T>
-std::array<double, 2> SoftFrobeniusPriorD1Errors(const T& value,
-                                                 const T& measured) {
-  constexpr int dimension = T::LieAlgebra::RowsAtCompileTime;
-  Vector sigmas(dimension * dimension);
-  for (int i = 0; i < sigmas.size(); ++i) sigmas(i) = 0.5 + 0.1 * i;
+// Verifies the deferred non-constrained Frobenius prior cost path rejects.
+TEST(QcqpProblem, FrobeniusPriorRot2D1GaussianRejected) {
+  const Rot2 measured = Rot2::fromAngle(0.25);
+  const auto gaussianNoise = noiseModel::Isotropic::Sigma(4, 0.1);
 
   NonlinearFactorGraph graph;
-  graph.emplace_shared<FrobeniusPrior<T>>(x0, measured.matrix(),
-                                          noiseModel::Diagonal::Sigmas(sigmas));
-  const QcqpProblem problem(graph);
+  graph.emplace_shared<FrobeniusPrior<Rot2>>(x0, measured.matrix(),
+                                             gaussianNoise);
 
-  Values values;
-  values.insert(x0, value);
-  Values qcqpValues;
-  InsertQcqpValue<T, 1>(x0, value, &qcqpValues);
-  return {graph.error(values), problem.costs().error(qcqpValues)};
-}
-
-// Gaussian Frobenius priors lower to affine least-squares QCQP costs.
-TEST(QcqpProblem, SoftFrobeniusPriorD1) {
-  const auto rot2 =
-      SoftFrobeniusPriorD1Errors(Rot2::fromAngle(0.3), Rot2::fromAngle(-0.5));
-  EXPECT_DOUBLES_EQUAL(rot2[0], rot2[1], 1e-12);
-  EXPECT(rot2[0] > 0.0);
-
-  const auto rot3 = SoftFrobeniusPriorD1Errors(
-      Rot3::Expmap(Vector3{0.2, -0.3, 0.4}),
-      Rot3::Expmap(Vector3{-0.1, 0.5, 0.2}));
-  EXPECT_DOUBLES_EQUAL(rot3[0], rot3[1], 1e-12);
-
-  const auto pose2 = SoftFrobeniusPriorD1Errors(
-      Pose2(Rot2::fromAngle(0.2), Point2(1.0, -2.0)),
-      Pose2(Rot2::fromAngle(-0.4), Point2(-3.0, 0.5)));
-  EXPECT_DOUBLES_EQUAL(pose2[0], pose2[1], 1e-12);
-
-  const auto pose3 = SoftFrobeniusPriorD1Errors(
-      Pose3(Rot3::Expmap(Vector3{0.2, -0.3, 0.4}), Point3(1.0, -2.0, 0.5)),
-      Pose3(Rot3::Expmap(Vector3{-0.1, 0.5, 0.2}), Point3(-3.0, 0.5, 2.0)));
-  EXPECT_DOUBLES_EQUAL(pose3[0], pose3[1], 1e-12);
+  CHECK_EXCEPTION({ QcqpProblem problem(graph); }, std::runtime_error);
 }
 
 }  // namespace QcqpSingleFactorFixture

@@ -108,8 +108,10 @@ class WahbaFactor : public NoiseModelFactorN<Rot3> {
     constexpr int N = 3;
     constexpr int LiftedDim = PointDim * N;
 
-    // The residual B vec(aRb) - measured_aDirection is affine in vec(aRb).
-    Matrix B = Matrix::Zero(PointDim, LiftedDim);
+    // The residual is B vec(aRb) - c with c = measured_aDirection. The final
+    // column of B holds c, so Q is the augmented information [G g; g' f].
+    Matrix B = Matrix::Zero(PointDim, LiftedDim + 1);
+    B.col(LiftedDim) = measured_aDirection_.unitVector();
     const Point3 bDirection = bDirection_.unitVector();
     for (int column = 0; column < N; ++column) {
       B.block(0, column * PointDim, PointDim, PointDim)
@@ -117,10 +119,13 @@ class WahbaFactor : public NoiseModelFactorN<Rot3> {
           .setConstant(bDirection(column));
     }
 
+    const Matrix whitenedB = this->noiseModel_->Whiten(B);
+    const Matrix Q = whitenedB.transpose() * whitenedB;
+
     InsertQcqpConstraints<Rot3, 1>(this->key(), constraints);
-    costs->push_back(std::make_shared<QpCost>(JacobianFactor(
-        this->key(), this->noiseModel_->Whiten(B),
-        this->noiseModel_->whiten(measured_aDirection_.unitVector()))));
+    const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{LiftedDim, 1}, Q);
+    costs->push_back(std::make_shared<QpCost>(
+        HessianFactor(KeyVector{this->key()}, blockQ)));
   }
 };
 
