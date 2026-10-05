@@ -259,6 +259,46 @@ TEST(TableFactor, ConversionOfSparseTableOverManyKeys) {
 }
 
 /* ************************************************************************* */
+// A table over more than 32 binary keys has indices beyond the 32-bit range.
+TEST(TableFactor, SparseTableBeyond32Keys) {
+  const size_t nrKeys = 40;
+  DiscreteKeys dkeys;
+  for (size_t i = 0; i < nrKeys; i++) dkeys.emplace_back(i, 2);
+
+  // Convert a linear index into an assignment, first key most significant.
+  const auto assignment = [&](uint64_t index) {
+    DiscreteValues values;
+    for (size_t i = 0; i < nrKeys; i++) {
+      values[dkeys[i].first] = (index >> (nrKeys - 1 - i)) & 1;
+    }
+    return values;
+  };
+
+  const uint64_t size = uint64_t(1) << nrKeys;
+  const uint64_t largeIndex = (uint64_t(1) << 35) + 7;
+  SparseVector table(size);
+  table.insert(5) = 1.0;
+  table.insert(largeIndex) = 2.0;
+  table.insert(size - 1) = 3.0;
+  const TableFactor tf(dkeys, table);
+
+  EXPECT_LONGS_EQUAL(size, tf.sparseTable().size());
+  EXPECT_LONGS_EQUAL(3, tf.sparseTable().nonZeros());
+  EXPECT_DOUBLES_EQUAL(1.0, tf(assignment(5)), 1e-12);
+  EXPECT_DOUBLES_EQUAL(2.0, tf(assignment(largeIndex)), 1e-12);
+  EXPECT_DOUBLES_EQUAL(3.0, tf(assignment(size - 1)), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, tf(assignment(largeIndex + 1)), 1e-12);
+  EXPECT_DOUBLES_EQUAL(3.0, tf.max(), 1e-12);
+
+  // Multiplying by a factor on the first key keeps the large indices intact.
+  const TableFactor scale(dkeys[0], std::vector<double>{1.0, 10.0});
+  const TableFactor product = tf * scale;
+  EXPECT_DOUBLES_EQUAL(1.0, product(assignment(5)), 1e-12);
+  EXPECT_DOUBLES_EQUAL(2.0, product(assignment(largeIndex)), 1e-12);
+  EXPECT_DOUBLES_EQUAL(30.0, product(assignment(size - 1)), 1e-12);
+}
+
+/* ************************************************************************* */
 // Check multiplication with a TableDistribution in both operand orders.
 TEST(TableFactor, TableDistributionMultiplication) {
   const DiscreteKey key(0, 3);
