@@ -130,12 +130,18 @@ class QuadraticConstraint {
                       gtsam::QuadraticConstraint::Sense sense);
   QuadraticConstraint(gtsam::Key key, const gtsam::Matrix& A, double b,
                       gtsam::QuadraticConstraint::Sense sense, double sigma);
+  QuadraticConstraint(gtsam::Key key, const gtsam::Matrix& A,
+                      const gtsam::Vector& a, double b,
+                      gtsam::QuadraticConstraint::Sense sense, double sigma);
 
   static gtsam::QuadraticConstraint Equal(gtsam::Key key,
                                           const gtsam::Matrix& A, double b);
   static gtsam::QuadraticConstraint Equal(gtsam::Key key,
                                           const gtsam::Matrix& A, double b,
                                           double sigma);
+  static gtsam::QuadraticConstraint Equal(gtsam::Key key,
+                                          const gtsam::Matrix& A,
+                                          const gtsam::Vector& a, double b);
   static gtsam::QuadraticConstraint LessEqual(gtsam::Key key,
                                               const gtsam::Matrix& A, double b);
   static gtsam::QuadraticConstraint LessEqual(gtsam::Key key,
@@ -150,6 +156,8 @@ class QuadraticConstraint {
 
   gtsam::Key key() const;
   const gtsam::Matrix& A() const;
+  const gtsam::Vector& a() const;
+  bool hasLinearTerm() const;
   double b() const;
   gtsam::QuadraticConstraint::Sense sense() const;
   bool isEquality() const;

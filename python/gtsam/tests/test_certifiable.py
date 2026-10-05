@@ -205,7 +205,7 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
         ordered_key_dims = solver.orderedKeyDims()
         self.assertIsInstance(ordered_key_dims, dict)
         self.assertEqual(set(ordered_key_dims), set(expected_keys))
-        self.assertTrue(all(dimension == 3 for dimension in ordered_key_dims.values()))
+        self.assertTrue(all(dimension == 2 for dimension in ordered_key_dims.values()))
 
         variable_evrs = solver.variableEVRs()
         self.assertIsInstance(variable_evrs, list)
@@ -217,7 +217,7 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
         self.assertTrue(all(np.isfinite(evr) for evr in variable_evrs))
         np.testing.assert_allclose(variable_evrs, repeated_variable_evrs)
         for key in expected_keys:
-            self.assertEqual(qcqp_values.atMatrix(key).shape, (3, 1))
+            self.assertEqual(qcqp_values.atMatrix(key).shape, (2, 1))
             np.testing.assert_allclose(
                 qcqp_values.atMatrix(key), repeated_qcqp_values.atMatrix(key)
             )

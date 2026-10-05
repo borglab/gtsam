@@ -106,23 +106,21 @@ class WahbaFactor : public NoiseModelFactorN<Rot3> {
 
     constexpr int PointDim = 3;
     constexpr int N = 3;
-    constexpr int LiftedDim = 1 + PointDim * N;
+    constexpr int LiftedDim = PointDim * N;
 
+    // The residual B vec(aRb) - measured_aDirection is affine in vec(aRb).
     Matrix B = Matrix::Zero(PointDim, LiftedDim);
-    B.col(0) = -measured_aDirection_.unitVector();
     const Point3 bDirection = bDirection_.unitVector();
     for (int column = 0; column < N; ++column) {
-      B.block(0, 1 + column * PointDim, PointDim, PointDim)
+      B.block(0, column * PointDim, PointDim, PointDim)
           .diagonal()
           .setConstant(bDirection(column));
     }
 
-    const Matrix whitenedB = this->noiseModel_->Whiten(B);
-    const Matrix Q = whitenedB.transpose() * whitenedB;
-
     InsertQcqpConstraints<Rot3, 1>(this->key(), constraints);
-    const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{LiftedDim}, Q);
-    costs->push_back(std::make_shared<QpCost>(KeyVector{this->key()}, blockQ));
+    costs->push_back(std::make_shared<QpCost>(JacobianFactor(
+        this->key(), this->noiseModel_->Whiten(B),
+        this->noiseModel_->whiten(measured_aDirection_.unitVector()))));
   }
 };
 

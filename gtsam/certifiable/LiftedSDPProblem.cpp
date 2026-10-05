@@ -48,282 +48,16 @@ using LiftedVariableXijToSDPVariableViewMap =
 // Maps each QCQP key to the first-moment row y_k' of its PSD block.
 using FirstMomentViewMap = std::map<Key, mf::Variable::t>;
 
-// Recognize an exact, possibly scaled h^2=1 equality.
-bool isUnitHomogeneousConstraint(const QuadraticConstraint& constraint) {
-  const Matrix& A = constraint.A();
-  if (!constraint.isEquality() || A.size() == 0 || constraint.b() == 0.0 ||
-      !std::isfinite(constraint.b()) || A(0, 0) != constraint.b()) {
-    return false;
-  }
-  for (DenseIndex column = 0; column < A.cols(); ++column) {
-    for (DenseIndex row = 0; row < A.rows(); ++row) {
-      if ((row != 0 || column != 0) && A(row, column) != 0.0) return false;
-    }
-  }
-  return true;
-}
-
-// How one QCQP key is lifted. A key whose leading coordinate h is fixed by an
-// exact h^2=1 equality drops that coordinate: every PSD block instead carries a
-// single constant entry Y(0,0)=1, the Shor lift [1 y'; y X] of the remaining
-// coordinates. Other keys are lifted as plain vectors. Since h=1 in every
-// feasible point of the shared-coordinate relaxation, terms in h become linear
-// and constant terms of the remaining coordinates.
-struct LiftedKey {
-  DenseIndex qcqpDim = 0;
-  DenseIndex dim = 0;
-  bool homogenized = false;
-};
-using LiftedKeyMap = std::map<Key, LiftedKey>;
-
-// Classify every key by whether its leading coordinate is a unit homogenizer.
-LiftedKeyMap MakeLiftedKeys(const QcqpProblem& problem,
-                            const std::map<Key, DenseIndex>& qcqpDims) {
-  KeySet homogenized;
-  for (const auto& factor : problem.eConstraints()) {
-    const auto* quadratic =
-        dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
-    if (quadratic &&
-        isUnitHomogeneousConstraint(quadratic->quadraticConstraint())) {
-      homogenized.insert(quadratic->quadraticConstraint().key());
-    }
-  }
-
-  LiftedKeyMap liftedKeys;
-  for (const auto& [key, qcqpDim] : qcqpDims) {
-    LiftedKey lifted;
-    lifted.qcqpDim = qcqpDim;
-    lifted.homogenized = homogenized.count(key) != 0;
-    lifted.dim = qcqpDim - (lifted.homogenized ? 1 : 0);
-    if (lifted.dim == 0) {
-      throw std::runtime_error(
-          "LiftedSDPProblem: a homogenized key needs at least one coordinate "
-          "besides its homogenization entry.");
-    }
-    liftedKeys.emplace(key, lifted);
-  }
-  return liftedKeys;
-}
-
-// A QCQP cost 0.5 x'Gx - g'x + 0.5 f in the lifted coordinates of its keys.
-struct LiftedCost {
-  KeyVector keys;
-  Matrix G;
-  Vector g;
-  double f = 0.0;
-};
-
-// A unary QCQP constraint x'Ax + a'x ~ b in the lifted coordinates of its key.
-struct LiftedQuadraticConstraint {
-  Key key;
-  Matrix A;
-  Vector a;
-  double b = 0.0;
-  QuadraticConstraint::Sense sense = QuadraticConstraint::Sense::Equal;
-};
-
-// A unary QCQP equality Ax = b in the lifted coordinates of its key.
-struct LiftedLinearEquality {
-  Key key;
-  Matrix A;
-  Vector b;
-};
-
-// Rewrite a QpCost by substituting h=1 for every homogenized key.
-LiftedCost MakeLiftedCost(const QpCost& cost, const LiftedKeyMap& liftedKeys) {
-  const HessianFactor& H = cost.hessianFactor();
-  const Matrix Q = H.information();
-  const Vector linear = H.linearTerm();
-
-  std::vector<DenseIndex> physical, homogenization;
-  DenseIndex offset = 0;
-  for (Key key : H.keys()) {
-    const LiftedKey& lifted = liftedKeys.at(key);
-    const DenseIndex first = offset + (lifted.homogenized ? 1 : 0);
-    if (lifted.homogenized) homogenization.push_back(offset);
-    for (DenseIndex row = first; row < offset + lifted.qcqpDim; ++row) {
-      physical.push_back(row);
-    }
-    offset += lifted.qcqpDim;
-  }
-
-  // With error 0.5 x'Qx - x'q + 0.5 c and h=1: the h columns of Q join the
-  // linear term, and the h-h entries and h entries of q join the constant.
-  LiftedCost lifted;
-  lifted.keys = H.keys();
-  lifted.G.resize(physical.size(), physical.size());
-  lifted.g.resize(physical.size());
-  for (size_t row = 0; row < physical.size(); ++row) {
-    lifted.g(row) = linear(physical[row]);
-    for (size_t column = 0; column < physical.size(); ++column) {
-      lifted.G(row, column) = Q(physical[row], physical[column]);
-    }
-    for (DenseIndex h : homogenization) lifted.g(row) -= Q(physical[row], h);
-  }
-  lifted.f = H.constantTerm();
-  for (DenseIndex h : homogenization) {
-    lifted.f -= 2.0 * linear(h);
-    for (DenseIndex other : homogenization) lifted.f += Q(h, other);
-  }
-  return lifted;
-}
-
-// Rewrite a quadratic constraint by substituting h=1 for a homogenized key.
-LiftedQuadraticConstraint MakeLiftedQuadraticConstraint(
-    const QuadraticConstraint& constraint, const LiftedKeyMap& liftedKeys) {
-  const LiftedKey& liftedKey = liftedKeys.at(constraint.key());
-  const Matrix& A = constraint.A();
-  LiftedQuadraticConstraint lifted;
-  lifted.key = constraint.key();
-  lifted.sense = constraint.sense();
-  if (liftedKey.homogenized) {
-    const DenseIndex dim = liftedKey.dim;
-    lifted.A = A.bottomRightCorner(dim, dim);
-    lifted.a = 2.0 * A.block(0, 1, 1, dim).transpose();
-    lifted.b = constraint.b() - A(0, 0);
-  } else {
-    lifted.A = A;
-    lifted.a = Vector::Zero(A.rows());
-    lifted.b = constraint.b();
-  }
-  return lifted;
-}
-
-// Rewrite a unary linear equality by substituting h=1 for a homogenized key.
-// Rows that only involve h, such as the h=1 row of a fixed value, are dropped.
-LiftedLinearEquality MakeLiftedLinearEquality(
-    const LinearConstraint& constraint, const LiftedKeyMap& liftedKeys) {
-  const JacobianFactor& J = constraint.factor();
-  if (constraint.sense() != LinearConstraint::Sense::Equal || J.size() != 1) {
-    throw std::runtime_error(
-        "LiftedSDPProblem: only unary linear equality QCQP constraints are "
-        "supported.");
-  }
-  const Key key = *J.begin();
-  const LiftedKey& liftedKey = liftedKeys.at(key);
-  const Matrix A = J.getA(J.begin());
-  Matrix liftedA = A;
-  Vector liftedB = J.getb();
-  if (liftedKey.homogenized) {
-    liftedA = A.rightCols(liftedKey.dim);
-    liftedB -= A.col(0);
-  }
-
-  std::vector<DenseIndex> rows;
-  for (DenseIndex row = 0; row < liftedA.rows(); ++row) {
-    if (!liftedA.row(row).isZero(0.0)) {
-      rows.push_back(row);
-    } else if (std::abs(liftedB(row)) > 1e-12) {
-      throw std::runtime_error(
-          "LiftedSDPProblem: a linear equality is infeasible for h=1.");
-    }
-  }
-  LiftedLinearEquality lifted;
-  lifted.key = key;
-  lifted.A.resize(rows.size(), liftedA.cols());
-  lifted.b.resize(rows.size());
-  for (size_t row = 0; row < rows.size(); ++row) {
-    lifted.A.row(row) = liftedA.row(rows[row]);
-    lifted.b(row) = liftedB(rows[row]);
-  }
-  return lifted;
-}
-
-// The QCQP rewritten in the lifted coordinates of every key.
-struct LiftedQcqp {
-  std::vector<LiftedCost> costs;
-  std::vector<LiftedQuadraticConstraint> quadraticConstraints;
-  std::vector<LiftedLinearEquality> linearEqualities;
-};
-
-// Constant quadratic constraints, such as h^2=1 itself, need no SDP row.
-void AddLiftedQuadraticConstraint(LiftedQuadraticConstraint constraint,
-                                  LiftedQcqp* lifted) {
-  if (!constraint.A.isZero(0.0) || !constraint.a.isZero(0.0)) {
-    lifted->quadraticConstraints.push_back(std::move(constraint));
-    return;
-  }
-  const double b = constraint.b;
-  const bool satisfied =
-      constraint.sense == QuadraticConstraint::Sense::Equal ? b == 0.0
-      : constraint.sense == QuadraticConstraint::Sense::LessEqual ? b >= 0.0
-                                                                  : b <= 0.0;
-  if (!satisfied) {
-    throw std::runtime_error(
-        "LiftedSDPProblem: a quadratic constraint is infeasible for h=1.");
-  }
-}
-
-// Rewrite every cost and constraint of a QCQP in lifted coordinates.
-LiftedQcqp MakeLiftedQcqp(const QcqpProblem& problem,
-                          const LiftedKeyMap& liftedKeys) {
-  LiftedQcqp lifted;
-  for (const auto& factor : problem.costs()) {
-    if (!factor) continue;
-    const auto* cost = dynamic_cast<const QpCost*>(factor.get());
-    if (!cost) {
-      throw std::runtime_error("LiftedSDPProblem: expected QpCost.");
-    }
-    lifted.costs.push_back(MakeLiftedCost(*cost, liftedKeys));
-  }
-
-  // Equality factors may be quadratic or linear.
-  for (const auto& factor : problem.eConstraints()) {
-    if (!factor) continue;
-    if (const auto* quadratic =
-            dynamic_cast<const QuadraticEqualityConstraintFactor*>(
-                factor.get())) {
-      AddLiftedQuadraticConstraint(
-          MakeLiftedQuadraticConstraint(quadratic->quadraticConstraint(),
-                                        liftedKeys),
-          &lifted);
-      continue;
-    }
-    if (const auto* linear =
-            dynamic_cast<const LinearEqualityConstraintFactor*>(factor.get())) {
-      LiftedLinearEquality equality =
-          MakeLiftedLinearEquality(linear->linearConstraint(), liftedKeys);
-      if (equality.A.rows() > 0) {
-        lifted.linearEqualities.push_back(std::move(equality));
-      }
-      continue;
-    }
-    throw std::runtime_error(
-        "LiftedSDPProblem: expected quadratic or linear equality "
-        "constraints.");
-  }
-
-  // Inequality factors currently support only quadratic constraints.
-  for (const auto& factor : problem.iConstraints()) {
-    if (!factor) continue;
-    if (const auto* quadratic =
-            dynamic_cast<const QuadraticInequalityConstraintFactor*>(
-                factor.get())) {
-      AddLiftedQuadraticConstraint(
-          MakeLiftedQuadraticConstraint(quadratic->quadraticConstraint(),
-                                        liftedKeys),
-          &lifted);
-      continue;
-    }
-    if (dynamic_cast<const LinearInequalityConstraintFactor*>(factor.get())) {
-      throw std::runtime_error(
-          "LiftedSDPProblem: linear inequality constraints are not "
-          "supported.");
-    }
-    throw std::runtime_error(
-        "LiftedSDPProblem: expected quadratic inequality constraints.");
-  }
-  return lifted;
-}
-
 // Assign each key a contiguous range after the constant entry at index 0.
+// Every PSD block is the Shor lift [1 y'; y X] of the keys it holds.
 std::map<Key, std::pair<int, int>> MakeBlockRanges(
-    const KeyVector& keys, const LiftedKeyMap& liftedKeys, int* dimension) {
+    const KeyVector& keys, const std::map<Key, DenseIndex>& keyDims,
+    int* dimension) {
   std::map<Key, std::pair<int, int>> ranges;
   *dimension = 1;
   for (Key key : keys) {
     const int start = *dimension;
-    *dimension += static_cast<int>(liftedKeys.at(key).dim);
+    *dimension += static_cast<int>(keyDims.at(key));
     ranges.emplace(key, std::make_pair(start, *dimension));
   }
   return ranges;
@@ -454,10 +188,11 @@ void CollectOrderedKeysAndDims(const QcqpProblem& problem,
   KeySet constraintKeys = eqKeys;
   constraintKeys.merge(ineqKeys);
 
-  if (costKeys != constraintKeys) {
+  if (!std::includes(costKeys.begin(), costKeys.end(), constraintKeys.begin(),
+                     constraintKeys.end())) {
     throw std::runtime_error(
-        "LiftedSDPProblem: QCQP constraint keys do not match objective cost "
-        "keys.");
+        "LiftedSDPProblem: every constrained QCQP key must appear in an "
+        "objective cost.");
   }
 
   orderedKeys->assign(costKeys.begin(), costKeys.end());
@@ -627,21 +362,14 @@ Matrix SolvedMomentBlock(const FirstMomentViewMap& firstMoments,
   return block;
 }
 
-// Recover one D=1 QCQP vector per key, restoring h=1 for homogenized keys.
+// Recover one D=1 QCQP vector per key from its first moments.
 Values RecoverQcqpValues(const FirstMomentViewMap& firstMoments,
                          const KeyVector& orderedKeys,
-                         const LiftedKeyMap& liftedKeys) {
+                         const std::map<Key, DenseIndex>& keyDims) {
   Values recoveredQcqpValues;
   for (Key key : orderedKeys) {
-    const LiftedKey& lifted = liftedKeys.at(key);
-    const Vector y = ExtractSolvedFirstMoment(firstMoments.at(key), lifted.dim);
-    Matrix value(lifted.qcqpDim, 1);
-    if (lifted.homogenized) {
-      value(0, 0) = 1.0;
-      value.block(1, 0, lifted.dim, 1) = y;
-    } else {
-      value.col(0) = y;
-    }
+    const Matrix value =
+        ExtractSolvedFirstMoment(firstMoments.at(key), keyDims.at(key));
     recoveredQcqpValues.insert(key, value);
   }
   return recoveredQcqpValues;
@@ -651,25 +379,27 @@ Values RecoverQcqpValues(const FirstMomentViewMap& firstMoments,
 std::vector<double> ComputeVariableEVRs(
     const FirstMomentViewMap& firstMoments,
     const LiftedVariableXijToSDPVariableViewMap& xijMap,
-    const KeyVector& orderedKeys, const LiftedKeyMap& liftedKeys) {
+    const KeyVector& orderedKeys, const std::map<Key, DenseIndex>& keyDims) {
   std::vector<double> variableEVRs;
   variableEVRs.reserve(orderedKeys.size());
   for (Key key : orderedKeys) {
-    variableEVRs.push_back(ComputeBlockRankOneRatio(SolvedMomentBlock(
-        firstMoments, xijMap, key, liftedKeys.at(key).dim)));
+    variableEVRs.push_back(ComputeBlockRankOneRatio(
+        SolvedMomentBlock(firstMoments, xijMap, key, keyDims.at(key))));
   }
   return variableEVRs;
 }
 
 // Form the lifted objective term 0.5 <G, X_f> - g' y_f + 0.5 f of one cost.
-mf::Expression::t BuildLiftedCostTerm(
-    const LiftedCost& cost, const FirstMomentViewMap& firstMoments,
+mf::Expression::t BuildQpCostObjectiveTerm(
+    const QpCost& cost, const FirstMomentViewMap& firstMoments,
     const LiftedVariableXijToSDPVariableViewMap& xijMap) {
-  // Assemble the local SDP block matrix X_f in the cost's key order.
+  const HessianFactor& H = cost.hessianFactor();
+
+  // Assemble the local SDP block matrix X_f in the Hessian factor's key order.
   std::vector<mf::Expression::t> blockRows, firstMomentRow;
-  for (Key key_i : cost.keys) {
+  for (Key key_i : H.keys()) {
     std::vector<mf::Expression::t> rowBlocks;
-    for (Key key_j : cost.keys) {
+    for (Key key_j : H.keys()) {
       rowBlocks.push_back(xijMap.at({key_i, key_j})->asExpr());
     }
     blockRows.push_back(
@@ -680,28 +410,35 @@ mf::Expression::t BuildLiftedCostTerm(
   const auto X_f =
       mf::Expr::vstack(monty::new_array_ptr<mf::Expression::t>(blockRows));
   auto term = mf::Expr::mul(
-      0.5, mf::Expr::dot(convertToMosekDenseMatrix(cost.G), X_f));
-  if (!cost.g.isZero(0.0)) {
+      0.5, mf::Expr::dot(convertToMosekDenseMatrix(Matrix(H.information())),
+                         X_f));
+  const Vector g = H.linearTerm();
+  if (!g.isZero(0.0)) {
     const auto y_f = mf::Expr::hstack(
         monty::new_array_ptr<mf::Expression::t>(firstMomentRow));
     term = mf::Expr::sub(
-        term, mf::Expr::dot(convertToMosekDenseMatrix(
-                                Matrix(cost.g.transpose())),
+        term, mf::Expr::dot(convertToMosekDenseMatrix(Matrix(g.transpose())),
                             y_f));
   }
-  if (cost.f != 0.0) {
-    term = mf::Expr::add(term, mf::Expr::constTerm(0.5 * cost.f));
+  if (H.constantTerm() != 0.0) {
+    term = mf::Expr::add(term, mf::Expr::constTerm(0.5 * H.constantTerm()));
   }
   return term;
 }
 
 // Sum the lifted objective terms contributed by all QCQP costs.
 mf::Expression::t BuildObjective(
-    const LiftedQcqp& lifted, const FirstMomentViewMap& firstMoments,
+    const QcqpProblem& problem, const FirstMomentViewMap& firstMoments,
     const LiftedVariableXijToSDPVariableViewMap& xijMap) {
   std::vector<mf::Expression::t> objectiveTerms;
-  for (const auto& cost : lifted.costs) {
-    objectiveTerms.push_back(BuildLiftedCostTerm(cost, firstMoments, xijMap));
+  for (const auto& factor : problem.costs()) {
+    if (!factor) continue;
+    const auto* cost = dynamic_cast<const QpCost*>(factor.get());
+    if (!cost) {
+      throw std::runtime_error("BuildObjective: expected QpCost.");
+    }
+    objectiveTerms.push_back(
+        BuildQpCostObjectiveTerm(*cost, firstMoments, xijMap));
   }
 
   if (objectiveTerms.empty()) {
@@ -712,41 +449,48 @@ mf::Expression::t BuildObjective(
 
 // Lower x'Ax + a'x ~ b to the affine SDP constraint <A, X> + a'y ~ b.
 void AddQuadraticConstraint(
-    const mf::Model::t& M, const LiftedQuadraticConstraint& constraint,
+    const mf::Model::t& M, const QuadraticConstraint& constraint,
     const FirstMomentViewMap& firstMoments,
     const LiftedVariableXijToSDPVariableViewMap& xijMap) {
-  const Key key = constraint.key;
-  auto lhs = mf::Expr::dot(convertToMosekDenseMatrix(constraint.A),
+  const Key key = constraint.key();
+  auto lhs = mf::Expr::dot(convertToMosekDenseMatrix(constraint.A()),
                            xijMap.at({key, key})->asExpr());
-  if (!constraint.a.isZero(0.0)) {
+  if (constraint.hasLinearTerm()) {
     lhs = mf::Expr::add(
         lhs, mf::Expr::dot(convertToMosekDenseMatrix(
-                               Matrix(constraint.a.transpose())),
+                               Matrix(constraint.a().transpose())),
                            firstMoments.at(key)->asExpr()));
   }
 
-  switch (constraint.sense) {
+  switch (constraint.sense()) {
     case QuadraticConstraint::Sense::Equal:
-      M->constraint(lhs, mf::Domain::equalsTo(constraint.b));
+      M->constraint(lhs, mf::Domain::equalsTo(constraint.b()));
       break;
     case QuadraticConstraint::Sense::LessEqual:
-      M->constraint(lhs, mf::Domain::lessThan(constraint.b));
+      M->constraint(lhs, mf::Domain::lessThan(constraint.b()));
       break;
     case QuadraticConstraint::Sense::GreaterEqual:
-      M->constraint(lhs, mf::Domain::greaterThan(constraint.b));
+      M->constraint(lhs, mf::Domain::greaterThan(constraint.b()));
       break;
   }
 }
 
 // Lower Ax = b on one key to both rows of [-b A] [1 y'; y X] = 0.
 void AddLinearEqualityConstraint(
-    const mf::Model::t& M, const LiftedLinearEquality& equality,
+    const mf::Model::t& M, const LinearConstraint& equality,
     const FirstMomentViewMap& firstMoments,
     const LiftedVariableXijToSDPVariableViewMap& xijMap) {
-  const auto y = firstMoments.at(equality.key)->asExpr();
-  const auto X = xijMap.at({equality.key, equality.key})->asExpr();
-  const auto A = convertToMosekDenseMatrix(equality.A);
-  const auto b = convertToMosekDenseMatrix(equality.b);
+  const JacobianFactor& J = equality.factor();
+  if (J.size() != 1) {
+    throw std::runtime_error(
+        "LiftedSDPProblem: only unary linear equality QCQP constraints are "
+        "supported.");
+  }
+  const Key key = *J.begin();
+  const auto y = firstMoments.at(key)->asExpr();
+  const auto X = xijMap.at({key, key})->asExpr();
+  const auto A = convertToMosekDenseMatrix(Matrix(J.getA(J.begin())));
+  const auto b = convertToMosekDenseMatrix(Vector(J.getb()));
 
   // Ax=b implies A*x*x'=b*x', hence A*X=b*y' after lifting. Enforcing only the
   // first moments Ay=b would leave unconstrained PSD slack in X.
@@ -756,15 +500,48 @@ void AddLinearEqualityConstraint(
                 mf::Domain::equalsTo(0.0));
 }
 
-// Add all lifted equality and inequality constraints to a Fusion model.
-void AddQcqpConstraints(const mf::Model::t& M, const LiftedQcqp& lifted,
+// Add all QCQP equality and inequality constraints to a Fusion model.
+void AddQcqpConstraints(const mf::Model::t& M, const QcqpProblem& problem,
                         const FirstMomentViewMap& firstMoments,
                         const LiftedVariableXijToSDPVariableViewMap& xijMap) {
-  for (const auto& constraint : lifted.quadraticConstraints) {
-    AddQuadraticConstraint(M, constraint, firstMoments, xijMap);
+  // Equality factors may be quadratic or linear.
+  for (const auto& factor : problem.eConstraints()) {
+    if (!factor) continue;
+    if (const auto* quadratic =
+            dynamic_cast<const QuadraticEqualityConstraintFactor*>(
+                factor.get())) {
+      AddQuadraticConstraint(M, quadratic->quadraticConstraint(),
+                             firstMoments, xijMap);
+      continue;
+    }
+    if (const auto* linear =
+            dynamic_cast<const LinearEqualityConstraintFactor*>(factor.get())) {
+      AddLinearEqualityConstraint(M, linear->linearConstraint(), firstMoments,
+                                  xijMap);
+      continue;
+    }
+    throw std::runtime_error(
+        "LiftedSDPProblem: expected quadratic or linear equality "
+        "constraints.");
   }
-  for (const auto& equality : lifted.linearEqualities) {
-    AddLinearEqualityConstraint(M, equality, firstMoments, xijMap);
+
+  // Inequality factors currently support only quadratic constraints.
+  for (const auto& factor : problem.iConstraints()) {
+    if (!factor) continue;
+    if (const auto* quadratic =
+            dynamic_cast<const QuadraticInequalityConstraintFactor*>(
+                factor.get())) {
+      AddQuadraticConstraint(M, quadratic->quadraticConstraint(),
+                             firstMoments, xijMap);
+      continue;
+    }
+    if (dynamic_cast<const LinearInequalityConstraintFactor*>(factor.get())) {
+      throw std::runtime_error(
+          "LiftedSDPProblem: linear inequality constraints are not "
+          "supported.");
+    }
+    throw std::runtime_error(
+        "LiftedSDPProblem: expected quadratic inequality constraints.");
   }
 }
 
@@ -785,7 +562,6 @@ struct LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::Impl {
   MosekSolveSummary lastSolveSummary;
   KeyVector orderedKeys;
   std::map<Key, DenseIndex> orderedKeyDims;
-  LiftedKeyMap liftedKeys;
   FirstMomentViewMap firstMomentViews;
   LiftedVariableXijToSDPVariableViewMap liftedVariableXijToSDPVariableViewMap;
 
@@ -820,7 +596,6 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
   KeyVector orderedKeys;
   std::map<Key, DenseIndex> orderedKeyDims;
   SymbolicBayesTree bayesTree_;
-  LiftedKeyMap liftedKeys;
   FirstMomentViewMap firstMomentViews;
   LiftedVariableXijToSDPVariableViewMap liftedVariableXijToSDPVariableViewMap;
 
@@ -850,7 +625,7 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
     }
 
     if (key.first == key.second) {
-      const DenseIndex dim = liftedKeys.at(key.first).dim;
+      const DenseIndex dim = orderedKeyDims.at(key.first);
       for (DenseIndex r = 0; r < dim; ++r) {
         for (DenseIndex c = 0; c <= r; ++c) {
           M->constraint(
@@ -874,7 +649,8 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
     std::sort(indices.begin(), indices.end());
 
     int cliqueDimension;
-    const auto ranges = MakeBlockRanges(indices, liftedKeys, &cliqueDimension);
+    const auto ranges =
+        MakeBlockRanges(indices, orderedKeyDims, &cliqueDimension);
 
     if (!indices.empty()) {
       auto cliqueY =
@@ -925,11 +701,9 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
   RequireSharedHomogeneousCoordinates(shareHomogeneousCoordinates);
   CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                             &impl_->orderedKeyDims);
-  impl_->liftedKeys = MakeLiftedKeys(problem, impl_->orderedKeyDims);
-  const LiftedQcqp lifted = MakeLiftedQcqp(problem, impl_->liftedKeys);
   int coneDimension;
-  const auto ranges =
-      MakeBlockRanges(impl_->orderedKeys, impl_->liftedKeys, &coneDimension);
+  const auto ranges = MakeBlockRanges(impl_->orderedKeys, impl_->orderedKeyDims,
+                                      &coneDimension);
 
   // Represent the complete lifted matrix with one positive semidefinite cone.
   impl_->M = new mf::Model("MonolithicSDP_MosekSDPSolver");
@@ -940,10 +714,10 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
 
   impl_->M->objective(
       mf::ObjectiveSense::Minimize,
-      BuildObjective(lifted, impl_->firstMomentViews,
+      BuildObjective(problem, impl_->firstMomentViews,
                      impl_->liftedVariableXijToSDPVariableViewMap));
 
-  AddQcqpConstraints(impl_->M, lifted, impl_->firstMomentViews,
+  AddQcqpConstraints(impl_->M, problem, impl_->firstMomentViews,
                      impl_->liftedVariableXijToSDPVariableViewMap);
 }
 
@@ -984,7 +758,7 @@ Values LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::qcqpValues() const {
   }
   impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
   return RecoverQcqpValues(impl_->firstMomentViews, impl_->orderedKeys,
-                           impl_->liftedKeys);
+                           impl_->orderedKeyDims);
 }
 
 std::vector<double>
@@ -995,7 +769,7 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::variableEVRs() const {
   impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
   return ComputeVariableEVRs(impl_->firstMomentViews,
                              impl_->liftedVariableXijToSDPVariableViewMap,
-                             impl_->orderedKeys, impl_->liftedKeys);
+                             impl_->orderedKeys, impl_->orderedKeyDims);
 }
 
 const KeyVector& LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::orderedKeys()
@@ -1015,8 +789,6 @@ LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
   RequireSharedHomogeneousCoordinates(shareHomogeneousCoordinates);
   CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                             &impl_->orderedKeyDims);
-  impl_->liftedKeys = MakeLiftedKeys(problem, impl_->orderedKeyDims);
-  const LiftedQcqp lifted = MakeLiftedQcqp(problem, impl_->liftedKeys);
   impl_->M = new mf::Model("ChordalSDP_MosekSDPSolver");
   impl_->bayesTree_ = BuildSymbolicBayesTree(problem, orderingType);
   // Use one positive semidefinite variable per symbolic clique.
@@ -1024,10 +796,10 @@ LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
 
   impl_->M->objective(
       mf::ObjectiveSense::Minimize,
-      BuildObjective(lifted, impl_->firstMomentViews,
+      BuildObjective(problem, impl_->firstMomentViews,
                      impl_->liftedVariableXijToSDPVariableViewMap));
 
-  AddQcqpConstraints(impl_->M, lifted, impl_->firstMomentViews,
+  AddQcqpConstraints(impl_->M, problem, impl_->firstMomentViews,
                      impl_->liftedVariableXijToSDPVariableViewMap);
 }
 
@@ -1067,7 +839,7 @@ Values LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::qcqpValues() const {
   }
   impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
   return RecoverQcqpValues(impl_->firstMomentViews, impl_->orderedKeys,
-                           impl_->liftedKeys);
+                           impl_->orderedKeyDims);
 }
 
 std::vector<double> LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::variableEVRs()
@@ -1078,7 +850,7 @@ std::vector<double> LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::variableEVRs()
   impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
   return ComputeVariableEVRs(impl_->firstMomentViews,
                              impl_->liftedVariableXijToSDPVariableViewMap,
-                             impl_->orderedKeys, impl_->liftedKeys);
+                             impl_->orderedKeys, impl_->orderedKeyDims);
 }
 
 const KeyVector& LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::orderedKeys()

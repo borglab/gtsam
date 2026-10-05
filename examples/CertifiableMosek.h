@@ -65,7 +65,6 @@ inline CertifiableSolver parseCertifiableSolver(const std::string& name) {
 template <typename Rotation, typename Point>
 QcqpProblem makeAnchoredQcqp(const NonlinearFactorGraph& graph, Key rotationKey,
                              Key pointKey) {
-  constexpr int kPointDim = traits<Point>::QcqpVectorDim;
   constexpr int kDimension = Point::RowsAtCompileTime;
   NonlinearFactorGraph anchoredGraph = graph;
   anchoredGraph.emplace_shared<FrobeniusPrior<Rotation>>(
@@ -73,10 +72,9 @@ QcqpProblem makeAnchoredQcqp(const NonlinearFactorGraph& graph, Key rotationKey,
       noiseModel::Constrained::All(kDimension * kDimension));
   QcqpProblem problem(anchoredGraph, 1);
 
-  Matrix pointSelector = Matrix::Zero(kDimension, kPointDim);
-  pointSelector.block(0, 1, kDimension, kDimension).setIdentity();
   problem.addConstraint(LinearConstraint::Equal(
-      JacobianFactor(pointKey, pointSelector, Vector::Zero(kDimension))));
+      JacobianFactor(pointKey, Matrix::Identity(kDimension, kDimension),
+                     Vector::Zero(kDimension))));
   return problem;
 }
 
