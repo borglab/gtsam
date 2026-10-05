@@ -33,6 +33,7 @@
 
 #include <random>
 #include <string>
+#include <tuple>
 
 #ifdef GTSAM_USE_TBB
 #include <mutex> // std::mutex
@@ -279,11 +280,11 @@ struct traits<Unit3> : public internal::Manifold<Unit3> {
 
   /// The single unit-norm constraint, `||X||^2 = 1`.
   template <int D = 1>
-  static QcqpConstraintList<D> QcqpConstraints() {
+  static std::vector<std::tuple<Matrix, Vector, double>> QcqpConstraints() {
     if constexpr (D == 1) {
       return {{Matrix::Identity(3, 3), Vector(), 1.0}};
     } else if constexpr (D >= 3) {
-      return {{Matrix::Identity(1, 1), 1.0}};
+      return {{Matrix::Identity(1, 1), Vector(), 1.0}};
     } else {
       throw std::invalid_argument(
           "traits<Unit3>::QcqpConstraints supports D=1 and D>=3.");

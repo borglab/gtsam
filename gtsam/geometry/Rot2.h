@@ -26,6 +26,7 @@
 
 #include <random>
 #include <stdexcept>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -279,34 +280,34 @@ struct traits<Rot2> : public internal::MatrixLieGroup<Rot2, 2> {
   }
 
   /**
-   * Return row-space QCQP equality constraints A, b such that
-   * trace(x_i' A x_i) = b[j]. For D=1 an (A, a, b) triple with empty a is the
-   * unit-circle constraint c^2+s^2=1. For D>=2 the same 2-by-2 constraints
+   * Return row-space QCQP equality constraints (A, a, b) with empty a, such
+   * that trace(x_i' A x_i) = b[j]. For D=1 this is the unit-circle constraint
+   * c^2+s^2=1. For D>=2 the same 2-by-2 constraints
    * enforce row orthonormality. The matrix constraints enforce XX'=I, not
    * determinant +1; square D=2 variables therefore admit both components of
    * O(2).
    */
   template <int D = 1>
-  static QcqpConstraintList<D> QcqpConstraints() {
+  static std::vector<std::tuple<Matrix, Vector, double>> QcqpConstraints() {
     if constexpr (D == 1) {
       // c^2 + s^2 = 1 simultaneously enforces orthonormality and det(R)=1.
       return {{Matrix::Identity(QcqpVectorDim, QcqpVectorDim), Vector(), 1.0}};
     } else if constexpr (D >= 2) {
-      std::vector<std::pair<Matrix, double>> constraints;
+      std::vector<std::tuple<Matrix, Vector, double>> constraints;
       constraints.reserve(3);
 
       Matrix A = Matrix::Zero(2, 2);
       A(0, 0) = 1.0;
-      constraints.emplace_back(A, 1.0);
+      constraints.emplace_back(A, Vector(), 1.0);
 
       A.setZero();
       A(1, 1) = 1.0;
-      constraints.emplace_back(A, 1.0);
+      constraints.emplace_back(A, Vector(), 1.0);
 
       A.setZero();
       A(0, 1) = 0.5;
       A(1, 0) = 0.5;
-      constraints.emplace_back(A, 0.0);
+      constraints.emplace_back(A, Vector(), 0.0);
 
       return constraints;
     } else {

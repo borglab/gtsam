@@ -931,9 +931,10 @@ TEST(QcqpProblem, Rot2D3QcqpValueConstraints) {
   const auto constraintsD3 = traits<Rot2>::QcqpConstraints<3>();
   LONGS_EQUAL(constraintsD2.size(), constraintsD3.size());
   for (size_t i = 0; i < constraintsD2.size(); ++i) {
-    EXPECT(assert_equal(constraintsD2[i].first, constraintsD3[i].first, 1e-12));
-    EXPECT_DOUBLES_EQUAL(constraintsD2[i].second, constraintsD3[i].second,
-                         1e-12);
+    EXPECT(assert_equal(std::get<0>(constraintsD2[i]),
+                        std::get<0>(constraintsD3[i]), 1e-12));
+    EXPECT_DOUBLES_EQUAL(std::get<2>(constraintsD2[i]),
+                         std::get<2>(constraintsD3[i]), 1e-12);
   }
 
   NonlinearEqualityConstraints constraints;
@@ -1027,10 +1028,10 @@ TEST(QcqpProblem, Rot2QcqpConstraintsAreDIndependent) {
   LONGS_EQUAL(cs2.size(), cs3.size());
   LONGS_EQUAL(cs2.size(), cs5.size());
   for (size_t i = 0; i < cs2.size(); ++i) {
-    EXPECT(assert_equal(cs2[i].first, cs3[i].first, 1e-12));
-    EXPECT(assert_equal(cs2[i].first, cs5[i].first, 1e-12));
-    EXPECT_DOUBLES_EQUAL(cs2[i].second, cs3[i].second, 1e-12);
-    EXPECT_DOUBLES_EQUAL(cs2[i].second, cs5[i].second, 1e-12);
+    EXPECT(assert_equal(std::get<0>(cs2[i]), std::get<0>(cs3[i]), 1e-12));
+    EXPECT(assert_equal(std::get<0>(cs2[i]), std::get<0>(cs5[i]), 1e-12));
+    EXPECT_DOUBLES_EQUAL(std::get<2>(cs2[i]), std::get<2>(cs3[i]), 1e-12);
+    EXPECT_DOUBLES_EQUAL(std::get<2>(cs2[i]), std::get<2>(cs5[i]), 1e-12);
   }
 }
 

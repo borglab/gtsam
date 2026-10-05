@@ -12,6 +12,7 @@
 
 #include <cmath>
 #include <stdexcept>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -341,7 +342,7 @@ struct traits<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > :
 
   /** Vector spaces are unconstrained, so return no (A, a, b) triples. */
   template <int D>
-  static QcqpConstraintList<D> QcqpConstraints() {
+  static std::vector<std::tuple<Matrix, Vector, double>> QcqpConstraints() {
     if constexpr (D == 1) {
       return {};
     } else {

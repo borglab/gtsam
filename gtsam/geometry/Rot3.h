@@ -31,6 +31,7 @@
 
 #include <random>
 #include <stdexcept>
+#include <tuple>
 #include <utility>
 
 // You can override the default coordinate mode using this flag
@@ -628,15 +629,15 @@ struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
   }
 
   /**
-   * Return row-space QCQP equality constraints A, b such that
-   * trace(X' A X) = b. For D=1 these are the lifted SO(3) constraints in
-   * column-major coordinates, as (A, a, b) triples for x' A x + a' x = b with
-   * an empty a meaning no linear term. For D>=3 the same 3-by-3 constraints
-   * enforce XX'=I. The D=1 right-handedness constraints distinguish SO(3) from
-   * the reflected component of O(3).
+   * Return row-space QCQP equality constraints (A, a, b) such that
+   * trace(X' A X) + a' x = b, with an empty a meaning no linear term. For D=1
+   * these are the lifted SO(3) constraints in column-major coordinates; the
+   * three right-handedness rows carry a linear term. For D>=3 the same 3-by-3
+   * constraints, all with empty a, enforce XX'=I. The D=1 right-handedness
+   * constraints distinguish SO(3) from the reflected component of O(3).
    */
   template <int D = 1>
-  static QcqpConstraintList<D> QcqpConstraints() {
+  static std::vector<std::tuple<Matrix, Vector, double>> QcqpConstraints() {
     if constexpr (D == 1) {
       // The Rot3 vector is
       // x = [r00, r10, r20, r01, r11, r21, r02, r12, r22].
@@ -714,14 +715,14 @@ struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
 
       return constraints;
     } else if constexpr (D >= 3) {
-      std::vector<std::pair<Matrix, double>> constraints;
+      std::vector<std::tuple<Matrix, Vector, double>> constraints;
       constraints.reserve(6);
 
       // 3 row-unit-norm: ||row r||^2 = 1.
       for (int r = 0; r < 3; ++r) {
         Matrix A = Matrix::Zero(3, 3);
         A(r, r) = 1.0;
-        constraints.emplace_back(A, 1.0);
+        constraints.emplace_back(A, Vector(), 1.0);
       }
 
       // 3 row-orthogonality: row r1 . row r2 = 0.
@@ -730,7 +731,7 @@ struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
           Matrix A = Matrix::Zero(3, 3);
           A(r1, r2) = 0.5;
           A(r2, r1) = 0.5;
-          constraints.emplace_back(A, 0.0);
+          constraints.emplace_back(A, Vector(), 0.0);
         }
       }
       return constraints;

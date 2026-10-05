@@ -24,25 +24,10 @@
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/base/concepts.h>
 
-#include <tuple>
 #include <type_traits>
 #include <utility>
-#include <vector>
 
 namespace gtsam {
-
-/**
- * Equality constraints returned by traits<T>::QcqpConstraints<D>().
- *
- * D=1 vector variables use (A, a, b) triples for x' A x + a' x = b, where an
- * empty a means no linear term. Matrix variables (D>1) use (A, b) pairs for
- * trace(X' A X) = b, since a linear term is not invariant under the right-O(D)
- * gauge of a matrix lift.
- */
-template <int D>
-using QcqpConstraintList =
-    std::conditional_t<D == 1, std::vector<std::tuple<Matrix, Vector, double>>,
-                       std::vector<std::pair<Matrix, double>>>;
 
 /// tag to assert a type is a manifold
 struct manifold_tag {};

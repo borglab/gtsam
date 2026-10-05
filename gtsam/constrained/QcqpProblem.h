@@ -94,8 +94,9 @@ void InsertQcqpValue(Key key, const T& value, Values* qcqpValues) {
 /**
  * Insert the QCQP equality constraints for one variable.
  *
- * traits<T>::QcqpConstraints<D>() returns a QcqpConstraintList<D>: (A, a, b)
- * triples for x' A x + a' x = b at D=1 and (A, b) pairs otherwise. Only an
+ * traits<T>::QcqpConstraints<D>() returns (A, a, b) triples for
+ * trace(X' A X) + a' x = b, where an empty a means no linear term; only D=1
+ * constraints may have one. Only an
  * already-present quadratic equality with the same key, matrix, linear term,
  * and right-hand side is considered a duplicate. Other unary constraints on
  * the key are preserved and do not suppress the manifold constraints.
@@ -109,18 +110,9 @@ void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
     throw std::invalid_argument("InsertQcqpConstraints: constraints is null.");
   }
 
-  for (const auto& entry : traits<T>::template QcqpConstraints<D>()) {
-    const QuadraticConstraint candidate = [&] {
-      if constexpr (D == 1) {
-        const auto& [A, a, b] = entry;
-        return QuadraticConstraint::Equal(key, A, a, b);
-      } else {
-        const auto& [A, b] = entry;
-        return QuadraticConstraint::Equal(key, A, b);
-      }
-    }();
-    const Matrix& A = candidate.A();
-    const double b = candidate.b();
+  for (const auto& [A, a, b] : traits<T>::template QcqpConstraints<D>()) {
+    const QuadraticConstraint candidate =
+        QuadraticConstraint::Equal(key, A, a, b);
     bool alreadyPresent = false;
     for (const auto& factor : *constraints) {
       const auto* quadratic =

@@ -392,7 +392,7 @@ struct traits<Pose3> : public internal::MatrixLieGroup<Pose3, 4> {
    * trace(x' A x) + a' x = b.
    */
   template <int D = 1>
-  static QcqpConstraintList<D> QcqpConstraints() {
+  static std::vector<std::tuple<Matrix, Vector, double>> QcqpConstraints() {
     if constexpr (D == 1) {
       std::vector<std::tuple<Matrix, Vector, double>> constraints;
       constraints.reserve(9);

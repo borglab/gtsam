@@ -421,7 +421,7 @@ struct traits<Pose2> : public internal::MatrixLieGroup<Pose2, 3> {
    * trace(x' A x) = b; their linear terms a are empty.
    */
   template <int D = 1>
-  static QcqpConstraintList<D> QcqpConstraints() {
+  static std::vector<std::tuple<Matrix, Vector, double>> QcqpConstraints() {
     if constexpr (D == 1) {
       std::vector<std::tuple<Matrix, Vector, double>> constraints;
       constraints.reserve(4);
