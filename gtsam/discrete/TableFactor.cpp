@@ -895,7 +895,39 @@ TableFactor TableFactor::prune(size_t maxNrAssignments) const {
 /* ************************************************************************ */
 DiscreteFactor::shared_ptr TableFactor::restrict(
     const DiscreteValues& assignment) const {
-  throw std::runtime_error("TableFactor::restrict not implemented");
+  // Split our keys into those fixed by the assignment and those left free,
+  // keeping the free keys in their original order.
+  // Assigned keys that are not in this factor are ignored.
+  DiscreteValues fixedValues;
+  DiscreteKeys freeKeys;
+  uint64_t freeCardinality = 1;
+  for (Key key : keys_) {
+    auto it = assignment.find(key);
+    if (it != assignment.end()) {
+      fixedValues[key] = it->second;
+    } else {
+      freeKeys.emplace_back(key, cardinality(key));
+      freeCardinality *= cardinality(key);
+    }
+  }
+
+  // Copy the nonzero entries that agree with the fixed values, re-indexed over
+  // the free keys. Matching entries keep their relative order, so indices are
+  // inserted in increasing order.
+  Eigen::SparseVector<double> restrictedTable(freeCardinality);
+  restrictedTable.reserve(sparse_table_.nonZeros());
+  for (SparseIt it(sparse_table_); it; ++it) {
+    const bool matches = std::all_of(
+        fixedValues.begin(), fixedValues.end(), [&](const auto& keyValue) {
+          return keyValueForIndex(keyValue.first, it.index()) ==
+                 keyValue.second;
+        });
+    if (matches) {
+      restrictedTable.insert(uniqueRep(freeKeys, it.index())) = it.value();
+    }
+  }
+  restrictedTable.data().squeeze();
+  return std::make_shared<TableFactor>(freeKeys, restrictedTable);
 }
 
 /* ************************************************************************ */
