@@ -308,6 +308,13 @@ class GTSAM_EXPORT DiscreteConditional
   /// @}
 
  protected:
+  /**
+   * Return the entries of `given` assigned to the parent variables.
+   * If `forceComplete` is true, throw when a parent is missing.
+   */
+  DiscreteValues parentValues(const DiscreteValues& given,
+                              bool forceComplete) const;
+
   /// Internal version of choose
   DiscreteConditional::ADT choose(const DiscreteValues& given,
                                   bool forceComplete) const;

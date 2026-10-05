@@ -20,7 +20,6 @@
 #include <gtsam/base/debug.h>
 #include <gtsam/base/utilities.h>
 #include <gtsam/discrete/DiscreteConditional.h>
-#include <gtsam/discrete/Ring.h>
 #include <gtsam/discrete/Signature.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Ordering.h>
@@ -79,13 +78,6 @@ DiscreteConditional::DiscreteConditional(const Signature& signature)
 /* ************************************************************************** */
 DiscreteConditional DiscreteConditional::operator*(
     const DiscreteConditional& other) const {
-  // If the root is a nullptr, we have a TableDistribution
-  // TODO(Varun) Revisit this hack after RSS2025 submission
-  if (!other.root_) {
-    DiscreteConditional dc(other.nrFrontals(), other.toDecisionTreeFactor());
-    return dc * (*this);
-  }
-
   // Take union of frontal keys
   KeySet newFrontals;
   for (auto&& key : this->frontals()) newFrontals.insert(key);
@@ -116,7 +108,10 @@ DiscreteConditional DiscreteConditional::operator*(
   // Finally, add parents to keys, in order
   for (auto&& dk : parents) discreteKeys.push_back(dk);
 
-  ADT product = ADT::apply(other, Ring::mul);
+  // Convert through the virtual interface, so either operand may store its
+  // values in another representation, such as a TableDistribution.
+  const DecisionTreeFactor product =
+      toDecisionTreeFactor() * other.toDecisionTreeFactor();
   return DiscreteConditional(newFrontals.size(), discreteKeys, product);
 }
 
@@ -130,13 +125,14 @@ DiscreteConditional DiscreteConditional::marginal(Key key) const {
   // Calculate the keys as the frontal keys without the given key.
   DiscreteKeys discreteKeys{{key, cardinality(key)}};
 
-  // Calculate sum
-  ADT adt(*this);
-  for (auto&& k : frontals())
-    if (k != key) adt = adt.sum(k, cardinality(k));
+  // Sum out all other frontal keys
+  Ordering summedKeys;
+  for (Key k : frontals())
+    if (k != key) summedKeys.push_back(k);
+  const DiscreteFactor::shared_ptr summed = sum(summedKeys);
 
   // Return new factor
-  return DiscreteConditional(1, discreteKeys, adt);
+  return DiscreteConditional(1, discreteKeys, summed->toDecisionTreeFactor());
 }
 
 /* ************************************************************************** */
@@ -169,31 +165,41 @@ bool DiscreteConditional::equals(const DiscreteFactor& other,
 }
 
 /* ************************************************************************** */
+/// Return the entries of `given` whose keys are in `keys`, skipping the rest.
+template <typename KEYS>
+static DiscreteValues SelectValues(const DiscreteValues& given,
+                                   const KEYS& keys) {
+  DiscreteValues selected;
+  for (Key key : keys) {
+    auto it = given.find(key);
+    if (it != given.end()) selected[key] = it->second;
+  }
+  return selected;
+}
+
+/* ************************************************************************** */
+DiscreteValues DiscreteConditional::parentValues(const DiscreteValues& given,
+                                                 bool forceComplete) const {
+  const DiscreteValues selected = SelectValues(given, parents());
+  if (forceComplete && selected.size() < nrParents()) {
+    given.print("parentsValues: ");
+    throw runtime_error("DiscreteConditional::choose: parent value missing");
+  }
+  return selected;
+}
+
+/* ************************************************************************** */
 DiscreteConditional::ADT DiscreteConditional::choose(
     const DiscreteValues& given, bool forceComplete) const {
-  // Get the big decision tree with all the levels, and then go down the
-  // branches based on the value of the parent variables.
-  DiscreteConditional::ADT adt(*this);
-  size_t value;
-  for (Key j : parents()) {
-    try {
-      value = given.at(j);
-      adt = adt.choose(j, value);  // ADT keeps getting smaller.
-    } catch (std::out_of_range&) {
-      if (forceComplete) {
-        given.print("parentsValues: ");
-        throw runtime_error(
-            "DiscreteConditional::choose: parent value missing");
-      }
-    }
-  }
-  return adt;
+  return restrict(parentValues(given, forceComplete))->toDecisionTreeFactor();
 }
 
 /* ************************************************************************** */
 DiscreteConditional::shared_ptr DiscreteConditional::choose(
     const DiscreteValues& given) const {
-  ADT adt = choose(given, false);  // P(F|S=given)
+  // P(F|S=given)
+  const DiscreteFactor::shared_ptr restricted =
+      restrict(parentValues(given, false));
 
   // Collect all keys not in given.
   DiscreteKeys dKeys;
@@ -206,32 +212,27 @@ DiscreteConditional::shared_ptr DiscreteConditional::choose(
       dKeys.emplace_back(j, this->cardinality(j));
     }
   }
-  return std::make_shared<DiscreteConditional>(nrFrontals(), dKeys, adt);
+  return std::make_shared<DiscreteConditional>(
+      nrFrontals(), dKeys, restricted->toDecisionTreeFactor());
 }
 
 /* ************************************************************************** */
 DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
     const DiscreteValues& frontalValues) const {
-  // Get the big decision tree with all the levels, and then go down the
-  // branches based on the value of the frontal variables.
-  ADT adt(*this);
-  size_t value;
-  for (Key j : frontals()) {
-    try {
-      value = frontalValues.at(j);
-      adt = adt.choose(j, value);  // ADT keeps getting smaller.
-    } catch (exception&) {
-      frontalValues.print("frontalValues: ");
-      throw runtime_error("DiscreteConditional::choose: frontal value missing");
-    }
+  const DiscreteValues selected = SelectValues(frontalValues, frontals());
+  if (selected.size() < nrFrontals()) {
+    frontalValues.print("frontalValues: ");
+    throw runtime_error("DiscreteConditional::choose: frontal value missing");
   }
+  const DiscreteFactor::shared_ptr restricted = restrict(selected);
 
-  // Convert ADT to factor.
+  // Convert to a factor on the parents.
   DiscreteKeys discreteKeys;
   for (Key j : parents()) {
     discreteKeys.emplace_back(j, this->cardinality(j));
   }
-  return std::make_shared<DecisionTreeFactor>(discreteKeys, adt);
+  return std::make_shared<DecisionTreeFactor>(
+      discreteKeys, restricted->toDecisionTreeFactor());
 }
 
 /* ****************************************************************************/
@@ -248,7 +249,7 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
 
 /* ************************************************************************** */
 size_t DiscreteConditional::argmax(const DiscreteValues& parentsValues) const {
-  ADT pFS = choose(parentsValues, true);  // P(F|S=parentsValues)
+  parentValues(parentsValues, true);  // Throws if a parent is missing.
 
   // Initialize
   size_t maxValue = 0;
@@ -291,8 +292,7 @@ void DiscreteConditional::sampleInPlace(DiscreteValues* values,
 /* ************************************************************************** */
 size_t DiscreteConditional::sample(const DiscreteValues& parentsValues,
                                    std::mt19937_64* rng) const {
-  // Get the correct conditional distribution
-  ADT pFS = choose(parentsValues, true);  // P(F|S=parentsValues)
+  parentValues(parentsValues, true);  // Throws if a parent is missing.
 
   // TODO(Duy): only works for one key now, seems horribly slow this way
   if (nrFrontals() != 1) {
@@ -303,10 +303,10 @@ size_t DiscreteConditional::sample(const DiscreteValues& parentsValues,
   Key key = firstFrontalKey();
   size_t nj = cardinality(key);
   vector<double> p(nj);
-  DiscreteValues frontals;
+  DiscreteValues values = parentsValues;
   for (size_t value = 0; value < nj; value++) {
-    frontals[key] = value;
-    p[value] = pFS(frontals);  // P(F=value|S=parentsValues)
+    values[key] = value;
+    p[value] = (*this)(values);  // P(F=value|S=parentsValues)
     if (p[value] == 1.0) {
       return value;  // shortcut exit
     }
@@ -508,10 +508,7 @@ void DiscreteConditional::prune(size_t maxNrAssignments) {
 
 /* ************************************************************************ */
 void DiscreteConditional::removeDiscreteModes(const DiscreteValues& given) {
-  AlgebraicDecisionTree<Key> tree(*this);
-  for (auto [key, value] : given) {
-    tree = tree.choose(key, value);
-  }
+  const DecisionTreeFactor restricted = restrict(given)->toDecisionTreeFactor();
 
   // Get the leftover DiscreteKey frontals
   DiscreteKeys frontals;
@@ -536,7 +533,7 @@ void DiscreteConditional::removeDiscreteModes(const DiscreteValues& given) {
   // Update the conditional
   this->keys_ = allDkeys.indices();
   this->cardinalities_ = allDkeys.cardinalities();
-  this->root_ = tree.root_;
+  this->root_ = restricted.root_;
   this->nrFrontals_ = frontals.size();
 }
 
