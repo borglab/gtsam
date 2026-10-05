@@ -619,7 +619,7 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
     return out.str();
   }
 
-  // Constrain duplicate clique views to agree on their shared entries.
+  // Constrain a duplicate clique view to agree with its parent's copy.
   void addChordalOverlapEquality(const std::pair<Key, Key>& key,
                                  const mf::Variable::t& owner,
                                  const mf::Variable::t& duplicate) {
@@ -644,7 +644,14 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
   }
 
   // Allocate clique variables and register their block views recursively.
-  void populateXijMapRecursive(const SymbolicBayesTree::sharedClique& clique) {
+  // Running intersection puts every key a clique shares with an earlier clique
+  // in its separator, which the parent clique contains. Each duplicate is tied
+  // to the parent's copy, so the ties follow clique-tree edges; the cliques
+  // holding a key form a subtree, so all of its copies still agree.
+  void populateXijMapRecursive(
+      const SymbolicBayesTree::sharedClique& clique,
+      const KeyiToLiftedVectorxiViewInSDPVariableMap& parentXiMap,
+      const KeysijToLiftedVariableXijViewInSDPVariableMap& parentXijMap) {
     if (!clique) {
       return;
     }
@@ -656,6 +663,8 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
     const auto keyToSDPVariableRanges = ComputeKeyToSDPVariableRanges(
         indices, orderedKeyDims, &sdpVariableDimension);
 
+    KeyiToLiftedVectorxiViewInSDPVariableMap cliqueXiMap;
+    KeysijToLiftedVariableXijViewInSDPVariableMap cliqueXijMap;
     if (!indices.empty()) {
       auto cliqueY = M->variable(
           makeCliqueVariableName(indices),
@@ -665,10 +674,10 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
       for (Key key_i : indices) {
         const auto [i_start, i_end] = keyToSDPVariableRanges.at(key_i);
         auto xiView = SliceView(cliqueY, 0, 1, i_start, i_end);
-        auto [firstIt, firstInserted] =
-            keyiToLiftedVectorxiViewInSDPVariableMap.emplace(key_i, xiView);
-        if (!firstInserted) {
-          M->constraint(mf::Expr::sub(firstIt->second, xiView),
+        cliqueXiMap.emplace(key_i, xiView);
+        if (!keyiToLiftedVectorxiViewInSDPVariableMap.emplace(key_i, xiView)
+                 .second) {
+          M->constraint(mf::Expr::sub(parentXiMap.at(key_i), xiView),
                         mf::Domain::equalsTo(0.0));
         }
 
@@ -677,25 +686,25 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
           auto blockView = SliceView(cliqueY, i_start, i_end, j_start, j_end);
 
           const std::pair<Key, Key> key(key_i, key_j);
-          auto [it, inserted] =
-              keysijToLiftedVariableXijViewInSDPVariableMap.emplace(key,
-                                                                  blockView);
-          if (!inserted) {
-            addChordalOverlapEquality(key, it->second, blockView);
+          cliqueXijMap.emplace(key, blockView);
+          if (!keysijToLiftedVariableXijViewInSDPVariableMap
+                   .emplace(key, blockView)
+                   .second) {
+            addChordalOverlapEquality(key, parentXijMap.at(key), blockView);
           }
         }
       }
     }
 
     for (const auto& childClique : clique->children) {
-      populateXijMapRecursive(childClique);
+      populateXijMapRecursive(childClique, cliqueXiMap, cliqueXijMap);
     }
   }
 
   // Populate block views for every root of the symbolic Bayes tree.
   void populateXijMap() {
     for (const auto& rootClique : bayesTree_.roots()) {
-      populateXijMapRecursive(rootClique);
+      populateXijMapRecursive(rootClique, {}, {});
     }
   }
 };
