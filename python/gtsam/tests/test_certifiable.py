@@ -88,6 +88,25 @@ class TestCertifiableWrappers(unittest.TestCase):
         with self.assertRaises(TypeError):
             params.pMin = -1
 
+    def test_fixed_variables(self):
+        """A hard FrobeniusPrior's variable is substituted out of the QCQP."""
+        problem, _ = rot2_ring_qcqp()
+        fixed_variables = problem.fixedVariables()
+        self.assertEqual(list(fixed_variables.keys()), [X(0)])
+        np.testing.assert_allclose(
+            fixed_variables.atMatrix(X(0)), [[1.0], [0.0]]
+        )
+        np.testing.assert_allclose(
+            problem.fixedVariables().atMatrix(X(0)),
+            fixed_variables.atMatrix(X(0)),
+        )
+        self.assertNotIn(X(0), problem.costs().keys())
+        self.assertNotIn(X(0), problem.eConstraints().keys())
+        temporary_fixed_variables = rot2_ring_qcqp()[0].fixedVariables()
+        np.testing.assert_allclose(
+            temporary_fixed_variables.atMatrix(X(0)), [[1.0], [0.0]]
+        )
+
     def test_params_and_rot2_staircase(self):
         """Configure nested ALM parameters and certify a small Rot2 ring."""
         num_rotations = 5
@@ -200,7 +219,10 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
         self.assertTrue(np.isfinite(solver.objectiveValue()))
         self.assertGreaterEqual(solver.solveTimeSeconds(), 0.0)
 
-        expected_keys = [X(index) for index in range(len(ground_truth))]
+        # X(0) is fixed by its hard FrobeniusPrior: it has no SDP block, but
+        # qcqpValues() returns it.
+        all_keys = [X(index) for index in range(len(ground_truth))]
+        expected_keys = all_keys[1:]
         self.assertEqual(list(solver.orderedKeys()), expected_keys)
         ordered_key_dims = solver.orderedKeyDims()
         self.assertIsInstance(ordered_key_dims, dict)
@@ -213,10 +235,10 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
         repeated_qcqp_values = solver.qcqpValues()
         repeated_variable_evrs = solver.variableEVRs()
         self.assertEqual(qcqp_values.size(), len(ground_truth))
-        self.assertEqual(len(variable_evrs), len(ground_truth))
+        self.assertEqual(len(variable_evrs), len(expected_keys))
         self.assertTrue(all(np.isfinite(evr) for evr in variable_evrs))
         np.testing.assert_allclose(variable_evrs, repeated_variable_evrs)
-        for key in expected_keys:
+        for key in all_keys:
             self.assertEqual(qcqp_values.atMatrix(key).shape, (2, 1))
             np.testing.assert_allclose(
                 qcqp_values.atMatrix(key), repeated_qcqp_values.atMatrix(key)

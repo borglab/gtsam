@@ -100,13 +100,16 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
   /// Return MOSEK's optimizer time in seconds after solve().
   double solveTimeSeconds() const;
 
-  /// Return one keyed D=1 QCQP vector per diagonal SDP block after solve().
+  /**
+   * Return one keyed D=1 QCQP vector per diagonal SDP block after solve(),
+   * together with the QCQP's fixed variables, which are not in the SDP.
+   */
   Values qcqpValues() const;
 
   /// Return largest-to-second-largest eigenvalue ratios for recovered blocks.
   std::vector<double> variableEVRs() const;
 
-  /// Return QCQP variable keys in SDP block order.
+  /// Return QCQP variable keys in SDP block order, without fixed variables.
   const KeyVector& orderedKeys() const;
 
   /// Return the QCQP dimension associated with each ordered key.
@@ -161,13 +164,16 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
   /// Return MOSEK's optimizer time in seconds after solve().
   double solveTimeSeconds() const;
 
-  /// Return one keyed D=1 QCQP vector per diagonal SDP block after solve().
+  /**
+   * Return one keyed D=1 QCQP vector per diagonal SDP block after solve(),
+   * together with the QCQP's fixed variables, which are not in the SDP.
+   */
   Values qcqpValues() const;
 
   /// Return largest-to-second-largest eigenvalue ratios for recovered blocks.
   std::vector<double> variableEVRs() const;
 
-  /// Return QCQP variable keys in SDP block order.
+  /// Return QCQP variable keys in SDP block order, without fixed variables.
   const KeyVector& orderedKeys() const;
 
   /// Return the QCQP dimension associated with each ordered key.
