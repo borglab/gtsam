@@ -92,13 +92,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Install GCC (Linux)
+      - name: Install compiler (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get -y update
-          sudo apt-get install -y g++-${{ matrix.version }}
-          echo "CC=gcc-${{ matrix.version }}" >> "$GITHUB_ENV"
-          echo "CXX=g++-${{ matrix.version }}" >> "$GITHUB_ENV"
+          if [ "${{ matrix.compiler }}" = "clang" ]; then
+            sudo apt-get install -y clang-${{ matrix.version }}
+            CC=clang-${{ matrix.version }}
+            CXX=clang++-${{ matrix.version }}
+          else
+            sudo apt-get install -y g++-${{ matrix.version }}
+            CC=gcc-${{ matrix.version }}
+            CXX=g++-${{ matrix.version }}
+          fi
+          command -v "$CC"
+          command -v "$CXX"
+          echo "CC=$CC" >> "$GITHUB_ENV"
+          echo "CXX=$CXX" >> "$GITHUB_ENV"
 
       - name: Select Xcode (macOS)
         if: runner.os == 'macOS'
