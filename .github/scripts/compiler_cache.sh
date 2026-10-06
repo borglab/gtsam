@@ -74,7 +74,7 @@ CMAKE
   finish)
     if [ "$COMPILER_CACHE_TOOL" = ccache ]; then
       ccache -c
-      statistics=$(ccache -s -v)
+      statistics=$(ccache -s -v; echo; ccache --print-stats)
     else
       statistics=$(sccache --show-stats)
       # Flush the disk backend before taking its snapshot.
