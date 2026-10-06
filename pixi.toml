@@ -26,11 +26,12 @@ backend = { name = "pixi-build-cmake", version = "0.*" }
 compilers = ["c", "cxx"]
 # The GTSAM options live in cmake/CondaDefaults.cmake, shared with the test
 # environment below so the packaged build and the tested build cannot drift
-# apart. CMAKE_PROJECT_TOP_LEVEL_INCLUDES resolves relative to the source tree,
+# apart. CondaPackageCache.cmake includes those defaults and configures the
+# package's isolated compiler cache. The include resolves relative to the tree,
 # unlike `cmake -C`, which resolves against the working directory -- this
 # backend runs cmake from a build directory far away from the sources.
 extra-args = [
-  "-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/CondaDefaults.cmake",
+  "-DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/CondaPackageCache.cmake",
   "-DGTSAM_PYTHON_INSTALL_INTO_PREFIX=ON",
 ]
 # `pixi build` builds the default target, which includes the pybind11 wrappers.
@@ -46,6 +47,11 @@ env = { CMAKE_BUILD_PARALLEL_LEVEL = "1" }
 cmake = ">=3.24"
 ninja = "*"
 ccache = "*"
+
+# The package backend has its own build environment; the test environment's
+# sccache dependency and launchers do not carry over into it.
+[package.build-dependencies."if(build_platform == 'win-64')"]
+sccache = "*"
 
 # Linked against or imported, so they belong to the host platform. Their
 # run-exports supply the matching runtime requirements automatically. The

@@ -15,6 +15,9 @@ on:
   workflow_call:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
   cancel-in-progress: true
@@ -53,17 +56,29 @@ jobs:
           environments: test
           cache: true
 
-      # Restore the newest cache for this platform. ccache is not used by MSVC
-      # builds, but the step is harmless there.
-      - name: Restore the compiler cache
+      # Separate test/package entries so a slow package build cannot prevent
+      # test-cache persistence. Namespace by platform, runner image and toolchain
+      # inputs; compiler caches also check the actual compiler and compile flags.
+      # Each run/attempt is a new immutable generation, including same-SHA nights.
+      - name: Restore the test compiler cache
+        id: test-cache
         uses: actions/cache/restore@v6
         with:
           path: |
             .ccache
-            .ccache-pkg
             .sccache
-          key: ccache-${{ matrix.platform }}-${{ github.sha }}
-          restore-keys: ccache-${{ matrix.platform }}-
+          key: conda-test-v2-${{ matrix.platform }}-${{ matrix.runs-on }}-${{ hashFiles('pixi.lock', 'pixi.toml', 'cmake/CondaDefaults.cmake') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: conda-test-v2-${{ matrix.platform }}-${{ matrix.runs-on }}-${{ hashFiles('pixi.lock', 'pixi.toml', 'cmake/CondaDefaults.cmake') }}-
+
+      - name: Restore the package compiler cache
+        id: package-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: |
+            .ccache-pkg
+            .sccache-pkg
+          key: conda-package-v2-${{ matrix.platform }}-${{ matrix.runs-on }}-${{ hashFiles('pixi.lock', 'pixi.toml', 'cmake/Conda*.cmake') }}-${{ github.run_id }}-${{ github.run_attempt }}
+          restore-keys: conda-package-v2-${{ matrix.platform }}-${{ matrix.runs-on }}-${{ hashFiles('pixi.lock', 'pixi.toml', 'cmake/Conda*.cmake') }}-
 
       - name: Check pixi.toml and CMakeLists.txt agree on the version
         run: pixi run -e test check-version
@@ -83,29 +98,39 @@ jobs:
       # Reports the real hit rate, so a cache that has silently stopped working
       # shows up here instead of as an unexplained slowdown.
       - name: Test build cache statistics
-        if: always()
-        run: pixi run -e test ccache --show-stats
+        if: always() && runner.os != 'Windows'
+        run: |
+          pixi run -e test ccache --show-config
+          pixi run -e test ccache --show-stats
         continue-on-error: true
 
       - name: Test build cache statistics (Windows)
         if: always() && runner.os == 'Windows'
-        run: pixi run -e test sccache --show-stats
+        # Flush the test cache and stop its server before the package launches
+        # sccache with a different directory. A running server retains its env.
+        run: pixi run -e test sccache --stop-server
         continue-on-error: true
 
-      # --path: GTSAM ships a ROS package.xml, which pixi also accepts as a
-      # package manifest and picks over pixi.toml.
-      #
-      # `pixi build` compiles with the conda toolchain and its own flags, so its
-      # objects never match the ones the test environment produced: sharing a
-      # cache only lets the two evict each other. Give it its own, and make
-      # ccache ignore the work directory, whose path changes between runs.
+      # A reusable workflow inherits the caller's event/ref. Only trusted
+      # develop push/nightly/manual runs persist caches, never PRs or branches.
+      # Save before the package build can exhaust the job's time allowance.
+      - name: Save the test compiler cache
+        if: >-
+          always() && github.repository == 'borglab/gtsam' &&
+          github.ref == 'refs/heads/develop' &&
+          contains(fromJSON('["push", "schedule", "workflow_dispatch"]'), github.event_name)
+        uses: actions/cache/save@v6
+        with:
+          path: |
+            .ccache
+            .sccache
+          key: ${{ steps.test-cache.outputs.cache-primary-key }}
+
+      # --path avoids selecting GTSAM's ROS package.xml as the manifest.
+      # CondaPackageCache.cmake passes cache settings through the isolated
+      # backend's compiler launchers and reports the effective configuration.
       - name: Build the conda package
         run: pixi build --path pixi.toml --output-dir dist
-        env:
-          CCACHE_DIR: ${{ github.workspace }}/.ccache-pkg
-          CCACHE_BASEDIR: ${{ github.workspace }}
-          CCACHE_NOHASHDIR: "1"
-          CCACHE_MAXSIZE: 1G
 
       # Neither the test suite nor `pixi build` consumes GTSAM the way a user
       # does: both use the build tree. Install the package just built into a
@@ -135,27 +160,32 @@ jobs:
             "
 
       - name: Package build cache statistics
-        if: always()
-        run: pixi exec --spec ccache ccache --show-stats
+        if: always() && runner.os != 'Windows'
+        run: |
+          pixi exec --spec ccache ccache --show-config
+          pixi exec --spec ccache ccache --show-stats
         env:
           CCACHE_DIR: ${{ github.workspace }}/.ccache-pkg
+          CCACHE_MAXSIZE: 1G
 
-      # Only push builds write a cache entry. Saving on every pull request as
-      # well would churn through the 10 GB per-repository limit and evict the
-      # entries the restore above depends on.
-      #
-      # always(), because a failing test step would otherwise skip this and the
-      # platform could never build up a cache -- which is exactly what happened
-      # on Windows, where every run started cold.
-      - name: Save the compiler cache
-        if: always() && github.event_name == 'push'
+      - name: Package build cache statistics (Windows)
+        if: always() && runner.os == 'Windows'
+        run: pixi exec --spec sccache sccache --stop-server
+        env:
+          SCCACHE_DIR: ${{ github.workspace }}/.sccache-pkg
+          SCCACHE_SERVER_PORT: 4227
+
+      - name: Save the package compiler cache
+        if: >-
+          always() && github.repository == 'borglab/gtsam' &&
+          github.ref == 'refs/heads/develop' &&
+          contains(fromJSON('["push", "schedule", "workflow_dispatch"]'), github.event_name)
         uses: actions/cache/save@v6
         with:
           path: |
-            .ccache
             .ccache-pkg
-            .sccache
-          key: ccache-${{ matrix.platform }}-${{ github.sha }}
+            .sccache-pkg
+          key: ${{ steps.package-cache.outputs.cache-primary-key }}
 
       - uses: actions/upload-artifact@v7
         with:
