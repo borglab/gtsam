@@ -55,6 +55,7 @@ std::map<Key, std::pair<int, int>> ComputeKeyToSDPVariableRanges(
     const KeyVector& keys, const std::map<Key, DenseIndex>& keyDims,
     int* sdpVariableDimension) {
   std::map<Key, std::pair<int, int>> keyToSDPVariableRanges;
+  // Start at 1: the homogenization row is added in the SDP, not the QCQP.
   *sdpVariableDimension = 1;
   for (Key key : keys) {
     const int start = *sdpVariableDimension;
@@ -413,9 +414,9 @@ mf::Expression::t BuildQpCostObjectiveTerm(
 
   const auto X_f =
       mf::Expr::vstack(monty::new_array_ptr<mf::Expression::t>(blockRows));
-  auto term = mf::Expr::mul(
-      0.5, mf::Expr::dot(convertToMosekDenseMatrix(Matrix(H.information())),
-                         X_f));
+  const Matrix Q_f = H.information();
+  auto term =
+      mf::Expr::mul(0.5, mf::Expr::dot(convertToMosekDenseMatrix(Q_f), X_f));
   const Vector g = H.linearTerm();
   if (!g.isZero(0.0)) {
     const auto y_f = mf::Expr::hstack(
@@ -712,6 +713,8 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
 LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
     const QcqpProblem& problem, bool shareHomogeneousCoordinates)
     : impl_(std::make_unique<Impl>()) {
+  // Graceful error handling for backward compatibility: callers that still
+  // pass shareHomogeneousCoordinates=false get a clear exception.
   RequireSharedHomogeneousCoordinates(shareHomogeneousCoordinates);
   CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                             &impl_->orderedKeyDims);
@@ -724,6 +727,7 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
   auto Y = impl_->M->variable("Y", mf::Domain::inPSDCone(sdpVariableDimension));
   impl_->populateXijMap(Y, keyToSDPVariableRanges);
 
+  // Set homogenization term for entire monolithic SDP.
   impl_->M->constraint(Y->index(0, 0), mf::Domain::equalsTo(1.0));
 
   impl_->M->objective(
@@ -802,6 +806,8 @@ LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
     const QcqpProblem& problem, ChordalOrderingType orderingType,
     bool shareHomogeneousCoordinates)
     : impl_(std::make_unique<Impl>()) {
+  // Graceful error handling for backward compatibility: callers that still
+  // pass shareHomogeneousCoordinates=false get a clear exception.
   RequireSharedHomogeneousCoordinates(shareHomogeneousCoordinates);
   CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                             &impl_->orderedKeyDims);

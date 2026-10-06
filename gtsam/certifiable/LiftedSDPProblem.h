@@ -75,7 +75,7 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
    *
    * @param problem QCQP to relax.
    * @param shareHomogeneousCoordinates Must be true: every PSD block is the
-   * moment matrix [1 y'; y X] of its keys, with one constant entry. False
+   * lifted matrix [1 x'; x X] of its keys, with one constant entry. False
    * throws std::invalid_argument; the parameter remains for source
    * compatibility.
    */
@@ -137,7 +137,7 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
    * @param problem QCQP to relax.
    * @param orderingType Ordering used for symbolic elimination.
    * @param shareHomogeneousCoordinates Must be true: every PSD block is the
-   * moment matrix [1 y'; y X] of its keys, with one constant entry. False
+   * lifted matrix [1 x'; x X] of its keys, with one constant entry. False
    * throws std::invalid_argument; the parameter remains for source
    * compatibility.
    */
