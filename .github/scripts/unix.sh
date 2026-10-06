@@ -8,6 +8,8 @@
 set -e   # Make sure any error makes the script to return an error code
 set -x   # echo
 
+TIMED_SCRIPT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/timed.sh"
+
 
 # common tasks before either build or test
 function configure()
@@ -78,7 +80,7 @@ function test ()
 
   configure
 
-  build_targets=(check)
+  build_targets=(all.tests)
   if [ "${GTSAM_BUILD_EXAMPLES_ALWAYS:-OFF}" == "ON" ]; then
     build_targets+=(examples)
   fi
@@ -86,12 +88,15 @@ function test ()
   # Actual testing
   if [ "$(uname)" == "Linux" ]; then
     if (($(nproc) > 2)); then
-      cmake --build build -j$(nproc) --target "${build_targets[@]}"
+      bash "$TIMED_SCRIPT" Build cmake --build build -j$(nproc) --target "${build_targets[@]}"
+      bash "$TIMED_SCRIPT" Test cmake --build build -j$(nproc) --target check
     else
-      cmake --build build -j2 --target "${build_targets[@]}"
+      bash "$TIMED_SCRIPT" Build cmake --build build -j2 --target "${build_targets[@]}"
+      bash "$TIMED_SCRIPT" Test cmake --build build -j2 --target check
     fi
   elif [ "$(uname)" == "Darwin" ]; then
-    cmake --build build -j$(sysctl -n hw.physicalcpu) --target "${build_targets[@]}"
+    bash "$TIMED_SCRIPT" Build cmake --build build -j$(sysctl -n hw.physicalcpu) --target "${build_targets[@]}"
+    bash "$TIMED_SCRIPT" Test cmake --build build -j$(sysctl -n hw.physicalcpu) --target check
   fi
 
   finish

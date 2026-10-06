@@ -115,6 +115,22 @@ jobs:
           echo "GTSAM_BUILD_UNSTABLE=OFF" >> $GITHUB_ENV
           echo "GTSAM unstable will not be built."
 
+      - name: Set up persistent compiler cache
+        id: compiler-cache
+        uses: ./.github/actions/compiler-cache
+        with:
+          lane: native-${{ matrix.name }}
+          build-type: ${{ matrix.build_type }}
+
       - name: Build & Test
         run: |
           bash .github/scripts/unix.sh -t
+
+      - name: Report and save compiler cache
+        if: always() && steps.compiler-cache.outcome == 'success'
+        uses: ./.github/actions/compiler-cache
+        with:
+          operation: finish
+          lane: native-${{ matrix.name }}
+          build-type: ${{ matrix.build_type }}
+          successful: ${{ job.status == 'success' }}

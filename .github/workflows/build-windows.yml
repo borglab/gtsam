@@ -19,7 +19,6 @@ jobs:
       CMAKE_BUILD_TYPE: ${{ matrix.build_type }}
       BOOST_VERSION: 1.72.0
       BOOST_EXE: boost_1_72_0-msvc-14.2
-      SCCACHE_GHA_ENABLED: ON
 
     strategy:
       fail-fast: true
@@ -75,11 +74,13 @@ jobs:
           # Set the BOOST_ROOT variable
           echo "BOOST_ROOT=$BOOST_PATH" >> $env:GITHUB_ENV
 
-      - name: Install sccache
-        if: matrix.build_type == 'Release'
-        uses: mozilla-actions/sccache-action@v0.0.11
+      - name: Set up persistent compiler cache
+        id: compiler-cache
+        uses: ./.github/actions/compiler-cache
         with:
-          version: "v0.17.0"
+          tool: sccache
+          lane: native-${{ matrix.name }}
+          build-type: ${{ matrix.build_type }}
 
       - name: Configuration
         shell: bash
@@ -109,13 +110,27 @@ jobs:
                   -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF \
                   -DGTSAM_ENABLE_CONSISTENCY_CHECKS=ON \
                   -DGTSAM_USE_BOOST_FEATURES=OFF \
-                  -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
+                  -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF \
+                  -DGTSAM_BUILD_WITH_PRECOMPILED_HEADERS=OFF \
+                  -DCMAKE_POLICY_DEFAULT_CMP0141=NEW \
+                  -DCMAKE_MSVC_DEBUG_INFORMATION_FORMAT=Embedded \
+                  -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+                  -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           fi
 
       - name: Build
         shell: bash
-        run: cmake --build build -j4 --target all.tests examples
+        run: bash .github/scripts/timed.sh Build cmake --build build -j4 --target all.tests examples
 
       - name: Test
         shell: bash
-        run: cmake --build build -j1 --target check
+        run: bash .github/scripts/timed.sh Test cmake --build build -j1 --target check
+
+      - name: Report and save compiler cache
+        if: always() && steps.compiler-cache.outcome == 'success'
+        uses: ./.github/actions/compiler-cache
+        with:
+          operation: finish
+          lane: native-${{ matrix.name }}
+          build-type: ${{ matrix.build_type }}
+          successful: ${{ job.status == 'success' }}

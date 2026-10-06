@@ -24,6 +24,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y libboost-all-dev libtbb-dev ninja-build
 
+      - name: Set up persistent compiler cache
+        id: compiler-cache
+        uses: ./.github/actions/compiler-cache
+        with:
+          lane: native-ubuntu-24.04-arm
+          build-type: Release
+
       - name: Configure
         run: |
           cmake -S . -B build -G Ninja \
@@ -38,5 +45,17 @@ jobs:
             -DGTSAM_USE_BOOST_FEATURES=OFF \
             -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
 
-      - name: Build and test
-        run: cmake --build build --target check --parallel 2
+      - name: Build
+        run: bash .github/scripts/timed.sh Build cmake --build build --target all.tests --parallel 2
+
+      - name: Test
+        run: bash .github/scripts/timed.sh Test cmake --build build --target check --parallel 2
+
+      - name: Report and save compiler cache
+        if: always() && steps.compiler-cache.outcome == 'success'
+        uses: ./.github/actions/compiler-cache
+        with:
+          operation: finish
+          lane: native-ubuntu-24.04-arm
+          build-type: Release
+          successful: ${{ job.status == 'success' }}

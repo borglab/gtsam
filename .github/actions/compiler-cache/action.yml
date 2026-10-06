@@ -1,0 +1,88 @@
+name: Persistent compiler cache
+description: Restore or report a bounded compiler cache; publish only successful develop builds.
+inputs:
+  operation:
+    description: setup before configuration, finish after build and tests
+    default: setup
+  tool:
+    description: ccache for existing Unix integration, sccache for explicit launchers
+    default: ccache
+  lane:
+    description: Runner/container and feature variant (no source revision)
+    required: true
+  build-type:
+    description: CMake configuration
+    required: true
+  successful:
+    description: Whether the build and tests succeeded (required for publication)
+    default: 'false'
+runs:
+  using: composite
+  steps:
+    - name: Install ccache
+      if: inputs.operation == 'setup' && inputs.tool == 'ccache'
+      shell: bash
+      run: |
+        if ! command -v ccache >/dev/null; then
+          if [ "$RUNNER_OS" = macOS ]; then
+            brew install ccache
+          elif [ "$(id -u)" = 0 ]; then
+            apt-get update
+            apt-get install -y --no-install-recommends ccache
+          else
+            sudo apt-get update
+            sudo apt-get install -y --no-install-recommends ccache
+          fi
+        fi
+
+    - name: Install sccache
+      if: inputs.operation == 'setup' && inputs.tool == 'sccache'
+      uses: mozilla-actions/sccache-action@v0.0.11
+      with:
+        version: v0.17.0
+        disable_annotations: 'true'
+
+    - name: Resolve cache namespace
+      if: inputs.operation == 'setup'
+      id: namespace
+      shell: bash
+      env:
+        CACHE_TOOL: ${{ inputs.tool }}
+        CACHE_LANE: ${{ inputs.lane }}
+        CACHE_BUILD_TYPE: ${{ inputs.build-type }}
+        CACHE_CONFIGURATION: ${{ hashFiles('CMakeLists.txt', 'cmake/**', '.github/actions/compiler-cache/action.yml', '.github/workflows/build-*.yml', '.github/scripts/compiler_cache.sh', '.github/scripts/unix.sh', '.github/scripts/python.sh') }}
+      run: bash "$GITHUB_WORKSPACE/.github/scripts/compiler_cache.sh" setup
+
+    - name: Restore compiler objects
+      if: inputs.operation == 'setup'
+      id: restore
+      uses: actions/cache/restore@v5
+      with:
+        path: ${{ env.COMPILER_CACHE_DIR }}
+        key: ${{ env.COMPILER_CACHE_KEY }}
+        restore-keys: ${{ env.COMPILER_CACHE_PREFIX }}
+
+    - name: Reset statistics
+      if: inputs.operation == 'setup'
+      shell: bash
+      env:
+        CACHE_HIT: ${{ steps.restore.outputs.cache-hit }}
+      run: bash "$GITHUB_WORKSPACE/.github/scripts/compiler_cache.sh" reset
+
+    - name: Report cache statistics and size
+      if: always() && inputs.operation == 'finish'
+      shell: bash
+      run: bash "$GITHUB_WORKSPACE/.github/scripts/compiler_cache.sh" finish
+
+    # PRs may read trusted base-branch caches. They never publish persistent
+    # compiler objects, even for same-repository PRs or pull_request_target.
+    - name: Publish successful trusted cache
+      if: >-
+        inputs.operation == 'finish' && inputs.successful == 'true' &&
+        github.repository == 'borglab/gtsam' && github.ref == 'refs/heads/develop' &&
+        (github.event_name == 'push' || github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') &&
+        env.COMPILER_CACHE_HIT != 'true'
+      uses: actions/cache/save@v5
+      with:
+        path: ${{ env.COMPILER_CACHE_DIR }}
+        key: ${{ env.COMPILER_CACHE_KEY }}

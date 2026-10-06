@@ -70,7 +70,7 @@ jobs:
           if [ "$EVENT_NAME" = "push" ] || [ "$RUNNER_SELECTION" = "windows-2022-msvc" ]; then
             echo 'build_matrix={"include":[{"name":"windows-2022-msvc","build_type":"Release","python_version":3,"os":"windows-2022","platform":64,"no_boost":false,"cpp_tests":false,"use_sccache":true}]}' >> "$GITHUB_OUTPUT"
           elif [ "$RUNNER_SELECTION" = "nightly-extra" ]; then
-            echo 'build_matrix={"include":[{"name":"ubuntu-22.04-gcc-11-noboost","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11","no_boost":true,"cpp_tests":false,"use_sccache":false},{"name":"ubuntu-22.04-clang-14","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"clang","version":"14","no_boost":false,"cpp_tests":false,"use_sccache":false}]}' >> "$GITHUB_OUTPUT"
+            echo 'build_matrix={"include":[{"name":"ubuntu-22.04-gcc-11-noboost","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11","no_boost":true,"cpp_tests":false,"use_sccache":true},{"name":"ubuntu-22.04-clang-14","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"clang","version":"14","no_boost":false,"cpp_tests":false,"use_sccache":true}]}' >> "$GITHUB_OUTPUT"
           elif [ "$EVENT_NAME" = "pull_request" ]; then
             echo 'build_matrix={"include":[{"name":"ubuntu-22.04-gcc-11","build_type":"Release","python_version":3,"os":"ubuntu-22.04","compiler":"gcc","version":"11","no_boost":true,"cpp_tests":true,"use_sccache":true},{"name":"macos-15-xcode-16","build_type":"Release","python_version":3,"os":"macos-15","compiler":"xcode","version":"16","no_boost":true,"cpp_tests":true,"use_sccache":true},{"name":"windows-2022-msvc","build_type":"Release","python_version":3,"os":"windows-2022","platform":64,"no_boost":true,"cpp_tests":true,"use_sccache":true}]}' >> "$GITHUB_OUTPUT"
           else
@@ -322,8 +322,17 @@ jobs:
           Write-Host "Using BOOST_INCLUDEDIR=$boostIncludeDir"
           Write-Host "Using BOOST_LIBRARYDIR=$boostLibraryDir"
     
+      - name: Set up persistent compiler cache (nightly extras)
+        if: inputs.runner == 'nightly-extra'
+        id: compiler-cache
+        uses: ./.github/actions/compiler-cache
+        with:
+          tool: sccache
+          lane: python-${{ matrix.name }}-${{ matrix.python_version }}
+          build-type: ${{ matrix.build_type }}
+
       - name: Install sccache
-        if: matrix.use_sccache == true
+        if: matrix.use_sccache == true && inputs.runner != 'nightly-extra'
         uses: mozilla-actions/sccache-action@v0.0.11
         with:
           version: "v0.17.0"
@@ -370,7 +379,7 @@ jobs:
           if [ "${{ runner.os }}" = "Windows" ]; then
             export BUILD_JOBS=3
           fi
-          bash .github/scripts/python.sh "${args[@]}"
+          bash .github/scripts/timed.sh Build bash .github/scripts/timed.sh Test bash .github/scripts/python.sh "${args[@]}"
 
       - name: Test
         shell: bash
@@ -379,14 +388,23 @@ jobs:
           if [ "${{ matrix.no_boost }}" = "true" ]; then
             args+=(--no-boost)
           fi
-          bash .github/scripts/python.sh "${args[@]}"
+          bash .github/scripts/timed.sh Test bash .github/scripts/python.sh "${args[@]}"
 
       - name: Test C++
         if: matrix.cpp_tests == true
         shell: bash
-        run: cmake --build build --target check --parallel 4
+        run: bash .github/scripts/timed.sh "C++ build and test" cmake --build build --target check --parallel 4
 
       - name: Show sccache statistics
         if: matrix.use_sccache == true
         shell: bash
         run: sccache --show-stats
+
+      - name: Report and save compiler cache (nightly extras)
+        if: always() && steps.compiler-cache.outcome == 'success'
+        uses: ./.github/actions/compiler-cache
+        with:
+          operation: finish
+          lane: python-${{ matrix.name }}-${{ matrix.python_version }}
+          build-type: ${{ matrix.build_type }}
+          successful: ${{ job.status == 'success' }}

@@ -1,0 +1,63 @@
+name: Compiler cache validation
+
+on:
+  pull_request:
+    paths:
+      - .github/actions/compiler-cache/**
+      - .github/scripts/compiler_cache.sh
+      - .github/scripts/test_compiler_cache.py
+      - .github/scripts/timed.sh
+      - .github/scripts/unix.sh
+      - .github/scripts/python.sh
+      - .github/workflows/compiler-cache-ci.yml
+      - .github/workflows/build-linux.yml
+      - .github/workflows/build-linux-arm64.yml
+      - .github/workflows/build-macos.yml
+      - .github/workflows/build-windows.yml
+      - .github/workflows/build-special.yml
+      - .github/workflows/build-python.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: compiler-cache-validation-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  reuse:
+    name: Cold, restored warm, and changed-source reuse
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+      - name: Install ccache
+        run: sudo apt-get update && sudo apt-get install -y ccache ninja-build
+      - name: Install sccache
+        uses: mozilla-actions/sccache-action@v0.0.11
+        with:
+          version: v0.17.0
+          disable_annotations: 'true'
+      - name: Exercise caches and run tests on every pass
+        run: python3 .github/scripts/test_compiler_cache.py
+
+  linux:
+    needs: reuse
+    uses: ./.github/workflows/build-linux.yml
+  linux-arm64:
+    needs: reuse
+    uses: ./.github/workflows/build-linux-arm64.yml
+  macos:
+    needs: reuse
+    uses: ./.github/workflows/build-macos.yml
+  windows:
+    needs: reuse
+    uses: ./.github/workflows/build-windows.yml
+  special:
+    needs: reuse
+    uses: ./.github/workflows/build-special.yml
+  python-extra:
+    needs: reuse
+    uses: ./.github/workflows/build-python.yml
+    with:
+      runner: nightly-extra
