@@ -166,7 +166,10 @@ jobs:
           pixi exec --spec ccache ccache --show-stats
         env:
           CCACHE_DIR: ${{ github.workspace }}/.ccache-pkg
+          CCACHE_BASEDIR: ${{ github.workspace }}
+          CCACHE_NOHASHDIR: "1"
           CCACHE_MAXSIZE: 1G
+          CCACHE_COMPILERCHECK: content
 
       - name: Package build cache statistics (Windows)
         if: always() && runner.os == 'Windows'

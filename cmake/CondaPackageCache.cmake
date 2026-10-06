@@ -30,7 +30,7 @@ endif()
 
 # Use explicit C and C++ launchers, including under MSVC. Disable GTSAM's
 # global RULE_LAUNCH_COMPILE ccache hook to avoid wrapping the launcher twice.
-set(GTSAM_BUILD_WITH_CCACHE OFF CACHE BOOL "")
+set(GTSAM_BUILD_WITH_CCACHE OFF CACHE BOOL "" FORCE)
 set(CMAKE_C_COMPILER_LAUNCHER
   "${CMAKE_COMMAND}" -E env ${_conda_cache_env} "${_conda_cache_program}")
 set(CMAKE_CXX_COMPILER_LAUNCHER ${CMAKE_C_COMPILER_LAUNCHER})
