@@ -65,7 +65,7 @@ bool RecordFixedVariable(const NonlinearFactor& factor,
   NonlinearFactorGraph frobeniusPriorCosts;
   NonlinearEqualityConstraints frobeniusPriorConstraints;
   frobeniusPrior->qcqpFactors(&frobeniusPriorCosts, &frobeniusPriorConstraints,
-                              1);
+                              nullptr, 1);
   Matrix v;
   for (const auto& constraint : frobeniusPriorConstraints) {
     if (const auto* linear =
@@ -236,17 +236,23 @@ QcqpProblem::QcqpProblem(const NonlinearFactorGraph& graph,
 
   // Pass 2: lower every other factor, substituting the fixed variables.
   QuadraticConstraintIndex quadraticConstraintIndex;
+  QuadraticConstraintIndex redundantConstraintIndex;
   double constant = 0.0;
   for (size_t i = 0; i < graph.size(); ++i) {
     if (!graph[i] || isHardFrobeniusPrior[i]) continue;
 
     NonlinearFactorGraph factorCosts;
     NonlinearEqualityConstraints factorConstraints;
-    graph[i]->qcqpFactors(&factorCosts, &factorConstraints, columnDimension);
+    NonlinearEqualityConstraints factorRedundantConstraints;
+    graph[i]->qcqpFactors(&factorCosts, &factorConstraints,
+                          &factorRedundantConstraints, columnDimension);
     costs_.add(
         SubstituteFixedVariables(factorCosts, fixedVariables_, &constant));
     MergeEqualityConstraints(factorConstraints, fixedVariables_,
                              &eqConstraints_, &quadraticConstraintIndex);
+    MergeEqualityConstraints(factorRedundantConstraints, fixedVariables_,
+                             &redundantConstraints_,
+                             &redundantConstraintIndex);
   }
 
   // Keep the objective exact: fold the constant left by costs on fixed

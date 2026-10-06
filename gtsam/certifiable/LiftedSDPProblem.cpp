@@ -507,9 +507,11 @@ void AddLinearEqualityConstraint(
                 mf::Domain::equalsTo(0.0));
 }
 
-// Add all QCQP equality and inequality constraints to a Fusion model.
+// Add all QCQP equality and inequality constraints to a Fusion model, and the
+// redundant constraints if requested.
 void AddQcqpConstraints(
     const mf::Model::t& M, const QcqpProblem& problem,
+    bool useRedundantConstraints,
     const KeyiToLiftedVectorxiViewInSDPVariableMap& xiMap,
     const KeysijToLiftedVariableXijViewInSDPVariableMap& xijMap) {
   // Equality factors may be quadratic or linear.
@@ -550,6 +552,18 @@ void AddQcqpConstraints(
     }
     throw std::runtime_error(
         "LiftedSDPProblem: expected quadratic inequality constraints.");
+  }
+
+  // Redundant constraints are quadratic equalities, lifted like the others.
+  if (!useRedundantConstraints) return;
+  for (const auto& factor : problem.redundantConstraints()) {
+    const auto* quadratic =
+        dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
+    if (!quadratic) {
+      throw std::runtime_error(
+          "LiftedSDPProblem: expected quadratic redundant constraints.");
+    }
+    AddQuadraticConstraint(M, quadratic->quadraticConstraint(), xiMap, xijMap);
   }
 }
 
@@ -717,7 +731,7 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
 };
 
 LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
-    const QcqpProblem& problem)
+    const QcqpProblem& problem, bool useRedundantConstraints)
     : impl_(std::make_unique<Impl>()) {
   CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                             &impl_->orderedKeyDims);
@@ -739,7 +753,7 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
       BuildObjective(problem, impl_->keyiToLiftedVectorxiViewInSDPVariableMap,
                      impl_->keysijToLiftedVariableXijViewInSDPVariableMap));
 
-  AddQcqpConstraints(impl_->M, problem,
+  AddQcqpConstraints(impl_->M, problem, useRedundantConstraints,
                      impl_->keyiToLiftedVectorxiViewInSDPVariableMap,
                      impl_->keysijToLiftedVariableXijViewInSDPVariableMap);
 }
@@ -810,7 +824,8 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::orderedKeyDims() const {
 }
 
 LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
-    const QcqpProblem& problem, ChordalOrderingType orderingType)
+    const QcqpProblem& problem, ChordalOrderingType orderingType,
+    bool useRedundantConstraints)
     : impl_(std::make_unique<Impl>()) {
   CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                             &impl_->orderedKeyDims);
@@ -825,7 +840,7 @@ LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
       BuildObjective(problem, impl_->keyiToLiftedVectorxiViewInSDPVariableMap,
                      impl_->keysijToLiftedVariableXijViewInSDPVariableMap));
 
-  AddQcqpConstraints(impl_->M, problem,
+  AddQcqpConstraints(impl_->M, problem, useRedundantConstraints,
                      impl_->keyiToLiftedVectorxiViewInSDPVariableMap,
                      impl_->keysijToLiftedVariableXijViewInSDPVariableMap);
 }

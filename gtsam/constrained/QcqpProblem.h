@@ -25,6 +25,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 #include <stdexcept>
+#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -59,6 +60,40 @@ struct HasQcqpVectorDim : std::false_type {};
 template <typename T>
 struct HasQcqpVectorDim<T, std::void_t<decltype(traits<T>::QcqpVectorDim)>>
     : std::true_type {};
+
+template <typename T, typename = void>
+struct HasQcqpRedundantConstraints : std::false_type {};
+
+template <typename T>
+struct HasQcqpRedundantConstraints<
+    T, std::void_t<decltype(traits<T>::QcqpRedundantConstraints())>>
+    : std::true_type {};
+
+/// Insert (A, a, b) quadratic equalities on one key, skipping exact duplicates.
+inline void InsertQuadraticEqualities(
+    Key key, const std::vector<std::tuple<Matrix, Vector, double>>& triples,
+    NonlinearEqualityConstraints* constraints) {
+  for (const auto& [A, a, b] : triples) {
+    const QuadraticConstraint candidate =
+        QuadraticConstraint::Equal(key, A, a, b);
+    bool alreadyPresent = false;
+    for (const auto& factor : *constraints) {
+      const auto* quadratic =
+          dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
+      if (!quadratic) continue;
+      const QuadraticConstraint& existing = quadratic->quadraticConstraint();
+      if (existing.key() == key && existing.A().isApprox(A, 0.0) &&
+          existing.a().isApprox(candidate.a(), 0.0) && existing.b() == b &&
+          existing.sigma() == 1.0) {
+        alreadyPresent = true;
+        break;
+      }
+    }
+    if (!alreadyPresent) {
+      constraints->push_back(candidate.createEqualityFactor());
+    }
+  }
+}
 
 }  // namespace internal
 
@@ -100,9 +135,16 @@ void InsertQcqpValue(Key key, const T& value, Values* qcqpValues) {
  * already-present quadratic equality with the same key, matrix, linear term,
  * and right-hand side is considered a duplicate. Other unary constraints on
  * the key are preserved and do not suppress the manifold constraints.
+ *
+ * At D=1, types whose traits define QcqpRedundantConstraints() also have
+ * redundant constraints: identities implied by the manifold constraints, so
+ * they add nothing to the QCQP, but not implied after the SDP relaxation,
+ * which they tighten. They go to redundantConstraints, with the same
+ * duplicate check, unless it is nullptr.
  */
 template <typename T, int D = 1>
-void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
+void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints,
+                           NonlinearEqualityConstraints* redundantConstraints) {
   static_assert(internal::HasQcqpVariableTraits<T, D>::value,
                 "InsertQcqpConstraints requires traits<T>::QcqpValue<D> and "
                 "traits<T>::QcqpConstraints<D>.");
@@ -110,24 +152,12 @@ void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
     throw std::invalid_argument("InsertQcqpConstraints: constraints is null.");
   }
 
-  for (const auto& [A, a, b] : traits<T>::template QcqpConstraints<D>()) {
-    const QuadraticConstraint candidate =
-        QuadraticConstraint::Equal(key, A, a, b);
-    bool alreadyPresent = false;
-    for (const auto& factor : *constraints) {
-      const auto* quadratic =
-          dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
-      if (!quadratic) continue;
-      const QuadraticConstraint& existing = quadratic->quadraticConstraint();
-      if (existing.key() == key && existing.A().isApprox(A, 0.0) &&
-          existing.a().isApprox(candidate.a(), 0.0) && existing.b() == b &&
-          existing.sigma() == 1.0) {
-        alreadyPresent = true;
-        break;
-      }
-    }
-    if (!alreadyPresent) {
-      constraints->push_back(candidate.createEqualityFactor());
+  internal::InsertQuadraticEqualities(
+      key, traits<T>::template QcqpConstraints<D>(), constraints);
+  if constexpr (D == 1 && internal::HasQcqpRedundantConstraints<T>::value) {
+    if (redundantConstraints) {
+      internal::InsertQuadraticEqualities(
+          key, traits<T>::QcqpRedundantConstraints(), redundantConstraints);
     }
   }
 }
@@ -250,12 +280,25 @@ class GTSAM_EXPORT QcqpProblem : public ConstrainedOptProblem {
    * variable, and their QCQP values are recorded in fixedVariables(). Writing
    * the prior as the linear constraint x = v instead would pin a rank-one
    * block of the lifted SDP variable, leaving the SDP without an interior.
+   *
+   * The factors' redundant constraints are collected separately, in
+   * redundantConstraints().
    */
   explicit QcqpProblem(const NonlinearFactorGraph& graph,
                        size_t columnDimension = 1);
 
   /// QCQP values of the variables fixed by hard FrobeniusPriors.
   const Values& fixedVariables() const { return fixedVariables_; }
+
+  /**
+   * Redundant equality constraints collected by the graph constructor. They
+   * are implied by eConstraints() on the QCQP, so they are kept out of it:
+   * adding them would break LICQ for QCQP solvers. The SDP relaxations can
+   * lift them, where they are no longer implied and tighten the relaxation.
+   */
+  const NonlinearEqualityConstraints& redundantConstraints() const {
+    return redundantConstraints_;
+  }
 
   /** Add a quadratic cost. Throws if it involves a fixed variable. */
   void addCost(const QpCost& cost);
@@ -268,6 +311,7 @@ class GTSAM_EXPORT QcqpProblem : public ConstrainedOptProblem {
 
  private:
   Values fixedVariables_;
+  NonlinearEqualityConstraints redundantConstraints_;
 };
 
 }  // namespace gtsam

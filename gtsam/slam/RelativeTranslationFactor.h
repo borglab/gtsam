@@ -124,6 +124,7 @@ class RelativeTranslationFactor
   /// Add this translation factor as a QCQP cost when traits exist.
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
+                   NonlinearEqualityConstraints* redundantConstraints,
                    size_t columnDimension = 1) const override {
     if (columnDimension == 0) {
       throw std::invalid_argument(
@@ -131,7 +132,7 @@ class RelativeTranslationFactor
           "columnDimension.");
     }
     if (columnDimension == 1) {
-      qcqpFactorsForVector(costs, constraints);
+      qcqpFactorsForVector(costs, constraints, redundantConstraints);
       return;
     }
     if (columnDimension < static_cast<size_t>(d)) {
@@ -159,8 +160,9 @@ class RelativeTranslationFactor
 
  private:
   /// Add the exact D=1 vector cost and variable constraints.
-  void qcqpFactorsForVector(NonlinearFactorGraph* costs,
-                            NonlinearEqualityConstraints* constraints) const {
+  void qcqpFactorsForVector(
+      NonlinearFactorGraph* costs, NonlinearEqualityConstraints* constraints,
+      NonlinearEqualityConstraints* redundantConstraints) const {
     if (!costs) {
       throw std::invalid_argument(
           "RelativeTranslationFactor::qcqpFactors: costs is null.");
@@ -191,9 +193,12 @@ class RelativeTranslationFactor
     B.block(0, kRotationDim, d, d) = -sw * Matrix::Identity(d, d);
     B.block(0, kRotationDim + kPointDim, d, d) = sw * Matrix::Identity(d, d);
 
-    InsertQcqpConstraints<Rot, 1>(this->key1(), constraints);
-    InsertQcqpConstraints<Point, 1>(this->key2(), constraints);
-    InsertQcqpConstraints<Point, 1>(this->key3(), constraints);
+    InsertQcqpConstraints<Rot, 1>(this->key1(), constraints,
+                                  redundantConstraints);
+    InsertQcqpConstraints<Point, 1>(this->key2(), constraints,
+                                    redundantConstraints);
+    InsertQcqpConstraints<Point, 1>(this->key3(), constraints,
+                                    redundantConstraints);
 
     const Matrix Q = B.transpose() * B;
     const SymmetricBlockMatrix blockQ(

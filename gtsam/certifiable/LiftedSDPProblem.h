@@ -77,8 +77,11 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
    * constant entry.
    *
    * @param problem QCQP to relax.
+   * @param useRedundantConstraints Also lift problem.redundantConstraints(),
+   * which tighten the relaxation. False keeps the plain Shor relaxation.
    */
-  explicit LiftedSDPProblem(const QcqpProblem& problem);
+  explicit LiftedSDPProblem(const QcqpProblem& problem,
+                            bool useRedundantConstraints = false);
 
   /// Dispose of the owned MOSEK model.
   ~LiftedSDPProblem();
@@ -140,9 +143,12 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
    *
    * @param problem QCQP to relax.
    * @param orderingType Ordering used for symbolic elimination.
+   * @param useRedundantConstraints Also lift problem.redundantConstraints(),
+   * which tighten the relaxation. False keeps the plain Shor relaxation.
    */
   LiftedSDPProblem(const QcqpProblem& problem,
-                   ChordalOrderingType orderingType);
+                   ChordalOrderingType orderingType,
+                   bool useRedundantConstraints = false);
 
   /// Dispose of the owned MOSEK model.
   ~LiftedSDPProblem();
