@@ -571,7 +571,8 @@ TEST(LiftedSDPs, NormProblemSingleKeyAndDisconnected) {
   CheckNormProblem(2, false, 1.0, result_, name_);
 }
 
-// Linear and constant QpCost terms read the first moments and the constant:
+// Linear and constant QpCost terms read the lifted vector x_i (row-0 slice)
+// and the constant:
 // 1/2||t - p||^2 + 1/2||t - q||^2 is minimized at t=(p+q)/2.
 TEST(LiftedSDPs, LinearAndConstantCost) {
   const Vector2 p(1.0, 0.0), q(0.0, 1.0);
@@ -596,8 +597,9 @@ TEST(LiftedSDPs, LinearAndConstantCost) {
   check(&chordal);
 }
 
-// A linear constraint term reads the first moments: projecting p onto the
-// circle ||t - c||^2 = r^2, written t't - 2c't = r^2 - c'c, is exact.
+// A linear constraint term reads the lifted vector x_i (row-0 slice):
+// projecting p onto the circle ||t - c||^2 = r^2, written
+// t't - 2c't = r^2 - c'c, is exact.
 TEST(LiftedSDPs, LinearConstraintTerm) {
   const Vector2 p(4.0, 5.0), c(1.0, 1.0);
   constexpr double r = 1.0;
