@@ -527,128 +527,104 @@ TEST(QcqpProblem, FrobeniusBetweenFactorPose3D1) {
   EXPECT_DOUBLES_EQUAL(0.0, errors[3], 1e-12);
 }
 
-// A hard prior imposes x=[c,s], so the negated value violates it by
-// ||2x|| = 2.
+template <typename T>
+QcqpProblem HardFrobeniusPriorProblem(const T& measured,
+                                      size_t columnDimension = 1) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusPrior<T>>(
+      x0, measured.matrix(),
+      noiseModel::Constrained::All(measured.matrix().size()));
+  return QcqpProblem(graph, columnDimension);
+}
+
+// A hard FrobeniusPrior fixes its variable: the QCQP keeps no cost or
+// constraint on it and records its QCQP value as a fixed variable.
 TEST(QcqpProblem, HardFrobeniusPriorRot2D1) {
   const Rot2 measured = Rot2::fromAngle(0.25);
-  const auto hardNoise = noiseModel::Constrained::All(4);
-
-  NonlinearFactorGraph graph;
-  graph.emplace_shared<FrobeniusPrior<Rot2>>(x0, measured.matrix(), hardNoise);
-
-  const QcqpProblem problem(graph);
-
-  const LinearEqualityConstraintFactor* priorConstraint = nullptr;
-  for (const auto& factor : problem.eConstraints()) {
-    if (const auto* linear =
-            dynamic_cast<const LinearEqualityConstraintFactor*>(factor.get())) {
-      priorConstraint = linear;
-      break;
-    }
-  }
-
+  const QcqpProblem problem = HardFrobeniusPriorProblem(measured);
   LONGS_EQUAL(0, problem.costs().size());
-  EXPECT(priorConstraint != nullptr);
-  if (!priorConstraint) return;
-
-  const Vector2 expectedTarget = traits<Rot2>::QcqpValue<1>(measured).col(0);
-  const JacobianFactor& priorJacobian =
-      priorConstraint->linearConstraint().factor();
-  EXPECT(assert_equal(Matrix(Matrix2::Identity()), Matrix(priorJacobian.getA()),
-                      1e-12));
-  EXPECT(assert_equal(Vector(expectedTarget), Vector(priorJacobian.getb()),
-                      1e-12));
-
-  Values qcqpValues;
-  InsertQcqpValue<Rot2, 1>(x0, measured, &qcqpValues);
-  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
-                       1e-12);
-
-  Values negatedQcqpValues;
-  negatedQcqpValues.insert(x0, -traits<Rot2>::QcqpValue<1>(measured));
-  EXPECT_DOUBLES_EQUAL(2.0,
-                       problem.eConstraints().violationNorm(negatedQcqpValues),
-                       1e-12);
+  LONGS_EQUAL(0, problem.eConstraints().size());
+  LONGS_EQUAL(1, problem.fixedVariables().size());
+  EXPECT(assert_equal(qcqpValue(measured),
+                      problem.fixedVariables().at<Matrix>(x0), 1e-12));
 }
 
-template <typename T>
-struct HardFrobeniusPriorD1Result {
-  size_t costCount;
-  bool foundPrior;
-  Matrix A;
-  Vector b;
-  Matrix expectedTarget;
-  double violation;
-};
-
-template <typename T>
-HardFrobeniusPriorD1Result<T> HardFrobeniusPriorD1(const T& measured) {
-  const auto hardNoise = noiseModel::Constrained::All(measured.matrix().size());
-
-  NonlinearFactorGraph graph;
-  graph.emplace_shared<FrobeniusPrior<T>>(x0, measured.matrix(), hardNoise);
-  const QcqpProblem problem(graph);
-
-  const LinearEqualityConstraintFactor* priorConstraint = nullptr;
-  for (const auto& factor : problem.eConstraints()) {
-    if (const auto* linear =
-            dynamic_cast<const LinearEqualityConstraintFactor*>(factor.get())) {
-      priorConstraint = linear;
-      break;
-    }
-  }
-
-  const Matrix expectedTarget = traits<T>::template QcqpValue<1>(measured);
-
-  Values qcqpValues;
-  InsertQcqpValue<T, 1>(x0, measured, &qcqpValues);
-  if (!priorConstraint) {
-    return {problem.costs().size(),
-            false,
-            Matrix(),
-            Vector(),
-            expectedTarget,
-            problem.eConstraints().violationNorm(qcqpValues)};
-  }
-
-  const JacobianFactor& priorJacobian =
-      priorConstraint->linearConstraint().factor();
-  return {problem.costs().size(),
-          true,
-          Matrix(priorJacobian.getA()),
-          Vector(priorJacobian.getb()),
-          expectedTarget,
-          problem.eConstraints().violationNorm(qcqpValues)};
-}
-
+// Same for Rot3, whose QCQP value is the full vectorized rotation.
 TEST(QcqpProblem, HardFrobeniusPriorRot3D1) {
-  const auto result =
-      HardFrobeniusPriorD1(Rot3::Expmap(Vector3{0.2, -0.3, 0.4}));
-  LONGS_EQUAL(0, result.costCount);
-  EXPECT(result.foundPrior);
-  EXPECT(assert_equal(Matrix::Identity(9, 9), result.A, 1e-12));
-  EXPECT(assert_equal(Vector(result.expectedTarget.col(0)), result.b, 1e-12));
-  EXPECT_DOUBLES_EQUAL(0.0, result.violation, 1e-12);
+  const Rot3 measured = Rot3::Expmap(Vector3{0.2, -0.3, 0.4});
+  const QcqpProblem problem = HardFrobeniusPriorProblem(measured);
+  LONGS_EQUAL(0, problem.costs().size());
+  LONGS_EQUAL(0, problem.eConstraints().size());
+  EXPECT(assert_equal(qcqpValue(measured),
+                      problem.fixedVariables().at<Matrix>(x0), 1e-12));
 }
 
+// Same for Pose2, whose QCQP value omits the constant bottom row.
 TEST(QcqpProblem, HardFrobeniusPriorPose2D1) {
-  const auto result =
-      HardFrobeniusPriorD1(Pose2(Rot2::fromAngle(0.2), Point2(1.0, -2.0)));
-  LONGS_EQUAL(0, result.costCount);
-  EXPECT(result.foundPrior);
-  EXPECT(assert_equal(Matrix::Identity(6, 6), result.A, 1e-12));
-  EXPECT(assert_equal(Vector(result.expectedTarget.col(0)), result.b, 1e-12));
-  EXPECT_DOUBLES_EQUAL(0.0, result.violation, 1e-12);
+  const Pose2 measured(Rot2::fromAngle(0.2), Point2(1.0, -2.0));
+  const QcqpProblem problem = HardFrobeniusPriorProblem(measured);
+  LONGS_EQUAL(0, problem.costs().size());
+  LONGS_EQUAL(0, problem.eConstraints().size());
+  EXPECT(assert_equal(qcqpValue(measured),
+                      problem.fixedVariables().at<Matrix>(x0), 1e-12));
 }
 
+// Same for Pose3, whose QCQP value omits the constant bottom row.
 TEST(QcqpProblem, HardFrobeniusPriorPose3D1) {
-  const auto result = HardFrobeniusPriorD1(
-      Pose3(Rot3::Expmap(Vector3{0.2, -0.3, 0.4}), Point3(1.0, -2.0, 0.5)));
-  LONGS_EQUAL(0, result.costCount);
-  EXPECT(result.foundPrior);
-  EXPECT(assert_equal(Matrix::Identity(12, 12), result.A, 1e-12));
-  EXPECT(assert_equal(Vector(result.expectedTarget.col(0)), result.b, 1e-12));
-  EXPECT_DOUBLES_EQUAL(0.0, result.violation, 1e-12);
+  const Pose3 measured(Rot3::Expmap(Vector3{0.2, -0.3, 0.4}),
+                       Point3(1.0, -2.0, 0.5));
+  const QcqpProblem problem = HardFrobeniusPriorProblem(measured);
+  LONGS_EQUAL(0, problem.costs().size());
+  LONGS_EQUAL(0, problem.eConstraints().size());
+  EXPECT(assert_equal(qcqpValue(measured),
+                      problem.fixedVariables().at<Matrix>(x0), 1e-12));
+}
+
+// A hard FrobeniusPrior whose target is not a rotation is rejected instead of
+// being substituted.
+TEST(QcqpProblem, HardFrobeniusPriorNonRotationRejected) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusPrior<Rot2>>(x0, 2.0 * Matrix2::Identity(),
+                                             noiseModel::Constrained::All(4));
+  CHECK_EXCEPTION({ QcqpProblem problem(graph); }, std::invalid_argument);
+}
+
+// Repeated hard FrobeniusPriors must agree on the fixed variable's value.
+TEST(QcqpProblem, DuplicateHardFrobeniusPriors) {
+  const auto hardNoise = noiseModel::Constrained::All(4);
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusPrior<Rot2>>(
+      x0, Rot2::fromAngle(0.25).matrix(), hardNoise);
+  graph.emplace_shared<FrobeniusPrior<Rot2>>(
+      x0, Rot2::fromAngle(0.25).matrix(), hardNoise);
+  const QcqpProblem problem(graph);
+  LONGS_EQUAL(1, problem.fixedVariables().size());
+
+  graph.emplace_shared<FrobeniusPrior<Rot2>>(
+      x0, Rot2::fromAngle(0.5).matrix(), hardNoise);
+  CHECK_EXCEPTION({ QcqpProblem conflicting(graph); }, std::invalid_argument);
+}
+
+// Fixed variables are substituted only at D=1; matrix-form priors still
+// throw.
+TEST(QcqpProblem, HardFrobeniusPriorD2Rejected) {
+  CHECK_EXCEPTION(HardFrobeniusPriorProblem(Rot2::fromAngle(0.25), 2),
+                  std::runtime_error);
+}
+
+// Costs and constraints cannot be added on a fixed variable afterwards.
+TEST(QcqpProblem, AddOnFixedVariableRejected) {
+  QcqpProblem problem = HardFrobeniusPriorProblem(Rot2::fromAngle(0.25));
+  CHECK_EXCEPTION(problem.addCost(QpCost(HessianFactor(
+                      x0, Matrix2::Identity(), Vector2::Zero(), 0.0))),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(problem.addConstraint(QuadraticConstraint::Equal(
+                      x0, Matrix2::Identity(), 1.0)),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(
+      problem.addConstraint(LinearConstraint::Equal(
+          JacobianFactor(x0, Matrix2::Identity(), Vector2::Zero()))),
+      std::invalid_argument);
 }
 
 // Verifies the deferred non-constrained Frobenius prior cost path rejects.
@@ -734,7 +710,9 @@ template <typename T>
 PoseRingOptimizationResult<T> OptimizePoseRing(
     const std::vector<T>& groundTruth, const std::vector<T>& initialPoses) {
   const QcqpProblem problem(AnchoredPoseRingGraph(groundTruth));
-  const Values initialValues = PoseRingQcqpValues(initialPoses);
+  // The anchored pose is a fixed variable, so it is not optimized.
+  Values initialValues = PoseRingQcqpValues(initialPoses);
+  initialValues.erase(Symbol('x', 0));
   const double initialCost = problem.costs().error(initialValues);
 
   auto params = std::make_shared<AugmentedLagrangianParams>();
@@ -742,8 +720,9 @@ PoseRingOptimizationResult<T> OptimizePoseRing(
   params->absoluteViolationTolerance = 1e-6;
   params->verbose = false;
 
-  const Values result =
+  Values result =
       AugmentedLagrangianOptimizer(problem, initialValues, params).optimize();
+  result.insert(problem.fixedVariables());
   const auto recovered = ExtractQcqpValues<T, 1>(result);
   return {problem.eConstraints().violationNorm(result), initialCost,
           problem.costs().error(result), recovered};
@@ -843,7 +822,9 @@ TEST(QcqpProblem, AugmentedLagrangianOptimizerPose3Ring) {
 }
 
 // Every D=1 between cost and quadratic constraint is invariant under the
-// global sign flip x_i -> -x_i; one hard prior rejects that second solution.
+// global sign flip x_i -> -x_i. Substituting the fixed x0 turns its two ring
+// edges into unary costs on x1 and x4, which reject that second solution:
+// each has residual 2R_j, so ½||2R_j||² = 4 per edge.
 TEST(QcqpProblem, HardPriorPinsRot2RingSign) {
   constexpr size_t N = 5;
   constexpr double delta = 2.0 * M_PI / static_cast<double>(N);
@@ -852,20 +833,76 @@ TEST(QcqpProblem, HardPriorPinsRot2RingSign) {
   graph.emplace_shared<FrobeniusPrior<Rot2>>(
       Symbol('x', 0), Matrix2::Identity(), noiseModel::Constrained::All(4));
   const QcqpProblem problem(graph);
-  const Values canonical = RingQcqpValues(N, delta, 0.0);
+  Values canonical = RingQcqpValues(N, delta, 0.0);
+  canonical.erase(Symbol('x', 0));
 
   Values negated;
-  for (size_t i = 0; i < N; ++i) {
+  for (size_t i = 1; i < N; ++i) {
     const Key key = Symbol('x', i);
     negated.insert(key, -canonical.at<Matrix>(key));
   }
 
-  EXPECT_DOUBLES_EQUAL(problem.costs().error(canonical),
-                       problem.costs().error(negated), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.costs().error(canonical), 1e-12);
+  EXPECT_DOUBLES_EQUAL(8.0, problem.costs().error(negated), 1e-12);
   EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(canonical),
                        1e-12);
-  EXPECT_DOUBLES_EQUAL(2.0, problem.eConstraints().violationNorm(negated),
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(negated),
                        1e-12);
+}
+
+// Substitution is exact: the QCQP with x0 fixed has, at any values of the
+// other variables, the cost of the unanchored QCQP with x0 = v inserted, and
+// no cost or constraint on x0.
+TEST(QcqpProblem, FixedVariableSubstitutionRot2Ring) {
+  constexpr size_t N = 3;
+  constexpr double delta = 2.0 * M_PI / static_cast<double>(N);
+  const Rot2 anchor = Rot2::fromAngle(0.3);
+
+  NonlinearFactorGraph graph = RingGraph(N, delta);
+  graph.emplace_shared<FrobeniusPrior<Rot2>>(
+      Symbol('x', 0), anchor.matrix(), noiseModel::Constrained::All(4));
+  const QcqpProblem problem(graph);
+  const QcqpProblem unanchored(RingGraph(N, delta));
+
+  Values freeValues;
+  InsertQcqpValue<Rot2, 1>(Symbol('x', 1), Rot2::fromAngle(1.7), &freeValues);
+  InsertQcqpValue<Rot2, 1>(Symbol('x', 2), Rot2::fromAngle(-2.4), &freeValues);
+  Values allValues = freeValues;
+  InsertQcqpValue<Rot2, 1>(Symbol('x', 0), anchor, &allValues);
+
+  EXPECT_DOUBLES_EQUAL(unanchored.costs().error(allValues),
+                       problem.costs().error(freeValues), 1e-12);
+  EXPECT(!problem.costs().keys().count(Symbol('x', 0)));
+  EXPECT(!problem.eConstraints().keys().count(Symbol('x', 0)));
+  LONGS_EQUAL(2, problem.eConstraints().size());
+}
+
+// A cost on fixed variables only leaves a constant, which is kept so the
+// objective stays exact: here x0 and x1 are fixed, inconsistently with the
+// x0-x1 edge.
+TEST(QcqpProblem, FixedVariableConstantRot2Ring) {
+  constexpr size_t N = 3;
+  constexpr double delta = 2.0 * M_PI / static_cast<double>(N);
+  const Rot2 anchor0 = Rot2::fromAngle(0.3);
+  const Rot2 anchor1 = Rot2::fromAngle(1.0);
+
+  NonlinearFactorGraph graph = RingGraph(N, delta);
+  graph.emplace_shared<FrobeniusPrior<Rot2>>(
+      Symbol('x', 0), anchor0.matrix(), noiseModel::Constrained::All(4));
+  graph.emplace_shared<FrobeniusPrior<Rot2>>(
+      Symbol('x', 1), anchor1.matrix(), noiseModel::Constrained::All(4));
+  const QcqpProblem problem(graph);
+  const QcqpProblem unanchored(RingGraph(N, delta));
+
+  Values freeValues;
+  InsertQcqpValue<Rot2, 1>(Symbol('x', 2), Rot2::fromAngle(-2.4), &freeValues);
+  Values allValues = freeValues;
+  InsertQcqpValue<Rot2, 1>(Symbol('x', 0), anchor0, &allValues);
+  InsertQcqpValue<Rot2, 1>(Symbol('x', 1), anchor1, &allValues);
+
+  LONGS_EQUAL(2, problem.fixedVariables().size());
+  EXPECT_DOUBLES_EQUAL(unanchored.costs().error(allValues),
+                       problem.costs().error(freeValues), 1e-12);
 }
 
 }  // namespace QcqpRingFixture
