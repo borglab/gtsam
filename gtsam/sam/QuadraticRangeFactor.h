@@ -154,6 +154,7 @@ class QuadraticRangeFactor
   /// Add this range factor as a QCQP cost when traits exist.
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
+                   NonlinearEqualityConstraints* redundantConstraints,
                    size_t columnDimension = 1) const override {
     if (columnDimension == 0) {
       throw std::invalid_argument(
@@ -161,7 +162,7 @@ class QuadraticRangeFactor
           "columnDimension.");
     }
     if (columnDimension == 1) {
-      qcqpFactorsForVector(costs, constraints);
+      qcqpFactorsForVector(costs, constraints, redundantConstraints);
       return;
     }
     if (columnDimension < static_cast<size_t>(d)) {
@@ -174,7 +175,8 @@ class QuadraticRangeFactor
           "QuadraticRangeFactor::qcqpFactors: costs is null.");
     }
 
-    InsertQcqpConstraints<Direction, d>(this->key3(), constraints);
+    InsertQcqpConstraints<Direction, d>(this->key3(), constraints,
+                                        redundantConstraints);
 
     // The direction is a Rot2 in 2D, which takes 2 rows, and a Unit3 in 3D,
     // which takes 1. Only the first row is used; any others stay zero.
@@ -194,8 +196,9 @@ class QuadraticRangeFactor
 
  private:
   /// Add the exact D=1 vector cost and variable constraints.
-  void qcqpFactorsForVector(NonlinearFactorGraph* costs,
-                            NonlinearEqualityConstraints* constraints) const {
+  void qcqpFactorsForVector(
+      NonlinearFactorGraph* costs, NonlinearEqualityConstraints* constraints,
+      NonlinearEqualityConstraints* redundantConstraints) const {
     if (!costs) {
       throw std::invalid_argument(
           "QuadraticRangeFactor::qcqpFactors: costs is null.");
@@ -214,9 +217,12 @@ class QuadraticRangeFactor
     B.block(0, kPointDim, d, d) = sw * Matrix::Identity(d, d);
     B.block(0, 2 * kPointDim, d, d) = -sw * range_ * Matrix::Identity(d, d);
 
-    InsertQcqpConstraints<Point, 1>(this->key1(), constraints);
-    InsertQcqpConstraints<Point, 1>(this->key2(), constraints);
-    InsertQcqpConstraints<Direction, 1>(this->key3(), constraints);
+    InsertQcqpConstraints<Point, 1>(this->key1(), constraints,
+                                    redundantConstraints);
+    InsertQcqpConstraints<Point, 1>(this->key2(), constraints,
+                                    redundantConstraints);
+    InsertQcqpConstraints<Direction, 1>(this->key3(), constraints,
+                                        redundantConstraints);
 
     const Matrix Q = B.transpose() * B;
     const SymmetricBlockMatrix blockQ(

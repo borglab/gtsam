@@ -148,11 +148,14 @@ public:
 
   /**
    * Add this factor's QCQP cost and constraints over matrix-valued QCQP
-   * variables with the given column dimension. The default implementation
-   * throws for unsupported factors.
+   * variables with the given column dimension. Redundant constraints, implied
+   * by the others on the QCQP but tightening its SDP relaxation, go to
+   * redundantConstraints; pass nullptr to skip them. The default
+   * implementation throws for unsupported factors.
    */
   virtual void qcqpFactors(NonlinearFactorGraph* costs,
                            NonlinearEqualityConstraints* constraints,
+                           NonlinearEqualityConstraints* redundantConstraints,
                            size_t columnDimension = 1) const;
 
   /**

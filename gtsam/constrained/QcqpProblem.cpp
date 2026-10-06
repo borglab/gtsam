@@ -78,7 +78,8 @@ QcqpProblem::QcqpProblem(const NonlinearFactorGraph& graph,
 
     NonlinearFactorGraph factorCosts;
     NonlinearEqualityConstraints factorConstraints;
-    factor->qcqpFactors(&factorCosts, &factorConstraints, columnDimension);
+    factor->qcqpFactors(&factorCosts, &factorConstraints, nullptr,
+                        columnDimension);
     costs_.add(factorCosts);
     MergeEqualityConstraints(factorConstraints, &eqConstraints_,
                              &quadraticConstraintIndex);
