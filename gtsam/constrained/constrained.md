@@ -40,7 +40,7 @@ It includes classes for representing constraints, building constrained problems,
 - [`ActiveSetSolver`](doc/QpProblem.ipynb): Active-set QP/LP solver with sparse and dense QP subproblem modes.
 - [`QcqpProblem`](doc/QcqpProblem.ipynb): Holds quadratic costs and linear/quadratic constraints over vector or matrix variables.
 - [`QpCost`](doc/QcqpProblem.ipynb): Also used for QCQP objectives; `QpCost(keys, Q, columnDim)` creates a pure row-space quadratic cost $\frac{1}{2}\sum_{ij}\operatorname{tr}(X_i^\top Q_{ij}X_j)$ over vectors or matrices $X_i \in \mathbb{R}^{r_i \times d}$.
-- [`QuadraticConstraint`](doc/QcqpProblem.ipynb): Scalar quadratic constraint $\operatorname{tr}(X^\top A X) \sim b$, where $\sim$ is equal, less-equal, or greater-equal. For vector variables it may carry a linear term, $x^\top A x + a^\top x \sim b$.
+- [`QuadraticConstraint`](doc/QcqpProblem.ipynb): Scalar quadratic constraint $\operatorname{tr}(X^\top A X) \sim b$, where $\sim$ is equal, less-equal, or greater-equal. For vector variables it may carry a linear term, $x^\top A x + 2a^\top x \sim b$, following Luo et al. (2010); `QuadraticConstraint::FromPqr` accepts the Boyd and Vandenberghe form $\frac{1}{2}x^\top P x + q^\top x + r \sim 0$ (*Convex Optimization*, Eq. (4.35)).
 - `QcqpProblem(graph, columnDim)`: Opt-in conversion hook for supported nonlinear factors that can populate `QpCost` objectives and `QuadraticConstraint` equalities over matrix-valued QCQP variables.
 - `InsertQcqpValue<T, D>` and `InsertQcqpConstraints<T, D>`: Helpers for inserting supported QCQP variable values and their equality constraints.
 - `ExtractQcqpValues<T, D>`: Projection of exact-shape D=1 vectors or matrix

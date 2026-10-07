@@ -225,7 +225,7 @@ TEST(QuadraticConstraint, GreaterEqualViolation) {
       1e-12);
 }
 
-// Verifies the linear term enters both x' A x + a' x - b and its gradient.
+// Verifies the linear term enters both x' A x + 2 a' x - b and its gradient.
 TEST(QuadraticConstraint, LinearTerm) {
   const Matrix A = Matrix::Identity(2, 2);
   const Vector a = Vector2(1.0, -2.0);
@@ -236,10 +236,32 @@ TEST(QuadraticConstraint, LinearTerm) {
   const Vector x = Vector2(0.5, 3.0);
 
   std::vector<Matrix> H(1);
-  const double expected = x.squaredNorm() + a.dot(x) - 1.0;
+  const double expected = x.squaredNorm() + 2.0 * a.dot(x) - 1.0;
   EXPECT_DOUBLES_EQUAL(expected,
                        factor->unwhitenedError(VectorValue(x), H)(0), 1e-12);
-  EXPECT(assert_equal(Matrix((2.0 * x + a).transpose()), H[0], 1e-12));
+  EXPECT(assert_equal(Matrix((2.0 * x + 2.0 * a).transpose()), H[0], 1e-12));
+}
+
+// FromPqr maps the Boyd and Vandenberghe form 0.5 x' P x + q' x + r ~ 0 to
+// A = P/2, a = q/2, b = -r, so both forms evaluate the same constraint.
+TEST(QuadraticConstraint, FromPqr) {
+  const Matrix P = (Matrix2() << 4.0, 1.0, 1.0, 2.0).finished();
+  const Vector q = Vector2(1.0, -2.0);
+  constexpr double r = -3.0;
+  const QuadraticConstraint constraint = QuadraticConstraint::FromPqr(
+      x0, P, q, r, QuadraticConstraint::Sense::LessEqual, 0.5);
+  EXPECT(assert_equal(Matrix(0.5 * P), constraint.A(), 0.0));
+  EXPECT(assert_equal(Vector(0.5 * q), constraint.a(), 0.0));
+  EXPECT_DOUBLES_EQUAL(-r, constraint.b(), 0.0);
+  EXPECT(constraint.sense() == QuadraticConstraint::Sense::LessEqual);
+  EXPECT_DOUBLES_EQUAL(0.5, constraint.sigma(), 0.0);
+
+  const Vector x = Vector2(0.5, 3.0);
+  const double expected = 0.5 * x.dot(P * x) + q.dot(x) + r;
+  EXPECT_DOUBLES_EQUAL(
+      expected,
+      constraint.createInequalityFactor()->unwhitenedError(VectorValue(x))(0),
+      1e-12);
 }
 
 // Verifies an omitted linear term is stored as zero and matrices reject one.
@@ -900,10 +922,10 @@ TEST(QcqpProblem, Rot2D3QcqpValueConstraints) {
   const auto constraintsD3 = traits<Rot2>::QcqpConstraints<3>();
   LONGS_EQUAL(constraintsD2.size(), constraintsD3.size());
   for (size_t i = 0; i < constraintsD2.size(); ++i) {
-    EXPECT(assert_equal(std::get<0>(constraintsD2[i]),
-                        std::get<0>(constraintsD3[i]), 1e-12));
-    EXPECT_DOUBLES_EQUAL(std::get<2>(constraintsD2[i]),
-                         std::get<2>(constraintsD3[i]), 1e-12);
+    const auto& [A2, a2, b2] = constraintsD2[i];
+    const auto& [A3, a3, b3] = constraintsD3[i];
+    EXPECT(assert_equal(A2, A3, 1e-12));
+    EXPECT_DOUBLES_EQUAL(b2, b3, 1e-12);
   }
 
   NonlinearEqualityConstraints constraints;
@@ -970,9 +992,9 @@ namespace QcqpTraitExtensionsFixture {
 const Key x0 = Symbol('x', 0);
 const Key x1 = Symbol('x', 1);
 
-// Evaluate x' A x + a' x, where an empty a means no linear term.
+// Evaluate x' A x + 2 a' x, where an empty a means no linear term.
 double ConstraintForm(const Matrix& A, const Vector& a, const Vector& x) {
-  return x.dot(A * x) + (a.size() == 0 ? 0.0 : a.dot(x));
+  return x.dot(A * x) + (a.size() == 0 ? 0.0 : 2.0 * a.dot(x));
 }
 
 // Verifies Rot2 QcqpValue at D=4 zero-pads beyond the intrinsic dim.
@@ -997,10 +1019,13 @@ TEST(QcqpProblem, Rot2QcqpConstraintsAreDIndependent) {
   LONGS_EQUAL(cs2.size(), cs3.size());
   LONGS_EQUAL(cs2.size(), cs5.size());
   for (size_t i = 0; i < cs2.size(); ++i) {
-    EXPECT(assert_equal(std::get<0>(cs2[i]), std::get<0>(cs3[i]), 1e-12));
-    EXPECT(assert_equal(std::get<0>(cs2[i]), std::get<0>(cs5[i]), 1e-12));
-    EXPECT_DOUBLES_EQUAL(std::get<2>(cs2[i]), std::get<2>(cs3[i]), 1e-12);
-    EXPECT_DOUBLES_EQUAL(std::get<2>(cs2[i]), std::get<2>(cs5[i]), 1e-12);
+    const auto& [A2, a2, b2] = cs2[i];
+    const auto& [A3, a3, b3] = cs3[i];
+    const auto& [A5, a5, b5] = cs5[i];
+    EXPECT(assert_equal(A2, A3, 1e-12));
+    EXPECT(assert_equal(A2, A5, 1e-12));
+    EXPECT_DOUBLES_EQUAL(b2, b3, 1e-12);
+    EXPECT_DOUBLES_EQUAL(b2, b5, 1e-12);
   }
 }
 

@@ -73,14 +73,12 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
   /**
    * Construct the monolithic SDP relaxation of a QCQP problem.
    *
+   * Every PSD block is the lifted matrix [1 x'; x X] of its keys, with one
+   * constant entry.
+   *
    * @param problem QCQP to relax.
-   * @param shareHomogeneousCoordinates Must be true: every PSD block is the
-   * lifted matrix [1 x'; x X] of its keys, with one constant entry. False
-   * throws std::invalid_argument; the parameter remains for source
-   * compatibility.
    */
-  explicit LiftedSDPProblem(const QcqpProblem& problem,
-                            bool shareHomogeneousCoordinates = true);
+  explicit LiftedSDPProblem(const QcqpProblem& problem);
 
   /// Dispose of the owned MOSEK model.
   ~LiftedSDPProblem();
@@ -134,16 +132,14 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
   /**
    * Construct the chordal SDP relaxation of a QCQP problem.
    *
+   * Every PSD block is the lifted matrix [1 x'; x X] of its keys, with one
+   * constant entry.
+   *
    * @param problem QCQP to relax.
    * @param orderingType Ordering used for symbolic elimination.
-   * @param shareHomogeneousCoordinates Must be true: every PSD block is the
-   * lifted matrix [1 x'; x X] of its keys, with one constant entry. False
-   * throws std::invalid_argument; the parameter remains for source
-   * compatibility.
    */
   LiftedSDPProblem(const QcqpProblem& problem,
-                   ChordalOrderingType orderingType,
-                   bool shareHomogeneousCoordinates = true);
+                   ChordalOrderingType orderingType);
 
   /// Dispose of the owned MOSEK model.
   ~LiftedSDPProblem();

@@ -630,7 +630,7 @@ struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
 
   /**
    * Return row-space QCQP equality constraints (A, a, b) such that
-   * trace(X' A X) + a' x = b, with an empty a meaning no linear term. For D=1
+   * trace(X' A X) + 2 a' x = b, with an empty a meaning no linear term. For D=1
    * these are the lifted SO(3) constraints in column-major coordinates; the
    * three right-handedness rows carry a linear term. For D>=3 the same 3-by-3
    * constraints, all with empty a, enforce XX'=I. The D=1 right-handedness
@@ -646,26 +646,27 @@ struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
 
       Matrix A = Matrix::Zero(9, 9);
 
-      // cross(R.col(1), R.col(2)) = R.col(0), with R.col(0) as the linear term.
+      // cross(R.col(1), R.col(2)) = R.col(0), with R.col(0) as the linear term
+      // 2 a' x, so a = -e_k / 2.
       A(4, 8) = 0.5;
       A(8, 4) = 0.5;
       A(5, 7) = -0.5;
       A(7, 5) = -0.5;
-      constraints.emplace_back(A, -Vector::Unit(9, 0), 0.0);
+      constraints.emplace_back(A, -0.5 * Vector::Unit(9, 0), 0.0);
 
       A.setZero();
       A(5, 6) = 0.5;
       A(6, 5) = 0.5;
       A(3, 8) = -0.5;
       A(8, 3) = -0.5;
-      constraints.emplace_back(A, -Vector::Unit(9, 1), 0.0);
+      constraints.emplace_back(A, -0.5 * Vector::Unit(9, 1), 0.0);
 
       A.setZero();
       A(3, 7) = 0.5;
       A(7, 3) = 0.5;
       A(4, 6) = -0.5;
       A(6, 4) = -0.5;
-      constraints.emplace_back(A, -Vector::Unit(9, 2), 0.0);
+      constraints.emplace_back(A, -0.5 * Vector::Unit(9, 2), 0.0);
 
       // RR^T = I supplies the six row-orthonormality constraints.
       A.setZero();

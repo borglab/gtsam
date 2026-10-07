@@ -249,14 +249,6 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
         self.assertGreater(solver.bayesTree().size(), 0)
         self.assert_solver_solution(solver, ground_truth)
 
-    def test_unshared_homogeneous_coordinates(self):
-        """Both constructor bindings reject opting out of the shared coordinate."""
-        problem, _ = rot2_ring_qcqp()
-        with self.assertRaises(ValueError):
-            MosekMonolithicSDP(problem, shareHomogeneousCoordinates=False)
-        with self.assertRaises(ValueError):
-            MosekChordalSDP(problem, ChordalOrderingType.Colamd, False)
-
 
 if __name__ == "__main__":
     unittest.main()

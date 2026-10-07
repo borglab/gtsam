@@ -493,14 +493,6 @@ TEST(LiftedSDPs, NoisyRot2Ring) {
   }
 }
 
-// Opting out of the shared homogeneous coordinate is rejected.
-TEST(LiftedSDPs, UnsharedHomogeneousCoordinatesRejected) {
-  const QcqpProblem problem(lifted_sdp_tests::Rot2RingGraph(3, 0.0), 1);
-  CHECK_EXCEPTION(MosekMonolithicSDP(problem, false), std::invalid_argument);
-  CHECK_EXCEPTION(MosekChordalSDP(problem, ChordalOrderingType::Colamd, false),
-                  std::invalid_argument);
-}
-
 // Minimize half the squared norm with a prescribed, scaled squared leading
 // entry per key. Different block dimensions exercise rectangular views.
 QcqpProblem NormProblem(size_t count, bool connected, double firstSquaredNorm) {
@@ -599,7 +591,7 @@ TEST(LiftedSDPs, LinearAndConstantCost) {
 
 // A linear constraint term reads the lifted vector x_i (row-0 slice):
 // projecting p onto the circle ||t - c||^2 = r^2, written
-// t't - 2c't = r^2 - c'c, is exact.
+// t't + 2a't = r^2 - c'c with a = -c, is exact.
 TEST(LiftedSDPs, LinearConstraintTerm) {
   const Vector2 p(4.0, 5.0), c(1.0, 1.0);
   constexpr double r = 1.0;
@@ -608,7 +600,7 @@ TEST(LiftedSDPs, LinearConstraintTerm) {
                                              Vector(p), p.squaredNorm()));
   QcqpProblem problem(costs, NonlinearEqualityConstraints());
   problem.addConstraint(QuadraticConstraint::Equal(
-      0, Matrix2::Identity(), Vector(-2.0 * c), r * r - c.squaredNorm()));
+      0, Matrix2::Identity(), Vector(-c), r * r - c.squaredNorm()));
 
   const double distance = (p - c).norm();
   const double expected = 0.5 * (distance - r) * (distance - r);

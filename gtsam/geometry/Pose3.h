@@ -358,7 +358,7 @@ typedef std::vector<Pose3> Pose3Vector;
  * Eigen's `segment<3>(start)` selects three consecutive entries of x, while
  * `T.col(column).head<3>()` selects the retained part of one matrix column.
  * QcqpConstraints returns the symmetric matrices A, linear terms a, and
- * scalars b for the nine equations x' A x + a' x = b. Their translation rows
+ * scalars b for the nine equations x' A x + 2 a' x = b. Their translation rows
  * and columns are zero, so these equations constrain only the embedded SO(3)
  * rotation.
  */
@@ -389,7 +389,7 @@ struct traits<Pose3> : public internal::MatrixLieGroup<Pose3, 4> {
 
   /**
    * Return the nine D=1 lifted SE(3) manifold constraints (A, a, b) such that
-   * trace(x' A x) + a' x = b.
+   * trace(x' A x) + 2 a' x = b.
    */
   template <int D = 1>
   static std::vector<std::tuple<Matrix, Vector, double>> QcqpConstraints() {
@@ -399,26 +399,27 @@ struct traits<Pose3> : public internal::MatrixLieGroup<Pose3, 4> {
 
       Matrix A = Matrix::Zero(12, 12);
 
-      // cross(R.col(1), R.col(2)) = R.col(0), with R.col(0) as the linear term.
+      // cross(R.col(1), R.col(2)) = R.col(0), with R.col(0) as the linear term
+      // 2 a' x, so a = -e_k / 2.
       A(4, 8) = 0.5;
       A(8, 4) = 0.5;
       A(5, 7) = -0.5;
       A(7, 5) = -0.5;
-      constraints.emplace_back(A, -Vector::Unit(12, 0), 0.0);
+      constraints.emplace_back(A, -0.5 * Vector::Unit(12, 0), 0.0);
 
       A.setZero();
       A(5, 6) = 0.5;
       A(6, 5) = 0.5;
       A(3, 8) = -0.5;
       A(8, 3) = -0.5;
-      constraints.emplace_back(A, -Vector::Unit(12, 1), 0.0);
+      constraints.emplace_back(A, -0.5 * Vector::Unit(12, 1), 0.0);
 
       A.setZero();
       A(3, 7) = 0.5;
       A(7, 3) = 0.5;
       A(4, 6) = -0.5;
       A(6, 4) = -0.5;
-      constraints.emplace_back(A, -Vector::Unit(12, 2), 0.0);
+      constraints.emplace_back(A, -0.5 * Vector::Unit(12, 2), 0.0);
 
       // RR^T = I.
       A.setZero();

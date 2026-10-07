@@ -133,6 +133,9 @@ class QuadraticConstraint {
   QuadraticConstraint(gtsam::Key key, const gtsam::Matrix& A,
                       const gtsam::Vector& a, double b,
                       gtsam::QuadraticConstraint::Sense sense, double sigma);
+  static gtsam::QuadraticConstraint FromPqr(
+      gtsam::Key key, const gtsam::Matrix& P, const gtsam::Vector& q, double r,
+      gtsam::QuadraticConstraint::Sense sense, double sigma = 1.0);
 
   static gtsam::QuadraticConstraint Equal(gtsam::Key key,
                                           const gtsam::Matrix& A, double b);

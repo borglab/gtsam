@@ -95,7 +95,7 @@ void InsertQcqpValue(Key key, const T& value, Values* qcqpValues) {
  * Insert the QCQP equality constraints for one variable.
  *
  * traits<T>::QcqpConstraints<D>() returns (A, a, b) triples for
- * trace(X' A X) + a' x = b, where an empty a means no linear term; only D=1
+ * trace(X' A X) + 2 a' x = b, where an empty a means no linear term; only D=1
  * constraints may have one. Only an
  * already-present quadratic equality with the same key, matrix, linear term,
  * and right-hand side is considered a duplicate. Other unary constraints on

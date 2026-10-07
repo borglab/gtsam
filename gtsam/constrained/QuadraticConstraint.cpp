@@ -64,12 +64,12 @@ Vector ConstraintError(const QuadraticConstraint& constraint,
   const double sign = SenseSign(constraint.sense());
   if (H) {
     Matrix gradient = sign * (constraint.A() + constraint.A().transpose()) * X;
-    if (linear) gradient += sign * constraint.a();
+    if (linear) gradient += 2.0 * sign * constraint.a();
     const Eigen::Map<const Vector> vectorized(gradient.data(), gradient.size());
     (*H)[0] = vectorized.transpose();
   }
   double value = (X.transpose() * AX).trace() - constraint.b();
-  if (linear) value += constraint.a().dot(X.col(0));
+  if (linear) value += 2.0 * constraint.a().dot(X.col(0));
   return Vector1(sign * value);
 }
 

@@ -453,7 +453,7 @@ mf::Expression::t BuildObjective(
   return mf::Expr::add(monty::new_array_ptr<mf::Expression::t>(objectiveTerms));
 }
 
-// Lower x'Ax + a'x ~ b to the affine SDP constraint <A, X> + a'y ~ b.
+// Lower x'Ax + 2a'x ~ b to the affine SDP constraint <A, X> + 2a'y ~ b.
 void AddQuadraticConstraint(
     const mf::Model::t& M, const QuadraticConstraint& constraint,
     const KeyiToLiftedVectorxiViewInSDPVariableMap& xiMap,
@@ -464,7 +464,7 @@ void AddQuadraticConstraint(
   if (constraint.hasLinearTerm()) {
     lhs = mf::Expr::add(
         lhs, mf::Expr::dot(convertToMosekDenseMatrix(
-                               Matrix(constraint.a().transpose())),
+                               Matrix(2.0 * constraint.a().transpose())),
                            xiMap.at(key)->asExpr()));
   }
 
@@ -550,16 +550,6 @@ void AddQcqpConstraints(
     }
     throw std::runtime_error(
         "LiftedSDPProblem: expected quadratic inequality constraints.");
-  }
-}
-
-// Reject the removed per-key homogeneous-coordinate formulation.
-void RequireSharedHomogeneousCoordinates(bool shareHomogeneousCoordinates) {
-  if (!shareHomogeneousCoordinates) {
-    throw std::invalid_argument(
-        "LiftedSDPProblem: shareHomogeneousCoordinates=false is no longer "
-        "supported; every PSD block carries one shared homogeneous "
-        "coordinate.");
   }
 }
 
@@ -711,11 +701,8 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
 };
 
 LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
-    const QcqpProblem& problem, bool shareHomogeneousCoordinates)
+    const QcqpProblem& problem)
     : impl_(std::make_unique<Impl>()) {
-  // Graceful error handling for backward compatibility: callers that still
-  // pass shareHomogeneousCoordinates=false get a clear exception.
-  RequireSharedHomogeneousCoordinates(shareHomogeneousCoordinates);
   CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                             &impl_->orderedKeyDims);
   int sdpVariableDimension;
@@ -803,12 +790,8 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::orderedKeyDims() const {
 }
 
 LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
-    const QcqpProblem& problem, ChordalOrderingType orderingType,
-    bool shareHomogeneousCoordinates)
+    const QcqpProblem& problem, ChordalOrderingType orderingType)
     : impl_(std::make_unique<Impl>()) {
-  // Graceful error handling for backward compatibility: callers that still
-  // pass shareHomogeneousCoordinates=false get a clear exception.
-  RequireSharedHomogeneousCoordinates(shareHomogeneousCoordinates);
   CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                             &impl_->orderedKeyDims);
   impl_->M = new mf::Model("ChordalSDP_MosekSDPSolver");
