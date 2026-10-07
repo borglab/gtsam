@@ -22,13 +22,10 @@
 
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 
-#include <gtsam/geometry/Point1.h> 
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Point3.h> 
+#include <Eigen/Core>
 #include <cmath>
 #include <memory>
 #include <stdexcept>
-#include <type_traits>
 #include <vector>
 
 namespace gtsam {
@@ -45,16 +42,15 @@ namespace gtsam {
  *
  * See `gtsam/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb` for more details regarding usage.
  */
-template <class T>
-class KnownLandmarkSquaredRangeFactor : public NoiseModelFactorN<T> {
+template <int N>
+class KnownLandmarkSquaredRangeFactor : public NoiseModelFactorN<Eigen::Matrix<double, N, 1>> {
  public:
-  static_assert(std::is_same_v<T, Point1> || std::is_same_v<T, Point2> || std::is_same_v<T, Point3>,
-                "KnownLandmarkSquaredRangeFactor supports only Point1, Point2, and Point3");
+  static_assert(N > 0, "KnownLandmarkSquaredRangeFactor requires N > 0");
+  using Point = Eigen::Matrix<double, N, 1>;
+  using Base = NoiseModelFactorN<Point>;
+  using This = KnownLandmarkSquaredRangeFactor<N>;
 
-  using Base = NoiseModelFactorN<T>;
-  using This = KnownLandmarkSquaredRangeFactor<T>;
-  //was using Point = typename T::Translation;
-  using Point = T;
+
  private:
   Point wL_;              ///< Known landmark expressed in the world frame.
   double measuredRange_;  ///< Corresponding range measurement of landmark position wL_
@@ -63,7 +59,7 @@ class KnownLandmarkSquaredRangeFactor : public NoiseModelFactorN<T> {
   using Base::evaluateError;
 
   /// Construct from a key, world landmark, measurement, and noise model.
-  KnownLandmarkFactor(Key key, const Point& wL, const double measuredRange,
+  KnownLandmarkSquaredRangeFactor(Key key, const Point& wL, double measuredRange,
                       const SharedNoiseModel& model)
       : Base(model, key), wL_(wL), measuredRange_(measuredRange) {}
 
@@ -80,8 +76,8 @@ class KnownLandmarkSquaredRangeFactor : public NoiseModelFactorN<T> {
   }
 
   /** Evaluate squared predicted range minus squared measured range */
-  Vector evaluateError(const T& wX, OptionalMatrixType H) const override {
-    const T difference = wX - wL_;
+  Vector evaluateError(const Point& wX, OptionalMatrixType H) const override {
+    const Point difference = wX - wL_;
     const double predictedSquaredRange = difference.squaredNorm();
 
     cost double error = predictedSquaredRange - measuredRange_ * measredRange_;
