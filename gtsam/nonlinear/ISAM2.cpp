@@ -717,9 +717,22 @@ void ISAM2::marginalizeLeaves(
         while (leafKeys.exists(cg->keys()[nToRemove])) ++nToRemove;
 
         // Make the clique's matrix appear as a subset
+        const DenseIndex oldRowStart = cg->matrixObject().rowStart();
         const DenseIndex dimToRemove = cg->matrixObject().offset(nToRemove);
         cg->matrixObject().firstBlock() += nToRemove;
         cg->matrixObject().rowStart() = dimToRemove;
+
+        // The noise model holds one sigma per row of the original conditional.
+        // Drop the sigmas of the rows that were removed, so that each remaining
+        // row keeps its own (a Constrained model would otherwise mark soft rows
+        // as hard). offset() is absolute, so subtract the old rowStart(): an
+        // earlier split has already hidden (and dropped) the rows before it.
+        if (cg->get_model() && dimToRemove > oldRowStart) {
+          const Vector sigmas = cg->get_model()->sigmas();
+          const Vector remaining =
+              sigmas.tail(sigmas.size() - (dimToRemove - oldRowStart));
+          cg->setModel((remaining.array() == 0.0).any(), remaining);
+        }
 
         // Change the keys in the clique
         KeyVector originalKeys;
