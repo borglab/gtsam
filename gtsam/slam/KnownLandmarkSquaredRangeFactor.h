@@ -80,7 +80,7 @@ class KnownLandmarkSquaredRangeFactor : public NoiseModelFactorN<Eigen::Matrix<d
     const Point difference = wX - wL_;
     const double predictedSquaredRange = difference.squaredNorm();
 
-    cost double error = predictedSquaredRange - measuredRange_ * measredRange_;
+    cost double error = predictedSquaredRange - measuredRange_ * measuredRange_;
     if (H) {
       *H = 2.0 * difference.transpose();
     }
