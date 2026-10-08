@@ -23,7 +23,9 @@
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/nonlinear/ISAM2.h>
+#include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/BetweenFactor.h>
@@ -1329,6 +1331,75 @@ TEST(IncrementalFixedLagSmoother, RetainKeyWhileBothNeighborsExpire) {
 }
 
 }  // namespace retention
+
+/* ************************************************************************* */
+namespace constrained_clique_split {
+
+const Key kBurn = Symbol('b', 0);
+
+// A state [p, v] with hard dynamics x1 = F x0 + G b, a burn b, and soft
+// measurements. Linear factors are wrapped so they can carry a Constrained
+// noise model into iSAM2.
+NonlinearFactorGraph chainWithHardDynamics(const Values& linearizationPoint) {
+  const Matrix22 F = (Matrix22() << 1, 1, 0, 1).finished();
+  const Vector2 G(0, 1);
+  const Matrix12 H(1, 0);
+  auto wrap = [&](const JacobianFactor& factor) {
+    return std::make_shared<LinearContainerFactor>(factor, linearizationPoint);
+  };
+
+  NonlinearFactorGraph graph;
+  graph.addPrior<Vector2>(X(0), Vector2::Zero(),
+                          noiseModel::Diagonal::Sigmas(Vector2(1.0, 0.1)));
+  graph.addPrior<Vector1>(kBurn, Vector1::Zero(),
+                          noiseModel::Isotropic::Sigma(1, 0.05));
+  graph.push_back(wrap(JacobianFactor(
+      X(0), -F, X(1), I_2x2, kBurn, -G, Vector2::Zero(),
+      noiseModel::Constrained::All(2))));
+  graph.push_back(wrap(JacobianFactor(X(1), H, kBurn, Matrix11::Constant(0.8),
+                                      Vector1::Zero(),
+                                      noiseModel::Isotropic::Sigma(1, 0.5))));
+  return graph;
+}
+
+// Marginalizing x0 out of a clique that still holds x1 and the burn splits the
+// clique. The remaining rows must keep their own noise-model sigmas: the
+// Constrained model of the hard dynamics marks only its own two rows as hard.
+// Before the fix every row after the first read a sigma from the row above it,
+// so a soft row was read as hard and a marginal covariance came back as zero.
+TEST(IncrementalFixedLagSmoother, ConstrainedCliqueSplitKeepsNoiseModelRows) {
+  Values linearizationPoint;
+  linearizationPoint.insert(X(0), Vector2(0, 0));
+  linearizationPoint.insert(X(1), Vector2(0, 0));
+  linearizationPoint.insert(kBurn, Vector1(0));
+  const NonlinearFactorGraph graph = chainWithHardDynamics(linearizationPoint);
+
+  // Smoother with a lag that expires x0 while x1 and the burn stay, and a
+  // reference that never marginalizes.
+  IncrementalFixedLagSmoother smoother(0.5, ISAM2Params());
+  IncrementalFixedLagSmoother reference(1e9, ISAM2Params());
+  const FixedLagSmoother::KeyTimestampMap stamps{
+      {X(0), 0.0}, {X(1), 1.0}, {kBurn, 0.5}};
+  smoother.update(graph, linearizationPoint, stamps);
+  reference.update(graph, linearizationPoint, stamps);
+
+  EXPECT(!smoother.getLinearizationPoint().exists(X(0)));
+  EXPECT(smoother.getLinearizationPoint().exists(X(1)));
+
+  // Every conditional has one noise-model sigma per row.
+  for (const auto& [key, clique] : smoother.getISAM2().nodes()) {
+    const auto& conditional = clique->conditional();
+    EXPECT_LONGS_EQUAL(conditional->rows(), conditional->get_model()->dim());
+  }
+
+  for (const Key key : {X(1), kBurn}) {
+    const Matrix actual = smoother.getISAM2().marginalCovariance(key);
+    const Matrix expected = reference.getISAM2().marginalCovariance(key);
+    EXPECT(assert_equal(expected, actual, 1e-9));
+  }
+}
+
+}  // namespace constrained_clique_split
 /* ************************************************************************* */
 
 int main() {
