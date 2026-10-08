@@ -323,7 +323,7 @@ virtual class AugmentedLagrangianOptimizer {
   AugmentedLagrangianOptimizer(
       const gtsam::ConstrainedOptProblem& problem,
       const gtsam::Values& initialValues,
-      gtsam::AugmentedLagrangianParams::shared_ptr p);
+      gtsam::AugmentedLagrangianParams* p);
 
   gtsam::Values optimize() const;
 };
