@@ -145,6 +145,11 @@ class QuadraticConstraint {
   static gtsam::QuadraticConstraint Equal(gtsam::Key key,
                                           const gtsam::Matrix& A,
                                           const gtsam::Vector& a, double b);
+  // MATLAB needs the explicit sigma to avoid the scalar four-argument overload.
+  static gtsam::QuadraticConstraint Equal(gtsam::Key key,
+                                          const gtsam::Matrix& A,
+                                          const gtsam::Vector& a, double b,
+                                          double sigma);
   static gtsam::QuadraticConstraint LessEqual(gtsam::Key key,
                                               const gtsam::Matrix& A, double b);
   static gtsam::QuadraticConstraint LessEqual(gtsam::Key key,

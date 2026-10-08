@@ -24,6 +24,9 @@ testValues
 display 'Starting: testCustomFactor'
 testCustomFactor
 
+display 'Starting: testQcqpProblem'
+testQcqpProblem
+
 display 'Starting: testMosekSDP'
 testMosekSDP
 

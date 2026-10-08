@@ -93,6 +93,15 @@ class GTSAM_EXPORT QuadraticConstraint {
     return QuadraticConstraint(key, A, a, b, Sense::Equal);
   }
 
+  /**
+   * Create x' A x + 2 a' x - b = 0 with explicit sigma. MATLAB callers must
+   * use this overload to distinguish it from Equal(key, A, b, sigma).
+   */
+  static QuadraticConstraint Equal(Key key, const Matrix& A, const Vector& a,
+                                   double b, double sigma) {
+    return QuadraticConstraint(key, A, a, b, Sense::Equal, sigma);
+  }
+
   /// Create trace(X' A X) - b <= 0.
   static QuadraticConstraint LessEqual(Key key, const Matrix& A, double b) {
     return QuadraticConstraint(key, A, b, Sense::LessEqual);
