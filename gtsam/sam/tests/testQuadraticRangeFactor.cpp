@@ -286,8 +286,9 @@ TEST(QuadraticRangeFactor, EmitsItsAuxiliarysOwnConstraints) {
     CHECK(quadratic);
     const QuadraticConstraint& constraint = quadratic->quadraticConstraint();
     EXPECT(constraint.key() == kU);
-    EXPECT_DOUBLES_EQUAL(expected[i].second, constraint.b(), 1e-12);
-    EXPECT(assert_equal(expected[i].first, constraint.A(), 1e-12));
+    const auto& [A, a, b] = expected[i];
+    EXPECT_DOUBLES_EQUAL(b, constraint.b(), 1e-12);
+    EXPECT(assert_equal(A, constraint.A(), 1e-12));
   }
 }
 

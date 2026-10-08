@@ -193,7 +193,7 @@ class QuadraticRangeFactor
   }
 
  private:
-  /// Add the exact D=1 homogeneous-vector cost and variable constraints.
+  /// Add the exact D=1 vector cost and variable constraints.
   void qcqpFactorsForVector(NonlinearFactorGraph* costs,
                             NonlinearEqualityConstraints* constraints) const {
     if (!costs) {
@@ -205,16 +205,14 @@ class QuadraticRangeFactor
     constexpr int kDirectionDim = traits<Direction>::QcqpVectorDim;
     const double sw = std::sqrt(weight_);
 
-    // Both Rot2 and Unit3 store the relevant direction in the d entries after
-    // the homogeneous coordinate (Rot2's first matrix column in 2D).
-    Matrix directionSelector = Matrix::Zero(d, kDirectionDim);
-    directionSelector.block(0, 1, d, d).setIdentity();
+    // Both Rot2 and Unit3 store the relevant direction in their d entries
+    // (Rot2's first matrix column in 2D).
+    static_assert(kDirectionDim == d);
 
     Matrix B = Matrix::Zero(d, 2 * kPointDim + kDirectionDim);
-    B.block(0, 1, d, d) = -sw * Matrix::Identity(d, d);
-    B.block(0, kPointDim + 1, d, d) = sw * Matrix::Identity(d, d);
-    B.block(0, 2 * kPointDim, d, kDirectionDim) =
-        -sw * range_ * directionSelector;
+    B.block(0, 0, d, d) = -sw * Matrix::Identity(d, d);
+    B.block(0, kPointDim, d, d) = sw * Matrix::Identity(d, d);
+    B.block(0, 2 * kPointDim, d, d) = -sw * range_ * Matrix::Identity(d, d);
 
     InsertQcqpConstraints<Point, 1>(this->key1(), constraints);
     InsertQcqpConstraints<Point, 1>(this->key2(), constraints);

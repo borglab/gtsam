@@ -33,6 +33,7 @@
 
 #include <random>
 #include <string>
+#include <tuple>
 
 #ifdef GTSAM_USE_TBB
 #include <mutex> // std::mutex
@@ -259,17 +260,14 @@ GTSAM_EXPORT Point3 cross(const Point3& p, const Unit3& q,
  */
 template <>
 struct traits<Unit3> : public internal::Manifold<Unit3> {
-  /// Dimension of the D=1 homogenized QCQP vector: [1; p].
-  inline constexpr static int QcqpVectorDim = 4;
+  /// Dimension of the D=1 QCQP vector p.
+  inline constexpr static int QcqpVectorDim = 3;
 
   /// Lift a direction to a 1-by-D row, zero-padded above the ambient dimension.
   template <int D = 1>
   static Matrix QcqpValue(const Unit3& value) {
     if constexpr (D == 1) {
-      Eigen::Matrix<double, 4, 1> X;
-      X(0, 0) = 1.0;
-      X.segment<3>(1) = value.unitVector();
-      return X;
+      return value.unitVector();
     } else if constexpr (D >= 3) {
       Matrix X = Matrix::Zero(1, D);
       X.block(0, 0, 1, 3) = value.unitVector().transpose();
@@ -282,19 +280,11 @@ struct traits<Unit3> : public internal::Manifold<Unit3> {
 
   /// The single unit-norm constraint, `||X||^2 = 1`.
   template <int D = 1>
-  static std::vector<std::pair<Matrix, double>> QcqpConstraints() {
+  static std::vector<std::tuple<Matrix, Vector, double>> QcqpConstraints() {
     if constexpr (D == 1) {
-      // Homogenized: pin the leading coordinate and the direction's norm.
-      std::vector<std::pair<Matrix, double>> constraints;
-      Matrix A = Matrix::Zero(4, 4);
-      A(0, 0) = 1.0;
-      constraints.emplace_back(A, 1.0);
-      A.setZero();
-      A(1, 1) = A(2, 2) = A(3, 3) = 1.0;
-      constraints.emplace_back(A, 1.0);
-      return constraints;
+      return {{Matrix::Identity(3, 3), Vector(), 1.0}};
     } else if constexpr (D >= 3) {
-      return {{Matrix::Identity(1, 1), 1.0}};
+      return {{Matrix::Identity(1, 1), Vector(), 1.0}};
     } else {
       throw std::invalid_argument(
           "traits<Unit3>::QcqpConstraints supports D=1 and D>=3.");
@@ -307,9 +297,9 @@ struct traits<Unit3> : public internal::Manifold<Unit3> {
     if constexpr (D == 1) {
       if (X.rows() != QcqpVectorDim || X.cols() != 1) {
         throw std::invalid_argument(
-            "traits<Unit3>::FromQcqpValue requires a 4-by-1 matrix.");
+            "traits<Unit3>::FromQcqpValue requires a 3-by-1 matrix.");
       }
-      return Unit3(Point3(X.block(1, 0, 3, 1)));
+      return Unit3(Point3(X.col(0)));
     } else if constexpr (D >= 3) {
       if (X.rows() != 1 || X.cols() != D) {
         throw std::invalid_argument(
