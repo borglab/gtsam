@@ -173,7 +173,10 @@ jobs:
 
       - name: Package build cache statistics (Windows)
         if: always() && runner.os == 'Windows'
+        # The server may have expired while linking, packaging or testing the
+        # consumer. A failed diagnostic must not fail a successful package build.
         run: pixi exec --spec sccache sccache --stop-server
+        continue-on-error: true
         env:
           SCCACHE_DIR: ${{ github.workspace }}/.sccache-pkg
           SCCACHE_SERVER_PORT: 4227
