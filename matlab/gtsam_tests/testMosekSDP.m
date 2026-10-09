@@ -17,6 +17,8 @@ for j = 1:4
                                        Rot2.fromAngle(0.2)));
 end
 problem = QcqpProblem(graph);
+CHECK('Fixed anchor in QCQP', problem.fixedVariables().size() == 1 && ...
+      norm(problem.fixedVariables().atMatrix(keys(1)) - [1; 0]) < 1e-12);
 expected = 8 * (1 - cos(0.2));
 solvers = {MosekMonolithicSDP(problem), ...
            MosekChordalSDP(problem, ChordalOrderingType.Colamd), ...
@@ -35,13 +37,16 @@ for i = 1:numel(solvers)
     anchor = values.atMatrix(keys(1));
     CHECK('Natural anchor size', isequal(size(anchor), [2, 1]));
     CHECK('Recovered anchor', norm(anchor - [1; 0]) < 1e-6);
+    CHECK('All QCQP values recovered', values.size() == 4);
     CHECK('Repeated retrieval', values.equals(solver.qcqpValues(), 1e-9));
-    CHECK('Ordered keys', solver.orderedKeys().size() == 4);
+    orderedKeys = solver.orderedKeys();
+    CHECK('Only free keys are ordered', orderedKeys.size() == 3);
     dimensions = solver.orderedKeyDims();
     evrs = solver.variableEVRs();
-    CHECK('Diagnostic sizes', dimensions.size() == 4 && evrs.size() == 4);
-    for j = 1:4
-        CHECK('Dimension at symbolic key', dimensions.at(keys(j)) == 2);
+    CHECK('Diagnostics exclude anchor', dimensions.size() == 3 && evrs.size() == 3);
+    for j = 1:3
+        CHECK('Ordered key is free', orderedKeys.at(j - 1) ~= keys(1));
+        CHECK('Free key dimension', dimensions.at(keys(j + 1)) == 2);
         CHECK('Eigenvalue ratio', evrs.at(j - 1) > 1e4);
     end
     CHECK('Solver timing', solver.solveTimeSeconds() >= 0);
