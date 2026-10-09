@@ -23,6 +23,7 @@
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/geometry/Gal3.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/navigation/EquivariantFilter.h>
@@ -946,6 +947,55 @@ TEST(EquivariantFilter_LeftSphere, UpdateAppliesCorrectionAtTheOrigin) {
 }
 
 }  // namespace left_sphere
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+// Right-regular action of Gal(3) on itself, with a discrete lift that is a
+// product of exponentials.
+namespace gal3_right_regular {
+
+using Matrix10 = Eigen::Matrix<double, 10, 10>;
+
+struct Symmetry : public GroupAction<Symmetry, Gal3, Gal3> {
+  static constexpr ActionType type = ActionType::Right;
+
+  Gal3 operator()(const Gal3& xi, const Gal3& X,
+                  OptionalJacobian<10, 10> H_xi = {},
+                  OptionalJacobian<10, 10> H_X = {}) const {
+    return xi.compose(X, H_xi, H_X);
+  }
+};
+
+using Filter = EquivariantFilter<Gal3, Symmetry>;
+
+const Gal3 kEstimate(Rot3::RzRyRx(0.1, -0.2, 0.3), Point3(1.0, 2.0, 3.0),
+                     Velocity3(0.4, -0.5, 0.6), 0.7);
+const Matrix10 kCovariance =
+    0.1 * Vector10{1.0, 2.0, 1.5, 3.0, 1.0, 2.5, 4.0, 1.0, 2.0, 0.5}
+              .asDiagonal();
+
+// A group step is composed on the right, matching predictWithTransition()
+// with the step's logarithm as the lift.
+TEST(EquivariantFilter_Gal3, PredictWithStep) {
+  const Gal3 step =
+      Gal3::Expmap(Vector10{0, 0, 0, 0, 0, -0.1, 0, 0, 0, 0}) *
+      Gal3::Expmap(Vector10{0.1, -0.2, 0.3, 0.5, 0.1, 0.2, 0, 0, 0, 0.01});
+  const Matrix10 Phi = Gal3::Expmap(Vector10::Constant(0.1)).AdjointMap();
+  const Matrix10 Qd = 1e-3 * Matrix10::Identity();
+
+  Filter withStep(Gal3(), kCovariance, kEstimate);
+  Filter withLift(Gal3(), kCovariance, kEstimate);
+  withStep.predictWithStep(step, Phi, Qd);
+  withLift.predictWithTransition(
+      [&](const Gal3&) -> Vector10 { return Gal3::Logmap(step); }, Phi, Qd,
+      1.0);
+
+  EXPECT(assert_equal(kEstimate.compose(step), withStep.groupEstimate(), 1e-9));
+  EXPECT(assert_equal(withLift.groupEstimate(), withStep.groupEstimate(), 1e-9));
+  EXPECT(assert_equal(withLift.errorCovariance(), withStep.errorCovariance()));
+}
+
+}  // namespace gal3_right_regular
 /* ************************************************************************* */
 
 int main() {

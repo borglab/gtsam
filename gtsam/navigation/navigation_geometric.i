@@ -95,7 +95,7 @@ template <N = {1, 2, 3}>
 class AbcEquivariantFilter {
   // Constructors
   AbcEquivariantFilter();
-  AbcEquivariantFilter(const gtsam::Matrix6& Sigma0);
+  AbcEquivariantFilter(const gtsam::Matrix& Sigma0);
 
   // Predict and update methods
   void predict(const gtsam::Vector3& omega,
