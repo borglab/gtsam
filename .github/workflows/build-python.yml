@@ -390,7 +390,7 @@ jobs:
           if [ "${{ runner.os }}" = "Windows" ]; then
             export BUILD_JOBS=3
           fi
-          bash .github/scripts/timed.sh Build bash .github/scripts/timed.sh Test bash .github/scripts/python.sh "${args[@]}"
+          bash .github/scripts/timed.sh Build bash .github/scripts/python.sh "${args[@]}"
 
       - name: Test
         shell: bash
