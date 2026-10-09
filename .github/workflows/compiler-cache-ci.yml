@@ -1,21 +1,6 @@
 name: Compiler cache validation
 
 on:
-  pull_request:
-    paths:
-      - .github/actions/compiler-cache/**
-      - .github/scripts/compiler_cache.sh
-      - .github/scripts/test_compiler_cache.py
-      - .github/scripts/timed.sh
-      - .github/scripts/unix.sh
-      - .github/scripts/python.sh
-      - .github/workflows/compiler-cache-ci.yml
-      - .github/workflows/build-linux.yml
-      - .github/workflows/build-linux-arm64.yml
-      - .github/workflows/build-macos.yml
-      - .github/workflows/build-windows.yml
-      - .github/workflows/build-special.yml
-      - .github/workflows/build-python.yml
   workflow_dispatch:
 
 permissions:

@@ -36,11 +36,12 @@ The sccache lanes use the local disk backend; `actions/cache/save` is their only
 persistent writer. Neither `pull_request_target` nor a same-repository feature
 branch is a trusted write context.
 
-The path-scoped `Compiler cache validation` PR workflow runs all native lanes and
-the two Python extras. Its small C/C++ fixture checks both cache tools with a cold
-build, an archive-restored warm build after deleting `build/`, and a changed-source
-build. CTest runs on every pass. It also checks namespace partitioning. The normal
-Python PR workflow remains in place, and the working vcpkg integration is unchanged.
+The `Compiler cache validation` workflow is manual-only and runs all native lanes
+and the two Python extras when dispatched. Its small C/C++ fixture checks both
+cache tools with a cold build, an archive-restored warm build after deleting
+`build/`, and a changed-source build. CTest runs on every pass. It also checks
+namespace partitioning. The normal PR CI remains in place, and the working vcpkg
+integration is unchanged.
 
 A draft PR cannot prove publication or warm restoration from the new trusted
 `develop` namespace. After merge, compare the first trusted population run and a
