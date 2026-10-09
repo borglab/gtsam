@@ -95,27 +95,28 @@ TEST(WahbaFactor, QcqpValidation) {
   NonlinearEqualityConstraints constraints;
   const WahbaFactor factor(kKey, bDirection, measured_aDirection,
                            noiseModel::Unit::Create(3));
-  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, 2),
+  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, nullptr, 2),
                   std::invalid_argument);
-  CHECK_EXCEPTION(factor.qcqpFactors(nullptr, &constraints, 1),
+  CHECK_EXCEPTION(factor.qcqpFactors(nullptr, &constraints, nullptr, 1),
                   std::invalid_argument);
 
   const WahbaFactor nullModelFactor(kKey, bDirection, measured_aDirection,
                                     nullptr);
-  CHECK_EXCEPTION(nullModelFactor.qcqpFactors(&costs, &constraints, 1),
+  CHECK_EXCEPTION(nullModelFactor.qcqpFactors(&costs, &constraints, nullptr, 1),
                   std::runtime_error);
 
   const auto robustModel = noiseModel::Robust::Create(
       noiseModel::mEstimator::Huber::Create(1.0), noiseModel::Unit::Create(3));
   const WahbaFactor robustFactor(kKey, bDirection, measured_aDirection,
                                  robustModel);
-  CHECK_EXCEPTION(robustFactor.qcqpFactors(&costs, &constraints, 1),
+  CHECK_EXCEPTION(robustFactor.qcqpFactors(&costs, &constraints, nullptr, 1),
                   std::runtime_error);
 
   const WahbaFactor constrainedFactor(kKey, bDirection, measured_aDirection,
                                       noiseModel::Constrained::All(3));
-  CHECK_EXCEPTION(constrainedFactor.qcqpFactors(&costs, &constraints, 1),
-                  std::runtime_error);
+  CHECK_EXCEPTION(
+      constrainedFactor.qcqpFactors(&costs, &constraints, nullptr, 1),
+      std::runtime_error);
 }
 
 // Verifies polymorphic cloning and measurement-aware equality.

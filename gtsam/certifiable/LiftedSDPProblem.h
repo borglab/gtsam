@@ -77,8 +77,11 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
    * constant entry.
    *
    * @param problem QCQP to relax.
+   * @param useRedundantConstraints Also lift problem.redundantConstraints(),
+   * which tighten the relaxation. False keeps the plain Shor relaxation.
    */
-  explicit LiftedSDPProblem(const QcqpProblem& problem);
+  explicit LiftedSDPProblem(const QcqpProblem& problem,
+                            bool useRedundantConstraints = false);
 
   /// Dispose of the owned MOSEK model.
   ~LiftedSDPProblem();
@@ -100,13 +103,16 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
   /// Return MOSEK's optimizer time in seconds after solve().
   double solveTimeSeconds() const;
 
-  /// Return one keyed D=1 QCQP vector per diagonal SDP block after solve().
+  /**
+   * Return one keyed D=1 QCQP vector per diagonal SDP block after solve(),
+   * together with the QCQP's fixed variables, which are not in the SDP.
+   */
   Values qcqpValues() const;
 
   /// Return largest-to-second-largest eigenvalue ratios for recovered blocks.
   std::vector<double> variableEVRs() const;
 
-  /// Return QCQP variable keys in SDP block order.
+  /// Return QCQP variable keys in SDP block order, without fixed variables.
   const KeyVector& orderedKeys() const;
 
   /// Return the QCQP dimension associated with each ordered key.
@@ -137,9 +143,12 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
    *
    * @param problem QCQP to relax.
    * @param orderingType Ordering used for symbolic elimination.
+   * @param useRedundantConstraints Also lift problem.redundantConstraints(),
+   * which tighten the relaxation. False keeps the plain Shor relaxation.
    */
   LiftedSDPProblem(const QcqpProblem& problem,
-                   ChordalOrderingType orderingType);
+                   ChordalOrderingType orderingType,
+                   bool useRedundantConstraints = false);
 
   /// Dispose of the owned MOSEK model.
   ~LiftedSDPProblem();
@@ -161,13 +170,16 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
   /// Return MOSEK's optimizer time in seconds after solve().
   double solveTimeSeconds() const;
 
-  /// Return one keyed D=1 QCQP vector per diagonal SDP block after solve().
+  /**
+   * Return one keyed D=1 QCQP vector per diagonal SDP block after solve(),
+   * together with the QCQP's fixed variables, which are not in the SDP.
+   */
   Values qcqpValues() const;
 
   /// Return largest-to-second-largest eigenvalue ratios for recovered blocks.
   std::vector<double> variableEVRs() const;
 
-  /// Return QCQP variable keys in SDP block order.
+  /// Return QCQP variable keys in SDP block order, without fixed variables.
   const KeyVector& orderedKeys() const;
 
   /// Return the QCQP dimension associated with each ordered key.
