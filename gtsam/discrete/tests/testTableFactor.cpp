@@ -603,6 +603,81 @@ TEST(TableFactor, UnaryAssignment) {
 }
 
 /* ************************************************************************* */
+namespace restrict_fixture {
+const DiscreteKey A(12, 2), B(5, 3), C(91, 2);
+
+// Restricting some keys keeps only the entries consistent with the assignment.
+TEST(TableFactor, Restrict) {
+  const TableFactor f1(A & B, "1 2  3 4  5 6");
+  const auto restricted1 =
+      std::dynamic_pointer_cast<TableFactor>(f1.restrict({{A.first, 1}}));
+  CHECK(restricted1);
+  EXPECT(assert_equal(TableFactor(B, "4 5 6"), *restricted1));
+
+  const TableFactor f2(A & B & C, "1 2  3 4  5 6  7 8  9 10  11 12");
+  const auto restricted2 = std::dynamic_pointer_cast<TableFactor>(
+      f2.restrict({{A.first, 0}, {B.first, 2}}));
+  CHECK(restricted2);
+  EXPECT(assert_equal(TableFactor(C, "5 6"), *restricted2));
+}
+
+// Restricting every key leaves a single value, ignoring keys not in the factor.
+TEST(TableFactor, RestrictAllKeys) {
+  const TableFactor f(A, "50 100");
+  const auto restricted = std::dynamic_pointer_cast<TableFactor>(
+      f.restrict({{A.first, 1}, {B.first, 0}}));
+  CHECK(restricted);
+  EXPECT_LONGS_EQUAL(0, restricted->size());
+  EXPECT_LONGS_EQUAL(1, restricted->nrValues());
+  EXPECT_DOUBLES_EQUAL(100, restricted->evaluate(DiscreteValues()), 1e-9);
+}
+
+// Restricting a sparse table agrees with restricting the decision tree.
+TEST(TableFactor, RestrictMatchesDecisionTree) {
+  const std::vector<double> values{0, 2, 3, 0, 5, 6, 7, 0, 9, 10, 0, 12};
+  const TableFactor table(A & B & C, values);
+  const DecisionTreeFactor tree(A & B & C, values);
+  for (size_t b = 0; b < B.second; b++) {
+    const DiscreteValues assignment{{B.first, b}};
+    EXPECT(assert_equal(tree.restrict(assignment)->toDecisionTreeFactor(),
+                        table.restrict(assignment)->toDecisionTreeFactor()));
+  }
+}
+
+}  // namespace restrict_fixture
+/* ************************************************************************* */
+namespace table_distribution_fixture {
+const DiscreteKey A(0, 2), B(1, 3);
+const std::string spec = "1 2 3 4 5 6";
+const TableDistribution distribution(A & B, spec);
+// The same joint distribution, stored as a decision tree.
+const DiscreteConditional treeConditional(2, DecisionTreeFactor(A & B, spec));
+
+// Marginalizing a TableDistribution matches the decision tree version.
+TEST(TableDistribution, Marginal) {
+  EXPECT(assert_equal(treeConditional.marginal(A.first),
+                      distribution.marginal(A.first)));
+}
+
+// The likelihood of a TableDistribution matches the decision tree version.
+TEST(TableDistribution, Likelihood) {
+  const DiscreteValues frontalValues{{A.first, 1}, {B.first, 2}};
+  EXPECT(assert_equal(*treeConditional.likelihood(frontalValues),
+                      *distribution.likelihood(frontalValues)));
+}
+
+// Multiplying conditionals works with a TableDistribution on either side.
+TEST(TableDistribution, ConditionalProduct) {
+  const DiscreteKey C(2, 2);
+  const DiscreteConditional conditional(C, {A}, "1/3 2/2");  // P(C|A)
+  const DiscreteConditional& tableConditional = distribution;
+  const DiscreteConditional expected = conditional * treeConditional;
+  EXPECT(assert_equal(expected, conditional * tableConditional));
+  EXPECT(assert_equal(expected, tableConditional * conditional));
+}
+
+}  // namespace table_distribution_fixture
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
