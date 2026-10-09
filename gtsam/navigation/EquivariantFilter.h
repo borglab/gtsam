@@ -35,7 +35,8 @@ namespace gtsam {
  * 2. **Explicit A**: predictWithJacobian() takes a continuous-time A and
  *    discretizes it.
  * 3. **Explicit transition**: predictWithTransition() takes an already
- *    discretized Phi and Qd, for models derived directly in discrete time.
+ *    discretized Phi and Qd, for models derived directly in discrete time,
+ *    and predictWithStep() does the same with the lift as a group element.
  *
  * The filter propagates its error in **error coordinates**, the tangent space at
  * the reference state xi_ref: the covariance P, the error dynamics matrix A and
@@ -124,9 +125,7 @@ class EquivariantFilter : public ManifoldEKF<M> {
    * Commit g_ after the base class validates the matrix dimensions and updates
    * the manifold state and covariance.
    */
-  void propagate(const TangentG& increment, const MatrixM& Phi,
-                 const CovarianceM& Qd) {
-    const G step = traits<G>::Expmap(increment);
+  void propagate(const G& step, const MatrixM& Phi, const CovarianceM& Qd) {
     const G g_next = Symmetry::type == ActionType::Left
                          ? traits<G>::Compose(step, g_)
                          : traits<G>::Compose(g_, step);
@@ -313,7 +312,8 @@ class EquivariantFilter : public ManifoldEKF<M> {
   void predictWithJacobian(const Lift& lift_u, const MatrixM& A,
                            const MatrixM& Qc, double dt) {
     const TangentG Lambda = lift_u(this->state());
-    propagate(Lambda * dt, transitionMatrix<K>(A, dt), CovarianceM(Qc * dt));
+    propagate(traits<G>::Expmap(Lambda * dt), transitionMatrix<K>(A, dt),
+              CovarianceM(Qc * dt));
   }
 
   /**
@@ -335,7 +335,20 @@ class EquivariantFilter : public ManifoldEKF<M> {
   template <typename Lift>
   void predictWithTransition(const Lift& lift_u, const MatrixM& Phi,
                              const CovarianceM& Qd, double dt) {
-    propagate(lift_u(this->state()) * dt, Phi, Qd);
+    propagate(traits<G>::Expmap(lift_u(this->state()) * dt), Phi, Qd);
+  }
+
+  /**
+   * @brief Propagate with a discrete lift given as a group element.
+   *
+   * Same as predictWithTransition(), for exactly discretized lifts such as a
+   * product of exponentials that is not Exp(Lambda dt) for a convenient Lambda.
+   * The step is composed on the right for a right action and on the left for a
+   * left action.
+   */
+  void predictWithStep(const G& step, const MatrixM& Phi,
+                       const CovarianceM& Qd) {
+    propagate(step, Phi, Qd);
   }
 
   /**
