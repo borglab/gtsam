@@ -1,200 +1,40 @@
 name: Conda build
-
-# Builds GTSAM against conda-forge dependencies (system Eigen, metis, TBB,
-# Boost, SuiteSparse) on every platform the conda-forge feedstock ships, runs
-# the C++ and Python test suites, and builds the conda package itself. This is
-# the combination that tends to surface portability problems, so catching them
-# here avoids discovering them at release time in
-# https://github.com/conda-forge/gtsam-feedstock.
-#
-# Called from the nightly CI rather than on pull requests: the Windows job
-# alone takes a few hours, which is too slow to sit in the PR path. Run it on
-# demand with workflow_dispatch when a change is likely to affect it.
-
 on:
-  workflow_call:
   workflow_dispatch:
-
 permissions:
   contents: read
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
-  cancel-in-progress: true
-
+  actions: read
 jobs:
-  build:
-    name: ${{ matrix.platform }}
-    runs-on: ${{ matrix.runs-on }}
-    # pixi's activation env does not interpolate $PIXI_PROJECT_ROOT on Windows,
-    # so sccache read it literally and cached into a directory of that name,
-    # which actions/cache never picked up. Set it where the runner expands it.
-    env:
-      SCCACHE_DIR: ${{ github.workspace }}/.sccache
-      SCCACHE_CACHE_SIZE: 1G
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - platform: linux-64
-            runs-on: ubuntu-latest
-          - platform: linux-aarch64
-            runs-on: ubuntu-24.04-arm
-          - platform: osx-64
-            runs-on: macos-15-intel
-          - platform: osx-arm64
-            runs-on: macos-15
-          - platform: win-64
-            runs-on: windows-latest
-
+  reproduce:
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
-
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           pixi-version: v0.81.0
-          environments: test
-          cache: true
-
-      # Separate test/package entries so a slow package build cannot prevent
-      # test-cache persistence. Namespace by platform, runner image and toolchain
-      # inputs; compiler caches also check the actual compiler and compile flags.
-      # Each run/attempt is a new immutable generation, including same-SHA nights.
-      - name: Restore the test compiler cache
-        id: test-cache
-        uses: actions/cache/restore@v6
-        with:
-          path: |
-            .ccache
-            .sccache
-          key: conda-test-v2-${{ matrix.platform }}-${{ matrix.runs-on }}-${{ hashFiles('pixi.lock', 'pixi.toml', 'cmake/CondaDefaults.cmake') }}-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: conda-test-v2-${{ matrix.platform }}-${{ matrix.runs-on }}-${{ hashFiles('pixi.lock', 'pixi.toml', 'cmake/CondaDefaults.cmake') }}-
-
-      - name: Restore the package compiler cache
-        id: package-cache
-        uses: actions/cache/restore@v6
-        with:
-          path: |
-            .ccache-pkg
-            .sccache-pkg
-          key: conda-package-v2-${{ matrix.platform }}-${{ matrix.runs-on }}-${{ hashFiles('pixi.lock', 'pixi.toml', 'cmake/Conda*.cmake') }}-${{ github.run_id }}-${{ github.run_attempt }}
-          restore-keys: conda-package-v2-${{ matrix.platform }}-${{ matrix.runs-on }}-${{ hashFiles('pixi.lock', 'pixi.toml', 'cmake/Conda*.cmake') }}-
-
-      - name: Check pixi.toml and CMakeLists.txt agree on the version
-        run: pixi run -e test check-version
-
-      - name: Build GTSAM and the unit tests
-        run: pixi run -e test build-tests
-
-      - name: Run the C++ tests
-        run: pixi run -e test test
-
-      - name: Build the Python wrappers
-        run: pixi run -e test build-python
-
-      - name: Run the Python tests
-        run: pixi run -e test python-test
-
-      # Reports the real hit rate, so a cache that has silently stopped working
-      # shows up here instead of as an unexplained slowdown.
-      - name: Test build cache statistics
-        if: always() && runner.os != 'Windows'
-        run: |
-          pixi run -e test ccache --show-config
-          pixi run -e test ccache --show-stats
-        continue-on-error: true
-
-      - name: Test build cache statistics (Windows)
-        if: always() && runner.os == 'Windows'
-        # Flush the test cache and stop its server before the package launches
-        # sccache with a different directory. A running server retains its env.
-        run: pixi run -e test sccache --stop-server
-        continue-on-error: true
-
-      # A reusable workflow inherits the caller's event/ref. Only trusted
-      # develop push/nightly/manual runs persist caches, never PRs or branches.
-      # Save before the package build can exhaust the job's time allowance.
-      - name: Save the test compiler cache
-        if: >-
-          always() && github.repository == 'borglab/gtsam' &&
-          github.ref == 'refs/heads/develop' &&
-          contains(fromJSON('["push", "schedule", "workflow_dispatch"]'), github.event_name)
-        uses: actions/cache/save@v6
-        with:
-          path: |
-            .ccache
-            .sccache
-          key: ${{ steps.test-cache.outputs.cache-primary-key }}
-
-      # --path avoids selecting GTSAM's ROS package.xml as the manifest.
-      # CondaPackageCache.cmake passes cache settings through the isolated
-      # backend's compiler launchers and reports the effective configuration.
-      - name: Build the conda package
-        run: pixi build --path pixi.toml --output-dir dist
-
-      # Neither the test suite nor `pixi build` consumes GTSAM the way a user
-      # does: both use the build tree. Install the package just built into a
-      # fresh environment and build and run the example project against its
-      # GTSAMConfig.cmake, so that a broken exported config fails here.
-      - name: Build a CMake project against the conda package
+          run-install: false
+      - name: Download the original Windows package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download 38047493267 --repo borglab/gtsam --name conda-package-win-64 --dir baseline
+      - name: Reproduce the installed Python import failure
         shell: bash
         run: |
-          prefix_path='$CONDA_PREFIX'
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            prefix_path='$CONDA_PREFIX/Library'
-          fi
-          pixi exec \
-            --spec dist/gtsam-*.conda \
-            --spec cmake \
-            --spec ninja \
-            --spec cxx-compiler \
-            --spec eigen \
-            --spec libboost-devel \
-            --spec tbb-devel \
-            -- bash -c "
-              set -e
-              cmake -G Ninja -S cmake/example_cmake_find_gtsam -B build-example \
-                -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=\"$prefix_path\"
-              cmake --build build-example
-              ./build-example/example
-            "
-
-      - name: Package build cache statistics
-        if: always() && runner.os != 'Windows'
-        run: |
-          pixi exec --spec ccache ccache --show-config
-          pixi exec --spec ccache ccache --show-stats
-        env:
-          CCACHE_DIR: ${{ github.workspace }}/.ccache-pkg
-          CCACHE_BASEDIR: ${{ github.workspace }}
-          CCACHE_NOHASHDIR: "1"
-          CCACHE_MAXSIZE: 1G
-          CCACHE_COMPILERCHECK: content
-
-      - name: Package build cache statistics (Windows)
-        if: always() && runner.os == 'Windows'
-        # The server may have expired while linking, packaging or testing the
-        # consumer. A failed diagnostic must not fail a successful package build.
-        run: pixi exec --spec sccache sccache --stop-server
-        continue-on-error: true
-        env:
-          SCCACHE_DIR: ${{ github.workspace }}/.sccache-pkg
-          SCCACHE_SERVER_PORT: 4227
-
-      - name: Save the package compiler cache
-        if: >-
-          always() && github.repository == 'borglab/gtsam' &&
-          github.ref == 'refs/heads/develop' &&
-          contains(fromJSON('["push", "schedule", "workflow_dispatch"]'), github.event_name)
-        uses: actions/cache/save@v6
-        with:
-          path: |
-            .ccache-pkg
-            .sccache-pkg
-          key: ${{ steps.package-cache.outputs.cache-primary-key }}
-
-      - uses: actions/upload-artifact@v7
-        with:
-          name: conda-package-${{ matrix.platform }}
-          path: dist/*.conda
-          if-no-files-found: error
+          package=$(realpath baseline/gtsam-*.conda)
+          cd "$RUNNER_TEMP"
+          pixi exec --spec "$package" -- python -I -c '
+          import pathlib, sys, sysconfig
+          print("Python:", sys.version)
+          print("Prefix:", sys.prefix)
+          print("Expected site-packages:", sysconfig.get_path("platlib"))
+          installed = list(pathlib.Path(sys.prefix).glob("Library/**/gtsam/__init__.py"))
+          print("Packaged gtsam location:", installed)
+          assert installed, "Original misplaced package was not found"
+          try:
+              import gtsam
+          except ModuleNotFoundError as error:
+              assert error.name == "gtsam", error
+              print("Reproduced:", repr(error))
+          else:
+              raise AssertionError("Original package unexpectedly imports")
+          '
