@@ -2,8 +2,8 @@
 #   cmake -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/CondaDefaults.cmake
 # which, unlike `cmake -C`, takes a path relative to the source tree.
 #
-# Shared by `pixi build` and the pixi `test` environment so the packaged build
-# and the tested build cannot drift apart. See pixi.toml.
+# Shared GTSAM options for `pixi build` and the pixi `test` environment.
+# Dependencies, compilers and their flags are resolved separately. See pixi.toml.
 
 set(CMAKE_BUILD_TYPE Release CACHE STRING "")
 
