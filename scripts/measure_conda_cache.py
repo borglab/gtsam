@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import time
@@ -21,6 +22,8 @@ SUMMARY = []
 
 
 def run(args, *, cwd=ROOT, capture=False):
+    if PHASE == "package" and args[0] == "sccache":
+        args = ["pixi", "exec", "--spec", "sccache", "--", *args]
     print("COMMAND:", args, flush=True)
     process = subprocess.Popen(args, cwd=cwd, env=ENV, text=True,
                                encoding="utf-8", errors="replace",
@@ -82,13 +85,22 @@ def measure(temperature):
 
 
 run(["sccache", "--version"])
-run(["python", "--version"])
-run(["cmake", "--version"])
+run([sys.executable, "--version"])
+if PHASE == "development":
+    run(["cmake", "--version"])
 # These jobs intentionally restore no compiler caches.
 assert not CACHE.exists(), f"Cold cache already exists: {CACHE}"
 cold = measure("cold")
 if PHASE == "development":
     run(["cmake", "--build", "build", "--target", "clean"])
+else:
+    # Pixi's frontend build directory is separate from the backend's CMake
+    # outputs. Remove those outputs explicitly to force native recompilation.
+    caches = list((ROOT / ".pixi" / "bld" / "gtsam").rglob("CMakeCache.txt"))
+    assert caches, "No backend CMake build found to clean"
+    for cache in caches:
+        print("Removing compiler outputs:", cache.parent, flush=True)
+        shutil.rmtree(cache.parent)
 warm = measure("warm")
 assert cold == warm, "Cold and warm dependency records differ"
 
