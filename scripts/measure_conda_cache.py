@@ -54,7 +54,7 @@ def dependencies():
     packages = set()
     for root in roots:
         for metadata in root.glob("*.json"):
-            record = json.loads(metadata.read_text())
+            record = json.loads(metadata.read_text(encoding="utf-8"))
             packages.add((record["name"], record["version"], record["build"], record.get("sha256", "")))
     if not packages:
         raise RuntimeError("No dependency records found")
@@ -90,6 +90,11 @@ if PHASE == "development":
     run(["cmake", "--version"])
 # These jobs intentionally restore no compiler caches.
 assert not CACHE.exists(), f"Cold cache already exists: {CACHE}"
+# Check the measurement harness before starting the expensive cold build.
+run([sys.executable, "-c", "import sys; sys.stdout.reconfigure(encoding='utf-8'); print('UTF-8 log probe: \\U0001f680')"])
+stats("empty")
+if PHASE == "development":
+    dependencies()
 cold = measure("cold")
 if PHASE == "development":
     run(["cmake", "--build", "build", "--target", "clean"])
