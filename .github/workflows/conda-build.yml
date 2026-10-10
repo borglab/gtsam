@@ -1,8 +1,9 @@
 name: Conda build
 
 # Builds GTSAM against conda-forge dependencies (system Eigen, metis, TBB,
-# Boost, SuiteSparse) on every platform the conda-forge feedstock ships, runs
-# the C++ and Python test suites, and builds the conda package itself. This is
+# Boost, SuiteSparse) on every platform the conda-forge feedstock ships. The
+# locked development build runs C++ and Python tests; the separately resolved
+# package runs installed Python tests and a C++ consumer. This is
 # the combination that tends to surface portability problems, so catching them
 # here avoids discovering them at release time in
 # https://github.com/conda-forge/gtsam-feedstock.
@@ -95,6 +96,9 @@ jobs:
       - name: Run the Python tests
         run: pixi run -e test python-test
 
+      - name: Run the unstable Python tests
+        run: pixi run -e test python-test-unstable
+
       # Reports the real hit rate, so a cache that has silently stopped working
       # shows up here instead of as an unexplained slowdown.
       - name: Test build cache statistics
@@ -130,19 +134,16 @@ jobs:
       # CondaPackageCache.cmake passes cache settings through the isolated
       # backend's compiler launchers and reports the effective configuration.
       - name: Build the conda package
+        id: package
         run: pixi build --path pixi.toml --output-dir dist
 
-      # Neither the test suite nor `pixi build` consumes GTSAM the way a user
-      # does: both use the build tree. Install the package just built into a
-      # fresh environment and build and run the example project against its
-      # GTSAMConfig.cmake, so that a broken exported config fails here.
-      - name: Build a CMake project against the conda package
+      # Test the actual package in its own environment. The development build
+      # above can have different dependencies, compilers and compiler flags.
+      - name: Test the installed conda package
         shell: bash
         run: |
-          prefix_path='$CONDA_PREFIX'
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            prefix_path='$CONDA_PREFIX/Library'
-          fi
+          # Expand CONDA_PREFIX inside the consumer environment.
+          # shellcheck disable=SC2016
           pixi exec \
             --spec dist/gtsam-*.conda \
             --spec cmake \
@@ -151,13 +152,19 @@ jobs:
             --spec eigen \
             --spec libboost-devel \
             --spec tbb-devel \
-            -- bash -c "
+            --spec pytest \
+            -- bash -c '
               set -e
+              prefix_path="$CONDA_PREFIX"
+              if [[ "$RUNNER_OS" == "Windows" ]]; then
+                prefix_path="$CONDA_PREFIX/Library"
+              fi
+              python -I scripts/test_conda_package.py
               cmake -G Ninja -S cmake/example_cmake_find_gtsam -B build-example \
-                -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=\"$prefix_path\"
+                -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$prefix_path"
               cmake --build build-example
               ./build-example/example
-            "
+            '
 
       - name: Package build cache statistics
         if: always() && runner.os != 'Windows'
@@ -194,6 +201,7 @@ jobs:
           key: ${{ steps.package-cache.outputs.cache-primary-key }}
 
       - uses: actions/upload-artifact@v7
+        if: always() && steps.package.outcome == 'success'
         with:
           name: conda-package-${{ matrix.platform }}
           path: dist/*.conda
