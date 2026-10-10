@@ -2,6 +2,13 @@
 # and other workflows on their existing compiler-cache configuration.
 include("${CMAKE_CURRENT_LIST_DIR}/CondaDefaults.cmake")
 
+# Windows C++ files install under PREFIX/Library, but Python's site-packages
+# belongs under PREFIX. The backend supplies the host environment as PREFIX.
+if(DEFINED ENV{PREFIX})
+  file(TO_CMAKE_PATH "$ENV{PREFIX}" _conda_python_prefix)
+  set(GTSAM_PYTHON_INSTALL_PREFIX "${_conda_python_prefix}" CACHE PATH "")
+endif()
+
 # The backend sanitizes its environment and sets HOME to its work directory.
 # Workflow CCACHE_* / SCCACHE_* variables therefore do not reach the compiler.
 # CMAKE_SOURCE_DIR is the checkout, whereas backend SRC_DIR is the work tree.

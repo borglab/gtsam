@@ -22,13 +22,7 @@ if(GTSAM_BUILD_PYTHON OR GTSAM_INSTALL_MATLAB_TOOLBOX)
     else()
       # Get info about the Python3 interpreter
       # https://cmake.org/cmake/help/latest/module/FindPython3.html#module:FindPython3
-      find_package(Python3 COMPONENTS Interpreter Development)
-
-      if(NOT ${Python3_FOUND})
-        message(
-          FATAL_ERROR
-            "Cannot find Python3 interpreter. Please install Python >= 3.6.")
-      endif()
+      find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 
       set(Python_VERSION_MAJOR ${Python3_VERSION_MAJOR})
       set(Python_VERSION_MINOR ${Python3_VERSION_MINOR})

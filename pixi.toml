@@ -71,6 +71,10 @@ pyparsing = "*"
 pip = "*"
 setuptools = "*"
 
+# CMake's Development component also needs the separate embedding library.
+[package.host-dependencies."if(host_platform != 'win-64')"]
+libpython = "*"
+
 [package.run-dependencies]
 pyparsing = "*"
 
@@ -99,6 +103,9 @@ pyparsing = "*"
 pip = "*"
 setuptools = "*"
 pytest = "*"
+
+[feature.test.target.unix.dependencies]
+libpython = "*"
 
 # CMake and ccache pick these up from the environment, so one task works
 # everywhere.
