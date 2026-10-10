@@ -20,10 +20,10 @@ jobs:
       - name: Reproduce the installed Python import failure
         shell: bash
         run: |
-          package=$(realpath baseline/gtsam-*.conda)
-          cd "$RUNNER_TEMP"
+          package=$(echo baseline/gtsam-*.conda)
           pixi exec --spec "$package" -- python -I -c '
-          import pathlib, sys, sysconfig
+          import os, pathlib, sys, sysconfig
+          os.chdir(os.environ["RUNNER_TEMP"])
           print("Python:", sys.version)
           print("Prefix:", sys.prefix)
           print("Expected site-packages:", sysconfig.get_path("platlib"))
