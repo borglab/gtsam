@@ -45,7 +45,11 @@ set(CMAKE_CXX_COMPILER_LAUNCHER ${CMAKE_C_COMPILER_LAUNCHER})
 message(STATUS "Conda package cache directory: ${_conda_cache_dir}")
 message(STATUS "Conda package C launcher: ${CMAKE_C_COMPILER_LAUNCHER}")
 message(STATUS "Conda package C++ launcher: ${CMAKE_CXX_COMPILER_LAUNCHER}")
+execute_process(COMMAND "${_conda_cache_program}" --version)
 execute_process(
   COMMAND "${CMAKE_COMMAND}" -E env ${_conda_cache_env}
     "${_conda_cache_program}" ${_conda_cache_diagnostics}
-  COMMAND_ERROR_IS_FATAL ANY)
+  RESULT_VARIABLE _conda_cache_diagnostic_result)
+if(NOT _conda_cache_diagnostic_result EQUAL 0)
+  message(WARNING "Could not report Conda package cache configuration")
+endif()

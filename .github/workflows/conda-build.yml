@@ -33,6 +33,9 @@ jobs:
     env:
       SCCACHE_DIR: ${{ github.workspace }}/.sccache
       SCCACHE_CACHE_SIZE: 1G
+      # Retain this job's statistics through long linking/packaging steps.
+      # Each server is explicitly stopped when its phase finishes.
+      SCCACHE_IDLE_TIMEOUT: "0"
     strategy:
       fail-fast: false
       matrix:
@@ -84,6 +87,15 @@ jobs:
       - name: Check pixi.toml and CMakeLists.txt agree on the version
         run: pixi run -e test check-version
 
+      - name: Reset test compiler cache statistics
+        continue-on-error: true
+        shell: bash
+        run: |
+          cache=ccache
+          if [[ "$RUNNER_OS" == "Windows" ]]; then cache=sccache; fi
+          pixi run -e test "$cache" --version
+          pixi run -e test "$cache" --zero-stats
+
       - name: Build GTSAM and the unit tests
         run: pixi run -e test build-tests
 
@@ -105,7 +117,7 @@ jobs:
         if: always() && runner.os != 'Windows'
         run: |
           pixi run -e test ccache --show-config
-          pixi run -e test ccache --show-stats
+          pixi run -e test ccache --show-stats --verbose
         continue-on-error: true
 
       - name: Test build cache statistics (Windows)
@@ -133,6 +145,25 @@ jobs:
       # --path avoids selecting GTSAM's ROS package.xml as the manifest.
       # CondaPackageCache.cmake passes cache settings through the isolated
       # backend's compiler launchers and reports the effective configuration.
+      - name: Reset package compiler cache statistics
+        if: runner.os != 'Windows'
+        continue-on-error: true
+        run: |
+          pixi exec --spec ccache ccache --version
+          pixi exec --spec ccache ccache --zero-stats
+        env:
+          CCACHE_DIR: ${{ github.workspace }}/.ccache-pkg
+
+      - name: Reset package compiler cache statistics (Windows)
+        if: runner.os == 'Windows'
+        continue-on-error: true
+        run: |
+          pixi exec --spec sccache sccache --version
+          pixi exec --spec sccache sccache --zero-stats
+        env:
+          SCCACHE_DIR: ${{ github.workspace }}/.sccache-pkg
+          SCCACHE_SERVER_PORT: 4227
+
       - name: Build the conda package
         id: package
         run: pixi build --path pixi.toml --output-dir dist
@@ -170,7 +201,8 @@ jobs:
         if: always() && runner.os != 'Windows'
         run: |
           pixi exec --spec ccache ccache --show-config
-          pixi exec --spec ccache ccache --show-stats
+          pixi exec --spec ccache ccache --show-stats --verbose
+        continue-on-error: true
         env:
           CCACHE_DIR: ${{ github.workspace }}/.ccache-pkg
           CCACHE_BASEDIR: ${{ github.workspace }}
@@ -180,8 +212,7 @@ jobs:
 
       - name: Package build cache statistics (Windows)
         if: always() && runner.os == 'Windows'
-        # The server may have expired while linking, packaging or testing the
-        # consumer. A failed diagnostic must not fail a successful package build.
+        # A failed diagnostic must not fail a successful package build.
         run: pixi exec --spec sccache sccache --stop-server
         continue-on-error: true
         env:
