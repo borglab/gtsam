@@ -10,8 +10,8 @@ preview = ["pixi-build"]
 #
 # This builds GTSAM the way conda-forge does: against the system Eigen, metis,
 # TBB, Boost and SuiteSparse rather than the bundled copies. That combination
-# is what tends to surface portability problems, so building it on every PR
-# catches them before they reach the feedstock.
+# is what tends to surface portability problems. Nightly and manual CI runs
+# build against current conda-forge packages and test the installed artifact.
 # ---------------------------------------------------------------------------
 [package]
 name = "gtsam"
@@ -25,8 +25,9 @@ backend = { name = "pixi-build-cmake", version = "0.*" }
 # cephes (gtsam/3rdparty/cephes) is C, the rest is C++.
 compilers = ["c", "cxx"]
 # The GTSAM options live in cmake/CondaDefaults.cmake, shared with the test
-# environment below so the packaged build and the tested build cannot drift
-# apart. CondaPackageCache.cmake includes those defaults and configures the
+# environment below. Its locked dependencies and toolchain can differ from
+# the package backend's freshly resolved environment and compiler flags.
+# CondaPackageCache.cmake includes those defaults and configures the
 # package's isolated compiler cache. The include resolves relative to the tree,
 # unlike `cmake -C`, which resolves against the working directory -- this
 # backend runs cmake from a build directory far away from the sources.
@@ -71,14 +72,17 @@ pyparsing = "*"
 pip = "*"
 setuptools = "*"
 
+# CMake's Development component also needs the separate embedding library.
+[package.host-dependencies."if(host_platform != 'win-64')"]
+libpython = "*"
+
 [package.run-dependencies]
 pyparsing = "*"
 
 # ---------------------------------------------------------------------------
-# Test environment: configure, build everything including the unit tests, and
-# run them. `pixi build` only builds the install target, so it never compiles
-# the test binaries, and the test suite is where dependency-version
-# regressions actually surface.
+# Development environment: build and run C++ and Python tests with the
+# dependencies in pixi.lock. Packaging resolves its own dependencies, so CI
+# also tests the installed package; these suites do not validate that build.
 # ---------------------------------------------------------------------------
 [feature.test.dependencies]
 c-compiler = "*"
@@ -100,6 +104,9 @@ pip = "*"
 setuptools = "*"
 pytest = "*"
 
+[feature.test.target.unix.dependencies]
+libpython = "*"
+
 # CMake and ccache pick these up from the environment, so one task works
 # everywhere.
 [feature.test.activation.env]
@@ -114,9 +121,8 @@ CCACHE_MAXSIZE = "1G"
 [feature.test.target.win-64.dependencies]
 sccache = "*"
 
-# GTSAM never launches ccache under MSVC, so Windows recompiles everything on
-# every run. sccache does support cl.exe, and GTSAM's Release flags are /MD /O2
-# with no /Zi, which sccache cannot cache.
+# Use sccache with MSVC. CondaDefaults.cmake disables precompiled headers,
+# whose /Fp flag prevents caching the main GTSAM library's compilations.
 [feature.test.target.win-64.activation.env]
 CMAKE_PREFIX_PATH = "$CONDA_PREFIX\\Library"
 CMAKE_C_COMPILER_LAUNCHER = "sccache"
@@ -155,6 +161,10 @@ depends-on = ["build-tests"]
 
 [feature.test.tasks.python-test]
 cmd = ["cmake", "--build", "build", "--target", "python-test"]
+depends-on = ["build-python"]
+
+[feature.test.tasks.python-test-unstable]
+cmd = ["cmake", "--build", "build", "--target", "python-test-unstable"]
 depends-on = ["build-python"]
 
 # pixi cannot read the version out of CMakeLists.txt yet

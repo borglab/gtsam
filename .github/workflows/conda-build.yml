@@ -1,40 +1,35 @@
 name: Conda build
+
+# Temporary native measurements; excluded from the proposed PR.
 on:
   workflow_dispatch:
 permissions:
   contents: read
-  actions: read
 jobs:
-  reproduce:
+  measure:
+    name: Native Windows ${{ matrix.phase }}
     runs-on: windows-latest
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        phase: [development, package]
+    env:
+      SCCACHE_DIR: ${{ github.workspace }}/.sccache
+      SCCACHE_CACHE_SIZE: 1G
+      SCCACHE_IDLE_TIMEOUT: "0"
     steps:
       - uses: actions/checkout@v7
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           pixi-version: v0.81.0
-          run-install: false
-      - name: Download the original Windows package
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh run download 38047493267 --repo borglab/gtsam --name conda-package-win-64 --dir baseline
-      - name: Reproduce the installed Python import failure
-        shell: bash
-        run: |
-          package=$(echo baseline/gtsam-*.conda)
-          pixi exec --spec "$package" -- python -I -c '
-          import os, pathlib, sys, sysconfig
-          os.chdir(os.environ["RUNNER_TEMP"])
-          print("Python:", sys.version)
-          print("Prefix:", sys.prefix)
-          print("Expected site-packages:", sysconfig.get_path("platlib"))
-          installed = list(pathlib.Path(sys.prefix).glob("Library/**/gtsam/__init__.py"))
-          print("Packaged gtsam location:", installed)
-          assert installed, "Original misplaced package was not found"
-          try:
-              import gtsam
-          except ModuleNotFoundError as error:
-              assert error.name == "gtsam", error
-              print("Reproduced:", repr(error))
-          else:
-              raise AssertionError("Original package unexpectedly imports")
-          '
+          environments: test
+          cache: true
+      - name: Native cold and warm builds with identical dependencies
+        run: pixi run -e test python scripts/measure_conda_cache.py ${{ matrix.phase }}
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: windows-cache-${{ matrix.phase }}
+          path: measurements/
+          if-no-files-found: error
