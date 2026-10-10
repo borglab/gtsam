@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -61,6 +62,18 @@ def dependencies():
     return sorted(packages)
 
 
+def clean_package_outputs(project, name):
+    directory = project / ".pixi" / "bld" / name
+
+    def remove_readonly(function, path, exception):
+        print(f"Clearing read-only attribute: {path}: {exception}", flush=True)
+        os.chmod(path, stat.S_IWRITE | stat.S_IREAD)
+        function(path)
+
+    print("Removing backend artifacts:", directory, flush=True)
+    shutil.rmtree(directory, onexc=remove_readonly)
+
+
 def check_package_rebuild():
     """Prove the warm-build cleanup with a small native package first."""
     project = ROOT / ".benchmark-preflight"
@@ -86,10 +99,7 @@ install(TARGETS cache_probe)
     (project / "probe.cpp").write_text('__declspec(dllexport) int answer() { return 42; }\n')
     for temperature in ("cold", "warm"):
         if temperature == "warm":
-            caches = list((project / ".pixi" / "bld").rglob("CMakeCache.txt"))
-            assert caches, "Preflight backend CMake directory not found"
-            for cache in caches:
-                shutil.rmtree(cache.parent)
+            clean_package_outputs(project, "gtsam-cache-probe")
         output = run(["pixi", "build", "--clean", "--path", str(project / "pixi.toml"),
                       "--output-dir", str(project / temperature)], capture=True)
         assert "Building CXX object" in output, "Preflight reused a package without recompiling"
@@ -139,13 +149,9 @@ else:
     # Its executable can be inside the backend environment. Windows cannot
     # remove that environment while the server is still running.
     run(["sccache", "--stop-server"])
-    # Pixi's frontend build directory is separate from the backend's CMake
-    # outputs. Remove those outputs explicitly to force native recompilation.
-    caches = list((ROOT / ".pixi" / "bld" / "gtsam").rglob("CMakeCache.txt"))
-    assert caches, "No backend CMake build found to clean"
-    for cache in caches:
-        print("Removing compiler outputs:", cache.parent, flush=True)
-        shutil.rmtree(cache.parent)
+    # Remove backend artifacts as well as compiler outputs. The small-package
+    # preflight verifies this forces compilation and handles Windows attributes.
+    clean_package_outputs(ROOT, "gtsam")
 warm = measure("warm")
 assert cold == warm, "Cold and warm dependency records differ"
 assert SUMMARY[-1]["stats"]["stats"]["compile_requests"] > 0, "Warm build performed no compiler calls"
