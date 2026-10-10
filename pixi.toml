@@ -121,9 +121,8 @@ CCACHE_MAXSIZE = "1G"
 [feature.test.target.win-64.dependencies]
 sccache = "*"
 
-# GTSAM never launches ccache under MSVC, so Windows recompiles everything on
-# every run. sccache does support cl.exe, and GTSAM's Release flags are /MD /O2
-# with no /Zi, which sccache cannot cache.
+# Use sccache with MSVC. CondaDefaults.cmake disables precompiled headers,
+# whose /Fp flag prevents caching the main GTSAM library's compilations.
 [feature.test.target.win-64.activation.env]
 CMAKE_PREFIX_PATH = "$CONDA_PREFIX\\Library"
 CMAKE_C_COMPILER_LAUNCHER = "sccache"
