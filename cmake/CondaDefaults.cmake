@@ -2,8 +2,8 @@
 #   cmake -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/CondaDefaults.cmake
 # which, unlike `cmake -C`, takes a path relative to the source tree.
 #
-# Shared by `pixi build` and the pixi `test` environment so the packaged build
-# and the tested build cannot drift apart. See pixi.toml.
+# Shared GTSAM options for `pixi build` and the pixi `test` environment.
+# Dependencies, compilers and their flags are resolved separately. See pixi.toml.
 
 set(CMAKE_BUILD_TYPE Release CACHE STRING "")
 
@@ -13,6 +13,9 @@ set(GTSAM_BUILD_WITH_MARCH_NATIVE OFF CACHE BOOL "")
 # Warnings-as-errors is useful upstream, but it would make the packaged build
 # hostage to every new compiler version conda-forge ships.
 set(GTSAM_BUILD_WITH_WERROR OFF CACHE BOOL "")
+
+# MSVC's /Fp precompiled-header calls cannot be cached by sccache.
+set(GTSAM_BUILD_WITH_PRECOMPILED_HEADERS OFF CACHE BOOL "")
 
 # Nothing here needs the examples or the timing scripts.
 set(GTSAM_BUILD_EXAMPLES_ALWAYS OFF CACHE BOOL "")
