@@ -1,35 +1,26 @@
 name: Conda build
 
-# Temporary native measurements; excluded from the proposed PR.
+# Temporary diagnosis of the original artifact, not part of the proposed PR.
 on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 jobs:
-  measure:
-    name: Native Windows ${{ matrix.phase }}
+  layout:
     runs-on: windows-latest
-    timeout-minutes: 350
-    strategy:
-      fail-fast: false
-      matrix:
-        phase: [package]
-    env:
-      SCCACHE_DIR: ${{ github.workspace }}/.sccache
-      SCCACHE_CACHE_SIZE: 1G
-      SCCACHE_IDLE_TIMEOUT: "0"
     steps:
       - uses: actions/checkout@v7
       - uses: prefix-dev/setup-pixi@v0.10.2
         with:
           pixi-version: v0.81.0
-          environments: test
-          cache: true
-      - name: Native cold and warm builds with identical dependencies
-        run: python scripts/measure_conda_cache.py ${{ matrix.phase }}
-      - uses: actions/upload-artifact@v7
-        if: always()
-        with:
-          name: windows-cache-${{ matrix.phase }}
-          path: measurements/
-          if-no-files-found: error
+          run-install: false
+      - name: Download the original Windows artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh run download 38047493267 --repo borglab/gtsam --name conda-package-win-64 --dir baseline
+      - name: Confirm the failure and test the corrected location
+        shell: bash
+        run: |
+          package=$(echo baseline/gtsam-*.conda)
+          pixi exec --spec "$package" --spec pytest -- python -I scripts/probe_conda_layout.py
