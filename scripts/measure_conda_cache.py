@@ -90,7 +90,7 @@ install(TARGETS cache_probe)
             assert caches, "Preflight backend CMake directory not found"
             for cache in caches:
                 shutil.rmtree(cache.parent)
-        output = run(["pixi", "build", "--path", str(project / "pixi.toml"),
+        output = run(["pixi", "build", "--clean", "--path", str(project / "pixi.toml"),
                       "--output-dir", str(project / temperature)], capture=True)
         assert "Building CXX object" in output, "Preflight reused a package without recompiling"
         print(f"RESULT preflight-{temperature}: native compilation observed", flush=True)
@@ -107,7 +107,7 @@ def measure(temperature):
         # Cleaning backend artifacts forces recompilation; the compiler cache
         # lives in the checkout, outside this backend build directory.
         run(["pixi", "build", "--path", "pixi.toml", "--build-dir", str(ROOT / "benchmark-package"),
-             "--output-dir", f"dist-{temperature}"])
+             "--clean", "--output-dir", f"dist-{temperature}"])
     elapsed = time.monotonic() - started
     current = stats(label)
     size = sum(p.stat().st_size for p in CACHE.rglob("*") if p.is_file())
@@ -136,6 +136,9 @@ cold = measure("cold")
 if PHASE == "development":
     run(["cmake", "--build", "build", "--target", "clean"])
 else:
+    # Its executable can be inside the backend environment. Windows cannot
+    # remove that environment while the server is still running.
+    run(["sccache", "--stop-server"])
     # Pixi's frontend build directory is separate from the backend's CMake
     # outputs. Remove those outputs explicitly to force native recompilation.
     caches = list((ROOT / ".pixi" / "bld" / "gtsam").rglob("CMakeCache.txt"))
