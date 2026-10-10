@@ -7,6 +7,7 @@ import subprocess
 import sys
 import time
 
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 ROOT = Path.cwd()
 OUT = ROOT / "measurements"
 OUT.mkdir(exist_ok=True)
