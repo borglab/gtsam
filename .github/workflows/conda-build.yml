@@ -13,7 +13,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        phase: [development, package]
+        phase: [package]
     env:
       SCCACHE_DIR: ${{ github.workspace }}/.sccache
       SCCACHE_CACHE_SIZE: 1G

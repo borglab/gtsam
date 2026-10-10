@@ -67,7 +67,7 @@ def measure(temperature):
     else:
         # Cleaning backend artifacts forces recompilation; the compiler cache
         # lives in the checkout, outside this backend build directory.
-        run(["pixi", "build", "--path", "pixi.toml", "--build-dir", "benchmark-package",
+        run(["pixi", "build", "--path", "pixi.toml", "--build-dir", str(ROOT / "benchmark-package"),
              "--clean", "--output-dir", f"dist-{temperature}"])
     elapsed = time.monotonic() - started
     current = stats(label)
