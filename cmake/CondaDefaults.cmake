@@ -14,6 +14,9 @@ set(GTSAM_BUILD_WITH_MARCH_NATIVE OFF CACHE BOOL "")
 # hostage to every new compiler version conda-forge ships.
 set(GTSAM_BUILD_WITH_WERROR OFF CACHE BOOL "")
 
+# MSVC's /Fp precompiled-header calls cannot be cached by sccache.
+set(GTSAM_BUILD_WITH_PRECOMPILED_HEADERS OFF CACHE BOOL "")
+
 # Nothing here needs the examples or the timing scripts.
 set(GTSAM_BUILD_EXAMPLES_ALWAYS OFF CACHE BOOL "")
 set(GTSAM_BUILD_TIMING_ALWAYS OFF CACHE BOOL "")
