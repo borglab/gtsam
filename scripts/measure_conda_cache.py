@@ -61,6 +61,41 @@ def dependencies():
     return sorted(packages)
 
 
+def check_package_rebuild():
+    """Prove the warm-build cleanup with a small native package first."""
+    project = ROOT / ".benchmark-preflight"
+    project.mkdir()
+    (project / "pixi.toml").write_text('''[workspace]
+name = "gtsam-cache-probe"
+channels = ["conda-forge"]
+platforms = ["win-64"]
+preview = ["pixi-build"]
+[package]
+name = "gtsam-cache-probe"
+version = "0.1.0"
+[package.build]
+backend = { name = "pixi-build-cmake", version = "0.*" }
+[package.build.config]
+compilers = ["cxx"]
+''')
+    (project / "CMakeLists.txt").write_text('''cmake_minimum_required(VERSION 3.24)
+project(CacheRebuildProbe LANGUAGES CXX)
+add_library(cache_probe SHARED probe.cpp)
+install(TARGETS cache_probe)
+''')
+    (project / "probe.cpp").write_text('__declspec(dllexport) int answer() { return 42; }\n')
+    for temperature in ("cold", "warm"):
+        if temperature == "warm":
+            caches = list((project / ".pixi" / "bld").rglob("CMakeCache.txt"))
+            assert caches, "Preflight backend CMake directory not found"
+            for cache in caches:
+                shutil.rmtree(cache.parent)
+        output = run(["pixi", "build", "--path", str(project / "pixi.toml"),
+                      "--output-dir", str(project / temperature)], capture=True)
+        assert "Building CXX object" in output, "Preflight reused a package without recompiling"
+        print(f"RESULT preflight-{temperature}: native compilation observed", flush=True)
+
+
 def measure(temperature):
     label = f"{PHASE}-{temperature}"
     run(["sccache", "--zero-stats"])
@@ -72,7 +107,7 @@ def measure(temperature):
         # Cleaning backend artifacts forces recompilation; the compiler cache
         # lives in the checkout, outside this backend build directory.
         run(["pixi", "build", "--path", "pixi.toml", "--build-dir", str(ROOT / "benchmark-package"),
-             "--clean", "--output-dir", f"dist-{temperature}"])
+             "--output-dir", f"dist-{temperature}"])
     elapsed = time.monotonic() - started
     current = stats(label)
     size = sum(p.stat().st_size for p in CACHE.rglob("*") if p.is_file())
@@ -95,6 +130,8 @@ run([sys.executable, "-c", "import sys; sys.stdout.reconfigure(encoding='utf-8')
 stats("empty")
 if PHASE == "development":
     dependencies()
+else:
+    check_package_rebuild()
 cold = measure("cold")
 if PHASE == "development":
     run(["cmake", "--build", "build", "--target", "clean"])
@@ -108,6 +145,7 @@ else:
         shutil.rmtree(cache.parent)
 warm = measure("warm")
 assert cold == warm, "Cold and warm dependency records differ"
+assert SUMMARY[-1]["stats"]["stats"]["compile_requests"] > 0, "Warm build performed no compiler calls"
 
 if PHASE == "development":
     # Replay an actual formerly PCH-dependent library translation unit. Ninja

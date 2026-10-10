@@ -7,7 +7,7 @@ permissions:
   contents: read
 jobs:
   measure:
-    name: Native Windows development
+    name: Native Windows package
     runs-on: windows-latest
     timeout-minutes: 350
     env:
@@ -22,10 +22,19 @@ jobs:
           environments: test
           cache: true
       - name: Native cold and warm builds with identical dependencies
-        run: pixi run -e test python scripts/measure_conda_cache.py development
+        run: python scripts/measure_conda_cache.py package
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: windows-cache-development
+          name: windows-cache-package
           path: measurements/
           if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: windows-benchmark-package-outputs
+          path: |
+            dist-cold/
+            dist-warm/
+            .sccache-pkg/
+          include-hidden-files: true
