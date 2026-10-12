@@ -71,6 +71,10 @@ pyparsing = "*"
 pip = "*"
 setuptools = "*"
 
+# CMake's Development component also needs the separate embedding library.
+[package.host-dependencies."if(host_platform != 'win-64')"]
+libpython = "*"
+
 [package.run-dependencies]
 pyparsing = "*"
 
