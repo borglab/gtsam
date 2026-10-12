@@ -11,7 +11,7 @@
 
 /**
  * @file testKnownLandmarkSquaredRangeFactor.cpp
- * @brief Tests for KnownLandmarkSquaredRangeFactor
+ * @brief Tests for KnownLandmarkSquaredRangeFactor.
  * @author Avinash Subramanian
  * @author Frederike Dümbgen
  * @author Frank Dellaert
@@ -25,6 +25,8 @@
 #include <gtsam/slam/KnownLandmarkSquaredRangeFactor.h>
 
 #include <Eigen/Core>
+#include <memory>
+#include <stdexcept>
 
 using namespace gtsam;
 
@@ -34,7 +36,7 @@ namespace point2_fixture {
 using Point = Eigen::Matrix<double, 2, 1>;
 using Factor = KnownLandmarkSquaredRangeFactor<2>;
 
-const Key kkey = 3;
+const Key kKey = 3;
 
 TEST(KnownLandmarkSquaredRangeFactor, Point2) {
   const Point wX(1.0, 2.0);
@@ -52,7 +54,7 @@ TEST(KnownLandmarkSquaredRangeFactor, Point2) {
   EXPECT_LONGS_EQUAL(1, H.rows());
   EXPECT_LONGS_EQUAL(2, H.cols());
 
-  Matrix expectedh(1, -2);
+  Matrix expectedH(1, 2);
   expectedH << -6.0, -8.0;
   EXPECT(assert_equal(expectedH, H));
 
@@ -83,7 +85,14 @@ TEST(KnownLandmarkSquaredRangeFactor, ScalarInfo) {
   EXPECT_DOUBLES_EQUAL(expected, factor.error(values), 1e-9);
 }
 
+TEST(KnownLandmarkSquaredRangeFactor, RejectsNegativeRange) {
+  const Point wL(4.0, 6.0);
+  const auto model = noiseModel::Unit::Create(1);
+
+  CHECK_EXCEPTION(Factor(kKey, wL, -4.0, model), std::invalid_argument);
 }
+ 
+}  // namespace point2_fixture
 
 namespace point3_fixture {
 
@@ -122,7 +131,7 @@ TEST(KnownLandmarkSquaredRangeFactor, Point3) {
 
 /*
   clone() should preserve the concrete factor type and all factor data.
-  equals() should reject changes to eitehr the fixed landmark or measured range.
+  equals() should reject changes to either the fixed landmark or measured range.
 */
 TEST(KnownLandmarkSquaredRangeFactor, CloneAndEquals) {
   const Point wL(3.0, 5.0, 9.0);
@@ -142,13 +151,10 @@ TEST(KnownLandmarkSquaredRangeFactor, CloneAndEquals) {
   NonlinearFactorGraph graph;
   graph.push_back(clone);
   const NonlinearFactorGraph graphClone = graph.clone();
-  EXPECT(std::dynamic_pointer_cast<Factor>(graphClone.at(0)));
+  EXPECT(std::dynamic_pointer_cast<Factor>(graphClone.at(0)) != nullptr);
 }
 
-}
-
- // namespace point3_fixture
-/* ************************************************************************* */
+} // namespace point3_fixture
 
 /* ************************************************************************* */
 int main() {

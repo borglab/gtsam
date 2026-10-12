@@ -11,7 +11,7 @@
 
 /**
  * @file KnownLandmarkSquaredRangeFactor.h
- * @brief Factors for range-only observations of a knownlandmark from an unknown position.
+ * @brief Factor for range-only observation of a known landmark from an unknown position.
  * @author Avinash Subramanian
  * @author Frederike Dümbgen
  * @author Frank Dellaert
@@ -22,46 +22,61 @@
 
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 
-#include <Eigen/Core>
-#include <cmath>
-#include <memory>
 #include <stdexcept>
-#include <vector>
+#include <Eigen/Core>
+#include <memory>
 
 namespace gtsam {
 
 /**
- * A unary known-landmark factor using the conventional GTSAM state direction.
+ * A unary known-landmark factor using a squared-range residual.
  *
- * For a position wX, the residual is
+ * For a position wX, known world landmark wL, and measured range d,
+ * the residual is
  *
- *   e(wX) = (measuredRange_)^2 - (wX - wL)^2
+ *   e(wX) = ||wX - wL||^2 - d^2.
  *
- * The known world landmark is fixed data, and the supplied noise model
- * represents the measurement weight. 
+ * The known world landmark is fixed data. The supplied noise model weights
+ * the scalar squared-range residual.
  *
- * See `gtsam/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb` for more details regarding usage.
+ * See `gtsam/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb` for more details 
+ * regarding usage.
  */
+
 template <int N>
-class KnownLandmarkSquaredRangeFactor : public NoiseModelFactorN<Eigen::Matrix<double, N, 1>> {
+class KnownLandmarkSquaredRangeFactor 
+    : public NoiseModelFactorN<Eigen::Matrix<double, N, 1>> {
  public:
   static_assert(N > 0, "KnownLandmarkSquaredRangeFactor requires N > 0");
+
   using Point = Eigen::Matrix<double, N, 1>;
   using Base = NoiseModelFactorN<Point>;
   using This = KnownLandmarkSquaredRangeFactor<N>;
 
-
  private:
-  Point wL_;              ///< Known landmark expressed in the world frame.
-  double measuredRange_;  ///< Corresponding range measurement of landmark position wL_
+  Point wL_;                    ///< Known landmark expressed in the world frame.
+  double measuredRangeSquared_; ///< Corresponding squared range measurement of landmark position wL_.
 
  public:
   using Base::evaluateError;
 
-  /// Construct from a key, world landmark, measurement, and noise model.
+/** 
+* Construct from a key, world landmark, range measurement, and noise model.
+* 
+* @param key Key associated with the unknown position.
+* @param wL Known landmark expressed in the world frame.
+* @param measuredRange Measured range to the landmark.
+* @param model Noise model for the scalar squared-range residual.
+* @throws std::invalid_argument if measuredRange is negative. 
+*/
   KnownLandmarkSquaredRangeFactor(Key key, const Point& wL, double measuredRange,
                       const SharedNoiseModel& model)
-      : Base(model, key), wL_(wL), measuredRange_(measuredRange) {}
+      : Base(model, key), wL_(wL), measuredRangeSquared_(measuredRange * measuredRange) {
+    if (measuredRange < 0.0){
+      throw std::invalid_argument(
+        "KnownLandmarkSquareRangeFactor: range must be non-negative.");
+    }
+  }
 
   NonlinearFactor::shared_ptr clone() const override {
     return std::make_shared<This>(*this);
@@ -72,21 +87,20 @@ class KnownLandmarkSquaredRangeFactor : public NoiseModelFactorN<Eigen::Matrix<d
     const auto* e = dynamic_cast<const This*>(&expected);
     return e != nullptr && Base::equals(*e, tol) &&
            traits<Point>::Equals(wL_, e->wL_, tol) &&
-           traits<double>::Equals(measuredRange_, e->measuredRange_, tol);
+           traits<double>::Equals(measuredRangeSquared_, e->measuredRangeSquared_, tol);
   }
 
   /** Evaluate squared predicted range minus squared measured range */
   Vector evaluateError(const Point& wX, OptionalMatrixType H) const override {
     const Point difference = wX - wL_;
-    const double predictedSquaredRange = difference.squaredNorm();
+    const double predictedRangeSquared = difference.squaredNorm();
 
-    cost double error = predictedSquaredRange - measuredRange_ * measuredRange_;
+    const double error = predictedRangeSquared - measuredRangeSquared_;
     if (H) {
       *H = 2.0 * difference.transpose();
     }
     return Vector1(error);
   }
 };
-
 
 }  // namespace gtsam
