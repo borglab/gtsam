@@ -27,11 +27,15 @@
 #include <boost/serialization/export.hpp>
 #endif
 
+// Preamble for STL classes and serialization keys used by this translation unit.
+#include "python/gtsam/preamble/{module_name}.h"
+
+#ifndef GTSAM_PYTHON_GENERATED_NOISE_MODEL_EXPORTS
+#include "python/gtsam/noise_model_serialization.h"
+#endif
+
 // Export classes for serialization
 {boost_class_export}
-
-// Preamble for STL classes
-#include "python/gtsam/preamble/{module_name}.h"
 
 using namespace std;
 

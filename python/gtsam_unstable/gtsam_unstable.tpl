@@ -16,6 +16,7 @@
 #include "python/gtsam/optional_jacobian_pybind.h"
 #include "gtsam/base/serialization.h"
 #include "gtsam/base/utilities.h"  // for RedirectCout.
+#include "python/gtsam/noise_model_serialization.h"
 
 // These are the included headers listed in `gtsam_unstable.i`
 {includes}
@@ -27,29 +28,29 @@
 {boost_class_export}
 
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
-// Boost export registrations are local to each Python extension. Keep these
-// dependencies synchronized with the serializable noise models in
+// Instantiate exports for the noise models serialized by unstable factors.
+// Keep these dependencies synchronized with the serializable noise models in
 // gtsam/linear/linear.i so unstable factors can serialize their polymorphic
 // SharedNoiseModel members.
-BOOST_CLASS_EXPORT(gtsam::noiseModel::Gaussian)
-BOOST_CLASS_EXPORT(gtsam::noiseModel::Diagonal)
-BOOST_CLASS_EXPORT(gtsam::noiseModel::Constrained)
-BOOST_CLASS_EXPORT(gtsam::noiseModel::Isotropic)
-BOOST_CLASS_EXPORT(gtsam::noiseModel::Unit)
-BOOST_CLASS_EXPORT(gtsam::noiseModel::Robust)
-BOOST_CLASS_EXPORT(gtsam::noiseModel::mEstimator::Null)
-BOOST_CLASS_EXPORT(gtsam::noiseModel::mEstimator::Fair)
-BOOST_CLASS_EXPORT(gtsam::noiseModel::mEstimator::Huber)
-BOOST_CLASS_EXPORT(gtsam::noiseModel::mEstimator::Cauchy)
-BOOST_CLASS_EXPORT(gtsam::noiseModel::mEstimator::Tukey)
-BOOST_CLASS_EXPORT(gtsam::noiseModel::mEstimator::Welsch)
-BOOST_CLASS_EXPORT(gtsam::noiseModel::mEstimator::GemanMcClure)
-BOOST_CLASS_EXPORT(gtsam::noiseModel::mEstimator::TruncatedLeastSquares)
-BOOST_CLASS_EXPORT(gtsam::noiseModel::mEstimator::DCS)
-BOOST_CLASS_EXPORT(gtsam::noiseModel::mEstimator::L2WithDeadZone)
-BOOST_CLASS_EXPORT(gtsam::noiseModel::mEstimator::AsymmetricTukey)
-BOOST_CLASS_EXPORT(gtsam::noiseModel::mEstimator::AsymmetricCauchy)
-BOOST_CLASS_EXPORT(gtsam::noiseModel::mEstimator::Custom)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::Gaussian)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::Diagonal)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::Constrained)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::Isotropic)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::Unit)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::Robust)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::mEstimator::Null)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::mEstimator::Fair)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::mEstimator::Huber)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::mEstimator::Cauchy)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::mEstimator::Tukey)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::mEstimator::Welsch)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::mEstimator::GemanMcClure)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::mEstimator::TruncatedLeastSquares)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::mEstimator::DCS)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::mEstimator::L2WithDeadZone)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::mEstimator::AsymmetricTukey)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::mEstimator::AsymmetricCauchy)
+BOOST_CLASS_EXPORT_IMPLEMENT(gtsam::noiseModel::mEstimator::Custom)
 #endif
 
 #include "python/gtsam_unstable/preamble.h"
