@@ -55,7 +55,7 @@ class KnownLandmarkSquaredRangeFactor
 
  private:
   Point wL_;                    ///< Known landmark expressed in the world frame.
-  double measuredRangeSquared_; ///< Corresponding squared range measurement of landmark position wL_.
+  double measuredRangeSquared_; ///< Squared measured range to wL_.
 
  public:
   using Base::evaluateError;
@@ -74,7 +74,7 @@ class KnownLandmarkSquaredRangeFactor
       : Base(model, key), wL_(wL), measuredRangeSquared_(measuredRange * measuredRange) {
     if (measuredRange < 0.0){
       throw std::invalid_argument(
-        "KnownLandmarkSquareRangeFactor: range must be non-negative.");
+        "KnownLandmarkSquaredRangeFactor: range must be non-negative.");
     }
   }
 

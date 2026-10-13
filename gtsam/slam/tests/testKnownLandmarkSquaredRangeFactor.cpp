@@ -154,7 +154,7 @@ TEST(KnownLandmarkSquaredRangeFactor, CloneAndEquals) {
   EXPECT(std::dynamic_pointer_cast<Factor>(graphClone.at(0)) != nullptr);
 }
 
-} // namespace point3_fixture
+}  // namespace point3_fixture
 
 /* ************************************************************************* */
 int main() {
