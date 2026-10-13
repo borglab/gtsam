@@ -94,9 +94,12 @@ void InsertQcqpValue(Key key, const T& value, Values* qcqpValues) {
 /**
  * Insert the QCQP equality constraints for one variable.
  *
- * Only an already-present quadratic equality with the same key, matrix, and
- * right-hand side is considered a duplicate. Other unary constraints on the
- * key are preserved and do not suppress the manifold constraints.
+ * traits<T>::QcqpConstraints<D>() returns (A, a, b) triples for
+ * trace(X' A X) + 2 a' x = b, where an empty a means no linear term; only D=1
+ * constraints may have one. Only an
+ * already-present quadratic equality with the same key, matrix, linear term,
+ * and right-hand side is considered a duplicate. Other unary constraints on
+ * the key are preserved and do not suppress the manifold constraints.
  */
 template <typename T, int D = 1>
 void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
@@ -107,7 +110,9 @@ void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
     throw std::invalid_argument("InsertQcqpConstraints: constraints is null.");
   }
 
-  for (const auto& [A, b] : traits<T>::template QcqpConstraints<D>()) {
+  for (const auto& [A, a, b] : traits<T>::template QcqpConstraints<D>()) {
+    const QuadraticConstraint candidate =
+        QuadraticConstraint::Equal(key, A, a, b);
     bool alreadyPresent = false;
     for (const auto& factor : *constraints) {
       const auto* quadratic =
@@ -115,14 +120,14 @@ void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
       if (!quadratic) continue;
       const QuadraticConstraint& existing = quadratic->quadraticConstraint();
       if (existing.key() == key && existing.A().isApprox(A, 0.0) &&
-          existing.b() == b && existing.sigma() == 1.0) {
+          existing.a().isApprox(candidate.a(), 0.0) && existing.b() == b &&
+          existing.sigma() == 1.0) {
         alreadyPresent = true;
         break;
       }
     }
     if (!alreadyPresent) {
-      constraints->push_back(
-          QuadraticConstraint::Equal(key, A, b).createEqualityFactor());
+      constraints->push_back(candidate.createEqualityFactor());
     }
   }
 }
@@ -130,7 +135,7 @@ void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
 /**
  * Project QCQP variables back into typed values.
  *
- * D=1 accepts the exact homogenized vector dimension defined by T. D>1 accepts
+ * D=1 accepts the exact vector dimension defined by T. D>1 accepts
  * exact N-by-D matrix slices, where N is the intrinsic matrix row dimension
  * of T. Selection is shape-only: types with identical lift dimensions (for
  * example, compact Rot2 and Vector2 at D=1) cannot be distinguished in a

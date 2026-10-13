@@ -134,7 +134,7 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
    * Add this Frobenius prior to the QCQP graph.
    *
    * D=1 supports hard constrained Rot2, Rot3, Pose2, and Pose3 priors in their
-   * exact homogeneous lifts. Matrix-form priors are not lowered because a
+   * exact vector lifts. Matrix-form priors are not lowered because a
    * fixed lifted target breaks the right-orthogonal gauge required by the
    * Burer--Monteiro formulation.
    */
@@ -180,16 +180,15 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
 
         constexpr int LiftedDim = traits<T>::QcqpVectorDim;
         Vector target = Vector::Zero(LiftedDim);
-        target(0) = 1.0;
         if constexpr (std::is_same_v<T, Rot2>) {
           // vec(R)=[c,s,-s,c], so the compact lift retains its first column.
-          target.segment<2>(1) = vecM_.template head<2>();
+          target.segment<2>(0) = vecM_.template head<2>();
         } else {
-          static_assert((LiftedDim - 1) % N == 0);
-          constexpr int M = (LiftedDim - 1) / N;
-          // Build the homogeneous target while omitting fixed pose-matrix rows.
+          static_assert(LiftedDim % N == 0);
+          constexpr int M = LiftedDim / N;
+          // Build the target while omitting fixed pose-matrix rows.
           for (int column = 0; column < N; ++column) {
-            target.segment<M>(1 + column * M) =
+            target.segment<M>(column * M) =
                 vecM_.template segment<M>(column * N);
           }
         }
@@ -396,7 +395,7 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   /**
    * Add this Frobenius between factor as a QCQP cost when traits exist.
    *
-   * D=1 takes the exact homogeneous Rot2, Rot3, Pose2, or Pose3 form. For Rot2
+   * D=1 takes the exact vector Rot2, Rot3, Pose2, or Pose3 form. For Rot2
    * and Rot3, D>=N takes the N-by-D row-Stiefel form, where N is the intrinsic
    * rotation-matrix dimension.
    */
@@ -463,19 +462,19 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       }
 
       constexpr int LiftedDim = traits<T>::QcqpVectorDim;
-      Matrix Q_trunc_hom;
+      Matrix Q_trunc;
       if constexpr (std::is_same_v<T, Rot2>) {
         // vec(R)=L[c,s]' exactly. Since SO(2) is abelian,
         // vec(R2-R1*M)=L(q2-M*q1).
         Matrix L(4, 2);
         L << 1.0, 0.0, 0.0, 1.0, 0.0, -1.0, 1.0, 0.0;
         Matrix fullB = Matrix::Zero(4, 2 * LiftedDim);
-        fullB.block<4, 2>(0, 1) = -L * this->T12_.matrix();
-        fullB.block<4, 2>(0, LiftedDim + 1) = L;
+        fullB.block<4, 2>(0, 0) = -L * this->T12_.matrix();
+        fullB.block<4, 2>(0, LiftedDim) = L;
         const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
-        Q_trunc_hom = whitenedB.transpose() * whitenedB;
+        Q_trunc = whitenedB.transpose() * whitenedB;
       } else {
-        constexpr int MN = LiftedDim - 1;
+        constexpr int MN = LiftedDim;
         static_assert(MN % N == 0);
         constexpr int M = MN / N;
         using MatrixM = Eigen::Matrix<double, M, M>;
@@ -496,20 +495,14 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
         }
 
         const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
-        const Matrix Q = whitenedB.transpose() * whitenedB;
-        Q_trunc_hom = Matrix::Zero(2 * LiftedDim, 2 * LiftedDim);
-        Q_trunc_hom.block<MN, MN>(1, 1) = Q.block<MN, MN>(0, 0);
-        Q_trunc_hom.block<MN, MN>(1, LiftedDim + 1) = Q.block<MN, MN>(0, MN);
-        Q_trunc_hom.block<MN, MN>(LiftedDim + 1, 1) = Q.block<MN, MN>(MN, 0);
-        Q_trunc_hom.block<MN, MN>(LiftedDim + 1, LiftedDim + 1) =
-            Q.block<MN, MN>(MN, MN);
+        Q_trunc = whitenedB.transpose() * whitenedB;
       }
 
       InsertQcqpConstraints<T, 1>(this->key1(), constraints);
       InsertQcqpConstraints<T, 1>(this->key2(), constraints);
 
       const SymmetricBlockMatrix blockQ(
-          std::vector<DenseIndex>{LiftedDim, LiftedDim}, Q_trunc_hom);
+          std::vector<DenseIndex>{LiftedDim, LiftedDim}, Q_trunc);
       costs->push_back(std::make_shared<QpCost>(
           KeyVector{this->key1(), this->key2()}, blockQ));
     }
@@ -640,7 +633,7 @@ class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   }
 
   /**
-   * Add the exact D=1 homogeneous left-composed between cost to a QCQP.
+   * Add the exact D=1 left-composed between cost to a QCQP.
    */
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
@@ -682,7 +675,7 @@ class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
     return result;
   }
 
-  /// Build the exact retained-row D=1 homogeneous QCQP cost.
+  /// Build the exact retained-row D=1 QCQP cost.
   void qcqpFactorsForVec(NonlinearFactorGraph* costs,
                          NonlinearEqualityConstraints* constraints) const {
     if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
@@ -712,17 +705,20 @@ class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       }
 
       constexpr int LiftedDim = traits<T>::QcqpVectorDim;
+      // The residual is B [x1; x2] - c. The final column of B holds c, so Q is
+      // the augmented information [G g; g' f] of 0.5 ||B [x1; x2] - c||^2.
+      constexpr int AugmentedDim = 2 * LiftedDim + 1;
       Matrix Q;
       if constexpr (std::is_same_v<T, Rot2>) {
         Matrix L(4, 2);
         L << 1.0, 0.0, 0.0, 1.0, 0.0, -1.0, 1.0, 0.0;
-        Matrix fullB = Matrix::Zero(4, 2 * LiftedDim);
-        fullB.block<4, 2>(0, 1) = L;
-        fullB.block<4, 2>(0, LiftedDim + 1) = -L * this->T12_.matrix();
+        Matrix fullB = Matrix::Zero(4, AugmentedDim);
+        fullB.block<4, 2>(0, 0) = L;
+        fullB.block<4, 2>(0, LiftedDim) = -L * this->T12_.matrix();
         const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
         Q = whitenedB.transpose() * whitenedB;
       } else {
-        constexpr int MN = LiftedDim - 1;
+        constexpr int MN = LiftedDim;
         static_assert(MN % N == 0);
         constexpr int M = MN / N;
         using MatrixM = Eigen::Matrix<double, M, M>;
@@ -737,15 +733,15 @@ class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
           offset.segment((N - 1) * M, M) = iTj.block(0, N - 1, M, 1);
         }
 
-        Matrix retainedB = Matrix::Zero(MN, 2 * LiftedDim);
-        retainedB.block(0, 1, MN, MN).setIdentity();
-        retainedB.col(LiftedDim) = -offset;
-        retainedB.block(0, LiftedDim + 1, MN, MN) = -leftAction;
+        Matrix retainedB = Matrix::Zero(MN, AugmentedDim);
+        retainedB.block(0, 0, MN, MN).setIdentity();
+        retainedB.block(0, LiftedDim, MN, MN) = -leftAction;
+        retainedB.col(2 * LiftedDim) = offset;
 
-        Matrix fullB = Matrix::Zero(Dim, 2 * LiftedDim);
+        Matrix fullB = Matrix::Zero(Dim, AugmentedDim);
         for (int column = 0; column < N; ++column) {
-          fullB.block(column * N, 0, M, 2 * LiftedDim) =
-              retainedB.block(column * M, 0, M, 2 * LiftedDim);
+          fullB.block(column * N, 0, M, AugmentedDim) =
+              retainedB.block(column * M, 0, M, AugmentedDim);
         }
 
         const Matrix whitenedB = this->noiseModel_->Whiten(fullB);
@@ -756,9 +752,9 @@ class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
       InsertQcqpConstraints<T, 1>(this->key2(), constraints);
 
       const SymmetricBlockMatrix blockQ(
-          std::vector<DenseIndex>{LiftedDim, LiftedDim}, Q);
+          std::vector<DenseIndex>{LiftedDim, LiftedDim, 1}, Q);
       costs->push_back(std::make_shared<QpCost>(
-          KeyVector{this->key1(), this->key2()}, blockQ));
+          HessianFactor(KeyVector{this->key1(), this->key2()}, blockQ)));
     }
   }
 };

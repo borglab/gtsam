@@ -42,7 +42,8 @@ void FixedLagSmoother::print(const std::string& s, const KeyFormatter& keyFormat
 /* ************************************************************************* */
 bool FixedLagSmoother::equals(const FixedLagSmoother& rhs, double tol) const {
   return std::abs(smootherLag_ - rhs.smootherLag_) < tol
-      && std::equal(timestampKeyMap_.begin(), timestampKeyMap_.end(), rhs.timestampKeyMap_.begin());
+      && std::equal(timestampKeyMap_.begin(), timestampKeyMap_.end(), rhs.timestampKeyMap_.begin())
+      && retainedKeys_ == rhs.retainedKeys_;
 }
 
 /* ************************************************************************* */
@@ -76,8 +77,22 @@ void FixedLagSmoother::updateKeyTimestampMap(const KeyTimestampMap& timestamps) 
 }
 
 /* ************************************************************************* */
+void FixedLagSmoother::updateRetainedKeys(const KeySet& keysToRetain,
+                                        const KeySet& keysToRelease) {
+  for (Key key : keysToRetain) {
+    retainedKeys_.insert(key);
+  }
+  for (Key key : keysToRelease) {
+    retainedKeys_.erase(key);
+  }
+}
+
+/* ************************************************************************* */
 void FixedLagSmoother::eraseKeyTimestampMap(const KeyVector& keys) {
   for(Key key: keys) {
+    // Also remove from retained set so it stays consistent after marginalization
+    retainedKeys_.erase(key);
+
     // Erase the key from the Timestamp->Key map
     const auto entry = keyTimestampMap_.find(key);
     if (entry == keyTimestampMap_.end()) {
@@ -119,8 +134,17 @@ double FixedLagSmoother::getCurrentTimestamp() const {
 KeyVector FixedLagSmoother::findKeysBefore(double timestamp) const {
   KeyVector keys;
   TimestampKeyMap::const_iterator end = timestampKeyMap_.lower_bound(timestamp);
-  for(TimestampKeyMap::const_iterator iter = timestampKeyMap_.begin(); iter != end; ++iter) {
-    keys.push_back(iter->second);
+  if (retainedKeys_.empty()) {
+    for(TimestampKeyMap::const_iterator iter = timestampKeyMap_.begin(); iter != end; ++iter) {
+      keys.push_back(iter->second);
+    }
+  } else {
+    for(TimestampKeyMap::const_iterator iter = timestampKeyMap_.begin(); iter != end; ++iter) {
+      // Skip keys that have been retained — they are exempt from auto-marginalization
+      if (retainedKeys_.count(iter->second) == 0) {
+        keys.push_back(iter->second);
+      }
+    }
   }
   return keys;
 }

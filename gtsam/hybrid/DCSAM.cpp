@@ -22,7 +22,12 @@
 
 namespace gtsam {
 
-DCSAM::DCSAM() : isam_(ISAM2(ISAM2Params())) {}
+DCSAM::DCSAM()
+    : DCSAM([] {
+        ISAM2Params params;
+        params.findUnusedFactorSlots = true;
+        return params;
+      }()) {}
 
 DCSAM::DCSAM(const ISAM2Params& isam_params) : isam_(ISAM2(isam_params)) {}
 
@@ -98,31 +103,38 @@ void DCSAM::updateContinuous(const NonlinearFactorGraph& newFactors,
   // Initialize continuous factors
   NonlinearFactorGraph graph(newFactors);
 
-  // Given the best discrete values estimate,
-  // we get the corresponding continuous factors.
-  for (auto& factor : hfg_) {
-    if (auto nonlinear_mixture =
-            std::dynamic_pointer_cast<HybridNonlinearFactor>(factor)) {
-      auto sharedContinuous = nonlinear_mixture->factors()(currDiscrete_).first;
-      graph.push_back(sharedContinuous);
-      // Record the continuous factor
-      nfg_.push_back(sharedContinuous);
+  // Given the best discrete values estimate, select the continuous component
+  // of each hybrid factor. Only a component that differs from the one already
+  // in iSAM2 is added, and the one it replaces is removed, so each hybrid
+  // factor contributes exactly one component however often we update.
+  FactorIndices removeIndices;
+  std::vector<size_t> added;
+  for (size_t i = 0; i < hfg_.size(); i++) {
+    auto nonlinear_mixture =
+        std::dynamic_pointer_cast<HybridNonlinearFactor>(hfg_[i]);
+    auto component = nonlinear_mixture->factors()(currDiscrete_).first;
+    if (i < selectedComponents_.size()) {
+      if (component == selectedComponents_[i]) continue;
+      removeIndices.push_back(selectedIndices_[i]);
+      selectedComponents_[i] = component;
+    } else {
+      selectedComponents_.push_back(component);
+      selectedIndices_.push_back(0);
     }
+    added.push_back(i);
+    graph.push_back(component);
   }
-
-  // Mark all affected variables, which are the continuous variables
-  ISAM2UpdateParams updateParams;
-  FastMap<FactorIndex, KeySet> newAffectedKeys;
-  for (size_t j = 0; j < nfg_.size(); j++) {
-    auto continuousFactor = nfg_[j];
-    for (const Key& k : continuousFactor->keys()) {
-      newAffectedKeys[j].insert(k);
-    }
-  }
-  updateParams.newAffectedKeys = std::move(newAffectedKeys);
 
   // Solve for continuous values
-  isam_.update(graph, initialGuess, updateParams);
+  ISAM2UpdateParams updateParams;
+  updateParams.removeFactorIndices = std::move(removeIndices);
+  const ISAM2Result result = isam_.update(graph, initialGuess, updateParams);
+
+  // Record where iSAM2 stored the added components
+  for (size_t j = 0; j < added.size(); j++) {
+    selectedIndices_[added[j]] =
+        result.newFactorsIndices[newFactors.size() + j];
+  }
 }
 
 DiscreteValues DCSAM::solveDiscrete() const {

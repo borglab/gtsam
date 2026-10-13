@@ -92,7 +92,7 @@ TableFactor makeOneToOneConstraint(size_t numberObjects) {
     validAssignments *= i + 1;
   }
 
-  Eigen::SparseVector<double> values(cardinality);
+  SparseVector values(cardinality);
   values.reserve(validAssignments);
   std::vector<bool> used(numberObjects, false);
   const auto addAssignments = [&](const auto& add, size_t depth,

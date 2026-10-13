@@ -149,6 +149,56 @@ Matrix23 matrix{{1.0, 2.0, 3.0},
   the superseded scaffolding and rewrite the PR description around the
   final implementation.
 
+### Choosing an interface file for wrappers
+
+Place new wrapper declarations in the shared `.i` file for their logical
+API group. Add methods, constructors, and overloads to the existing wrapped
+class declaration in its current file. For new classes and free functions,
+use the following split; inspect declarations rather than `#include` lines,
+since sibling files also include headers for dependencies.
+
+* `gtsam/slam/slam.i`: between factors, planar and ordinary projection
+  factors, and general SFM factors (`BetweenFactor`, `PlanarProjectionFactor`,
+  `GenericProjectionFactor`, `GeneralSFMFactor`, and `GeneralSFMFactor2`).
+* `gtsam/slam/slam_smart_projection.i`: smart projection factors, their
+  parameters and base classes, and the linear-factor specializations they
+  return (`SmartFactorBase`, `SmartProjectionParams`, `SmartProjectionFactor`,
+  `SmartProjectionPoseFactor`, `SmartProjectionRigFactor`,
+  `RegularHessianFactor`, and `JacobianFactorQ`).
+* `gtsam/slam/slam_synchronization.i`: Lie-group synchronization, averaging,
+  and initialization (`FastSync`, `KarcherMeanFactor`, Frobenius factors,
+  `WahbaFactor`, `RelativeTranslationFactor`, `InitializePose3`, and `lago`);
+  dataset I/O; and the smaller SLAM factors already grouped here (stereo,
+  reference-frame, rotation, oriented-plane, pose translation/rotation priors,
+  known-landmark, and triangulation factors). Extend each family here.
+* `gtsam/nonlinear/nonlinear.i`: core nonlinear factor and graph APIs,
+  marginals, linear-container factors, batch optimizers and their parameters,
+  and incremental optimization (`ISAM2` and `NonlinearISAM`).
+* `gtsam/nonlinear/nonlinear_continuous_time.i`: continuous-time
+  Gaussian-process APIs (`StateData`, `WnoaMotionFactor`, `WnoaInterpFactor`,
+  and `WnoaFactorGraph`, together with its `ExpressionFactorGraph` base);
+  prior factors (`PriorFactor`, `ExtendedPriorFactor`, and
+  `ConcentratedGaussian`), `VectorNormFactor`, fixed-lag smoothers and their
+  supporting types, and `ExtendedKalmanFilter`.
+* `gtsam/nonlinear/values.i`: `Values` and its typed accessors.
+  `gtsam/nonlinear/custom.i`: `CustomFactor`.
+* `gtsam/navigation/navigation.i`: navigation state and IMU bias,
+  preintegration and IMU/AHRS factors, navigation measurement factors (GPS,
+  pseudorange, carrier phase, Doppler, attitude, barometric, constant velocity,
+  and magnetic), and scenarios and scenario runners.
+* `gtsam/navigation/navigation_geometric.i`: manifold, Lie-group, invariant,
+  and equivariant filters (`ManifoldEKF`, `LieGroupEKF`, `LeftLinearEKF`,
+  `InvariantEKF`, and `AbcEquivariantFilter`), specialized IMU EKFs
+  (`NavStateImuEKF` and `Gal3ImuEKF`), and legged estimators and their contact
+  measurements and parameters, including the legged fixed-lag smoothers.
+
+For APIs outside these groups, follow the existing shared `.i` file for that
+subsystem. Keep related classes and functions together and use descriptive
+topic names when a new logical group needs its own interface file. Keep each
+file's required includes with its declarations, and preserve registration
+order in `python/CMakeLists.txt` and `matlab/CMakeLists.txt`: a wrapped base
+class belongs in the same file as its derived classes or in an earlier file.
+
 ## Tests
 
 * Run validation relevant to the files changed.

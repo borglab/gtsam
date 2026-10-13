@@ -279,33 +279,35 @@ double Unit3::distance(const Unit3& q, OptionalJacobian<1, 2> H) const {
 }
 
 /* ************************************************************************* */
-Unit3 Unit3::retract(const Vector2& v, OptionalJacobian<2,2> H) const {
-  // Compute the 3D xi_hat vector
-  const Vector3 xi_hat = basis() * v;
-  const double theta = xi_hat.norm();
-  const double c = std::cos(theta);
+Unit3 Unit3::retract(const Vector2& v, OptionalJacobian<2, 2> H) const {
+  const Matrix32& B = basis();
+  const Vector3 tangent = B * v;
+  // The tangent basis is orthonormal, so ||B v|| = ||v||.
+  const double thetaSquared = v.squaredNorm();
+  const double theta = std::sqrt(thetaSquared);
+  const double cosine = std::cos(theta);
+  // Taylor series avoid division by zero and cancellation near zero.
+  const bool nearZero = thetaSquared < 1e-8;
+  const double sinc =
+      nearZero ? 1.0 + thetaSquared * (-1.0 / 6.0 + thetaSquared / 120.0)
+               : std::sin(theta) / theta;
 
-  // Treat case of very small v differently.
   Matrix23 H_from_point;
-  if (theta < std::numeric_limits<double>::epsilon()) {
-    const Unit3 exp_p_xi_hat = Unit3::FromPoint3(c * p_ + xi_hat,
-                                                 H? &H_from_point : nullptr);
-    if (H) { // Jacobian
-      *H = H_from_point *
-          (-p_ * xi_hat.transpose() + Matrix33::Identity()) * basis();
-    }
-    return exp_p_xi_hat;
+  const Unit3 result = Unit3::FromPoint3(cosine * p_ + sinc * tangent,
+                                         H ? &H_from_point : nullptr);
+  if (H) {
+    // (cos(theta) - sinc(theta)) / theta^2 tends to -1/3 at zero.
+    const double radialScale =
+        nearZero
+            ? -1.0 / 3.0 + thetaSquared * (1.0 / 30.0 - thetaSquared / 840.0)
+            : (cosine - sinc) / thetaSquared;
+    // Differentiate directly in the 2D tangent coordinates, using B^T B = I.
+    const Vector3 radial = -sinc * p_ + radialScale * tangent;
+    Matrix32 derivative = sinc * B;
+    derivative += radial * v.transpose();
+    *H = H_from_point * derivative;
   }
-
-  const double st = std::sin(theta) / theta;
-  const Unit3 exp_p_xi_hat = Unit3::FromPoint3(c * p_ + xi_hat * st,
-                                               H? &H_from_point : nullptr);
-  if (H) { // Jacobian
-    *H = H_from_point *
-        (p_ * -st * xi_hat.transpose() + st * Matrix33::Identity() +
-        xi_hat * ((c - st) / std::pow(theta, 2)) * xi_hat.transpose()) * basis();
-  }
-  return exp_p_xi_hat;
+  return result;
 }
 
 /* ************************************************************************* */

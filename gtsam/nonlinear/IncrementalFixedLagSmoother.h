@@ -59,10 +59,10 @@ public:
 
   /**
    * Add new factors, updating the solution and re-linearizing as needed.
-   * @param newFactors new factors on old and/or new variables
-   * @param newTheta new values for new variables only
-   * @param timestamps an (optional) map from keys to real time stamps
-   * @param factorsToRemove an (optional) list of factors to remove.
+   * @param newFactors      new factors on old and/or new variables
+   * @param newTheta        new values for new variables only
+   * @param timestamps      an (optional) map from keys to real time stamps
+   * @param factorsToRemove an (optional) list of factors to remove
    *
    * Every key in @p timestamps must name a value the smoother already holds or
    * one supplied in @p newTheta in this update; otherwise the update throws
@@ -87,9 +87,43 @@ public:
    * the smoother or in @p newTheta.
    */
   Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
-                const Values& newTheta = Values(), //
+                const Values& newTheta = Values(),
                 const KeyTimestampMap& timestamps = KeyTimestampMap(),
                 const FactorIndices& factorsToRemove = FactorIndices()) override;
+
+  /**
+   * Add new factors as in update(), and also change the persistent set of
+   * retained keys before choosing which variables to marginalize.
+   *
+   * A retained key is never marginalized because of the lag, however old its
+   * timestamp; it stays retained across later updates, including calls to the
+   * four-argument update(), until it is released. Releasing a key whose
+   * timestamp is already outside the lag window marginalizes it in this same
+   * update. The retained set is changed only after the update is validated, so
+   * a rejected update leaves it unchanged.
+   *
+   * Every key in keysToRetain must name a value the smoother already holds or
+   * one supplied in newTheta in this update. Releasing a key that is not
+   * retained has no effect. A retained key is dropped from the set when its
+   * variable is removed from the smoother, for example because its last factor
+   * was removed.
+   *
+   * This overload is available only on the concrete smoother; calls through a
+   * FixedLagSmoother reference use the four-argument update().
+   *
+   * @param keysToRetain  keys to add to the retained set
+   * @param keysToRelease keys to remove from the retained set; applied after
+   *                      keysToRetain, so a key in both is released
+   * @throws std::invalid_argument identifying a key in keysToRetain with no
+   * value in the smoother or newTheta, in addition to the exceptions thrown by
+   * the four-argument update().
+   */
+  Result update(const NonlinearFactorGraph& newFactors,
+                const Values& newTheta,
+                const KeyTimestampMap& timestamps,
+                const FactorIndices& factorsToRemove,
+                const KeySet& keysToRetain,
+                const KeySet& keysToRelease = KeySet());
 
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
@@ -161,6 +195,14 @@ protected:
 
   /** Store results of latest isam2 update */
   ISAM2Result isamResult_;
+
+  /// Shared body of both update() overloads.
+  Result updateImpl(const NonlinearFactorGraph& newFactors,
+                    const Values& newTheta,
+                    const KeyTimestampMap& timestamps,
+                    const FactorIndices& factorsToRemove,
+                    const KeySet& keysToRetain,
+                    const KeySet& keysToRelease);
 
   /** Erase any keys associated with timestamps before the provided time */
   void eraseKeysBefore(double timestamp);

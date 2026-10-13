@@ -858,7 +858,8 @@ QcqpProblem OneVariableProblem(const Matrix2& Q, double sigma) {
                       SymmetricBlockMatrix(std::vector<DenseIndex>{2},
                                            Matrix(Q)),
                       3));
-  for (const auto& [A, b] : traits<Rot2>::QcqpConstraints<2>()) {
+  for (const auto& [A, a, b] : traits<Rot2>::QcqpConstraints<2>()) {
+    (void)a;
     qcqp.addConstraint(QuadraticConstraint::Equal(key, A, b, sigma));
   }
   return qcqp;

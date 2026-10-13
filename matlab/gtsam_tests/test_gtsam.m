@@ -24,8 +24,14 @@ testValues
 display 'Starting: testCustomFactor'
 testCustomFactor
 
+display 'Starting: testQcqpProblem'
+testQcqpProblem
+
 display 'Starting: testMosekSDP'
 testMosekSDP
+
+display 'Starting: testFixedLagSmootherRetention'
+testFixedLagSmootherRetention
 
 %% navigation
 display 'Starting: testRotatingImuCovariance'

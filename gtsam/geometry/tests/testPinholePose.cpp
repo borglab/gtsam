@@ -57,20 +57,6 @@ TEST( PinholePose, constructor)
   EXPECT(assert_equal( pose, camera.pose()));
 }
 
-//******************************************************************************
-/* Already in testPinholeCamera???
-TEST(PinholeCamera, Pose) {
-
-  Matrix actualH;
-  EXPECT(assert_equal(pose, camera.getPose(actualH)));
-
-  // Check derivative
-  auto f = std::bind(&Camera::getPose,_1,{});
-  Matrix numericalH = numericalDerivative11<Pose3,Camera>(f,camera);
-  EXPECT(assert_equal(numericalH, actualH, 1e-9));
-}
-*/
-
 /* ************************************************************************* */
 TEST( PinholePose, lookat)
 {

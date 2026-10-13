@@ -79,7 +79,7 @@ TableFactor AllDiff::toTableFactor() const {
     validAssignmentCount *= sortedCardinalities[i] - i;
   }
 
-  Eigen::SparseVector<double> table(cardinalityProduct);
+  SparseVector table(cardinalityProduct);
   table.reserve(validAssignmentCount);
   std::vector<bool> used(maximumCardinality, false);
   const auto addValidAssignments = [&](const auto& add, size_t depth,

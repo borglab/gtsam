@@ -35,6 +35,7 @@
 
 using namespace std;
 using namespace gtsam;
+using symbol_shorthand::X;
 
 
 /* ************************************************************************* */
@@ -736,6 +737,142 @@ TEST(BatchFixedLagSmoother, ValidatesRemovalsBeforeTimestamps) {
 }
 
 }  // namespace removal_validation
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace retention {
+
+using Timestamps = BatchFixedLagSmoother::KeyTimestampMap;
+const SharedDiagonal kNoise = noiseModel::Isotropic::Sigma(2, 0.1);
+
+// A retained key survives far outside the lag window across later four-argument
+// updates, and is marginalized in the same update that releases it.
+TEST(BatchFixedLagSmoother, RetainAndRelease) {
+  BatchFixedLagSmoother smoother(10.0, LevenbergMarquardtParams());
+
+  NonlinearFactorGraph factors;
+  factors.addPrior(X(0), Point2(0, 0), kNoise);
+  Values values;
+  values.insert(X(0), Point2(0, 0));
+  smoother.update(factors, values, {{X(0), 0.0}});
+
+  // Add X(1) at t=2 and retain it.
+  factors = NonlinearFactorGraph();
+  factors.emplace_shared<BetweenFactor<Point2>>(X(0), X(1), Point2(1, 0), kNoise);
+  values = Values();
+  values.insert(X(1), Point2(1, 0));
+  smoother.update(factors, values, {{X(1), 2.0}}, FactorIndices(),
+                  KeySet{X(1)});
+  EXPECT(smoother.retainedKeys().exists(X(1)));
+
+  // Advance to t=50 one state at a time, far past the lag for X(1).
+  for (size_t i = 2; i <= 25; ++i) {
+    factors = NonlinearFactorGraph();
+    factors.emplace_shared<BetweenFactor<Point2>>(X(i - 1), X(i), Point2(1, 0),
+                                                  kNoise);
+    values = Values();
+    values.insert(X(i), Point2(double(i), 0));
+    smoother.update(factors, values, {{X(i), 2.0 * i}});
+  }
+
+  EXPECT(smoother.retainedKeys().exists(X(1)));
+  EXPECT(smoother.timestamps().count(X(1)) == 1);
+  EXPECT(!smoother.getLinearizationPoint().exists(X(0)));
+  EXPECT(assert_equal(Point2(1, 0), smoother.calculateEstimate<Point2>(X(1)),
+                      1e-2));
+
+  // Releasing X(1), whose timestamp is outside the lag, marginalizes it now.
+  smoother.update(NonlinearFactorGraph(), Values(), Timestamps(),
+                  FactorIndices(), KeySet(), KeySet{X(1)});
+  EXPECT(smoother.retainedKeys().empty());
+  EXPECT(smoother.timestamps().count(X(1)) == 0);
+  EXPECT(!smoother.getLinearizationPoint().exists(X(1)));
+}
+
+// Retaining a key that is neither in the smoother nor in newTheta throws, and
+// the rejected update leaves the smoother unchanged.
+TEST(BatchFixedLagSmoother, RejectsRetainingUnknownKey) {
+  BatchFixedLagSmoother smoother(1.0, LevenbergMarquardtParams());
+
+  NonlinearFactorGraph factors;
+  factors.addPrior(X(0), Point2(0, 0), kNoise);
+  Values values;
+  values.insert(X(0), Point2(0, 0));
+  smoother.update(factors, values, {{X(0), 0.0}});
+
+  factors = NonlinearFactorGraph();
+  factors.emplace_shared<BetweenFactor<Point2>>(X(0), X(2), Point2(1, 0), kNoise);
+  values = Values();
+  values.insert(X(2), Point2(1, 0));
+  CHECK_EXCEPTION((smoother.update(factors, values, {{X(2), 5.0}},
+                                   FactorIndices(), KeySet{X(1)})),
+                  std::invalid_argument);
+  EXPECT(smoother.retainedKeys().empty());
+  EXPECT(smoother.timestamps().count(X(2)) == 0);
+  EXPECT(!smoother.getLinearizationPoint().exists(X(2)));
+
+  // A key the smoother already holds can be retained without new values.
+  smoother.update(NonlinearFactorGraph(), Values(), Timestamps(),
+                  FactorIndices(), KeySet{X(0)});
+  EXPECT(smoother.retainedKeys().exists(X(0)));
+}
+
+// Retaining X(1) while both of its neighbors, X(0) and X(2), expire in the same
+// update marginalizes both neighbors and keeps the full-history solution for
+// X(1) and X(3). Releasing X(1) later marginalizes it immediately, because its
+// timestamp is already outside the lag. This is the scenario of
+// borglab/gtsam#2825.
+TEST(BatchFixedLagSmoother, RetainKeyWhileBothNeighborsExpire) {
+  BatchFixedLagSmoother smoother(5.0, LevenbergMarquardtParams());
+  NonlinearFactorGraph fullGraph;
+  Values fullValues;
+
+  // Prior on X(0) and the chain X(0)-X(1)-X(2), all at t=0, retaining X(1).
+  NonlinearFactorGraph factors;
+  factors.addPrior(X(0), Point2(0.0, 0.0), kNoise);
+  factors.emplace_shared<BetweenFactor<Point2>>(X(0), X(1), Point2(1.0, 0.0),
+                                                kNoise);
+  factors.emplace_shared<BetweenFactor<Point2>>(X(1), X(2), Point2(1.0, 0.5),
+                                                kNoise);
+  Values values;
+  values.insert(X(0), Point2(0.1, -0.1));
+  values.insert(X(1), Point2(1.1, 0.1));
+  values.insert(X(2), Point2(1.9, 0.6));
+  fullGraph.push_back(factors);
+  fullValues.insert(values);
+  smoother.update(factors, values, {{X(0), 0.0}, {X(1), 0.0}, {X(2), 0.0}},
+                  FactorIndices(), KeySet{X(1)});
+
+  // X(3) at t=10 expires X(0) and X(2) together, leaving X(1) at t=0.
+  factors = NonlinearFactorGraph();
+  factors.emplace_shared<BetweenFactor<Point2>>(X(2), X(3), Point2(1.0, -0.5),
+                                                kNoise);
+  values = Values();
+  values.insert(X(3), Point2(3.1, 0.1));
+  fullGraph.push_back(factors);
+  fullValues.insert(values);
+  smoother.update(factors, values, {{X(3), 10.0}});
+
+  for (const Key expired : {X(0), X(2)}) {
+    EXPECT(!smoother.getLinearizationPoint().exists(expired));
+    EXPECT(smoother.timestamps().count(expired) == 0);
+  }
+  EXPECT(smoother.retainedKeys().exists(X(1)));
+  EXPECT_DOUBLES_EQUAL(0.0, smoother.timestamps().at(X(1)), 1e-9);
+  EXPECT(check_smoother(fullGraph, fullValues, smoother, X(1)));
+  EXPECT(check_smoother(fullGraph, fullValues, smoother, X(3)));
+
+  // Releasing X(1) marginalizes it in this update.
+  smoother.update(NonlinearFactorGraph(), Values(), Timestamps(),
+                  FactorIndices(), KeySet(), KeySet{X(1)});
+  EXPECT(smoother.retainedKeys().empty());
+  EXPECT(!smoother.getLinearizationPoint().exists(X(1)));
+  EXPECT(smoother.timestamps().count(X(1)) == 0);
+  EXPECT(smoother.timestamps().count(X(3)) == 1);
+  EXPECT(check_smoother(fullGraph, fullValues, smoother, X(3)));
+}
+
+}  // namespace retention
 /* ************************************************************************* */
 
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}

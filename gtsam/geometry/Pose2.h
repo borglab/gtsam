@@ -379,36 +379,36 @@ using Pose2Pairs = std::vector<Pose2Pair>;
  * `traits<Pose2>::QcqpValue<1>(pose)` without constructing a traits object.
  *
  * Each method is itself a template on D, the QCQP variable's column count.
- * `if constexpr (D == 1)` selects this exact homogenized vector formulation at
- * compile time. The lift discards the fixed last row [0, 0, 1] of the Pose2
- * matrix and stores the remaining entries column by column:
+ * `if constexpr (D == 1)` selects this exact vector formulation at compile
+ * time. The lift discards the fixed last row [0, 0, 1] of the Pose2 matrix and
+ * stores the remaining entries column by column:
  *
- *   x = [1, r00, r10, r01, r11, tx, ty]'.
+ *   x = [r00, r10, r01, r11, tx, ty]'.
  *
  * Eigen's `segment<2>(start)` selects two consecutive entries of x, while
  * `T.col(column).head<2>()` selects the first two entries of one matrix column.
- * QcqpConstraints returns the symmetric matrices A and scalars b for the five
- * equations x' A x = b. Their translation rows and columns are zero, so these
- * equations constrain only the embedded SO(2) rotation.
+ * QcqpConstraints returns the symmetric matrices A and scalars b for the four
+ * equations x' A x = b, whose linear terms are empty. Their translation rows
+ * and columns are zero, so these equations constrain only the embedded SO(2)
+ * rotation.
  */
 template <>
 struct traits<Pose2> : public internal::MatrixLieGroup<Pose2, 3> {
-  /// Dimension of the D=1 homogenized QCQP vector.
-  inline constexpr static int QcqpVectorDim = 7;
+  /// Dimension of the D=1 QCQP vector.
+  inline constexpr static int QcqpVectorDim = 6;
 
   /**
-   * Return the D=1 homogenized QCQP variable
-   * x = [1, r00, r10, r01, r11, tx, ty].
+   * Return the D=1 QCQP variable
+   * x = [r00, r10, r01, r11, tx, ty].
    */
   template <int D = 1>
   static Matrix QcqpValue(const Pose2& value) {
     if constexpr (D == 1) {
       const Matrix3 T = value.matrix();
-      Vector7 X;
-      X(0, 0) = 1.0;
-      X.segment<2>(1) = T.col(0).head<2>();
-      X.segment<2>(3) = T.col(1).head<2>();
-      X.segment<2>(5) = T.col(2).head<2>();
+      Vector6 X;
+      X.segment<2>(0) = T.col(0).head<2>();
+      X.segment<2>(2) = T.col(1).head<2>();
+      X.segment<2>(4) = T.col(2).head<2>();
       return X;
     } else {
       throw std::invalid_argument(
@@ -417,46 +417,41 @@ struct traits<Pose2> : public internal::MatrixLieGroup<Pose2, 3> {
   }
 
   /**
-   * Return the five D=1 lifted SE(2) manifold constraints A, b such that
-   * trace(x' A x) = b.
+   * Return the four D=1 lifted SE(2) manifold constraints (A, a, b) such that
+   * trace(x' A x) = b; their linear terms a are empty.
    */
   template <int D = 1>
-  static std::vector<std::pair<Matrix, double>> QcqpConstraints() {
+  static std::vector<std::tuple<Matrix, Vector, double>> QcqpConstraints() {
     if constexpr (D == 1) {
-      std::vector<std::pair<Matrix, double>> constraints;
-      constraints.reserve(5);
+      std::vector<std::tuple<Matrix, Vector, double>> constraints;
+      constraints.reserve(4);
 
-      Matrix A = Matrix::Zero(7, 7);
-
-      // Homogenization.
-      A(0, 0) = 1.0;
-      constraints.emplace_back(A, 1.0);
+      Matrix A = Matrix::Zero(6, 6);
 
       // det(R) = r00*r11 - r10*r01 = 1.
-      A.setZero();
-      A(1, 4) = 0.5;
-      A(4, 1) = 0.5;
-      A(2, 3) = -0.5;
-      A(3, 2) = -0.5;
-      constraints.emplace_back(A, 1.0);
+      A(0, 3) = 0.5;
+      A(3, 0) = 0.5;
+      A(1, 2) = -0.5;
+      A(2, 1) = -0.5;
+      constraints.emplace_back(A, Vector(), 1.0);
 
       // RR^T = I.
       A.setZero();
+      A(0, 0) = 1.0;
+      A(2, 2) = 1.0;
+      constraints.emplace_back(A, Vector(), 1.0);
+
+      A.setZero();
+      A(0, 1) = 0.5;
+      A(1, 0) = 0.5;
+      A(2, 3) = 0.5;
+      A(3, 2) = 0.5;
+      constraints.emplace_back(A, Vector(), 0.0);
+
+      A.setZero();
       A(1, 1) = 1.0;
       A(3, 3) = 1.0;
-      constraints.emplace_back(A, 1.0);
-
-      A.setZero();
-      A(1, 2) = 0.5;
-      A(2, 1) = 0.5;
-      A(3, 4) = 0.5;
-      A(4, 3) = 0.5;
-      constraints.emplace_back(A, 0.0);
-
-      A.setZero();
-      A(2, 2) = 1.0;
-      A(4, 4) = 1.0;
-      constraints.emplace_back(A, 1.0);
+      constraints.emplace_back(A, Vector(), 1.0);
 
       return constraints;
     } else {
@@ -465,21 +460,19 @@ struct traits<Pose2> : public internal::MatrixLieGroup<Pose2, 3> {
     }
   }
 
-  /** Project a D=1 homogenized QCQP vector back to Pose2. */
+  /** Project a D=1 QCQP vector back to Pose2. */
   template <int D>
   static Pose2 FromQcqpValue(const Matrix& X) {
     if constexpr (D == 1) {
-      if (X.rows() != QcqpVectorDim || X.cols() != 1 ||
-          std::abs(X(0, 0)) < 1e-9) {
+      if (X.rows() != QcqpVectorDim || X.cols() != 1) {
         throw std::invalid_argument(
-            "traits<Pose2>::FromQcqpValue requires a 7-by-1 vector with a "
-            "nonzero homogenization entry.");
+            "traits<Pose2>::FromQcqpValue requires a 6-by-1 vector.");
       }
-      const Vector x = X.col(0) / X(0, 0);
+      const Vector x = X.col(0);
       Matrix2 R;
-      R.col(0) = x.segment<2>(1);
-      R.col(1) = x.segment<2>(3);
-      return Pose2(Rot2::ClosestTo(R), x.segment<2>(5));
+      R.col(0) = x.segment<2>(0);
+      R.col(1) = x.segment<2>(2);
+      return Pose2(Rot2::ClosestTo(R), x.segment<2>(4));
     } else {
       throw std::invalid_argument(
           "traits<Pose2>::FromQcqpValue only supports D=1.");

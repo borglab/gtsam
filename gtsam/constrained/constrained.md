@@ -40,14 +40,19 @@ It includes classes for representing constraints, building constrained problems,
 - [`ActiveSetSolver`](doc/QpProblem.ipynb): Active-set QP/LP solver with sparse and dense QP subproblem modes.
 - [`QcqpProblem`](doc/QcqpProblem.ipynb): Holds quadratic costs and linear/quadratic constraints over vector or matrix variables.
 - [`QpCost`](doc/QcqpProblem.ipynb): Also used for QCQP objectives; `QpCost(keys, Q, columnDim)` creates a pure row-space quadratic cost $\frac{1}{2}\sum_{ij}\operatorname{tr}(X_i^\top Q_{ij}X_j)$ over vectors or matrices $X_i \in \mathbb{R}^{r_i \times d}$.
-- [`QuadraticConstraint`](doc/QcqpProblem.ipynb): Scalar quadratic constraint $\operatorname{tr}(X^\top A X) \sim b$, where $\sim$ is equal, less-equal, or greater-equal.
+- [`QuadraticConstraint`](doc/QcqpProblem.ipynb): Scalar quadratic constraint $\operatorname{tr}(X^\top A X) \sim b$, where $\sim$ is equal, less-equal, or greater-equal. For vector variables it may carry a linear term, $x^\top A x + 2a^\top x \sim b$, following Luo et al. (2010); `QuadraticConstraint::FromPqr` accepts the Boyd and Vandenberghe form $\frac{1}{2}x^\top P x + q^\top x + r \sim 0$ (*Convex Optimization*, Eq. (4.35)).
 - `QcqpProblem(graph, columnDim)`: Opt-in conversion hook for supported nonlinear factors that can populate `QpCost` objectives and `QuadraticConstraint` equalities over matrix-valued QCQP variables.
 - `InsertQcqpValue<T, D>` and `InsertQcqpConstraints<T, D>`: Helpers for inserting supported QCQP variable values and their equality constraints.
-- `ExtractQcqpValues<T, D>`: Projection of exact-shape D=1 homogeneous vectors
-  or matrix slices back to manifold values. Absolute results from unanchored
-  matrix components are gauge-dependent. Extraction is shape-only, so compact
-  D=1 Rot2 and Vector2 blocks (both 3-by-1) require key-directed recovery when
-  they appear in the same `Values` container.
+- `ExtractQcqpValues<T, D>`: Projection of exact-shape D=1 vectors or matrix
+  slices back to manifold values. Absolute results from unanchored matrix
+  components are gauge-dependent. Extraction is shape-only, so compact D=1 Rot2
+  and Vector2 blocks (both 2-by-1) require key-directed recovery when they
+  appear in the same `Values` container.
+
+D=1 QCQP vectors carry no homogenizing coordinate. Affine terms are stated
+directly: as linear and constant terms of a `QpCost`, as the linear term of a
+`QuadraticConstraint`, or as the right-hand side of a `LinearConstraint`. The
+lifted SDP adds the constant 1 once per PSD block instead.
 
 The leading factor of `1/2` in row-space `QpCost` construction is intentional:
 it follows GTSAM's standard factor-error convention. To represent a QCQP
@@ -55,9 +60,9 @@ objective written without the `1/2`, pass twice the row-space `Q` blocks to
 `QpCost`.
 
 The rotation conversion has two tracks. Rot2 at `D=1` uses the exact minimal
-homogeneous lift $[1,\cos\theta,\sin\theta]^\top$ and supports a sign-pinning
-hard prior. The identities $r_{01}=-r_{10}$ and $r_{11}=r_{00}$ are structural,
-so its SDP block has order 3 rather than 5. At `D>=N`, Rot2 (`D>=2`) and Rot3
+lift $[\cos\theta,\sin\theta]^\top$ and supports a sign-pinning hard prior.
+The identities $r_{01}=-r_{10}$ and $r_{11}=r_{00}$ are structural, so its SDP
+block has order 3 rather than 5, counting the constant entry. At `D>=N`, Rot2 (`D>=2`) and Rot3
 (`D>=3`) use row-Stiefel variables satisfying $XX^\top=I$. Between costs have a
 common right-$O(D)$ gauge. Matrix-form priors are intentionally unsupported: a
 fixed target $\|X-[M^\top\;0]\|_F^2$ breaks that gauge and cannot be represented

@@ -225,6 +225,14 @@ public:
                   OptionalJacobian<9, 3> G1 = {},
                   OptionalJacobian<9, 3> G2 = {}) const;
 
+  // Return the predicted state directly, avoiding a local/retract round-trip.
+  NavState predictPIM(const Vector9& pim, double dt,
+                      const Vector3& n_gravity,
+                      const std::optional<Vector3>& omegaCoriolis,
+                      OptionalJacobian<9, 9> H1 = {},
+                      OptionalJacobian<9, 9> H2 = {},
+                      OptionalJacobian<9, 3> H3 = {}) const;
+
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
   /**
    * Compute the legacy approximate tangent-space Coriolis contribution.
@@ -250,16 +258,6 @@ public:
   /// @}
 
 private:
-  friend class PreintegrationBase;
-
-  // Return the predicted state directly, avoiding a local/retract round-trip.
-  NavState predictPIM(const Vector9& pim, double dt,
-                      const Vector3& n_gravity,
-                      const std::optional<Vector3>& omegaCoriolis,
-                      OptionalJacobian<9, 9> H1 = {},
-                      OptionalJacobian<9, 9> H2 = {},
-                      OptionalJacobian<9, 3> H3 = {}) const;
-
   /// @{
   /// serialization
 #if GTSAM_ENABLE_BOOST_SERIALIZATION  ///

@@ -31,7 +31,8 @@ using QuadraticConstraintIndex =
 bool SameQuadraticEquality(const QuadraticConstraint& first,
                            const QuadraticConstraint& second) {
   return first.key() == second.key() && first.A().isApprox(second.A(), 0.0) &&
-         first.b() == second.b() && first.sigma() == second.sigma();
+         first.a().isApprox(second.a(), 0.0) && first.b() == second.b() &&
+         first.sigma() == second.sigma();
 }
 
 /* ************************************************************************* */

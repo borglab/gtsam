@@ -140,7 +140,7 @@ class KnownLandmarkFactor2 : public NoiseModelFactorN<T> {
     return predicted_kP - measured_kP_;
   }
 
-  /** Add the exact D=1 homogeneous known-landmark cost to a QCQP. */
+  /** Add the exact D=1 known-landmark cost to a QCQP. */
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
                    size_t columnDimension = 1) const override {
@@ -163,15 +163,17 @@ class KnownLandmarkFactor2 : public NoiseModelFactorN<T> {
 
     constexpr int PointDim = Point::RowsAtCompileTime;
     constexpr int N = T::LieAlgebra::RowsAtCompileTime;
-    constexpr int LiftedDim = 1 + PointDim * N;
+    constexpr int LiftedDim = PointDim * N;
     static_assert(N == PointDim || N == PointDim + 1,
                   "Unsupported transform and point dimensions");
 
-    Matrix B = Matrix::Zero(PointDim, LiftedDim);
-    B.col(0) = -measured_kP_;
+    // The residual is B x - c with c = measured_kP. The final column of B holds
+    // c, so Q is the augmented information [G g; g' f].
+    Matrix B = Matrix::Zero(PointDim, LiftedDim + 1);
+    B.col(LiftedDim) = measured_kP_;
     for (int column = 0; column < N; ++column) {
       const double coefficient = column < PointDim ? wL_(column) : 1.0;
-      B.block(0, 1 + column * PointDim, PointDim, PointDim)
+      B.block(0, column * PointDim, PointDim, PointDim)
           .diagonal()
           .setConstant(coefficient);
     }
@@ -180,8 +182,9 @@ class KnownLandmarkFactor2 : public NoiseModelFactorN<T> {
     const Matrix Q = whitenedB.transpose() * whitenedB;
 
     InsertQcqpConstraints<T, 1>(this->key(), constraints);
-    const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{LiftedDim}, Q);
-    costs->push_back(std::make_shared<QpCost>(KeyVector{this->key()}, blockQ));
+    const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{LiftedDim, 1}, Q);
+    costs->push_back(std::make_shared<QpCost>(
+        HessianFactor(KeyVector{this->key()}, blockQ)));
   }
 };
 

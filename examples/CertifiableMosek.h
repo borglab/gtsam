@@ -74,7 +74,7 @@ QcqpProblem makeAnchoredQcqp(const NonlinearFactorGraph& graph, Key rotationKey,
   QcqpProblem problem(anchoredGraph, 1);
 
   Matrix pointSelector = Matrix::Zero(kDimension, kPointDim);
-  pointSelector.block(0, 1, kDimension, kDimension).setIdentity();
+  pointSelector.block(0, 0, kDimension, kDimension).setIdentity();
   problem.addConstraint(LinearConstraint::Equal(
       JacobianFactor(pointKey, pointSelector, Vector::Zero(kDimension))));
   return problem;

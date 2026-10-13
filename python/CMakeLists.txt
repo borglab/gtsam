@@ -115,14 +115,18 @@ set(interface_headers
     ${PROJECT_SOURCE_DIR}/gtsam/linear/linear.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/values.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/nonlinear.i
+    ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/nonlinear_continuous_time.i
     ${PROJECT_SOURCE_DIR}/gtsam/nonlinear/custom.i
     ${PROJECT_SOURCE_DIR}/gtsam/constrained/constrained.i
     ${PROJECT_SOURCE_DIR}/gtsam/certifiable/certifiable.i
     ${PROJECT_SOURCE_DIR}/gtsam/symbolic/symbolic.i
     ${PROJECT_SOURCE_DIR}/gtsam/sam/sam.i
     ${PROJECT_SOURCE_DIR}/gtsam/slam/slam.i
+    ${PROJECT_SOURCE_DIR}/gtsam/slam/slam_synchronization.i
+    ${PROJECT_SOURCE_DIR}/gtsam/slam/slam_smart_projection.i
     ${PROJECT_SOURCE_DIR}/gtsam/sfm/sfm.i
     ${PROJECT_SOURCE_DIR}/gtsam/navigation/navigation.i
+    ${PROJECT_SOURCE_DIR}/gtsam/navigation/navigation_geometric.i
     ${PROJECT_SOURCE_DIR}/gtsam/basis/basis.i
     ${PROJECT_SOURCE_DIR}/gtsam/hybrid/hybrid.i
 )
@@ -416,6 +420,30 @@ add_custom_target(${GTSAM_PYTHON_INSTALL_TARGET}
         DEPENDS ${GTSAM_PYTHON_DEPENDENCIES} ${GTSAM_PYTHON_INSTALL_EXTRA}
         WORKING_DIRECTORY ${GTSAM_PYTHON_BUILD_DIRECTORY}
         VERBATIM)
+
+# Package managers (conda-forge, pixi, spack) install into a prefix they own
+# and cannot use the `python-install` target above: outside a virtualenv it
+# passes --user, which installs to the user site instead of the prefix. Opt in
+# to installing the Python package into CMAKE_INSTALL_PREFIX as part of the
+# regular `install` target instead.
+option(GTSAM_PYTHON_INSTALL_INTO_PREFIX
+       "Install the Python package into CMAKE_INSTALL_PREFIX as part of `install`"
+       OFF)
+
+if(GTSAM_PYTHON_INSTALL_INTO_PREFIX)
+  install(CODE "
+    message(STATUS \"Installing the GTSAM Python package into \${CMAKE_INSTALL_PREFIX}\")
+    execute_process(
+      COMMAND \"${PYTHON_EXECUTABLE}\" -m pip install .
+              --no-deps --no-build-isolation --no-compile
+              --prefix \"\${CMAKE_INSTALL_PREFIX}\"
+      WORKING_DIRECTORY \"${GTSAM_PYTHON_BUILD_DIRECTORY}\"
+      RESULT_VARIABLE _gtsam_pip_result)
+    if(NOT _gtsam_pip_result EQUAL 0)
+      message(FATAL_ERROR \"Installing the GTSAM Python package failed\")
+    endif()
+  ")
+endif()
 
 # Custom make command to run all GTSAM Python tests
 add_custom_target(

@@ -130,11 +130,25 @@ class QuadraticConstraint {
                       gtsam::QuadraticConstraint::Sense sense);
   QuadraticConstraint(gtsam::Key key, const gtsam::Matrix& A, double b,
                       gtsam::QuadraticConstraint::Sense sense, double sigma);
+  QuadraticConstraint(gtsam::Key key, const gtsam::Matrix& A,
+                      const gtsam::Vector& a, double b,
+                      gtsam::QuadraticConstraint::Sense sense, double sigma);
+  static gtsam::QuadraticConstraint FromPqr(
+      gtsam::Key key, const gtsam::Matrix& P, const gtsam::Vector& q, double r,
+      gtsam::QuadraticConstraint::Sense sense, double sigma = 1.0);
 
   static gtsam::QuadraticConstraint Equal(gtsam::Key key,
                                           const gtsam::Matrix& A, double b);
   static gtsam::QuadraticConstraint Equal(gtsam::Key key,
                                           const gtsam::Matrix& A, double b,
+                                          double sigma);
+  static gtsam::QuadraticConstraint Equal(gtsam::Key key,
+                                          const gtsam::Matrix& A,
+                                          const gtsam::Vector& a, double b);
+  // MATLAB needs the explicit sigma to avoid the scalar four-argument overload.
+  static gtsam::QuadraticConstraint Equal(gtsam::Key key,
+                                          const gtsam::Matrix& A,
+                                          const gtsam::Vector& a, double b,
                                           double sigma);
   static gtsam::QuadraticConstraint LessEqual(gtsam::Key key,
                                               const gtsam::Matrix& A, double b);
@@ -150,6 +164,8 @@ class QuadraticConstraint {
 
   gtsam::Key key() const;
   const gtsam::Matrix& A() const;
+  const gtsam::Vector& a() const;
+  bool hasLinearTerm() const;
   double b() const;
   gtsam::QuadraticConstraint::Sense sense() const;
   bool isEquality() const;
@@ -307,7 +323,7 @@ virtual class AugmentedLagrangianOptimizer {
   AugmentedLagrangianOptimizer(
       const gtsam::ConstrainedOptProblem& problem,
       const gtsam::Values& initialValues,
-      gtsam::AugmentedLagrangianParams::shared_ptr p);
+      gtsam::AugmentedLagrangianParams* p);
 
   gtsam::Values optimize() const;
 };

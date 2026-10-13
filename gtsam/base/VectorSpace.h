@@ -12,6 +12,7 @@
 
 #include <cmath>
 #include <stdexcept>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -325,50 +326,42 @@ struct traits<Eigen::Matrix<double, M, N, Options, MaxRows, MaxCols> > :
   typedef Eigen::Matrix<double, dimension, dimension> Jacobian;
   typedef OptionalJacobian<dimension, dimension> ChartJacobian;
 
-  /// Dimension of the exact D=1 homogeneous QCQP vector `[1; vec(value)]`.
-  inline constexpr static int QcqpVectorDim = dimension + 1;
+  /// Dimension of the exact D=1 QCQP vector `vec(value)`.
+  inline constexpr static int QcqpVectorDim = dimension;
 
-  /** Return the exact D=1 homogeneous QCQP representation. */
+  /** Return the exact D=1 QCQP representation `vec(value)`. */
   template <int D>
   static Matrix QcqpValue(const Fixed& value) {
     if constexpr (D == 1) {
-      Matrix result(QcqpVectorDim, 1);
-      result(0, 0) = 1.0;
-      result.col(0).tail(dimension) =
-          Eigen::Map<const TangentVector>(value.data());
-      return result;
+      return Eigen::Map<const TangentVector>(value.data());
     } else {
       throw std::invalid_argument(
           "fixed-size vector-space QCQP values only support D=1.");
     }
   }
 
-  /** Return the homogeneous-coordinate constraint `x(0)^2 = 1`. */
+  /** Vector spaces are unconstrained, so return no (A, a, b) triples. */
   template <int D>
-  static std::vector<std::pair<Matrix, double>> QcqpConstraints() {
+  static std::vector<std::tuple<Matrix, Vector, double>> QcqpConstraints() {
     if constexpr (D == 1) {
-      Matrix A = Matrix::Zero(QcqpVectorDim, QcqpVectorDim);
-      A(0, 0) = 1.0;
-      return {{A, 1.0}};
+      return {};
     } else {
       throw std::invalid_argument(
           "fixed-size vector-space QCQP constraints only support D=1.");
     }
   }
 
-  /** Recover a fixed-size value from its exact D=1 homogeneous QCQP vector. */
+  /** Recover a fixed-size value from its exact D=1 QCQP vector. */
   template <int D>
   static Fixed FromQcqpValue(const Matrix& qcqpValue) {
     if constexpr (D == 1) {
-      if (qcqpValue.rows() != QcqpVectorDim || qcqpValue.cols() != 1 ||
-          std::abs(qcqpValue(0, 0)) < 1e-12) {
+      if (qcqpValue.rows() != QcqpVectorDim || qcqpValue.cols() != 1) {
         throw std::invalid_argument(
             "fixed-size vector-space QCQP recovery requires a compatible "
-            "homogeneous vector.");
+            "vector.");
       }
       Fixed result;
-      Eigen::Map<TangentVector>(result.data()) =
-          qcqpValue.col(0).tail(dimension) / qcqpValue(0, 0);
+      Eigen::Map<TangentVector>(result.data()) = qcqpValue.col(0);
       return result;
     } else {
       throw std::invalid_argument(

@@ -606,10 +606,16 @@ void ISAM2::marginalizeLeaves(
         // Check if parent contains a marginalized leaf variable.  Only need to
         // check the first variable because it is the closest to the leaves.
         sharedClique parent = clique->parent();
-        if (leafKeys.exists(parent->conditional()->front()))
-          clique = parent;
-        else
+        if (!leafKeys.exists(parent->conditional()->front())) break;
+        // Processing the parent only removes (and summarizes) this clique if
+        // it depends on a marginalized variable. Otherwise, e.g. a leaf whose
+        // separator holds only kept variables below a parent that mixes
+        // marginalized and kept frontals, marginalize it here.
+        const auto parents = clique->conditional()->parents();
+        if (std::none_of(parents.begin(), parents.end(),
+                         [&](Key key) { return leafKeys.exists(key); }))
           break;
+        clique = parent;
       }
 
       // See if we should remove the whole clique
@@ -711,9 +717,22 @@ void ISAM2::marginalizeLeaves(
         while (leafKeys.exists(cg->keys()[nToRemove])) ++nToRemove;
 
         // Make the clique's matrix appear as a subset
+        const DenseIndex oldRowStart = cg->matrixObject().rowStart();
         const DenseIndex dimToRemove = cg->matrixObject().offset(nToRemove);
         cg->matrixObject().firstBlock() += nToRemove;
         cg->matrixObject().rowStart() = dimToRemove;
+
+        // The noise model holds one sigma per row of the original conditional.
+        // Drop the sigmas of the rows that were removed, so that each remaining
+        // row keeps its own (a Constrained model would otherwise mark soft rows
+        // as hard). offset() is absolute, so subtract the old rowStart(): an
+        // earlier split has already hidden (and dropped) the rows before it.
+        if (cg->get_model() && dimToRemove > oldRowStart) {
+          const Vector sigmas = cg->get_model()->sigmas();
+          const Vector remaining =
+              sigmas.tail(sigmas.size() - (dimToRemove - oldRowStart));
+          cg->setModel((remaining.array() == 0.0).any(), remaining);
+        }
 
         // Change the keys in the clique
         KeyVector originalKeys;

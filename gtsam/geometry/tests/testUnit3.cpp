@@ -421,21 +421,26 @@ TEST(Unit3, Retract) {
 }
 
 //*******************************************************************************
-TEST (Unit3, JacobianRetract) {
-  Matrix22 H;
-  Unit3 p;
-  auto f = std::bind(&Unit3::retract, p, std::placeholders::_1, nullptr);
-  {
-    Vector2 v(-0.2, 0.1);
-    p.retract(v, H);
-    Matrix H_expected_numerical = numericalDerivative11(f, v);
-    EXPECT(assert_equal(H_expected_numerical, H, 1e-5));
-  }
-  {
-    Vector2 v(0, 0);
-    p.retract(v, H);
-    Matrix H_expected_numerical = numericalDerivative11(f, v);
-    EXPECT(assert_equal(H_expected_numerical, H, 1e-5));
+// Checks the value and Jacobian at zero, across the Taylor cutoff, and at
+// large steps.
+TEST(Unit3, JacobianRetract) {
+  const Vector2 direction = Vector2{-2.0, 1.0}.normalized();
+  for (const Unit3& p : {Unit3(), Unit3(2, -3, 1), Unit3(-1, 4, -2)}) {
+    const auto retract = [&p](const Vector2& v) { return p.retract(v); };
+    for (double radius : {0.0, 1e-16, 1e-12, 1e-8, 1e-6, 0.5e-4,
+                          1e-4, 2e-4, 0.1, 1.0, M_PI, 4.0}) {
+      const Vector2 v = radius * direction;
+      Matrix2 H;
+      const Unit3 actual = p.retract(v, H);
+      const Matrix2 expectedH = numericalDerivative11(retract, v);
+      EXPECT(assert_equal(expectedH, H, 1e-8));
+
+      // An independent construction rotates p around p x (B v).
+      const Vector3 axisAngle = p.unitVector().cross(p.basis() * v);
+      const Unit3 expected = Rot3::Expmap(axisAngle) * p;
+      EXPECT(assert_equal(expected, actual, 1e-12));
+      EXPECT(assert_equal(retract(v), actual, 1e-12));
+    }
   }
 }
 

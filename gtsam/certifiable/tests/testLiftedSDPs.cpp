@@ -415,15 +415,10 @@ QcqpProblem ApplicationQcqp() {
                                               std::sqrt(2.0), 3.0);
 
   QcqpProblem problem(graph, 1);
-  Matrix rotationSelector = Matrix::Zero(2, traits<Rot2>::QcqpVectorDim);
-  rotationSelector.block<2, 2>(0, 1).setIdentity();
   problem.addConstraint(LinearConstraint::Equal(
-      JacobianFactor(kR0, rotationSelector, Vector2(1.0, 0.0))));
-
-  Matrix pointSelector = Matrix::Zero(2, traits<Vector2>::QcqpVectorDim);
-  pointSelector.block(0, 1, 2, 2).setIdentity();
+      JacobianFactor(kR0, Matrix2::Identity(), Vector2(1.0, 0.0))));
   problem.addConstraint(LinearConstraint::Equal(
-      JacobianFactor(kT0, pointSelector, Vector2::Zero())));
+      JacobianFactor(kT0, Matrix2::Identity(), Vector2::Zero())));
   return problem;
 }
 
@@ -465,15 +460,15 @@ TEST(LiftedSDPs, Pr2713ApplicationFactorsMonolithicAndChordal) {
 /* ************************************************************************* */
 
 /* ************************************************************************* */
-namespace shared_homogeneous_fixture {
+namespace natural_form_fixture {
 
-// Sharing and opting out preserve the nonzero optimum, anchor, and recovery.
-TEST(LiftedSDPs, SharedHomogeneousNoisyRot2Ring) {
+// The constant coordinate preserves the nonzero optimum, anchor, and recovery.
+TEST(LiftedSDPs, NoisyRot2Ring) {
   constexpr size_t count = 4;
   constexpr double delta = 0.2;
   QcqpProblem problem(lifted_sdp_tests::Rot2RingGraph(count, delta), 1);
-  problem.addConstraint(LinearConstraint::Equal(JacobianFactor(
-      Symbol('x', 0), Matrix{{0, 1, 0}, {0, 0, 1}}, Vector2(0.6, 0.8))));
+  problem.addConstraint(LinearConstraint::Equal(
+      JacobianFactor(Symbol('x', 0), Matrix2::Identity(), Vector2(0.6, 0.8))));
   // Each Frobenius edge costs 2*(1-cos(delta)); the total winding is zero.
   const double expected = 2.0 * count * (1.0 - std::cos(delta));
   auto check = [&](auto* solver) {
@@ -481,27 +476,25 @@ TEST(LiftedSDPs, SharedHomogeneousNoisyRot2Ring) {
     EXPECT_DOUBLES_EQUAL(expected, solver->objectiveValue(), 1e-6);
     const Values values = solver->qcqpValues();
     EXPECT_DOUBLES_EQUAL(expected, problem.costs().error(values), 1e-6);
-    EXPECT(assert_equal(Vector3(1, 0.6, 0.8),
+    EXPECT(assert_equal(Vector2(0.6, 0.8),
                         Vector(values.at<Matrix>(Symbol('x', 0)).col(0)),
                         1e-6));
     EXPECT(assert_equal(values, solver->qcqpValues(), 1e-12));
     for (double ratio : solver->variableEVRs()) EXPECT(ratio > 1e5);
   };
-  for (bool shareHomogeneousCoordinates : {true, false}) {
-    MosekMonolithicSDP monolithic(problem, shareHomogeneousCoordinates);
-    check(&monolithic);
-    for (const auto ordering :
-         {ChordalOrderingType::Colamd, ChordalOrderingType::Metis}) {
-      MosekChordalSDP chordal(problem, ordering, shareHomogeneousCoordinates);
-      check(&chordal);
-      EXPECT_DOUBLES_EQUAL(monolithic.objectiveValue(), chordal.objectiveValue(),
-                           1e-6);
-    }
+  MosekMonolithicSDP monolithic(problem);
+  check(&monolithic);
+  for (const auto ordering :
+       {ChordalOrderingType::Colamd, ChordalOrderingType::Metis}) {
+    MosekChordalSDP chordal(problem, ordering);
+    check(&chordal);
+    EXPECT_DOUBLES_EQUAL(monolithic.objectiveValue(), chordal.objectiveValue(),
+                         1e-6);
   }
 }
 
-// Minimize half the squared norm with prescribed homogeneous squared norms.
-// Different block dimensions also exercise rectangular objective views.
+// Minimize half the squared norm with a prescribed, scaled squared leading
+// entry per key. Different block dimensions exercise rectangular views.
 QcqpProblem NormProblem(size_t count, bool connected, double firstSquaredNorm) {
   NonlinearFactorGraph costs;
   if (connected) {
@@ -539,11 +532,14 @@ void CheckNormProblem(size_t count, bool connected, double firstSquaredNorm,
     const Values values = solver->qcqpValues();
     EXPECT_LONGS_EQUAL(count, values.size());
     for (size_t key = 0; key < count; ++key) {
-      Vector expectedColumn = Vector::Zero(key + 2);
-      expectedColumn(0) = key == 0 ? firstSquaredNorm : 1.0;
       EXPECT_LONGS_EQUAL(key + 2, solver->orderedKeyDims().at(key));
-      EXPECT(assert_equal(expectedColumn, Vector(values.at<Matrix>(key).col(0)),
-                          1e-6));
+      const Vector recovered = values.at<Matrix>(key).col(0);
+      // The relaxation is sign-symmetric in each key, so only |y_0| <=
+      // sqrt(X_00) and the zero tail are determined.
+      const double squaredNorm = key == 0 ? firstSquaredNorm : 1.0;
+      EXPECT(std::abs(recovered(0)) <= std::sqrt(squaredNorm) + 1e-6);
+      EXPECT(assert_equal(Vector(Vector::Zero(key + 1)),
+                          Vector(recovered.tail(key + 1)), 1e-6));
     }
   };
   MosekMonolithicSDP monolithic(problem);
@@ -555,23 +551,74 @@ void CheckNormProblem(size_t count, bool connected, double firstSquaredNorm,
   }
 }
 
-// Exact positive and negative multiples of h^2=1 permit coordinate sharing.
-TEST(LiftedSDPs, SharedHomogeneousScaledNormalization) {
+// Coupled keys of different sizes read rectangular off-diagonal blocks.
+TEST(LiftedSDPs, NormProblemRectangularViews) {
   CheckNormProblem(2, true, 1.0, result_, name_);
-}
-
-// A non-unit h^2=4 keeps the old formulation, including cross moment h0*h1=1.
-TEST(LiftedSDPs, SharedHomogeneousNonUnitFallback) {
   CheckNormProblem(2, true, 4.0, result_, name_);
 }
 
-// One-key cones and separate components retain their original keyed results.
-TEST(LiftedSDPs, SharedHomogeneousSingleKeyAndDisconnected) {
+// One-key cones and separate components retain their keyed results.
+TEST(LiftedSDPs, NormProblemSingleKeyAndDisconnected) {
   CheckNormProblem(1, false, 1.0, result_, name_);
   CheckNormProblem(2, false, 1.0, result_, name_);
 }
 
-}  // namespace shared_homogeneous_fixture
+// Linear and constant QpCost terms read the lifted vector x_i (row-0 slice)
+// and the constant:
+// 1/2||t - p||^2 + 1/2||t - q||^2 is minimized at t=(p+q)/2.
+TEST(LiftedSDPs, LinearAndConstantCost) {
+  const Vector2 p(1.0, 0.0), q(0.0, 1.0);
+  NonlinearFactorGraph costs;
+  costs.emplace_shared<QpCost>(HessianFactor(
+      0, Matrix(2.0 * Matrix2::Identity()), Vector(p + q),
+      p.squaredNorm() + q.squaredNorm()));
+  const QcqpProblem problem(costs, NonlinearEqualityConstraints());
+
+  const double expected = 0.25 * (p - q).squaredNorm();
+  auto check = [&](auto* solver) {
+    EXPECT(solver->solve());
+    EXPECT_DOUBLES_EQUAL(expected, solver->objectiveValue(), 1e-6);
+    const Values values = solver->qcqpValues();
+    EXPECT(assert_equal(Vector2(0.5, 0.5), Vector(values.at<Matrix>(0).col(0)),
+                        1e-6));
+    EXPECT_DOUBLES_EQUAL(expected, problem.costs().error(values), 1e-6);
+  };
+  MosekMonolithicSDP monolithic(problem);
+  check(&monolithic);
+  MosekChordalSDP chordal(problem, ChordalOrderingType::Colamd);
+  check(&chordal);
+}
+
+// A linear constraint term reads the lifted vector x_i (row-0 slice):
+// projecting p onto the circle ||t - c||^2 = r^2, written
+// t't + 2a't = r^2 - c'c with a = -c, is exact.
+TEST(LiftedSDPs, LinearConstraintTerm) {
+  const Vector2 p(4.0, 5.0), c(1.0, 1.0);
+  constexpr double r = 1.0;
+  NonlinearFactorGraph costs;
+  costs.emplace_shared<QpCost>(HessianFactor(0, Matrix(Matrix2::Identity()),
+                                             Vector(p), p.squaredNorm()));
+  QcqpProblem problem(costs, NonlinearEqualityConstraints());
+  problem.addConstraint(QuadraticConstraint::Equal(
+      0, Matrix2::Identity(), Vector(-c), r * r - c.squaredNorm()));
+
+  const double distance = (p - c).norm();
+  const double expected = 0.5 * (distance - r) * (distance - r);
+  const Vector2 projection = c + r * (p - c) / distance;
+  auto check = [&](auto* solver) {
+    EXPECT(solver->solve());
+    EXPECT_DOUBLES_EQUAL(expected, solver->objectiveValue(), 1e-6);
+    const Values values = solver->qcqpValues();
+    EXPECT(assert_equal(projection, Vector(values.at<Matrix>(0).col(0)), 1e-5));
+    EXPECT(solver->variableEVRs().front() > 1e5);
+  };
+  MosekMonolithicSDP monolithic(problem);
+  check(&monolithic);
+  MosekChordalSDP chordal(problem, ChordalOrderingType::Colamd);
+  check(&chordal);
+}
+
+}  // namespace natural_form_fixture
 /* ************************************************************************* */
 #endif
 

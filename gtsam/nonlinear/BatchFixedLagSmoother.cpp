@@ -55,6 +55,22 @@ Matrix BatchFixedLagSmoother::marginalCovariance(Key key) const {
 FixedLagSmoother::Result BatchFixedLagSmoother::update(
     const NonlinearFactorGraph& newFactors, const Values& newTheta,
     const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove) {
+  return updateImpl(newFactors, newTheta, timestamps, factorsToRemove, KeySet(), KeySet());
+}
+
+/* ************************************************************************* */
+FixedLagSmoother::Result BatchFixedLagSmoother::update(
+    const NonlinearFactorGraph& newFactors, const Values& newTheta,
+    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove,
+    const KeySet& keysToRetain, const KeySet& keysToRelease) {
+  return updateImpl(newFactors, newTheta, timestamps, factorsToRemove, keysToRetain, keysToRelease);
+}
+
+/* ************************************************************************* */
+FixedLagSmoother::Result BatchFixedLagSmoother::updateImpl(
+    const NonlinearFactorGraph& newFactors, const Values& newTheta,
+    const KeyTimestampMap& timestamps, const FactorIndices& factorsToRemove,
+    const KeySet& keysToRetain, const KeySet& keysToRelease) {
 
   // Capture keys touched by explicit removals before adding new factors. They
   // are removed below only when no replacement factor still references them.
@@ -86,6 +102,17 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
     }
   }
 
+  // Retention names a variable, so it must be one the smoother holds or one
+  // arriving in this update. Validate before any state mutation.
+  for (const Key key : keysToRetain) {
+    if (!theta_.exists(key) && !newTheta.exists(key)) {
+      throw invalid_argument(
+          "BatchFixedLagSmoother::update: cannot retain key '" +
+          DefaultKeyFormatter(key) +
+          "', because no value exists in the smoother or newTheta.");
+    }
+  }
+
   // Update all of the internal variables with the new information
   gttic(augment_system);
   // Add the new variables to theta
@@ -105,6 +132,10 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
   // reappear as a timestamp-only entry after its state is erased.
   updateKeyTimestampMap(timestamps);
 
+  // Apply retain/release before computing marginalization candidates so that
+  // releasing takes effect immediately in this same update call
+  updateRetainedKeys(keysToRetain, keysToRelease);
+
   // Preserve this update's cutoff even if the newest state is removed below.
   const double current_timestamp = getCurrentTimestamp();
 
@@ -120,7 +151,8 @@ FixedLagSmoother::Result BatchFixedLagSmoother::update(
   }
   eraseKeys(unusedKeys);
 
-  // Find the set of variables to be marginalized out
+  // Find the set of variables to be marginalized out (retained keys are excluded
+  // inside findKeysBefore)
   KeyVector marginalizableKeys = findKeysBefore(
       current_timestamp - smootherLag_);
 

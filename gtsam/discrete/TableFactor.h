@@ -37,6 +37,12 @@
 
 namespace gtsam {
 
+/**
+ * @brief Using Eigen::SparseVector with 64 bit indices to support large
+ * discrete factors. Fixes https://github.com/borglab/gtsam/issues/2831
+ */
+using SparseVector = Eigen::SparseVector<double, 0, int64_t>;
+
 class DiscreteConditional;
 class HybridValues;
 
@@ -51,7 +57,7 @@ class HybridValues;
 class GTSAM_EXPORT TableFactor : public DiscreteFactor {
  protected:
   /// SparseVector of nonzero probabilities.
-  Eigen::SparseVector<double> sparse_table_;
+  SparseVector sparse_table_;
 
  private:
   /// Map of Keys and their denominators used in keyValueForIndex.
@@ -60,18 +66,41 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   DiscreteKeys sorted_dkeys_;
 
   /**
-   * @brief Uses lazy cartesian product to find nth entry in the cartesian
-   * product of arrays in O(1)
-   * Example)
-   *   v0 | v1 | val
-   *    0 |  0 |  10
-   *    0 |  1 |  21
-   *    1 |  0 |  32
-   *    1 |  1 |  43
-   *   keyValueForIndex(v1, 2) = 0
-   * @param target_key nth entry's key to find out its assigned value
-   * @param index nth entry in the sparse vector
-   * @return TableFactor
+   * Return the discrete value assigned to `target_key` at a linear table
+   * index.
+   *
+   * A key's discrete value is the integer identifying one of its alternatives,
+   * ranging from zero to its cardinality minus one. It is distinct from the
+   * factor value stored at a table index. Keys use the order in which they
+   * were supplied to the factor, and the last key varies fastest.
+   * `denominators_[target_key]` is the product of the cardinalities of all
+   * keys after `target_key`, so the discrete value is
+   * `(index / denominators_[target_key]) % cardinality(target_key)`.
+   *
+   * `index` is the linear index in the full table, even when the table is
+   * sparse; it is not the ordinal number of a nonzero entry. For example, let
+   * `v0` have cardinality 2 and `v1` cardinality 3:
+   *
+   *   index | v0 discrete value | v1 discrete value | factor value
+   *   ------|-------------------|-------------------|-------------
+   *       0 |                 0 |                 0 |          10
+   *       1 |                 0 |                 1 |          21
+   *       2 |                 0 |                 2 |          32
+   *       3 |                 1 |                 0 |          43
+   *       4 |                 1 |                 1 |          54
+   *       5 |                 1 |                 2 |          65
+   *
+   * At index 2, `keyValueForIndex(v1, 2)` returns the discrete value 2; the
+   * factor value in that row is 32. At index 5, the discrete value for `v1`
+   * is also 2, but the factor value is 65. Meanwhile,
+   * `keyValueForIndex(v0, 2)` returns 0. With three keys `(x, y, z)` of
+   * cardinalities `(2, 3, 2)`, `z` changes every index, `y` every 2 indices,
+   * and `x` every 6 indices. Index 8 represents the discrete values
+   * `(x, y, z) = (1, 1, 0)`.
+   *
+   * @param target_key Key whose discrete value to decode.
+   * @param index Linear index in the full Cartesian-product table.
+   * @return The discrete value of `target_key` at `index`.
    */
   size_t keyValueForIndex(Key target_key, uint64_t index) const;
 
@@ -89,18 +118,18 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    * Convert probability table given as doubles to SparseVector.
    * Example: {0, 1, 1, 0, 0, 1, 0} -> values: {1, 1, 1}, indices: {1, 2, 5}
    */
-  static Eigen::SparseVector<double> Convert(const DiscreteKeys& keys,
+  static SparseVector Convert(const DiscreteKeys& keys,
                                              const std::vector<double>& table);
 
   /// Convert probability table given as string to SparseVector.
-  static Eigen::SparseVector<double> Convert(const DiscreteKeys& keys,
+  static SparseVector Convert(const DiscreteKeys& keys,
                                              const std::string& table);
 
   // typedefs needed to play nice with gtsam
   typedef TableFactor This;
   typedef DiscreteFactor Base;  ///< Typedef to base class
   typedef std::shared_ptr<TableFactor> shared_ptr;
-  typedef Eigen::SparseVector<double>::InnerIterator SparseIt;
+  typedef SparseVector::InnerIterator SparseIt;
   typedef std::vector<std::pair<DiscreteValues, double>> AssignValList;
 
   /// @name Standard Constructors
@@ -114,7 +143,7 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
 
   /** Constructor from sparse_table */
   TableFactor(const DiscreteKeys& keys,
-              const Eigen::SparseVector<double>& table);
+              const SparseVector& table);
 
   /** Constructor from doubles */
   TableFactor(const DiscreteKeys& keys, const std::vector<double>& table)
@@ -160,7 +189,7 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   // /// @{
 
   /// Getter for the underlying sparse vector
-  Eigen::SparseVector<double> sparseTable() const { return sparse_table_; }
+  SparseVector sparseTable() const { return sparse_table_; }
 
   /// Evaluate probability distribution, is just look up in TableFactor.
   double evaluate(const Assignment<Key>& values) const override;

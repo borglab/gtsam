@@ -23,7 +23,10 @@
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Ordering.h>
 
+#include <algorithm>
+#include <functional>
 #include <utility>
+#include <vector>
 
 using namespace std;
 
@@ -128,8 +131,7 @@ TableFactor::TableFactor(const DiscreteKeys& dkeys,
 }
 
 /* ************************************************************************ */
-TableFactor::TableFactor(const DiscreteKeys& dkeys,
-                         const Eigen::SparseVector<double>& table)
+TableFactor::TableFactor(const DiscreteKeys& dkeys, const SparseVector& table)
     : DiscreteFactor(dkeys.indices(), dkeys.cardinalities()),
       sparse_table_(table.size()) {
   sparse_table_ = table;
@@ -156,17 +158,17 @@ TableFactor::TableFactor(const DiscreteKeys& dkeys,
  *  is then used to create the TableFactor.
  *
  * @param dt The DecisionTree
- * @return Eigen::SparseVector<double>
+ * @return SparseVector
  */
-static Eigen::SparseVector<double> ComputeSparseTable(
-    const DiscreteKeys& dkeys, const DecisionTreeFactor& dt) {
+static SparseVector ComputeSparseTable(const DiscreteKeys& dkeys,
+                                       const DecisionTreeFactor& dt) {
   // SparseVector needs to know the maximum possible index,
   // so we compute the product of cardinalities.
   size_t cardinalityProduct = 1;
   for (auto&& [_, c] : dt.cardinalities()) {
     cardinalityProduct *= c;
   }
-  Eigen::SparseVector<double> sparseTable(cardinalityProduct);
+  SparseVector sparseTable(cardinalityProduct);
   size_t nrValues = 0;
   dt.visit([&nrValues](double x) {
     if (x > 0) nrValues += 1;
@@ -254,8 +256,8 @@ TableFactor::TableFactor(const DiscreteConditional& c)
     : TableFactor(c.discreteKeys(), c) {}
 
 /* ************************************************************************ */
-Eigen::SparseVector<double> TableFactor::Convert(
-    const DiscreteKeys& keys, const std::vector<double>& table) {
+SparseVector TableFactor::Convert(const DiscreteKeys& keys,
+                                  const std::vector<double>& table) {
   size_t max_size = 1;
   for (auto&& [_, cardinality] : keys.cardinalities()) {
     max_size *= cardinality;
@@ -266,7 +268,7 @@ Eigen::SparseVector<double> TableFactor::Convert(
         "input.");
   }
 
-  Eigen::SparseVector<double> sparse_table(table.size());
+  SparseVector sparse_table(table.size());
   // Count number of nonzero elements in table and reserve the space.
   const uint64_t nnz = std::count_if(table.begin(), table.end(),
                                      [](uint64_t i) { return i != 0; });
@@ -280,7 +282,7 @@ Eigen::SparseVector<double> TableFactor::Convert(
 }
 
 /* ************************************************************************ */
-Eigen::SparseVector<double> TableFactor::Convert(const DiscreteKeys& keys,
+SparseVector TableFactor::Convert(const DiscreteKeys& keys,
                                                  const std::string& table) {
   // Convert string to doubles.
   std::vector<double> ys;
@@ -392,14 +394,50 @@ DecisionTreeFactor TableFactor::toDecisionTreeFactor() const {
     return DecisionTreeFactor(dkeys, tree);
   }
 
-  std::vector<double> table(sparse_table_.size(), 0.0);
+  // Build the tree from the nonzero entries only, so a sparse table over many
+  // keys (e.g. a pruned hybrid mode posterior) costs time in its nonzeros, not
+  // in the product of all cardinalities. Keys go from highest to lowest, the
+  // order a DecisionTree keeps from root to leaves.
+  DiscreteKeys orderedKeys = dkeys;
+  std::sort(orderedKeys.begin(), orderedKeys.end(),
+            [](const DiscreteKey& a, const DiscreteKey& b) {
+              return a.first > b.first;
+            });
+  std::vector<std::pair<std::vector<size_t>, double>> entries;
+  entries.reserve(sparse_table_.nonZeros());
   for (SparseIt it(sparse_table_); it; ++it) {
-    table[it.index()] = it.value();
+    std::vector<size_t> values;
+    values.reserve(orderedKeys.size());
+    for (const DiscreteKey& dkey : orderedKeys) {
+      values.push_back(keyValueForIndex(dkey.first, it.index()));
+    }
+    entries.emplace_back(std::move(values), it.value());
   }
+  std::sort(entries.begin(), entries.end());
 
-  AlgebraicDecisionTree<Key> tree(dkeys, table);
-  DecisionTreeFactor f(dkeys, tree);
-  return f;
+  using Tree = DecisionTree<Key, double>;
+  std::function<Tree(size_t, size_t, size_t)> build =
+      [&](size_t level, size_t begin, size_t end) -> Tree {
+    if (begin == end) return Tree(0.0);
+    if (level == orderedKeys.size()) return Tree(entries[begin].second);
+    std::vector<Tree> branches;
+    branches.reserve(orderedKeys[level].second);
+    size_t first = begin;
+    for (size_t value = 0; value < orderedKeys[level].second; ++value) {
+      size_t last = first;
+      while (last < end && entries[last].first[level] == value) ++last;
+      branches.push_back(build(level + 1, first, last));
+      first = last;
+    }
+    return Tree(branches.begin(), branches.end(), orderedKeys[level].first);
+  };
+
+  // Build the decision tree
+  const Tree built = build(0, 0, entries.size());
+  // Merge identical branches to reduce size of the tree
+  AlgebraicDecisionTree<Key> tree(Tree::Choice::Unique(built.root_));
+
+  return DecisionTreeFactor(dkeys, tree);
 }
 
 /* ************************************************************************ */
@@ -428,7 +466,7 @@ TableFactor TableFactor::choose(const DiscreteValues parent_assign,
   uint64_t child_card = 1;
   for (const DiscreteKey& child_dkey : child_dkeys)
     child_card *= child_dkey.second;
-  Eigen::SparseVector<double> child_sparse_table_(child_card);
+  SparseVector child_sparse_table_(child_card);
   child_sparse_table_.reserve(child_card);
 
   // Populate child sparse table.
@@ -486,7 +524,7 @@ DiscreteFactor::shared_ptr TableFactor::sum(const Ordering& keys) const {
 /* ************************************************************************ */
 double TableFactor::max() const {
   double max_value = std::numeric_limits<double>::lowest();
-  for (Eigen::SparseVector<double>::InnerIterator it(sparse_table_); it; ++it) {
+  for (SparseVector::InnerIterator it(sparse_table_); it; ++it) {
     max_value = std::max(max_value, it.value());
   }
   return max_value;
@@ -507,7 +545,7 @@ TableFactor TableFactor::apply(Unary op) const {
   // Initialize new factor.
   uint64_t cardi = 1;
   for (auto [key, c] : cardinalities_) cardi *= c;
-  Eigen::SparseVector<double> sparse_table(cardi);
+  SparseVector sparse_table(cardi);
   sparse_table.reserve(sparse_table_.nonZeros());
 
   // Populate
@@ -526,7 +564,7 @@ TableFactor TableFactor::apply(UnaryAssignment op) const {
   // Initialize new factor.
   uint64_t cardi = 1;
   for (auto [key, c] : cardinalities_) cardi *= c;
-  Eigen::SparseVector<double> sparse_table(cardi);
+  SparseVector sparse_table(cardi);
   sparse_table.reserve(sparse_table_.nonZeros());
 
   // Populate
@@ -554,7 +592,7 @@ TableFactor TableFactor::apply(const TableFactor& f, Binary op) const {
       f.createMap(scopes.contractScope.keys, scopes.factorFreeScope.keys);
   // 3. Initialize the multiplied factor with a scope-aware upper bound on its
   // number of nonzeros.
-  Eigen::SparseVector<double> multipliedSparseTable(
+  SparseVector multipliedSparseTable(
       scopes.unionScope.cardinality);
   multipliedSparseTable.reserve(
       scopes.reserveSize(sparse_table_.nonZeros(), f.sparse_table_.nonZeros()));
@@ -682,7 +720,7 @@ TableFactor::shared_ptr TableFactor::combine(size_t nrFrontals,
     card *= cardinality(keys_[i]);
   }
   // Create combined table.
-  Eigen::SparseVector<double> combined_table(card);
+  SparseVector combined_table(card);
   combined_table.reserve(sparse_table_.nonZeros());
   // Populate combined table.
   for (SparseIt it(sparse_table_); it; ++it) {
@@ -717,7 +755,7 @@ TableFactor::shared_ptr TableFactor::combine(const Ordering& frontalKeys,
     }
   }
   // Create combined table.
-  Eigen::SparseVector<double> combined_table(card);
+  SparseVector combined_table(card);
   combined_table.reserve(sparse_table_.nonZeros());
   // Populate combined table.
   for (SparseIt it(sparse_table_); it; ++it) {
@@ -842,7 +880,7 @@ TableFactor TableFactor::prune(size_t maxNrAssignments) const {
   if (probabilities.size() > N) probabilities.resize(N);
 
   // Create pruned sparse vector.
-  Eigen::SparseVector<double> pruned_vec(sparse_table_.size());
+  SparseVector pruned_vec(sparse_table_.size());
   pruned_vec.reserve(probabilities.size());
 
   // Populate pruned sparse vector.

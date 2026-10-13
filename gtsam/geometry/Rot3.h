@@ -31,6 +31,7 @@
 
 #include <random>
 #include <stdexcept>
+#include <tuple>
 #include <utility>
 
 // You can override the default coordinate mode using this flag
@@ -601,14 +602,14 @@ class GTSAM_EXPORT Rot3 : public MatrixLieGroup<Rot3, 3, 3> {
 
 template <>
 struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
-  /// Dimension of the D=1 homogenized QCQP vector.
-  inline constexpr static int QcqpVectorDim = 10;
+  /// Dimension of the D=1 QCQP vector vec(R).
+  inline constexpr static int QcqpVectorDim = 9;
 
   /**
    * Return a matrix-valued QCQP variable for Rot3.
    *
-   * D=1 prepends a fixed homogenization coordinate to the existing
-   * column-major SO(3) vectorization, yielding a 10-by-1 matrix.
+   * D=1 uses the column-major SO(3) vectorization, yielding a 9-by-1
+   * matrix.
    * D>=3 returns [R', 0] as a 3-by-D row-orthonormal matrix. These variables
    * form a Stiefel relaxation with a common right-O(D) gauge.
    */
@@ -616,10 +617,7 @@ struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
   static Matrix QcqpValue(const Rot3& value) {
     if constexpr (D == 1) {
       const Matrix3 R = value.matrix();
-      Vector10 X;
-      X(0, 0) = 1.0;  // Homogenization entry.
-      X.bottomRows(9) = Eigen::Map<const Matrix>(R.data(), 9, 1);
-      return X;
+      return Eigen::Map<const Matrix>(R.data(), 9, 1);
     } else if constexpr (D >= 3) {
       Matrix X = Matrix::Zero(3, D);
       X.template leftCols<3>() = value.matrix().transpose();
@@ -631,60 +629,75 @@ struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
   }
 
   /**
-   * Return row-space QCQP equality constraints A, b such that
-   * trace(X' A X) = b. For D=1 these are the lifted SO(3) constraints in
-   * column-major coordinates. For D>=3 the same 3-by-3 constraints enforce
-   * XX'=I. The D=1 right-handedness constraints distinguish SO(3) from the
-   * reflected component of O(3).
+   * Return row-space QCQP equality constraints (A, a, b) such that
+   * trace(X' A X) + 2 a' x = b, with an empty a meaning no linear term. For D=1
+   * these are the lifted SO(3) constraints in column-major coordinates; the
+   * three right-handedness rows carry a linear term. For D>=3 the same 3-by-3
+   * constraints, all with empty a, enforce XX'=I. The D=1 right-handedness
+   * constraints distinguish SO(3) from the reflected component of O(3).
    */
   template <int D = 1>
-  static std::vector<std::pair<Matrix, double>> QcqpConstraints() {
+  static std::vector<std::tuple<Matrix, Vector, double>> QcqpConstraints() {
     if constexpr (D == 1) {
-      // The homogenized Rot3 lifted vector is
-      // x = [1, r00, r10, r20, r01, r11, r21, r02, r12, r22].
-      std::vector<std::pair<Matrix, double>> constraints;
-      constraints.reserve(10);
+      // The Rot3 vector is
+      // x = [r00, r10, r20, r01, r11, r21, r02, r12, r22].
+      std::vector<std::tuple<Matrix, Vector, double>> constraints;
+      constraints.reserve(9);
 
-      Matrix A = Matrix::Zero(10, 10);
+      Matrix A = Matrix::Zero(9, 9);
 
-      // The quadratic lift fixes x(0)^2 = 1.
-      A(0, 0) = 1.0;
-      constraints.emplace_back(A, 1.0);
-
-      // cross(R.col(1), R.col(2)) = x(0) * R.col(0).
-      A.setZero();
-      A(5, 9) = 0.5;
-      A(9, 5) = 0.5;
-      A(6, 8) = -0.5;
-      A(8, 6) = -0.5;
-      A(0, 1) = -0.5;
-      A(1, 0) = -0.5;
-      constraints.emplace_back(A, 0.0);
-
-      A.setZero();
-      A(6, 7) = 0.5;
-      A(7, 6) = 0.5;
-      A(4, 9) = -0.5;
-      A(9, 4) = -0.5;
-      A(0, 2) = -0.5;
-      A(2, 0) = -0.5;
-      constraints.emplace_back(A, 0.0);
-
-      A.setZero();
+      // cross(R.col(1), R.col(2)) = R.col(0), with R.col(0) as the linear term
+      // 2 a' x, so a = -e_k / 2.
       A(4, 8) = 0.5;
       A(8, 4) = 0.5;
       A(5, 7) = -0.5;
       A(7, 5) = -0.5;
-      A(0, 3) = -0.5;
-      A(3, 0) = -0.5;
-      constraints.emplace_back(A, 0.0);
+      constraints.emplace_back(A, -0.5 * Vector::Unit(9, 0), 0.0);
+
+      A.setZero();
+      A(5, 6) = 0.5;
+      A(6, 5) = 0.5;
+      A(3, 8) = -0.5;
+      A(8, 3) = -0.5;
+      constraints.emplace_back(A, -0.5 * Vector::Unit(9, 1), 0.0);
+
+      A.setZero();
+      A(3, 7) = 0.5;
+      A(7, 3) = 0.5;
+      A(4, 6) = -0.5;
+      A(6, 4) = -0.5;
+      constraints.emplace_back(A, -0.5 * Vector::Unit(9, 2), 0.0);
 
       // RR^T = I supplies the six row-orthonormality constraints.
+      A.setZero();
+      A(0, 0) = 1.0;
+      A(3, 3) = 1.0;
+      A(6, 6) = 1.0;
+      constraints.emplace_back(A, Vector(), 1.0);
+
+      A.setZero();
+      A(0, 1) = 0.5;
+      A(1, 0) = 0.5;
+      A(3, 4) = 0.5;
+      A(4, 3) = 0.5;
+      A(6, 7) = 0.5;
+      A(7, 6) = 0.5;
+      constraints.emplace_back(A, Vector(), 0.0);
+
+      A.setZero();
+      A(0, 2) = 0.5;
+      A(2, 0) = 0.5;
+      A(3, 5) = 0.5;
+      A(5, 3) = 0.5;
+      A(6, 8) = 0.5;
+      A(8, 6) = 0.5;
+      constraints.emplace_back(A, Vector(), 0.0);
+
       A.setZero();
       A(1, 1) = 1.0;
       A(4, 4) = 1.0;
       A(7, 7) = 1.0;
-      constraints.emplace_back(A, 1.0);
+      constraints.emplace_back(A, Vector(), 1.0);
 
       A.setZero();
       A(1, 2) = 0.5;
@@ -693,48 +706,24 @@ struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
       A(5, 4) = 0.5;
       A(7, 8) = 0.5;
       A(8, 7) = 0.5;
-      constraints.emplace_back(A, 0.0);
-
-      A.setZero();
-      A(1, 3) = 0.5;
-      A(3, 1) = 0.5;
-      A(4, 6) = 0.5;
-      A(6, 4) = 0.5;
-      A(7, 9) = 0.5;
-      A(9, 7) = 0.5;
-      constraints.emplace_back(A, 0.0);
+      constraints.emplace_back(A, Vector(), 0.0);
 
       A.setZero();
       A(2, 2) = 1.0;
       A(5, 5) = 1.0;
       A(8, 8) = 1.0;
-      constraints.emplace_back(A, 1.0);
-
-      A.setZero();
-      A(2, 3) = 0.5;
-      A(3, 2) = 0.5;
-      A(5, 6) = 0.5;
-      A(6, 5) = 0.5;
-      A(8, 9) = 0.5;
-      A(9, 8) = 0.5;
-      constraints.emplace_back(A, 0.0);
-
-      A.setZero();
-      A(3, 3) = 1.0;
-      A(6, 6) = 1.0;
-      A(9, 9) = 1.0;
-      constraints.emplace_back(A, 1.0);
+      constraints.emplace_back(A, Vector(), 1.0);
 
       return constraints;
     } else if constexpr (D >= 3) {
-      std::vector<std::pair<Matrix, double>> constraints;
+      std::vector<std::tuple<Matrix, Vector, double>> constraints;
       constraints.reserve(6);
 
       // 3 row-unit-norm: ||row r||^2 = 1.
       for (int r = 0; r < 3; ++r) {
         Matrix A = Matrix::Zero(3, 3);
         A(r, r) = 1.0;
-        constraints.emplace_back(A, 1.0);
+        constraints.emplace_back(A, Vector(), 1.0);
       }
 
       // 3 row-orthogonality: row r1 . row r2 = 0.
@@ -743,7 +732,7 @@ struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
           Matrix A = Matrix::Zero(3, 3);
           A(r1, r2) = 0.5;
           A(r2, r1) = 0.5;
-          constraints.emplace_back(A, 0.0);
+          constraints.emplace_back(A, Vector(), 0.0);
         }
       }
       return constraints;
@@ -763,18 +752,11 @@ struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
   template <int D>
   static Rot3 FromQcqpValue(const Matrix& X) {
     if constexpr (D == 1) {
-      if (X.rows() != QcqpVectorDim || X.cols() != 1 ||
-          std::abs(X(0, 0)) < 1e-9) {
+      if (X.rows() != QcqpVectorDim || X.cols() != 1) {
         throw std::invalid_argument(
-            "traits<Rot3>::FromQcqpValue requires a 10-by-1 vector with a "
-            "nonzero homogenization entry.");
+            "traits<Rot3>::FromQcqpValue requires a 9-by-1 vector.");
       }
-      const Vector x = X.col(0) / X(0, 0);
-      Matrix3 R;
-      R.col(0) = x.segment<3>(1);
-      R.col(1) = x.segment<3>(4);
-      R.col(2) = x.segment<3>(7);
-      return Rot3::ClosestTo(R);
+      return Rot3::ClosestTo(Eigen::Map<const Matrix3>(X.data()));
     } else {
       static_assert(D >= 3,
                     "traits<Rot3>::FromQcqpValue requires D >= 3.");

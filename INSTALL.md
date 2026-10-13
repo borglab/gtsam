@@ -25,7 +25,9 @@ $ cmake --build . --target install
 
     Boost version 1.70 or greater is required when either
     `GTSAM_USE_BOOST_FEATURES` or `GTSAM_ENABLE_BOOST_SERIALIZATION` is
-    enabled. Both options are enabled by default outside ROS 2 `colcon` builds.
+    enabled. Both options are enabled by default outside ROS 2 builds, which
+    are detected through `colcon` or an install prefix under `/opt/ros/`, as
+    used by ROS binary packages.
     To build without Boost, disable both:
 
     ```sh
@@ -34,7 +36,7 @@ $ cmake --build . --target install
         -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
     ```
 
-    ROS 2 `colcon` builds also use the system Eigen package by default. This
+    ROS 2 builds also use the system Eigen package by default. This
     keeps GTSAM and downstream ROS packages on the same Eigen version. Plain
     CMake builds continue to use GTSAM's bundled Eigen by default. Either build
     mode can override the choice explicitly with `GTSAM_USE_SYSTEM_EIGEN`.

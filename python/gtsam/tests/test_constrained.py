@@ -100,6 +100,38 @@ class TestConstrainedWrappers(unittest.TestCase):
         self.assertEqual(problem.dim(), (1, 1, 0))
         self.assertEqual(problem.evaluate(values), (0.5, 0.0, 0.0))
 
+    def test_quadratic_constraint_linear_term(self):
+        """A vector constraint x'Ax + 2a'x = b exposes and evaluates its linear term."""
+        x = X(0)
+        a = np.array([1.0, -2.0])
+        constraint = gtsam.QuadraticConstraint.Equal(x, np.eye(2), a, 1.0)
+        self.assertTrue(constraint.hasLinearTerm())
+        np.testing.assert_allclose(constraint.a(), a)
+        self.assertFalse(
+            gtsam.QuadraticConstraint.Equal(x, np.eye(2), 1.0).hasLinearTerm()
+        )
+
+        problem = gtsam.QcqpProblem()
+        problem.addConstraint(constraint)
+        values = gtsam.Values()
+        values.insert(x, np.array([1.0, 0.0]))
+        self.assertAlmostEqual(problem.evaluate(values)[1], 2.0)
+
+    def test_quadratic_constraint_from_pqr(self):
+        """FromPqr maps 0.5 x'Px + q'x + r ~ 0 to A = P/2, a = q/2, b = -r."""
+        P = np.array([[4.0, 1.0], [1.0, 2.0]])
+        q = np.array([1.0, -2.0])
+        constraint = gtsam.QuadraticConstraint.FromPqr(
+            X(0), P, q, -3.0, gtsam.QuadraticConstraint.Sense.LessEqual
+        )
+        np.testing.assert_allclose(constraint.A(), 0.5 * P)
+        np.testing.assert_allclose(constraint.a(), 0.5 * q)
+        self.assertAlmostEqual(constraint.b(), 3.0)
+        self.assertEqual(
+            constraint.sense(), gtsam.QuadraticConstraint.Sense.LessEqual
+        )
+        self.assertAlmostEqual(constraint.sigma(), 1.0)
+
     def test_exact_qcqp_value_conversion_wrappers(self):
         """Insert and recover every supported exact D=1 manifold value."""
         typed_values = [
@@ -145,7 +177,11 @@ class TestConstrainedWrappers(unittest.TestCase):
         ]
 
         qcqp_values = gtsam.Values()
-        for key, value, to_qcqp, insert, from_qcqp, _, _ in typed_values:
+        expected_dimensions = [2, 9, 6, 12]
+        for (key, value, to_qcqp, insert, from_qcqp, _, _), dimension in zip(
+            typed_values, expected_dimensions
+        ):
+            self.assertEqual(to_qcqp(value).shape, (dimension, 1))
             recovered = from_qcqp(to_qcqp(value))
             error = value.localCoordinates(recovered)
             np.testing.assert_allclose(error, np.zeros_like(error), atol=1e-12)

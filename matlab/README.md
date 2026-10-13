@@ -72,15 +72,14 @@ Coding for the GTSAM MATLAB toolbox is straightforward and very fast once you un
 ### MOSEK SDP solvers
 
 With `GTSAM_WITH_MOSEK=ON`, the toolbox includes `MosekMonolithicSDP` and
-`MosekChordalSDP`. Both enable homogeneous-coordinate sharing by default when
-every key has an explicit unit-normalization constraint; otherwise they retain
-the original formulation. Pass `false` as the final constructor argument to
-disable sharing:
+`MosekChordalSDP`. Both use natural D=1 QCQP coordinates, with one constant
+entry per SDP block. The constructors no longer accept the
+`shareHomogeneousCoordinates` option:
 
 ```matlab
 problem = gtsam.QcqpProblem(graph);
-solver = gtsam.MosekMonolithicSDP(problem, false);
-% Or: gtsam.MosekChordalSDP(problem, gtsam.ChordalOrderingType.Colamd, false)
+solver = gtsam.MosekMonolithicSDP(problem);
+% Or: gtsam.MosekChordalSDP(problem, gtsam.ChordalOrderingType.Colamd)
 solver.solve();
 values = solver.qcqpValues();
 ```
@@ -95,8 +94,24 @@ solver.solve(params);
 
 `orderedKeyDims()` returns a wrapped map with `size()` and `at(key)` methods.
 `variableEVRs()` returns a wrapped vector with `size()` and zero-based `at(i)`
-access. Running `test_gtsam` exercises both formulations and the sharing option
-when MOSEK is available.
+access. The D=1 value dimensions are 2 for Rot2, 9 for Rot3, 6 for Pose2,
+and 12 for Pose3; the leading constant 1 is no longer part of these values.
+For example, the identity Rot2 is `[1; 0]`. Use `qcqpValueRot2`,
+`qcqpValueRot3`, `qcqpValuePose2`, or `qcqpValuePose3` to convert manifold
+values, and the corresponding `fromQcqpValue...` functions to recover them.
+The D>=2 matrix coordinates used by the Riemannian Staircase are unchanged.
+
+For an affine quadratic equality `x' * A * x + 2 * a' * x = b`, pass an
+explicit sigma: `gtsam.QuadraticConstraint.Equal(key, A, a, b, 1.0)`.
+MATLAB's four-argument `Equal(key, A, b, sigma)` form remains the purely
+quadratic equality. `QuadraticConstraint.FromPqr(key, P, q, r, sense)` converts
+`0.5 * x' * P * x + q' * x + r = 0` (or the chosen inequality sense) to the
+same convention.
+
+Running `test_gtsam` exercises the D=1 conversion and affine-constraint APIs
+without requiring MOSEK. When MOSEK is available, it also exercises both SDP
+formulations, both chordal orderings, solver parameter maps, unconstrained
+point costs, and a shifted-circle constraint with a linear term.
 
 
 ## Filename Case Sensitivity

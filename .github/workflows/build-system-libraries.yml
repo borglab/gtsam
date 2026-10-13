@@ -46,6 +46,7 @@ jobs:
       - name: Configure with system libraries
         run: |
           cmake -S . -B build -G Ninja \
+            -DGTSAM_BUILD_WITH_WERROR=ON \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_DISABLE_FIND_PACKAGE_CHOLMOD=ON \
             -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \

@@ -78,6 +78,40 @@ public:
                 const KeyTimestampMap& timestamps = KeyTimestampMap(),
                 const FactorIndices& factorsToRemove = FactorIndices()) override;
 
+  /**
+   * Add new factors as in update(), and also change the persistent set of
+   * retained keys before choosing which variables to marginalize.
+   *
+   * A retained key is never marginalized because of the lag, however old its
+   * timestamp; it stays retained across later updates, including calls to the
+   * four-argument update(), until it is released. Releasing a key whose
+   * timestamp is already outside the lag window marginalizes it in this same
+   * update. The retained set is changed only after the update is validated, so
+   * a rejected update leaves it unchanged.
+   *
+   * Every key in keysToRetain must name a value the smoother already holds or
+   * one supplied in newTheta in this update. Releasing a key that is not
+   * retained has no effect. A retained key is dropped from the set when its
+   * variable is removed from the smoother, for example because its last factor
+   * was removed.
+   *
+   * This overload is available only on the concrete smoother; calls through a
+   * FixedLagSmoother reference use the four-argument update().
+   *
+   * @param keysToRetain  keys to add to the retained set
+   * @param keysToRelease keys to remove from the retained set; applied after
+   *                      keysToRetain, so a key in both is released
+   * @throws std::invalid_argument identifying a key in keysToRetain with no
+   * value in the smoother or newTheta, in addition to the exceptions thrown by
+   * the four-argument update().
+   */
+  Result update(const NonlinearFactorGraph& newFactors,
+                const Values& newTheta,
+                const KeyTimestampMap& timestamps,
+                const FactorIndices& factorsToRemove,
+                const KeySet& keysToRetain,
+                const KeySet& keysToRelease = KeySet());
+
   /** Compute an estimate from the incomplete linear delta computed during the last update.
    * This delta is incomplete because it was not updated below wildfire_threshold.  If only
    * a single variable is needed, it is faster to call calculateEstimate(const KEY&).
@@ -181,6 +215,14 @@ protected:
 
   /** A cross-reference structure to allow efficient factor lookups by key **/
   FactorIndex factorIndex_;
+
+  /** Shared body of both update() overloads. */
+  Result updateImpl(const NonlinearFactorGraph& newFactors,
+                    const Values& newTheta,
+                    const KeyTimestampMap& timestamps,
+                    const FactorIndices& factorsToRemove,
+                    const KeySet& keysToRetain,
+                    const KeySet& keysToRelease);
 
   /** Augment the list of factors with a set of new factors */
   void insertFactors(const NonlinearFactorGraph& newFactors);

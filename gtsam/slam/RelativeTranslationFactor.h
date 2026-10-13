@@ -158,7 +158,7 @@ class RelativeTranslationFactor
   }
 
  private:
-  /// Add the exact D=1 homogeneous-vector cost and variable constraints.
+  /// Add the exact D=1 vector cost and variable constraints.
   void qcqpFactorsForVector(NonlinearFactorGraph* costs,
                             NonlinearEqualityConstraints* constraints) const {
     if (!costs) {
@@ -170,7 +170,7 @@ class RelativeTranslationFactor
     constexpr int kPointDim = traits<Point>::QcqpVectorDim;
     const double sw = std::sqrt(weight_);
 
-    // Express R*measured in the non-homogeneous rotation coordinates.
+    // Express R*measured in the rotation coordinates.
     Matrix rotateMeasurement;
     if constexpr (d == 2) {
       // [[mx,-my],[my,mx]] [c,s]' = R(c,s)*measured.
@@ -187,10 +187,9 @@ class RelativeTranslationFactor
     }
 
     Matrix B = Matrix::Zero(d, kRotationDim + 2 * kPointDim);
-    B.block(0, 1, d, kRotationDim - 1) = -sw * rotateMeasurement;
-    B.block(0, kRotationDim + 1, d, d) = -sw * Matrix::Identity(d, d);
-    B.block(0, kRotationDim + kPointDim + 1, d, d) =
-        sw * Matrix::Identity(d, d);
+    B.block(0, 0, d, kRotationDim) = -sw * rotateMeasurement;
+    B.block(0, kRotationDim, d, d) = -sw * Matrix::Identity(d, d);
+    B.block(0, kRotationDim + kPointDim, d, d) = sw * Matrix::Identity(d, d);
 
     InsertQcqpConstraints<Rot, 1>(this->key1(), constraints);
     InsertQcqpConstraints<Point, 1>(this->key2(), constraints);
