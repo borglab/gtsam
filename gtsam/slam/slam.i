@@ -628,6 +628,13 @@ virtual class KnownLandmarkFactor2 : gtsam::NoiseModelFactor {
   gtsam::Vector evaluateError(const POSE& kTw) const;
 };
 
+#include <gtsam/slam/KnownLandmarkSquaredRangeFactor.h>
+template <N = {2, 3}>
+virtual class KnownLandmarkSquaredRangeFactor : gtsam::NoiseModelFactor {
+  KnownLandmarkSquaredRangeFactor(gtsam::Key key, const gtsam::Vector& wL,
+                                  double measuredRange, const gtsam::noiseModel::Base* model);
+};
+
 #include <gtsam/slam/WahbaFactor.h>
 class WahbaFactor : gtsam::NoiseModelFactor {
   WahbaFactor(gtsam::Key key, const gtsam::Unit3& bDirection,
