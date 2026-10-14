@@ -42,7 +42,7 @@ It includes classes for representing constraints, building constrained problems,
 - [`QpCost`](doc/QcqpProblem.ipynb): Also used for QCQP objectives; `QpCost(keys, Q, columnDim)` creates a pure row-space quadratic cost $\frac{1}{2}\sum_{ij}\operatorname{tr}(X_i^\top Q_{ij}X_j)$ over vectors or matrices $X_i \in \mathbb{R}^{r_i \times d}$.
 - [`QuadraticConstraint`](doc/QcqpProblem.ipynb): Scalar quadratic constraint $\operatorname{tr}(X^\top A X) \sim b$, where $\sim$ is equal, less-equal, or greater-equal. For vector variables it may carry a linear term, $x^\top A x + 2a^\top x \sim b$, following Luo et al. (2010); `QuadraticConstraint::FromPqr` accepts the Boyd and Vandenberghe form $\frac{1}{2}x^\top P x + q^\top x + r \sim 0$ (*Convex Optimization*, Eq. (4.35)).
 - `QcqpProblem(graph, columnDim)`: Opt-in conversion hook for supported nonlinear factors that can populate `QpCost` objectives and `QuadraticConstraint` equalities over matrix-valued QCQP variables.
-- `InsertQcqpValue<T, D>` and `InsertQcqpConstraints<T, D>`: Helpers for inserting supported QCQP variable values and their equality constraints.
+- `InsertQcqpValue<T, D>` and `InsertQcqpConstraints<T, D>`: Helpers for inserting supported QCQP variable values and their equality constraints. At D=1, Rot3 and Pose3 also have redundant constraints (the column-orthonormality and cyclic cross-product identities of SO(3)), which `QcqpProblem(graph)` keeps in `redundantConstraints()`, out of the QCQP, so that the SDP relaxations can lift them on request.
 - `ExtractQcqpValues<T, D>`: Projection of exact-shape D=1 vectors or matrix
   slices back to manifold values. Absolute results from unanchored matrix
   components are gauge-dependent. Extraction is shape-only, so compact D=1 Rot2

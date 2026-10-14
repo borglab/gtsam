@@ -230,7 +230,7 @@ TEST(QuadraticRangeFactor, QcqpCostMatchesTypedResidual) {
 
   NonlinearFactorGraph costs;
   NonlinearEqualityConstraints constraints;
-  factor.qcqpFactors(&costs, &constraints, /*columnDimension=*/2);
+  factor.qcqpFactors(&costs, &constraints, nullptr, /*columnDimension=*/2);
   EXPECT_LONGS_EQUAL(1, static_cast<long>(costs.size()));
 
   Values Y;
@@ -274,7 +274,7 @@ TEST(QuadraticRangeFactor, EmitsItsAuxiliarysOwnConstraints) {
 
   NonlinearFactorGraph costs;
   NonlinearEqualityConstraints constraints;
-  factor.qcqpFactors(&costs, &constraints, 2);
+  factor.qcqpFactors(&costs, &constraints, nullptr, 2);
 
   const auto expected = traits<Rot2>::QcqpConstraints<2>();
   EXPECT_LONGS_EQUAL(static_cast<long>(expected.size()),
@@ -316,7 +316,7 @@ TEST(QuadraticRangeFactor, QcqpCostMatchesTypedResidualIn3D) {
 
   NonlinearFactorGraph costs;
   NonlinearEqualityConstraints constraints;
-  factor.qcqpFactors(&costs, &constraints, /*columnDimension=*/3);
+  factor.qcqpFactors(&costs, &constraints, nullptr, /*columnDimension=*/3);
   EXPECT_LONGS_EQUAL(1, static_cast<long>(costs.size()));
 
   Values Y;
@@ -363,7 +363,7 @@ TEST(QuadraticRangeFactor, QcqpCostIsUnchangedByLifting) {
   for (int p : {2, 3, 5}) {
     NonlinearFactorGraph costs;
     NonlinearEqualityConstraints constraints;
-    factor.qcqpFactors(&costs, &constraints, static_cast<size_t>(p));
+    factor.qcqpFactors(&costs, &constraints, nullptr, static_cast<size_t>(p));
 
     Matrix translation = Matrix::Zero(1, p), landmark = Matrix::Zero(1, p);
     translation.leftCols<2>() = ti.transpose();
@@ -384,7 +384,7 @@ TEST(QuadraticRangeFactor, QcqpFactorsRejectTooFewColumns) {
   const QuadraticRangeFactor3 factor(kTi, kTarget, kU, 1.0, 1.0);
   NonlinearFactorGraph costs;
   NonlinearEqualityConstraints constraints;
-  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, 2),
+  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, nullptr, 2),
                   std::invalid_argument);
 }
 
