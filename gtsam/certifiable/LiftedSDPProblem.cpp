@@ -560,6 +560,7 @@ struct LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::Impl {
   MosekSolveSummary lastSolveSummary;
   KeyVector orderedKeys;
   std::map<Key, DenseIndex> orderedKeyDims;
+  Values fixedVariables;
   KeyiToLiftedVectorxiViewInSDPVariableMap
       keyiToLiftedVectorxiViewInSDPVariableMap;
   KeysijToLiftedVariableXijViewInSDPVariableMap
@@ -597,6 +598,7 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
   MosekSolveSummary lastSolveSummary;
   KeyVector orderedKeys;
   std::map<Key, DenseIndex> orderedKeyDims;
+  Values fixedVariables;
   SymbolicBayesTree bayesTree_;
   KeyiToLiftedVectorxiViewInSDPVariableMap
       keyiToLiftedVectorxiViewInSDPVariableMap;
@@ -719,6 +721,7 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
     : impl_(std::make_unique<Impl>()) {
   CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                             &impl_->orderedKeyDims);
+  impl_->fixedVariables = problem.fixedVariables();
   int sdpVariableDimension;
   const auto keyToSDPVariableRanges = ComputeKeyToSDPVariableRanges(
       impl_->orderedKeys, impl_->orderedKeyDims, &sdpVariableDimension);
@@ -777,8 +780,11 @@ Values LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::qcqpValues() const {
     throw std::runtime_error("qcqpValues: solve() has not been called.");
   }
   impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
-  return RecoverQcqpValues(impl_->keyiToLiftedVectorxiViewInSDPVariableMap,
-                           impl_->orderedKeys, impl_->orderedKeyDims);
+  Values recoveredQcqpValues =
+      RecoverQcqpValues(impl_->keyiToLiftedVectorxiViewInSDPVariableMap,
+                        impl_->orderedKeys, impl_->orderedKeyDims);
+  recoveredQcqpValues.insert(impl_->fixedVariables);
+  return recoveredQcqpValues;
 }
 
 std::vector<double>
@@ -808,6 +814,7 @@ LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
     : impl_(std::make_unique<Impl>()) {
   CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                             &impl_->orderedKeyDims);
+  impl_->fixedVariables = problem.fixedVariables();
   impl_->M = new mf::Model("ChordalSDP_MosekSDPSolver");
   impl_->bayesTree_ = BuildSymbolicBayesTree(problem, orderingType);
   // Use one positive semidefinite variable per symbolic clique.
@@ -858,8 +865,11 @@ Values LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::qcqpValues() const {
     throw std::runtime_error("qcqpValues: solve() has not been called.");
   }
   impl_->M->acceptedSolutionStatus(mf::AccSolutionStatus::Anything);
-  return RecoverQcqpValues(impl_->keyiToLiftedVectorxiViewInSDPVariableMap,
-                           impl_->orderedKeys, impl_->orderedKeyDims);
+  Values recoveredQcqpValues =
+      RecoverQcqpValues(impl_->keyiToLiftedVectorxiViewInSDPVariableMap,
+                        impl_->orderedKeys, impl_->orderedKeyDims);
+  recoveredQcqpValues.insert(impl_->fixedVariables);
+  return recoveredQcqpValues;
 }
 
 std::vector<double> LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::variableEVRs()

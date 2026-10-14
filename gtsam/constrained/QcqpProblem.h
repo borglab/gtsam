@@ -240,18 +240,34 @@ class GTSAM_EXPORT QcqpProblem : public ConstrainedOptProblem {
               const NonlinearInequalityConstraints& ineqConstraints)
       : Base(costs, eqConstraints, ineqConstraints) {}
 
-  /** Convert a supported nonlinear factor graph into QCQP costs/constraints. */
+  /**
+   * Convert a supported nonlinear factor graph into QCQP costs/constraints.
+   *
+   * At columnDimension 1, a FrobeniusPrior with a constrained noise model on
+   * Rot2, Rot3, Pose2 or Pose3 fixes its variable. Fixed variables are
+   * substituted out: they appear in no cost or constraint of the QCQP, a
+   * binary cost with a fixed variable becomes a unary cost on the other
+   * variable, and their QCQP values are recorded in fixedVariables(). Writing
+   * the prior as the linear constraint x = v instead would pin a rank-one
+   * block of the lifted SDP variable, leaving the SDP without an interior.
+   */
   explicit QcqpProblem(const NonlinearFactorGraph& graph,
                        size_t columnDimension = 1);
 
-  /** Add a quadratic cost. */
-  void addCost(const QpCost& cost) { costs_.emplace_shared<QpCost>(cost); }
+  /// QCQP values of the variables fixed by hard FrobeniusPriors.
+  const Values& fixedVariables() const { return fixedVariables_; }
 
-  /** Add a linear constraint. */
+  /** Add a quadratic cost. Throws if it involves a fixed variable. */
+  void addCost(const QpCost& cost);
+
+  /** Add a linear constraint. Throws if it involves a fixed variable. */
   void addConstraint(const LinearConstraint& constraint);
 
-  /** Add a quadratic constraint. */
+  /** Add a quadratic constraint. Throws if it involves a fixed variable. */
   void addConstraint(const QuadraticConstraint& constraint);
+
+ private:
+  Values fixedVariables_;
 };
 
 }  // namespace gtsam

@@ -39,6 +39,15 @@ CHECK('Extract Rot3', rot3Values.atRot3(keys(2)).equals(typedValues{2}, 1e-12));
 CHECK('Extract Pose2', pose2Values.atPose2(keys(3)).equals(typedValues{3}, 1e-12));
 CHECK('Extract Pose3', pose3Values.atPose3(keys(4)).equals(typedValues{4}, 1e-12));
 
+% Hard Frobenius priors are exposed as fixed QCQP values even without MOSEK.
+fixedKey = symbol('a', 0);
+fixedGraph = NonlinearFactorGraph();
+fixedGraph.add(FrobeniusPriorRot2(fixedKey, eye(2), noiseModel.Constrained.All(4)));
+fixedProblem = QcqpProblem(fixedGraph);
+fixedValues = fixedProblem.fixedVariables();
+CHECK('Fixed anchor count', fixedValues.size() == 1);
+CHECK('Fixed anchor value', norm(fixedValues.atMatrix(fixedKey) - [1; 0]) < 1e-12);
+
 % Check the new overloads and the x'Ax + 2a'x convention through optimization.
 key = symbol('p', 0);
 A = 1;
