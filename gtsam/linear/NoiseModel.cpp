@@ -844,7 +844,7 @@ Vector Robust::unweightedWhiten(const Vector& v) const {
   return noise_->unweightedWhiten(v);
 }
 double Robust::weight(const Vector& v) const {
-  return robust_->weight(v.norm());
+  return robust_->weight(noise_->whiten(v).norm());
 }
 
 Robust::shared_ptr Robust::Create(
