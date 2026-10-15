@@ -162,4 +162,12 @@ virtual class GeneralSFMFactor2 : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
+#include <gtsam/slam/KnownLandmarkSquaredRangeFactor.h>
+template <N = {2, 3}>
+virtual class KnownLandmarkSquaredRangeFactor : gtsam::NoiseModelFactor {
+  KnownLandmarkSquaredRangeFactor(
+      gtsam::Key key, const gtsam::Vector& wL, double measuredRange,
+      const gtsam::noiseModel::Base* model);
+};
+
 }  // namespace gtsam
