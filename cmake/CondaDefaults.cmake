@@ -15,7 +15,10 @@ set(GTSAM_BUILD_WITH_MARCH_NATIVE OFF CACHE BOOL "")
 set(GTSAM_BUILD_WITH_WERROR OFF CACHE BOOL "")
 
 # MSVC's /Fp precompiled-header calls cannot be cached by sccache.
-set(GTSAM_BUILD_WITH_PRECOMPILED_HEADERS OFF CACHE BOOL "")
+# WIN32 is not guaranteed to be initialized in this early project hook.
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+  set(GTSAM_BUILD_WITH_PRECOMPILED_HEADERS OFF CACHE BOOL "")
+endif()
 
 # Nothing here needs the examples or the timing scripts.
 set(GTSAM_BUILD_EXAMPLES_ALWAYS OFF CACHE BOOL "")

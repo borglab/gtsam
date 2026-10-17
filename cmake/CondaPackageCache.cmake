@@ -4,7 +4,7 @@ include("${CMAKE_CURRENT_LIST_DIR}/CondaDefaults.cmake")
 
 # Windows C++ files install under PREFIX/Library, but Python's site-packages
 # belongs under PREFIX. The backend supplies the host environment as PREFIX.
-if(DEFINED ENV{PREFIX})
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows" AND DEFINED ENV{PREFIX})
   file(TO_CMAKE_PATH "$ENV{PREFIX}" _conda_python_prefix)
   set(GTSAM_PYTHON_INSTALL_PREFIX "${_conda_python_prefix}" CACHE PATH "")
 endif()
