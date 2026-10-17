@@ -12,7 +12,7 @@
 /**
  * @file KnownLandmarkSquaredRangeFactor.h
  * @brief Factor for range-only observation of a known landmark from an unknown position.
- * @author Avinash Subramanian
+ * @author Oluwatodimu Afolayan
  * @author Frederike Dümbgen
  * @author Frank Dellaert
  */
@@ -38,6 +38,11 @@ namespace gtsam {
  *
  * The known world landmark is fixed data. The supplied noise model weights
  * the scalar squared-range residual.
+
+ // add motivation for new factor (suitable for qcqp reformulation)
+ // add note as to difference between this factor and knownlandmarkfactor
+ // add meaning of N (size of state)
+ // add doxygen for every function
  *
  * See `gtsam/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb` for more details 
  * regarding usage.
@@ -55,10 +60,10 @@ class KnownLandmarkSquaredRangeFactor
 
  private:
   Point wL_;                    ///< Known landmark expressed in the world frame.
-  double measuredRangeSquared_; ///< Squared measured range to wL_.
+  double measuredRangeSquared_; ///< Squared measured range to wL_ (d^2).
 
  public:
-  using Base::evaluateError;
+  using Base::evaluateError; // do I need this after all?
 
 /** 
 * Construct from a key, world landmark, range measurement, and noise model.
@@ -89,6 +94,8 @@ class KnownLandmarkSquaredRangeFactor
            traits<Point>::Equals(wL_, e->wL_, tol) &&
            traits<double>::Equals(measuredRangeSquared_, e->measuredRangeSquared_, tol);
   }
+
+// add print function
 
   /** Evaluate squared predicted range minus squared measured range */
   Vector evaluateError(const Point& wX, OptionalMatrixType H) const override {

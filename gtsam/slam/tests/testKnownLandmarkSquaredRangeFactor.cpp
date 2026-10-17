@@ -12,7 +12,7 @@
 /**
  * @file testKnownLandmarkSquaredRangeFactor.cpp
  * @brief Tests for KnownLandmarkSquaredRangeFactor.
- * @author Avinash Subramanian
+ * @author Oluwatodimu Afolayan
  * @author Frederike Dümbgen
  * @author Frank Dellaert
  */
