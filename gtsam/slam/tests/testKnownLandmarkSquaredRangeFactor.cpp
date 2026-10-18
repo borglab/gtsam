@@ -25,6 +25,7 @@
 #include <gtsam/slam/KnownLandmarkSquaredRangeFactor.h>
 
 #include <Eigen/Core>
+
 #include <memory>
 #include <stdexcept>
 
@@ -38,6 +39,7 @@ using Factor = KnownLandmarkSquaredRangeFactor<2>;
 
 const Key kKey = 3;
 
+// Verfies the 2D residual, analytic Jacobian, and zero-residual case.
 TEST(KnownLandmarkSquaredRangeFactor, Point2) {
   const Point wX(1.0, 2.0);
   const Point wL(4.0, 6.0);
@@ -66,6 +68,7 @@ TEST(KnownLandmarkSquaredRangeFactor, Point2) {
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
 }
 
+// Verifies that scalar information weighting produces the expected factor cost.
 TEST(KnownLandmarkSquaredRangeFactor, ScalarInfo) {
   const Point wX(1.0, 2.0);
   const Point wL(4.0, 6.0);
@@ -85,6 +88,7 @@ TEST(KnownLandmarkSquaredRangeFactor, ScalarInfo) {
   EXPECT_DOUBLES_EQUAL(expected, factor.error(values), 1e-9);
 }
 
+// Verifies that negative range measurements are rejected.
 TEST(KnownLandmarkSquaredRangeFactor, RejectsNegativeRange) {
   const Point wL(4.0, 6.0);
   const auto model = noiseModel::Unit::Create(1);
@@ -93,7 +97,9 @@ TEST(KnownLandmarkSquaredRangeFactor, RejectsNegativeRange) {
 }
  
 }  // namespace point2_fixture
+/* ************************************************************************* */
 
+/* ************************************************************************* */
 namespace point3_fixture {
 
   using Point = Eigen::Matrix<double, 3, 1>;
@@ -101,6 +107,7 @@ namespace point3_fixture {
 
   const Key kKey = 4;
 
+// Verifies the 3D residual, analytic Jacobian, and zero-residual case.
 TEST(KnownLandmarkSquaredRangeFactor, Point3) {
   const Point wX(1.0, 2.0, 3.0);
   const Point wL(3.0, 5.0, 9.0);
@@ -129,10 +136,7 @@ TEST(KnownLandmarkSquaredRangeFactor, Point3) {
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
 }
 
-/*
-  clone() should preserve the concrete factor type and all factor data.
-  equals() should reject changes to either the fixed landmark or measured range.
-*/
+// Verifies cloning preserves factor data and equality detects changed data.
 TEST(KnownLandmarkSquaredRangeFactor, CloneAndEquals) {
   const Point wL(3.0, 5.0, 9.0);
   const auto model = noiseModel::Unit::Create(1);
@@ -155,8 +159,8 @@ TEST(KnownLandmarkSquaredRangeFactor, CloneAndEquals) {
 }
 
 }  // namespace point3_fixture
-
 /* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
