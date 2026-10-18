@@ -100,6 +100,9 @@ pip = "*"
 setuptools = "*"
 pytest = "*"
 
+[feature.test.target.unix.dependencies]
+libpython = "*"
+
 # CMake and ccache pick these up from the environment, so one task works
 # everywhere.
 [feature.test.activation.env]
