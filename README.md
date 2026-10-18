@@ -6,9 +6,9 @@
 <p align="center">
   <a href="https://borglab.github.io/gtsam/">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="doc/images/gtsam-manifold-optimization-dark.png">
-      <source media="(prefers-color-scheme: light)" srcset="doc/images/gtsam-manifold-optimization-light.png">
-      <img alt="GTSAM manifold optimization workflow: build a factor graph, linearize and solve in tangent spaces, retract to manifolds, and iterate to convergence." src="doc/images/gtsam-manifold-optimization-light.png" width="100%">
+      <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/borglab/gtsam/develop/doc/images/gtsam-manifold-optimization-dark.png">
+      <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/borglab/gtsam/develop/doc/images/gtsam-manifold-optimization-light.png">
+      <img alt="GTSAM manifold optimization workflow: build a factor graph, linearize and solve in tangent spaces, retract to manifolds, and iterate to convergence." src="https://raw.githubusercontent.com/borglab/gtsam/develop/doc/images/gtsam-manifold-optimization-light.png" width="100%">
     </picture>
   </a>
 </p>
