@@ -11,43 +11,52 @@
 
 /**
  * @file KnownLandmarkSquaredRangeFactor.h
- * @brief Factor for range-only observation of a known landmark from an unknown position.
+ * @brief Factor for range-only observation of a known landmark from an unknown 
+ * position.
  * @author Oluwatodimu Afolayan
  * @author Frederike Dümbgen
  * @author Frank Dellaert
  */
 
-
 #pragma once
 
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 
-#include <stdexcept>
 #include <Eigen/Core>
+
+#include <iostream>
 #include <memory>
+#include <stdexcept>
+#include <string>
 
 namespace gtsam {
 
 /**
- * A unary known-landmark factor using a squared-range residual.
+ * Unary factor on an N-dimensional Euclidean point using squared range to a
+ * fixed known landmark.
  *
- * For a position wX, known world landmark wL, and measured range d,
+ * For a point wX, known world landmark wL, and measured range d,
  * the residual is
  *
  *   e(wX) = ||wX - wL||^2 - d^2.
  *
- * The known world landmark is fixed data. The supplied noise model weights
- * the scalar squared-range residual.
-
- // add motivation for new factor (suitable for qcqp reformulation)
- // add note as to difference between this factor and knownlandmarkfactor
- // add meaning of N (size of state)
- // add doxygen for every function
+ * Squaring the range eliminates the square root present in an ordinary range
+ * residual and gives a polynomial form suitable for future lifted QCQP and
+ * semidefinite programming formulations.
+ * 
+ * Unlike KnownLandmarkFactor, which constrains a pose using a relative
+ * landmark-position measurement, this factor constrains an N-dimensional
+ * Euclidean point using only a scalar range measurement.
  *
- * See `gtsam/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb` for more details 
+ * The known landmark is fixed data, and the supplied noise model weights the scalar
+ * squared-range residual.
+ * 
+ * @tparam N Dimension of the Euclidean point state and known landmark.
+ * @ingroup slam
+ *
+ * See `gtsam/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb` for more details
  * regarding usage.
  */
-
 template <int N>
 class KnownLandmarkSquaredRangeFactor 
     : public NoiseModelFactorN<Eigen::Matrix<double, N, 1>> {
@@ -63,41 +72,81 @@ class KnownLandmarkSquaredRangeFactor
   double measuredRangeSquared_; ///< Squared measured range to wL_ (d^2).
 
  public:
-  using Base::evaluateError; // do I need this after all?
+  /// Expose the base-class evaluateError overloads.
+  using Base::evaluateError;
 
-/** 
-* Construct from a key, world landmark, range measurement, and noise model.
-* 
-* @param key Key associated with the unknown position.
-* @param wL Known landmark expressed in the world frame.
-* @param measuredRange Measured range to the landmark.
-* @param model Noise model for the scalar squared-range residual.
-* @throws std::invalid_argument if measuredRange is negative. 
-*/
-  KnownLandmarkSquaredRangeFactor(Key key, const Point& wL, double measuredRange,
+ /** 
+ * Construct from a key, world landmark, range measurement, and noise model.
+ *
+ * @param key Key associated with the unknown position.
+ * @param wL Known landmark expressed in the world frame.
+ * @param measuredRange Measured range to the landmark.
+ * @param model Noise model for the scalar squared-range residual.
+ * @throws std::invalid_argument if measuredRange is negative.
+ */
+KnownLandmarkSquaredRangeFactor(Key key, const Point& wL,
+                      double measuredRange,
                       const SharedNoiseModel& model)
-      : Base(model, key), wL_(wL), measuredRangeSquared_(measuredRange * measuredRange) {
+      : Base(model, key),
+        wL_(wL),
+        measuredRangeSquared_(measuredRange * measuredRange) {
     if (measuredRange < 0.0){
       throw std::invalid_argument(
         "KnownLandmarkSquaredRangeFactor: range must be non-negative.");
     }
   }
 
+  /** Return a deep copy of this factor. */
   NonlinearFactor::shared_ptr clone() const override {
     return std::make_shared<This>(*this);
   }
+
+ /**
+ * Print the factor.
+ *
+ * @param s Optional string printed before the factor.
+ * @param keyFormatter Formatter used to display the variable key.
+ */
+  void print(
+      const std::string& s = "",
+      const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
+    std::cout << s << "KnownLandmarkSquaredRangeFactor<" << N << "> on "
+              << keyFormatter(this->key1()) << "\n";
+    traits<Point>::Print(wL_, "  landmark: ");
+    std::cout << "  measured range squared: " << measuredRangeSquared_ << "\n";
+
+    if (this->noiseModel_) {
+      this->noiseModel_->print("  noise model: ");
+    } else {
+      std::cout << "  no noise model\n";
+    }
+  }
+
+/**
+ * Check whether this factor equals another factor within a tolerance.
+ *
+ * @param expected Factor to compare against.
+ * @param tol Numerical comparison tolerance.
+ * @return True if the factors are equal within tol.
+ */
 
   bool equals(const NonlinearFactor& expected,
               double tol = 1e-9) const override {
     const auto* e = dynamic_cast<const This*>(&expected);
     return e != nullptr && Base::equals(*e, tol) &&
            traits<Point>::Equals(wL_, e->wL_, tol) &&
-           traits<double>::Equals(measuredRangeSquared_, e->measuredRangeSquared_, tol);
+           traits<double>::Equals(measuredRangeSquared_,
+                                  e->measuredRangeSquared_, tol);
   }
 
-// add print function
-
-  /** Evaluate squared predicted range minus squared measured range */
+/** 
+ * Evaluate the squared-range residual and optionally its Jacobian.
+ *
+ * @param wX Current value of the unknown point in the world frame.
+ * @param H Optional 1-by-N Jacobian of the residual with respect to wX.
+ * @return One-dimensional residual vector containing
+ *         ||wX - wL||^2 - d^2.
+ */
   Vector evaluateError(const Point& wX, OptionalMatrixType H) const override {
     const Point difference = wX - wL_;
     const double predictedRangeSquared = difference.squaredNorm();
