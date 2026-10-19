@@ -854,7 +854,7 @@ string TableFactor::html(const KeyFormatter& keyFormatter,
 }
 
 /* ************************************************************************ */
-TableFactor TableFactor::prune(size_t maxNrAssignments) const {
+DiscreteFactor::shared_ptr TableFactor::prune(size_t maxNrAssignments) const {
   const size_t N = maxNrAssignments;
 
   // Get the probabilities in the TableFactor so we can threshold.
@@ -866,7 +866,7 @@ TableFactor TableFactor::prune(size_t maxNrAssignments) const {
   }
 
   // The number of probabilities can be lower than max_leaves.
-  if (probabilities.size() <= N) return *this;
+  if (probabilities.size() <= N) return std::make_shared<TableFactor>(*this);
 
   // Sort the vector in descending order based on the element values.
   sort(probabilities.begin(), probabilities.end(),
@@ -888,7 +888,7 @@ TableFactor TableFactor::prune(size_t maxNrAssignments) const {
   }
 
   // Create pruned decision tree factor and return.
-  return TableFactor(this->discreteKeys(), pruned_vec);
+  return std::make_shared<TableFactor>(this->discreteKeys(), pruned_vec);
 }
 
 /* ************************************************************************ */

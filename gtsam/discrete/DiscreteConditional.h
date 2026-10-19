@@ -292,8 +292,12 @@ class GTSAM_EXPORT DiscreteConditional
    */
   double negLogConstant() const override;
 
-  /// Prune the conditional
-  virtual void prune(size_t maxNrAssignments);
+  /**
+   * Prune the conditional, keeping the `maxNrAssignments` most probable
+   * assignments, and renormalize. Returns a DiscreteConditional with the same
+   * keys and number of frontals.
+   */
+  DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const override;
 
   /**
    * @brief Remove the discrete modes whose assignments are given to us.

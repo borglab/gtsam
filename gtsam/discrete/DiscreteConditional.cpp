@@ -500,10 +500,14 @@ DiscreteFactor::shared_ptr DiscreteConditional::max(
 }
 
 /* ************************************************************************* */
-void DiscreteConditional::prune(size_t maxNrAssignments) {
-  // Get as DiscreteConditional so the probabilities are normalized
-  DiscreteConditional pruned(nrFrontals(), BaseFactor::prune(maxNrAssignments));
-  this->root_ = pruned.root_;
+DiscreteFactor::shared_ptr DiscreteConditional::prune(
+    size_t maxNrAssignments) const {
+  // Construct a DiscreteConditional so the probabilities are normalized, then
+  // restore our key order.
+  const DiscreteConditional normalized(nrFrontals(),
+                                       *BaseFactor::prune(maxNrAssignments));
+  return std::make_shared<DiscreteConditional>(nrFrontals(), discreteKeys(),
+                                               normalized);
 }
 
 /* ************************************************************************ */

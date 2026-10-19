@@ -186,6 +186,12 @@ class GTSAM_EXPORT DiscreteFactor : public Factor {
   virtual DiscreteFactor::shared_ptr restrict(
       const DiscreteValues& assignment) const = 0;
 
+  /**
+   * Prune the factor, keeping the `maxNrAssignments` assignments with the
+   * largest values and setting all other values to zero.
+   */
+  virtual DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const = 0;
+
   /// @}
   /// @name Wrapper support
   /// @{

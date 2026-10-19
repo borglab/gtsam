@@ -140,8 +140,10 @@ DiscreteValues TableDistribution::argmax() const {
 }
 
 /* ****************************************************************************/
-void TableDistribution::prune(size_t maxNrAssignments) {
-  table_ = table_.prune(maxNrAssignments);
+DiscreteFactor::shared_ptr TableDistribution::prune(
+    size_t maxNrAssignments) const {
+  return std::make_shared<TableDistribution>(
+      table_.prune(maxNrAssignments)->toTableFactor());
 }
 
 /* ****************************************************************************/

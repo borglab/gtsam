@@ -514,7 +514,8 @@ namespace gtsam {
   }
 
   /* ************************************************************************ */
-  DecisionTreeFactor DecisionTreeFactor::prune(size_t maxNrAssignments) const {
+  DiscreteFactor::shared_ptr DecisionTreeFactor::prune(
+      size_t maxNrAssignments) const {
     const size_t N = maxNrAssignments;
 
     double threshold = computeThreshold(N);
@@ -546,7 +547,8 @@ namespace gtsam {
     DecisionTree<Key, double> thresholded(*this, thresholdFunc);
 
     // Create pruned decision tree factor and return.
-    return DecisionTreeFactor(this->discreteKeys(), thresholded);
+    return std::make_shared<DecisionTreeFactor>(this->discreteKeys(),
+                                                thresholded);
   }
 
 /* ************************************************************************ */

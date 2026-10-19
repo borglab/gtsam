@@ -343,9 +343,9 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    * 0.8).
    *
    * @param maxNrAssignments The maximum number of assignments to keep.
-   * @return TableFactor
+   * @return The pruned TableFactor.
    */
-  TableFactor prune(size_t maxNrAssignments) const;
+  DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const override;
 
   /**
    * Get the number of non-zero values contained in this factor.

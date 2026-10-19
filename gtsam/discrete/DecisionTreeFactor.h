@@ -299,9 +299,9 @@ namespace gtsam {
      * 0.8).
      *
      * @param maxNrAssignments The maximum number of assignments to keep.
-     * @return DecisionTreeFactor
+     * @return The pruned DecisionTreeFactor.
      */
-    DecisionTreeFactor prune(size_t maxNrAssignments) const;
+    DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const override;
 
     /**
      * Get the number of non-zero values contained in this factor.
