@@ -274,7 +274,7 @@ class GTSAM_EXPORT SymmetricBlockMatrix {
     auto dest = block_(I, I);
     assert(dest.rows() == xpr.rows());
     assert(dest.cols() == xpr.cols());
-    for (DenseIndex col = 0; col < dest.cols(); ++col) {
+    for (DenseIndex col = 0; col < xpr.cols(); ++col) {
       for (DenseIndex row = 0; row <= col; ++row) {
         dest(row, col) += xpr(row, col);
       }
