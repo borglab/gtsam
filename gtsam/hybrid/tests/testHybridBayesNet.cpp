@@ -516,8 +516,8 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   }
 
   size_t maxNrLeaves = 3;
-  DiscreteConditional prunedDecisionTree(joint);
-  prunedDecisionTree.prune(maxNrLeaves);
+  DiscreteConditional prunedDecisionTree =
+      *std::static_pointer_cast<DiscreteConditional>(joint.prune(maxNrLeaves));
 
 #ifdef GTSAM_DT_MERGING
   EXPECT_LONGS_EQUAL(maxNrLeaves + 2 /*2 zero leaves*/,

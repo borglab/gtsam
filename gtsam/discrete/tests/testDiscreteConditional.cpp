@@ -290,6 +290,23 @@ TEST(DiscreteConditional, choose) {
 }
 
 /* ************************************************************************* */
+// Pruning returns a renormalized conditional with the original key order.
+TEST(DiscreteConditional, Prune) {
+  // Keys are deliberately not in sorted order.
+  DiscreteKey A(5, 2), B(3, 2);
+  DiscreteConditional conditional(A, {B}, "1/4 2/3");  // P(A|B)
+
+  // Keeping the top two values, 0.8 and 0.6, leaves A=1 for each B.
+  auto pruned =
+      std::dynamic_pointer_cast<DiscreteConditional>(conditional.prune(2));
+  CHECK(pruned);
+  EXPECT(conditional.keys() == pruned->keys());
+  EXPECT_LONGS_EQUAL(1, pruned->nrFrontals());
+  DiscreteConditional expected(A, {B}, "0/1 0/1");
+  EXPECT(assert_equal(expected, *pruned, 1e-9));
+}
+
+/* ************************************************************************* */
 // Check argmax on P(C|D) and P(D), plus tie-breaking for P(B)
 TEST(DiscreteConditional, Argmax) {
   DiscreteKey C(2, 2), D(4, 2);

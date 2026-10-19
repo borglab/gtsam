@@ -477,17 +477,19 @@ TEST(TableFactor, Prune) {
 
   // Only keep the leaves with the top 5 values.
   size_t maxNrAssignments = 5;
-  auto pruned5 = f.prune(maxNrAssignments);
+  auto pruned5 =
+      std::dynamic_pointer_cast<TableFactor>(f.prune(maxNrAssignments));
 
   // Pruned leaves should be 0
   TableFactor expected(A & B & C, "0 5 0 7 0 6 4 8");
-  EXPECT(assert_equal(expected, pruned5));
+  EXPECT(assert_equal(expected, *pruned5));
 
   // Check for more extreme pruning where we only keep the top 2 leaves
   maxNrAssignments = 2;
-  auto pruned2 = f.prune(maxNrAssignments);
+  auto pruned2 =
+      std::dynamic_pointer_cast<TableFactor>(f.prune(maxNrAssignments));
   TableFactor expected2(A & B & C, "0 0 0 7 0 0 0 8");
-  EXPECT(assert_equal(expected2, pruned2));
+  EXPECT(assert_equal(expected2, *pruned2));
 
   DiscreteKey D(4, 2);
   TableFactor factor(
@@ -499,8 +501,9 @@ TEST(TableFactor, Prune) {
                         "0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 "
                         "0.999952870000 1.0 1.0 1.0 1.0");
   maxNrAssignments = 5;
-  auto pruned3 = factor.prune(maxNrAssignments);
-  EXPECT(assert_equal(expected3, pruned3));
+  auto pruned3 =
+      std::dynamic_pointer_cast<TableFactor>(factor.prune(maxNrAssignments));
+  EXPECT(assert_equal(expected3, *pruned3));
 }
 
 /* ************************************************************************* */
@@ -690,6 +693,14 @@ TEST(TableDistribution, ConditionalProduct) {
   const DiscreteConditional expected = conditional * treeConditional;
   EXPECT(assert_equal(expected, conditional * tableConditional));
   EXPECT(assert_equal(expected, tableConditional * conditional));
+}
+
+// Pruning a TableDistribution returns a renormalized TableDistribution.
+TEST(TableDistribution, Prune) {
+  const auto pruned =
+      std::dynamic_pointer_cast<TableDistribution>(distribution.prune(2));
+  CHECK(pruned);
+  EXPECT(assert_equal(TableDistribution(A & B, "0 0 0 0 5 6"), *pruned));
 }
 
 }  // namespace table_distribution_fixture
