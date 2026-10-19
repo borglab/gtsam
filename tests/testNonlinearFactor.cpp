@@ -121,9 +121,9 @@ TEST(NonlinearFactor, Weight) {
   CHECK(assert_equal(1.0, factor2.weight(values)));
 
   Point2 estimate(3, 3), prior(1, 1);
-  double distance = (estimate - prior).norm();
 
   auto gaussian = noiseModel::Isotropic::Sigma(2, 0.2);
+  const double distance = gaussian->whiten(estimate - prior).norm();
 
   PriorFactor<Point2> factor;
 
@@ -175,6 +175,24 @@ TEST(NonlinearFactor, Weight) {
     values.clear();
     values.insert(X(3), estimate);
     CHECK(assert_equal(model->robust()->weight(distance), factor.weight(values)));
+  }
+}
+
+/* ************************************************************************* */
+// Both weight queries apply the estimator after Gaussian whitening.
+TEST(NonlinearFactor, RobustWeightUsesWhitenedResidual) {
+  using namespace noiseModel;
+  const Vector2 residual{3.0, 4.0};
+  Values values;
+  values.insert(0, residual);
+
+  for (double sigma : {1.0, 2.0, 4.0}) {
+    const auto model = Robust::Create(mEstimator::Cauchy::Create(1.0),
+                                     Isotropic::Sigma(2, sigma));
+    const PriorFactor<Point2> factor(0, Point2(0, 0), model);
+    const double expected = 1.0 / (1.0 + 25.0 / (sigma * sigma));
+    EXPECT_DOUBLES_EQUAL(expected, model->weight(residual), 1e-12);
+    EXPECT_DOUBLES_EQUAL(expected, factor.weight(values), 1e-12);
   }
 }
 

@@ -18,14 +18,12 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
-
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/slam/KnownLandmarkSquaredRangeFactor.h>
 
 #include <Eigen/Core>
-
 #include <memory>
 #include <stdexcept>
 
@@ -39,7 +37,7 @@ using Factor = KnownLandmarkSquaredRangeFactor<2>;
 
 const Key kKey = 3;
 
-// Verfies the 2D residual, analytic Jacobian, and zero-residual case.
+// Verifies the 2D residual, analytic Jacobian, and zero-residual case.
 TEST(KnownLandmarkSquaredRangeFactor, Point2) {
   const Point wX(1.0, 2.0);
   const Point wL(4.0, 6.0);
@@ -88,6 +86,28 @@ TEST(KnownLandmarkSquaredRangeFactor, ScalarInfo) {
   EXPECT_DOUBLES_EQUAL(expected, factor.error(values), 1e-9);
 }
 
+// Verifies that dynamically sized 2D landmarks are accepted after validation.
+TEST(KnownLandmarkSquaredRangeFactor, AcceptsDynamicLandmark2D) {
+  Vector wL(2);
+  wL << 4.0, 6.0;
+  const Point wX(1.0, 2.0);
+  const auto model = noiseModel::Unit::Create(1);
+
+  const Factor factor(kKey, wL, 4.0, model);
+  EXPECT(assert_equal(Vector1(9.0), factor.evaluateError(wX)));
+}
+
+// Verifies that short and long 2D landmark vectors throw before Eigen
+// conversion.
+TEST(KnownLandmarkSquaredRangeFactor, RejectsWrongLandmarkDimension2D) {
+  const auto model = noiseModel::Unit::Create(1);
+  const Vector tooShort = Vector::Zero(1);
+  const Vector tooLong = Vector::Zero(3);
+
+  CHECK_EXCEPTION(Factor(kKey, tooShort, 4.0, model), std::invalid_argument);
+  CHECK_EXCEPTION(Factor(kKey, tooLong, 4.0, model), std::invalid_argument);
+}
+
 // Verifies that negative range measurements are rejected.
 TEST(KnownLandmarkSquaredRangeFactor, RejectsNegativeRange) {
   const Point wL(4.0, 6.0);
@@ -95,17 +115,17 @@ TEST(KnownLandmarkSquaredRangeFactor, RejectsNegativeRange) {
 
   CHECK_EXCEPTION(Factor(kKey, wL, -4.0, model), std::invalid_argument);
 }
- 
+
 }  // namespace point2_fixture
 /* ************************************************************************* */
 
 /* ************************************************************************* */
 namespace point3_fixture {
 
-  using Point = Eigen::Matrix<double, 3, 1>;
-  using Factor = KnownLandmarkSquaredRangeFactor<3>;
+using Point = Eigen::Matrix<double, 3, 1>;
+using Factor = KnownLandmarkSquaredRangeFactor<3>;
 
-  const Key kKey = 4;
+const Key kKey = 4;
 
 // Verifies the 3D residual, analytic Jacobian, and zero-residual case.
 TEST(KnownLandmarkSquaredRangeFactor, Point3) {
@@ -134,6 +154,28 @@ TEST(KnownLandmarkSquaredRangeFactor, Point3) {
   Values values;
   values.insert(kKey, wX);
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
+
+// Verifies that dynamically sized 3D landmarks are accepted after validation.
+TEST(KnownLandmarkSquaredRangeFactor, AcceptsDynamicLandmark3D) {
+  Vector wL(3);
+  wL << 3.0, 5.0, 9.0;
+  const Point wX(1.0, 2.0, 3.0);
+  const auto model = noiseModel::Unit::Create(1);
+
+  const Factor factor(kKey, wL, 5.0, model);
+  EXPECT(assert_equal(Vector1(24.0), factor.evaluateError(wX)));
+}
+
+// Verifies that short and long 3D landmark vectors throw before Eigen
+// conversion.
+TEST(KnownLandmarkSquaredRangeFactor, RejectsWrongLandmarkDimension3D) {
+  const auto model = noiseModel::Unit::Create(1);
+  const Vector tooShort = Vector::Zero(2);
+  const Vector tooLong = Vector::Zero(4);
+
+  CHECK_EXCEPTION(Factor(kKey, tooShort, 5.0, model), std::invalid_argument);
+  CHECK_EXCEPTION(Factor(kKey, tooLong, 5.0, model), std::invalid_argument);
 }
 
 // Verifies cloning preserves factor data and equality detects changed data.
@@ -165,4 +207,3 @@ int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
 }
-

@@ -10,3 +10,6 @@
  * Without this they will be automatically converted to a Python object, and all
  * mutations on Python side will not be reflected on C++.
  */
+
+// linear.cpp's generated exports supply the noise-model keys themselves.
+#define GTSAM_PYTHON_GENERATED_NOISE_MODEL_EXPORTS

@@ -13,7 +13,9 @@ Author: Frank Dellaert
 
 import unittest
 
-from dfg_utils import generate_observation_cpt, generate_transition_cpt, make_key
+from gtsam.tests.dfg_utils import (
+    generate_observation_cpt, generate_transition_cpt, make_key,
+)
 from gtsam.utils.test_case import GtsamTestCase
 
 from gtsam import (
