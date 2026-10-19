@@ -134,7 +134,12 @@ class FormParser(HTMLParser):
         if self._current is not None and tag == "input":
             name = attrs.get("name")
             if name:
-                self._current["inputs"][name] = attrs.get("value", "")
+                default_value = (
+                    "on" if attrs.get("type", "").lower() == "checkbox" else ""
+                )
+                self._current["inputs"][name] = attrs.get(
+                    "value", default_value
+                )
 
     def handle_endtag(self, tag):
         if tag == "title":
@@ -313,65 +318,104 @@ def release_page_after_reauthentication(version):
 
 
 delete_requests = []
+failures = []
 for version in versions:
-    release_path, release_url, release_page = release_page_after_reauthentication(
-        version
-    )
-    csrf, form = csrf_for(
-        release_page.text, required_input="confirm_delete_version"
-    )
-    if not csrf or not form:
-        raise RuntimeError(
-            f"PyPI did not expose a deletion form for {package!r} {version!r}: "
-            + describe_forms(release_page)
+    try:
+        release_path, release_url, release_page = (
+            release_page_after_reauthentication(version)
+        )
+        csrf, form = csrf_for(
+            release_page.text, required_input="confirm_delete_version"
+        )
+        if not csrf or not form:
+            raise RuntimeError(
+                f"PyPI did not expose a deletion form for {package!r} "
+                f"{version!r}: " + describe_forms(release_page)
+            )
+
+        form_url = safe_form_url(form["action"])
+        if not same_path(form_url, release_path):
+            raise RuntimeError(
+                f"Refusing unexpected deletion form action "
+                f"{form['action']!r}."
+            )
+        form_inputs = dict(form["inputs"])
+        form_inputs["csrf_token"] = csrf
+        form_inputs["confirm_delete_version"] = version
+        delete_requests.append(
+            (version, release_path, release_url, form_url, form_inputs)
+        )
+    except Exception as error:
+        failures.append((version, f"could not prepare deletion: {error}"))
+        print(
+            f"WARNING: Skipping {package!r} version {version}: {error}",
+            file=sys.stderr,
+            flush=True,
         )
 
-    form_url = safe_form_url(form["action"])
-    if not same_path(form_url, release_path):
-        raise RuntimeError(
-            f"Refusing unexpected deletion form action {form['action']!r}."
-        )
-    delete_requests.append((version, release_path, release_url, form_url, csrf))
+if delete_requests:
+    print(
+        f"Validated deletion forms for {len(delete_requests)} of "
+        f"{len(versions)} release(s)."
+    )
+    print("Deletion starts in 5 seconds; press Ctrl-C now to abort.", flush=True)
+    time.sleep(5)
 
-print(f"Validated deletion forms for all {len(delete_requests)} release(s).")
-print("Deletion starts in 5 seconds; press Ctrl-C now to abort.", flush=True)
-time.sleep(5)
-
-for version, release_path, release_url, form_url, csrf in delete_requests:
+for version, release_path, release_url, form_url, form_inputs in delete_requests:
     print(f"Deleting {package!r} version {version}...", flush=True)
-    delete_response = session.post(
-        form_url,
-        data={
-            "csrf_token": csrf,
-            "confirm_delete_version": version,
-        },
-        headers={"referer": release_url},
-        timeout=30,
-    )
-    delete_response.raise_for_status()
-    if (
-        same_path(delete_response.url, "/account/login/")
-        or same_path(delete_response.url, "/account/reauthenticate/")
-        or delete_response.url.startswith(f"{base_url}/account/two-factor/")
-    ):
-        raise RuntimeError(
-            f"PyPI requested authentication again while deleting {version!r}."
+    try:
+        delete_response = session.post(
+            form_url,
+            data=form_inputs,
+            headers={"referer": release_url},
+            timeout=30,
         )
-
-    verification = session.get(release_url, allow_redirects=False, timeout=30)
-    if verification.status_code != 404:
-        release_list_path = f"/manage/project/{package}/releases/"
-        redirect_url = urljoin(
-            base_url, verification.headers.get("location", "")
-        )
-        if not verification.is_redirect or not same_path(
-            redirect_url, release_list_path
+        delete_response.raise_for_status()
+        if (
+            same_path(delete_response.url, "/account/login/")
+            or same_path(delete_response.url, "/account/reauthenticate/")
+            or delete_response.url.startswith(
+                f"{base_url}/account/two-factor/"
+            )
         ):
             raise RuntimeError(
-                f"PyPI did not confirm removal of {version!r}; "
-                "stopping before deleting another release."
+                f"PyPI requested authentication again while deleting "
+                f"{version!r}."
             )
-    print(f"Deleted {package!r} version {version}.", flush=True)
+
+        verification = session.get(
+            release_url, allow_redirects=False, timeout=30
+        )
+        if verification.status_code != 404:
+            release_list_path = f"/manage/project/{package}/releases/"
+            redirect_url = urljoin(
+                base_url, verification.headers.get("location", "")
+            )
+            if not verification.is_redirect or not same_path(
+                redirect_url, release_list_path
+            ):
+                raise RuntimeError(
+                    f"PyPI did not confirm removal of {version!r}."
+                )
+        print(f"Deleted {package!r} version {version}.", flush=True)
+    except Exception as error:
+        failures.append((version, f"deletion failed: {error}"))
+        print(
+            f"ERROR: Could not delete {package!r} version {version}: "
+            f"{error}",
+            file=sys.stderr,
+            flush=True,
+        )
+        print("Continuing with the next release.", file=sys.stderr, flush=True)
+
+if failures:
+    print(
+        f"Cleanup completed with {len(failures)} failure(s):",
+        file=sys.stderr,
+    )
+    for version, error in failures:
+        print(f"  {version}: {error}", file=sys.stderr)
+    raise SystemExit(1)
 PY
 }
 

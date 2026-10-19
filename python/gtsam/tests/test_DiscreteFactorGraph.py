@@ -15,7 +15,9 @@ import unittest
 
 import numpy as np
 from gtsam.utils.test_case import GtsamTestCase
-from dfg_utils import make_key, generate_transition_cpt, generate_observation_cpt
+from gtsam.tests.dfg_utils import (
+    make_key, generate_transition_cpt, generate_observation_cpt,
+)
 
 from gtsam import (
     DecisionTreeFactor,
