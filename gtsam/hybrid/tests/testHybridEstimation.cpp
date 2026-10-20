@@ -18,8 +18,8 @@
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/VectorConstants.h>
 #include <gtsam/discrete/DiscreteBayesNet.h>
-#include <gtsam/discrete/DiscreteMarginals.h>
 #include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/DiscreteMarginals.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/hybrid/DiscreteBoundaryFactor.h>

@@ -145,8 +145,7 @@ TEST(HybridGaussianFactorGraph, TwoStateModel) {
     // Importance sampling run with 100k samples gives 50.051/49.949
     // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
     DiscreteConditional expected(m1, "50/50");
-    EXPECT(
-        assert_equal(expected, *(bn->at(2)->asDiscrete())));
+    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete())));
   }
 
   {
@@ -163,8 +162,7 @@ TEST(HybridGaussianFactorGraph, TwoStateModel) {
     // Values taken from an importance sampling run with 100k samples:
     // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
     DiscreteConditional expected(m1, "44.3854/55.6146");
-    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()),
-                        0.02));
+    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.02));
   }
 }
 
@@ -252,8 +250,7 @@ TEST(HybridGaussianFactorGraph, TwoStateModel2) {
     // Values taken from an importance sampling run with 100k samples:
     // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
     DiscreteConditional expected(m1, "48.3158/51.6842");
-    EXPECT(assert_equal(
-        expected, *(eliminated->at(2)->asDiscrete()), 0.02));
+    EXPECT(assert_equal(expected, *(eliminated->at(2)->asDiscrete()), 0.02));
   }
 
   {
@@ -268,8 +265,7 @@ TEST(HybridGaussianFactorGraph, TwoStateModel2) {
     // Values taken from an importance sampling run with 100k samples:
     // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
     DiscreteConditional expected(m1, "55.396/44.604");
-    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()),
-                        0.02));
+    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.02));
   }
 }
 
@@ -346,8 +342,7 @@ TEST(HybridGaussianFactorGraph, TwoStateModel3) {
     // Values taken from an importance sampling run with 100k samples:
     // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
     DiscreteConditional expected(m1, "51.7762/48.2238");
-    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()),
-                        0.02));
+    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.02));
   }
 
   {
@@ -362,8 +357,7 @@ TEST(HybridGaussianFactorGraph, TwoStateModel3) {
     // Values taken from an importance sampling run with 100k samples:
     // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
     DiscreteConditional expected(m1, "49.0762/50.9238");
-    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()),
-                        0.05));
+    EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.05));
   }
 }
 
@@ -389,8 +383,7 @@ TEST(HybridGaussianFactorGraph, TwoStateModel4) {
   // Values taken from an importance sampling run with 100k samples:
   // approximateDiscreteMarginal(hbn, hybridMotionModel, given);
   DiscreteConditional expected(m1, "8.91527/91.0847");
-  EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()),
-                      0.01));
+  EXPECT(assert_equal(expected, *(bn->at(2)->asDiscrete()), 0.01));
 }
 
 /* ************************************************************************* */

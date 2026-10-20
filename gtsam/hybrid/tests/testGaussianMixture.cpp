@@ -90,8 +90,7 @@ TEST(GaussianMixture, GaussianMixtureModel) {
     // Workflow 1: convert HBN to HFG and solve
     auto eliminationResult1 =
         gmm.toFactorGraph({{Z(0), Vector1(z)}}).eliminateSequential();
-    auto posterior1 =
-        *eliminationResult1->at(0)->asDiscrete();
+    auto posterior1 = *eliminationResult1->at(0)->asDiscrete();
     EXPECT_DOUBLES_EQUAL(expected, posterior1(m1Assignment), 1e-8);
 
     // Workflow 2: directly specify HFG and solve
@@ -100,8 +99,7 @@ TEST(GaussianMixture, GaussianMixtureModel) {
         m, std::vector{Gaussian(mu0, sigma, z), Gaussian(mu1, sigma, z)});
     hfg1.push_back(mixing);
     auto eliminationResult2 = hfg1.eliminateSequential();
-    auto posterior2 =
-        *eliminationResult2->at(0)->asDiscrete();
+    auto posterior2 = *eliminationResult2->at(0)->asDiscrete();
     EXPECT_DOUBLES_EQUAL(expected, posterior2(m1Assignment), 1e-8);
   }
 }
@@ -151,8 +149,7 @@ TEST(GaussianMixture, GaussianMixtureModel2) {
     // Workflow 1: convert HBN to HFG and solve
     auto eliminationResult1 =
         gmm.toFactorGraph({{Z(0), Vector1(z)}}).eliminateSequential();
-    auto posterior1 =
-        *eliminationResult1->at(0)->asDiscrete();
+    auto posterior1 = *eliminationResult1->at(0)->asDiscrete();
     EXPECT_DOUBLES_EQUAL(expected, posterior1(m1Assignment), 1e-8);
 
     // Workflow 2: directly specify HFG and solve
@@ -161,8 +158,7 @@ TEST(GaussianMixture, GaussianMixtureModel2) {
         m, std::vector{Gaussian(mu0, sigma0, z), Gaussian(mu1, sigma1, z)});
     hfg.push_back(mixing);
     auto eliminationResult2 = hfg.eliminateSequential();
-    auto posterior2 =
-        *eliminationResult2->at(0)->asDiscrete();
+    auto posterior2 = *eliminationResult2->at(0)->asDiscrete();
     EXPECT_DOUBLES_EQUAL(expected, posterior2(m1Assignment), 1e-8);
   }
 }

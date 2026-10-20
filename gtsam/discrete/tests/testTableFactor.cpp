@@ -183,7 +183,8 @@ TEST(TableFactor, Conversion) {
       assert_equal(tf, static_cast<const DiscreteFactor&>(tf).toTableFactor()));
 
   const DiscreteKey distributionKey(3, 2);
-  const DiscreteConditional distribution(1, TableFactor(distributionKey, "1 3"));
+  const DiscreteConditional distribution(1,
+                                         TableFactor(distributionKey, "1 3"));
   EXPECT(assert_equal(
       TableFactor(distributionKey, "0.25 0.75"),
       static_cast<const DiscreteFactor&>(distribution).toTableFactor()));

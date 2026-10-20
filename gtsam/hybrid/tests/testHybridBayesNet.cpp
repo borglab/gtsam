@@ -20,8 +20,8 @@
 
 #include <gtsam/base/MatrixConstants.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/DiscreteConditional.h>
+#include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
