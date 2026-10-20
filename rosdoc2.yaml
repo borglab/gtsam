@@ -1,0 +1,18 @@
+## Configuration for rosdoc2, which builds this package's documentation on docs.ros.org.
+## See https://github.com/ros-infrastructure/rosdoc2 for the available settings.
+type: 'rosdoc2 config'
+version: 1
+
+---
+
+settings: {
+}
+builders:
+    - doxygen: {
+        ## Do not document the vendored third-party libraries (Eigen, etc.).
+        extra_doxyfile_statements: [
+            'EXCLUDE_PATTERNS = */gtsam/3rdparty/*'
+        ]
+      }
+    - sphinx: {
+      }
