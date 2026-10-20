@@ -41,7 +41,7 @@ namespace gtsam {
   /* ************************************************************************ */
   DecisionTreeFactor::DecisionTreeFactor(const DiscreteConditional& c)
       : DiscreteFactor(c.keys(), c.cardinalities()),
-        AlgebraicDecisionTree<Key>(c) {}
+        AlgebraicDecisionTree<Key>(c.toDecisionTreeFactor()) {}
 
   /* ************************************************************************ */
   bool DecisionTreeFactor::equals(const DiscreteFactor& other,
@@ -230,23 +230,6 @@ namespace gtsam {
       }
     }
     return std::make_shared<DecisionTreeFactor>(dkeys, result);
-  }
-
-  /* ************************************************************************ */
-  std::vector<std::pair<DiscreteValues, double>> DecisionTreeFactor::enumerate()
-      const {
-    // Get all possible assignments
-    DiscreteKeys pairs = discreteKeys();
-    // Reverse to make cartesian product output a more natural ordering.
-    DiscreteKeys rpairs(pairs.rbegin(), pairs.rend());
-    const auto assignments = DiscreteValues::CartesianProduct(rpairs);
-
-    // Construct unordered_map with values
-    std::vector<std::pair<DiscreteValues, double>> result;
-    for (const auto& assignment : assignments) {
-      result.emplace_back(assignment, evaluate(assignment));
-    }
-    return result;
   }
 
   /* ************************************************************************ */

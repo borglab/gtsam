@@ -24,6 +24,9 @@
 #include <gtsam/inference/Factor.h>
 
 #include <string>
+#include <utility>
+#include <vector>
+
 namespace gtsam {
 
 class DecisionTreeFactor;
@@ -126,6 +129,9 @@ class GTSAM_EXPORT DiscreteFactor : public Factor {
 
   /// Compute error for each assignment and return as a tree
   virtual AlgebraicDecisionTree<Key> errorTree() const;
+
+  /// Enumerate all assignments with their values, in Cartesian-product order.
+  std::vector<std::pair<DiscreteValues, double>> enumerate() const;
 
   /// Multiply with a scalar
   virtual DiscreteFactor::shared_ptr operator*(double s) const = 0;

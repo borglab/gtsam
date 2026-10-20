@@ -266,9 +266,6 @@ namespace gtsam {
      */
     shared_ptr combine(const Ordering& keys, Binary op) const;
 
-    /// Enumerate all values into a map from values to double.
-    std::vector<std::pair<DiscreteValues, double>> enumerate() const;
-
     /// Get all the probabilities in order of assignment values
     std::vector<double> probabilities() const;
 

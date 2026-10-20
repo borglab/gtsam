@@ -25,6 +25,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -253,7 +254,7 @@ TableFactor::TableFactor(const DecisionTreeFactor& dtf)
 
 /* ************************************************************************ */
 TableFactor::TableFactor(const DiscreteConditional& c)
-    : TableFactor(c.discreteKeys(), c) {}
+    : TableFactor(c.toTableFactor()) {}
 
 /* ************************************************************************ */
 SparseVector TableFactor::Convert(const DiscreteKeys& keys,
@@ -772,21 +773,6 @@ TableFactor::shared_ptr TableFactor::combine(const Ordering& frontalKeys,
 size_t TableFactor::keyValueForIndex(Key target_key, uint64_t index) const {
   // http://phrogz.net/lazy-cartesian-product
   return (index / denominators_.at(target_key)) % cardinality(target_key);
-}
-
-/* ************************************************************************ */
-std::vector<std::pair<DiscreteValues, double>> TableFactor::enumerate() const {
-  // Get all possible assignments
-  std::vector<std::pair<Key, size_t>> pairs = discreteKeys();
-  // Reverse to make cartesian product output a more natural ordering.
-  std::vector<std::pair<Key, size_t>> rpairs(pairs.rbegin(), pairs.rend());
-  const auto assignments = DiscreteValues::CartesianProduct(rpairs);
-  // Construct unordered_map with values
-  std::vector<std::pair<DiscreteValues, double>> result;
-  for (const auto& assignment : assignments) {
-    result.emplace_back(assignment, operator()(assignment));
-  }
-  return result;
 }
 
 // Print out header.

@@ -324,9 +324,6 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    */
   shared_ptr combine(const Ordering& keys, Binary op) const;
 
-  /// Enumerate all values into a map from values to double.
-  std::vector<std::pair<DiscreteValues, double>> enumerate() const;
-
   /**
    * @brief Prune the decision tree of discrete variables.
    *
