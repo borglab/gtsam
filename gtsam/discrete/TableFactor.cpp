@@ -878,6 +878,31 @@ DiscreteFactor::shared_ptr TableFactor::prune(size_t maxNrAssignments) const {
 }
 
 /* ************************************************************************ */
+TableFactor TableFactor::reorder(const DiscreteKeys& keys) const {
+  if (keys.size() != keys_.size() ||
+      !std::all_of(keys.begin(), keys.end(), [this](const DiscreteKey& key) {
+        auto it = cardinalities_.find(key.first);
+        return it != cardinalities_.end() && it->second == key.second;
+      })) {
+    throw std::invalid_argument(
+        "TableFactor::reorder: keys must be a permutation of the factor keys.");
+  }
+
+  // Move each nonzero entry to its index in the new layout, then insert them
+  // in increasing order.
+  std::vector<std::pair<int64_t, double>> entries;
+  entries.reserve(sparse_table_.nonZeros());
+  for (SparseIt it(sparse_table_); it; ++it) {
+    entries.emplace_back(uniqueRep(keys, it.index()), it.value());
+  }
+  std::sort(entries.begin(), entries.end());
+  SparseVector reordered(sparse_table_.size());
+  reordered.reserve(entries.size());
+  for (auto&& [index, value] : entries) reordered.insertBack(index) = value;
+  return TableFactor(keys, reordered);
+}
+
+/* ************************************************************************ */
 DiscreteFactor::shared_ptr TableFactor::restrict(
     const DiscreteValues& assignment) const {
   // Split our keys into those fixed by the assignment and those left free,

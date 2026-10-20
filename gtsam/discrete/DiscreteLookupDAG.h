@@ -42,7 +42,7 @@ class GTSAM_EXPORT DiscreteLookupTable : public DiscreteConditional {
  public:
   using This = DiscreteLookupTable;
   using shared_ptr = std::shared_ptr<This>;
-  using BaseConditional = Conditional<DecisionTreeFactor, This>;
+  using BaseConditional = Conditional<DiscreteFactor, This>;
 
   /**
    * @brief Construct a new Discrete Lookup Table object
@@ -65,7 +65,7 @@ class GTSAM_EXPORT DiscreteLookupTable : public DiscreteConditional {
   DiscreteLookupTable(size_t nFrontals, const DiscreteKeys& keys,
                       const TableFactor& potentials)
       : DiscreteConditional(nFrontals, keys,
-                            potentials.toDecisionTreeFactor()) {}
+                            std::make_shared<TableFactor>(potentials)) {}
 
   /// GTSAM-style print
   void print(

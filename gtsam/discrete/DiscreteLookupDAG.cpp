@@ -48,13 +48,14 @@ void DiscreteLookupTable::print(const std::string& s,
     }
   }
   cout << "):\n";
-  ADT::print("", formatter);
+  printValues(formatter);
   cout << endl;
 }
 
 /* ************************************************************************** */
 void DiscreteLookupTable::argmaxInPlace(DiscreteValues* values) const {
-  ADT pFS = choose(*values, true);  // P(F|S=parentsValues)
+  // P(F|S=parentsValues)
+  const DiscreteFactor::shared_ptr pFS = restrict(parentValues(*values, true));
 
   // Initialize
   DiscreteValues mpe;
@@ -65,7 +66,7 @@ void DiscreteLookupTable::argmaxInPlace(DiscreteValues* values) const {
 
   // Find the maximum
   for (const auto& frontalVals : allPosbValues) {
-    double pValueS = pFS(frontalVals);  // P(F=value|S=parentsValues)
+    double pValueS = (*pFS)(frontalVals);  // P(F=value|S=parentsValues)
     // Update maximum solution if better
     if (pValueS > maxP) {
       maxP = pValueS;
@@ -81,7 +82,9 @@ void DiscreteLookupTable::argmaxInPlace(DiscreteValues* values) const {
 
 /* ************************************************************************** */
 size_t DiscreteLookupTable::argmax(const DiscreteValues& parentsValues) const {
-  ADT pFS = choose(parentsValues, true);  // P(F|S=parentsValues)
+  // P(F|S=parentsValues)
+  const DiscreteFactor::shared_ptr pFS =
+      restrict(parentValues(parentsValues, true));
 
   // Then, find the max over all remaining
   // TODO(Duy): only works for one key now, seems horribly slow this way
@@ -92,7 +95,7 @@ size_t DiscreteLookupTable::argmax(const DiscreteValues& parentsValues) const {
   Key j = (firstFrontalKey());
   for (size_t value = 0; value < cardinality(j); value++) {
     frontals[j] = value;
-    double pValueS = pFS(frontals);  // P(F=value|S=parentsValues)
+    double pValueS = (*pFS)(frontals);  // P(F=value|S=parentsValues)
     // Update MPE solution if better
     if (pValueS > maxP) {
       maxP = pValueS;

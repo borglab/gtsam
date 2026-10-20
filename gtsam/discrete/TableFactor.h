@@ -351,6 +351,12 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   uint64_t nrValues() const override { return sparse_table_.nonZeros(); }
 
   /**
+   * Return the same factor with its keys, and hence its table layout, in the
+   * given order. The keys must be a permutation of this factor's keys.
+   */
+  TableFactor reorder(const DiscreteKeys& keys) const;
+
+  /**
    * Restrict the factor to the given assignment, returning a TableFactor over
    * the keys that the assignment leaves free. Assigned keys that are not in
    * this factor are ignored.

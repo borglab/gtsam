@@ -200,7 +200,7 @@ TEST(TableFactor, Conversion) {
   // GTSAM_PRINT(tf2.toDecisionTreeFactor());
 
   // Check for ADT equality since the order of keys is irrelevant
-  EXPECT(assert_equal<AlgebraicDecisionTree<Key>>(dtf2,
+  EXPECT(assert_equal<AlgebraicDecisionTree<Key>>(dtf2.toDecisionTreeFactor(),
                                                   tf2.toDecisionTreeFactor()));
 }
 
@@ -350,7 +350,7 @@ TEST(TableFactor, multiplication) {
   DecisionTreeFactor expected(v0 & v1, "0.25 1.5 0.75 3");
   CHECK(assert_equal(expected, static_cast<DecisionTreeFactor>(prior) *
                                    f1.toDecisionTreeFactor()));
-  CHECK(assert_equal(expected, f1 * prior));
+  CHECK(assert_equal(expected, f1 * prior.toDecisionTreeFactor()));
 
   // Multiply two factors
   TableFactor f2(v1 & v2, "5 6 7 8");
@@ -618,6 +618,17 @@ TEST(TableFactor, EvaluateUnsortedKeys) {
   for (auto&& [assignment, value] : tree.enumerate()) {
     EXPECT_DOUBLES_EQUAL(value, table.evaluate(assignment), 1e-9);
   }
+}
+
+// Reordering the keys changes the table layout but not the values.
+TEST(TableFactor, Reorder) {
+  const TableFactor table(X & Y, values);
+  const TableFactor reordered = table.reorder(Y & X);
+  EXPECT(assert_equal(TableFactor(Y & X, "1 4 2 5 3 6"), reordered));
+  for (auto&& [assignment, value] : table.enumerate()) {
+    EXPECT_DOUBLES_EQUAL(value, reordered.evaluate(assignment), 1e-9);
+  }
+  CHECK_EXCEPTION(table.reorder(DiscreteKeys{X}), std::invalid_argument);
 }
 
 }  // namespace key_order_fixture

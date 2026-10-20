@@ -27,34 +27,52 @@
 #include <string>
 #include <vector>
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/serialization/shared_ptr.hpp>
+#endif
+
 namespace gtsam {
 
 /**
  * Discrete Conditional Density
- * Derives from DecisionTreeFactor
+ *
+ * Stores its probabilities in any DiscreteFactor, such as a DecisionTreeFactor
+ * or a TableFactor, and implements the conditional operations through the
+ * DiscreteFactor interface. The stored factor always has the same keys, in the
+ * same order, as the conditional: frontal keys first, then parents.
  *
  * @ingroup discrete
  */
 class GTSAM_EXPORT DiscreteConditional
-    : public DecisionTreeFactor,
-      public Conditional<DecisionTreeFactor, DiscreteConditional> {
+    : public DiscreteFactor,
+      public Conditional<DiscreteFactor, DiscreteConditional> {
  public:
   // typedefs needed to play nice with gtsam
   typedef DiscreteConditional This;          ///< Typedef to this class
   typedef std::shared_ptr<This> shared_ptr;  ///< shared_ptr to this class
-  typedef DecisionTreeFactor BaseFactor;  ///< Typedef to our factor base class
+  typedef DiscreteFactor BaseFactor;  ///< Typedef to our factor base class
   typedef Conditional<BaseFactor, This>
       BaseConditional;  ///< Typedef to our conditional base class
+  using ADT = AlgebraicDecisionTree<Key>;  ///< Decision tree of probabilities
 
   using Values = DiscreteValues;  ///< backwards compatibility
 
+ protected:
+  /// The probabilities, with our keys in our key order. Never modified in
+  /// place, since copies share it.
+  DiscreteFactor::shared_ptr factor_;
+
+ public:
   /// @name Standard Constructors
   /// @{
 
   /// Default constructor needed for serialization.
-  DiscreteConditional() {}
+  DiscreteConditional();
 
-  /// Construct from factor, taking the first `nFrontals` keys as frontals.
+  /**
+   * Construct from a factor by normalizing it, taking the first `nFrontals`
+   * keys as frontals. The conditional uses the same representation as `f`.
+   */
   DiscreteConditional(size_t nFrontals, const DiscreteFactor& f);
 
   /**
@@ -63,6 +81,14 @@ class GTSAM_EXPORT DiscreteConditional
    */
   DiscreteConditional(size_t nFrontals, const DiscreteKeys& keys,
                       const ADT& potentials);
+
+  /**
+   * Construct from DiscreteKeys and a factor holding the probabilities, taking
+   * the first `nFrontals` keys as frontals, in the order given. The factor is
+   * stored as is: it is neither copied nor normalized.
+   */
+  DiscreteConditional(size_t nFrontals, const DiscreteKeys& keys,
+                      const DiscreteFactor::shared_ptr& potentials);
 
   /** Construct from signature */
   explicit DiscreteConditional(const Signature& signature);
@@ -123,8 +149,6 @@ class GTSAM_EXPORT DiscreteConditional
                       const DecisionTreeFactor& marginal,
                       const Ordering& orderedKeys);
 
-  using DecisionTreeFactor::operator*;
-
   /**
    * @brief Combine two conditionals, yielding a new conditional with the union
    * of the frontal keys, ordered by gtsam::Key.
@@ -161,6 +185,9 @@ class GTSAM_EXPORT DiscreteConditional
   /// @name Standard Interface
   /// @{
 
+  /// Return the factor holding the probabilities.
+  DiscreteFactor::shared_ptr factor() const { return factor_; }
+
   /// Log-probability is just -error(x).
   double logProbability(const DiscreteValues& x) const { return -error(x); }
 
@@ -172,8 +199,12 @@ class GTSAM_EXPORT DiscreteConditional
   }
 
   using BaseFactor::error;       ///< DiscreteValues version
-  using BaseFactor::evaluate;    ///< DiscreteValues version
   using BaseFactor::operator();  ///< DiscreteValues version
+
+  /// Calculate probability for given values.
+  double evaluate(const Assignment<Key>& values) const override {
+    return factor_->evaluate(values);
+  }
 
   /**
    * @brief restrict to given *parent* values.
@@ -229,14 +260,68 @@ class GTSAM_EXPORT DiscreteConditional
    */
   size_t argmax(const DiscreteValues& parentsValues = DiscreteValues()) const;
 
-  /**
-   * @brief Create new factor by maximizing over all
-   * values with the same separator.
-   *
-   * @param keys The keys to sum over.
-   * @return DiscreteFactor::shared_ptr
-   */
-  virtual DiscreteFactor::shared_ptr max(const Ordering& keys) const override;
+  /// @}
+  /// @name DiscreteFactor interface, forwarded to the stored factor.
+  /// Results are plain factors, not conditionals.
+  /// @{
+
+  /// Multiply with a scalar.
+  DiscreteFactor::shared_ptr operator*(double s) const override {
+    return *factor_ * s;
+  }
+
+  /// Multiply with a DecisionTreeFactor.
+  DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override {
+    return *factor_ * f;
+  }
+
+  /// Multiply with any DiscreteFactor.
+  DiscreteFactor::shared_ptr multiply(
+      const DiscreteFactor::shared_ptr& f) const override;
+
+  /// Divide by any DiscreteFactor.
+  DiscreteFactor::shared_ptr operator/(
+      const DiscreteFactor::shared_ptr& f) const override;
+
+  /// Convert to a DecisionTreeFactor.
+  DecisionTreeFactor toDecisionTreeFactor() const override {
+    return factor_->toDecisionTreeFactor();
+  }
+
+  /// Convert to a TableFactor.
+  TableFactor toTableFactor() const override;
+
+  /// Sum out the first `nrFrontals` keys.
+  DiscreteFactor::shared_ptr sum(size_t nrFrontals) const override {
+    return factor_->sum(nrFrontals);
+  }
+
+  /// Sum out the given keys.
+  DiscreteFactor::shared_ptr sum(const Ordering& keys) const override {
+    return factor_->sum(keys);
+  }
+
+  /// Find the maximum value.
+  double max() const override { return factor_->max(); }
+
+  /// Max out the first `nrFrontals` keys.
+  DiscreteFactor::shared_ptr max(size_t nrFrontals) const override {
+    return factor_->max(nrFrontals);
+  }
+
+  /// Max out the given keys.
+  DiscreteFactor::shared_ptr max(const Ordering& keys) const override {
+    return factor_->max(keys);
+  }
+
+  /// Get the number of non-zero values in the stored factor.
+  uint64_t nrValues() const override { return factor_->nrValues(); }
+
+  /// Restrict the stored factor to the given assignment.
+  DiscreteFactor::shared_ptr restrict(
+      const DiscreteValues& assignment) const override {
+    return factor_->restrict(assignment);
+  }
 
   /// @}
   /// @name Advanced Interface
@@ -319,18 +404,23 @@ class GTSAM_EXPORT DiscreteConditional
   DiscreteValues parentValues(const DiscreteValues& given,
                               bool forceComplete) const;
 
-  /// Internal version of choose
-  DiscreteConditional::ADT choose(const DiscreteValues& given,
-                                  bool forceComplete) const;
+  /// Print the stored values; decision trees print just the tree.
+  void printValues(const KeyFormatter& formatter) const;
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
-  /** Serialization function */
+  /**
+   * Serialization function. Archives written when DiscreteConditional derived
+   * from DecisionTreeFactor cannot be read. Serializing requires the stored
+   * factor type, e.g. DecisionTreeFactor or TableFactor, to be exported with
+   * BOOST_CLASS_EXPORT_GUID.
+   */
   friend class boost::serialization::access;
   template <class Archive>
   void serialize(Archive& ar, const unsigned int /*version*/) {
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseFactor);
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
+    ar& BOOST_SERIALIZATION_NVP(factor_);
   }
 #endif
 };

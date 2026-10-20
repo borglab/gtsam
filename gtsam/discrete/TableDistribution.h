@@ -38,9 +38,12 @@ namespace gtsam {
  */
 class GTSAM_EXPORT TableDistribution : public DiscreteConditional {
  private:
-  TableFactor table_;
-
   typedef SparseVector::InnerIterator SparseIt;
+
+  /// The stored factor, which is always a TableFactor.
+  const TableFactor& tableFactor() const {
+    return static_cast<const TableFactor&>(*factor_);
+  }
 
  public:
   // typedefs needed to play nice with gtsam
@@ -57,7 +60,7 @@ class GTSAM_EXPORT TableDistribution : public DiscreteConditional {
   /// Default constructor needed for serialization.
   TableDistribution() {}
 
-  /// Construct from TableFactor.
+  /// Construct from TableFactor, normalizing it.
   TableDistribution(const TableFactor& f);
 
   /**
@@ -91,7 +94,9 @@ class GTSAM_EXPORT TableDistribution : public DiscreteConditional {
   /// GTSAM-style print
   void print(
       const std::string& s = "Table Distribution: ",
-      const KeyFormatter& formatter = DefaultKeyFormatter) const override;
+      const KeyFormatter& formatter = DefaultKeyFormatter) const override {
+    BaseConditional::print(s, formatter);
+  }
 
   /// GTSAM-style equals
   bool equals(const DiscreteFactor& other, double tol = 1e-9) const override;
@@ -101,42 +106,7 @@ class GTSAM_EXPORT TableDistribution : public DiscreteConditional {
   /// @{
 
   /// Return the underlying TableFactor
-  TableFactor table() const { return table_; }
-
-  using BaseConditional::evaluate;  // HybridValues version
-
-  /// Evaluate the conditional given the values.
-  virtual double evaluate(const Assignment<Key>& values) const override {
-    return table_.evaluate(values);
-  }
-
-  /// Create new factor by summing all values with the same separator values
-  DiscreteFactor::shared_ptr sum(size_t nrFrontals) const override;
-
-  /// Create new factor by summing all values with the same separator values
-  DiscreteFactor::shared_ptr sum(const Ordering& keys) const override;
-
-  /// Find the maximum value in the factor.
-  double max() const override { return table_.max(); }
-
-  /// Create new factor by maximizing over all values with the same separator.
-  DiscreteFactor::shared_ptr max(size_t nrFrontals) const override;
-
-  /// Create new factor by maximizing over all values with the same separator.
-  DiscreteFactor::shared_ptr max(const Ordering& keys) const override;
-
-  /// Restrict the underlying table to the given assignment.
-  DiscreteFactor::shared_ptr restrict(
-      const DiscreteValues& assignment) const override {
-    return table_.restrict(assignment);
-  }
-
-  /// Multiply by scalar s
-  DiscreteFactor::shared_ptr operator*(double s) const override;
-
-  /// divide by DiscreteFactor::shared_ptr f (safely)
-  DiscreteFactor::shared_ptr operator/(
-      const DiscreteFactor::shared_ptr& f) const override;
+  TableFactor table() const { return tableFactor(); }
 
   /**
    * @brief Return assignment that maximizes value.
@@ -145,32 +115,12 @@ class GTSAM_EXPORT TableDistribution : public DiscreteConditional {
    */
   DiscreteValues argmax() const;
 
-  /**
-   * sample
-   * @param parentsValues Known values of the parents
-   * @param rng Pseudo random number generator
-   * @return sample from conditional
-   */
-  virtual size_t sample(const DiscreteValues& parentsValues,
-                        std::mt19937_64* rng = nullptr) const override;
-
   /// @}
   /// @name Advanced Interface
   /// @{
 
   /// Prune the conditional and renormalize, returning a TableDistribution.
   DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const override;
-
-  /// Get a DecisionTreeFactor representation.
-  DecisionTreeFactor toDecisionTreeFactor() const override {
-    return table_.toDecisionTreeFactor();
-  }
-
-  /// Get the sparse table representation.
-  TableFactor toTableFactor() const override { return table_; }
-
-  /// Get the number of non-zero values.
-  uint64_t nrValues() const override { return table_.sparseTable().nonZeros(); }
 
   /// @}
 
@@ -181,7 +131,6 @@ class GTSAM_EXPORT TableDistribution : public DiscreteConditional {
   template <class Archive>
   void serialize(Archive& ar, const unsigned int /*version*/) {
     ar& BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
-    ar& BOOST_SERIALIZATION_NVP(table_);
   }
 #endif
 };
