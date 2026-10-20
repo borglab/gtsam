@@ -116,6 +116,7 @@ virtual class DiscreteConditional : gtsam::DiscreteFactor {
   gtsam::DiscreteFactor* factor() const;
   gtsam::DecisionTreeFactor toDecisionTreeFactor() const;
   gtsam::TableFactor toTableFactor() const;
+  uint64_t nrValues() const;
   size_t cardinality(gtsam::Key j) const;
   gtsam::DiscreteFactor* sum(size_t nrFrontals) const;
   gtsam::DiscreteFactor* sum(const gtsam::Ordering& keys) const;
@@ -182,19 +183,6 @@ virtual class TableFactor : gtsam::DiscreteFactor {
   TableFactor(const gtsam::DecisionTreeFactor& dtf);
 
   double error(const gtsam::DiscreteValues& values) const;
-};
-
-#include <gtsam/discrete/TableDistribution.h>
-virtual class TableDistribution : gtsam::DiscreteConditional {
-  TableDistribution();
-  TableDistribution(const gtsam::TableFactor& f);
-  TableDistribution(const gtsam::DiscreteKey& key, std::vector<double> spec);
-  TableDistribution(const gtsam::DiscreteKeys& keys, std::vector<double> spec);
-  TableDistribution(const gtsam::DiscreteKeys& keys, string spec);
-  TableDistribution(const gtsam::DiscreteKey& key, string spec);
-
-  gtsam::TableFactor table() const;
-  uint64_t nrValues() const;
 };
 
 #include <gtsam/discrete/DiscreteBayesNet.h>

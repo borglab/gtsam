@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/TableFactor.h>
 #include <gtsam/inference/Conditional-inst.h>
@@ -31,15 +34,16 @@ namespace gtsam {
  * Distribution which uses a SparseVector as the internal
  * representation, similar to the TableFactor.
  *
- * This is primarily used in the case when we have a clique in the BayesTree
- * which consists of all the discrete variables, e.g. in hybrid elimination.
+ * @deprecated A DiscreteConditional can store its probabilities in a
+ * TableFactor directly. Construct one with
+ * `DiscreteConditional(f.size(), f)` from a TableFactor `f`, which normalizes
+ * it and keeps the sparse table. Use `toTableFactor()` in place of `table()`,
+ * and `toTableFactor().argmax()` in place of `argmax()`.
  *
  * @ingroup discrete
  */
 class GTSAM_EXPORT TableDistribution : public DiscreteConditional {
  private:
-  typedef SparseVector::InnerIterator SparseIt;
-
   /// The stored factor, which is always a TableFactor.
   const TableFactor& tableFactor() const {
     return static_cast<const TableFactor&>(*factor_);
@@ -142,3 +146,5 @@ template <>
 struct traits<TableDistribution> : public Testable<TableDistribution> {};
 
 }  // namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43
