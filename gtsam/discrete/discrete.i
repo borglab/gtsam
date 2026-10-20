@@ -182,6 +182,8 @@ virtual class TableFactor : gtsam::DiscreteFactor {
               const gtsam::DecisionTreeFactor& dtf);
   TableFactor(const gtsam::DecisionTreeFactor& dtf);
 
+  gtsam::DiscreteValues argmax() const;
+
   double error(const gtsam::DiscreteValues& values) const;
 };
 

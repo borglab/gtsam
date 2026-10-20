@@ -118,7 +118,9 @@ Mathematical abstraction for algebraic operations on decision tree values, enabl
 Parses string representations of conditional probability signatures, enabling convenient model specification from text.
 
 ### TableDistribution
-Utility class for working with probability distributions represented as tables.
+Deprecated in GTSAM 4.3: construct a `DiscreteConditional` from a `TableFactor` instead, which stores the probabilities in the sparse table.
+
+**Notebook**: [TableDistribution.ipynb](doc/TableDistribution.ipynb)
 
 ## Example Workflows
 
