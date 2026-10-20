@@ -347,7 +347,7 @@ TEST(DiscreteConditional, FromFactorKeyOrder) {
 }
 
 // Products, choose, and removeDiscreteModes keep the stored factor in the
-// conditional's key order.
+// conditional's key order, and match the decision tree results.
 TEST(DiscreteConditional, DerivedKeyOrder) {
   const std::vector<double> zGivenX{0.25, 0.5, 0.75, 0.5};  // over (Z, X)
   const DiscreteConditional tableZ(
@@ -366,6 +366,10 @@ TEST(DiscreteConditional, DerivedKeyOrder) {
   DiscreteConditional removed = product;
   removed.removeDiscreteModes({{X.first, 0}});
   EXPECT(removed.factor()->keys() == removed.keys());
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(removed.factor()));
+  DiscreteConditional treeRemoved = treeZ * xGivenY;
+  treeRemoved.removeDiscreteModes({{X.first, 0}});
+  EXPECT(assert_equal(treeRemoved, removed));
 }
 
 }  // namespace key_order_fixture
