@@ -23,6 +23,7 @@
 #include <iterator>
 #include <string>
 #include <utility>
+#include <vector>
 #include <cassert>
 
 using std::pair;
@@ -54,55 +55,48 @@ void DiscreteLookupTable::print(const std::string& s,
 
 /* ************************************************************************** */
 void DiscreteLookupTable::argmaxInPlace(DiscreteValues* values) const {
-  // P(F|S=parentsValues)
-  const DiscreteFactor::shared_ptr pFS = restrict(parentValues(*values, true));
+  checkParents(*values);
 
-  // Initialize
-  DiscreteValues mpe;
+  // Enumerate the frontal assignments in place in `values`, evaluating the
+  // stored factor directly, allocating no factor.
+  // Each entry tracks a frontal value, its cardinality, and its value
+  // in the best assignment so far.
+  struct Frontal {
+    DiscreteValues::iterator entry;
+    size_t cardinality;
+    size_t best;
+  };
+
+  std::vector<Frontal> frontals;
+  frontals.reserve(nrFrontals());
+  for (Key j : this->frontals()) {
+    auto entry = values->emplace(j, 0).first;
+    entry->second = 0;
+    frontals.push_back({entry, cardinality(j), 0});
+  }
+
+  // Advance to the next assignment, with the last frontal varying fastest as
+  // in frontalAssignments(), so that ties resolve in the same order.
+  auto advance = [&frontals]() {
+    for (size_t i = frontals.size(); i-- > 0;) {
+      if (++frontals[i].entry->second < frontals[i].cardinality) return true;
+      frontals[i].entry->second = 0;
+    }
+    return false;
+  };
+
   double maxP = 0;
-
-  // Get all Possible Configurations
-  const auto allPosbValues = frontalAssignments();
-
-  // Find the maximum
-  for (const auto& frontalVals : allPosbValues) {
-    double pValueS = (*pFS)(frontalVals);  // P(F=value|S=parentsValues)
+  do {
+    const double pValueS = (*this)(*values);  // P(F=value|S=parentsValues)
     // Update maximum solution if better
     if (pValueS > maxP) {
       maxP = pValueS;
-      mpe = frontalVals;
+      for (auto& frontal : frontals) frontal.best = frontal.entry->second;
     }
-  }
+  } while (advance());
 
   // set values (inPlace) to maximum
-  for (Key j : frontals()) {
-    (*values)[j] = mpe[j];
-  }
-}
-
-/* ************************************************************************** */
-size_t DiscreteLookupTable::argmax(const DiscreteValues& parentsValues) const {
-  // P(F|S=parentsValues)
-  const DiscreteFactor::shared_ptr pFS =
-      restrict(parentValues(parentsValues, true));
-
-  // Then, find the max over all remaining
-  // TODO(Duy): only works for one key now, seems horribly slow this way
-  size_t mpe = 0;
-  double maxP = 0;
-  DiscreteValues frontals;
-  assert(nrFrontals() == 1);
-  Key j = (firstFrontalKey());
-  for (size_t value = 0; value < cardinality(j); value++) {
-    frontals[j] = value;
-    double pValueS = (*pFS)(frontals);  // P(F=value|S=parentsValues)
-    // Update MPE solution if better
-    if (pValueS > maxP) {
-      maxP = pValueS;
-      mpe = value;
-    }
-  }
-  return mpe;
+  for (auto& frontal : frontals) frontal.entry->second = frontal.best;
 }
 
 /* ************************************************************************** */
