@@ -521,9 +521,10 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
 
 #ifdef GTSAM_DT_MERGING
   EXPECT_LONGS_EQUAL(maxNrLeaves + 2 /*2 zero leaves*/,
-                     prunedDecisionTree.nrLeaves());
+                     prunedDecisionTree.toDecisionTreeFactor().nrLeaves());
 #else
-  EXPECT_LONGS_EQUAL(8 /*full tree*/, prunedDecisionTree.nrLeaves());
+  EXPECT_LONGS_EQUAL(8 /*full tree*/,
+                     prunedDecisionTree.toDecisionTreeFactor().nrLeaves());
 #endif
 
   // regression
@@ -552,12 +553,11 @@ TEST(HybridBayesNet, UpdateDiscreteConditionals) {
   // Get the pruned discrete conditionals as an AlgebraicDecisionTree
   CHECK(pruned.at(4)->asDiscrete());
   auto pruned_discrete_conditionals = pruned.at(4)->asDiscrete();
-  auto discrete_conditional_tree =
-      std::dynamic_pointer_cast<DecisionTreeFactor::ADT>(
-          pruned_discrete_conditionals);
+  const DecisionTreeFactor::ADT discrete_conditional_tree =
+      pruned_discrete_conditionals->toDecisionTreeFactor();
 
   // The checker functor verifies the values for us.
-  discrete_conditional_tree->apply(checker);
+  discrete_conditional_tree.apply(checker);
 }
 
 /* ****************************************************************************/

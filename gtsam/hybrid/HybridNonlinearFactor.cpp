@@ -214,7 +214,7 @@ std::shared_ptr<HybridGaussianFactor> HybridNonlinearFactor::linearize(
 
 /* *******************************************************************************/
 HybridNonlinearFactor::shared_ptr HybridNonlinearFactor::prune(
-    const DecisionTreeFactor& discreteProbs) const {
+    const DiscreteFactor& discreteProbs) const {
   // Find keys in discreteProbs.keys() but not in this->keys():
   KeySet mine(this->keys().begin(), this->keys().end());
   KeySet theirs(discreteProbs.keys().begin(),

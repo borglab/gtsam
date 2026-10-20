@@ -48,6 +48,7 @@ BOOST_CLASS_EXPORT_GUID(DiscreteConditional, "gtsam_DiscreteConditional")
 BOOST_CLASS_EXPORT_GUID(TableDistribution, "gtsam_TableDistribution")
 
 BOOST_CLASS_EXPORT_GUID(DecisionTreeFactor, "gtsam_DecisionTreeFactor")
+BOOST_CLASS_EXPORT_GUID(TableFactor, "gtsam_TableFactor")
 using ADT = AlgebraicDecisionTree<Key>;
 BOOST_CLASS_EXPORT_GUID(ADT, "gtsam_AlgebraicDecisionTree")
 BOOST_CLASS_EXPORT_GUID(ADT::Leaf, "gtsam_AlgebraicDecisionTree_Leaf")

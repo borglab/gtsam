@@ -195,11 +195,12 @@ public:
    * Entries with probability 0 (or very small) in discreteProbs will lead to
    * pruning of corresponding branches in this factor.
    * 
-   * @param discreteProbs A DecisionTreeFactor representing P(M) or P(M|...).
-   * @return HybridNonlinearFactor::shared_ptr 
+   * @param discreteProbs A discrete factor or conditional representing P(M)
+   * or P(M|...).
+   * @return HybridNonlinearFactor::shared_ptr
    */
   HybridNonlinearFactor::shared_ptr prune(
-      const DecisionTreeFactor& discreteProbs) const;
+      const DiscreteFactor& discreteProbs) const;
 
   /**
    * @brief Restrict the factor to the given discrete values.
