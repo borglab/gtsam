@@ -163,7 +163,7 @@ TEST( GaussianBayesNet, optimize3 )
 
 /* ************************************************************************* */
 namespace sampling {
-static Matrix A1{{1., 2.}, {3., 4.}};
+static Matrix2 A1{{1., 2.}, {3., 4.}};
 static const Vector2 mean(20, 40), b(10, 10);
 static const double sigma = 0.01;
 static const GaussianBayesNet gbn = {

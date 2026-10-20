@@ -441,7 +441,7 @@ TEST(GaussianConditional, likelihood) {
 /* ************************************************************************* */
 // Test sampling
 TEST(GaussianConditional, Sample) {
-  Matrix A1{{1., 2.}, {3., 4.}};
+  Matrix2 A1{{1., 2.}, {3., 4.}};
   const Vector2 b(20, 40), x1(3, 4);
   const double sigma = 0.01;
 
