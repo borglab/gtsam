@@ -19,7 +19,6 @@
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridValues.h>
 
@@ -151,14 +150,7 @@ DiscreteValues HybridBayesNet::mpe() const {
 
   for (auto &&conditional : *this) {
     if (conditional->isDiscrete()) {
-      if (auto dtc = conditional->asDiscrete<TableDistribution>()) {
-        // The number of keys should be small so should not
-        // be expensive to convert to DiscreteConditional.
-        discrete_fg.push_back(DiscreteConditional(dtc->nrFrontals(),
-                                                  dtc->toDecisionTreeFactor()));
-      } else {
-        discrete_fg.push_back(conditional->asDiscrete());
-      }
+      discrete_fg.push_back(conditional->asDiscrete());
     }
   }
 

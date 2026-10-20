@@ -15,7 +15,6 @@
  * @author Varun Agrawal
  */
 
-#include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
 #include <gtsam/hybrid/HybridNonlinearISAM.h>
@@ -65,14 +64,8 @@ void HybridNonlinearISAM::reorderRelinearize() {
     // Obtain the new linearization point
     const Values newLinPoint = estimate();
 
-    DiscreteConditional::shared_ptr discreteProbabilities;
-
-    auto discreteRoot = isam_.roots().at(0)->conditional();
-    if (discreteRoot->asDiscrete<TableDistribution>()) {
-      discreteProbabilities = discreteRoot->asDiscrete<TableDistribution>();
-    } else {
-      discreteProbabilities = discreteRoot->asDiscrete();
-    }
+    const DiscreteConditional::shared_ptr discreteProbabilities =
+        isam_.roots().at(0)->conditional()->asDiscrete();
 
     isam_.clear();
 

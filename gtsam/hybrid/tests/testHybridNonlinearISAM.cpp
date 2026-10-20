@@ -19,7 +19,7 @@
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteDistribution.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/discrete/TableDistribution.h>
+#include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridNonlinearISAM.h>
@@ -266,7 +266,7 @@ TEST(HybridNonlinearISAM, ApproxInference) {
     1 1 1 Leaf  0.5
   */
 
-  auto discreteConditional_m0 = *dynamic_pointer_cast<TableDistribution>(
+  auto discreteConditional_m0 = *dynamic_pointer_cast<DiscreteConditional>(
       bayesTree[M(0)]->conditional()->inner());
   EXPECT(discreteConditional_m0.keys() == KeyVector({M(0), M(1), M(2)}));
 
@@ -518,7 +518,7 @@ TEST(HybridNonlinearISAM, NonTrivial) {
   // The final discrete graph should not be empty since we have eliminated
   // all continuous variables.
   auto discreteTree =
-      bayesTree[M(3)]->conditional()->asDiscrete<TableDistribution>();
+      bayesTree[M(3)]->conditional()->asDiscrete();
   EXPECT_LONGS_EQUAL(3, discreteTree->size());
 
   // Test if the optimal discrete mode assignment is (1, 1, 1).

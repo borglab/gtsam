@@ -20,7 +20,7 @@
 #include <gtsam/base/treeTraversal-inst.h>
 #include <gtsam/discrete/DiscreteBayesNet.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
-#include <gtsam/discrete/TableDistribution.h>
+#include <gtsam/discrete/TableFactor.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
@@ -47,9 +47,7 @@ DiscreteValues HybridBayesTree::discreteMaxProduct(
     const DiscreteFactorGraph& dfg) const {
   DiscreteFactor::shared_ptr product = dfg.scaledProduct();
 
-  TableFactor p = product->toTableFactor();
-  DiscreteValues assignment = TableDistribution(p).argmax();
-  return assignment;
+  return product->toTableFactor().argmax();
 }
 
 /* ************************************************************************* */
@@ -63,8 +61,7 @@ DiscreteValues HybridBayesTree::mpe() const {
 
   //  The root should be discrete only, we compute the MPE
   if (root_conditional->isDiscrete()) {
-    auto discrete = root_conditional->asDiscrete<TableDistribution>();
-    discrete_fg.push_back(discrete);
+    discrete_fg.push_back(root_conditional->asDiscrete());
     mpe = discreteMaxProduct(discrete_fg);
   } else {
     mpe = DiscreteValues();
@@ -202,7 +199,7 @@ void HybridBayesTree::prune(const size_t maxNrLeaves) {
   }
 
   auto discreteProbs =
-      this->roots_.at(0)->conditional()->asDiscrete<TableDistribution>();
+      this->roots_.at(0)->conditional()->asDiscrete();
 
   // Prune the discrete probabilities and store them back in the root.
   auto prunedDiscreteProbs = std::static_pointer_cast<DiscreteConditional>(
