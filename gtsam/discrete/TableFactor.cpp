@@ -914,7 +914,7 @@ DiscreteFactor::shared_ptr TableFactor::restrict(
   // Copy the nonzero entries that agree with the fixed values, re-indexed over
   // the free keys. Matching entries keep their relative order, so indices are
   // inserted in increasing order.
-  Eigen::SparseVector<double> restrictedTable(freeCardinality);
+  SparseVector restrictedTable(freeCardinality);
   restrictedTable.reserve(sparse_table_.nonZeros());
   for (SparseIt it(sparse_table_); it; ++it) {
     const bool matches = std::all_of(

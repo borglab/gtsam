@@ -35,6 +35,7 @@ using gtsam::DecisionTreeFactor;
 using gtsam::DiscreteFactor;
 using gtsam::DiscreteKey;
 using gtsam::DiscreteKeys;
+using gtsam::SparseVector;
 using gtsam::TableFactor;
 using gtsam::symbol_shorthand::A;
 using gtsam::timing::BenchmarkMetric;

@@ -47,6 +47,7 @@ using gtsam::HybridValues;
 using gtsam::JacobianFactor;
 using gtsam::Matrix2;
 using gtsam::Ordering;
+using gtsam::SparseVector;
 using gtsam::TableFactor;
 using gtsam::Vector2;
 using gtsam::noiseModel::Isotropic;
