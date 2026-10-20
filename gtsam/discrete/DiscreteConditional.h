@@ -341,6 +341,26 @@ class GTSAM_EXPORT DiscreteConditional
   /// @name Wrapper support
   /// @{
 
+  /// Output the probabilities as a decision tree to a graphviz stream.
+  void dot(std::ostream& os,
+           const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+           bool showZero = true) const {
+    toDecisionTreeFactor().dot(os, keyFormatter, showZero);
+  }
+
+  /// Output the probabilities as a decision tree to a graphviz file.
+  void dot(const std::string& name,
+           const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+           bool showZero = true) const {
+    toDecisionTreeFactor().dot(name, keyFormatter, showZero);
+  }
+
+  /// Output the probabilities as a decision tree in graphviz format.
+  std::string dot(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
+                  bool showZero = true) const {
+    return toDecisionTreeFactor().dot(keyFormatter, showZero);
+  }
+
   /// Render as markdown table.
   std::string markdown(const KeyFormatter& keyFormatter = DefaultKeyFormatter,
                        const Names& names = {}) const override;

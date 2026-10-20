@@ -141,7 +141,10 @@ virtual class DiscreteConditional : gtsam::DiscreteFactor {
                      std::mt19937_64 @rng = nullptr) const;
   size_t argmax(const gtsam::DiscreteValues& parentsValues) const;
 
-  // Markdown and HTML
+  // Graphviz, Markdown and HTML
+  string dot(
+      const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
+      bool showZero = true) const;
   string markdown(
       const gtsam::KeyFormatter& keyFormatter = gtsam::DefaultKeyFormatter,
       const std::map<gtsam::Key, std::vector<std::string>>& names =
