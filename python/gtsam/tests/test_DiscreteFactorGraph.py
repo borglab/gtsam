@@ -252,7 +252,7 @@ class TestChains(GtsamTestCase):
         last_marginal = sum_product.at(chain_length - 1)
 
         # Ensure marginal probabilities are close to the stationary distribution
-        self.gtsamAssertEquals(expected, last_marginal)
+        self.gtsamAssertEquals(expected, last_marginal.toDecisionTreeFactor())
 
 
 if __name__ == "__main__":
