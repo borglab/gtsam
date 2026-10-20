@@ -715,6 +715,56 @@ TEST(TableDistribution, Prune) {
 }
 
 }  // namespace table_distribution_fixture
+
+// Multiplication must preserve normalization after pruning a table prior.
+TEST(TableDistribution, PrunedConditionalProduct) {
+  const DiscreteKey A(0, 2), B(1, 2);
+  TableDistribution prior(A, "0.4 0.6");
+  // Retain only A=1. Pruning returns a new, renormalized distribution.
+  const auto pruned =
+      std::dynamic_pointer_cast<TableDistribution>(prior.prune(1));
+  CHECK(pruned);
+  const DiscreteConditional conditional(B, {A}, "1/1 1/1");  // P(B|A)
+  const DiscreteConditional& tablePrior = *pruned;
+  const DiscreteConditional joint = conditional * tablePrior;
+
+  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {B.first, 0}}),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {B.first, 1}}),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {B.first, 0}}),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {B.first, 1}}),
+                       1e-12);
+
+  double total = 0.0;
+  for (const auto& values : joint.allAssignments()) total += joint(values);
+  EXPECT_DOUBLES_EQUAL(1.0, total, 1e-12);
+}
+
+// Removing a known mode through the base class must update table storage too.
+TEST(TableDistribution, RemoveDiscreteModesUpdatesTable) {
+  const DiscreteKey A(0, 2), B(1, 2);
+  TableDistribution distribution(A & B, "1 2 3 4");
+  DiscreteConditional& conditional = distribution;
+  conditional.removeDiscreteModes(DiscreteValues{{A.first, 1}});
+
+  EXPECT_LONGS_EQUAL(1, conditional.size());
+  EXPECT_LONGS_EQUAL(1, conditional.nrFrontals());
+  EXPECT_LONGS_EQUAL(0, conditional.nrParents());
+  EXPECT_LONGS_EQUAL(B.first, conditional.firstFrontalKey());
+
+  // Keep the A=1 slice of the original normalized joint: [0.3, 0.4].
+  // Mode removal restricts the distribution; it does not renormalize it.
+  EXPECT_DOUBLES_EQUAL(0.3, distribution(DiscreteValues{{B.first, 0}}), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.4, distribution(DiscreteValues{{B.first, 1}}), 1e-12);
+
+  const DecisionTreeFactor expected(B, "0.3 0.4");
+  const DecisionTreeFactor converted = distribution.toDecisionTreeFactor();
+  EXPECT_LONGS_EQUAL(1, converted.size());
+  EXPECT(assert_equal(expected, converted));
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;
