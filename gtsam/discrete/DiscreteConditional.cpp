@@ -44,12 +44,29 @@ namespace gtsam {
 template class GTSAM_EXPORT Conditional<DiscreteFactor, DiscreteConditional>;
 
 /* ************************************************************************** */
+/// Return the stored factor if `f` is a conditional, so that products and
+/// quotients use its representation.
+static DiscreteFactor::shared_ptr StoredFactor(
+    const DiscreteFactor::shared_ptr& f) {
+  if (auto conditional = std::dynamic_pointer_cast<DiscreteConditional>(f)) {
+    return conditional->factor();
+  }
+  return f;
+}
+
+/* ************************************************************************** */
 /// Return `factor` with its keys in the order of `keys`, keeping the
 /// representation of tables. Decision trees do not depend on key order, so
 /// only their keys change.
 static DiscreteFactor::shared_ptr InKeyOrder(
     const DiscreteFactor::shared_ptr& factor, const DiscreteKeys& keys) {
-  if (factor->keys() == keys.indices()) return factor;
+  const KeyVector& factorKeys = factor->keys();
+  if (std::equal(factorKeys.begin(), factorKeys.end(), keys.begin(),
+                 keys.end(), [](Key key, const DiscreteKey& discreteKey) {
+                   return key == discreteKey.first;
+                 })) {
+    return factor;
+  }
   if (auto table = std::dynamic_pointer_cast<TableFactor>(factor)) {
     return std::make_shared<TableFactor>(table->reorder(keys));
   }
@@ -71,9 +88,9 @@ DiscreteConditional::DiscreteConditional(const size_t nrFrontals,
 DiscreteConditional::DiscreteConditional(size_t nrFrontals,
                                          const DiscreteKeys& keys,
                                          const ADT& potentials)
-    : DiscreteConditional(nrFrontals, keys,
-                          std::make_shared<DecisionTreeFactor>(keys,
-                                                               potentials)) {}
+    : BaseFactor(keys.indices(), keys.cardinalities()),
+      BaseConditional(nrFrontals),
+      factor_(std::make_shared<DecisionTreeFactor>(keys, potentials)) {}
 
 /* ************************************************************************** */
 DiscreteConditional::DiscreteConditional(
@@ -85,7 +102,7 @@ DiscreteConditional::DiscreteConditional(
     throw std::invalid_argument(
         "DiscreteConditional: the potentials factor must not be null.");
   }
-  factor_ = InKeyOrder(potentials, keys);
+  factor_ = InKeyOrder(StoredFactor(potentials), keys);
 }
 
 /* ************************************************************************** */
@@ -211,17 +228,6 @@ bool DiscreteConditional::equals(const DiscreteFactor& other,
 }
 
 /* ************************************************************************** */
-/// Return the stored factor if `f` is a conditional, so that products and
-/// quotients use its representation.
-static DiscreteFactor::shared_ptr StoredFactor(
-    const DiscreteFactor::shared_ptr& f) {
-  if (auto conditional = std::dynamic_pointer_cast<DiscreteConditional>(f)) {
-    return conditional->factor();
-  }
-  return f;
-}
-
-/* ************************************************************************** */
 DiscreteFactor::shared_ptr DiscreteConditional::multiply(
     const DiscreteFactor::shared_ptr& f) const {
   return factor_->multiply(StoredFactor(f));
@@ -252,14 +258,20 @@ static DiscreteValues SelectValues(const DiscreteValues& given,
 }
 
 /* ************************************************************************** */
+void DiscreteConditional::checkParents(const DiscreteValues& given) const {
+  for (Key key : parents()) {
+    if (given.find(key) == given.end()) {
+      given.print("parentsValues: ");
+      throw runtime_error("DiscreteConditional::choose: parent value missing");
+    }
+  }
+}
+
+/* ************************************************************************** */
 DiscreteValues DiscreteConditional::parentValues(const DiscreteValues& given,
                                                  bool forceComplete) const {
-  const DiscreteValues selected = SelectValues(given, parents());
-  if (forceComplete && selected.size() < nrParents()) {
-    given.print("parentsValues: ");
-    throw runtime_error("DiscreteConditional::choose: parent value missing");
-  }
-  return selected;
+  if (forceComplete) checkParents(given);
+  return SelectValues(given, parents());
 }
 
 /* ************************************************************************** */
@@ -294,6 +306,11 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
   }
   const DiscreteFactor::shared_ptr restricted = restrict(selected);
 
+  // Restricting keeps the remaining keys in order, so these are the parents.
+  if (auto tree = std::dynamic_pointer_cast<DecisionTreeFactor>(restricted)) {
+    return tree;
+  }
+
   // Convert to a factor on the parents.
   DiscreteKeys discreteKeys;
   for (Key j : parents()) {
@@ -317,7 +334,7 @@ DecisionTreeFactor::shared_ptr DiscreteConditional::likelihood(
 
 /* ************************************************************************** */
 size_t DiscreteConditional::argmax(const DiscreteValues& parentsValues) const {
-  parentValues(parentsValues, true);  // Throws if a parent is missing.
+  checkParents(parentsValues);
 
   // Initialize
   size_t maxValue = 0;
@@ -360,7 +377,7 @@ void DiscreteConditional::sampleInPlace(DiscreteValues* values,
 /* ************************************************************************** */
 size_t DiscreteConditional::sample(const DiscreteValues& parentsValues,
                                    std::mt19937_64* rng) const {
-  parentValues(parentsValues, true);  // Throws if a parent is missing.
+  checkParents(parentsValues);
 
   // TODO(Duy): only works for one key now, seems horribly slow this way
   if (nrFrontals() != 1) {

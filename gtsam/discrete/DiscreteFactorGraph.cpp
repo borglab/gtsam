@@ -145,8 +145,8 @@ namespace gtsam {
     // Make lookup with product
     gttic(lookup);
     size_t nrFrontals = frontalKeys.size();
-    auto lookup = std::make_shared<DiscreteLookupTable>(
-        nrFrontals, orderedKeys, product->toDecisionTreeFactor());
+    auto lookup =
+        std::make_shared<DiscreteLookupTable>(nrFrontals, orderedKeys, product);
     gttoc(lookup);
 
     return {std::dynamic_pointer_cast<DiscreteConditional>(lookup), max};

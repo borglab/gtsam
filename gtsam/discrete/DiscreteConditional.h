@@ -417,6 +417,9 @@ class GTSAM_EXPORT DiscreteConditional
   /// @}
 
  protected:
+  /// Throw exception if any parent is missing from `given`.
+  void checkParents(const DiscreteValues& given) const;
+
   /**
    * Return the entries of `given` assigned to the parent variables.
    * If `forceComplete` is true, throw when a parent is missing.
