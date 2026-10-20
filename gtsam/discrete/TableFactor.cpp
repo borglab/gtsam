@@ -345,6 +345,11 @@ DecisionTreeFactor TableFactor::operator*(const DecisionTreeFactor& f) const {
 }
 
 /* ************************************************************************ */
+TableFactor TableFactor::operator*(const DiscreteConditional& c) const {
+  return *this * c.toTableFactor();
+}
+
+/* ************************************************************************ */
 DiscreteFactor::shared_ptr TableFactor::multiply(
     const DiscreteFactor::shared_ptr& f) const {
   DiscreteFactor::shared_ptr result;

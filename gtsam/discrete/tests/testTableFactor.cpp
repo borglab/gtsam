@@ -350,7 +350,7 @@ TEST(TableFactor, multiplication) {
   DecisionTreeFactor expected(v0 & v1, "0.25 1.5 0.75 3");
   CHECK(assert_equal(expected, static_cast<DecisionTreeFactor>(prior) *
                                    f1.toDecisionTreeFactor()));
-  CHECK(assert_equal(expected, f1 * prior.toDecisionTreeFactor()));
+  CHECK(assert_equal(TableFactor(v0 & v1, "0.25 1.5 0.75 3"), f1 * prior));
 
   // Multiply two factors
   TableFactor f2(v1 & v2, "5 6 7 8");

@@ -171,6 +171,9 @@ namespace gtsam {
       return apply(f, Ring::mul);
     }
 
+    /// Multiply with a conditional, e.g., to apply Bayes' rule.
+    DecisionTreeFactor operator*(const DiscreteConditional& c) const;
+
     static double safe_div(const double& a, const double& b);
 
     /**

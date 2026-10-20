@@ -211,6 +211,9 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// multiply with DecisionTreeFactor
   DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
 
+  /// Multiply with a conditional, keeping the sparse table representation.
+  TableFactor operator*(const DiscreteConditional& c) const;
+
   /**
    * @brief Multiply factors, DiscreteFactor::shared_ptr edition.
    *

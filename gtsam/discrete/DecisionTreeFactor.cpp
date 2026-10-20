@@ -44,6 +44,12 @@ namespace gtsam {
         AlgebraicDecisionTree<Key>(c.toDecisionTreeFactor()) {}
 
   /* ************************************************************************ */
+  DecisionTreeFactor DecisionTreeFactor::operator*(
+      const DiscreteConditional& c) const {
+    return *this * c.toDecisionTreeFactor();
+  }
+
+  /* ************************************************************************ */
   bool DecisionTreeFactor::equals(const DiscreteFactor& other,
                                   double tol) const {
     if (!dynamic_cast<const DecisionTreeFactor*>(&other)) {
