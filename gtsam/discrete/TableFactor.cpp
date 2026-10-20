@@ -305,13 +305,12 @@ bool TableFactor::equals(const DiscreteFactor& other, double tol) const {
 
 /* ************************************************************************ */
 double TableFactor::evaluate(const Assignment<Key>& values) const {
-  // a b c d => D * (C * (B * (a) + b) + c) + d
-  uint64_t idx = 0, card = 1;
-  for (auto it = sorted_dkeys_.rbegin(); it != sorted_dkeys_.rend(); ++it) {
-    if (values.find(it->first) != values.end()) {
-      idx += card * values.at(it->first);
-    }
-    card *= it->second;
+  // The table is laid out in key order, and each key's value is weighted by
+  // its denominator, i.e., the product of the cardinalities of later keys.
+  uint64_t idx = 0;
+  for (auto&& [key, denominator] : denominators_) {
+    auto it = values.find(key);
+    if (it != values.end()) idx += it->second * denominator;
   }
   return sparse_table_.coeff(idx);
 }
