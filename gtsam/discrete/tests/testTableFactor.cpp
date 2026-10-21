@@ -631,6 +631,14 @@ TEST(TableFactor, Reorder) {
   CHECK_EXCEPTION(table.reorder(DiscreteKeys{X}), std::invalid_argument);
 }
 
+// Reordering rejects keys that are not a permutation of the factor's keys.
+TEST(TableFactor, ReorderInvalidKeys) {
+  const TableFactor table(X & Y, values);
+  CHECK_EXCEPTION(table.reorder(X & X), std::invalid_argument);
+  CHECK_EXCEPTION(table.reorder(DiscreteKey(Y.first, 2) & X),
+                  std::invalid_argument);
+}
+
 }  // namespace key_order_fixture
 /* ************************************************************************* */
 namespace restrict_fixture {

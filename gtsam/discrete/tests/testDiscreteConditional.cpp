@@ -318,6 +318,19 @@ TEST(DiscreteConditional, StoredFactorKeyOrder) {
   EXPECT(assert_equal(fromTree, fromTable));
 }
 
+// Construction rejects potentials whose cardinalities or keys do not match,
+// even when the key ids are already in order.
+TEST(DiscreteConditional, MismatchedPotentials) {
+  const DiscreteKey threeStateX(X.first, 3);
+  const auto table = std::make_shared<TableFactor>(X, "0.5 0.5");
+  CHECK_EXCEPTION(DiscreteConditional(1, DiscreteKeys{threeStateX}, table),
+                  std::invalid_argument);
+  const auto tree = std::make_shared<DecisionTreeFactor>(X, "0.5 0.5");
+  CHECK_EXCEPTION(DiscreteConditional(1, DiscreteKeys{threeStateX}, tree),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(DiscreteConditional(1, X & Y, table), std::invalid_argument);
+}
+
 // Constructing from a factor takes its first key as the frontal and normalizes
 // over it, even when that key is not the smallest.
 TEST(DiscreteConditional, FromFactorKeyOrder) {

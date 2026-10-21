@@ -58,9 +58,17 @@ static DiscreteFactor::shared_ptr StoredFactor(
 /// Return `factor` with its keys in the order of `keys`, keeping the
 /// representation of tables. Decision trees do not depend on key order, so
 /// only their keys change.
+/// Throws if `keys` is not a permutation of the
+/// factor's keys and cardinalities.
 static DiscreteFactor::shared_ptr InKeyOrder(
     const DiscreteFactor::shared_ptr& factor, const DiscreteKeys& keys) {
   const KeyVector& factorKeys = factor->keys();
+  // Equal sizes and cardinality maps rule out duplicate keys as well.
+  if (keys.size() != factorKeys.size() ||
+      keys.cardinalities() != factor->cardinalities()) {
+    throw std::invalid_argument(
+        "DiscreteConditional: potentials keys and cardinalities must match.");
+  }
   if (std::equal(factorKeys.begin(), factorKeys.end(), keys.begin(),
                  keys.end(), [](Key key, const DiscreteKey& discreteKey) {
                    return key == discreteKey.first;

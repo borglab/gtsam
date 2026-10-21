@@ -884,11 +884,8 @@ DiscreteFactor::shared_ptr TableFactor::prune(size_t maxNrAssignments) const {
 
 /* ************************************************************************ */
 TableFactor TableFactor::reorder(const DiscreteKeys& keys) const {
-  if (keys.size() != keys_.size() ||
-      !std::all_of(keys.begin(), keys.end(), [this](const DiscreteKey& key) {
-        auto it = cardinalities_.find(key.first);
-        return it != cardinalities_.end() && it->second == key.second;
-      })) {
+  // Equal sizes and cardinality maps rule out duplicate keys as well.
+  if (keys.size() != keys_.size() || keys.cardinalities() != cardinalities_) {
     throw std::invalid_argument(
         "TableFactor::reorder: keys must be a permutation of the factor keys.");
   }
