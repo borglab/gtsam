@@ -353,7 +353,11 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    */
   uint64_t nrValues() const override { return sparse_table_.nonZeros(); }
 
-  /// Restrict the factor to the given assignment.
+  /**
+   * Restrict the factor to the given assignment, returning a TableFactor over
+   * the keys that the assignment leaves free. Assigned keys that are not in
+   * this factor are ignored.
+   */
   DiscreteFactor::shared_ptr restrict(
       const DiscreteValues& assignment) const override;
 
