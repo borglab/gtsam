@@ -16,10 +16,14 @@
  *  @date   Feb 19, 2015
  */
 
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/CameraSet.h>
 #include <gtsam/geometry/Cal3_S2.h>
 #include <gtsam/geometry/Pose3.h>
 #include <CppUnitLite/TestHarness.h>
+
+#include <limits>
+#include <type_traits>
 
 using namespace std;
 using namespace gtsam;
@@ -122,6 +126,64 @@ TEST(CameraSet, Pinhole) {
   EXPECT(assert_equal(F1, Fs[0]));
   EXPECT(assert_equal(F1, Fs[1]));
   EXPECT(assert_equal(actualE, E));
+}
+
+/* ************************************************************************* */
+// Verifies projections and Jacobians for every combination of optional outputs.
+TEST(CameraSet, OptionalProjectionJacobians) {
+  using Camera = PinholeCamera<Cal3Bundler>;
+  using Set = CameraSet<Camera>;
+  const Set cameras{
+      Camera(Pose3(Rot3::RzRyRx(0.1, -0.2, 0.05), Point3(1, 0, 0)),
+             Cal3Bundler(500, 0.1, 0.02)),
+      Camera(Pose3(Rot3::RzRyRx(-0.1, 0.1, -0.05), Point3(0, 1, 0)),
+             Cal3Bundler(600, -0.05, 0.01))};
+  const double nan = std::numeric_limits<double>::quiet_NaN();
+
+  const auto checkProjection = [&](const auto& point) {
+    using Point = std::decay_t<decltype(point)>;
+    constexpr int N = FixedDimension<Point>::value;
+    for (bool cameraDerivatives : {false, true}) {
+      for (bool pointDerivatives : {false, true}) {
+        // Reuse output storage and verify every coefficient is written.
+        Set::FBlocks Fs(3, Set::MatrixZD::Constant(nan));
+        Matrix E = Matrix::Constant(4, N, nan);
+        const auto measurements = cameras.project2(
+            point, cameraDerivatives ? &Fs : nullptr,
+            pointDerivatives ? &E : nullptr);
+        LONGS_EQUAL(cameras.size(), measurements.size());
+        if (cameraDerivatives) LONGS_EQUAL(cameras.size(), Fs.size());
+        if (pointDerivatives) {
+          LONGS_EQUAL(4, E.rows());
+          LONGS_EQUAL(N, E.cols());
+        }
+        for (size_t i = 0; i < cameras.size(); ++i) {
+          EXPECT(assert_equal(cameras[i].project2(point), measurements[i]));
+          if (cameraDerivatives) {
+            const auto projectCamera = [&](const Camera& camera) {
+              return camera.project2(point);
+            };
+            const auto expected = numericalDerivative11<Point2, Camera>(
+                projectCamera, cameras[i]);
+            EXPECT(Fs[i].allFinite());
+            EXPECT(assert_equal(expected, Fs[i], 1e-6));
+          }
+          if (pointDerivatives) {
+            const auto projectPoint = [&](const Point& p) {
+              return cameras[i].project2(p);
+            };
+            const auto expected =
+                numericalDerivative11<Point2, Point>(projectPoint, point);
+            const Eigen::Matrix<double, 2, N> actual = E.block<2, N>(2 * i, 0);
+            EXPECT(E.allFinite());
+            EXPECT(assert_equal(expected, actual, 1e-6));
+          }
+        }
+      }
+    }
+  };
+  checkProjection(Point3(0.5, -0.3, 5));
+  checkProjection(Unit3(0.5, -0.3, 5));
 }
 
 /* ************************************************************************* */
