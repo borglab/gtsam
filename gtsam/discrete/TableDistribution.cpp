@@ -67,13 +67,11 @@ TableDistribution::TableDistribution(const DiscreteKeys& keys,
 
 /* ************************************************************************** */
 bool TableDistribution::equals(const DiscreteFactor& other, double tol) const {
-  auto dtc = dynamic_cast<const TableDistribution*>(&other);
-  if (!dtc) {
-    return false;
-  } else {
-    return tableFactor().equals(dtc->tableFactor(), tol) &&
-           DiscreteConditional::BaseConditional::equals(*dtc, tol);
-  }
+  auto distribution = dynamic_cast<const TableDistribution*>(&other);
+  // Other representations compare by value, as DiscreteConditional does.
+  if (!distribution) return BaseConditional::equals(other, tol);
+  return tableFactor().equals(distribution->tableFactor(), tol) &&
+         BaseConditional::BaseConditional::equals(*distribution, tol);
 }
 
 /* ************************************************************************ */

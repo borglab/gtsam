@@ -699,6 +699,13 @@ TEST(TableDistribution, DefaultConstructor) {
   EXPECT(assert_equal(empty, TableDistribution()));
 }
 
+// Equality with a decision-tree conditional holds in both directions.
+TEST(TableDistribution, EqualsAcrossRepresentations) {
+  const DiscreteConditional& tableConditional = distribution;
+  EXPECT(treeConditional.equals(tableConditional));
+  EXPECT(tableConditional.equals(treeConditional));
+}
+
 // Marginalizing a TableDistribution matches the decision tree version.
 TEST(TableDistribution, Marginal) {
   EXPECT(assert_equal(treeConditional.marginal(A.first),
