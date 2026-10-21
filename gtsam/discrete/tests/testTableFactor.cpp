@@ -603,6 +603,22 @@ TEST(TableFactor, UnaryAssignment) {
 }
 
 /* ************************************************************************* */
+namespace key_order_fixture {
+// Keys deliberately not in increasing order: X comes first but has key 1.
+const DiscreteKey X(1, 2), Y(0, 3);
+const std::vector<double> values{1, 2, 3, 4, 5, 6};
+
+// Evaluating a table whose keys are not sorted agrees with the decision tree.
+TEST(TableFactor, EvaluateUnsortedKeys) {
+  const TableFactor table(X & Y, values);
+  const DecisionTreeFactor tree(X & Y, values);
+  for (auto&& [assignment, value] : tree.enumerate()) {
+    EXPECT_DOUBLES_EQUAL(value, table.evaluate(assignment), 1e-9);
+  }
+}
+
+}  // namespace key_order_fixture
+/* ************************************************************************* */
 namespace restrict_fixture {
 const DiscreteKey A(12, 2), B(5, 3), C(91, 2);
 
