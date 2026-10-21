@@ -691,6 +691,14 @@ const TableDistribution distribution(A & B, spec);
 // The same joint distribution, stored as a decision tree.
 const DiscreteConditional treeConditional(2, DecisionTreeFactor(A & B, spec));
 
+// A default-constructed TableDistribution still stores a TableFactor.
+TEST(TableDistribution, DefaultConstructor) {
+  const TableDistribution empty;
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(empty.factor()));
+  EXPECT(assert_equal(TableFactor(), empty.table()));
+  EXPECT(assert_equal(empty, TableDistribution()));
+}
+
 // Marginalizing a TableDistribution matches the decision tree version.
 TEST(TableDistribution, Marginal) {
   EXPECT(assert_equal(treeConditional.marginal(A.first),

@@ -57,8 +57,9 @@ class GTSAM_EXPORT TableDistribution : public DiscreteConditional {
   /// @name Standard Constructors
   /// @{
 
-  /// Default constructor needed for serialization.
-  TableDistribution() {}
+  /// Default constructor needed for serialization, storing an empty table.
+  TableDistribution()
+      : BaseConditional(0, DiscreteKeys(), std::make_shared<TableFactor>()) {}
 
   /// Construct from TableFactor, normalizing it.
   TableDistribution(const TableFactor& f);
