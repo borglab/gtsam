@@ -420,6 +420,57 @@ TEST(DiscreteConditional, Argmax) {
 }
 
 /* ************************************************************************* */
+// Multiplication preserves normalization after pruning a table-backed prior.
+TEST(DiscreteConditional, PrunedTableConditionalProduct) {
+  const DiscreteKey A(0, 2), C(2, 2);
+  const DiscreteConditional prior(1, TableFactor(A, "0.4 0.6"));
+  const auto pruned =
+      std::dynamic_pointer_cast<DiscreteConditional>(prior.prune(1));
+  CHECK(pruned);
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(pruned->factor()));
+
+  const DiscreteConditional conditional(C, {A}, "1/1 1/1");  // P(C|A)
+  const DiscreteConditional joint = conditional * *pruned;
+
+  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {C.first, 0}}),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {C.first, 1}}),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {C.first, 0}}),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {C.first, 1}}),
+                       1e-12);
+
+  double total = 0.0;
+  for (const auto& values : joint.allAssignments()) total += joint(values);
+  EXPECT_DOUBLES_EQUAL(1.0, total, 1e-12);
+}
+
+/* ************************************************************************* */
+// Mode removal updates table storage and metadata without renormalizing.
+TEST(DiscreteConditional, RemoveDiscreteModesUpdatesTable) {
+  const DiscreteKey A(0, 2), C(2, 2);
+  DiscreteConditional conditional(2, TableFactor(A & C, "1 2 3 4"));
+  conditional.removeDiscreteModes(DiscreteValues{{A.first, 1}});
+
+  EXPECT_LONGS_EQUAL(1, conditional.size());
+  EXPECT_LONGS_EQUAL(1, conditional.nrFrontals());
+  EXPECT_LONGS_EQUAL(0, conditional.nrParents());
+  EXPECT_LONGS_EQUAL(C.first, conditional.firstFrontalKey());
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(conditional.factor()));
+  EXPECT(conditional.factor()->keys() == conditional.keys());
+
+  // Keep the A=1 slice of the normalized joint, with its original mass.
+  EXPECT_DOUBLES_EQUAL(0.3, conditional(DiscreteValues{{C.first, 0}}), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.4, conditional(DiscreteValues{{C.first, 1}}), 1e-12);
+
+  const DecisionTreeFactor expected(C, "0.3 0.4");
+  const DecisionTreeFactor converted = conditional.toDecisionTreeFactor();
+  EXPECT_LONGS_EQUAL(1, converted.size());
+  EXPECT(assert_equal(expected, converted));
+}
+
+/* ************************************************************************* */
 // Check markdown representation looks as expected, no parents.
 TEST(DiscreteConditional, markdown_prior) {
   DiscreteKey A(Symbol('x', 1), 3);
