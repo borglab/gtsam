@@ -119,10 +119,14 @@ TEST(HybridSmoother, IncrementalSmoother) {
   }
 
   auto& hybridBayesNet = smoother.hybridBayesNet();
+  // The discrete conditional stays a table holding the kept assignments.
+  const auto discrete = hybridBayesNet.at(5)->asDiscrete();
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(discrete->factor()));
+  EXPECT_LONGS_EQUAL(maxNrLeaves, discrete->nrValues());
 #ifdef GTSAM_DT_MERGING
-  EXPECT_LONGS_EQUAL(11, hybridBayesNet.at(5)->asDiscrete()->nrValues());
+  EXPECT_LONGS_EQUAL(11, discrete->toDecisionTreeFactor().nrLeaves());
 #else
-  EXPECT_LONGS_EQUAL(16, hybridBayesNet.at(5)->asDiscrete()->nrValues());
+  EXPECT_LONGS_EQUAL(16, discrete->toDecisionTreeFactor().nrLeaves());
 #endif
 
   // Get the continuous delta update as well as
@@ -175,10 +179,14 @@ TEST(HybridSmoother, ValidPruningError) {
   }
 
   auto& hybridBayesNet = smoother.hybridBayesNet();
+  // The discrete conditional stays a table holding the kept assignments.
+  const auto discrete = hybridBayesNet.at(8)->asDiscrete();
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(discrete->factor()));
+  EXPECT_LONGS_EQUAL(maxNrLeaves, discrete->nrValues());
 #ifdef GTSAM_DT_MERGING
-  EXPECT_LONGS_EQUAL(14, hybridBayesNet.at(8)->asDiscrete()->nrValues());
+  EXPECT_LONGS_EQUAL(14, discrete->toDecisionTreeFactor().nrLeaves());
 #else
-  EXPECT_LONGS_EQUAL(128, hybridBayesNet.at(8)->asDiscrete()->nrValues());
+  EXPECT_LONGS_EQUAL(128, discrete->toDecisionTreeFactor().nrLeaves());
 #endif
 
   // Get the continuous delta update as well as

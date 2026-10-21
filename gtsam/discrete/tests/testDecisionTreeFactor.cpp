@@ -256,30 +256,33 @@ TEST(DecisionTreeFactor, Prune) {
 
   // Only keep the leaves with the top 5 values.
   size_t maxNrAssignments = 5;
-  auto pruned5 = f.prune(maxNrAssignments);
+  auto pruned5 =
+      std::dynamic_pointer_cast<DecisionTreeFactor>(f.prune(maxNrAssignments));
 
   // Pruned leaves should be 0
   DecisionTreeFactor expected(A & B & C, "0 5 0 7 0 6 4 8");
-  EXPECT(assert_equal(expected, pruned5));
+  EXPECT(assert_equal(expected, *pruned5));
 
   // Check for more extreme pruning where we only keep the top 2 leaves
   maxNrAssignments = 2;
-  auto pruned2 = f.prune(maxNrAssignments);
+  auto pruned2 =
+      std::dynamic_pointer_cast<DecisionTreeFactor>(f.prune(maxNrAssignments));
   DecisionTreeFactor expected2(A & B & C, "0 0 0 7 0 0 0 8");
-  EXPECT(assert_equal(expected2, pruned2));
+  EXPECT(assert_equal(expected2, *pruned2));
 
   DecisionTreeFactor expected3(D & C & B & A,
                                "0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 "
                                "0.999952870000 1.0 1.0 1.0 1.0");
   maxNrAssignments = 5;
-  auto pruned3 = factor.prune(maxNrAssignments);
-  EXPECT(assert_equal(expected3, pruned3));
+  auto pruned3 = std::dynamic_pointer_cast<DecisionTreeFactor>(
+      factor.prune(maxNrAssignments));
+  EXPECT(assert_equal(expected3, *pruned3));
 
   // Edge case where the number of hypotheses are less than maxNrAssignments
   DecisionTreeFactor f(A, "0.50001 0.49999");
-  auto pruned4 = f.prune(10);
+  auto pruned4 = std::dynamic_pointer_cast<DecisionTreeFactor>(f.prune(10));
   DecisionTreeFactor expected4(A, "0.50001 0.49999");
-  EXPECT(assert_equal(expected4, pruned4));
+  EXPECT(assert_equal(expected4, *pruned4));
 }
 
 /* ************************************************************************** */

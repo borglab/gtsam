@@ -211,6 +211,9 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// multiply with DecisionTreeFactor
   DecisionTreeFactor operator*(const DecisionTreeFactor& f) const override;
 
+  /// Multiply with a conditional, keeping the sparse table representation.
+  TableFactor operator*(const DiscreteConditional& c) const;
+
   /**
    * @brief Multiply factors, DiscreteFactor::shared_ptr edition.
    *
@@ -324,9 +327,6 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    */
   shared_ptr combine(const Ordering& keys, Binary op) const;
 
-  /// Enumerate all values into a map from values to double.
-  std::vector<std::pair<DiscreteValues, double>> enumerate() const;
-
   /**
    * @brief Prune the decision tree of discrete variables.
    *
@@ -343,15 +343,21 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    * 0.8).
    *
    * @param maxNrAssignments The maximum number of assignments to keep.
-   * @return TableFactor
+   * @return The pruned TableFactor.
    */
-  TableFactor prune(size_t maxNrAssignments) const;
+  DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const override;
 
   /**
    * Get the number of non-zero values contained in this factor.
    * It could be much smaller than `prod_{key}(cardinality(key))`.
    */
   uint64_t nrValues() const override { return sparse_table_.nonZeros(); }
+
+  /**
+   * Return the same factor with its keys, and hence its table layout, in the
+   * given order. The keys must be a permutation of this factor's keys.
+   */
+  TableFactor reorder(const DiscreteKeys& keys) const;
 
   /**
    * Restrict the factor to the given assignment, returning a TableFactor over

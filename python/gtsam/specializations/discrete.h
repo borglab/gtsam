@@ -33,3 +33,8 @@ m_.def(
     },
     py::arg("values"), py::arg("s") = "",
     py::arg("keyFormatter") = gtsam::DefaultKeyFormatter);
+
+// Conditionals no longer derive from DecisionTreeFactor, so allow them where a
+// DecisionTreeFactor is expected, e.g. `factor * conditional` for Bayes' rule.
+py::implicitly_convertible<gtsam::DiscreteConditional,
+                           gtsam::DecisionTreeFactor>();

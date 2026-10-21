@@ -171,6 +171,9 @@ namespace gtsam {
       return apply(f, Ring::mul);
     }
 
+    /// Multiply with a conditional, e.g., to apply Bayes' rule.
+    DecisionTreeFactor operator*(const DiscreteConditional& c) const;
+
     static double safe_div(const double& a, const double& b);
 
     /**
@@ -266,9 +269,6 @@ namespace gtsam {
      */
     shared_ptr combine(const Ordering& keys, Binary op) const;
 
-    /// Enumerate all values into a map from values to double.
-    std::vector<std::pair<DiscreteValues, double>> enumerate() const;
-
     /// Get all the probabilities in order of assignment values
     std::vector<double> probabilities() const;
 
@@ -299,9 +299,9 @@ namespace gtsam {
      * 0.8).
      *
      * @param maxNrAssignments The maximum number of assignments to keep.
-     * @return DecisionTreeFactor
+     * @return The pruned DecisionTreeFactor.
      */
-    DecisionTreeFactor prune(size_t maxNrAssignments) const;
+    DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const override;
 
     /**
      * Get the number of non-zero values contained in this factor.

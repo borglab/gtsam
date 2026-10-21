@@ -42,7 +42,7 @@ class GTSAM_EXPORT DiscreteLookupTable : public DiscreteConditional {
  public:
   using This = DiscreteLookupTable;
   using shared_ptr = std::shared_ptr<This>;
-  using BaseConditional = Conditional<DecisionTreeFactor, This>;
+  using BaseConditional = Conditional<DiscreteFactor, This>;
 
   /**
    * @brief Construct a new Discrete Lookup Table object
@@ -65,19 +65,24 @@ class GTSAM_EXPORT DiscreteLookupTable : public DiscreteConditional {
   DiscreteLookupTable(size_t nFrontals, const DiscreteKeys& keys,
                       const TableFactor& potentials)
       : DiscreteConditional(nFrontals, keys,
-                            potentials.toDecisionTreeFactor()) {}
+                            std::make_shared<TableFactor>(potentials)) {}
+
+  /**
+   * @brief Construct a new Discrete Lookup Table object
+   *
+   * @param nFrontals number of frontal variables
+   * @param keys the keys, frontals first
+   * @param potentials factor holding the lookup values, stored without
+   * copying and in any representation.
+   */
+  DiscreteLookupTable(size_t nFrontals, const DiscreteKeys& keys,
+                      const DiscreteFactor::shared_ptr& potentials)
+      : DiscreteConditional(nFrontals, keys, potentials) {}
 
   /// GTSAM-style print
   void print(
       const std::string& s = "Discrete Lookup Table: ",
       const KeyFormatter& formatter = DefaultKeyFormatter) const override;
-
-  /**
-   * @brief return assignment for single frontal variable that maximizes value.
-   * @param parentsValues Known assignments for the parents.
-   * @return maximizing assignment for the frontal variable.
-   */
-  size_t argmax(const DiscreteValues& parentsValues) const;
 
   /**
    * @brief Calculate assignment for frontal variables that maximizes value.

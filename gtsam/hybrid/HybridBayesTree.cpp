@@ -201,11 +201,14 @@ void HybridBayesTree::prune(const size_t maxNrLeaves) {
     return;
   }
 
-  auto prunedDiscreteProbs =
+  auto discreteProbs =
       this->roots_.at(0)->conditional()->asDiscrete<TableDistribution>();
 
-  // Imperative pruning
-  prunedDiscreteProbs->prune(maxNrLeaves);
+  // Prune the discrete probabilities and store them back in the root.
+  auto prunedDiscreteProbs = std::static_pointer_cast<DiscreteConditional>(
+      discreteProbs->prune(maxNrLeaves));
+  this->roots_.at(0)->conditional() =
+      std::make_shared<HybridConditional>(prunedDiscreteProbs);
 
   /// Helper struct for pruning the hybrid bayes tree.
   struct HybridPrunerData {

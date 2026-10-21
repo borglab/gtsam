@@ -40,14 +40,15 @@ TEST(DiscreteBayesNet, bayesNet) {
   DiscreteKey Parent(0, 2), Child(1, 2);
 
   auto prior = std::make_shared<DiscreteConditional>(Parent % "6/4");
-  CHECK(assert_equal(ADT({Parent}, "0.6 0.4"), (ADT)*prior));
+  CHECK(assert_equal(ADT({Parent}, "0.6 0.4"),
+                     ADT(prior->toDecisionTreeFactor())));
   bayesNet.push_back(prior);
 
   auto conditional =
       std::make_shared<DiscreteConditional>(Child | Parent = "7/3 8/2");
   EXPECT_LONGS_EQUAL(1, *(conditional->beginFrontals()));
   ADT expected(Child & Parent, "0.7 0.8 0.3 0.2");
-  CHECK(assert_equal(expected, (ADT)*conditional));
+  CHECK(assert_equal(expected, ADT(conditional->toDecisionTreeFactor())));
   bayesNet.push_back(conditional);
 
   DiscreteFactorGraph fg(bayesNet);
@@ -146,7 +147,7 @@ TEST(DiscreteBayesNet, PruneSumToOne) {
       DiscreteConditional::shared_ptr prunedConditional = prunedBn.front();
       CHECK(prunedConditional); // Ensure it's not null
 
-      double sumOfProbs = prunedConditional->sum();
+      double sumOfProbs = prunedConditional->toDecisionTreeFactor().sum();
       EXPECT_DOUBLES_EQUAL(1.0, sumOfProbs, 1e-8);
     }
   }

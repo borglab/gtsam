@@ -200,7 +200,7 @@ TEST(TableFactor, Conversion) {
   // GTSAM_PRINT(tf2.toDecisionTreeFactor());
 
   // Check for ADT equality since the order of keys is irrelevant
-  EXPECT(assert_equal<AlgebraicDecisionTree<Key>>(dtf2,
+  EXPECT(assert_equal<AlgebraicDecisionTree<Key>>(dtf2.toDecisionTreeFactor(),
                                                   tf2.toDecisionTreeFactor()));
 }
 
@@ -350,7 +350,7 @@ TEST(TableFactor, multiplication) {
   DecisionTreeFactor expected(v0 & v1, "0.25 1.5 0.75 3");
   CHECK(assert_equal(expected, static_cast<DecisionTreeFactor>(prior) *
                                    f1.toDecisionTreeFactor()));
-  CHECK(assert_equal(expected, f1 * prior));
+  CHECK(assert_equal(TableFactor(v0 & v1, "0.25 1.5 0.75 3"), f1 * prior));
 
   // Multiply two factors
   TableFactor f2(v1 & v2, "5 6 7 8");
@@ -477,17 +477,19 @@ TEST(TableFactor, Prune) {
 
   // Only keep the leaves with the top 5 values.
   size_t maxNrAssignments = 5;
-  auto pruned5 = f.prune(maxNrAssignments);
+  auto pruned5 =
+      std::dynamic_pointer_cast<TableFactor>(f.prune(maxNrAssignments));
 
   // Pruned leaves should be 0
   TableFactor expected(A & B & C, "0 5 0 7 0 6 4 8");
-  EXPECT(assert_equal(expected, pruned5));
+  EXPECT(assert_equal(expected, *pruned5));
 
   // Check for more extreme pruning where we only keep the top 2 leaves
   maxNrAssignments = 2;
-  auto pruned2 = f.prune(maxNrAssignments);
+  auto pruned2 =
+      std::dynamic_pointer_cast<TableFactor>(f.prune(maxNrAssignments));
   TableFactor expected2(A & B & C, "0 0 0 7 0 0 0 8");
-  EXPECT(assert_equal(expected2, pruned2));
+  EXPECT(assert_equal(expected2, *pruned2));
 
   DiscreteKey D(4, 2);
   TableFactor factor(
@@ -499,8 +501,9 @@ TEST(TableFactor, Prune) {
                         "0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 0.0 "
                         "0.999952870000 1.0 1.0 1.0 1.0");
   maxNrAssignments = 5;
-  auto pruned3 = factor.prune(maxNrAssignments);
-  EXPECT(assert_equal(expected3, pruned3));
+  auto pruned3 =
+      std::dynamic_pointer_cast<TableFactor>(factor.prune(maxNrAssignments));
+  EXPECT(assert_equal(expected3, *pruned3));
 }
 
 /* ************************************************************************* */
@@ -617,6 +620,25 @@ TEST(TableFactor, EvaluateUnsortedKeys) {
   }
 }
 
+// Reordering the keys changes the table layout but not the values.
+TEST(TableFactor, Reorder) {
+  const TableFactor table(X & Y, values);
+  const TableFactor reordered = table.reorder(Y & X);
+  EXPECT(assert_equal(TableFactor(Y & X, "1 4 2 5 3 6"), reordered));
+  for (auto&& [assignment, value] : table.enumerate()) {
+    EXPECT_DOUBLES_EQUAL(value, reordered.evaluate(assignment), 1e-9);
+  }
+  CHECK_EXCEPTION(table.reorder(DiscreteKeys{X}), std::invalid_argument);
+}
+
+// Reordering rejects keys that are not a permutation of the factor's keys.
+TEST(TableFactor, ReorderInvalidKeys) {
+  const TableFactor table(X & Y, values);
+  CHECK_EXCEPTION(table.reorder(X & X), std::invalid_argument);
+  CHECK_EXCEPTION(table.reorder(DiscreteKey(Y.first, 2) & X),
+                  std::invalid_argument);
+}
+
 }  // namespace key_order_fixture
 /* ************************************************************************* */
 namespace restrict_fixture {
@@ -669,6 +691,21 @@ const TableDistribution distribution(A & B, spec);
 // The same joint distribution, stored as a decision tree.
 const DiscreteConditional treeConditional(2, DecisionTreeFactor(A & B, spec));
 
+// A default-constructed TableDistribution still stores a TableFactor.
+TEST(TableDistribution, DefaultConstructor) {
+  const TableDistribution empty;
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(empty.factor()));
+  EXPECT(assert_equal(TableFactor(), empty.table()));
+  EXPECT(assert_equal(empty, TableDistribution()));
+}
+
+// Equality with a decision-tree conditional holds in both directions.
+TEST(TableDistribution, EqualsAcrossRepresentations) {
+  const DiscreteConditional& tableConditional = distribution;
+  EXPECT(treeConditional.equals(tableConditional));
+  EXPECT(tableConditional.equals(treeConditional));
+}
+
 // Marginalizing a TableDistribution matches the decision tree version.
 TEST(TableDistribution, Marginal) {
   EXPECT(assert_equal(treeConditional.marginal(A.first),
@@ -692,7 +729,65 @@ TEST(TableDistribution, ConditionalProduct) {
   EXPECT(assert_equal(expected, tableConditional * conditional));
 }
 
+// Pruning a TableDistribution returns a renormalized TableDistribution.
+TEST(TableDistribution, Prune) {
+  const auto pruned =
+      std::dynamic_pointer_cast<TableDistribution>(distribution.prune(2));
+  CHECK(pruned);
+  EXPECT(assert_equal(TableDistribution(A & B, "0 0 0 0 5 6"), *pruned));
+}
+
 }  // namespace table_distribution_fixture
+
+// Multiplication must preserve normalization after pruning a table prior.
+TEST(TableDistribution, PrunedConditionalProduct) {
+  const DiscreteKey A(0, 2), B(1, 2);
+  TableDistribution prior(A, "0.4 0.6");
+  // Retain only A=1. Pruning returns a new, renormalized distribution.
+  const auto pruned =
+      std::dynamic_pointer_cast<TableDistribution>(prior.prune(1));
+  CHECK(pruned);
+  const DiscreteConditional conditional(B, {A}, "1/1 1/1");  // P(B|A)
+  const DiscreteConditional& tablePrior = *pruned;
+  const DiscreteConditional joint = conditional * tablePrior;
+
+  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {B.first, 0}}),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {B.first, 1}}),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {B.first, 0}}),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {B.first, 1}}),
+                       1e-12);
+
+  double total = 0.0;
+  for (const auto& values : joint.allAssignments()) total += joint(values);
+  EXPECT_DOUBLES_EQUAL(1.0, total, 1e-12);
+}
+
+// Removing a known mode through the base class must update table storage too.
+TEST(TableDistribution, RemoveDiscreteModesUpdatesTable) {
+  const DiscreteKey A(0, 2), B(1, 2);
+  TableDistribution distribution(A & B, "1 2 3 4");
+  DiscreteConditional& conditional = distribution;
+  conditional.removeDiscreteModes(DiscreteValues{{A.first, 1}});
+
+  EXPECT_LONGS_EQUAL(1, conditional.size());
+  EXPECT_LONGS_EQUAL(1, conditional.nrFrontals());
+  EXPECT_LONGS_EQUAL(0, conditional.nrParents());
+  EXPECT_LONGS_EQUAL(B.first, conditional.firstFrontalKey());
+
+  // Keep the A=1 slice of the original normalized joint: [0.3, 0.4].
+  // Mode removal restricts the distribution; it does not renormalize it.
+  EXPECT_DOUBLES_EQUAL(0.3, distribution(DiscreteValues{{B.first, 0}}), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.4, distribution(DiscreteValues{{B.first, 1}}), 1e-12);
+
+  const DecisionTreeFactor expected(B, "0.3 0.4");
+  const DecisionTreeFactor converted = distribution.toDecisionTreeFactor();
+  EXPECT_LONGS_EQUAL(1, converted.size());
+  EXPECT(assert_equal(expected, converted));
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;

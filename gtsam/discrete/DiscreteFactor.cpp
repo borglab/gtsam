@@ -74,6 +74,19 @@ AlgebraicDecisionTree<Key> DiscreteFactor::errorTree() const {
 }
 
 /* ************************************************************************ */
+std::vector<std::pair<DiscreteValues, double>> DiscreteFactor::enumerate()
+    const {
+  // Reverse the keys to make the Cartesian product order more natural.
+  const DiscreteKeys keys = discreteKeys();
+  const DiscreteKeys reversedKeys(keys.rbegin(), keys.rend());
+  std::vector<std::pair<DiscreteValues, double>> result;
+  for (const auto& assignment : DiscreteValues::CartesianProduct(reversedKeys)) {
+    result.emplace_back(assignment, evaluate(assignment));
+  }
+  return result;
+}
+
+/* ************************************************************************ */
 DiscreteFactor::shared_ptr DiscreteFactor::multiply(
     const DiscreteFactor::shared_ptr& factor) const {
   if (const auto table = std::dynamic_pointer_cast<TableFactor>(factor)) {

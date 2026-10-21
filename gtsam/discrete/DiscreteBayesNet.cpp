@@ -81,9 +81,9 @@ DiscreteBayesNet DiscreteBayesNet::prune(
   // Multiply into one big conditional. NOTE: possibly quite expensive.
   DiscreteConditional joint = this->joint();
 
-  // Prune the joint. NOTE: imperative and, again, possibly quite expensive.
-  DiscreteConditional pruned = joint;
-  pruned.prune(maxNrLeaves);
+  // Prune the joint. NOTE: again, possibly quite expensive.
+  DiscreteConditional pruned =
+      *std::static_pointer_cast<DiscreteConditional>(joint.prune(maxNrLeaves));
 
   DiscreteValues deadModesValues;
   // If we have a dead mode threshold and discrete variables left after pruning,

@@ -119,6 +119,10 @@ class GTSAM_EXPORT Constraint : public DiscreteFactor {
     return toDecisionTreeFactor().max(keys);
   }
 
+  DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const override {
+    return toDecisionTreeFactor().prune(maxNrAssignments);
+  }
+
   /// Compute error for each assignment and return as a tree
   AlgebraicDecisionTree<Key> errorTree() const override {
     throw std::runtime_error("Constraint::error not implemented");
