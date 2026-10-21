@@ -693,17 +693,8 @@ const std::string spec = "1 2 3 4 5 6";
 const DiscreteConditional tableConditional(2, TableFactor(A & B, spec));
 const DiscreteConditional treeConditional(2, DecisionTreeFactor(A & B, spec));
 
-// A default-constructed TableDistribution still stores a TableFactor.
-TEST(TableDistribution, DefaultConstructor) {
-  const TableDistribution empty;
-  EXPECT(std::dynamic_pointer_cast<TableFactor>(empty.factor()));
-  EXPECT(assert_equal(TableFactor(), empty.table()));
-  EXPECT(assert_equal(empty, TableDistribution()));
-}
-
 // Equality with a decision-tree conditional holds in both directions.
-TEST(TableDistribution, EqualsAcrossRepresentations) {
-  const DiscreteConditional& tableConditional = distribution;
+TEST(TableConditional, EqualsAcrossRepresentations) {
   EXPECT(treeConditional.equals(tableConditional));
   EXPECT(tableConditional.equals(treeConditional));
 }
@@ -754,10 +745,20 @@ TEST(TableFactor, Argmax) {
 }
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
-// The deprecated TableDistribution matches a table-backed conditional.
+// A default-constructed TableDistribution still stores a TableFactor.
+TEST(TableDistribution, DefaultConstructor) {
+  const TableDistribution empty;
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(empty.factor()));
+  EXPECT(assert_equal(TableFactor(), empty.table()));
+  EXPECT(assert_equal(empty, TableDistribution()));
+}
+
+// The deprecated TableDistribution matches a table-backed conditional, and
+// equality holds in both directions.
 TEST(TableDistribution, DeprecatedShim) {
   const TableDistribution distribution(A & B, spec);
   EXPECT(tableConditional.equals(distribution));
+  EXPECT(distribution.equals(tableConditional));
   EXPECT(assert_equal(tableConditional.toTableFactor(), distribution.table()));
   EXPECT(assert_equal(distribution.table().argmax(), distribution.argmax()));
   EXPECT(std::dynamic_pointer_cast<TableDistribution>(distribution.prune(2)));
