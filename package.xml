@@ -27,6 +27,7 @@
   <export>
     <!-- Specify that this is not really a Catkin package-->
     <build_type>cmake</build_type>
+    <rosdoc2>rosdoc2.yaml</rosdoc2>
   </export>
 </package>
 
