@@ -183,9 +183,10 @@ TEST(TableFactor, Conversion) {
       assert_equal(tf, static_cast<const DiscreteFactor&>(tf).toTableFactor()));
 
   const DiscreteKey distributionKey(3, 2);
-  const TableDistribution distribution(distributionKey, "1 3");
+  const DiscreteConditional distribution(1,
+                                         TableFactor(distributionKey, "1 3"));
   EXPECT(assert_equal(
-      distribution.table(),
+      TableFactor(distributionKey, "0.25 0.75"),
       static_cast<const DiscreteFactor&>(distribution).toTableFactor()));
 
   // Test for correct construction when keys are not in reverse order.
@@ -303,23 +304,24 @@ TEST(TableFactor, SparseTableBeyond32Keys) {
 }
 
 /* ************************************************************************* */
-// Check multiplication with a TableDistribution in both operand orders.
-TEST(TableFactor, TableDistributionMultiplication) {
+// Check multiplication with a table-backed conditional in both operand orders.
+TEST(TableFactor, TableConditionalMultiplication) {
   const DiscreteKey key(0, 3);
   const auto table =
       std::make_shared<TableFactor>(key, std::vector<double>{2.0, 3.0, 4.0});
-  const auto distribution = std::make_shared<TableDistribution>(key, "1 2 3");
+  const auto conditional =
+      std::make_shared<DiscreteConditional>(1, TableFactor(key, "1 2 3"));
   const TableFactor expected(key, std::vector<double>{1.0 / 3.0, 1.0, 2.0});
 
   const auto tableFirst =
-      std::dynamic_pointer_cast<TableFactor>(table->multiply(distribution));
-  const auto distributionFirst =
-      std::dynamic_pointer_cast<TableFactor>(distribution->multiply(table));
+      std::dynamic_pointer_cast<TableFactor>(table->multiply(conditional));
+  const auto conditionalFirst =
+      std::dynamic_pointer_cast<TableFactor>(conditional->multiply(table));
 
   CHECK(tableFirst);
-  CHECK(distributionFirst);
+  CHECK(conditionalFirst);
   EXPECT(assert_equal(expected, *tableFirst));
-  EXPECT(assert_equal(expected, *distributionFirst));
+  EXPECT(assert_equal(expected, *conditionalFirst));
 }
 
 /* ************************************************************************* */
@@ -684,13 +686,65 @@ TEST(TableFactor, RestrictMatchesDecisionTree) {
 
 }  // namespace restrict_fixture
 /* ************************************************************************* */
-namespace table_distribution_fixture {
+namespace table_conditional_fixture {
 const DiscreteKey A(0, 2), B(1, 3);
 const std::string spec = "1 2 3 4 5 6";
-const TableDistribution distribution(A & B, spec);
-// The same joint distribution, stored as a decision tree.
+// A joint distribution stored as a sparse table, and as a decision tree.
+const DiscreteConditional tableConditional(2, TableFactor(A & B, spec));
 const DiscreteConditional treeConditional(2, DecisionTreeFactor(A & B, spec));
 
+// Equality with a decision-tree conditional holds in both directions.
+TEST(TableConditional, EqualsAcrossRepresentations) {
+  EXPECT(treeConditional.equals(tableConditional));
+  EXPECT(tableConditional.equals(treeConditional));
+}
+
+// Constructing a conditional from a TableFactor keeps the sparse table.
+TEST(TableConditional, Storage) {
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(tableConditional.factor()));
+  EXPECT(assert_equal(treeConditional, tableConditional));
+}
+
+// Marginalizing a table-backed conditional matches the decision tree version.
+TEST(TableConditional, Marginal) {
+  EXPECT(assert_equal(treeConditional.marginal(A.first),
+                      tableConditional.marginal(A.first)));
+}
+
+// The likelihood of a table-backed conditional matches the decision tree
+// version.
+TEST(TableConditional, Likelihood) {
+  const DiscreteValues frontalValues{{A.first, 1}, {B.first, 2}};
+  EXPECT(assert_equal(*treeConditional.likelihood(frontalValues),
+                      *tableConditional.likelihood(frontalValues)));
+}
+
+// Multiplying conditionals works with a table-backed one on either side.
+TEST(TableConditional, ConditionalProduct) {
+  const DiscreteKey C(2, 2);
+  const DiscreteConditional conditional(C, {A}, "1/3 2/2");  // P(C|A)
+  const DiscreteConditional expected = conditional * treeConditional;
+  EXPECT(assert_equal(expected, conditional * tableConditional));
+  EXPECT(assert_equal(expected, tableConditional * conditional));
+}
+
+// Pruning a table-backed conditional keeps the table and renormalizes.
+TEST(TableConditional, Prune) {
+  const auto pruned =
+      std::dynamic_pointer_cast<DiscreteConditional>(tableConditional.prune(2));
+  CHECK(pruned);
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(pruned->factor()));
+  EXPECT(assert_equal(DiscreteConditional(2, TableFactor(A & B, "0 0 0 0 5 6")),
+                      *pruned));
+}
+
+// The argmax of a table is the assignment with the largest value.
+TEST(TableFactor, Argmax) {
+  const DiscreteValues expected{{A.first, 1}, {B.first, 2}};
+  EXPECT(assert_equal(expected, TableFactor(A & B, spec).argmax()));
+}
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 // A default-constructed TableDistribution still stores a TableFactor.
 TEST(TableDistribution, DefaultConstructor) {
   const TableDistribution empty;
@@ -699,65 +753,36 @@ TEST(TableDistribution, DefaultConstructor) {
   EXPECT(assert_equal(empty, TableDistribution()));
 }
 
-// Equality with a decision-tree conditional holds in both directions.
-TEST(TableDistribution, EqualsAcrossRepresentations) {
-  const DiscreteConditional& tableConditional = distribution;
-  EXPECT(treeConditional.equals(tableConditional));
-  EXPECT(tableConditional.equals(treeConditional));
+// The deprecated TableDistribution matches a table-backed conditional, and
+// equality holds in both directions.
+TEST(TableDistribution, DeprecatedShim) {
+  const TableDistribution distribution(A & B, spec);
+  EXPECT(tableConditional.equals(distribution));
+  EXPECT(distribution.equals(tableConditional));
+  EXPECT(assert_equal(tableConditional.toTableFactor(), distribution.table()));
+  EXPECT(assert_equal(distribution.table().argmax(), distribution.argmax()));
+  EXPECT(std::dynamic_pointer_cast<TableDistribution>(distribution.prune(2)));
 }
-
-// Marginalizing a TableDistribution matches the decision tree version.
-TEST(TableDistribution, Marginal) {
-  EXPECT(assert_equal(treeConditional.marginal(A.first),
-                      distribution.marginal(A.first)));
-}
-
-// The likelihood of a TableDistribution matches the decision tree version.
-TEST(TableDistribution, Likelihood) {
-  const DiscreteValues frontalValues{{A.first, 1}, {B.first, 2}};
-  EXPECT(assert_equal(*treeConditional.likelihood(frontalValues),
-                      *distribution.likelihood(frontalValues)));
-}
-
-// Multiplying conditionals works with a TableDistribution on either side.
-TEST(TableDistribution, ConditionalProduct) {
-  const DiscreteKey C(2, 2);
-  const DiscreteConditional conditional(C, {A}, "1/3 2/2");  // P(C|A)
-  const DiscreteConditional& tableConditional = distribution;
-  const DiscreteConditional expected = conditional * treeConditional;
-  EXPECT(assert_equal(expected, conditional * tableConditional));
-  EXPECT(assert_equal(expected, tableConditional * conditional));
-}
-
-// Pruning a TableDistribution returns a renormalized TableDistribution.
-TEST(TableDistribution, Prune) {
-  const auto pruned =
-      std::dynamic_pointer_cast<TableDistribution>(distribution.prune(2));
-  CHECK(pruned);
-  EXPECT(assert_equal(TableDistribution(A & B, "0 0 0 0 5 6"), *pruned));
-}
-
-}  // namespace table_distribution_fixture
 
 // Multiplication must preserve normalization after pruning a table prior.
 TEST(TableDistribution, PrunedConditionalProduct) {
-  const DiscreteKey A(0, 2), B(1, 2);
-  TableDistribution prior(A, "0.4 0.6");
+  const DiscreteKey C(2, 2);
+  const TableDistribution prior(A, "0.4 0.6");
   // Retain only A=1. Pruning returns a new, renormalized distribution.
   const auto pruned =
       std::dynamic_pointer_cast<TableDistribution>(prior.prune(1));
   CHECK(pruned);
-  const DiscreteConditional conditional(B, {A}, "1/1 1/1");  // P(B|A)
+  const DiscreteConditional conditional(C, {A}, "1/1 1/1");  // P(C|A)
   const DiscreteConditional& tablePrior = *pruned;
   const DiscreteConditional joint = conditional * tablePrior;
 
-  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {B.first, 0}}),
+  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {C.first, 0}}),
                        1e-12);
-  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {B.first, 1}}),
+  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {C.first, 1}}),
                        1e-12);
-  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {B.first, 0}}),
+  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {C.first, 0}}),
                        1e-12);
-  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {B.first, 1}}),
+  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {C.first, 1}}),
                        1e-12);
 
   double total = 0.0;
@@ -767,27 +792,29 @@ TEST(TableDistribution, PrunedConditionalProduct) {
 
 // Removing a known mode through the base class must update table storage too.
 TEST(TableDistribution, RemoveDiscreteModesUpdatesTable) {
-  const DiscreteKey A(0, 2), B(1, 2);
-  TableDistribution distribution(A & B, "1 2 3 4");
+  const DiscreteKey C(2, 2);
+  TableDistribution distribution(A & C, "1 2 3 4");
   DiscreteConditional& conditional = distribution;
   conditional.removeDiscreteModes(DiscreteValues{{A.first, 1}});
 
   EXPECT_LONGS_EQUAL(1, conditional.size());
   EXPECT_LONGS_EQUAL(1, conditional.nrFrontals());
   EXPECT_LONGS_EQUAL(0, conditional.nrParents());
-  EXPECT_LONGS_EQUAL(B.first, conditional.firstFrontalKey());
+  EXPECT_LONGS_EQUAL(C.first, conditional.firstFrontalKey());
 
   // Keep the A=1 slice of the original normalized joint: [0.3, 0.4].
   // Mode removal restricts the distribution; it does not renormalize it.
-  EXPECT_DOUBLES_EQUAL(0.3, distribution(DiscreteValues{{B.first, 0}}), 1e-12);
-  EXPECT_DOUBLES_EQUAL(0.4, distribution(DiscreteValues{{B.first, 1}}), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.3, distribution(DiscreteValues{{C.first, 0}}), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.4, distribution(DiscreteValues{{C.first, 1}}), 1e-12);
 
-  const DecisionTreeFactor expected(B, "0.3 0.4");
+  const DecisionTreeFactor expected(C, "0.3 0.4");
   const DecisionTreeFactor converted = distribution.toDecisionTreeFactor();
   EXPECT_LONGS_EQUAL(1, converted.size());
   EXPECT(assert_equal(expected, converted));
 }
+#endif
 
+}  // namespace table_conditional_fixture
 /* ************************************************************************* */
 int main() {
   TestResult tr;

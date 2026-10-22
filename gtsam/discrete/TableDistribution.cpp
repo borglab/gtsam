@@ -15,6 +15,10 @@
  *  @author Varun Agrawal
  */
 
+#include <gtsam/config.h>
+
+#ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
+
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/utilities.h>
@@ -76,19 +80,7 @@ bool TableDistribution::equals(const DiscreteFactor& other, double tol) const {
 
 /* ************************************************************************ */
 DiscreteValues TableDistribution::argmax() const {
-  uint64_t maxIdx = 0;
-  double maxValue = 0.0;
-
-  const SparseVector& sparseTable = tableFactor().sparseTable();
-
-  for (SparseIt it(sparseTable); it; ++it) {
-    if (it.value() > maxValue) {
-      maxIdx = it.index();
-      maxValue = it.value();
-    }
-  }
-
-  return tableFactor().findAssignments(maxIdx);
+  return tableFactor().argmax();
 }
 
 /* ****************************************************************************/
@@ -99,3 +91,5 @@ DiscreteFactor::shared_ptr TableDistribution::prune(
 }
 
 }  // namespace gtsam
+
+#endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

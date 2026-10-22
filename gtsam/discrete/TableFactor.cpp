@@ -536,6 +536,19 @@ double TableFactor::max() const {
 }
 
 /* ************************************************************************ */
+DiscreteValues TableFactor::argmax() const {
+  uint64_t maxIndex = 0;
+  double maxValue = 0.0;
+  for (SparseIt it(sparse_table_); it; ++it) {
+    if (it.value() > maxValue) {
+      maxIndex = it.index();
+      maxValue = it.value();
+    }
+  }
+  return findAssignments(maxIndex);
+}
+
+/* ************************************************************************ */
 DiscreteFactor::shared_ptr TableFactor::max(size_t nrFrontals) const {
   return combine(nrFrontals, Ring::max);
 }

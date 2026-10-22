@@ -25,7 +25,6 @@
 #include <gtsam/discrete/DiscreteJunctionTree.h>
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/DiscreteValues.h>
-#include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/discrete/TableFactor.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
@@ -323,7 +322,8 @@ discreteElimination(const HybridGaussianFactorGraph &factors,
     DiscreteFactor::shared_ptr product = dfg.scaledProduct();
 
     TableFactor p = product->toTableFactor();
-    auto conditional = std::make_shared<TableDistribution>(p);
+    // Normalizing keeps the sparse table representation.
+    auto conditional = std::make_shared<DiscreteConditional>(p.size(), p);
 
     DiscreteFactor::shared_ptr sum = p.sum(frontalKeys);
 

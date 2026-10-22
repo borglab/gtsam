@@ -20,7 +20,6 @@
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/discrete/DiscreteConditional.h>
 #include <gtsam/discrete/DiscreteKey.h>
-#include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
 #include <gtsam/hybrid/HybridGaussianConditional.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
@@ -80,8 +79,8 @@ TEST(GaussianMixture, GaussianMixtureModel) {
   double midway = mu1 - mu0;
   auto eliminationResult =
       gmm.toFactorGraph({{Z(0), Vector1(midway)}}).eliminateSequential();
-  auto pMid = eliminationResult->at(0)->asDiscrete<TableDistribution>();
-  EXPECT(assert_equal(TableDistribution(m, "60 40"), *pMid));
+  auto pMid = eliminationResult->at(0)->asDiscrete();
+  EXPECT(assert_equal(DiscreteConditional(m, "60/40"), *pMid));
 
   // Everywhere else, the result should be a sigmoid.
   for (const double shift : {-4, -2, 0, 2, 4}) {
@@ -91,8 +90,7 @@ TEST(GaussianMixture, GaussianMixtureModel) {
     // Workflow 1: convert HBN to HFG and solve
     auto eliminationResult1 =
         gmm.toFactorGraph({{Z(0), Vector1(z)}}).eliminateSequential();
-    auto posterior1 =
-        *eliminationResult1->at(0)->asDiscrete<TableDistribution>();
+    auto posterior1 = *eliminationResult1->at(0)->asDiscrete();
     EXPECT_DOUBLES_EQUAL(expected, posterior1(m1Assignment), 1e-8);
 
     // Workflow 2: directly specify HFG and solve
@@ -101,8 +99,7 @@ TEST(GaussianMixture, GaussianMixtureModel) {
         m, std::vector{Gaussian(mu0, sigma, z), Gaussian(mu1, sigma, z)});
     hfg1.push_back(mixing);
     auto eliminationResult2 = hfg1.eliminateSequential();
-    auto posterior2 =
-        *eliminationResult2->at(0)->asDiscrete<TableDistribution>();
+    auto posterior2 = *eliminationResult2->at(0)->asDiscrete();
     EXPECT_DOUBLES_EQUAL(expected, posterior2(m1Assignment), 1e-8);
   }
 }
@@ -141,8 +138,8 @@ TEST(GaussianMixture, GaussianMixtureModel2) {
   EXPECT(assert_equal(expectedDiscretePosterior,
                       eliminationResultMax->discretePosterior(vv)));
 
-  auto pMax = *eliminationResultMax->at(0)->asDiscrete<TableDistribution>();
-  EXPECT(assert_equal(TableDistribution(m, "42 58"), pMax, 1e-4));
+  auto pMax = *eliminationResultMax->at(0)->asDiscrete();
+  EXPECT(assert_equal(DiscreteConditional(m, "42/58"), pMax, 1e-4));
 
   // Everywhere else, the result should be a bell curve like function.
   for (const double shift : {-4, -2, 0, 2, 4}) {
@@ -152,8 +149,7 @@ TEST(GaussianMixture, GaussianMixtureModel2) {
     // Workflow 1: convert HBN to HFG and solve
     auto eliminationResult1 =
         gmm.toFactorGraph({{Z(0), Vector1(z)}}).eliminateSequential();
-    auto posterior1 =
-        *eliminationResult1->at(0)->asDiscrete<TableDistribution>();
+    auto posterior1 = *eliminationResult1->at(0)->asDiscrete();
     EXPECT_DOUBLES_EQUAL(expected, posterior1(m1Assignment), 1e-8);
 
     // Workflow 2: directly specify HFG and solve
@@ -162,8 +158,7 @@ TEST(GaussianMixture, GaussianMixtureModel2) {
         m, std::vector{Gaussian(mu0, sigma0, z), Gaussian(mu1, sigma1, z)});
     hfg.push_back(mixing);
     auto eliminationResult2 = hfg.eliminateSequential();
-    auto posterior2 =
-        *eliminationResult2->at(0)->asDiscrete<TableDistribution>();
+    auto posterior2 = *eliminationResult2->at(0)->asDiscrete();
     EXPECT_DOUBLES_EQUAL(expected, posterior2(m1Assignment), 1e-8);
   }
 }

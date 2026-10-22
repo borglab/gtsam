@@ -347,7 +347,7 @@ TEST(DiscreteConditional, FromFactorKeyOrder) {
 }
 
 // Products, choose, and removeDiscreteModes keep the stored factor in the
-// conditional's key order.
+// conditional's key order, and match the decision tree results.
 TEST(DiscreteConditional, DerivedKeyOrder) {
   const std::vector<double> zGivenX{0.25, 0.5, 0.75, 0.5};  // over (Z, X)
   const DiscreteConditional tableZ(
@@ -366,6 +366,10 @@ TEST(DiscreteConditional, DerivedKeyOrder) {
   DiscreteConditional removed = product;
   removed.removeDiscreteModes({{X.first, 0}});
   EXPECT(removed.factor()->keys() == removed.keys());
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(removed.factor()));
+  DiscreteConditional treeRemoved = treeZ * xGivenY;
+  treeRemoved.removeDiscreteModes({{X.first, 0}});
+  EXPECT(assert_equal(treeRemoved, removed));
 }
 
 }  // namespace key_order_fixture
@@ -413,6 +417,57 @@ TEST(DiscreteConditional, Argmax) {
   given[D.first] = 0;
   size_t actual4 = C_given_D.argmax(given);
   EXPECT_LONGS_EQUAL(1, actual4);
+}
+
+/* ************************************************************************* */
+// Multiplication preserves normalization after pruning a table-backed prior.
+TEST(DiscreteConditional, PrunedTableConditionalProduct) {
+  const DiscreteKey A(0, 2), C(2, 2);
+  const DiscreteConditional prior(1, TableFactor(A, "0.4 0.6"));
+  const auto pruned =
+      std::dynamic_pointer_cast<DiscreteConditional>(prior.prune(1));
+  CHECK(pruned);
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(pruned->factor()));
+
+  const DiscreteConditional conditional(C, {A}, "1/1 1/1");  // P(C|A)
+  const DiscreteConditional joint = conditional * *pruned;
+
+  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {C.first, 0}}),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, joint(DiscreteValues{{A.first, 0}, {C.first, 1}}),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {C.first, 0}}),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.5, joint(DiscreteValues{{A.first, 1}, {C.first, 1}}),
+                       1e-12);
+
+  double total = 0.0;
+  for (const auto& values : joint.allAssignments()) total += joint(values);
+  EXPECT_DOUBLES_EQUAL(1.0, total, 1e-12);
+}
+
+/* ************************************************************************* */
+// Mode removal updates table storage and metadata without renormalizing.
+TEST(DiscreteConditional, RemoveDiscreteModesUpdatesTable) {
+  const DiscreteKey A(0, 2), C(2, 2);
+  DiscreteConditional conditional(2, TableFactor(A & C, "1 2 3 4"));
+  conditional.removeDiscreteModes(DiscreteValues{{A.first, 1}});
+
+  EXPECT_LONGS_EQUAL(1, conditional.size());
+  EXPECT_LONGS_EQUAL(1, conditional.nrFrontals());
+  EXPECT_LONGS_EQUAL(0, conditional.nrParents());
+  EXPECT_LONGS_EQUAL(C.first, conditional.firstFrontalKey());
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(conditional.factor()));
+  EXPECT(conditional.factor()->keys() == conditional.keys());
+
+  // Keep the A=1 slice of the normalized joint, with its original mass.
+  EXPECT_DOUBLES_EQUAL(0.3, conditional(DiscreteValues{{C.first, 0}}), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.4, conditional(DiscreteValues{{C.first, 1}}), 1e-12);
+
+  const DecisionTreeFactor expected(C, "0.3 0.4");
+  const DecisionTreeFactor converted = conditional.toDecisionTreeFactor();
+  EXPECT_LONGS_EQUAL(1, converted.size());
+  EXPECT(assert_equal(expected, converted));
 }
 
 /* ************************************************************************* */

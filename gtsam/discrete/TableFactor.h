@@ -261,6 +261,9 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
   /// Find the maximum value in the factor.
   double max() const override;
 
+  /// Return the assignment to all keys with the largest value.
+  DiscreteValues argmax() const;
+
   /// Create new factor by maximizing over all values with the same separator.
   DiscreteFactor::shared_ptr max(size_t nrFrontals) const override;
 
