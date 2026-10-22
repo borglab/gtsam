@@ -113,6 +113,17 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
     return DiscreteKey(keys_[i], cardinalities_.at(keys_[i]));
   }
 
+  /**
+   * Apply a binary operator when every key and cardinality of `factor` is
+   * contained in this table. Each stored entry projects to exactly one index
+   * in `factor`; only stored matches invoke op, in the original operand order.
+   * Preserve the sorted result layout and the intersection of stored entries,
+   * including explicitly stored zeros. Storage strides, not keys_ order,
+   * determine the projection. See doc/TableFactorSubsetOperations.md for the
+   * index derivation, sparse semantics, and benchmark reproduction commands.
+   */
+  TableFactor applySubset(const TableFactor& factor, Binary op) const;
+
  public:
   /**
    * Convert probability table given as doubles to SparseVector.
