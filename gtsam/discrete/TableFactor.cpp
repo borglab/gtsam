@@ -667,13 +667,15 @@ TableFactor TableFactor::applySubset(const TableFactor& factor, Binary op) const
     for (const auto& term : projection)
       target += ((entry.index() / term.sourceStride) % term.cardinality) *
                 term.targetStride;
-    Eigen::Index offset = target;
+    // Projection stays within other.size(); match Eigen's signed index type.
+    const auto targetIndex = static_cast<SparseVector::StorageIndex>(target);
+    Eigen::Index offset = targetIndex;
     if (!dense) {
       const auto* end = indices + other.nonZeros();
-      const auto* found = std::lower_bound(indices, end, target);
+      const auto* found = std::lower_bound(indices, end, targetIndex);
       // Do not invoke a generic op on absent entries. Explicitly stored zeros
       // still participate, just as in the general sparse join.
-      if (found == end || *found != static_cast<int64_t>(target)) continue;
+      if (found == end || *found != targetIndex) continue;
       offset = found - indices;
     }
     const double value = op(entry.value(), other.valuePtr()[offset]);
