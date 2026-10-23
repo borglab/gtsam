@@ -116,6 +116,43 @@ struct ScopePartition {
   }
 };
 
+/// One mixed-radix digit, or a contiguous group of digits, in two table layouts.
+struct IndexProjection {
+  uint64_t sourceStride;
+  uint64_t cardinality;
+  uint64_t targetStride;
+};
+
+/**
+ * Cache the strides needed to project a source index onto a subset of its keys.
+ * Adjacent digits can be decoded together when they are contiguous in both
+ * layouts: a * c + b = (index / stride) % (cardinality_a * c). For example,
+ * projecting onto a suffix of the source keys needs one group instead of one
+ * integer division and remainder per key. Use actual strides because the
+ * metadata-only TableFactor constructor can reorder keys without moving data.
+ */
+std::vector<IndexProjection> makeSubsetProjection(
+    const DiscreteKeys& keys, const std::map<Key, size_t>& sourceStrides,
+    const std::map<Key, size_t>& targetStrides) {
+  std::vector<IndexProjection> projection;
+  projection.reserve(keys.size());
+  for (const auto& [key, cardinality] : keys) {
+    if (cardinality == 1) continue;  // This digit is always zero.
+    const IndexProjection term{sourceStrides.at(key), cardinality,
+                               targetStrides.at(key)};
+    if (!projection.empty() &&
+        projection.back().sourceStride == term.sourceStride * cardinality &&
+        projection.back().targetStride == term.targetStride * cardinality) {
+      auto& previous = projection.back();
+      previous = {term.sourceStride, previous.cardinality * cardinality,
+                  term.targetStride};
+    } else {
+      projection.push_back(term);
+    }
+  }
+  return projection;
+}
+
 }  // namespace
 
 /* ************************************************************************ */
@@ -600,11 +637,72 @@ TableFactor TableFactor::apply(UnaryAssignment op) const {
 }
 
 /* ************************************************************************ */
+TableFactor TableFactor::applySubset(const TableFactor& factor, Binary op) const {
+  SparseVector result(sparse_table_.size());
+  if (factor.sparse_table_.nonZeros() == 0)
+    return TableFactor(sorted_dkeys_, result);
+  // A strict subset can broadcast each entry across several source entries.
+  // Equal scopes can only intersect, so retain the tighter allocation bound.
+  result.reserve(size() == factor.size()
+                     ? std::min(sparse_table_.nonZeros(),
+                                factor.sparse_table_.nonZeros())
+                     : sparse_table_.nonZeros());
+
+  const auto projection = makeSubsetProjection(
+      factor.sorted_dkeys_, denominators_, factor.denominators_);
+
+  // Inspect actual strides: the metadata-only constructor can change keys_
+  // without changing the underlying storage order.
+  bool sortedLayout = true;
+  uint64_t stride = 1;
+  for (auto key = sorted_dkeys_.rbegin(); key != sorted_dkeys_.rend(); ++key) {
+    sortedLayout &= denominators_.at(key->first) == stride;
+    stride *= key->second;
+  }
+  const auto& other = factor.sparse_table_;
+  const bool dense = other.nonZeros() == other.size();
+  const auto* indices = other.innerIndexPtr();
+  for (SparseIt entry(sparse_table_); entry; ++entry) {
+    uint64_t target = 0;
+    for (const auto& term : projection)
+      target += ((entry.index() / term.sourceStride) % term.cardinality) *
+                term.targetStride;
+    // Projection stays within other.size(); match Eigen's signed index type.
+    const auto targetIndex = static_cast<SparseVector::StorageIndex>(target);
+    Eigen::Index offset = targetIndex;
+    if (!dense) {
+      const auto* end = indices + other.nonZeros();
+      const auto* found = std::lower_bound(indices, end, targetIndex);
+      // Do not invoke a generic op on absent entries. Explicitly stored zeros
+      // still participate, just as in the general sparse join.
+      if (found == end || *found != targetIndex) continue;
+      offset = found - indices;
+    }
+    const double value = op(entry.value(), other.valuePtr()[offset]);
+    if (sortedLayout)
+      result.insertBack(entry.index()) = value;
+    else
+      result.insert(uniqueRep(sorted_dkeys_, entry.index())) = value;
+  }
+  result.data().squeeze();
+  return TableFactor(sorted_dkeys_, result);
+}
+
+/* ************************************************************************ */
 TableFactor TableFactor::apply(const TableFactor& f, Binary op) const {
   if (keys_.empty() && sparse_table_.nonZeros() == 0)
     return f;
   else if (f.keys_.empty() && f.sparse_table_.nonZeros() == 0)
     return *this;
+  // Multiplying by a subset or dividing by a separator needs only a lookup,
+  // not a hash join with per-entry assignment maps. Check containment before
+  // allocating the four scope vectors needed only by the general join. Compare
+  // key/cardinality pairs, not just labels, to preserve the existing dispatch.
+  if (f.size() <= size() &&
+      std::includes(sorted_dkeys_.begin(), sorted_dkeys_.end(),
+                    f.sorted_dkeys_.begin(), f.sorted_dkeys_.end())) {
+    return applySubset(f, op);
+  }
   // 1. Partition both scopes and compute their cardinalities in one pass.
   const ScopePartition scopes(sorted_dkeys_, f.sorted_dkeys_);
   // 2. Create hash table for input factor f
