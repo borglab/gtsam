@@ -136,10 +136,12 @@ TableFactor::TableFactor(const DiscreteKeys& dkeys, const SparseVector& table)
     : DiscreteFactor(dkeys.indices(), dkeys.cardinalities()),
       sparse_table_(table.size()) {
   sparse_table_ = table;
-  double denom = table.size();
+  // Use integer arithmetic since `double` cannot represent every index above
+  // 2^53 due to precision limitations.
+  uint64_t denominator = table.size();
   for (const DiscreteKey& dkey : dkeys) {
-    denom /= dkey.second;
-    denominators_.insert(std::pair<Key, double>(dkey.first, denom));
+    denominator /= dkey.second;
+    denominators_.emplace(dkey.first, denominator);
   }
   sorted_dkeys_ = discreteKeys();
   sort(sorted_dkeys_.begin(), sorted_dkeys_.end());
@@ -180,10 +182,10 @@ static SparseVector ComputeSparseTable(const DiscreteKeys& dkeys,
 
   // Compute denominators to be used in computing sparse table indices
   std::map<Key, size_t> denominators;
-  double denom = sparseTable.size();
+  uint64_t denominator = sparseTable.size();
   for (const DiscreteKey& dkey : dkeys) {
-    denom /= dkey.second;
-    denominators.insert(std::pair<Key, double>(dkey.first, denom));
+    denominator /= dkey.second;
+    denominators.emplace(dkey.first, denominator);
   }
 
   /**

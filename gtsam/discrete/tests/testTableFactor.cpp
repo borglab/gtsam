@@ -744,6 +744,26 @@ TEST(TableFactor, Argmax) {
   EXPECT(assert_equal(expected, TableFactor(A & B, spec).argmax()));
 }
 
+// Verify that sparse indices for a large integer range remain exact.
+TEST(TableFactor, EvaluateLargeIntegerStride) {
+  DiscreteKeys keys{{0, 2}};
+  DiscreteValues values{{0, 1}};
+  uint64_t stride = 1;
+  for (Key key = 1; key <= 34; ++key) {
+    keys.emplace_back(key, 3);
+    values[key] = 0;
+    stride *= 3;
+  }
+
+  // The logical table is large, but only one nonzero entry is allocated.
+  // stride = 3^34 = 16677181699666569, which fits in a 64-bit index.
+  SparseVector entries(2 * stride);
+  entries.insert(stride) = 7.0;
+  const TableFactor table(keys, entries);
+
+  EXPECT_DOUBLES_EQUAL(7.0, table(values), 1e-12);
+}
+
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43
 // A default-constructed TableDistribution still stores a TableFactor.
 TEST(TableDistribution, DefaultConstructor) {

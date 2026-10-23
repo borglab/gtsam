@@ -21,6 +21,7 @@
 #include <gtsam/discrete/DiscreteEliminationTree.h>
 #include <gtsam/discrete/DiscreteFactor.h>
 #include <gtsam/discrete/DiscreteFactorGraph.h>
+#include <gtsam/discrete/TableFactor.h>
 #include <gtsam/inference/BayesNet.h>
 #include <gtsam/inference/Symbol.h>
 
@@ -54,10 +55,9 @@ TEST_UNSAFE(DiscreteFactorGraph, debugScheduler) {
 
 /* ************************************************************************* */
 /// Test the () operator of DiscreteFactorGraph
-TEST_UNSAFE( DiscreteFactorGraph, DiscreteFactorGraphEvaluationTest) {
-
+TEST_UNSAFE(DiscreteFactorGraph, DiscreteFactorGraphEvaluationTest) {
   // Three keys P1 and P2
-  DiscreteKey P1(0,2), P2(1,2), P3(2,3);
+  DiscreteKey P1(0, 2), P2(1, 2), P3(2, 3);
 
   // Create the DiscreteFactorGraph
   DiscreteFactorGraph graph;
@@ -71,9 +71,10 @@ TEST_UNSAFE( DiscreteFactorGraph, DiscreteFactorGraphEvaluationTest) {
   values[1] = 1;
 
   // Check if graph evaluation works ( 0.3*0.6*4 )
-  EXPECT_DOUBLES_EQUAL( .72, graph(values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(.72, graph(values), 1e-9);
 
-  // Creating a new test with third node and adding unary and ternary factors on it
+  // Creating a new test with third node and adding unary and ternary factors on
+  // it
   graph.add(P3, "0.9 0.2 0.5");
   graph.add(P1 & P2 & P3, "1 2 3 4 5 6 7 8 9 10 11 12");
 
@@ -83,7 +84,7 @@ TEST_UNSAFE( DiscreteFactorGraph, DiscreteFactorGraphEvaluationTest) {
   values[2] = 1;
 
   // Check if graph evaluation works (0.3*0.9*1*0.2*8)
-  EXPECT_DOUBLES_EQUAL( 4.32, graph(values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(4.32, graph(values), 1e-9);
 
   // Below values lead to selecting the 3rd index in the ternary factor table
   values[0] = 0;
@@ -91,11 +92,11 @@ TEST_UNSAFE( DiscreteFactorGraph, DiscreteFactorGraphEvaluationTest) {
   values[2] = 0;
 
   // Check if graph evaluation works (0.9*0.6*1*0.9*4)
-  EXPECT_DOUBLES_EQUAL( 1.944, graph(values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(1.944, graph(values), 1e-9);
 
   // Check if graph product works
   DecisionTreeFactor product = graph.product()->toDecisionTreeFactor();
-  EXPECT_DOUBLES_EQUAL( 1.944, product(values), 1e-9);
+  EXPECT_DOUBLES_EQUAL(1.944, product(values), 1e-9);
 }
 
 /* ************************************************************************* */
@@ -111,7 +112,8 @@ TEST(DiscreteFactorGraph, test) {
 
   // Test EliminateDiscrete
   const Ordering frontalKeys{0};
-  const auto [conditional, newFactorPtr] = EliminateDiscrete(graph, frontalKeys);
+  const auto [conditional, newFactorPtr] =
+      EliminateDiscrete(graph, frontalKeys);
 
   DecisionTreeFactor newFactor =
       *std::dynamic_pointer_cast<DecisionTreeFactor>(newFactorPtr);
@@ -154,7 +156,7 @@ TEST(DiscreteFactorGraph, test) {
   EXPECT(assert_equal(expectedBayesNet, *actual2));
 
   // Test mpe
-  DiscreteValues mpe { {0, 0}, {1, 0}, {2, 0}};
+  DiscreteValues mpe{{0, 0}, {1, 0}, {2, 0}};
   auto actualMPE = graph.optimize();
   EXPECT(assert_equal(mpe, actualMPE));
   EXPECT_DOUBLES_EQUAL(9, graph(mpe), 1e-5);  // regression
@@ -212,7 +214,7 @@ TEST(DiscreteFactorGraph, marginalIsNotMPE) {
   bayesNet.add(A % "10/9");
 
   // The expected MPE is A=1, B=1
-  DiscreteValues mpe { {0, 1}, {1, 1} };
+  DiscreteValues mpe{{0, 1}, {1, 1}};
 
   // Which we verify using max-product:
   DiscreteFactorGraph graph(bayesNet);
@@ -235,7 +237,7 @@ TEST(DiscreteFactorGraph, testMPE_Darwiche09book_p244) {
   graph.add(T1 & T2 & A, "1 0 0 1 0 1 1 0");
   graph.add(A, "1 0");  // evidence, A = yes (first choice in Darwiche)
 
-  DiscreteValues mpe { {0, 1}, {1, 1}, {2, 1}, {3, 1}, {4, 0}};
+  DiscreteValues mpe{{0, 1}, {1, 1}, {2, 1}, {3, 1}, {4, 0}};
   EXPECT_DOUBLES_EQUAL(0.33858, graph(mpe), 1e-5);  // regression
   // You can check visually by printing product:
   // graph.product().print("Darwiche-product");
@@ -351,10 +353,60 @@ TEST(DiscreteFactorGraph, markdown) {
   EXPECT_DOUBLES_EQUAL(0.3, graph[0]->operator()(values), 1e-9);
 }
 
+// Elimination preserves sparse storage, frontal order, and the scaled joint.
+TEST(DiscreteFactorGraph, EliminateSparseTablePreservesRepresentation) {
+  const DiscreteKey A(2, 2), B(0, 3), C(1, 2);
+  const DiscreteKeys keys = A & B & C;  // Deliberately unsorted.
+  const vector<double> values{0, 2, 3, 0, 5, 6, 7, 0, 9, 10, 0, 12};
+
+  DiscreteFactorGraph tableGraph, treeGraph;
+  tableGraph.emplace_shared<TableFactor>(keys, values);
+  treeGraph.emplace_shared<DecisionTreeFactor>(keys, values);
+
+  // Eliminate two frontals in an order different from the input key order.
+  const Ordering frontals{C.first, A.first};
+  const auto [conditional, separator] = EliminateDiscrete(tableGraph, frontals);
+  const auto [treeConditional, treeSeparator] =
+      EliminateDiscrete(treeGraph, frontals);
+
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(conditional->factor()) !=
+         nullptr);
+  EXPECT(std::dynamic_pointer_cast<TableFactor>(separator) != nullptr);
+  const KeyVector expectedKeys{C.first, A.first, B.first};
+  EXPECT(conditional->keys() == expectedKeys);
+  EXPECT_LONGS_EQUAL(2, conditional->nrFrontals());
+  EXPECT_LONGS_EQUAL(1, conditional->nrParents());
+  EXPECT(separator->keys() == KeyVector{B.first});
+
+  const auto reconstructed = conditional->multiply(separator);
+  const vector<double> marginal{9, 22, 23};
+  for (size_t b = 0; b < B.second; ++b) {
+    double total = 0.0;
+    for (size_t a = 0; a < A.second; ++a) {
+      for (size_t c = 0; c < C.second; ++c) {
+        const DiscreteValues assignment{
+            {A.first, a}, {B.first, b}, {C.first, c}};
+        const double weight = values[a * 6 + b * 2 + c];
+        const double probability = (*conditional)(assignment);
+        EXPECT_DOUBLES_EQUAL(weight / marginal[b], probability, 1e-12);
+        EXPECT_DOUBLES_EQUAL((*treeConditional)(assignment), probability,
+                             1e-12);
+        EXPECT_DOUBLES_EQUAL(marginal[b] / 12.0, (*separator)(assignment),
+                             1e-12);
+        EXPECT_DOUBLES_EQUAL((*treeSeparator)(assignment),
+                             (*separator)(assignment), 1e-12);
+        EXPECT_DOUBLES_EQUAL(weight / 12.0, (*reconstructed)(assignment),
+                             1e-12);
+        total += probability;
+      }
+    }
+    EXPECT_DOUBLES_EQUAL(1.0, total, 1e-12);
+  }
+}
+
 /* ************************************************************************* */
 int main() {
-TestResult tr;
-return TestRegistry::runAllTests(tr);
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
 }
 /* ************************************************************************* */
-
