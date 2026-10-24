@@ -25,6 +25,7 @@
 #include <gtsam/discrete/Signature.h>
 #include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/discrete/TableFactor.h>
+#include <gtsam/inference/Ordering.h>
 
 #include <algorithm>
 #include <chrono>
@@ -778,6 +779,32 @@ TEST(TableFactor, UnaryAssignment) {
 
   TableFactor expected(X & Y, "4 10 6 12 4 14");
   EXPECT(assert_equal(g, expected));
+}
+
+/* ************************************************************************* */
+// Check that zeros produced by an operation are not stored in the result.
+TEST(TableFactor, OperationsDropZeros) {
+  const DiscreteKey X(0, 2), Y(1, 2);
+  const TableFactor f(X & Y, "0.1 0.2 0.3 0.4");
+
+  // Unary ops that zero out values below 0.25.
+  const auto threshold = [](const double& x) { return x < 0.25 ? 0.0 : x; };
+  EXPECT_LONGS_EQUAL(2, f.apply(threshold).nrValues());
+  const auto thresholdAssignment = [&](const Assignment<Key>&,
+                                       const double& x) { return threshold(x); };
+  EXPECT_LONGS_EQUAL(2, f.apply(thresholdAssignment).nrValues());
+
+  // A binary op whose products underflow to zero.
+  const TableFactor tiny(X & Y, "1e-200 1e-200 1 1");
+  const auto product = [](const double& a, const double& b) {
+    return a * b * 1e-200;
+  };
+  EXPECT_LONGS_EQUAL(2, f.apply(tiny, product).nrValues());
+
+  // Summing out X cancels the values for Y=0.
+  const TableFactor g(X & Y, "1 2 -1 3");
+  EXPECT_LONGS_EQUAL(1, g.sum(1)->nrValues());
+  EXPECT_LONGS_EQUAL(1, g.sum(Ordering{X.first})->nrValues());
 }
 
 /* ************************************************************************* */

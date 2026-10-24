@@ -318,7 +318,6 @@ SparseVector TableFactor::Convert(const DiscreteKeys& keys,
   for (uint64_t i = 0; i < table.size(); i++) {
     if (table[i] != 0) sparse_table.insert(i) = table[i];
   }
-  sparse_table.pruned();
   sparse_table.data().squeeze();
   return sparse_table;
 }
@@ -526,7 +525,8 @@ TableFactor TableFactor::choose(const DiscreteValues parent_assign,
     }
   }
 
-  child_sparse_table_.pruned();
+  // Drop exact zeros, which would otherwise be stored and counted as values.
+  child_sparse_table_.prune(0.0);
   child_sparse_table_.data().squeeze();
   return TableFactor(child_dkeys, child_sparse_table_);
 }
@@ -613,7 +613,8 @@ TableFactor TableFactor::apply(Unary op) const {
   }
 
   // Free unused memory and return.
-  sparse_table.pruned();
+  // Drop exact zeros, which would otherwise be stored and counted as values.
+  sparse_table.prune(0.0);
   sparse_table.data().squeeze();
   return TableFactor(discreteKeys(), sparse_table);
 }
@@ -633,7 +634,8 @@ TableFactor TableFactor::apply(UnaryAssignment op) const {
   }
 
   // Free unused memory and return.
-  sparse_table.pruned();
+  // Drop exact zeros, which would otherwise be stored and counted as values.
+  sparse_table.prune(0.0);
   sparse_table.data().squeeze();
   return TableFactor(discreteKeys(), sparse_table);
 }
@@ -729,7 +731,8 @@ TableFactor TableFactor::apply(const TableFactor& f, Binary op) const {
     }
   }
   // 5. Free unused memory.
-  multipliedSparseTable.pruned();
+  // Drop exact zeros, which would otherwise be stored and counted as values.
+  multipliedSparseTable.prune(0.0);
   multipliedSparseTable.data().squeeze();
   // 6. Create union keys and return.
   return TableFactor(scopes.unionScope.keys, multipliedSparseTable);
@@ -849,7 +852,8 @@ TableFactor::shared_ptr TableFactor::combine(size_t nrFrontals,
     combined_table.coeffRef(idx) = new_val;
   }
   // Free unused memory.
-  combined_table.pruned();
+  // Drop exact zeros, which would otherwise be stored and counted as values.
+  combined_table.prune(0.0);
   combined_table.data().squeeze();
   return std::make_shared<TableFactor>(remain_dkeys, combined_table);
 }
@@ -884,7 +888,8 @@ TableFactor::shared_ptr TableFactor::combine(const Ordering& frontalKeys,
     combined_table.coeffRef(idx) = new_val;
   }
   // Free unused memory.
-  combined_table.pruned();
+  // Drop exact zeros, which would otherwise be stored and counted as values.
+  combined_table.prune(0.0);
   combined_table.data().squeeze();
   return std::make_shared<TableFactor>(remain_dkeys, combined_table);
 }
