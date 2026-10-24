@@ -35,6 +35,37 @@ using NonlinearFactorValuePair =
   std::pair<NoiseModelFactor::shared_ptr, double>;
 
 /**
+ * @brief A hybrid component that carries no information about the continuous
+ * variables, e.g. a uniform outlier hypothesis.
+ *
+ * It has no keys, zero error, and linearizes to an empty JacobianFactor, so
+ * only the scalar paired with it contributes. Unlike a nullptr component,
+ * which means "pruned" (infinite error), it has finite probability. When a
+ * HybridNonlinearFactor is restricted to this component, the restricted graph
+ * drops the factor, so the keys of the other components are no longer
+ * connected.
+ *
+ * @ingroup hybrid
+ */
+class NoInformationFactor : public NoiseModelFactor {
+ public:
+  using shared_ptr = std::shared_ptr<NoInformationFactor>;
+
+  NoInformationFactor() : NoiseModelFactor(SharedNoiseModel(), KeyVector{}) {}
+
+  size_t dim() const override { return 0; }
+
+  Vector unwhitenedError(const Values& /*x*/,
+                         OptionalMatrixVecType /*H*/ = nullptr) const override {
+    return Vector();
+  }
+
+  NonlinearFactor::shared_ptr clone() const override {
+    return std::make_shared<NoInformationFactor>(*this);
+  }
+};
+
+/**
  * @brief Implementation of a discrete-conditioned hybrid factor.
  *
  * Implements a joint discrete-continuous factor where the discrete variable
