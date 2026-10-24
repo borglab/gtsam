@@ -25,6 +25,7 @@
 #include <gtsam/discrete/Signature.h>
 #include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/discrete/TableFactor.h>
+#include <gtsam/inference/Ordering.h>
 
 #include <algorithm>
 #include <chrono>
@@ -343,8 +344,9 @@ TEST(TableFactor, SubsetOperationsAcrossKeyOrders) {
   } while (std::next_permutation(keys.begin(), keys.end()));
 }
 
-// Generic apply preserves stored zeros but does not evaluate missing entries.
-TEST(TableFactor, SubsetApplyPreservesStoredZeros) {
+// Generic apply evaluates stored zeros but not missing entries, and drops zero
+// results.
+TEST(TableFactor, SubsetApplyUsesStoredZeros) {
   const DiscreteKey A(0, 2), B(1, 3);
   SparseVector jointEntries(6);
   jointEntries.insertBack(0) = 0;
@@ -359,18 +361,19 @@ TEST(TableFactor, SubsetApplyPreservesStoredZeros) {
   entries.insertBack(2) = 7;
   const TableFactor subset(DiscreteKeys{B}, entries);
   const auto result = joint.apply(subset, [](double a, double b) { return a - b; });
+  // Indices 0 and 2 compute to zero and are dropped. Index 3 exists only
+  // because the subset's zero for B=0 is stored. Indices 1 and 4 are never
+  // evaluated because the subset has no entry for B=1.
   SparseVector expected(6);
-  expected.insertBack(0) = 0;
-  expected.insertBack(2) = 0;
   expected.insertBack(3) = 4;
   expected.insertBack(5) = -1;
-  EXPECT_LONGS_EQUAL(4, result.nrValues());
+  EXPECT_LONGS_EQUAL(2, result.nrValues());
   EXPECT(assert_equal(TableFactor(A & B, expected), result));
   vector<int64_t> storedIndices;
   const SparseVector stored = result.sparseTable();
   for (SparseVector::InnerIterator entry(stored); entry; ++entry)
     storedIndices.push_back(entry.index());
-  EXPECT(storedIndices == vector<int64_t>({0, 2, 3, 5}));
+  EXPECT(storedIndices == vector<int64_t>({3, 5}));
 
   const TableFactor empty(DiscreteKeys{B}, SparseVector(3));
   EXPECT_LONGS_EQUAL(0, joint.apply(empty, Ring::add).nrValues());
@@ -669,6 +672,18 @@ TEST(TableFactor, Prune) {
   EXPECT(assert_equal(expected3, *pruned3));
 }
 
+// Check that pruning keeps every value tied with the N-th largest, matching
+// DecisionTreeFactor::prune.
+TEST(TableFactor, PruneKeepsTies) {
+  DiscreteKey X(0, 5);
+  TableFactor f(X, "0.2 0.2 0.1 0.2 0.3");
+
+  auto pruned = std::dynamic_pointer_cast<TableFactor>(f.prune(3));
+
+  TableFactor expected(X, "0.2 0.2 0.0 0.2 0.3");
+  EXPECT(assert_equal(expected, *pruned));
+}
+
 /* ************************************************************************* */
 // Check markdown representation looks as expected.
 TEST(TableFactor, markdown) {
@@ -766,6 +781,64 @@ TEST(TableFactor, UnaryAssignment) {
 
   TableFactor expected(X & Y, "4 10 6 12 4 14");
   EXPECT(assert_equal(g, expected));
+}
+
+/* ************************************************************************* */
+// Check that zeros produced by an operation are not stored in the result.
+TEST(TableFactor, OperationsDropZeros) {
+  const DiscreteKey X(0, 2), Y(1, 2);
+  const TableFactor f(X & Y, "0.1 0.2 0.3 0.4");
+
+  // Unary ops that zero out values below 0.25.
+  const auto threshold = [](const double& x) { return x < 0.25 ? 0.0 : x; };
+  EXPECT_LONGS_EQUAL(2, f.apply(threshold).nrValues());
+  const auto thresholdAssignment = [&](const Assignment<Key>&,
+                                       const double& x) { return threshold(x); };
+  EXPECT_LONGS_EQUAL(2, f.apply(thresholdAssignment).nrValues());
+
+  // A binary op whose products underflow to zero.
+  const TableFactor tiny(X & Y, "1e-200 1e-200 1 1");
+  const auto product = [](const double& a, const double& b) {
+    return a * b * 1e-200;
+  };
+  EXPECT_LONGS_EQUAL(2, f.apply(tiny, product).nrValues());
+
+  // Summing out X cancels the values for Y=0.
+  const TableFactor g(X & Y, "1 2 -1 3");
+  EXPECT_LONGS_EQUAL(1, g.sum(1)->nrValues());
+  EXPECT_LONGS_EQUAL(1, g.sum(Ordering{X.first})->nrValues());
+}
+
+/* ************************************************************************* */
+// A computed scalar zero must annihilate factors in either multiplication order.
+TEST(TableFactor, ComputedScalarZero) {
+  const DiscreteKey X(0, 2);
+  const TableFactor prior(X, "0.25 0.75");
+  const TableFactor scalar(DiscreteKeys{}, std::vector<double>{1.0});
+  const auto zero = scalar.apply([](const double&) { return 0.0; });
+
+  for (const TableFactor& result :
+       {zero * prior, prior * zero, prior / zero}) {
+    EXPECT_DOUBLES_EQUAL(0.0, result(DiscreteValues{{X.first, 0}}), 1e-12);
+    EXPECT_DOUBLES_EQUAL(0.0, result(DiscreteValues{{X.first, 1}}), 1e-12);
+  }
+}
+
+/* ************************************************************************* */
+// Removing stored zeros must preserve the maximum of an all-zero factor.
+TEST(TableFactor, MaximumAfterZeroing) {
+  const DiscreteKey X(0, 2);
+  const auto zero = TableFactor(X, "0.25 0.75") * 0.0;
+  EXPECT_DOUBLES_EQUAL(0.0, zero->max(), 1e-12);
+}
+
+/* ************************************************************************* */
+// A default-constructed factor acts as the identity in multiplication.
+TEST(TableFactor, DefaultIsIdentity) {
+  const DiscreteKey X(0, 2);
+  const TableFactor prior(X, "0.25 0.75");
+  EXPECT(assert_equal(prior, TableFactor() * prior));
+  EXPECT(assert_equal(prior, prior * TableFactor()));
 }
 
 /* ************************************************************************* */

@@ -310,13 +310,14 @@ SparseVector TableFactor::Convert(const DiscreteKeys& keys,
 
   SparseVector sparse_table(table.size());
   // Count number of nonzero elements in table and reserve the space.
+  // Take each value as a double: converting to an integer would truncate
+  // probabilities below 1 to 0 and undercount.
   const uint64_t nnz = std::count_if(table.begin(), table.end(),
-                                     [](uint64_t i) { return i != 0; });
+                                     [](double value) { return value != 0.0; });
   sparse_table.reserve(nnz);
   for (uint64_t i = 0; i < table.size(); i++) {
     if (table[i] != 0) sparse_table.insert(i) = table[i];
   }
-  sparse_table.pruned();
   sparse_table.data().squeeze();
   return sparse_table;
 }
@@ -524,7 +525,8 @@ TableFactor TableFactor::choose(const DiscreteValues parent_assign,
     }
   }
 
-  child_sparse_table_.pruned();
+  // Drop exact zeros, which would otherwise be stored and counted as values.
+  child_sparse_table_.prune(0.0);
   child_sparse_table_.data().squeeze();
   return TableFactor(child_dkeys, child_sparse_table_);
 }
@@ -567,7 +569,11 @@ DiscreteFactor::shared_ptr TableFactor::sum(const Ordering& keys) const {
 
 /* ************************************************************************ */
 double TableFactor::max() const {
-  double max_value = std::numeric_limits<double>::lowest();
+  // Assignments without a stored value are implicitly zero, so they count
+  // toward the maximum too, e.g. an all-zero factor stores nothing.
+  double max_value = sparse_table_.nonZeros() < sparse_table_.size()
+                         ? 0.0
+                         : std::numeric_limits<double>::lowest();
   for (SparseVector::InnerIterator it(sparse_table_); it; ++it) {
     max_value = std::max(max_value, it.value());
   }
@@ -611,7 +617,8 @@ TableFactor TableFactor::apply(Unary op) const {
   }
 
   // Free unused memory and return.
-  sparse_table.pruned();
+  // Drop exact zeros, which would otherwise be stored and counted as values.
+  sparse_table.prune(0.0);
   sparse_table.data().squeeze();
   return TableFactor(discreteKeys(), sparse_table);
 }
@@ -631,7 +638,8 @@ TableFactor TableFactor::apply(UnaryAssignment op) const {
   }
 
   // Free unused memory and return.
-  sparse_table.pruned();
+  // Drop exact zeros, which would otherwise be stored and counted as values.
+  sparse_table.prune(0.0);
   sparse_table.data().squeeze();
   return TableFactor(discreteKeys(), sparse_table);
 }
@@ -684,15 +692,20 @@ TableFactor TableFactor::applySubset(const TableFactor& factor, Binary op) const
     else
       result.insert(uniqueRep(sorted_dkeys_, entry.index())) = value;
   }
+  // Drop exact zeros, which would otherwise be stored and counted as values.
+  result.prune(0.0);
   result.data().squeeze();
   return TableFactor(sorted_dkeys_, result);
 }
 
 /* ************************************************************************ */
 TableFactor TableFactor::apply(const TableFactor& f, Binary op) const {
-  if (keys_.empty() && sparse_table_.nonZeros() == 0)
+  // Only a default-constructed factor has an empty table, and it acts as the
+  // identity. A keyless scalar always has a table of length 1, even when its
+  // value is 0, so a computed zero still applies.
+  if (keys_.empty() && sparse_table_.size() == 0)
     return f;
-  else if (f.keys_.empty() && f.sparse_table_.nonZeros() == 0)
+  else if (f.keys_.empty() && f.sparse_table_.size() == 0)
     return *this;
   // Multiplying by a subset or dividing by a separator needs only a lookup,
   // not a hash join with per-entry assignment maps. Check containment before
@@ -727,7 +740,8 @@ TableFactor TableFactor::apply(const TableFactor& f, Binary op) const {
     }
   }
   // 5. Free unused memory.
-  multipliedSparseTable.pruned();
+  // Drop exact zeros, which would otherwise be stored and counted as values.
+  multipliedSparseTable.prune(0.0);
   multipliedSparseTable.data().squeeze();
   // 6. Create union keys and return.
   return TableFactor(scopes.unionScope.keys, multipliedSparseTable);
@@ -847,7 +861,8 @@ TableFactor::shared_ptr TableFactor::combine(size_t nrFrontals,
     combined_table.coeffRef(idx) = new_val;
   }
   // Free unused memory.
-  combined_table.pruned();
+  // Drop exact zeros, which would otherwise be stored and counted as values.
+  combined_table.prune(0.0);
   combined_table.data().squeeze();
   return std::make_shared<TableFactor>(remain_dkeys, combined_table);
 }
@@ -882,7 +897,8 @@ TableFactor::shared_ptr TableFactor::combine(const Ordering& frontalKeys,
     combined_table.coeffRef(idx) = new_val;
   }
   // Free unused memory.
-  combined_table.pruned();
+  // Drop exact zeros, which would otherwise be stored and counted as values.
+  combined_table.prune(0.0);
   combined_table.data().squeeze();
   return std::make_shared<TableFactor>(remain_dkeys, combined_table);
 }
@@ -961,38 +977,30 @@ string TableFactor::html(const KeyFormatter& keyFormatter,
 DiscreteFactor::shared_ptr TableFactor::prune(size_t maxNrAssignments) const {
   const size_t N = maxNrAssignments;
 
-  // Get the probabilities in the TableFactor so we can threshold.
-  vector<pair<Eigen::Index, double>> probabilities;
-
-  // Store non-zero probabilities along with their indices in a vector.
+  // Collect the stored values so we can find the N-th largest.
+  vector<double> values;
+  values.reserve(sparse_table_.nonZeros());
   for (SparseIt it(sparse_table_); it; ++it) {
-    probabilities.emplace_back(it.index(), it.value());
+    values.push_back(it.value());
   }
 
-  // The number of probabilities can be lower than max_leaves.
-  if (probabilities.size() <= N) return std::make_shared<TableFactor>(*this);
+  // The number of values can be lower than N, so there is nothing to prune.
+  if (values.size() <= N) return std::make_shared<TableFactor>(*this);
 
-  // Sort the vector in descending order based on the element values.
-  sort(probabilities.begin(), probabilities.end(),
-       [](const std::pair<Eigen::Index, double>& a,
-          const std::pair<Eigen::Index, double>& b) {
-         return a.second > b.second;
-       });
-
-  // Keep the largest N probabilities in the vector.
-  if (probabilities.size() > N) probabilities.resize(N);
-
-  // Create pruned sparse vector.
-  SparseVector pruned_vec(sparse_table_.size());
-  pruned_vec.reserve(probabilities.size());
-
-  // Populate pruned sparse vector.
-  for (const auto& prob : probabilities) {
-    pruned_vec.insert(prob.first) = prob.second;
+  // Keep every value at or above the N-th largest one, as
+  // DecisionTreeFactor::prune does. Values tied with the threshold are all
+  // kept, so more than N assignments can survive.
+  SparseVector pruned(sparse_table_.size());
+  if (N > 0) {
+    std::nth_element(values.begin(), values.begin() + (N - 1), values.end(),
+                     std::greater<double>());
+    const double threshold = values[N - 1];
+    for (SparseIt it(sparse_table_); it; ++it) {
+      if (it.value() >= threshold) pruned.insert(it.index()) = it.value();
+    }
   }
 
-  // Create pruned decision tree factor and return.
-  return std::make_shared<TableFactor>(this->discreteKeys(), pruned_vec);
+  return std::make_shared<TableFactor>(this->discreteKeys(), pruned);
 }
 
 /* ************************************************************************ */

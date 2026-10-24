@@ -100,6 +100,22 @@ TEST_UNSAFE(DiscreteFactorGraph, DiscreteFactorGraphEvaluationTest) {
 }
 
 /* ************************************************************************* */
+// A product that is zero everywhere throws, whatever the factor type.
+TEST(DiscreteFactorGraph, ZeroProductThrows) {
+  const DiscreteKey X(0, 2);
+
+  DiscreteFactorGraph trees;
+  trees.emplace_shared<DecisionTreeFactor>(X, "1 0");
+  trees.emplace_shared<DecisionTreeFactor>(X, "0 1");
+  CHECK_EXCEPTION(trees.product(), std::runtime_error);
+
+  DiscreteFactorGraph tables;
+  tables.emplace_shared<TableFactor>(X, "1 0");
+  tables.emplace_shared<TableFactor>(X, "0 1");
+  CHECK_EXCEPTION(tables.product(), std::runtime_error);
+}
+
+/* ************************************************************************* */
 TEST(DiscreteFactorGraph, test) {
   // Declare keys and ordering
   DiscreteKey C(0, 2), B(1, 2), A(2, 2);

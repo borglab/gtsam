@@ -297,6 +297,22 @@ TEST(DecisionTreeFactor, Prune) {
   EXPECT(assert_equal(expected4, *pruned4));
 }
 
+// Check that pruning keeps the largest values regardless of where they appear
+// in the tree, and keeps every value tied with the N-th largest.
+TEST(DecisionTreeFactor, PruneKeepsLargestValues) {
+  DiscreteKey X(0, 5);
+  DecisionTreeFactor f(X, "0.2 0.2 0.1 0.2 0.3");
+
+  // The threshold is the 3rd largest value, counting duplicates.
+  EXPECT_DOUBLES_EQUAL(0.2, f.computeThreshold(3), 1e-9);
+
+  auto pruned =
+      std::dynamic_pointer_cast<DecisionTreeFactor>(f.prune(3));
+
+  DecisionTreeFactor expected(X, "0.2 0.2 0.0 0.2 0.3");
+  EXPECT(assert_equal(expected, *pruned));
+}
+
 /* ************************************************************************** */
 // Asia Bayes Network
 /* ************************************************************************** */
