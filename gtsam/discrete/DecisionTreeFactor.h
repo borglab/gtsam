@@ -273,13 +273,15 @@ namespace gtsam {
     std::vector<double> probabilities() const;
 
     /**
-     * @brief Compute the probability value which is the threshold above which
-     * only `N` leaves are present.
+     * @brief Compute the `N`-th largest value over all assignments, counting
+     * duplicates.
      *
-     * This is used for pruning out the smaller probabilities.
+     * This is the threshold used by prune(). A leaf counts once for every
+     * assignment it covers, including assignments of keys the tree no longer
+     * branches on after compression. Returns 0 when the factor has fewer than
+     * `N` assignments, and infinity when `N` is 0.
      *
-     * @param N The number of leaves to keep post pruning.
-     * @return double
+     * @param N The number of assignments to keep post pruning.
      */
     double computeThreshold(const size_t N) const;
 
