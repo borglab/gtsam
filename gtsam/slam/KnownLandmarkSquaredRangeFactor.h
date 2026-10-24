@@ -5,9 +5,10 @@
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
  * See LICENSE for the license information
  * -------------------------------------------------------------------------- */
+
 /**
  * @file KnownLandmarkSquaredRangeFactor.h
- * @brief Squared-range observation factor and Euclidean point QCQP lift.
+ * @brief Squared-range observation factor with an optional lifted QCQP state.
  * @author Oluwatodimu Afolayan
  * @author Frederike Dümbgen
  * @author Frank Dellaert
@@ -15,6 +16,8 @@
 #pragma once
 
 #include <gtsam/base/VectorSpace.h>
+#include <gtsam/constrained/QcqpProblem.h>
+#include <gtsam/constrained/QpCost.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 #include <Eigen/Core>
@@ -25,17 +28,20 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <vector>
 
 namespace gtsam {
 
 /**
- * An N-dimensional Euclidean point with a quadratic lift for squared-range
- * constraints.
+ * An N-dimensional Euclidean point supporting a quadratic QCQP lift.
  *
- * The underlying vector space has dimension N. Its D=1 QCQP representation is
- * X = [h, x.transpose(), u].transpose(), with h = 1 and u = x.dot(x).
- * The representation has N+2 entries and is not the manifold tangent vector.
+ * Its tangent space has dimension N. For D=1, its lifted representation is
+ * X = [h, x.transpose(), u].transpose(), where the canonical lift has h = 1
+ * and u = x.dot(x). The N+2 QCQP coordinates are not tangent coordinates.
+ *
+ * @tparam N Number of Euclidean coordinates (strictly positive).
+ * @ingroup slam
  */
 template <int N>
 class AugmentedPoint {
@@ -43,25 +49,23 @@ class AugmentedPoint {
   static_assert(N > 0, "AugmentedPoint requires N > 0");
 
   using VectorType = Eigen::Matrix<double, N, 1>;
-
-  /// Dimension of the underlying Euclidean point.
-  static constexpr int dimension = N;
+  static constexpr int dimension = N;  ///< Euclidean tangent dimension.
 
   /// Construct the origin.
   AugmentedPoint() : point_(VectorType::Zero()) {}
 
-  /// Construct a point from its Euclidean coordinates.
+  /// Construct from a fixed-size Euclidean coordinate vector.
   explicit AugmentedPoint(const VectorType& point) : point_(point) {}
 
   /// Return the additive identity.
   static AugmentedPoint Identity() { return AugmentedPoint(); }
 
-  /// Add two Euclidean points.
+  /// Add two points in the underlying vector space.
   AugmentedPoint operator+(const AugmentedPoint& other) const {
     return AugmentedPoint(point_ + other.point_);
   }
 
-  /** Add a fixed-size or dynamic Eigen tangent vector. */
+  /** Add an Eigen tangent vector or vector expression of dimension N. */
   template <typename Derived>
   AugmentedPoint operator+(const Eigen::MatrixBase<Derived>& delta) const {
     if (delta.rows() != N || delta.cols() != 1) {
@@ -70,7 +74,7 @@ class AugmentedPoint {
     return AugmentedPoint(point_ + delta);
   }
 
-  /// Subtract two Euclidean points.
+  /// Subtract two points in the underlying vector space.
   AugmentedPoint operator-(const AugmentedPoint& other) const {
     return AugmentedPoint(point_ - other.point_);
   }
@@ -88,18 +92,18 @@ class AugmentedPoint {
     return AugmentedPoint(scalar * point.point_);
   }
 
-  /// Return the underlying vector-space dimension.
+  /// Return the Euclidean dimension.
   int dim() const { return N; }
 
   /// Return the Euclidean norm.
   double norm() const { return point_.norm(); }
 
-  /// Return the Euclidean inner product with another point.
+  /// Return the Euclidean inner product.
   double dot(const AugmentedPoint& other) const {
     return point_.dot(other.point_);
   }
 
-  /// Return the Euclidean coordinates.
+  /// Return the underlying Euclidean coordinates.
   VectorType vector() const { return point_; }
 
   /// Print the coordinates, optionally preceded by a label.
@@ -116,14 +120,17 @@ class AugmentedPoint {
   }
 
  private:
-  VectorType point_;
+  VectorType point_;  ///< Euclidean point coordinates.
 };
 
 /**
- * GTSAM vector-space traits with an N+2 dimensional D=1 QCQP lift.
+ * GTSAM vector-space traits and D=1 QCQP lift for AugmentedPoint<N>.
  *
- * The QCQP variable is X = [h, x.transpose(), u].transpose(). The two
- * quadratic equality constraints enforce x.dot(x) = h*u and h*h = 1.
+ * The lifted variable X = [h, x.transpose(), u].transpose() satisfies
+ * x.dot(x) - h*u = 0 and h*h = 1. Its canonical form has h = 1; the quadratic
+ * normalization permits h = -1 as well, which is handled during extraction.
+ *
+ * @tparam N Euclidean point dimension.
  */
 template <int N>
 struct traits<AugmentedPoint<N>>
@@ -131,12 +138,14 @@ struct traits<AugmentedPoint<N>>
   using Point = AugmentedPoint<N>;
   using VectorType = typename Point::VectorType;
 
-  /// Number of entries in the D=1 lifted QCQP vector.
+  /// Number of rows in the D=1 lifted QCQP variable.
   static constexpr int QcqpVectorDim = N + 2;
 
   /**
-   * Embed a Euclidean point as X = [1, x.transpose(), x.dot(x)].transpose().
-   * Only the single-column QCQP representation (D=1) is supported.
+   * Lift a point to [1, x.transpose(), x.dot(x)].transpose().
+   *
+   * @tparam D Number of QCQP columns; only D=1 is supported.
+   * @throws std::invalid_argument for D other than 1.
    */
   template <int D = 1>
   static Matrix QcqpValue(const Point& value) {
@@ -153,10 +162,14 @@ struct traits<AugmentedPoint<N>>
   }
 
   /**
-   * Return (A, a, b) triples for X.transpose()*A*X + 2*a.dot(X) = b.
+   * Return the two quadratic equalities as (A, a, b) triples.
    *
-   * The first equality enforces x.dot(x) - h*u = 0, and the second enforces
-   * h*h = 1. Both constraints have no linear term.
+   * Each tuple represents X.transpose()*A*X + 2*a.dot(X) = b. The first
+   * equality enforces x.dot(x) = h*u; the second enforces h*h = 1.
+   * Both use an empty linear term a.
+   *
+   * @tparam D Number of QCQP columns; only D=1 is supported.
+   * @throws std::invalid_argument for D other than 1.
    */
   template <int D = 1>
   static std::vector<std::tuple<Matrix, Vector, double>> QcqpConstraints() {
@@ -164,16 +177,15 @@ struct traits<AugmentedPoint<N>>
       std::vector<std::tuple<Matrix, Vector, double>> constraints;
       constraints.reserve(2);
 
-      Matrix A = Matrix::Zero(QcqpVectorDim, QcqpVectorDim);
-      A.block(1, 1, N, N).setIdentity();
-      A(0, N + 1) = -0.5;
-      A(N + 1, 0) = -0.5;
-      constraints.emplace_back(A, Vector(), 0.0);
+      Matrix liftConstraint = Matrix::Zero(QcqpVectorDim, QcqpVectorDim);
+      liftConstraint.block(1, 1, N, N).setIdentity();
+      liftConstraint(0, N + 1) = -0.5;
+      liftConstraint(N + 1, 0) = -0.5;
+      constraints.emplace_back(liftConstraint, Vector(), 0.0);
 
-      Matrix H = Matrix::Zero(QcqpVectorDim, QcqpVectorDim);
-      H(0, 0) = 1.0;
-      constraints.emplace_back(H, Vector(), 1.0);
-
+      Matrix normalization = Matrix::Zero(QcqpVectorDim, QcqpVectorDim);
+      normalization(0, 0) = 1.0;
+      constraints.emplace_back(normalization, Vector(), 1.0);
       return constraints;
     } else {
       throw std::invalid_argument(
@@ -182,13 +194,16 @@ struct traits<AugmentedPoint<N>>
   }
 
   /**
-   * Recover Euclidean coordinates from a D=1 QCQP vector.
+   * Recover an AugmentedPoint from a D=1 QCQP column.
    *
-   * Divide by the homogenization coordinate to remove the global sign
-   * ambiguity (h = +/-1 in an exact feasible vector). Reject invalid shape
-   * and a zero or non-finite homogenization coordinate.
+   * The recovered Euclidean coordinates are x/h. This removes the global
+   * sign ambiguity in the homogeneous representation, provided h is nonzero.
+   *
+   * @param X Lifted (N+2)-by-1 column.
+   * @throws std::invalid_argument for unsupported D, invalid dimensions,
+   *         or a non-finite or near-zero homogenization coordinate.
    */
-  template <int D>
+  template <int D = 1>
   static Point FromQcqpValue(const Matrix& X) {
     if constexpr (D == 1) {
       if (X.rows() != QcqpVectorDim || X.cols() != 1) {
@@ -201,12 +216,11 @@ struct traits<AugmentedPoint<N>>
       const double h = X(0, 0);
       if (!std::isfinite(h) || std::abs(h) < 1e-9) {
         throw std::invalid_argument(
-            "traits<AugmentedPoint>::FromQcqpValue requires a nonzero, "
-            "finite homogenization coordinate.");
+            "traits<AugmentedPoint>::FromQcqpValue requires a finite, "
+            "nonzero homogenization coordinate.");
       }
-
-      const VectorType x = X.col(0).segment<N>(1) / h;
-      return Point(x);
+      const VectorType coordinates = X.col(0).segment<N>(1) / h;
+      return Point(coordinates);
     } else {
       throw std::invalid_argument(
           "traits<AugmentedPoint>::FromQcqpValue only supports D=1.");
@@ -219,98 +233,89 @@ template <int N>
 struct traits<const AugmentedPoint<N>> : public traits<AugmentedPoint<N>> {};
 
 /**
- * Unary factor on an N-dimensional Euclidean point using squared range to a
- * fixed known landmark.
+ * Unary squared-range factor for a known Euclidean landmark.
  *
- * For a point wX, known world landmark wL, and measured range d,
- * the residual is
+ * Given an unknown state x, known world landmark L, and measured range d,
+ * the scalar residual is ||x-L||^2 - d^2. The supplied noise model weights
+ * this squared-range residual (not the unsquared range).
  *
- *   e(wX) = ||wX - wL||^2 - d^2.
+ * By default the state is an Eigen vector, preserving the existing nonlinear
+ * factor interface. To enable the exact D=1 QCQP representation, instantiate
+ * with State = AugmentedPoint<N>, which is also suitable for nonlinear
+ * optimization via its vector-space traits. The QCQP lift has N+2 coordinates.
  *
- * Squaring the range eliminates the square root present in an ordinary range
- * residual and gives a polynomial form suitable for future lifted QCQP and
- * semidefinite programming formulations.
- *
- * Unlike KnownLandmarkFactor, which constrains a pose using a relative
- * landmark-position measurement, this factor constrains an N-dimensional
- * Euclidean point using only a scalar range measurement.
- *
- * The known landmark is fixed data, and the supplied noise model weights the
- * scalar squared-range residual.
- *
- * @note The factor still uses an Eigen vector as its state type. The
- * AugmentedPoint QCQP traits above are not used by this factor until its
- * variable type and QCQP conversion are integrated separately.
- *
- * @tparam N Dimension of the Euclidean point state and known landmark.
+ * @tparam N Euclidean point and landmark dimension.
+ * @tparam State Optimized state: Eigen::Matrix<double,N,1> (default) or
+ *         AugmentedPoint<N> (QCQP-enabled).
  * @ingroup slam
  *
- * See `gtsam/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb` for more details
- * regarding usage.
+ * See `gtsam/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb` for usage.
  */
-template <int N>
-class KnownLandmarkSquaredRangeFactor
-    : public NoiseModelFactorN<Eigen::Matrix<double, N, 1>> {
+template <int N, typename State = Eigen::Matrix<double, N, 1>>
+class KnownLandmarkSquaredRangeFactor : public NoiseModelFactorN<State> {
  public:
   static_assert(N > 0, "KnownLandmarkSquaredRangeFactor requires N > 0");
-  using Point = Eigen::Matrix<double, N, 1>;
+  using VectorType = Eigen::Matrix<double, N, 1>;
+  using Point = State;
   using Base = NoiseModelFactorN<Point>;
-  using This = KnownLandmarkSquaredRangeFactor<N>;
+  using This = KnownLandmarkSquaredRangeFactor<N, State>;
+  static_assert(std::is_same_v<Point, VectorType> ||
+                    std::is_same_v<Point, AugmentedPoint<N>>,
+                "KnownLandmarkSquaredRangeFactor requires an Eigen vector "
+                "or AugmentedPoint<N> state.");
 
  private:
-  Point wL_;  ///< Known landmark expressed in the world frame.
-  double measuredRangeSquared_;  ///< Squared measured range to wL_ (d^2).
+  VectorType wL_;            ///< Known landmark in world coordinates.
+  double measuredRangeSquared_;  ///< Squared measured range (d^2).
 
-  /**
-   * Validate the landmark dimension before converting to a fixed-size Point.
-   *
-   * @throws std::invalid_argument if the landmark dimension is incorrect.
-   */
-  static Point checkedLandmark(const Vector& wL) {
-    if (wL.size() != N) {
+  /** Validate the dimension of a dynamically sized landmark. */
+  static VectorType checkedLandmark(const Vector& landmark) {
+    if (landmark.size() != N) {
       throw std::invalid_argument(
           "KnownLandmarkSquaredRangeFactor: invalid landmark dimension.");
     }
-    return Point(wL);
+    return VectorType(landmark);
+  }
+
+  /// Return underlying state coordinates for either supported state type.
+  static VectorType coordinates(const Point& point) {
+    if constexpr (std::is_same_v<Point, AugmentedPoint<N>>) {
+      return point.vector();
+    } else {
+      return point;
+    }
   }
 
  public:
-  /// Expose the base-class evaluateError overloads.
   using Base::evaluateError;
 
   /**
-   * Construct from a key, world landmark, range measurement, and noise model.
+   * Construct from a fixed-size known landmark and scalar range measurement.
    *
-   * @param key Key associated with the unknown position.
+   * @param key Key associated with the unknown point.
    * @param wL Known landmark expressed in the world frame.
-   * @param measuredRange Measured range to the landmark.
+   * @param measuredRange Nonnegative measured range.
    * @param model Noise model for the scalar squared-range residual.
-   * @throws std::invalid_argument if measuredRange is negative.
+   * @throws std::invalid_argument if measuredRange is negative or non-finite.
    */
-  KnownLandmarkSquaredRangeFactor(Key key, const Point& wL,
+  KnownLandmarkSquaredRangeFactor(Key key, const VectorType& wL,
                                   double measuredRange,
                                   const SharedNoiseModel& model)
       : Base(model, key),
         wL_(wL),
         measuredRangeSquared_(measuredRange * measuredRange) {
-    if (measuredRange < 0.0) {
+    if (!std::isfinite(measuredRange) || measuredRange < 0.0) {
       throw std::invalid_argument(
-          "KnownLandmarkSquaredRangeFactor: range must be non-negative.");
+          "KnownLandmarkSquaredRangeFactor: range must be finite and "
+          "non-negative.");
     }
   }
 
   /**
    * Construct from a dynamically sized landmark vector.
    *
-   * Validates the landmark dimension before converting it to a fixed-size
-   * Point.
-   *
-   * @param key Key associated with the unknown position.
-   * @param wL Known landmark expressed in the world frame.
-   * @param measuredRange Measured range to the landmark.
-   * @param model Noise model for the scalar squared-range residual.
-   * @throws std::invalid_argument if the landmark dimension is incorrect
-   *         or measuredRange is negative.
+   * @throws std::invalid_argument if its dimension is not N or the range is
+   *         negative or non-finite.
    */
   KnownLandmarkSquaredRangeFactor(Key key, const Vector& wL,
                                   double measuredRange,
@@ -318,23 +323,32 @@ class KnownLandmarkSquaredRangeFactor
       : KnownLandmarkSquaredRangeFactor(key, checkedLandmark(wL), measuredRange,
                                         model) {}
 
-  /** Return a deep copy of this factor. */
+  /**
+   * Construct from an AugmentedPoint landmark, regardless of the state type.
+   *
+   * The known landmark is stored as N Euclidean coordinates; no QCQP lift is
+   * needed for fixed measurement data.
+   *
+   * @throws std::invalid_argument if measuredRange is negative or non-finite.
+   */
+  KnownLandmarkSquaredRangeFactor(Key key, const AugmentedPoint<N>& wL,
+                                  double measuredRange,
+                                  const SharedNoiseModel& model)
+      : KnownLandmarkSquaredRangeFactor(key, wL.vector(), measuredRange,
+                                        model) {}
+
+  /// Return a deep copy of this factor.
   NonlinearFactor::shared_ptr clone() const override {
     return std::make_shared<This>(*this);
   }
 
-  /**
-   * Print the factor.
-   *
-   * @param s Optional string printed before the factor.
-   * @param keyFormatter Formatter used to display the variable key.
-   */
+  /** Print the key, known landmark, measured range, and noise model. */
   void print(
       const std::string& s = "",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
     std::cout << s << "KnownLandmarkSquaredRangeFactor<" << N << "> on "
               << keyFormatter(this->key1()) << "\n";
-    traits<Point>::Print(wL_, "  landmark: ");
+    traits<VectorType>::Print(wL_, "  landmark: ");
     std::cout << "  measured range squared: " << measuredRangeSquared_ << "\n";
     if (this->noiseModel_) {
       this->noiseModel_->print("  noise model: ");
@@ -343,38 +357,88 @@ class KnownLandmarkSquaredRangeFactor
     }
   }
 
-  /**
-   * Check whether this factor equals another factor within a tolerance.
-   *
-   * @param expected Factor to compare against.
-   * @param tol Numerical comparison tolerance.
-   * @return True if the factors are equal within tol.
-   */
+  /** Compare keys, noise models, landmarks, and squared ranges. */
   bool equals(const NonlinearFactor& expected,
               double tol = 1e-9) const override {
-    const auto* e = dynamic_cast<const This*>(&expected);
-    return e != nullptr && Base::equals(*e, tol) &&
-           traits<Point>::Equals(wL_, e->wL_, tol) &&
+    const auto* other = dynamic_cast<const This*>(&expected);
+    return other != nullptr && Base::equals(*other, tol) &&
+           traits<VectorType>::Equals(wL_, other->wL_, tol) &&
            traits<double>::Equals(measuredRangeSquared_,
-                                  e->measuredRangeSquared_, tol);
+                                  other->measuredRangeSquared_, tol);
   }
 
   /**
-   * Evaluate the squared-range residual and optionally its Jacobian.
+   * Evaluate ||x-L||^2-d^2 and optionally its 1-by-N tangent Jacobian.
    *
-   * @param wX Current value of the unknown point in the world frame.
-   * @param H Optional 1-by-N Jacobian of the residual with respect to wX.
-   * @return One-dimensional residual vector containing
-   *         ||wX - wL||^2 - d^2.
+   * The Jacobian is 2(x-L).transpose(), valid for either Euclidean state type.
+   *
+   * @param wX Unknown point in world coordinates.
+   * @param H Optional 1-by-N Jacobian with respect to the state tangent vector.
+   * @return A one-element vector containing the squared-range residual.
    */
   Vector evaluateError(const Point& wX, OptionalMatrixType H) const override {
-    const Point difference = wX - wL_;
-    const double predictedRangeSquared = difference.squaredNorm();
-    const double error = predictedRangeSquared - measuredRangeSquared_;
+    const VectorType difference = coordinates(wX) - wL_;
+    const double error = difference.squaredNorm() - measuredRangeSquared_;
     if (H) {
       *H = 2.0 * difference.transpose();
     }
     return Vector1(error);
+  }
+
+  /**
+   * Append this factor's exact D=1 QCQP quadratic cost and lift constraints.
+   *
+   * For X=[h,x,u], the scalar residual is B*X with
+   * B=[||L||^2-d^2, -2*L.transpose(), 1]. Its whitened squared residual
+   * contributes 0.5*X.transpose()*Q*X, with Q=B.transpose()*Sigma^-1*B.
+   * GTSAM's HessianFactor adds a final constant slot, whose coefficient is
+   * zero because h is already part of the lifted state.
+   *
+   * The method is supported only when State = AugmentedPoint<N>.
+   *
+   * @throws std::invalid_argument for null outputs or columnDimension != 1.
+   * @throws std::runtime_error for a non-augmented state or an unsupported
+   *         noise model (null, robust, or constrained).
+   */
+  void qcqpFactors(NonlinearFactorGraph* costs,
+                   NonlinearEqualityConstraints* constraints,
+                   size_t columnDimension = 1) const override {
+    if constexpr (!std::is_same_v<Point, AugmentedPoint<N>>) {
+      throw std::runtime_error(
+          "KnownLandmarkSquaredRangeFactor::qcqpFactors requires an "
+          "AugmentedPoint<N> state.");
+    } else {
+      if (columnDimension != 1) {
+        throw std::invalid_argument(
+            "KnownLandmarkSquaredRangeFactor::qcqpFactors only supports D=1.");
+      }
+      if (!costs || !constraints) {
+        throw std::invalid_argument(
+            "KnownLandmarkSquaredRangeFactor::qcqpFactors: null output.");
+      }
+      if (!this->noiseModel_ ||
+          std::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_) ||
+          this->noiseModel_->isConstrained()) {
+        throw std::runtime_error(
+            "KnownLandmarkSquaredRangeFactor::qcqpFactors requires a "
+            "non-null, non-robust, unconstrained noise model.");
+      }
+
+      constexpr int LiftedDim = traits<Point>::QcqpVectorDim;
+      // The last column is GTSAM's HessianFactor constant slot (coefficient 0).
+      Matrix B = Matrix::Zero(1, LiftedDim + 1);
+      B(0, 0) = wL_.squaredNorm() - measuredRangeSquared_;
+      B.block(0, 1, 1, N) = -2.0 * wL_.transpose();
+      B(0, N + 1) = 1.0;
+
+      const Matrix whitenedB = this->noiseModel_->Whiten(B);
+      const Matrix Q = whitenedB.transpose() * whitenedB;
+      InsertQcqpConstraints<Point, 1>(this->key(), constraints);
+      const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{LiftedDim, 1},
+                                        Q);
+      costs->push_back(std::make_shared<QpCost>(
+          HessianFactor(KeyVector{this->key()}, blockQ)));
+    }
   }
 };
 

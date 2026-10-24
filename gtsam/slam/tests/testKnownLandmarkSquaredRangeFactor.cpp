@@ -10,13 +10,15 @@
 
 /**
  * @file testKnownLandmarkSquaredRangeFactor.cpp
- * @brief Tests for KnownLandmarkSquaredRangeFactor and AugmentedPoint QCQP traits.
+ * @brief Tests for KnownLandmarkSquaredRangeFactor and AugmentedPoint QCQP
+ *        traits.
  * @author Oluwatodimu Afolayan
  * @author Frederike Dümbgen
  * @author Frank Dellaert
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/factorTesting.h>
@@ -28,6 +30,7 @@
 #include <memory>
 #include <stdexcept>
 #include <tuple>
+#include <vector>
 
 using namespace gtsam;
 
@@ -332,6 +335,241 @@ TEST(AugmentedPoint, RejectsUnsupportedQcqpColumns) {
 }
 
 }  // namespace augmented_point3_fixture
+/* ************************************************************************* */
+namespace augmented_factor1_fixture {
+
+using VectorType = Eigen::Matrix<double, 1, 1>;
+using Point = AugmentedPoint<1>;
+using Factor = KnownLandmarkSquaredRangeFactor<1, Point>;
+
+const Key kKey = 11;
+
+// Verifies that the one-dimensional state and its three-entry lift work in
+// both the nonlinear factor graph and the converted QCQP.
+TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint1D) {
+  VectorType coordinates;
+  coordinates << 2.0;
+  VectorType landmark;
+  landmark << 5.0;
+  const Point point(coordinates);
+  const auto model = noiseModel::Unit::Create(1);
+  const Factor factor(kKey, landmark, 2.0, model);
+
+  Matrix H;
+  EXPECT(assert_equal(Vector1(5.0), factor.evaluateError(point, H)));
+  EXPECT_LONGS_EQUAL(1, H.rows());
+  EXPECT_LONGS_EQUAL(1, H.cols());
+  EXPECT_DOUBLES_EQUAL(-6.0, H(0, 0), 1e-12);
+
+  NonlinearFactorGraph graph;
+  graph.push_back(std::make_shared<Factor>(factor));
+  Values values;
+  values.insert(kKey, point);
+
+  const QcqpProblem qcqp(graph);
+  Values lifted;
+  InsertQcqpValue<Point, 1>(kKey, point, &lifted);
+  EXPECT_LONGS_EQUAL(1, qcqp.costs().size());
+  EXPECT_LONGS_EQUAL(2, qcqp.eConstraints().size());
+  EXPECT_DOUBLES_EQUAL(graph.error(values), qcqp.costs().error(lifted),
+                       1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, qcqp.eConstraints().violationNorm(lifted),
+                       1e-12);
+}
+
+}  // namespace augmented_factor1_fixture
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace augmented_factor2_fixture {
+
+using VectorType = Eigen::Vector2d;
+using Point = AugmentedPoint<2>;
+using Factor = KnownLandmarkSquaredRangeFactor<2, Point>;
+using EigenFactor = KnownLandmarkSquaredRangeFactor<2>;
+
+const Key kKey = 12;
+
+// Verifies that both state types give the same residual and tangent Jacobian.
+TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint2DResidualAndJacobian) {
+  const VectorType coordinates(1.0, 2.0);
+  const VectorType landmark(4.0, 6.0);
+  const Point point(coordinates);
+  const auto model = noiseModel::Unit::Create(1);
+
+  const Factor augmented(kKey, landmark, 4.0, model);
+  const EigenFactor eigen(kKey, landmark, 4.0, model);
+
+  Matrix augmentedH, eigenH;
+  const Vector augmentedError = augmented.evaluateError(point, augmentedH);
+  const Vector eigenError = eigen.evaluateError(coordinates, eigenH);
+
+  EXPECT(assert_equal(Vector1(9.0), augmentedError));
+  EXPECT(assert_equal(eigenError, augmentedError));
+  EXPECT(assert_equal(eigenH, augmentedH));
+  EXPECT_LONGS_EQUAL(1, augmentedH.rows());
+  EXPECT_LONGS_EQUAL(2, augmentedH.cols());
+
+  Values values;
+  values.insert(kKey, point);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(augmented, values, 1e-7, 1e-5);
+}
+
+// An AugmentedPoint supplied as the fixed landmark must produce the same
+// factor as one constructed with ordinary Eigen coordinates.
+TEST(KnownLandmarkSquaredRangeFactor, AugmentedLandmarkConstructor2D) {
+  const VectorType landmark(4.0, 6.0);
+  const Point point(VectorType(1.0, 2.0));
+  const auto model = noiseModel::Unit::Create(1);
+  const Factor fromVector(kKey, landmark, 4.0, model);
+  const Factor fromAugmented(kKey, Point(landmark), 4.0, model);
+
+  EXPECT(fromVector.equals(fromAugmented));
+  EXPECT(assert_equal(fromVector.evaluateError(point),
+                      fromAugmented.evaluateError(point)));
+
+  Vector wrongDimension = Vector::Zero(3);
+  CHECK_EXCEPTION(Factor(kKey, wrongDimension, 4.0, model),
+                  std::invalid_argument);
+}
+
+// The whitened lifted quadratic cost must match the nonlinear information-
+// weighted least-squares cost, including its homogeneous sign ambiguity.
+TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint2DWeightedQcqpCost) {
+  const Point point(VectorType(1.0, 2.0));
+  const VectorType landmark(4.0, 6.0);
+  Matrix information(1, 1);
+  information << 4.0;
+  const auto model = noiseModel::Gaussian::Information(information);
+
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<Factor>(kKey, landmark, 4.0, model);
+
+  Values nonlinearValues;
+  nonlinearValues.insert(kKey, point);
+  const QcqpProblem qcqp(graph);
+  Values liftedValues;
+  InsertQcqpValue<Point, 1>(kKey, point, &liftedValues);
+
+  EXPECT_LONGS_EQUAL(1, qcqp.costs().size());
+  EXPECT_LONGS_EQUAL(2, qcqp.eConstraints().size());
+  EXPECT_DOUBLES_EQUAL(162.0, graph.error(nonlinearValues), 1e-12);
+  EXPECT_DOUBLES_EQUAL(graph.error(nonlinearValues),
+                       qcqp.costs().error(liftedValues), 1e-10);
+  EXPECT_DOUBLES_EQUAL(0.0,
+                       qcqp.eConstraints().violationNorm(liftedValues),
+                       1e-12);
+
+  // X and -X represent the same original point and quadratic cost.
+  const Matrix negativeLift = -traits<Point>::QcqpValue<1>(point);
+  Values negativeValues;
+  negativeValues.insert(kKey, negativeLift);
+  EXPECT_DOUBLES_EQUAL(qcqp.costs().error(liftedValues),
+                       qcqp.costs().error(negativeValues), 1e-10);
+  EXPECT_DOUBLES_EQUAL(0.0,
+                       qcqp.eConstraints().violationNorm(negativeValues),
+                       1e-12);
+
+  const Values recovered = extractQcqpValues<Point>(negativeValues);
+  EXPECT(recovered.at<Point>(kKey).equals(point));
+}
+
+// The Eigen-state factor remains usable for nonlinear optimization, while
+// conversion to QCQP requires the opt-in AugmentedPoint state.
+TEST(KnownLandmarkSquaredRangeFactor, RejectsEigenStateQcqpConversion) {
+  const VectorType landmark(4.0, 6.0);
+  const auto model = noiseModel::Unit::Create(1);
+  const EigenFactor factor(kKey, landmark, 4.0, model);
+  NonlinearFactorGraph costs;
+  NonlinearEqualityConstraints constraints;
+  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints),
+                  std::runtime_error);
+}
+
+}  // namespace augmented_factor2_fixture
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace augmented_factor3_fixture {
+
+using VectorType = Eigen::Vector3d;
+using Point = AugmentedPoint<3>;
+using Factor = KnownLandmarkSquaredRangeFactor<3, Point>;
+
+const Key kKey = 13;
+
+// Checks the 3D tangent Jacobian and the factor's nonlinear graph interface.
+TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint3DResidualAndJacobian) {
+  const Point point(VectorType(1.0, 2.0, 3.0));
+  const VectorType landmark(3.0, 5.0, 9.0);
+  const auto model = noiseModel::Unit::Create(1);
+  const Factor factor(kKey, landmark, 5.0, model);
+
+  Matrix H;
+  EXPECT(assert_equal(Vector1(24.0), factor.evaluateError(point, H)));
+  Matrix expectedH(1, 3);
+  expectedH << -4.0, -6.0, -12.0;
+  EXPECT(assert_equal(expectedH, H));
+
+  Values values;
+  values.insert(kKey, point);
+  EXPECT_DOUBLES_EQUAL(0.5 * 24.0 * 24.0, factor.error(values), 1e-12);
+  EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
+}
+
+// Multiple measurements on the same state must contribute separate costs but
+// must not duplicate the two shared point-lift constraints.
+TEST(KnownLandmarkSquaredRangeFactor, MultipleAugmentedQcqpFactors3D) {
+  const Point point(VectorType(1.0, 2.0, 3.0));
+  const auto model = noiseModel::Unit::Create(1);
+
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<Factor>(kKey, VectorType(3.0, 5.0, 9.0), 5.0,
+                               model);
+  graph.emplace_shared<Factor>(kKey, VectorType(-1.0, 2.0, 4.0), 3.0,
+                               model);
+
+  Values nonlinearValues;
+  nonlinearValues.insert(kKey, point);
+  const QcqpProblem qcqp(graph);
+  Values qcqpValues;
+  InsertQcqpValue<Point, 1>(kKey, point, &qcqpValues);
+
+  EXPECT_LONGS_EQUAL(2, qcqp.costs().size());
+  EXPECT_LONGS_EQUAL(2, qcqp.eConstraints().size());
+  EXPECT_DOUBLES_EQUAL(graph.error(nonlinearValues),
+                       qcqp.costs().error(qcqpValues), 1e-10);
+  EXPECT_DOUBLES_EQUAL(0.0,
+                       qcqp.eConstraints().violationNorm(qcqpValues),
+                       1e-12);
+}
+
+// Validate qcqpFactors error handling without an SDP solve.
+TEST(KnownLandmarkSquaredRangeFactor, AugmentedQcqpRejectsInvalidInputs) {
+  const VectorType landmark(3.0, 5.0, 9.0);
+  const auto model = noiseModel::Unit::Create(1);
+  const Factor factor(kKey, landmark, 5.0, model);
+
+  NonlinearFactorGraph costs;
+  NonlinearEqualityConstraints constraints;
+  CHECK_EXCEPTION(factor.qcqpFactors(nullptr, &constraints),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(factor.qcqpFactors(&costs, nullptr),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, 2),
+                  std::invalid_argument);
+
+  const Factor missingNoise(kKey, landmark, 5.0, SharedNoiseModel());
+  CHECK_EXCEPTION(missingNoise.qcqpFactors(&costs, &constraints),
+                  std::runtime_error);
+  CHECK_EXCEPTION(Factor(kKey, landmark, -1.0, model),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(
+      Factor(kKey, landmark, std::numeric_limits<double>::infinity(), model),
+                  std::invalid_argument);
+}
+
+}  // namespace augmented_factor3_fixture
 /* ************************************************************************* */
 
 int main() {
