@@ -313,6 +313,33 @@ TEST(DecisionTreeFactor, PruneKeepsLargestValues) {
   EXPECT(assert_equal(expected, *pruned));
 }
 
+// Check that each leaf counts all the assignments it covers, including those
+// of keys the tree no longer branches on after compression.
+TEST(DecisionTreeFactor, PruneCompressedKey) {
+  DiscreteKey X(0, 2), Y(1, 2);
+  DecisionTreeFactor f(X & Y, "0.1 0.4 0.1 0.4");
+
+  // The values don't depend on X, so compression removes it from the tree.
+  EXPECT_LONGS_EQUAL(1, f.labels().size());
+
+  // Each 0.4 leaf stands for two assignments, so it alone fills the top 2.
+  EXPECT_DOUBLES_EQUAL(0.4, f.computeThreshold(2), 1e-9);
+
+  auto pruned = std::dynamic_pointer_cast<DecisionTreeFactor>(f.prune(2));
+  DecisionTreeFactor expected(X & Y, "0 0.4 0 0.4");
+  EXPECT(assert_equal(expected, *pruned));
+}
+
+// Check that keeping zero assignments prunes everything, as TableFactor does.
+TEST(DecisionTreeFactor, PruneToZero) {
+  DiscreteKey X(0, 3);
+  DecisionTreeFactor f(X, "0.2 0.5 0.3");
+
+  auto pruned = std::dynamic_pointer_cast<DecisionTreeFactor>(f.prune(0));
+  DecisionTreeFactor expected(X, "0 0 0");
+  EXPECT(assert_equal(expected, *pruned));
+}
+
 /* ************************************************************************** */
 // Asia Bayes Network
 /* ************************************************************************** */
