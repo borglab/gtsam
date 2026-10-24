@@ -310,8 +310,10 @@ SparseVector TableFactor::Convert(const DiscreteKeys& keys,
 
   SparseVector sparse_table(table.size());
   // Count number of nonzero elements in table and reserve the space.
+  // Take each value as a double: converting to an integer would truncate
+  // probabilities below 1 to 0 and undercount.
   const uint64_t nnz = std::count_if(table.begin(), table.end(),
-                                     [](uint64_t i) { return i != 0; });
+                                     [](double value) { return value != 0.0; });
   sparse_table.reserve(nnz);
   for (uint64_t i = 0; i < table.size(); i++) {
     if (table[i] != 0) sparse_table.insert(i) = table[i];
