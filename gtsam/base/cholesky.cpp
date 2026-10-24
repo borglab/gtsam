@@ -31,12 +31,12 @@ namespace gtsam {
 static const double negativePivotThreshold = -1e-1;
 static const double zeroPivotThreshold = 1e-6;
 static const double underconstrainedPrior = 1e-5;
-// Reject a Cholesky pivot more than 12 binary exponents below the square root
+// Reject a Cholesky pivot more than 15 binary exponents below the square root
 // of its original diagonal entry. This is invariant under diagonal changes of
 // variable units, although the pivots still depend on elimination ordering.
 // Compare squared values below to avoid a square root and division per pivot.
 static constexpr double minimumNormalizedPivotSquared =
-    1.0 / (4096.0 * 4096.0);
+    1.0 / (32768.0 * 32768.0);
 
 /* ************************************************************************* */
 static inline int choleskyStep(Matrix& ATA, size_t k, size_t order) {

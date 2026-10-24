@@ -114,6 +114,16 @@ TEST(cholesky, choleskyPartialScaleInvariant) {
 }
 
 /* ************************************************************************* */
+// Verifies that disparate measurement and prior noise scales do not cause a
+// false rejection in Cholesky factorization (#2856).
+TEST(cholesky, DisparateNoiseScalesNotRejected) {
+  constexpr double P = 1.0;
+  constexpr double K = 1e8;
+  Matrix matrix{{P + K, -K}, {-K, K}};
+  EXPECT(choleskyPartial(matrix, 2));
+}
+
+/* ************************************************************************* */
 TEST(cholesky, BadScalingSVD) {
   Matrix A{{1.0, 0.0}, {0.0, 1e-40}};
 
