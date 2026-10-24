@@ -177,6 +177,22 @@ class GTSAM_EXPORT HybridSmoother {
   HybridGaussianFactorGraph removeFixedValues(
       const HybridGaussianFactorGraph& graph,
       const HybridGaussianFactorGraph& newFactors);
+
+  /**
+   * @brief If every discrete key in `graph` is fixed and at least one hybrid
+   * factor is fixed to a component without keys (e.g. a NoInformationFactor),
+   * eliminate the chosen Gaussian graph without those components.
+   *
+   * The hybrid elimination had to include the edges of undecided modes, so
+   * the resulting conditionals keep them as parents even after pruning.
+   * Eliminating again once all modes are decided removes that fill-in.
+   *
+   * @param graph The factor graph that was eliminated in this update.
+   * @return The new Bayes net fragment, or nothing if no component was dropped
+   * or some modes are still undecided.
+   */
+  std::optional<HybridBayesNet> eliminateWithoutNoInformation(
+      const HybridGaussianFactorGraph& graph) const;
 };
 
 }  // namespace gtsam

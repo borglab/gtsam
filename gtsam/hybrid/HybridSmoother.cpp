@@ -19,7 +19,7 @@
 #include <gtsam/hybrid/HybridSmoother.h>
 
 #include <algorithm>
-#include <unordered_set>
+#include <unordered_map>
 
 // #define DEBUG_SMOOTHER
 namespace gtsam {
@@ -111,6 +111,42 @@ HybridGaussianFactorGraph HybridSmoother::removeFixedValues(
 }
 
 /* ************************************************************************* */
+std::optional<HybridBayesNet> HybridSmoother::eliminateWithoutNoInformation(
+    const HybridGaussianFactorGraph& graph) const {
+  // We can only choose a single Gaussian graph if every mode is decided.
+  for (Key key : graph.discreteKeySet()) {
+    if (fixedValues_.count(key) == 0) return {};
+  }
+
+  // Check if any hybrid factor is fixed to a component without keys.
+  bool dropsComponent = false;
+  for (const auto& factor : graph) {
+    if (auto hgf = std::dynamic_pointer_cast<HybridGaussianFactor>(factor)) {
+      auto component = (*hgf)(fixedValues_).first;
+      if (component && component->keys().empty()) {
+        dropsComponent = true;
+        break;
+      }
+    }
+  }
+  if (!dropsComponent) return {};
+
+  // Eliminate the chosen Gaussian graph without the keyless components.
+  GaussianFactorGraph chosen;
+  for (const auto& factor : graph.choose(fixedValues_)) {
+    if (factor && !factor->keys().empty()) chosen.push_back(factor);
+  }
+
+  const GaussianBayesNet::shared_ptr gaussianBayesNet =
+      chosen.eliminateSequential();
+  HybridBayesNet fragment;
+  for (const auto& conditional : *gaussianBayesNet) {
+    fragment.push_back(std::make_shared<HybridConditional>(conditional));
+  }
+  return fragment;
+}
+
+/* ************************************************************************* */
 void HybridSmoother::update(const HybridNonlinearFactorGraph& newFactors,
                             const Values& initial,
                             std::optional<size_t> maxNrLeaves,
@@ -191,6 +227,11 @@ void HybridSmoother::update(const HybridNonlinearFactorGraph& newFactors,
 #endif
   }
 
+  // Remove the fill-in from components that were fixed to no information.
+  if (auto fragment = eliminateWithoutNoInformation(updatedGraph)) {
+    bayesNetFragment = std::move(*fragment);
+  }
+
 #ifdef DEBUG_SMOOTHER
   // Print discrete keys in the bayesNetFragment:
   std::cout << "\nAfter pruning: ";
@@ -217,66 +258,46 @@ std::pair<HybridGaussianFactorGraph, HybridBayesNet>
 HybridSmoother::addConditionals(const HybridGaussianFactorGraph& newFactors,
                                 const HybridBayesNet& hybridBayesNet) const {
   HybridGaussianFactorGraph graph(newFactors);
-  HybridBayesNet updatedHybridBayesNet(hybridBayesNet);
 
-  KeySet involvedKeys = newFactors.keys();
-  auto involved = [](const KeySet& involvedKeys, const Key& key) {
-    return involvedKeys.find(key) != involvedKeys.end();
-  };
+  // If hybridBayesNet is empty, there are no conditionals to add.
+  if (hybridBayesNet.empty()) {
+    return {graph, hybridBayesNet};
+  }
 
-  // If hybridBayesNet is not empty,
-  // it means we have conditionals to add to the factor graph.
-  if (!hybridBayesNet.empty()) {
-    // We add all relevant hybrid conditionals on the last continuous variable
-    // in the previous `hybridBayesNet` to the graph
-
-    // New conditionals to add to the graph
-    HybridBayesNet newConditionals;
-
-    // NOTE(Varun) Using a for-range loop doesn't work since some of the
-    // conditionals are invalid pointers
-
-    // First get all the keys involved.
-    // We do this by iterating over all conditionals, and checking if their
-    // frontals are involved in the factor graph. If yes, then also make the
-    // parent keys involved in the factor graph.
-    for (size_t i = 0; i < hybridBayesNet.size(); i++) {
-      auto conditional = hybridBayesNet.at(i);
-
-      for (auto& key : conditional->frontals()) {
-        if (involved(involvedKeys, key)) {
-          // Add the conditional parents to involvedKeys
-          // so we add those conditionals too.
-          for (auto&& parentKey : conditional->parents()) {
-            involvedKeys.insert(parentKey);
-          }
-          // Break so we don't add parents twice.
-          break;
-        }
-      }
+  // Map each frontal key to the index of the conditional that eliminates it.
+  std::unordered_map<Key, size_t> frontalToIndex;
+  for (size_t i = 0; i < hybridBayesNet.size(); i++) {
+    for (Key key : hybridBayesNet.at(i)->frontals()) {
+      frontalToIndex[key] = i;
     }
-#ifdef DEBUG_SMOOTHER
-    PrintKeySet(involvedKeys);
-#endif
+  }
 
-    for (size_t i = 0; i < hybridBayesNet.size(); i++) {
-      auto conditional = hybridBayesNet.at(i);
-
-      for (auto& key : conditional->frontals()) {
-        if (involved(involvedKeys, key)) {
-          newConditionals.push_back(conditional);
-
-          // Remove the conditional from the updated Bayes net
-          auto it = find(updatedHybridBayesNet.begin(),
-                         updatedHybridBayesNet.end(), conditional);
-          updatedHybridBayesNet.erase(it);
-
-          break;
-        }
-      }
+  // Starting from the keys of the new factors, walk up through the parents and
+  // mark every conditional that has to be re-eliminated. Unlike a single
+  // forward pass, this does not assume the Bayes net is in elimination order.
+  std::vector<bool> involved(hybridBayesNet.size(), false);
+  const KeySet newKeys = newFactors.keys();
+  KeyVector stack(newKeys.begin(), newKeys.end());
+  while (!stack.empty()) {
+    const Key key = stack.back();
+    stack.pop_back();
+    auto it = frontalToIndex.find(key);
+    if (it == frontalToIndex.end() || involved[it->second]) continue;
+    involved[it->second] = true;
+    for (Key parentKey : hybridBayesNet.at(it->second)->parents()) {
+      stack.push_back(parentKey);
     }
+  }
 
-    graph.push_back(newConditionals);
+  // Split the Bayes net in a single pass: involved conditionals go into the
+  // factor graph and the rest remain in the Bayes net.
+  HybridBayesNet updatedHybridBayesNet;
+  for (size_t i = 0; i < hybridBayesNet.size(); i++) {
+    if (involved[i]) {
+      graph.push_back(hybridBayesNet.at(i));
+    } else {
+      updatedHybridBayesNet.push_back(hybridBayesNet.at(i));
+    }
   }
 
   return {graph, updatedHybridBayesNet};
