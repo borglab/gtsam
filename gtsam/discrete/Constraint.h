@@ -119,7 +119,8 @@ class GTSAM_EXPORT Constraint : public DiscreteFactor {
     return toDecisionTreeFactor().max(keys);
   }
 
-  DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const override {
+  [[nodiscard]] DiscreteFactor::shared_ptr prune(
+      size_t maxNrAssignments) const override {
     return toDecisionTreeFactor().prune(maxNrAssignments);
   }
 
