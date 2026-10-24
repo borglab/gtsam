@@ -569,7 +569,11 @@ DiscreteFactor::shared_ptr TableFactor::sum(const Ordering& keys) const {
 
 /* ************************************************************************ */
 double TableFactor::max() const {
-  double max_value = std::numeric_limits<double>::lowest();
+  // Assignments without a stored value are implicitly zero, so they count
+  // toward the maximum too, e.g. an all-zero factor stores nothing.
+  double max_value = sparse_table_.nonZeros() < sparse_table_.size()
+                         ? 0.0
+                         : std::numeric_limits<double>::lowest();
   for (SparseVector::InnerIterator it(sparse_table_); it; ++it) {
     max_value = std::max(max_value, it.value());
   }

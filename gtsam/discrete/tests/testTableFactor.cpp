@@ -823,6 +823,14 @@ TEST(TableFactor, ComputedScalarZero) {
 }
 
 /* ************************************************************************* */
+// Removing stored zeros must preserve the maximum of an all-zero factor.
+TEST(TableFactor, MaximumAfterZeroing) {
+  const DiscreteKey X(0, 2);
+  const auto zero = TableFactor(X, "0.25 0.75") * 0.0;
+  EXPECT_DOUBLES_EQUAL(0.0, zero->max(), 1e-12);
+}
+
+/* ************************************************************************* */
 // A default-constructed factor acts as the identity in multiplication.
 TEST(TableFactor, DefaultIsIdentity) {
   const DiscreteKey X(0, 2);
