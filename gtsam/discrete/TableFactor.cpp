@@ -692,6 +692,8 @@ TableFactor TableFactor::applySubset(const TableFactor& factor, Binary op) const
     else
       result.insert(uniqueRep(sorted_dkeys_, entry.index())) = value;
   }
+  // Drop exact zeros, which would otherwise be stored and counted as values.
+  result.prune(0.0);
   result.data().squeeze();
   return TableFactor(sorted_dkeys_, result);
 }

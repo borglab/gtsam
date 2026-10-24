@@ -344,8 +344,9 @@ TEST(TableFactor, SubsetOperationsAcrossKeyOrders) {
   } while (std::next_permutation(keys.begin(), keys.end()));
 }
 
-// Generic apply preserves stored zeros but does not evaluate missing entries.
-TEST(TableFactor, SubsetApplyPreservesStoredZeros) {
+// Generic apply evaluates stored zeros but not missing entries, and drops zero
+// results.
+TEST(TableFactor, SubsetApplyUsesStoredZeros) {
   const DiscreteKey A(0, 2), B(1, 3);
   SparseVector jointEntries(6);
   jointEntries.insertBack(0) = 0;
@@ -360,18 +361,19 @@ TEST(TableFactor, SubsetApplyPreservesStoredZeros) {
   entries.insertBack(2) = 7;
   const TableFactor subset(DiscreteKeys{B}, entries);
   const auto result = joint.apply(subset, [](double a, double b) { return a - b; });
+  // Indices 0 and 2 compute to zero and are dropped. Index 3 exists only
+  // because the subset's zero for B=0 is stored. Indices 1 and 4 are never
+  // evaluated because the subset has no entry for B=1.
   SparseVector expected(6);
-  expected.insertBack(0) = 0;
-  expected.insertBack(2) = 0;
   expected.insertBack(3) = 4;
   expected.insertBack(5) = -1;
-  EXPECT_LONGS_EQUAL(4, result.nrValues());
+  EXPECT_LONGS_EQUAL(2, result.nrValues());
   EXPECT(assert_equal(TableFactor(A & B, expected), result));
   vector<int64_t> storedIndices;
   const SparseVector stored = result.sparseTable();
   for (SparseVector::InnerIterator entry(stored); entry; ++entry)
     storedIndices.push_back(entry.index());
-  EXPECT(storedIndices == vector<int64_t>({0, 2, 3, 5}));
+  EXPECT(storedIndices == vector<int64_t>({3, 5}));
 
   const TableFactor empty(DiscreteKeys{B}, SparseVector(3));
   EXPECT_LONGS_EQUAL(0, joint.apply(empty, Ring::add).nrValues());
