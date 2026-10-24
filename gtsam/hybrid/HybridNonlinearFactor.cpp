@@ -18,6 +18,7 @@
 
 #include <gtsam/discrete/DecisionTreeFactor.h>
 #include <gtsam/hybrid/HybridNonlinearFactor.h>
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
@@ -32,7 +33,8 @@ struct HybridNonlinearFactor::ConstructorHelper {
   FactorValuePairs factorTree;
 
   void copyOrCheckContinuousKeys(const NoiseModelFactor::shared_ptr& factor) {
-    if (!factor) return;
+    // Skip pruned (nullptr) and no-information (keyless) components.
+    if (!factor || factor->keys().empty()) return;
     if (continuousKeys.empty()) {
       continuousKeys = factor->keys();
     } else if (factor->keys() != continuousKeys) {
@@ -192,6 +194,12 @@ std::shared_ptr<HybridGaussianFactor> HybridNonlinearFactor::linearize(
     // Check if valid factor. If not, return null and infinite error.
     if (!factor) {
       return {nullptr, std::numeric_limits<double>::infinity()};
+    }
+
+    // A no-information component linearizes to an empty factor plus its
+    // scalar.
+    if (factor->keys().empty()) {
+      return {std::make_shared<JacobianFactor>(), val};
     }
 
     if (auto gaussian = std::dynamic_pointer_cast<noiseModel::Gaussian>(

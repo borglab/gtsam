@@ -234,7 +234,11 @@ HybridNonlinearFactorGraph HybridNonlinearFactorGraph::restrict(
     }
     // Check if it is a hybrid factor
     if (auto hf = dynamic_pointer_cast<HybridFactor>(f)) {
-      result.push_back(hf->restrict(discreteValues));
+      auto restricted = hf->restrict(discreteValues);
+      // A component without keys (e.g. a NoInformationFactor) only adds a
+      // constant, so drop it to keep its keys from being connected.
+      if (restricted && restricted->keys().empty()) continue;
+      result.push_back(restricted);
     } else if (auto df = dynamic_pointer_cast<DiscreteFactor>(f)) {
       auto restricted_df = df->restrict(discreteValues);
       // In the case where all the discrete values in the factor

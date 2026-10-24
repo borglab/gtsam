@@ -44,7 +44,7 @@ struct HybridGaussianFactor::ConstructorHelper {
       : discreteKeys({discreteKey}) {
     // Extract continuous keys from the first non-null factor
     for (const auto& factor : factors) {
-      if (factor && continuousKeys.empty()) {
+      if (factor && !factor->keys().empty() && continuousKeys.empty()) {
         continuousKeys = factor->keys();
         break;
       }
@@ -65,7 +65,7 @@ struct HybridGaussianFactor::ConstructorHelper {
       : discreteKeys({discreteKey}) {
     // Extract continuous keys from the first non-null factor
     for (const GaussianFactorValuePair& pair : factorPairs) {
-      if (pair.first && continuousKeys.empty()) {
+      if (pair.first && !pair.first->keys().empty() && continuousKeys.empty()) {
         continuousKeys = pair.first->keys();
         break;
       }
@@ -83,7 +83,7 @@ struct HybridGaussianFactor::ConstructorHelper {
     // Extract continuous keys from the first non-null factor
     // TODO: just stop after first non-null factor
     factorPairs.visit([&](const GaussianFactorValuePair& pair) {
-      if (pair.first && continuousKeys.empty()) {
+      if (pair.first && !pair.first->keys().empty() && continuousKeys.empty()) {
         continuousKeys = pair.first->keys();
       }
     });
