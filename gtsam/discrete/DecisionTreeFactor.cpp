@@ -24,6 +24,7 @@
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Ordering.h>
 
+#include <limits>
 #include <utility>
 
 using namespace std;
@@ -439,27 +440,19 @@ namespace gtsam {
 
   /* ************************************************************************ */
   double DecisionTreeFactor::computeThreshold(const size_t N) const {
-    // Set of all keys
-    std::set<Key> allKeys = this->labels();
+    // With nothing to keep, no value can reach the threshold.
+    if (N == 0) return std::numeric_limits<double>::infinity();
+
     MinHeap min_heap;
 
     auto op = [&](const Assignment<Key>& a, double p) {
-      // Get all the keys in the current assignment
-      KeySet assignment_keys;
-      for (auto&& [k, _] : a) {
-        assignment_keys.insert(k);
-      }
-
-      // Find the keys missing in the assignment
-      KeyVector diff;
-      std::set_difference(allKeys.begin(), allKeys.end(),
-                          assignment_keys.begin(), assignment_keys.end(),
-                          std::back_inserter(diff));
-
-      // Compute the total number of assignments in the (pruned) subtree
+      // A leaf covers every assignment of the keys missing from its path.
+      // Iterate over the factor's keys rather than the tree's labels():
+      // merging drops keys the values don't depend on from the tree,
+      // but each leaf still stands for all of their assignments.
       size_t nrAssignments = 1;
-      for (auto&& k : diff) {
-        nrAssignments *= cardinalities_.at(k);
+      for (auto&& [key, cardinality] : cardinalities_) {
+        if (a.count(key) == 0) nrAssignments *= cardinality;
       }
 
       // Insert one copy of p per assignment in the subtree, keeping only the
