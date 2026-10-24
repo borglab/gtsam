@@ -669,6 +669,18 @@ TEST(TableFactor, Prune) {
   EXPECT(assert_equal(expected3, *pruned3));
 }
 
+// Check that pruning keeps every value tied with the N-th largest, matching
+// DecisionTreeFactor::prune.
+TEST(TableFactor, PruneKeepsTies) {
+  DiscreteKey X(0, 5);
+  TableFactor f(X, "0.2 0.2 0.1 0.2 0.3");
+
+  auto pruned = std::dynamic_pointer_cast<TableFactor>(f.prune(3));
+
+  TableFactor expected(X, "0.2 0.2 0.0 0.2 0.3");
+  EXPECT(assert_equal(expected, *pruned));
+}
+
 /* ************************************************************************* */
 // Check markdown representation looks as expected.
 TEST(TableFactor, markdown) {

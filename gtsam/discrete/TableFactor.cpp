@@ -961,38 +961,30 @@ string TableFactor::html(const KeyFormatter& keyFormatter,
 DiscreteFactor::shared_ptr TableFactor::prune(size_t maxNrAssignments) const {
   const size_t N = maxNrAssignments;
 
-  // Get the probabilities in the TableFactor so we can threshold.
-  vector<pair<Eigen::Index, double>> probabilities;
-
-  // Store non-zero probabilities along with their indices in a vector.
+  // Collect the stored values so we can find the N-th largest.
+  vector<double> values;
+  values.reserve(sparse_table_.nonZeros());
   for (SparseIt it(sparse_table_); it; ++it) {
-    probabilities.emplace_back(it.index(), it.value());
+    values.push_back(it.value());
   }
 
-  // The number of probabilities can be lower than max_leaves.
-  if (probabilities.size() <= N) return std::make_shared<TableFactor>(*this);
+  // The number of values can be lower than N, so there is nothing to prune.
+  if (values.size() <= N) return std::make_shared<TableFactor>(*this);
 
-  // Sort the vector in descending order based on the element values.
-  sort(probabilities.begin(), probabilities.end(),
-       [](const std::pair<Eigen::Index, double>& a,
-          const std::pair<Eigen::Index, double>& b) {
-         return a.second > b.second;
-       });
-
-  // Keep the largest N probabilities in the vector.
-  if (probabilities.size() > N) probabilities.resize(N);
-
-  // Create pruned sparse vector.
-  SparseVector pruned_vec(sparse_table_.size());
-  pruned_vec.reserve(probabilities.size());
-
-  // Populate pruned sparse vector.
-  for (const auto& prob : probabilities) {
-    pruned_vec.insert(prob.first) = prob.second;
+  // Keep every value at or above the N-th largest one, as
+  // DecisionTreeFactor::prune does. Values tied with the threshold are all
+  // kept, so more than N assignments can survive.
+  SparseVector pruned(sparse_table_.size());
+  if (N > 0) {
+    std::nth_element(values.begin(), values.begin() + (N - 1), values.end(),
+                     std::greater<double>());
+    const double threshold = values[N - 1];
+    for (SparseIt it(sparse_table_); it; ++it) {
+      if (it.value() >= threshold) pruned.insert(it.index()) = it.value();
+    }
   }
 
-  // Create pruned decision tree factor and return.
-  return std::make_shared<TableFactor>(this->discreteKeys(), pruned_vec);
+  return std::make_shared<TableFactor>(this->discreteKeys(), pruned);
 }
 
 /* ************************************************************************ */
