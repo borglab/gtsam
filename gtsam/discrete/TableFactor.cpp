@@ -694,9 +694,12 @@ TableFactor TableFactor::applySubset(const TableFactor& factor, Binary op) const
 
 /* ************************************************************************ */
 TableFactor TableFactor::apply(const TableFactor& f, Binary op) const {
-  if (keys_.empty() && sparse_table_.nonZeros() == 0)
+  // Only a default-constructed factor has an empty table, and it acts as the
+  // identity. A keyless scalar always has a table of length 1, even when its
+  // value is 0, so a computed zero still applies.
+  if (keys_.empty() && sparse_table_.size() == 0)
     return f;
-  else if (f.keys_.empty() && f.sparse_table_.nonZeros() == 0)
+  else if (f.keys_.empty() && f.sparse_table_.size() == 0)
     return *this;
   // Multiplying by a subset or dividing by a separator needs only a lookup,
   // not a hash join with per-entry assignment maps. Check containment before

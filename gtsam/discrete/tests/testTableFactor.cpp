@@ -808,6 +808,30 @@ TEST(TableFactor, OperationsDropZeros) {
 }
 
 /* ************************************************************************* */
+// A computed scalar zero must annihilate factors in either multiplication order.
+TEST(TableFactor, ComputedScalarZero) {
+  const DiscreteKey X(0, 2);
+  const TableFactor prior(X, "0.25 0.75");
+  const TableFactor scalar(DiscreteKeys{}, std::vector<double>{1.0});
+  const auto zero = scalar.apply([](const double&) { return 0.0; });
+
+  for (const TableFactor& result :
+       {zero * prior, prior * zero, prior / zero}) {
+    EXPECT_DOUBLES_EQUAL(0.0, result(DiscreteValues{{X.first, 0}}), 1e-12);
+    EXPECT_DOUBLES_EQUAL(0.0, result(DiscreteValues{{X.first, 1}}), 1e-12);
+  }
+}
+
+/* ************************************************************************* */
+// A default-constructed factor acts as the identity in multiplication.
+TEST(TableFactor, DefaultIsIdentity) {
+  const DiscreteKey X(0, 2);
+  const TableFactor prior(X, "0.25 0.75");
+  EXPECT(assert_equal(prior, TableFactor() * prior));
+  EXPECT(assert_equal(prior, prior * TableFactor()));
+}
+
+/* ************************************************************************* */
 namespace key_order_fixture {
 // Keys deliberately not in increasing order: X comes first but has key 1.
 const DiscreteKey X(1, 2), Y(0, 3);
