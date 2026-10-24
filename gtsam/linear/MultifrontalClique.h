@@ -230,6 +230,9 @@ class GTSAM_EXPORT MultifrontalClique {
    */
   void eliminateInPlace();
 
+  /** Set original frontal diagonals before each elimination or damping attempt. */
+  void setReferenceDiagonal(const VectorValues& diagonal);
+
   /**
    * Version of eliminate that applies damping before eliminate.
    *
@@ -264,6 +267,7 @@ class GTSAM_EXPORT MultifrontalClique {
                                   const MultifrontalClique& clique);
 
  private:
+  Vector referenceDiagonal_;  ///< Original frontal diagonal plus applied damping.
   enum class SolveMode {
     Cholesky,
     QrLeaf,

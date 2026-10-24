@@ -92,13 +92,6 @@ MultifrontalSolver::PrecomputedData NonlinearMultifrontalSolver::Precompute(
 /* ************************************************************************* */
 void NonlinearMultifrontalSolver::load(const GaussianFactorGraph& graph) {
   MultifrontalSolver::load(graph);
-  if (dampingParams_.diagonalDamping && dampingParams_.exactHessianDiagonal) {
-    exactHessianDiagonal_ = graph.hessianDiagonal();
-    hasExactHessianDiagonal_ = true;
-  } else {
-    hasExactHessianDiagonal_ = false;
-    exactHessianDiagonal_ = VectorValues();
-  }
 }
 
 /* ************************************************************************* */
@@ -115,7 +108,8 @@ void NonlinearMultifrontalSolver::eliminateInPlace(double lambda) {
   } else {
     runBottomUp(
         [this, lambda](MultifrontalClique& node) {
-          node.eliminateInPlace(lambda, dampingParams_, exactHessianDiagonal_);
+          node.setReferenceDiagonal(hessianDiagonal_);
+          node.eliminateInPlace(lambda, dampingParams_, hessianDiagonal_);
         },
         params_.eliminationParallelThreshold,
         params_.leafAggregationProblemSize);
@@ -132,20 +126,14 @@ void NonlinearMultifrontalSolver::eliminateInPlace(
     return;
   }
 
-  // Calculate the exact Hessian diagonal if needed.
-  if (dampingParams_.diagonalDamping && dampingParams_.exactHessianDiagonal) {
-    exactHessianDiagonal_ = graph.hessianDiagonal();
-    hasExactHessianDiagonal_ = true;
-  } else {
-    hasExactHessianDiagonal_ = false;
-    exactHessianDiagonal_ = VectorValues();
-  }
+  hessianDiagonal_ = graph.hessianDiagonal();
 
   // Run bottom-up elimination with damping.
   runBottomUp(
       [&graph, this, lambda](MultifrontalClique& node) {
+        node.setReferenceDiagonal(hessianDiagonal_);
         node.fillAb(graph);
-        node.eliminateInPlace(lambda, dampingParams_, exactHessianDiagonal_);
+        node.eliminateInPlace(lambda, dampingParams_, hessianDiagonal_);
       },
       params_.eliminationParallelThreshold,
       params_.leafAggregationProblemSize);

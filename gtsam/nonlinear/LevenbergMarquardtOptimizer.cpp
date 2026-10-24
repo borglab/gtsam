@@ -127,6 +127,15 @@ inline void LevenbergMarquardtOptimizer::writeLogFile(double currentError){
 /* ************************************************************************* */
 bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
                                             const VectorValues& sqrtHessianDiagonal) {
+  const bool needsDiagonal = (params_.isMultifrontal() || params_.isSequential()) &&
+      internal::usesCholesky(params_.getEliminationFunction());
+  return tryLambda(linear, sqrtHessianDiagonal,
+                   needsDiagonal ? linear.hessianDiagonal() : VectorValues());
+}
+
+bool LevenbergMarquardtOptimizer::tryLambda(
+    const GaussianFactorGraph& linear, const VectorValues& sqrtHessianDiagonal,
+    const VectorValues& hessianDiagonal) {
   auto currentState = static_cast<const State*>(state_.get());
   bool verbose = (params_.verbosityLM >= LevenbergMarquardtParams::TRYLAMBDA);
   auto solveStart = std::chrono::high_resolution_clock::now();
@@ -155,11 +164,30 @@ bool LevenbergMarquardtOptimizer::tryLambda(const GaussianFactorGraph& linear,
       // like gradient descent)
       GaussianFactorGraph dampedSystem =
           buildDampedSystem(linear, sqrtHessianDiagonal);
-      delta = solve(dampedSystem, params_);
+      if (hessianDiagonal.size() != 0) {
+        VectorValues diagonal;
+        // Standard damping appends factors. Custom damping can replace them;
+        // in that case derive the diagonal from the actual returned system.
+        if (dampedSystem.size() >= linear.size() &&
+            std::equal(linear.begin(), linear.end(), dampedSystem.begin())) {
+          diagonal = hessianDiagonal;
+          for (size_t i = linear.size(); i < dampedSystem.size(); ++i)
+            if (dampedSystem[i]) dampedSystem[i]->hessianDiagonalAdd(diagonal);
+        } else {
+          diagonal = dampedSystem.hessianDiagonal();
+        }
+        delta = solveWithReferenceDiagonal(dampedSystem, params_, diagonal);
+      } else {
+        delta = solve(dampedSystem, params_);
+      }
     }
     systemSolvedSuccessfully = true;
     // ========================================================================
   } catch (const IndeterminateSystemException&) {
+    systemSolvedSuccessfully = false;
+  } catch (const CholeskyFailed&) {
+    // The reusable multifrontal solver reports the same numerical rejection
+    // directly, without the HessianFactor exception translation.
     systemSolvedSuccessfully = false;
   }
 
@@ -314,9 +342,13 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::iterate() {
   }
 
   // Only calculate diagonal of Hessian (expensive) once per outer iteration, if we need it
-  VectorValues sqrtHessianDiagonal;
+  VectorValues hessianDiagonal, sqrtHessianDiagonal;
+  const bool usesCholesky = (params_.isMultifrontal() || params_.isSequential()) &&
+      internal::usesCholesky(params_.getEliminationFunction());
+  if (!useMultifrontal && (params_.dampingParams.diagonalDamping || usesCholesky))
+    hessianDiagonal = linear->hessianDiagonal();
   if (params_.dampingParams.diagonalDamping && !useMultifrontal) {
-    sqrtHessianDiagonal = linear->hessianDiagonal();
+    sqrtHessianDiagonal = hessianDiagonal;
     for (auto& [key, value] : sqrtHessianDiagonal) {
       value = value.cwiseMax(params_.dampingParams.minDiagonal)
                   .cwiseMin(params_.dampingParams.maxDiagonal)
@@ -325,7 +357,7 @@ GaussianFactorGraph::shared_ptr LevenbergMarquardtOptimizer::iterate() {
   }
 
   // Keep increasing lambda until we make make progress
-  while (!tryLambda(*linear, sqrtHessianDiagonal)) {
+  while (!tryLambda(*linear, sqrtHessianDiagonal, hessianDiagonal)) {
     auto newState = static_cast<const State*>(state_.get());
     writeLogFile(newState->error);
   }

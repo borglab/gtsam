@@ -638,6 +638,7 @@ MultifrontalSolver::PrecomputedData MultifrontalSolver::Precompute(
 
 /* ************************************************************************* */
 void MultifrontalSolver::load(const GaussianFactorGraph& graph) {
+  hessianDiagonal_ = graph.hessianDiagonal();
   for (auto& clique : cliques_) {
     clique->fillAb(graph);
   }
@@ -661,7 +662,10 @@ void MultifrontalSolver::eliminateInPlace() {
   }
   eliminated_ = false;
   hasDeltaError_ = false;
-  runBottomUp([](MultifrontalClique& node) { node.eliminateInPlace(); },
+  runBottomUp([this](MultifrontalClique& node) {
+                node.setReferenceDiagonal(hessianDiagonal_);
+                node.eliminateInPlace();
+              },
               params_.eliminationParallelThreshold,
               params_.leafAggregationProblemSize);
   eliminated_ = true;
@@ -674,9 +678,11 @@ void MultifrontalSolver::eliminateInPlace(const GaussianFactorGraph& graph) {
         "MultifrontalSolver::eliminateInPlace: solver is configured for "
         "partial elimination.");
   }
+  hessianDiagonal_ = graph.hessianDiagonal();
   // Combine load + eliminate in one post-order traversal to improve locality.
   runBottomUp(
-      [&graph](MultifrontalClique& node) {
+      [this, &graph](MultifrontalClique& node) {
+        node.setReferenceDiagonal(hessianDiagonal_);
         node.fillAb(graph);
         node.eliminateInPlace();
       },
@@ -700,7 +706,8 @@ void MultifrontalSolver::eliminatePartialInPlace() {
         "configured with a partial ordering.");
   }
   runBottomUp(
-      [](MultifrontalClique& node) {
+      [this](MultifrontalClique& node) {
+        node.setReferenceDiagonal(hessianDiagonal_);
         node.prepareForElimination();
         if (node.numFrontals() > 0) node.factorize();
       },
@@ -719,8 +726,10 @@ void MultifrontalSolver::eliminatePartialInPlace(
         "MultifrontalSolver::eliminatePartialInPlace: solver is not "
         "configured with a partial ordering.");
   }
+  hessianDiagonal_ = graph.hessianDiagonal();
   runBottomUp(
-      [&graph](MultifrontalClique& node) {
+      [this, &graph](MultifrontalClique& node) {
+        node.setReferenceDiagonal(hessianDiagonal_);
         node.fillAb(graph);
         node.prepareForElimination();
         if (node.numFrontals() > 0) node.factorize();

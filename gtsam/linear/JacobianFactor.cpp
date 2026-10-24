@@ -623,6 +623,9 @@ Matrix JacobianFactor::information() const {
 
 /* ************************************************************************* */
 void JacobianFactor::hessianDiagonalAdd(VectorValues& d) const {
+  // Structural Bayes-tree orphan wrappers have keys but no matrix blocks.
+  // Match updateHessian(): a factor without rows contributes no information.
+  if (rows() == 0) return;
   for (size_t pos = 0; pos < size(); ++pos) {
     Key j = keys_[pos];
     size_t nj = Ab_(pos).cols();

@@ -554,6 +554,55 @@ TEST(GaussianFactorGraph, InconsistentEliminationMessage) {
   }
 }
 /* ************************************************************************* */
+
+// #2856: retain usable weak pivots; #2653: reject much weaker pivots even
+// when sequential elimination puts the last variable in a scalar clique.
+TEST(GaussianFactorGraph, CholeskyAgreementAcrossEliminations) {
+  const Ordering ordering{0, 1};
+  for (double sigma : {1e-4, 1e-5}) {
+    GaussianFactorGraph graph;
+    graph.emplace_shared<JacobianFactor>(0, Matrix11{1.0}, Vector1{0.1});
+    graph.emplace_shared<JacobianFactor>(0, Matrix11{-1.0}, 1,
+        Matrix11{1.0}, Vector1{0.0}, noiseModel::Isotropic::Sigma(1, sigma));
+    const auto expected = graph.optimize(ordering, EliminateQR);
+    const auto tree = graph.buildIndexedJunctionTree(ordering);
+    if (sigma == 1e-4) {
+      EXPECT(assert_equal(expected, graph.optimizeDensely(), 1e-8));
+      EXPECT(assert_equal(expected,
+          graph.eliminateSequential(ordering, EliminateCholesky)->optimize(), 1e-8));
+      EXPECT(assert_equal(expected, graph.optimize(ordering, EliminateCholesky), 1e-8));
+      EXPECT(assert_equal(expected,
+          graph.eliminateMultifrontal(tree, EliminateCholesky)->optimize(), 1e-8));
+    } else {
+      CHECK_EXCEPTION(graph.optimizeDensely(), CholeskyFailed);
+      CHECK_EXCEPTION(graph.eliminateSequential(ordering, EliminateCholesky),
+                      IndeterminateSystemException);
+      CHECK_EXCEPTION(graph.optimize(ordering, EliminateCholesky),
+                      IndeterminateSystemException);
+      CHECK_EXCEPTION(graph.eliminateMultifrontal(tree, EliminateCholesky),
+                      IndeterminateSystemException);
+      CHECK_EXCEPTION(graph.eliminateSequential(ordering),
+                      IndeterminateSystemException);
+    }
+  }
+}
+
+
+// Incremental elimination carries structural orphan wrappers with parent keys
+// but no numeric rows. They must not be read as populated Jacobian blocks.
+TEST(GaussianFactorGraph, HessianDiagonalSkipsOrphanWrappers) {
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, Matrix11{2.0}, Vector1{0.0});
+  const auto expected = graph.hessianDiagonal();
+  auto orphan = std::make_shared<GaussianBayesTreeClique>();
+  auto conditional = std::make_shared<GaussianConditional>(
+      1, Vector1{0.0}, Matrix11{1.0}, 0, Matrix11{-1.0},
+      noiseModel::Unit::Create(1));
+  orphan->setEliminationResult({conditional, GaussianFactor::shared_ptr()});
+  graph.emplace_shared<BayesTreeOrphanWrapper<GaussianBayesTreeClique>>(orphan);
+  EXPECT(assert_equal(expected, graph.hessianDiagonal()));
+}
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

@@ -384,6 +384,10 @@ namespace gtsam {
      */
     std::shared_ptr<GaussianConditional> eliminateCholesky(const Ordering& keys);
 
+    /** Eliminate using the original system's scalar frontal diagonals. */
+    std::shared_ptr<GaussianConditional> eliminateCholesky(
+        const Ordering& keys, const Vector& referenceDiagonal);
+
       /// Solve the system A'*A delta = A'*b in-place, return delta as VectorValues
     VectorValues solve();
 

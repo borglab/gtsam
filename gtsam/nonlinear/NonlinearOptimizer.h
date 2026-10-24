@@ -94,7 +94,16 @@ class GTSAM_EXPORT NonlinearOptimizer {
   /// Optional reusable CHOLMOD numerical and symbolic session.
   mutable std::unique_ptr<internal::CholmodSolver> cholmodSolver_;
 
+  /// Call the virtual solve hook while supplying a known system diagonal.
+  VectorValues solveWithReferenceDiagonal(
+      const GaussianFactorGraph& graph, const NonlinearOptimizerParams& params,
+      const VectorValues& diagonal) const;
+
  private:
+  // Borrowed only for the duration of solveWithReferenceDiagonal(). Keeping
+  // this context preserves existing subclasses' two-argument solve overrides.
+  mutable const GaussianFactorGraph* referenceGraph_ = nullptr;
+  mutable const VectorValues* referenceDiagonal_ = nullptr;
   /// Symbolic tree and the ordering and per-factor keys that permit its reuse.
   struct IndexedJunctionTreeCache;
   mutable std::unique_ptr<IndexedJunctionTreeCache> indexedJunctionTreeCache_;

@@ -86,9 +86,15 @@ void SymmetricBlockMatrix::invertInPlace() {
 
 /* ************************************************************************* */
 void SymmetricBlockMatrix::choleskyPartial(DenseIndex nFrontals) {
+  choleskyPartial(nFrontals, nullptr);
+}
+
+void SymmetricBlockMatrix::choleskyPartial(DenseIndex nFrontals,
+                                          const double* referenceDiagonal) {
   gttic(VerticalBlockMatrix_choleskyPartial);
   DenseIndex topleft = variableColOffsets_[blockStart_];
-  if (!gtsam::choleskyPartial(matrix_, offset(nFrontals) - topleft, topleft)) {
+  if (!gtsam::choleskyPartial(matrix_, offset(nFrontals) - topleft, topleft,
+                            referenceDiagonal)) {
     throw CholeskyFailed();
   }
 }

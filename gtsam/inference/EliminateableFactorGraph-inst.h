@@ -79,7 +79,7 @@ namespace gtsam {
       gttic(eliminateSequential);
       // Do elimination
       EliminationTreeType etree(asDerived(), (*variableIndex).get(), ordering);
-      const auto [bayesNet, factorGraph] = etree.eliminate(function);
+      const auto [bayesNet, factorGraph] = etree.eliminate(prepareElimination(function));
       // If any factors are remaining, the ordering was incomplete
       if(!factorGraph->empty()) {
         throw InconsistentEliminationRequested(factorGraph->keys());
@@ -142,7 +142,7 @@ namespace gtsam {
       // Do elimination with given ordering
       EliminationTreeType etree(asDerived(), (*variableIndex).get(), ordering);
       JunctionTreeType junctionTree(etree);
-      const auto [bayesTree, factorGraph] = junctionTree.eliminate(function);
+      const auto [bayesTree, factorGraph] = junctionTree.eliminate(prepareElimination(function));
       // If any factors are remaining, the ordering was incomplete
       if(!factorGraph->empty()) {
         throw InconsistentEliminationRequested(factorGraph->keys());
@@ -269,7 +269,8 @@ namespace gtsam {
 
     ClusterEliminationData rootsContainer(0, indexedJunctionTree.nrRoots());
 
-    EliminationPostOrderVisitor visitorPost(asDerived(), function);
+    const Eliminate prepared = prepareElimination(function);
+    EliminationPostOrderVisitor visitorPost(asDerived(), prepared);
     {
       TbbOpenMPMixedScope threadLimiter;
       treeTraversal::DepthFirstForestParallel(
@@ -304,7 +305,7 @@ namespace gtsam {
       gttic(eliminatePartialSequential);
       // Do elimination
       EliminationTreeType etree(asDerived(), (*variableIndex).get(), ordering);
-      return etree.eliminate(function);
+      return etree.eliminate(prepareElimination(function));
     } else {
       // If no variable index is provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
@@ -344,7 +345,7 @@ namespace gtsam {
       // Do elimination
       EliminationTreeType etree(asDerived(), (*variableIndex).get(), ordering);
       JunctionTreeType junctionTree(etree);
-      return junctionTree.eliminate(function);
+      return junctionTree.eliminate(prepareElimination(function));
     } else {
       // If no variable index is provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());

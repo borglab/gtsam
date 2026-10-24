@@ -434,4 +434,19 @@ template<>
 struct traits<GaussianFactorGraph> : public Testable<GaussianFactorGraph> {
 };
 
+  /// Bind original diagonals for the built-in Cholesky elimination callbacks.
+  template <>
+  GTSAM_EXPORT GaussianFactorGraph::Eliminate
+  EliminateableFactorGraph<GaussianFactorGraph>::prepareElimination(
+      const Eliminate& function) const;
+
+  namespace internal {
+  /// Bind a complete-system diagonal; leave custom/QR callbacks intact.
+  GTSAM_EXPORT GaussianFactorGraph::Eliminate withCholeskyDiagonal(
+      const GaussianFactorGraph::Eliminate& function,
+      const VectorValues& referenceDiagonal);
+  /// Whether a callback is one of the built-in Cholesky elimination functions.
+  GTSAM_EXPORT bool usesCholesky(const GaussianFactorGraph::Eliminate& function);
+  }
+
 } // \ namespace gtsam
