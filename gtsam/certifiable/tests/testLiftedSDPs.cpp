@@ -361,6 +361,15 @@ TEST(LiftedSDPs, Pose2_MonolithicAndChordal) {
   EXPECT(chordalResult.objective < kObjectiveTolerance);
   EXPECT_DOUBLES_EQUAL(monolithicResult.objective, chordalResult.objective,
                        kObjectiveTolerance);
+
+  // Pose 0 is a fixed variable: it has no SDP block, but qcqpValues()
+  // returns it.
+  LONGS_EQUAL(kNumPoses - 1, monolithic.orderedKeys().size());
+  LONGS_EQUAL(kNumPoses - 1, chordal.orderedKeys().size());
+  LONGS_EQUAL(kNumPoses - 1, monolithic.variableEVRs().size());
+  EXPECT(!monolithic.orderedKeyDims().count(0));
+  EXPECT(monolithic.qcqpValues().exists(0));
+  EXPECT(chordal.qcqpValues().exists(0));
 }
 
 // Verifies rank-one Pose3 slices and matching monolithic/chordal solutions.
