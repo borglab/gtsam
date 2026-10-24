@@ -560,6 +560,11 @@ Vector HessianFactor::gradient(Key key, const VectorValues& x) const {
 /* ************************************************************************* */
 std::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(
     const Ordering& keys) {
+  return eliminateCholesky(keys, Vector());
+}
+
+std::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(
+    const Ordering& keys, const Vector& referenceDiagonal) {
   gttic(HessianFactor_eliminateCholesky);
 
   GaussianConditional::shared_ptr conditional;
@@ -568,7 +573,12 @@ std::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(
     // Do dense elimination
     size_t nFrontals = keys.size();
     assert(nFrontals <= size());
-    info_.choleskyPartial(nFrontals);
+    const DenseIndex frontalDim = info_.blockScalarOffset(nFrontals) -
+                                  info_.blockScalarOffset(0);
+    if (referenceDiagonal.size() && referenceDiagonal.size() != frontalDim)
+      throw std::invalid_argument("Cholesky reference diagonal dimension mismatch");
+    info_.choleskyPartial(nFrontals, referenceDiagonal.size()
+                                       ? referenceDiagonal.data() : nullptr);
 
     // TODO(frank): pre-allocate GaussianConditional and write into it
     VerticalBlockMatrix Ab = info_.split(nFrontals);

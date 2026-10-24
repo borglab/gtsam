@@ -358,19 +358,7 @@ namespace gtsam {
     Scatter scatter(*this);
     HessianFactor combined(*this, scatter);
 
-    // TODO(frank): cast to large dynamic matrix :-(
-    // NOTE(frank): info only valid (I think) in upper triangle. No problem for LLT...
-    Matrix augmented = combined.info().selfadjointView();
-
-    // Do Cholesky Factorization
-    size_t n = augmented.rows() - 1;
-    auto AtA = augmented.topLeftCorner(n, n);
-    auto eta = augmented.topRightCorner(n, 1);
-    Eigen::LLT<Matrix, Eigen::Upper> llt(AtA);
-
-    // Solve and convert, re-using scatter data structure
-    Vector solution = llt.solve(eta);
-    return VectorValues(solution, scatter);
+    return combined.solve();
   }
 
   /* ************************************************************************* */
@@ -578,5 +566,48 @@ namespace gtsam {
                      // factor
     }
   }
+
+namespace internal {
+
+bool usesCholesky(const GaussianFactorGraph::Eliminate& function) {
+  if (const auto* target = function.target<decltype(&EliminateCholesky)>())
+    return *target == &EliminateCholesky;
+  if (const auto* target = function.target<decltype(&EliminatePreferCholesky)>())
+    return *target == &EliminatePreferCholesky ||
+           *target == &EliminationTraits<GaussianFactorGraph>::DefaultEliminate;
+  return false;
+}
+
+GaussianFactorGraph::Eliminate withCholeskyDiagonal(
+    const GaussianFactorGraph::Eliminate& function,
+    const VectorValues& referenceDiagonal) {
+  if (!usesCholesky(function)) return function;
+  const bool preferCholesky = !function.target<decltype(&EliminateCholesky)>();
+  return [referenceDiagonal, preferCholesky](const GaussianFactorGraph& factors,
+                                           const Ordering& keys)
+      -> GaussianFactorGraph::EliminationResult {
+    if (preferCholesky && hasConstraints(factors)) return EliminateQR(factors, keys);
+    HessianFactor::shared_ptr joint;
+    try {
+      joint = std::make_shared<HessianFactor>(factors, Scatter(factors, keys));
+    } catch (const std::invalid_argument&) {
+      throw InvalidDenseElimination(
+          "EliminateCholesky requested variables absent from its factors.");
+    }
+    const Vector diagonal = referenceDiagonal.vector(keys);
+    auto conditional = joint->eliminateCholesky(keys, diagonal);
+    return {conditional, joint};
+  };
+}
+
+}  // namespace internal
+
+template <>
+GaussianFactorGraph::Eliminate
+EliminateableFactorGraph<GaussianFactorGraph>::prepareElimination(
+    const Eliminate& function) const {
+  if (!internal::usesCholesky(function)) return function;
+  return internal::withCholeskyDiagonal(function, asDerived().hessianDiagonal());
+}
 
 } // namespace gtsam

@@ -90,6 +90,11 @@ namespace gtsam {
     /// The function type that does a single dense elimination step on a subgraph.
     typedef std::function<EliminationResult(const FactorGraphType&, const Ordering&)> Eliminate;
 
+    /** Bind any graph-wide numerical data before starting an elimination. */
+    Eliminate prepareElimination(const Eliminate& function) const {
+      return function;
+    }
+
     /// Typedef for an optional variable index as an argument to elimination functions
     /// It is an optional to a constant reference
     typedef std::optional<std::reference_wrapper<const VariableIndex>> OptionalVariableIndex;
