@@ -25,6 +25,7 @@ namespace gtsam {
 #include <gtsam/geometry/SphericalCamera.h>
 #include <gtsam/geometry/StereoPoint2.h>
 #include <gtsam/navigation/ImuBias.h>
+#include <gtsam/slam/KnownLandmarkSquaredRangeFactor.h>
 #include <gtsam/constrained/NonlinearEquality.h>
 template <T = {gtsam::Point2,
                gtsam::StereoPoint2,
@@ -268,6 +269,21 @@ template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
 T fromQcqpValue(const gtsam::Matrix& qcqpValue);
 
 template <T = {gtsam::Rot2, gtsam::Rot3, gtsam::Pose2, gtsam::Pose3}>
+gtsam::Values extractQcqpValues(const gtsam::Values& qcqpValues);
+
+// Dimension overloads avoid nested type arguments in wrapped free functions.
+template <N = {2, 3}>
+gtsam::Matrix qcqpValue(const gtsam::AugmentedPoint<N>& typedValue);
+
+template <N = {2, 3}>
+void insertQcqpValue(gtsam::Key key,
+                     const gtsam::AugmentedPoint<N>& typedValue,
+                     gtsam::Values& qcqpValues);
+
+template <N = {2, 3}>
+gtsam::AugmentedPoint<N> fromQcqpValue(const gtsam::Matrix& qcqpValue);
+
+template <N = {2, 3}>
 gtsam::Values extractQcqpValues(const gtsam::Values& qcqpValues);
 
 #include <gtsam/constrained/ConstrainedOptimizer.h>

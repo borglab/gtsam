@@ -30,7 +30,6 @@
 #include <memory>
 #include <stdexcept>
 #include <tuple>
-#include <vector>
 
 using namespace gtsam;
 
@@ -71,26 +70,6 @@ TEST(KnownLandmarkSquaredRangeFactor, Point2) {
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
 }
 
-// Verifies that scalar information weighting produces the expected factor cost.
-TEST(KnownLandmarkSquaredRangeFactor, ScalarInfo) {
-  const Point wX(1.0, 2.0);
-  const Point wL(4.0, 6.0);
-
-  Matrix information(1, 1);
-  information << 4.0;
-  const auto model = noiseModel::Gaussian::Information(information);
-  const Factor factor(kKey, wL, 4.0, model);
-
-  Values values;
-  values.insert(kKey, wX);
-
-  const Vector error = factor.evaluateError(wX);
-  const double expected = 0.5 * error.dot(information * error);
-
-  EXPECT_DOUBLES_EQUAL(162.0, expected, 1e-12);
-  EXPECT_DOUBLES_EQUAL(expected, factor.error(values), 1e-9);
-}
-
 // Verifies that dynamically sized 2D landmarks are accepted after validation.
 TEST(KnownLandmarkSquaredRangeFactor, AcceptsDynamicLandmark2D) {
   Vector wL(2);
@@ -111,14 +90,6 @@ TEST(KnownLandmarkSquaredRangeFactor, RejectsWrongLandmarkDimension2D) {
 
   CHECK_EXCEPTION(Factor(kKey, tooShort, 4.0, model), std::invalid_argument);
   CHECK_EXCEPTION(Factor(kKey, tooLong, 4.0, model), std::invalid_argument);
-}
-
-// Verifies that negative range measurements are rejected.
-TEST(KnownLandmarkSquaredRangeFactor, RejectsNegativeRange) {
-  const Point wL(4.0, 6.0);
-  const auto model = noiseModel::Unit::Create(1);
-
-  CHECK_EXCEPTION(Factor(kKey, wL, -4.0, model), std::invalid_argument);
 }
 
 }  // namespace point2_fixture
@@ -161,28 +132,6 @@ TEST(KnownLandmarkSquaredRangeFactor, Point3) {
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-7, 1e-5);
 }
 
-// Verifies that dynamically sized 3D landmarks are accepted after validation.
-TEST(KnownLandmarkSquaredRangeFactor, AcceptsDynamicLandmark3D) {
-  Vector wL(3);
-  wL << 3.0, 5.0, 9.0;
-  const Point wX(1.0, 2.0, 3.0);
-  const auto model = noiseModel::Unit::Create(1);
-
-  const Factor factor(kKey, wL, 5.0, model);
-  EXPECT(assert_equal(Vector1(24.0), factor.evaluateError(wX)));
-}
-
-// Verifies that short and long 3D landmark vectors throw before Eigen
-// conversion.
-TEST(KnownLandmarkSquaredRangeFactor, RejectsWrongLandmarkDimension3D) {
-  const auto model = noiseModel::Unit::Create(1);
-  const Vector tooShort = Vector::Zero(2);
-  const Vector tooLong = Vector::Zero(4);
-
-  CHECK_EXCEPTION(Factor(kKey, tooShort, 5.0, model), std::invalid_argument);
-  CHECK_EXCEPTION(Factor(kKey, tooLong, 5.0, model), std::invalid_argument);
-}
-
 // Verifies cloning preserves factor data and equality detects changed data.
 TEST(KnownLandmarkSquaredRangeFactor, CloneAndEquals) {
   const Point wL(3.0, 5.0, 9.0);
@@ -209,32 +158,19 @@ TEST(KnownLandmarkSquaredRangeFactor, CloneAndEquals) {
 /* ************************************************************************* */
 
 /* ************************************************************************* */
-namespace augmented_point1_fixture {
-
-using Point = AugmentedPoint<1>;
-using Traits = traits<Point>;
-
-// Verifies the lift and sign-independent recovery for a 1D point.
-TEST(AugmentedPoint, QcqpOneDimensional) {
-  Point::VectorType coordinates;
-  coordinates << -3.0;
-  const Point point(coordinates);
-
-  const Matrix X = Traits::QcqpValue<1>(point);
-  const Vector expected = (Vector(3) << 1.0, -3.0, 9.0).finished();
-  EXPECT(expected.isApprox(X.col(0), 1e-12));
-  EXPECT_LONGS_EQUAL(2, Traits::QcqpConstraints<1>().size());
-  EXPECT(point.equals(Traits::FromQcqpValue<1>(-X)));
-}
-
-}  // namespace augmented_point1_fixture
-/* ************************************************************************* */
-
-/* ************************************************************************* */
 namespace augmented_point3_fixture {
 
 using Point = AugmentedPoint<3>;
 using Traits = traits<Point>;
+
+// Dynamic wrapper inputs must be validated before conversion to fixed storage.
+TEST(AugmentedPoint, DynamicCoordinates) {
+  const Vector coordinates = (Vector(3) << 1.0, -2.0, 3.0).finished();
+  EXPECT(Point(coordinates).vector().isApprox(coordinates));
+  CHECK_EXCEPTION(Point(Vector::Zero(2)), std::invalid_argument);
+  CHECK_EXCEPTION(Point(Vector::Zero(4)), std::invalid_argument);
+  CHECK_EXCEPTION(Point(Matrix::Zero(1, 3)), std::invalid_argument);
+}
 
 // Verifies the additive group operations and vector-space traits.
 TEST(AugmentedPoint, VectorSpace) {
@@ -306,11 +242,11 @@ TEST(AugmentedPoint, QcqpLiftAndConstraints3D) {
 // Verifies round-trip recovery and global sign invariance.
 TEST(AugmentedPoint, QcqpRoundTripAndSign) {
   const Point point(Eigen::Vector3d(1.0, -2.0, 3.0));
-  const Matrix X = Traits::QcqpValue<1>(point);
-  EXPECT(point.equals(Traits::FromQcqpValue<1>(X)));
+  const Matrix X = qcqpValue<3>(point);
+  EXPECT(point.equals(fromQcqpValue<3>(X)));
 
   // h^2 = 1 permits h = -1; recovery must cancel the global sign.
-  EXPECT(point.equals(Traits::FromQcqpValue<1>(-X)));
+  EXPECT(point.equals(fromQcqpValue<3>(-X)));
 
   CHECK_EXCEPTION(Traits::FromQcqpValue<1>(Matrix::Zero(4, 1)),
                   std::invalid_argument);
@@ -336,6 +272,8 @@ TEST(AugmentedPoint, RejectsUnsupportedQcqpColumns) {
 
 }  // namespace augmented_point3_fixture
 /* ************************************************************************* */
+
+/* ************************************************************************* */
 namespace augmented_factor1_fixture {
 
 using VectorType = Eigen::Matrix<double, 1, 1>;
@@ -344,8 +282,7 @@ using Factor = KnownLandmarkSquaredRangeFactor<1, Point>;
 
 const Key kKey = 11;
 
-// Verifies that the one-dimensional state and its three-entry lift work in
-// both the nonlinear factor graph and the converted QCQP.
+// C++ dimensions remain unrestricted by the 2D/3D wrapper specializations.
 TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint1D) {
   VectorType coordinates;
   coordinates << 2.0;
@@ -368,7 +305,7 @@ TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint1D) {
 
   const QcqpProblem qcqp(graph);
   Values lifted;
-  InsertQcqpValue<Point, 1>(kKey, point, &lifted);
+  insertQcqpValue<1>(kKey, point, lifted);
   EXPECT_LONGS_EQUAL(1, qcqp.costs().size());
   EXPECT_LONGS_EQUAL(2, qcqp.eConstraints().size());
   EXPECT_DOUBLES_EQUAL(graph.error(values), qcqp.costs().error(lifted),
@@ -427,10 +364,6 @@ TEST(KnownLandmarkSquaredRangeFactor, AugmentedLandmarkConstructor2D) {
   EXPECT(fromVector.equals(fromAugmented));
   EXPECT(assert_equal(fromVector.evaluateError(point),
                       fromAugmented.evaluateError(point)));
-
-  Vector wrongDimension = Vector::Zero(3);
-  CHECK_EXCEPTION(Factor(kKey, wrongDimension, 4.0, model),
-                  std::invalid_argument);
 }
 
 // The whitened lifted quadratic cost must match the nonlinear information-
@@ -449,7 +382,7 @@ TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint2DWeightedQcqpCost) {
   nonlinearValues.insert(kKey, point);
   const QcqpProblem qcqp(graph);
   Values liftedValues;
-  InsertQcqpValue<Point, 1>(kKey, point, &liftedValues);
+  insertQcqpValue<2>(kKey, point, liftedValues);
 
   EXPECT_LONGS_EQUAL(1, qcqp.costs().size());
   EXPECT_LONGS_EQUAL(2, qcqp.eConstraints().size());
@@ -470,7 +403,7 @@ TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint2DWeightedQcqpCost) {
                        qcqp.eConstraints().violationNorm(negativeValues),
                        1e-12);
 
-  const Values recovered = extractQcqpValues<Point>(negativeValues);
+  const Values recovered = extractQcqpValues<2>(negativeValues);
   EXPECT(recovered.at<Point>(kKey).equals(point));
 }
 

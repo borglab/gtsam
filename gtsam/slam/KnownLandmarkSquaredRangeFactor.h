@@ -57,6 +57,15 @@ class AugmentedPoint {
   /// Construct from a fixed-size Euclidean coordinate vector.
   explicit AugmentedPoint(const VectorType& point) : point_(point) {}
 
+  /// Construct from an Eigen vector expression, checking its dimensions.
+  template <typename Derived>
+  explicit AugmentedPoint(const Eigen::MatrixBase<Derived>& point) {
+    if (point.rows() != N || point.cols() != 1) {
+      throw std::invalid_argument("AugmentedPoint: invalid point dimension.");
+    }
+    point_ = point;
+  }
+
   /// Return the additive identity.
   static AugmentedPoint Identity() { return AugmentedPoint(); }
 
@@ -231,6 +240,31 @@ struct traits<AugmentedPoint<N>>
 /// Preserve vector-space traits for const-qualified points.
 template <int N>
 struct traits<const AugmentedPoint<N>> : public traits<AugmentedPoint<N>> {};
+
+/// Return the exact QCQP column for an N-dimensional augmented point.
+template <int N>
+Matrix qcqpValue(const AugmentedPoint<N>& typedValue) {
+  return qcqpValue<AugmentedPoint<N>>(typedValue);
+}
+
+/// Insert an N-dimensional augmented point as an exact QCQP column.
+template <int N>
+void insertQcqpValue(Key key, const AugmentedPoint<N>& typedValue,
+                     Values& qcqpValues) {
+  insertQcqpValue<AugmentedPoint<N>>(key, typedValue, qcqpValues);
+}
+
+/// Recover an N-dimensional augmented point from an exact QCQP column.
+template <int N>
+AugmentedPoint<N> fromQcqpValue(const Matrix& qcqpValue) {
+  return fromQcqpValue<AugmentedPoint<N>>(qcqpValue);
+}
+
+/// Recover N-dimensional augmented points from matching exact QCQP columns.
+template <int N>
+Values extractQcqpValues(const Values& qcqpValues) {
+  return extractQcqpValues<AugmentedPoint<N>>(qcqpValues);
+}
 
 /**
  * Unary squared-range factor for a known Euclidean landmark.

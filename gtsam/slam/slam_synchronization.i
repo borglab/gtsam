@@ -334,12 +334,46 @@ virtual class KnownLandmarkFactor2 : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/slam/KnownLandmarkSquaredRangeFactor.h>
+// Only the wrappers restrict spatial dimensions to 2 and 3.
 template <N = {2, 3}>
+class AugmentedPoint {
+  AugmentedPoint();
+  AugmentedPoint(const gtsam::Vector& point);
+
+  static gtsam::AugmentedPoint<N> Identity();
+
+  int dim() const;
+  double norm() const;
+  double dot(const gtsam::AugmentedPoint<N>& other) const;
+  // MATLAB needs a numeric vector type; the lambda preserves the C++ return type.
+  @pybind_lambda
+  gtsam::Vector vector() const;
+
+  void print(const std::string& s = "") const;
+  bool equals(const gtsam::AugmentedPoint<N>& other, double tol = 1e-9) const;
+};
+
+// Instantiate only the dimension/state combinations we support.
+template <N, STATE>
 virtual class KnownLandmarkSquaredRangeFactor : gtsam::NoiseModelFactor {
   KnownLandmarkSquaredRangeFactor(
       gtsam::Key key, const gtsam::Vector& wL, double measuredRange,
       const gtsam::noiseModel::Base* model);
+
+  gtsam::Vector evaluateError(const STATE& wX) const;
 };
+
+// Ordinary nonlinear factors.
+typedef gtsam::KnownLandmarkSquaredRangeFactor<2, gtsam::Vector2>
+    KnownLandmarkSquaredRangeFactor2;
+typedef gtsam::KnownLandmarkSquaredRangeFactor<3, gtsam::Vector3>
+    KnownLandmarkSquaredRangeFactor3;
+
+// Factors supporting both nonlinear optimization and QCQP conversion.
+typedef gtsam::KnownLandmarkSquaredRangeFactor<2, gtsam::AugmentedPoint<2>>
+    KnownLandmarkSquaredRangeFactorAugmentedPoint2;
+typedef gtsam::KnownLandmarkSquaredRangeFactor<3, gtsam::AugmentedPoint<3>>
+    KnownLandmarkSquaredRangeFactorAugmentedPoint3;
 
 #include <gtsam/slam/WahbaFactor.h>
 class WahbaFactor : gtsam::NoiseModelFactor {
