@@ -20,6 +20,7 @@
 #include <gtsam/linear/PCGSolver.h>
 #include <gtsam/linear/Preconditioner.h>
 #include <gtsam/constrained/NonlinearEquality.h>
+#include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/sfm/SfmData.h>
 #include <gtsam/sfm/SfmLevenbergMarquardt.h>
 #include <gtsam/slam/GeneralSFMFactor.h>
@@ -197,6 +198,67 @@ TEST(SfmLevenbergMarquardt, FullAndSchurDampedStepsAgree) {
   EXPECT(assert_equal(fullDelta, schurDelta, 1e-5));
 }
 
+/* ************************************************************************* */
+namespace schur_pivot_fixture {
+
+class PointScalarFactor : public NoiseModelFactor2<Point3, double> {
+ public:
+  explicit PointScalarFactor(double sigma)
+      : NoiseModelFactor2<Point3, double>(
+            noiseModel::Isotropic::Sigma(1, sigma), 0, 1) {}
+
+  Vector evaluateError(const Point3& point, const double& scalar,
+                       OptionalMatrixType pointJacobian,
+                       OptionalMatrixType scalarJacobian) const override {
+    if (pointJacobian) *pointJacobian = Matrix13{1.0, 0.0, 0.0};
+    if (scalarJacobian) *scalarJacobian = Matrix11::Constant(-1.0);
+    return Vector1(point.x() - scalar);
+  }
+};
+
+// Full and Schur solves must accept and reject the same original-system pivots.
+TEST(SfmLevenbergMarquardt, FullAndSchurCholeskyRetriesAgree) {
+  for (double sigma : {1e-4, 1e-5}) {
+    NonlinearFactorGraph graph;
+    graph.emplace_shared<PriorFactor<Point3>>(
+        0, Point3::Zero(), noiseModel::Isotropic::Sigma(3, 1.0));
+    graph.emplace_shared<PointScalarFactor>(sigma);
+    Values initial;
+    initial.insert(0, Point3(0.1, 0.0, 0.0));
+    initial.insert(1, 0.1);
+
+    for (const auto solver :
+         {NonlinearOptimizerParams::SEQUENTIAL_CHOLESKY,
+          NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY,
+          NonlinearOptimizerParams::MULTIFRONTAL_SOLVER}) {
+      SfmLevenbergMarquardtParams fullParams;
+      fullParams.setLinearSolver(solver);
+      fullParams.setOrdering(Ordering{0, 1});
+      fullParams.dampingParams.diagonalDamping = false;
+      fullParams.multifrontalParams.qrMode =
+          MultifrontalParameters::QRMode::Off;
+      fullParams.multifrontalParams.mergeDimCap = 0;
+      auto schurParams = fullParams;
+      schurParams.setEliminationMode(SfmEliminationMode::Schur);
+      schurParams.setOrdering(Ordering{1});
+
+      SfmLevenbergMarquardtOptimizer full(graph, initial, fullParams);
+      SfmLevenbergMarquardtOptimizer schur(graph, initial, schurParams);
+      full.iterate();
+      schur.iterate();
+      if (sigma == 1e-4) {
+        EXPECT_LONGS_EQUAL(1, full.getInnerIterations());
+      } else {
+        EXPECT(full.getInnerIterations() > 1);
+      }
+      EXPECT_LONGS_EQUAL(full.getInnerIterations(), schur.getInnerIterations());
+      EXPECT_DOUBLES_EQUAL(full.lambda(), schur.lambda(), 1e-12);
+      EXPECT_DOUBLES_EQUAL(full.error(), schur.error(), 1e-10);
+    }
+  }
+}
+
+}  // namespace schur_pivot_fixture
 /* ************************************************************************* */
 TEST(SfmLevenbergMarquardt, DirectSolverDispatch) {
   const SmallProblem problem = smallProblem(false);

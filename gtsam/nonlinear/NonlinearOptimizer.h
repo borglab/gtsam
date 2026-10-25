@@ -27,6 +27,7 @@ namespace gtsam {
 
 namespace internal {
 class CholmodSolver;
+class GaussianElimination;
 struct NonlinearOptimizerState;
 }
 class NonlinearMultifrontalSolver;
@@ -93,6 +94,11 @@ class GTSAM_EXPORT NonlinearOptimizer {
 
   /// Optional reusable CHOLMOD numerical and symbolic session.
   mutable std::unique_ptr<internal::CholmodSolver> cholmodSolver_;
+
+  /** Continue a numerical operation through a built-in reduced-system solve. */
+  VectorValues solve(const GaussianFactorGraph& graph,
+                     const NonlinearOptimizerParams& params,
+                     const internal::GaussianElimination& operation) const;
 
  private:
   /// Symbolic tree and the ordering and per-factor keys that permit its reuse.
