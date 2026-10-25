@@ -397,6 +397,13 @@ virtual class RelativeElevationFactor: gtsam::NoiseModelFactor {
   //void print(string s) const;
 };
 
+#include <gtsam_unstable/slam/BiasedGPSFactor.h>
+virtual class BiasedGPSFactor : gtsam::NoiseModelFactor {
+  BiasedGPSFactor(gtsam::Key posekey, gtsam::Key biaskey, const gtsam::Point3& measured,
+                  const gtsam::noiseModel::Base* model);
+  const gtsam::Point3& measured() const;
+};
+
 #include <gtsam_unstable/slam/InvDepthFactorVariant1.h>
 virtual class InvDepthFactorVariant1 : gtsam::NoiseModelFactor {
   InvDepthFactorVariant1(gtsam::Key poseKey, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
