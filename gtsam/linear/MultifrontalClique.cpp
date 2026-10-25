@@ -19,10 +19,10 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/config.h>
 #include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/base/CholeskyCheck.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
+#include <gtsam/base/CholeskyCheck.h>
 #include <gtsam/linear/MultifrontalSolver.h>
 #include <gtsam/linear/internal/BatchJacobianFactorElimination.h>
 #include <gtsam/linear/internal/CompactLeafSchurKernel.h>
@@ -902,6 +902,16 @@ void MultifrontalClique::prepareCompactCholesky() {
   }
 }
 
+void MultifrontalClique::setReferenceDiagonal(const VectorValues& diagonal) {
+  referenceDiagonal_.resize(static_cast<DenseIndex>(frontalDim));
+  DenseIndex offset = 0;
+  for (size_t j = 0; j < numFrontals(); ++j) {
+    const auto& block = diagonal.at(orderedKeys_.at(j));
+    referenceDiagonal_.segment(offset, block.size()) = block;
+    offset += block.size();
+  }
+}
+
 void MultifrontalClique::factorize() {
   try {
     if (useQR()) {
@@ -917,7 +927,8 @@ void MultifrontalClique::factorize() {
     } else if (useCompactCholesky()) {
       factorizeCompactCholesky();
     } else {
-      info_.choleskyPartial(numFrontals());
+      info_.choleskyPartial(numFrontals(), referenceDiagonal_.size()
+                                             ? referenceDiagonal_.data() : nullptr);
       // Split exposes [R S d] while info_ retains the separator Schur complement.
       info_.split(numFrontals(), &RSd_);
       info_.blockStart() = 0;
@@ -930,7 +941,8 @@ void MultifrontalClique::factorize() {
 
 void MultifrontalClique::factorizeFusedStarCholesky() {
   if (!internal::CompactLeafSchurKernel::factorFrontalRows(
-          &RSd_, static_cast<DenseIndex>(frontalDim))) {
+          &RSd_, static_cast<DenseIndex>(frontalDim),
+          referenceDiagonal_.size() ? referenceDiagonal_.data() : nullptr)) {
     throw CholeskyFailed();
   }
 }
@@ -947,7 +959,8 @@ void MultifrontalClique::factorizeCompactCholesky() {
   // Match the scale-normalized pivot guard used by standard Cholesky.
   for (DenseIndex i = 0; i < n; ++i) {
     const double pivot = R(i, i);
-    if (!internal::CholeskyCheck::accept(pivot, A(i, i))) {
+    if (!internal::CholeskyCheck::accept(
+            pivot, referenceDiagonal_.size() ? referenceDiagonal_(i) : A(i, i))) {
       throw CholeskyFailed();
     }
   }
@@ -1030,6 +1043,7 @@ void MultifrontalClique::applyDampingCholesky(
 }
 
 void MultifrontalClique::addIdentityDamping(double lambda) {
+  if (referenceDiagonal_.size()) referenceDiagonal_.array() += lambda;
   const size_t nf = numFrontals();
   for (size_t j = 0; j < nf; ++j) {
     if (useCompactCholesky()) {
@@ -1057,11 +1071,18 @@ void MultifrontalClique::addDiagonalDamping(double lambda, double minDiagonal,
       const Vector scaled =
           lambda * diagonal.cwiseMax(minDiagonal).cwiseMin(maxDiagonal);
       diagonal += scaled;
+      if (referenceDiagonal_.size())
+        referenceDiagonal_.segment(row, dim) += scaled;
     } else {
       const Vector scaled =
           lambda *
           info_.diagonal(j).cwiseMax(minDiagonal).cwiseMin(maxDiagonal);
       info_.addToDiagonalBlock(j, scaled);
+      if (referenceDiagonal_.size()) {
+        const DenseIndex offset = info_.blockScalarOffset(j) -
+                                  info_.blockScalarOffset(0);
+        referenceDiagonal_.segment(offset, scaled.size()) += scaled;
+      }
     }
   }
 }
@@ -1074,6 +1095,10 @@ void MultifrontalClique::addExactDiagonalDamping(
     const Key key = orderedKeys_.at(j);
     const Vector diag =
         hessianDiagonal.at(key).cwiseMax(minDiagonal).cwiseMin(maxDiagonal);
+    if (referenceDiagonal_.size()) {
+      const DenseIndex offset = RSd_.offset(static_cast<DenseIndex>(j));
+      referenceDiagonal_.segment(offset, diag.size()) += lambda * diag;
+    }
     if (useCompactCholesky()) {
       const DenseIndex index = static_cast<DenseIndex>(j);
       const DenseIndex row = RSd_.offset(index);

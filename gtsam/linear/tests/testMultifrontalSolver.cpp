@@ -1724,7 +1724,48 @@ TEST(MultifrontalSolver, BalancedSmoother) {
 }
 
 /* ************************************************************************* */
-// Ordinary, compact, and fused kernels agree on a weak frontal block.
+
+// Merging changes frontal grouping, not the scale used for rejecting pivots.
+TEST(MultifrontalSolver, CholeskyAgreementWithAndWithoutMerging) {
+  const Ordering ordering{0, 1};
+  for (double sigma : {1e-4, 1e-5}) {
+    GaussianFactorGraph graph;
+    graph.emplace_shared<JacobianFactor>(0, Matrix11{1.0}, Vector1{0.1});
+    graph.emplace_shared<JacobianFactor>(0, Matrix11{-1.0}, 1,
+        Matrix11{1.0}, Vector1{0.0}, noiseModel::Isotropic::Sigma(1, sigma));
+    const auto expected = graph.optimize(ordering, EliminateQR);
+    for (size_t merge : {size_t(0), size_t(32)}) {
+      auto params = noMergeParams();
+      params.mergeDimCap = merge;
+      params.qrMode = MultifrontalParameters::QRMode::Off;
+      MultifrontalSolver solver(graph, ordering, params);
+      if (sigma == 1e-4) {
+        solver.eliminateInPlace(graph);
+        EXPECT(assert_equal(expected, solver.updateSolution(), 1e-8));
+        solver.load(graph);
+        solver.eliminateInPlace();
+        EXPECT(assert_equal(expected, solver.updateSolution(), 1e-8));
+      } else {
+        CHECK_EXCEPTION(solver.eliminateInPlace(graph), IndeterminateSystemException);
+      }
+    }
+  }
+}
+
+// The fused CPU kernel applies the same check to an externally supplied scale.
+TEST(CompactLeafSchurKernel, OriginalReferenceDiagonal) {
+  const Vector1 reference{1e8};
+  for (double pivotSquared : {1.0, 0.01}) {
+    VerticalBlockMatrix rows(std::vector<size_t>{1}, 1, true);
+    rows.matrix() << pivotSquared, 0.0;
+    EXPECT(internal::CompactLeafSchurKernel::factorFrontalRows(
+        &rows, 1, reference.data()) == (pivotSquared == 1.0));
+  }
+}
+
+
+// Exercise the ordinary, compact-storage, and fused batch CPU kernels on the
+// same weak frontal block, with an uneliminated separator.
 TEST(MultifrontalSolver, SharedCheckInLeafKernels) {
   for (double strength : {1e8, 1e10}) {
     const double w = std::sqrt(strength);
@@ -1768,6 +1809,18 @@ TEST(MultifrontalSolver, SharedCheckInLeafKernels) {
       }
     }
   }
+}
+
+// A zero-row factor is numerically singular, with known variable dimensions.
+TEST(MultifrontalSolver, ZeroRowsReportIndeterminateSystem) {
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, Matrix::Zero(0, 2), Vector::Zero(0));
+  auto params = noMergeParams();
+  params.qrMode = MultifrontalParameters::QRMode::Off;
+  MultifrontalSolver solver(graph, Ordering{0}, params);
+  solver.load(graph);
+  CHECK_EXCEPTION(solver.eliminateInPlace(), IndeterminateSystemException);
+  CHECK_EXCEPTION(solver.eliminateInPlace(graph), IndeterminateSystemException);
 }
 
 int main() {
