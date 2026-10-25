@@ -26,7 +26,8 @@ namespace gtsam {
 
   /**
    * A class to model GPS measurements, including a bias term which models
-   * common-mode errors and that can be partially corrected if other sensors are used
+   * common-mode errors and that can be partially corrected if other sensors are used.
+   * The error is pose.translation() + bias - measured, all in the navigation frame.
    * @ingroup slam
    */
   class BiasedGPSFactor
@@ -81,18 +82,12 @@ namespace gtsam {
     Vector3 evaluateError(const Pose3& pose, const Point3& bias,
                           OptionalMatrixType H1,
                           OptionalMatrixType H2) const override {
-
-      if (H1 || H2){
-        H1->resize(3,6); // jacobian wrt pose
-        (*H1) << Z_3x3,  pose.rotation().matrix();
-        H2->resize(3,3); // jacobian wrt bias
-        *H2 = I_3x3;
-      }
-      return pose.translation() + bias - measured_;
+      if (H2) *H2 = I_3x3;
+      return pose.translation(H1) + bias - measured_;
     }
 
     /** return the measured */
-    const Point3 measured() const {
+    const Point3& measured() const {
       return measured_;
     }
 
