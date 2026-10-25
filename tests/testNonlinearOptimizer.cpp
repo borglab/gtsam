@@ -1266,6 +1266,31 @@ TEST(NonlinearOptimizer, IllConditionedAnchoredGraph) {
 }
 
 
+// Undamped optimizers report the same graph exception for a missing gauge.
+TEST(NonlinearOptimizer, SingularGraphReportsIndeterminateSystem) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<BetweenFactor<double>>(
+      0, 1, 0.0, noiseModel::Isotropic::Sigma(1, 1.0));
+  Values initial;
+  initial.insert(0, 0.1);
+  initial.insert(1, 0.2);
+  for (const std::string solver : {"SEQUENTIAL_CHOLESKY", "MULTIFRONTAL_CHOLESKY",
+                                  "MULTIFRONTAL_SOLVER"}) {
+    GaussNewtonParams gnParams;
+    gnParams.setOrdering(Ordering{0, 1});
+    gnParams.setLinearSolverType(solver);
+    gnParams.multifrontalParams.qrMode = MultifrontalParameters::QRMode::Off;
+    CHECK_EXCEPTION(GaussNewtonOptimizer(graph, initial, gnParams).iterate(),
+                    IndeterminateSystemException);
+    DoglegParams dlParams;
+    dlParams.setOrdering(Ordering{0, 1});
+    dlParams.setLinearSolverType(solver);
+    dlParams.multifrontalParams = gnParams.multifrontalParams;
+    CHECK_EXCEPTION(DoglegOptimizer(graph, initial, dlParams).iterate(),
+                    IndeterminateSystemException);
+  }
+}
+
 // More extreme conditioning still triggers the safeguard. Both LM backends
 // must retry with damping, then reset the reference before the next attempt.
 TEST(NonlinearOptimizer, SharedCholeskyRejectionRetries) {

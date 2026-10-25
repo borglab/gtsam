@@ -126,7 +126,11 @@ class GTSAM_EXPORT MultifrontalClique {
   /// children.
   void prepareForElimination();
 
-  /// Perform Cholesky factorization on the frontal block.
+  /**
+   * Factor the frontal block using the selected QR or Cholesky mode.
+   * Throws IndeterminateSystemException with a nearby frontal key if Cholesky
+   * fails, including the compact and fused modes.
+   */
   void factorize();
 
   /**

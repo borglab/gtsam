@@ -53,9 +53,9 @@ namespace gtsam {
     typedef GaussianBayesTree BayesTreeType;             ///< Type of Bayes tree
     typedef GaussianJunctionTree JunctionTreeType;       ///< Type of Junction tree
     /// The default dense elimination function
-    static std::pair<std::shared_ptr<ConditionalType>, std::shared_ptr<FactorType> >
-      DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
-        return EliminatePreferCholesky(factors, keys); }
+    static GTSAM_EXPORT
+    std::pair<std::shared_ptr<ConditionalType>, std::shared_ptr<FactorType>>
+    DefaultEliminate(const FactorGraphType& factors, const Ordering& keys);
     /// The default ordering generation function
     static Ordering DefaultOrderingFunc(
         const FactorGraphType& graph,

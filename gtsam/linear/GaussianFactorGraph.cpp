@@ -35,6 +35,13 @@ using namespace gtsam;
 
 namespace gtsam {
 
+  // Keep a single exported callback address across shared-library boundaries.
+  std::pair<std::shared_ptr<GaussianConditional>, std::shared_ptr<GaussianFactor>>
+  EliminationTraits<GaussianFactorGraph>::DefaultEliminate(
+      const GaussianFactorGraph& factors, const Ordering& keys) {
+    return EliminatePreferCholesky(factors, keys);
+  }
+
   // Instantiate base classes
   template class FactorGraph<GaussianFactor>;
   template class EliminateableFactorGraph<GaussianFactorGraph>;

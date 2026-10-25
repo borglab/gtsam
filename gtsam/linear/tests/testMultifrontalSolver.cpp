@@ -1711,7 +1711,7 @@ TEST(MultifrontalSolver, CholeskyAgreementWithAndWithoutMerging) {
         solver.eliminateInPlace();
         EXPECT(assert_equal(expected, solver.updateSolution(), 1e-8));
       } else {
-        CHECK_EXCEPTION(solver.eliminateInPlace(graph), CholeskyFailed);
+        CHECK_EXCEPTION(solver.eliminateInPlace(graph), IndeterminateSystemException);
       }
     }
   }
@@ -1765,7 +1765,12 @@ TEST(MultifrontalSolver, SharedCheckInLeafKernels) {
         EXPECT(assert_equal(expected.second->augmentedHessian(Ordering{1, 2}),
             solver.remainingFactorGraph().augmentedHessian(Ordering{1, 2}), 1e-7));
       } else {
-        CHECK_EXCEPTION(solver.eliminatePartialInPlace(), CholeskyFailed);
+        try {
+          solver.eliminatePartialInPlace();
+          FAIL("Expected an indeterminate system");
+        } catch (const IndeterminateSystemException& exception) {
+          EXPECT_LONGS_EQUAL(0, exception.nearbyVariable());
+        }
       }
     }
   }

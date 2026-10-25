@@ -185,10 +185,6 @@ bool LevenbergMarquardtOptimizer::tryLambda(
     // ========================================================================
   } catch (const IndeterminateSystemException&) {
     systemSolvedSuccessfully = false;
-  } catch (const CholeskyFailed&) {
-    // The reusable multifrontal solver reports the same numerical rejection
-    // directly, without the HessianFactor exception translation.
-    systemSolvedSuccessfully = false;
   }
 
   if (systemSolvedSuccessfully) {

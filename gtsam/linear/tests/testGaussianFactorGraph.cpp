@@ -569,12 +569,16 @@ TEST(GaussianFactorGraph, CholeskyAgreementAcrossEliminations) {
     if (sigma == 1e-4) {
       EXPECT(assert_equal(expected, graph.optimizeDensely(), 1e-8));
       EXPECT(assert_equal(expected,
+          graph.eliminateSequential(ordering)->optimize(), 1e-8));
+      EXPECT(assert_equal(expected,
+          graph.eliminateMultifrontal(ordering)->optimize(), 1e-8));
+      EXPECT(assert_equal(expected,
           graph.eliminateSequential(ordering, EliminateCholesky)->optimize(), 1e-8));
       EXPECT(assert_equal(expected, graph.optimize(ordering, EliminateCholesky), 1e-8));
       EXPECT(assert_equal(expected,
           graph.eliminateMultifrontal(tree, EliminateCholesky)->optimize(), 1e-8));
     } else {
-      CHECK_EXCEPTION(graph.optimizeDensely(), CholeskyFailed);
+      CHECK_EXCEPTION(graph.optimizeDensely(), IndeterminateSystemException);
       CHECK_EXCEPTION(graph.eliminateSequential(ordering, EliminateCholesky),
                       IndeterminateSystemException);
       CHECK_EXCEPTION(graph.optimize(ordering, EliminateCholesky),
@@ -585,6 +589,19 @@ TEST(GaussianFactorGraph, CholeskyAgreementAcrossEliminations) {
                       IndeterminateSystemException);
     }
   }
+}
+
+// The exported default callback must retain the constrained-factor QR fallback.
+TEST(GaussianFactorGraph, DefaultEliminationWithConstraints) {
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, Matrix11{1.0}, Vector1{0.2},
+                                      noiseModel::Constrained::All(1));
+  graph.emplace_shared<JacobianFactor>(0, Matrix11{-1.0}, 1, Matrix11{1.0},
+                                      Vector1{0.3});
+  const Ordering ordering{0, 1};
+  const auto expected = graph.optimize(ordering, EliminateQR);
+  EXPECT(assert_equal(expected, graph.eliminateSequential(ordering)->optimize()));
+  EXPECT(assert_equal(expected, graph.eliminateMultifrontal(ordering)->optimize()));
 }
 
 
