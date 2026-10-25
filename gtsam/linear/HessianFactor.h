@@ -384,7 +384,14 @@ namespace gtsam {
      */
     std::shared_ptr<GaussianConditional> eliminateCholesky(const Ordering& keys);
 
-      /// Solve the system A'*A delta = A'*b in-place, return delta as VectorValues
+    /** Eliminate using the original system's scalar frontal diagonals. */
+    std::shared_ptr<GaussianConditional> eliminateCholesky(
+        const Ordering& keys, const Vector& referenceDiagonal);
+
+    /**
+     * Solve A'*A delta = A'*b in-place, returning delta as VectorValues.
+     * Throws IndeterminateSystemException with a nearby key if Cholesky fails.
+     */
     VectorValues solve();
 
  private:
@@ -452,6 +459,14 @@ GTSAM_EXPORT std::pair<std::shared_ptr<GaussianConditional>, std::shared_ptr<Gau
 /// traits
 template<>
 struct traits<HessianFactor> : public Testable<HessianFactor> {};
+
+namespace internal {
+/** Eliminate a frontal block using an operation's original scalar diagonal. */
+GTSAM_EXPORT std::pair<std::shared_ptr<GaussianConditional>,
+                      std::shared_ptr<HessianFactor>>
+eliminateCholeskyWithReference(const GaussianFactorGraph& factors,
+                               const Ordering& keys, const Vector& diagonal);
+}
 
 } // \ namespace gtsam
 

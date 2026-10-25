@@ -53,9 +53,9 @@ namespace gtsam {
     typedef GaussianBayesTree BayesTreeType;             ///< Type of Bayes tree
     typedef GaussianJunctionTree JunctionTreeType;       ///< Type of Junction tree
     /// The default dense elimination function
-    static std::pair<std::shared_ptr<ConditionalType>, std::shared_ptr<FactorType> >
-      DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
-        return EliminatePreferCholesky(factors, keys); }
+    static GTSAM_EXPORT
+    std::pair<std::shared_ptr<ConditionalType>, std::shared_ptr<FactorType>>
+    DefaultEliminate(const FactorGraphType& factors, const Ordering& keys);
     /// The default ordering generation function
     static Ordering DefaultOrderingFunc(
         const FactorGraphType& graph,
@@ -82,9 +82,67 @@ namespace gtsam {
     typedef EliminateableFactorGraph<This> BaseEliminateable; ///< Typedef to base elimination class
     typedef std::shared_ptr<This> shared_ptr; ///< shared_ptr to this class
 
+    using BaseEliminateable::eliminateMultifrontal;
+    /** Eliminate an indexed tree within one numerical operation. */
+    std::shared_ptr<BayesTreeType> eliminateMultifrontal(
+        const IndexedJunctionTree& indexedJunctionTree,
+        const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
+
+    /** Compute a marginal while sharing one numerical operation across stages. */
+    std::shared_ptr<BayesNetType> marginalMultifrontalBayesNet(
+        const Ordering& variables,
+        const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+        OptionalVariableIndex variableIndex = {}) const;
+
+    /** Compute a marginal while sharing one numerical operation across stages. */
+    std::shared_ptr<BayesNetType> marginalMultifrontalBayesNet(
+        const Ordering& variables,
+        const Ordering& marginalizedVariableOrdering,
+        const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+        OptionalVariableIndex variableIndex = {}) const;
+
+    /** Compute a marginal while sharing one numerical operation across stages. */
+    std::shared_ptr<BayesNetType> marginalMultifrontalBayesNet(
+        const KeyVector& variables,
+        const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+        OptionalVariableIndex variableIndex = {}) const;
+
+    /** Compute a marginal while sharing one numerical operation across stages. */
+    std::shared_ptr<BayesNetType> marginalMultifrontalBayesNet(
+        const KeyVector& variables,
+        const Ordering& marginalizedVariableOrdering,
+        const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+        OptionalVariableIndex variableIndex = {}) const;
+
+    /** Compute a marginal while sharing one numerical operation across stages. */
+    std::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
+        const Ordering& variables,
+        const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+        OptionalVariableIndex variableIndex = {}) const;
+
+    /** Compute a marginal while sharing one numerical operation across stages. */
+    std::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
+        const Ordering& variables,
+        const Ordering& marginalizedVariableOrdering,
+        const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+        OptionalVariableIndex variableIndex = {}) const;
+
+    /** Compute a marginal while sharing one numerical operation across stages. */
+    std::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
+        const KeyVector& variables,
+        const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+        OptionalVariableIndex variableIndex = {}) const;
+
+    /** Compute a marginal while sharing one numerical operation across stages. */
+    std::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
+        const KeyVector& variables,
+        const Ordering& marginalizedVariableOrdering,
+        const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+        OptionalVariableIndex variableIndex = {}) const;
+
     /// @name Constructors
     /// @{
-    
+
     /** Default constructor */
     GaussianFactorGraph() {}
 
@@ -94,7 +152,7 @@ namespace gtsam {
      *   GaussianFactorGraph graph = { factor1, factor2, factor3 };
      */
     GaussianFactorGraph(std::initializer_list<sharedFactor> factors) : Base(factors) {}
-    
+
 
     /** Construct from iterator over factors */
     template<typename ITERATOR>
@@ -234,7 +292,7 @@ namespace gtsam {
      * GaussianFactorGraph::jacobian and GaussianFactorGraph::sparseJacobian.
      */
     Matrix augmentedJacobian(const Ordering& ordering) const;
-    
+
     /**
      * Return a dense \f$ [ \;A\;b\; ] \in \mathbb{R}^{m \times n+1} \f$
      * Jacobian matrix, augmented with b with the noise models baked
@@ -433,5 +491,10 @@ namespace gtsam {
 template<>
 struct traits<GaussianFactorGraph> : public Testable<GaussianFactorGraph> {
 };
+
+  namespace internal {
+  /// Whether a callback is one of the built-in Cholesky elimination functions.
+  GTSAM_EXPORT bool usesCholesky(const GaussianFactorGraph::Eliminate& function);
+  }
 
 } // \ namespace gtsam

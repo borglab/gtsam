@@ -54,6 +54,10 @@ namespace gtsam {
     /** Test whether the tree is equal to another */
     bool equals(const This& other, double tol = 1e-9) const;
 
+
+  /** Eliminate using one numerical operation for the tree input system. */
+  std::pair<std::shared_ptr<GaussianBayesNet>, std::shared_ptr<GaussianFactorGraph>>
+  eliminate(const Eliminate& function) const;
   private:
 
     friend class ::EliminationTreeTester;

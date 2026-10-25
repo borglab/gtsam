@@ -554,6 +554,57 @@ TEST(GaussianFactorGraph, InconsistentEliminationMessage) {
   }
 }
 /* ************************************************************************* */
+
+// #2856: retain usable weak pivots; #2653: reject much weaker pivots even
+// when sequential elimination puts the last variable in a scalar clique.
+TEST(GaussianFactorGraph, CholeskyAgreementAcrossEliminations) {
+  const Ordering ordering{0, 1};
+  for (double sigma : {1e-4, 1e-5}) {
+    GaussianFactorGraph graph;
+    graph.emplace_shared<JacobianFactor>(0, Matrix11{1.0}, Vector1{0.1});
+    graph.emplace_shared<JacobianFactor>(0, Matrix11{-1.0}, 1,
+        Matrix11{1.0}, Vector1{0.0}, noiseModel::Isotropic::Sigma(1, sigma));
+    const auto expected = graph.optimize(ordering, EliminateQR);
+    const auto tree = graph.buildIndexedJunctionTree(ordering);
+    if (sigma == 1e-4) {
+      EXPECT(assert_equal(expected, graph.optimizeDensely(), 1e-8));
+      EXPECT(assert_equal(expected,
+          graph.eliminateSequential(ordering)->optimize(), 1e-8));
+      EXPECT(assert_equal(expected,
+          graph.eliminateMultifrontal(ordering)->optimize(), 1e-8));
+      EXPECT(assert_equal(expected,
+          graph.eliminateSequential(ordering, EliminateCholesky)->optimize(), 1e-8));
+      EXPECT(assert_equal(expected, graph.optimize(ordering, EliminateCholesky), 1e-8));
+      EXPECT(assert_equal(expected,
+          graph.eliminateMultifrontal(tree, EliminateCholesky)->optimize(), 1e-8));
+    } else {
+      CHECK_EXCEPTION(graph.optimizeDensely(), IndeterminateSystemException);
+      CHECK_EXCEPTION(graph.eliminateSequential(ordering, EliminateCholesky),
+                      IndeterminateSystemException);
+      CHECK_EXCEPTION(graph.optimize(ordering, EliminateCholesky),
+                      IndeterminateSystemException);
+      CHECK_EXCEPTION(graph.eliminateMultifrontal(tree, EliminateCholesky),
+                      IndeterminateSystemException);
+      CHECK_EXCEPTION(graph.eliminateSequential(ordering),
+                      IndeterminateSystemException);
+    }
+  }
+}
+
+// The exported default callback must retain the constrained-factor QR fallback.
+TEST(GaussianFactorGraph, DefaultEliminationWithConstraints) {
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, Matrix11{1.0}, Vector1{0.2},
+                                      noiseModel::Constrained::All(1));
+  graph.emplace_shared<JacobianFactor>(0, Matrix11{-1.0}, 1, Matrix11{1.0},
+                                      Vector1{0.3});
+  const Ordering ordering{0, 1};
+  const auto expected = graph.optimize(ordering, EliminateQR);
+  EXPECT(assert_equal(expected, graph.eliminateSequential(ordering)->optimize()));
+  EXPECT(assert_equal(expected, graph.eliminateMultifrontal(ordering)->optimize()));
+}
+
+
 // Incremental elimination carries structural orphan wrappers with parent keys
 // but no numeric rows. They must not be read as populated Jacobian blocks.
 TEST(GaussianFactorGraph, HessianDiagonalSkipsOrphanWrappers) {
@@ -567,6 +618,36 @@ TEST(GaussianFactorGraph, HessianDiagonalSkipsOrphanWrappers) {
   orphan->setEliminationResult({conditional, GaussianFactor::shared_ptr()});
   graph.emplace_shared<BayesTreeOrphanWrapper<GaussianBayesTreeClique>>(orphan);
   EXPECT(assert_equal(expected, graph.hessianDiagonal()));
+}
+
+// Rescaling an exact equality must not change later finite-pivot acceptance.
+TEST(GaussianFactorGraph, ConstrainedReferenceScale) {
+  const Ordering ordering{0, 1, 2};
+  const VectorValues expected{{0, Vector1{0.1}}, {1, Vector1{0.2}},
+                              {2, Vector1{-0.3}}};
+  for (double scale : {1.0, 1e5}) {
+    GaussianFactorGraph graph;
+    graph.emplace_shared<JacobianFactor>(0, Matrix11{1.0}, Vector1{0.1});
+    graph.emplace_shared<JacobianFactor>(1, Matrix11{1.0}, Vector1{0.2});
+    graph.emplace_shared<JacobianFactor>(
+        0, Matrix11{scale}, 1, Matrix11{scale}, 2, Matrix11{scale},
+        Vector1{0.0}, noiseModel::Constrained::All(1));
+    EXPECT(assert_equal(expected, graph.eliminateSequential(ordering)->optimize()));
+    EXPECT(assert_equal(expected, graph.eliminateMultifrontal(ordering)->optimize()));
+    EXPECT(assert_equal(expected,
+        graph.eliminateMultifrontal(graph.buildIndexedJunctionTree(ordering))->optimize()));
+    EXPECT(assert_equal(expected,
+        graph.eliminateSequential(ordering, EliminatePreferCholesky)->optimize()));
+  }
+}
+
+// Numerical zero-row factors retain their keys and report a singular system.
+TEST(GaussianFactorGraph, ZeroRowsReportIndeterminateSystem) {
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, Matrix::Zero(0, 2), Vector::Zero(0));
+  CHECK_EXCEPTION(graph.eliminateSequential(Ordering{0}), IndeterminateSystemException);
+  CHECK_EXCEPTION(graph.eliminateMultifrontal(Ordering{0}), IndeterminateSystemException);
+  CHECK_EXCEPTION(graph.optimizeDensely(), IndeterminateSystemException);
 }
 
 // Dense graph solving uses the same checked Cholesky path as dense factors.
