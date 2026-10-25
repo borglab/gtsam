@@ -1105,6 +1105,7 @@ TEST( SmartProjectionPoseFactor, Hessian ) {
 }
 
 /* *************************************************************************/
+// Verify Hessian invariance under global rotations and translations.
 TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
   // cout << " ************************ SmartProjectionPoseFactor: rotated Hessian **********************" << endl;
 
@@ -1152,7 +1153,9 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
       smartFactorInstance->linearize(tranValues);
 
   // Hessian is invariant to rotations and translations in the nondegenerate case
-  EXPECT(assert_equal(factor->information(), factorRotTran->information(), 1e-7));
+  // Entries are O(1e7); allow roundoff from triangulation and linearization
+  // after the frame change (Eigen 5 with MKL can differ by more than 1e-7).
+  EXPECT(assert_equal(factor->information(), factorRotTran->information(), 1e-6));
 }
 
 /* *************************************************************************/

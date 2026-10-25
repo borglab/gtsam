@@ -526,7 +526,8 @@ TableFactor TableFactor::choose(const DiscreteValues parent_assign,
   }
 
   // Drop exact zeros, which would otherwise be stored and counted as values.
-  child_sparse_table_.prune(0.0);
+  // Pass both numeric arguments to avoid Eigen 5's predicate overload.
+  child_sparse_table_.prune(0.0, 0.0);
   child_sparse_table_.data().squeeze();
   return TableFactor(child_dkeys, child_sparse_table_);
 }
@@ -618,7 +619,7 @@ TableFactor TableFactor::apply(Unary op) const {
 
   // Free unused memory and return.
   // Drop exact zeros, which would otherwise be stored and counted as values.
-  sparse_table.prune(0.0);
+  sparse_table.prune(0.0, 0.0);
   sparse_table.data().squeeze();
   return TableFactor(discreteKeys(), sparse_table);
 }
@@ -639,7 +640,7 @@ TableFactor TableFactor::apply(UnaryAssignment op) const {
 
   // Free unused memory and return.
   // Drop exact zeros, which would otherwise be stored and counted as values.
-  sparse_table.prune(0.0);
+  sparse_table.prune(0.0, 0.0);
   sparse_table.data().squeeze();
   return TableFactor(discreteKeys(), sparse_table);
 }
@@ -693,7 +694,7 @@ TableFactor TableFactor::applySubset(const TableFactor& factor, Binary op) const
       result.insert(uniqueRep(sorted_dkeys_, entry.index())) = value;
   }
   // Drop exact zeros, which would otherwise be stored and counted as values.
-  result.prune(0.0);
+  result.prune(0.0, 0.0);
   result.data().squeeze();
   return TableFactor(sorted_dkeys_, result);
 }
@@ -741,7 +742,7 @@ TableFactor TableFactor::apply(const TableFactor& f, Binary op) const {
   }
   // 5. Free unused memory.
   // Drop exact zeros, which would otherwise be stored and counted as values.
-  multipliedSparseTable.prune(0.0);
+  multipliedSparseTable.prune(0.0, 0.0);
   multipliedSparseTable.data().squeeze();
   // 6. Create union keys and return.
   return TableFactor(scopes.unionScope.keys, multipliedSparseTable);
@@ -862,7 +863,7 @@ TableFactor::shared_ptr TableFactor::combine(size_t nrFrontals,
   }
   // Free unused memory.
   // Drop exact zeros, which would otherwise be stored and counted as values.
-  combined_table.prune(0.0);
+  combined_table.prune(0.0, 0.0);
   combined_table.data().squeeze();
   return std::make_shared<TableFactor>(remain_dkeys, combined_table);
 }
@@ -898,7 +899,7 @@ TableFactor::shared_ptr TableFactor::combine(const Ordering& frontalKeys,
   }
   // Free unused memory.
   // Drop exact zeros, which would otherwise be stored and counted as values.
-  combined_table.prune(0.0);
+  combined_table.prune(0.0, 0.0);
   combined_table.data().squeeze();
   return std::make_shared<TableFactor>(remain_dkeys, combined_table);
 }
