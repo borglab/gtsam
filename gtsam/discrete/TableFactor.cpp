@@ -153,6 +153,18 @@ std::vector<IndexProjection> makeSubsetProjection(
   return projection;
 }
 
+/**
+ * Remove explicitly stored zeros from a sparse table and release unused
+ * storage. Both prune() arguments are passed on purpose: Eigen 5 adds a
+ * templated prune(F&& keep_predicate) overload that would capture a lone
+ * prune(0.0) and fail to compile, while the two-argument value overload exists
+ * in Eigen 3.4 and 5. With a zero reference, only exact zeros are removed.
+ */
+void removeZeros(SparseVector& table) {
+  table.prune(0.0, 0.0);
+  table.data().squeeze();
+}
+
 }  // namespace
 
 /* ************************************************************************ */
@@ -525,9 +537,7 @@ TableFactor TableFactor::choose(const DiscreteValues parent_assign,
     }
   }
 
-  // Drop exact zeros, which would otherwise be stored and counted as values.
-  child_sparse_table_.prune(0.0);
-  child_sparse_table_.data().squeeze();
+  removeZeros(child_sparse_table_);
   return TableFactor(child_dkeys, child_sparse_table_);
 }
 
@@ -617,9 +627,7 @@ TableFactor TableFactor::apply(Unary op) const {
   }
 
   // Free unused memory and return.
-  // Drop exact zeros, which would otherwise be stored and counted as values.
-  sparse_table.prune(0.0);
-  sparse_table.data().squeeze();
+  removeZeros(sparse_table);
   return TableFactor(discreteKeys(), sparse_table);
 }
 
@@ -638,9 +646,7 @@ TableFactor TableFactor::apply(UnaryAssignment op) const {
   }
 
   // Free unused memory and return.
-  // Drop exact zeros, which would otherwise be stored and counted as values.
-  sparse_table.prune(0.0);
-  sparse_table.data().squeeze();
+  removeZeros(sparse_table);
   return TableFactor(discreteKeys(), sparse_table);
 }
 
@@ -692,9 +698,7 @@ TableFactor TableFactor::applySubset(const TableFactor& factor, Binary op) const
     else
       result.insert(uniqueRep(sorted_dkeys_, entry.index())) = value;
   }
-  // Drop exact zeros, which would otherwise be stored and counted as values.
-  result.prune(0.0);
-  result.data().squeeze();
+  removeZeros(result);
   return TableFactor(sorted_dkeys_, result);
 }
 
@@ -740,9 +744,7 @@ TableFactor TableFactor::apply(const TableFactor& f, Binary op) const {
     }
   }
   // 5. Free unused memory.
-  // Drop exact zeros, which would otherwise be stored and counted as values.
-  multipliedSparseTable.prune(0.0);
-  multipliedSparseTable.data().squeeze();
+  removeZeros(multipliedSparseTable);
   // 6. Create union keys and return.
   return TableFactor(scopes.unionScope.keys, multipliedSparseTable);
 }
@@ -861,9 +863,7 @@ TableFactor::shared_ptr TableFactor::combine(size_t nrFrontals,
     combined_table.coeffRef(idx) = new_val;
   }
   // Free unused memory.
-  // Drop exact zeros, which would otherwise be stored and counted as values.
-  combined_table.prune(0.0);
-  combined_table.data().squeeze();
+  removeZeros(combined_table);
   return std::make_shared<TableFactor>(remain_dkeys, combined_table);
 }
 
@@ -897,9 +897,7 @@ TableFactor::shared_ptr TableFactor::combine(const Ordering& frontalKeys,
     combined_table.coeffRef(idx) = new_val;
   }
   // Free unused memory.
-  // Drop exact zeros, which would otherwise be stored and counted as values.
-  combined_table.prune(0.0);
-  combined_table.data().squeeze();
+  removeZeros(combined_table);
   return std::make_shared<TableFactor>(remain_dkeys, combined_table);
 }
 
