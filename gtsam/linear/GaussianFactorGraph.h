@@ -64,6 +64,14 @@ namespace gtsam {
     }
   };
 
+  /// Bind original diagonals for the built-in Cholesky elimination callbacks.
+  // Declare before the exported derived class: MSVC instantiates its template
+  // bases when exporting the class, so a later specialization is too late.
+  template <>
+  GTSAM_EXPORT EliminateableFactorGraph<GaussianFactorGraph>::Eliminate
+  EliminateableFactorGraph<GaussianFactorGraph>::prepareElimination(
+      const Eliminate& function) const;
+
   /* ************************************************************************* */
   /**
    * A Linear Factor Graph is a factor graph where all factors are Gaussian, i.e.
@@ -433,12 +441,6 @@ namespace gtsam {
 template<>
 struct traits<GaussianFactorGraph> : public Testable<GaussianFactorGraph> {
 };
-
-  /// Bind original diagonals for the built-in Cholesky elimination callbacks.
-  template <>
-  GTSAM_EXPORT GaussianFactorGraph::Eliminate
-  EliminateableFactorGraph<GaussianFactorGraph>::prepareElimination(
-      const Eliminate& function) const;
 
   namespace internal {
   /// Bind a complete-system diagonal; leave custom/QR callbacks intact.
