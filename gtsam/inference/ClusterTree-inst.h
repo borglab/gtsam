@@ -11,6 +11,7 @@
 
 #include <gtsam/inference/ClusterTree.h>
 #include <gtsam/inference/BayesTree.h>
+#include <gtsam/inference/inference-inst.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/base/treeTraversal-inst.h>
 
@@ -399,7 +400,8 @@ EliminatableClusterTree<BAYESTREE, GRAPH>::eliminate(const Eliminate& function) 
   typedef EliminationData<This> Data;
   Data rootsContainer(0, this->nrRoots());
 
-  typename Data::EliminationPostOrderVisitor visitorPost(function, result->nodes_);
+  const Eliminate prepared = inference::prepareTreeElimination(*this, function);
+  typename Data::EliminationPostOrderVisitor visitorPost(prepared, result->nodes_);
   {
     TbbOpenMPMixedScope threadLimiter;  // Limits OpenMP threads since we're mixing TBB and OpenMP
     treeTraversal::DepthFirstForestParallel(*this, rootsContainer, Data::EliminationPreOrderVisitor,

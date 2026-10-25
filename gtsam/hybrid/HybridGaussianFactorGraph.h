@@ -82,11 +82,9 @@ struct EliminationTraits<HybridGaussianFactorGraph> {
   typedef HybridBayesTree BayesTreeType;        ///< Type of Bayes tree
   typedef HybridJunctionTree JunctionTreeType;  ///< Type of Junction tree
   /// The default dense elimination function
-  static std::pair<std::shared_ptr<ConditionalType>,
-                   std::shared_ptr<FactorType>>
-  DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
-    return EliminateHybrid(factors, keys);
-  }
+  static GTSAM_EXPORT std::pair<std::shared_ptr<ConditionalType>,
+                               std::shared_ptr<FactorType>>
+  DefaultEliminate(const FactorGraphType& factors, const Ordering& keys);
   /// The default ordering generation function
   static Ordering DefaultOrderingFunc(
       const FactorGraphType& graph,
@@ -94,6 +92,13 @@ struct EliminationTraits<HybridGaussianFactorGraph> {
     return HybridOrdering(graph);
   }
 };
+
+/** Bind original Gaussian diagonals per hypothesis unless exact constraints
+ * require preserving the existing local QR/Cholesky policy. */
+template <>
+GTSAM_EXPORT EliminateableFactorGraph<HybridGaussianFactorGraph>::Eliminate
+EliminateableFactorGraph<HybridGaussianFactorGraph>::prepareElimination(
+    const Eliminate& function) const;
 
 /**
  * Hybrid Gaussian Factor Graph

@@ -27,6 +27,22 @@
 namespace gtsam {
   namespace inference {
 
+    /** Bind graph-wide numerical data from the original factors in a tree. */
+    template<class TREE>
+    typename TREE::Eliminate prepareTreeElimination(
+        const TREE& tree, const typename TREE::Eliminate& function) {
+      typename TREE::FactorGraphType graph;
+      graph.push_back(tree.remainingFactors());
+      FastVector<typename TREE::sharedNode> pending(tree.roots());
+      while (!pending.empty()) {
+        const auto node = pending.back();
+        pending.pop_back();
+        graph.push_back(node->factors);
+        pending.insert(pending.end(), node->children.begin(), node->children.end());
+      }
+      return graph.prepareElimination(function);
+    }
+
     namespace {
       /* ************************************************************************* */
       template<class TREE>

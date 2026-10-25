@@ -444,14 +444,15 @@ namespace gtsam {
       return marginalMultifrontalBayesNet(variables, marginalizedVariableOrdering, function, index);
     } else {
       gttic(marginalMultifrontalBayesNet);
+      const Eliminate prepared = prepareElimination(function);
       // An ordering was provided for the marginalized variables, so we can first eliminate them
       // in the order requested.
       const auto [bayesTree, factorGraph] =
-        eliminatePartialMultifrontal(marginalizedVariableOrdering, function, variableIndex);
+        eliminatePartialMultifrontal(marginalizedVariableOrdering, prepared, variableIndex);
 
       // An ordering was also provided for the unmarginalized variables, so we can also
       // eliminate them in the order requested.
-      return factorGraph->eliminateSequential(variables, function);
+      return factorGraph->eliminateSequential(variables, prepared);
     }
   }
 
@@ -469,13 +470,14 @@ namespace gtsam {
       return marginalMultifrontalBayesNet(variables, marginalizedVariableOrdering, function, index);
     } else {
       gttic(marginalMultifrontalBayesNet);
+      const Eliminate prepared = prepareElimination(function);
       // An ordering was provided for the marginalized variables, so we can first eliminate them
       // in the order requested.
       const auto [bayesTree, factorGraph] =
-        eliminatePartialMultifrontal(marginalizedVariableOrdering, function, variableIndex);
+        eliminatePartialMultifrontal(marginalizedVariableOrdering, prepared, variableIndex);
 
       // No ordering was provided for the unmarginalized variables, so order them with COLAMD.
-      return factorGraph->eliminateSequential(Ordering::COLAMD, function);
+      return factorGraph->eliminateSequential(Ordering::COLAMD, prepared);
     }
   }
 
@@ -549,14 +551,15 @@ namespace gtsam {
       return marginalMultifrontalBayesTree(variables, marginalizedVariableOrdering, function, std::cref(computedVariableIndex));
     } else {
       gttic(marginalMultifrontalBayesTree);
+      const Eliminate prepared = prepareElimination(function);
       // An ordering was provided for the marginalized variables, so we can first eliminate them
       // in the order requested.
       const auto [bayesTree, factorGraph] =
-        eliminatePartialMultifrontal(marginalizedVariableOrdering, function, variableIndex);
+        eliminatePartialMultifrontal(marginalizedVariableOrdering, prepared, variableIndex);
 
       // An ordering was also provided for the unmarginalized variables, so we can also
       // eliminate them in the order requested.
-      return factorGraph->eliminateMultifrontal(variables, function);
+      return factorGraph->eliminateMultifrontal(variables, prepared);
     }
   }
 
@@ -574,13 +577,14 @@ namespace gtsam {
       return marginalMultifrontalBayesTree(variables, marginalizedVariableOrdering, function, std::cref(computedVariableIndex));
     } else {
       gttic(marginalMultifrontalBayesTree);
+      const Eliminate prepared = prepareElimination(function);
       // An ordering was provided for the marginalized variables, so we can first eliminate them
       // in the order requested.
       const auto [bayesTree, factorGraph] =
-        eliminatePartialMultifrontal(marginalizedVariableOrdering, function, variableIndex);
+        eliminatePartialMultifrontal(marginalizedVariableOrdering, prepared, variableIndex);
 
       // No ordering was provided for the unmarginalized variables, so order them with COLAMD.
-      return factorGraph->eliminateMultifrontal(Ordering::COLAMD, function);
+      return factorGraph->eliminateMultifrontal(Ordering::COLAMD, prepared);
     }
   }
 

@@ -228,7 +228,8 @@ namespace gtsam {
     auto result = std::make_shared<BayesNetType>();
 
     // Run tree elimination algorithm
-    FastVector<sharedFactor> remainingFactors = inference::EliminateTree(result, *this, function);
+    const Eliminate prepared = inference::prepareTreeElimination(*this, function);
+    FastVector<sharedFactor> remainingFactors = inference::EliminateTree(result, *this, prepared);
 
     // Add remaining factors that were not involved with eliminated variables
     auto allRemainingFactors = std::make_shared<FactorGraphType>();
