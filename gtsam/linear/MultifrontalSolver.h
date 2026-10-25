@@ -104,7 +104,6 @@ class GTSAM_EXPORT MultifrontalSolver
   std::map<Key, size_t> dims_;         ///< Map from variable key to dimension.
   mutable VectorValues solution_;      ///< Cached solution vector.
   std::unordered_set<Key> fixedKeys_;  ///< Keys fixed by constrained factors.
-  VectorValues hessianDiagonal_;  ///< Raw system diagonal shared with LM damping.
   bool loaded_ = false;                ///< Whether load() has been called.
   bool eliminated_ = false;            ///< Whether eliminateInPlace() ran.
   bool partiallyEliminated_ = false;   ///< Whether partial elimination ran.

@@ -15,10 +15,10 @@
  * @author Frank Dellaert
  */
 
+#include <gtsam/base/CholeskyCheck.h>
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
 #include <gtsam/linear/internal/CompactLeafSchurKernel.h>
-#include <gtsam/base/CholeskyCheck.h>
 
 #include <cassert>
 #include <cmath>
@@ -28,8 +28,7 @@ namespace gtsam {
 namespace internal {
 namespace {
 
-
-bool factorUpper(Matrix* matrix, DenseIndex dimension, const double* referenceDiagonal) {
+bool factorUpper(Matrix* matrix, DenseIndex dimension) {
   for (DenseIndex column = 0; column < dimension; ++column) {
     const double originalDiagonal = (*matrix)(column, column);
     if (!std::isfinite(originalDiagonal) || originalDiagonal <= 0.0) {
@@ -40,8 +39,7 @@ bool factorUpper(Matrix* matrix, DenseIndex dimension, const double* referenceDi
     for (DenseIndex k = 0; k < column; ++k) {
       pivotSquared -= (*matrix)(k, column) * (*matrix)(k, column);
     }
-    if (!CholeskyCheck::acceptSquared(pivotSquared, referenceDiagonal
-            ? referenceDiagonal[column] : originalDiagonal)) {
+    if (!CholeskyCheck::acceptSquared(pivotSquared, originalDiagonal)) {
       return false;
     }
 
@@ -65,14 +63,13 @@ bool factorUpper(Matrix* matrix, DenseIndex dimension, const double* referenceDi
 }  // namespace
 
 bool CompactLeafSchurKernel::factorFrontalRows(VerticalBlockMatrix* frontalRows,
-                                               DenseIndex frontalDimension,
-                                               const double* referenceDiagonal) {
+                                               DenseIndex frontalDimension) {
   assert(frontalRows);
   Matrix& matrix = frontalRows->matrix();
   assert(frontalDimension >= 0 && frontalDimension <= matrix.rows());
   assert(matrix.rows() == frontalDimension);
   assert(matrix.cols() >= frontalDimension);
-  return factorUpper(&matrix, frontalDimension, referenceDiagonal);
+  return factorUpper(&matrix, frontalDimension);
 }
 
 std::vector<DenseIndex> CompactLeafSchurKernel::expandScalarOffsets(

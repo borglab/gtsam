@@ -623,10 +623,6 @@ Matrix JacobianFactor::information() const {
 
 /* ************************************************************************* */
 void JacobianFactor::hessianDiagonalAdd(VectorValues& d) const {
-  // Structural Bayes-tree orphan wrappers have keys but no matrix blocks.
-  // Real zero-row factors still define variable dimensions and zero diagonals.
-  if (rows() == 0 && Ab_.nBlocks() != static_cast<DenseIndex>(size() + 1))
-    return;
   for (size_t pos = 0; pos < size(); ++pos) {
     Key j = keys_[pos];
     size_t nj = Ab_(pos).cols();

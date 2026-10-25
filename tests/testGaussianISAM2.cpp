@@ -20,7 +20,6 @@
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
-#include <gtsam/linear/linearExceptions.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/treeTraversal-inst.h>
@@ -1485,59 +1484,5 @@ TEST(ISAM2, constrained_gradient_at_zero_mixed_components) {
 }
 
 /* ************************************************************************* */
-namespace cholesky_reference {
-
-NonlinearFactorGraph scalarChain(double sigma) {
-  NonlinearFactorGraph graph;
-  graph.addPrior(0, 0.1, noiseModel::Unit::Create(1));
-  graph.emplace_shared<BetweenFactor<double>>(
-      0, 1, 0.0, noiseModel::Isotropic::Sigma(1, sigma));
-  graph.emplace_shared<BetweenFactor<double>>(
-      1, 2, 0.0, noiseModel::Unit::Create(1));
-  return graph;
-}
-
-// Both incremental insertion and batch rebuilding retain the original scale
-// across the {0} and {1,2} cliques for a fixed elimination ordering.
-TEST(ISAM2, CholeskyReferenceAcrossCliques) {
-  Values initial;
-  FastMap<Key, int> orderingGroups;
-  for (Key key = 0; key < 3; ++key) {
-    initial.insert(key, 0.0);
-    orderingGroups.emplace(key, static_cast<int>(key));
-  }
-
-  for (bool batchRebuild : {false, true}) {
-    for (double sigma : {1e-4, 1e-5}) {
-      ISAM2Params params;
-      params.factorization = ISAM2Params::CHOLESKY;
-      ISAM2 isam(params);
-      NonlinearFactorGraph added = scalarChain(sigma);
-      Values addedInitial = initial;
-      if (batchRebuild) {
-        isam.update(scalarChain(1.0), initial, {}, orderingGroups);
-        added = NonlinearFactorGraph();
-        added.emplace_shared<BetweenFactor<double>>(
-            0, 1, 0.0, noiseModel::Isotropic::Sigma(1, sigma));
-        addedInitial = Values();
-      }
-      if (sigma == 1e-5) {
-        CHECK_EXCEPTION(isam.update(added, addedInitial, {}, orderingGroups),
-                        IndeterminateSystemException);
-      } else {
-        const auto result =
-            isam.update(added, addedInitial, {}, orderingGroups);
-        EXPECT(result.batchReorderTriggered == batchRebuild);
-        for (Key key = 0; key < 3; ++key) {
-          EXPECT_DOUBLES_EQUAL(0.1, isam.calculateEstimate<double>(key), 1e-7);
-        }
-      }
-    }
-  }
-}
-
-}  // namespace cholesky_reference
-/* ************************************************************************* */
-
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

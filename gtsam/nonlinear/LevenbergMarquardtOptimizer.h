@@ -126,10 +126,6 @@ public:
   /// @}
 
 protected:
-  /// Try damping while reusing the undamped linearization's diagonal.
-  bool tryLambda(const GaussianFactorGraph& linear,
-                 const VectorValues& sqrtHessianDiagonal,
-                 const VectorValues& hessianDiagonal);
 
   /** Evaluate the linear-model error change used for LM step quality. */
   virtual double linearDeltaError(const GaussianFactorGraph& linear,

@@ -19,8 +19,6 @@
 #include <gtsam/linear/cuda/internal/DenseCholeskySolver.h>
 
 #include <gtsam/base/cuda/Errors.h>
-#include <gtsam/base/ThreadsafeException.h>
-#include <gtsam/linear/cuda/internal/CholeskyCheck.h>
 
 #include <algorithm>
 #include <chrono>
@@ -99,12 +97,11 @@ void checkCusolver(cusolverStatus_t status, const char* expression) {
 #define GTSAM_CUSOLVER_CHECK(expr) checkCusolver((expr), #expr)
 
 void checkDeviceInfo(const DeviceArray<int>& info, cudaStream_t stream,
-                     const char* operation, bool factorization = false) {
+                     const char* operation) {
   std::vector<int> hostInfo;
   info.download(&hostInfo, stream);
   GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));
   if (!hostInfo.empty() && hostInfo[0] != 0) {
-    if (factorization && hostInfo[0] > 0) throw gtsam::CholeskyFailed();
     std::ostringstream os;
     os << operation << " failed with device info " << hostInfo[0];
     throw std::runtime_error(os.str());
@@ -123,7 +120,6 @@ struct DenseCholeskySolver::Impl {
   cusolverDnHandle_t handle = nullptr;
   DeviceArray<double> workspace;
   DeviceArray<int> info;
-  DeviceArray<double> referenceDiagonal;
   int analyzedDimension = 0;
 
   Impl() { GTSAM_CUSOLVER_CHECK(cusolverDnCreate(&handle)); }
@@ -166,22 +162,12 @@ void DenseCholeskySolver::solveInPlace(DenseSpdSystemView system,
   impl_->workspace.resize(static_cast<size_t>(workspaceSize));
   impl_->info.resize(1);
 
-  const double* reference = system.referenceDiagonal;
-  if (!reference) {
-    impl_->referenceDiagonal.resize(static_cast<size_t>(system.dimension));
-    internal::saveCholeskyDiagonal(system.values, system.dimension,
-        system.leadingDimension, impl_->referenceDiagonal.data(), stream);
-    reference = impl_->referenceDiagonal.data();
-  }
-
   const auto factorizationStart = std::chrono::steady_clock::now();
   GTSAM_CUSOLVER_CHECK(cusolverDnDpotrf(
       impl_->handle, CUBLAS_FILL_MODE_LOWER, system.dimension, system.values,
       system.leadingDimension, impl_->workspace.data(), workspaceSize,
       impl_->info.data()));
-  internal::checkCholeskyPivots(system.values, system.dimension,
-      system.leadingDimension, reference, impl_->info.data(), stream);
-  checkDeviceInfo(impl_->info, stream, "cusolverDnDpotrf / Cholesky pivot check", true);
+  checkDeviceInfo(impl_->info, stream, "cusolverDnDpotrf");
   const double factorizationSeconds = elapsed(factorizationStart);
 
   const auto solveStart = std::chrono::steady_clock::now();

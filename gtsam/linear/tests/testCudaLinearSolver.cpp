@@ -18,7 +18,6 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/Testable.h>
-#include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/cuda/DeviceSparseSpdSystem.h>
 #include <gtsam/linear/cuda/LinearSolver.h>
@@ -328,37 +327,6 @@ TEST(LinearSolverSession, DispatchesOrderedSparsePreparedSystem) {
 
 }  // namespace linear_solver_fixture
 /* ************************************************************************* */
-
-
-// Dense CUDA accepts the usable #2856 pivot, rejects the weaker #2653 case,
-// and honors a reference diagonal supplied before Schur elimination.
-TEST(LinearSolverSession, DenseCholeskyUsesSharedPivotCheck) {
-  LinearSolverOptions options;
-  options.backend = LinearSolverType::DenseCholesky;
-  LinearSolverSession session(options);
-  session.analyze(2);
-  DeviceArray<double> matrix, rhs, solution, reference;
-  for (double strength : {1e8, 1e10}) {
-    matrix.upload({strength + 1.0, -strength, -strength, strength});
-    rhs.upload({0.1, 0.0});
-    DenseSpdSystemView system{2, 2, matrix.data(), rhs.data()};
-    if (strength == 1e8) {
-      session.solve(system, &solution);
-      std::vector<double> actual;
-      solution.download(&actual);
-      GTSAM_CUDA_CHECK(cudaDeviceSynchronize());
-      DOUBLES_EQUAL(0.1, actual[0], 1e-8);
-      DOUBLES_EQUAL(0.1, actual[1], 1e-8);
-    } else {
-      CHECK_EXCEPTION(session.solve(system, &solution), gtsam::CholeskyFailed);
-    }
-  }
-  matrix.upload({1.0});
-  rhs.upload({0.1});
-  reference.upload({1e10});
-  DenseSpdSystemView schur{1, 1, matrix.data(), rhs.data(), reference.data()};
-  CHECK_EXCEPTION(session.solve(schur, &solution), gtsam::CholeskyFailed);
-}
 
 int main() {
   TestResult tr;

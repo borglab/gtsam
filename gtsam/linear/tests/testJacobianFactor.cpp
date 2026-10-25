@@ -615,23 +615,6 @@ TEST(JacobianFactor, empty )
 }
 
 /* ************************************************************************* */
-// Zero-row numerical factors retain their variable dimensions in the diagonal.
-TEST(JacobianFactor, ZeroRowsHessianDiagonal) {
-  const JacobianFactor factor(0, Matrix::Zero(0, 2), 1, Matrix::Zero(0, 3),
-                              Vector::Zero(0));
-  VectorValues expected;
-  expected.insert(0, Vector2::Zero());
-  expected.insert(1, Vector3::Zero());
-  EXPECT(assert_equal(expected, factor.hessianDiagonal()));
-
-  expected.at(0) = Vector2::Ones();
-  VectorValues accumulated;
-  accumulated.insert(0, Vector2::Ones());
-  factor.hessianDiagonalAdd(accumulated);
-  EXPECT(assert_equal(expected, accumulated));
-}
-
-/* ************************************************************************* */
 TEST(JacobianFactor, eliminate)
 {
   Matrix A01{//

@@ -35,13 +35,6 @@ using namespace gtsam;
 
 namespace gtsam {
 
-  // Keep a single exported callback address across shared-library boundaries.
-  std::pair<std::shared_ptr<GaussianConditional>, std::shared_ptr<GaussianFactor>>
-  EliminationTraits<GaussianFactorGraph>::DefaultEliminate(
-      const GaussianFactorGraph& factors, const Ordering& keys) {
-    return EliminatePreferCholesky(factors, keys);
-  }
-
   // Instantiate base classes
   template class FactorGraph<GaussianFactor>;
   template class EliminateableFactorGraph<GaussianFactorGraph>;
@@ -573,58 +566,5 @@ namespace gtsam {
                      // factor
     }
   }
-
-namespace internal {
-
-bool usesCholesky(const GaussianFactorGraph::Eliminate& function) {
-  if (const auto* target = function.target<decltype(&EliminateCholesky)>())
-    return *target == &EliminateCholesky;
-  if (const auto* target = function.target<decltype(&EliminatePreferCholesky)>())
-    return *target == &EliminatePreferCholesky ||
-           *target == &EliminationTraits<GaussianFactorGraph>::DefaultEliminate;
-  return false;
-}
-
-GaussianFactorGraph::Eliminate withCholeskyDiagonal(
-    const GaussianFactorGraph::Eliminate& function,
-    const VectorValues& referenceDiagonal) {
-  if (!usesCholesky(function)) return function;
-  const bool preferCholesky = !function.target<decltype(&EliminateCholesky)>();
-  const auto reference = std::make_shared<const VectorValues>(referenceDiagonal);
-  return [reference, preferCholesky](const GaussianFactorGraph& factors,
-                                    const Ordering& keys)
-      -> GaussianFactorGraph::EliminationResult {
-    if (preferCholesky && hasConstraints(factors)) return EliminateQR(factors, keys);
-    HessianFactor::shared_ptr joint;
-    try {
-      joint = std::make_shared<HessianFactor>(factors, Scatter(factors, keys));
-    } catch (const std::invalid_argument&) {
-      throw InvalidDenseElimination(
-          "EliminateCholesky requested variables absent from its factors.");
-    }
-    const Vector diagonal = reference->vector(keys);
-    auto conditional = joint->eliminateCholesky(keys, diagonal);
-    return {conditional, joint};
-  };
-}
-
-}  // namespace internal
-
-template <>
-GaussianFactorGraph::Eliminate
-EliminateableFactorGraph<GaussianFactorGraph>::prepareElimination(
-    const Eliminate& function) const {
-  // Exact constraints have no finite normal-equation diagonal: their arbitrary
-  // row scaling must not become the reference for a later Cholesky step.
-  // Preserve the existing local QR/Cholesky fallback for these systems.
-  if (!internal::usesCholesky(function)) return function;
-  if (hasConstraints(asDerived())) {
-    // Keep this policy through composed calls even after constraints disappear.
-    return [function](const GaussianFactorGraph& factors, const Ordering& keys) {
-      return function(factors, keys);
-    };
-  }
-  return internal::withCholeskyDiagonal(function, asDerived().hessianDiagonal());
-}
 
 } // namespace gtsam

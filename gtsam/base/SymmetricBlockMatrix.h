@@ -507,9 +507,6 @@ class GTSAM_EXPORT SymmetricBlockMatrix {
    */
   void choleskyPartial(DenseIndex nFrontals);
 
-  /** Factor with scalar frontal reference diagonals from the original system. */
-  void choleskyPartial(DenseIndex nFrontals, const double* referenceDiagonal);
-
   /**
    * After partial Cholesky, we can optionally split off R and Sd, to be
    * interpreted as a GaussianConditional |R*x1 + S*x2 - d]^2. We leave the

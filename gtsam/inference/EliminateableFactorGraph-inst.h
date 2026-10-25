@@ -79,7 +79,7 @@ namespace gtsam {
       gttic(eliminateSequential);
       // Do elimination
       EliminationTreeType etree(asDerived(), (*variableIndex).get(), ordering);
-      const auto [bayesNet, factorGraph] = etree.eliminate(prepareElimination(function));
+      const auto [bayesNet, factorGraph] = etree.eliminate(function);
       // If any factors are remaining, the ordering was incomplete
       if(!factorGraph->empty()) {
         throw InconsistentEliminationRequested(factorGraph->keys());
@@ -142,7 +142,7 @@ namespace gtsam {
       // Do elimination with given ordering
       EliminationTreeType etree(asDerived(), (*variableIndex).get(), ordering);
       JunctionTreeType junctionTree(etree);
-      const auto [bayesTree, factorGraph] = junctionTree.eliminate(prepareElimination(function));
+      const auto [bayesTree, factorGraph] = junctionTree.eliminate(function);
       // If any factors are remaining, the ordering was incomplete
       if(!factorGraph->empty()) {
         throw InconsistentEliminationRequested(factorGraph->keys());
@@ -269,8 +269,7 @@ namespace gtsam {
 
     ClusterEliminationData rootsContainer(0, indexedJunctionTree.nrRoots());
 
-    const Eliminate prepared = prepareElimination(function);
-    EliminationPostOrderVisitor visitorPost(asDerived(), prepared);
+    EliminationPostOrderVisitor visitorPost(asDerived(), function);
     {
       TbbOpenMPMixedScope threadLimiter;
       treeTraversal::DepthFirstForestParallel(
@@ -305,7 +304,7 @@ namespace gtsam {
       gttic(eliminatePartialSequential);
       // Do elimination
       EliminationTreeType etree(asDerived(), (*variableIndex).get(), ordering);
-      return etree.eliminate(prepareElimination(function));
+      return etree.eliminate(function);
     } else {
       // If no variable index is provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
@@ -345,7 +344,7 @@ namespace gtsam {
       // Do elimination
       EliminationTreeType etree(asDerived(), (*variableIndex).get(), ordering);
       JunctionTreeType junctionTree(etree);
-      return junctionTree.eliminate(prepareElimination(function));
+      return junctionTree.eliminate(function);
     } else {
       // If no variable index is provided, compute one and call this function again
       VariableIndex computedVariableIndex(asDerived());
@@ -444,15 +443,14 @@ namespace gtsam {
       return marginalMultifrontalBayesNet(variables, marginalizedVariableOrdering, function, index);
     } else {
       gttic(marginalMultifrontalBayesNet);
-      const Eliminate prepared = prepareElimination(function);
       // An ordering was provided for the marginalized variables, so we can first eliminate them
       // in the order requested.
       const auto [bayesTree, factorGraph] =
-        eliminatePartialMultifrontal(marginalizedVariableOrdering, prepared, variableIndex);
+        eliminatePartialMultifrontal(marginalizedVariableOrdering, function, variableIndex);
 
       // An ordering was also provided for the unmarginalized variables, so we can also
       // eliminate them in the order requested.
-      return factorGraph->eliminateSequential(variables, prepared);
+      return factorGraph->eliminateSequential(variables, function);
     }
   }
 
@@ -470,14 +468,13 @@ namespace gtsam {
       return marginalMultifrontalBayesNet(variables, marginalizedVariableOrdering, function, index);
     } else {
       gttic(marginalMultifrontalBayesNet);
-      const Eliminate prepared = prepareElimination(function);
       // An ordering was provided for the marginalized variables, so we can first eliminate them
       // in the order requested.
       const auto [bayesTree, factorGraph] =
-        eliminatePartialMultifrontal(marginalizedVariableOrdering, prepared, variableIndex);
+        eliminatePartialMultifrontal(marginalizedVariableOrdering, function, variableIndex);
 
       // No ordering was provided for the unmarginalized variables, so order them with COLAMD.
-      return factorGraph->eliminateSequential(Ordering::COLAMD, prepared);
+      return factorGraph->eliminateSequential(Ordering::COLAMD, function);
     }
   }
 
@@ -551,15 +548,14 @@ namespace gtsam {
       return marginalMultifrontalBayesTree(variables, marginalizedVariableOrdering, function, std::cref(computedVariableIndex));
     } else {
       gttic(marginalMultifrontalBayesTree);
-      const Eliminate prepared = prepareElimination(function);
       // An ordering was provided for the marginalized variables, so we can first eliminate them
       // in the order requested.
       const auto [bayesTree, factorGraph] =
-        eliminatePartialMultifrontal(marginalizedVariableOrdering, prepared, variableIndex);
+        eliminatePartialMultifrontal(marginalizedVariableOrdering, function, variableIndex);
 
       // An ordering was also provided for the unmarginalized variables, so we can also
       // eliminate them in the order requested.
-      return factorGraph->eliminateMultifrontal(variables, prepared);
+      return factorGraph->eliminateMultifrontal(variables, function);
     }
   }
 
@@ -577,14 +573,13 @@ namespace gtsam {
       return marginalMultifrontalBayesTree(variables, marginalizedVariableOrdering, function, std::cref(computedVariableIndex));
     } else {
       gttic(marginalMultifrontalBayesTree);
-      const Eliminate prepared = prepareElimination(function);
       // An ordering was provided for the marginalized variables, so we can first eliminate them
       // in the order requested.
       const auto [bayesTree, factorGraph] =
-        eliminatePartialMultifrontal(marginalizedVariableOrdering, prepared, variableIndex);
+        eliminatePartialMultifrontal(marginalizedVariableOrdering, function, variableIndex);
 
       // No ordering was provided for the unmarginalized variables, so order them with COLAMD.
-      return factorGraph->eliminateMultifrontal(Ordering::COLAMD, prepared);
+      return factorGraph->eliminateMultifrontal(Ordering::COLAMD, function);
     }
   }
 

@@ -126,11 +126,7 @@ class GTSAM_EXPORT MultifrontalClique {
   /// children.
   void prepareForElimination();
 
-  /**
-   * Factor the frontal block using the selected QR or Cholesky mode.
-   * Throws IndeterminateSystemException with a nearby frontal key if Cholesky
-   * fails, including the compact and fused modes.
-   */
+  /// Perform Cholesky factorization on the frontal block.
   void factorize();
 
   /**
@@ -234,9 +230,6 @@ class GTSAM_EXPORT MultifrontalClique {
    */
   void eliminateInPlace();
 
-  /** Set original frontal diagonals before each elimination or damping attempt. */
-  void setReferenceDiagonal(const VectorValues& diagonal);
-
   /**
    * Version of eliminate that applies damping before eliminate.
    *
@@ -271,7 +264,6 @@ class GTSAM_EXPORT MultifrontalClique {
                                   const MultifrontalClique& clique);
 
  private:
-  Vector referenceDiagonal_;  ///< Original frontal diagonal plus applied damping.
   enum class SolveMode {
     Cholesky,
     QrLeaf,

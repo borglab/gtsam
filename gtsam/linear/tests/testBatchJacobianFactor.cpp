@@ -295,7 +295,7 @@ TEST(BatchJacobianFactor, FlatHessianBlockDiagonal) {
 
 // Verifies weighted compact error and diagonal operations preserve the dense
 // compatibility semantics.
-TEST(BatchJacobianFactor, WeightedErrorAndDiagonalMatchDense) {
+TEST(BatchJacobianFactor, WeightedErrorAndDiagonalUseDenseFallback) {
   const Factor factor = createWeightedFactor();
   VectorValues values;
   values.emplace(0, Vector2{{0.2, -0.4}});
@@ -334,52 +334,6 @@ TEST(BatchJacobianFactor, UnaryRowAccess) {
 }
 
 }  // namespace update_hessian_fixture
-/* ************************************************************************* */
-
-namespace hessian_diagonal_fixture {
-
-class TrackingFactor : public BatchJacobianFactor<2, 2, 3> {
- public:
-  using Base = BatchJacobianFactor<2, 2, 3>;
-  using Base::Base;
-  mutable size_t conversions = 0;
-
-  JacobianFactor toJacobianFactor() const override {
-    ++conversions;
-    return Base::toJacobianFactor();
-  }
-};
-
-// Weighted diagonal accumulation preserves dense semantics and compact storage,
-// including repeated additions and constrained rows' whitening convention.
-TEST(BatchJacobianFactor, HessianDiagonalWithoutDenseConversion) {
-  const std::vector<SharedDiagonal> models{
-      nullptr, noiseModel::Unit::Create(4),
-      noiseModel::Diagonal::Sigmas(Vector4{2.0, 3.0, 4.0, 5.0}),
-      noiseModel::Constrained::MixedSigmas(Vector4{0.0, 3.0, 4.0, 0.0})};
-  for (const auto& model : models) {
-    TrackingFactor factor(KeyVector{0, 1, 2}, {2, 2, 3}, model);
-    factor.addRow({0, 2},
-                  {Matrix2{{1.0, 2.0}, {3.0, 4.0}},
-                   Matrix23{{0.5, 1.0, -1.5}, {2.0, -0.5, 0.25}}},
-                  Vector2::Zero());
-    factor.addRow({1, 2},
-                  {Matrix2{{-1.0, 0.5}, {2.0, -0.25}},
-                   Matrix23{{1.5, -2.0, 0.75}, {-1.0, 0.25, 2.5}}},
-                  Vector2::Zero());
-    const JacobianFactor dense = factor.toJacobianFactor();
-    factor.conversions = 0;
-    VectorValues actual, expected;
-    for (size_t repeat = 0; repeat < 2; ++repeat) {
-      factor.hessianDiagonalAdd(actual);
-      dense.hessianDiagonalAdd(expected);
-      EXPECT(assert_equal(expected, actual, 1e-12));
-      EXPECT_LONGS_EQUAL(0, factor.conversions);
-    }
-  }
-}
-
-}  // namespace hessian_diagonal_fixture
 /* ************************************************************************* */
 
 int main() {

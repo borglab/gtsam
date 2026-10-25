@@ -7,12 +7,6 @@
 
 #include <limits>
 
-#ifdef __CUDACC__
-#define GTSAM_CHOLESKY_HOST_DEVICE __host__ __device__
-#else
-#define GTSAM_CHOLESKY_HOST_DEVICE
-#endif
-
 namespace gtsam::internal {
 
 /** Shared, dimensionless safeguard for normal-equation Cholesky pivots. */
@@ -22,16 +16,16 @@ struct CholeskyCheck {
   // #2653. Keep this value shared by every Cholesky implementation.
   static constexpr double minimumNormalizedPivotSquared = 0x1p-28;
 
-  /** Test a squared pivot against its diagonal before any elimination. */
-  GTSAM_CHOLESKY_HOST_DEVICE static bool acceptSquared(
+  /** Test a squared pivot against its diagonal at entry to this factorization. */
+  static bool acceptSquared(
       double pivotSquared, double referenceDiagonal) {
     return positiveFinite(referenceDiagonal) && positiveFinite(pivotSquared) &&
            pivotSquared >= minimumNormalizedPivotSquared * referenceDiagonal;
   }
 
   /** Test a Cholesky diagonal without overflowing when squaring it. */
-  GTSAM_CHOLESKY_HOST_DEVICE static bool accept(double pivot,
-                                                double referenceDiagonal) {
+  static bool accept(double pivot,
+                     double referenceDiagonal) {
     if (!positiveFinite(pivot) || !positiveFinite(referenceDiagonal))
       return false;
     // Division before multiplication also handles very small valid systems.
@@ -39,11 +33,9 @@ struct CholeskyCheck {
   }
 
  private:
-  GTSAM_CHOLESKY_HOST_DEVICE static bool positiveFinite(double value) {
+  static bool positiveFinite(double value) {
     return value > 0.0 && value <= std::numeric_limits<double>::max();
   }
 };
 
 }  // namespace gtsam::internal
-
-#undef GTSAM_CHOLESKY_HOST_DEVICE

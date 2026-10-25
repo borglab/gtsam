@@ -1217,9 +1217,7 @@ TEST(NonlinearOptimizer, DerivedGraphVirtualDispatch) {
 }
 
 /* ************************************************************************* */
-
-// Anchored, full-rank version of #2856: a tight relative measurement must not
-// cause LM to stop early after repeated numerical rejections and large damping.
+// An anchored graph with a tight relative measurement accepts useful LM steps.
 TEST(NonlinearOptimizer, IllConditionedAnchoredGraph) {
   NonlinearFactorGraph graph;
   graph.emplace_shared<PriorFactor<double>>(0, 0.0,
@@ -1265,7 +1263,6 @@ TEST(NonlinearOptimizer, IllConditionedAnchoredGraph) {
   }
 }
 
-
 // Undamped optimizers report the same graph exception for a missing gauge.
 TEST(NonlinearOptimizer, SingularGraphReportsIndeterminateSystem) {
   NonlinearFactorGraph graph;
@@ -1288,114 +1285,6 @@ TEST(NonlinearOptimizer, SingularGraphReportsIndeterminateSystem) {
     dlParams.multifrontalParams = gnParams.multifrontalParams;
     CHECK_EXCEPTION(DoglegOptimizer(graph, initial, dlParams).iterate(),
                     IndeterminateSystemException);
-  }
-}
-
-// More extreme conditioning still triggers the safeguard. Both LM backends
-// must retry with damping, then reset the reference before the next attempt.
-TEST(NonlinearOptimizer, SharedCholeskyRejectionRetries) {
-  NonlinearFactorGraph graph;
-  graph.emplace_shared<PriorFactor<double>>(0, 0.0,
-      noiseModel::Isotropic::Sigma(1, 1.0));
-  graph.emplace_shared<BetweenFactor<double>>(0, 1, 0.0,
-      noiseModel::Isotropic::Sigma(1, 1e-5));
-  Values initial;
-  initial.insert(0, 0.1);
-  initial.insert(1, 0.1);
-  size_t expectedAttempts = 0;
-  double expectedError = 0;
-  for (const std::string solver : {"SEQUENTIAL_CHOLESKY", "MULTIFRONTAL_CHOLESKY",
-                                  "MULTIFRONTAL_SOLVER"}) {
-    LevenbergMarquardtParams params;
-    params.setOrdering(Ordering{0, 1});
-    params.setLinearSolverType(solver);
-    params.multifrontalParams.qrMode = MultifrontalParameters::QRMode::Off;
-    params.multifrontalParams.mergeDimCap = 0;
-    LevenbergMarquardtOptimizer lm(graph, initial, params);
-    lm.iterate();
-    EXPECT(lm.getInnerIterations() > 1);
-    EXPECT(lm.error() < graph.error(initial));
-    if (!expectedAttempts) {
-      expectedAttempts = lm.getInnerIterations();
-      expectedError = lm.error();
-    } else {
-      LONGS_EQUAL(expectedAttempts, lm.getInnerIterations());
-      DOUBLES_EQUAL(expectedError, lm.error(), 1e-10);
-    }
-  }
-}
-
-
-// Damping retries must reuse the original diagonal, including when subclasses
-// supply the linearization. Only appended damping factors need new diagonals.
-TEST(NonlinearOptimizer, ReusesHessianDiagonalAcrossRetries) {
-  class CountingFactor final : public JacobianFactor {
-    size_t* calls_;
-   public:
-    CountingFactor(const JacobianFactor& factor, size_t* calls)
-        : JacobianFactor(factor), calls_(calls) {}
-    void hessianDiagonalAdd(VectorValues& diagonal) const override {
-      ++*calls_;
-      JacobianFactor::hessianDiagonalAdd(diagonal);
-    }
-  };
-  class CountingLM final : public LevenbergMarquardtOptimizer {
-    size_t* calls_;
-   public:
-    CountingLM(const NonlinearFactorGraph& graph, const Values& initial,
-               const LevenbergMarquardtParams& params, size_t* calls)
-        : LevenbergMarquardtOptimizer(graph, initial, params), calls_(calls) {}
-    GaussianFactorGraph::shared_ptr linearize() const override {
-      auto result = LevenbergMarquardtOptimizer::linearize();
-      for (auto& factor : *result)
-        factor = std::make_shared<CountingFactor>(
-            *std::dynamic_pointer_cast<JacobianFactor>(factor), calls_);
-      return result;
-    }
-  };
-  NonlinearFactorGraph graph;
-  graph.emplace_shared<PriorFactor<double>>(0, 0.0,
-      noiseModel::Isotropic::Sigma(1, 1.0));
-  graph.emplace_shared<BetweenFactor<double>>(0, 1, 0.0,
-      noiseModel::Isotropic::Sigma(1, 1e-5));
-  Values initial;
-  initial.insert(0, 0.1);
-  initial.insert(1, 0.1);
-  for (const std::string solver : {"SEQUENTIAL_CHOLESKY", "MULTIFRONTAL_CHOLESKY"}) {
-    LevenbergMarquardtParams params;
-    params.setOrdering(Ordering{0, 1});
-    params.setLinearSolverType(solver);
-    size_t calls = 0;
-    CountingLM lm(graph, initial, params, &calls);
-    lm.iterate();
-    EXPECT(lm.getInnerIterations() > 1);
-    LONGS_EQUAL(graph.size(), calls);
-  }
-}
-
-// Cached LM reference diagonals must not normalize pivots by exact-row scales.
-TEST(NonlinearOptimizer, ConstrainedReferenceDiagonal) {
-  class ReferenceLM : public LevenbergMarquardtOptimizer {
-   public:
-    using LevenbergMarquardtOptimizer::LevenbergMarquardtOptimizer;
-    using NonlinearOptimizer::solveWithReferenceDiagonal;
-  };
-  GaussianFactorGraph graph;
-  graph.emplace_shared<JacobianFactor>(0, Matrix11{1.0}, Vector1{0.1});
-  graph.emplace_shared<JacobianFactor>(1, Matrix11{1.0}, Vector1{0.2});
-  graph.emplace_shared<JacobianFactor>(
-      0, Matrix11{1e5}, 1, Matrix11{1e5}, 2, Matrix11{1e5}, Vector1{0.0},
-      noiseModel::Constrained::All(1));
-  const VectorValues expected{{0, Vector1{0.1}}, {1, Vector1{0.2}},
-                              {2, Vector1{-0.3}}};
-  for (const auto solver : {NonlinearOptimizerParams::SEQUENTIAL_CHOLESKY,
-                             NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY}) {
-    LevenbergMarquardtParams params;
-    params.setLinearSolver(solver);
-    params.setOrdering(Ordering{0, 1, 2});
-    ReferenceLM optimizer(NonlinearFactorGraph{}, Values{}, params);
-    EXPECT(assert_equal(expected, optimizer.solveWithReferenceDiagonal(
-                                      graph, params, graph.hessianDiagonal())));
   }
 }
 

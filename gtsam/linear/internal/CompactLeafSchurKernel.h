@@ -40,8 +40,7 @@ class GTSAM_EXPORT CompactLeafSchurKernel {
    * where `R'R=Hff` and `R'[S d]=[Hfs gf]`.
    */
   static bool factorFrontalRows(VerticalBlockMatrix* frontalRows,
-                                DenseIndex frontalDimension,
-                                const double* referenceDiagonal = nullptr);
+                                DenseIndex frontalDimension);
 
   /** Expand block scalar offsets into one destination per scalar column. */
   static std::vector<DenseIndex> expandScalarOffsets(

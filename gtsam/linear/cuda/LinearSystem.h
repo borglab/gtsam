@@ -34,9 +34,6 @@ struct DenseSpdSystemView {
   int leadingDimension = 0;
   double* values = nullptr;
   double* rhs = nullptr;
-  /// Optional device diagonal from before any Schur elimination, including
-  /// damping. If absent, the dense solver saves the input matrix's diagonal.
-  const double* referenceDiagonal = nullptr;
 };
 
 /// Non-owning view of a symmetric CSR SPD matrix and right-hand side.

@@ -405,14 +405,6 @@ namespace gtsam {
       std::push_heap(v_.begin(), v_.end(), std::greater<double>{});
     }
 
-    /// Push value `x`, `n` number of times.
-    void push(double x, size_t n) {
-      for (size_t i = 0; i < n; ++i) {
-        v_.push_back(x);
-        std::push_heap(v_.begin(), v_.end(), std::greater<double>{});
-      }
-    }
-
     /// Pop the top value of the heap.
     double pop() {
       std::pop_heap(v_.begin(), v_.end(), std::greater<double>{});
@@ -470,26 +462,18 @@ namespace gtsam {
         nrAssignments *= cardinalities_.at(k);
       }
 
-      // If min-heap is empty, fill it initially.
-      // This is because there is nothing at the top.
-      if (min_heap.empty()) {
-        min_heap.push(p, std::min(nrAssignments, N));
-
-      } else {
-        for (size_t i = 0; i < std::min(nrAssignments, N); ++i) {
-          // If p is larger than the smallest element,
-          // then we insert into the min heap.
-          // We check against the top each time because the
-          // heap maintains the smallest element at the top.
-          if (p > min_heap.top()) {
-            if (min_heap.size() == N) {
-              min_heap.pop();
-            }
-            min_heap.push(p);
-          } else {
-            // p is <= min value so move to the next one
-            break;
-          }
+      // Insert one copy of p per assignment in the subtree, keeping only the
+      // N largest values. Until the heap is full every value belongs in it;
+      // afterwards p must beat the current smallest value to get in.
+      for (size_t i = 0; i < std::min(nrAssignments, N); ++i) {
+        if (min_heap.size() < N) {
+          min_heap.push(p);
+        } else if (p > min_heap.top()) {
+          min_heap.pop();
+          min_heap.push(p);
+        } else {
+          // p is <= the smallest kept value, so its remaining copies are too.
+          break;
         }
       }
       return p;
@@ -506,33 +490,13 @@ namespace gtsam {
   /* ************************************************************************ */
   DiscreteFactor::shared_ptr DecisionTreeFactor::prune(
       size_t maxNrAssignments) const {
-    const size_t N = maxNrAssignments;
-
-    double threshold = computeThreshold(N);
-
-    // Now threshold the decision tree
-    size_t total = 0;
-    auto thresholdFunc = [threshold, &total, N](const double& value) {
-      // There is a possible case where the `threshold` is equal to 0.0
-      // In that case `(value < threshold) == false`
-      // which increases the leaf total erroneously.
-      // Hence we check for 0.0 explicitly.
-      if (fpEqual(value, 0.0, 1e-12)) {
-        return 0.0;
-      }
-
-      // Check if value is less than the threshold and
-      // we haven't exceeded the maximum number of leaves.
-      // TODO(Varun): Bug since we can have a case where we need to prune higher
-      // probabilities after we have reached N.
-      // E.g. N=3 for [0.2, 0.2, 0.1, 0.2, 0.3]
-      // will give [0.2, 0.2, 0.0, 0.2, 0.0]
-      if (value < threshold || total >= N) {
-        return 0.0;
-      } else {
-        total += 1;
-        return value;
-      }
+    // Keep every value at or above the N-th largest one. We don't stop after N
+    // kept values: leaves are visited in tree order, not value order, so a cap
+    // would drop larger values that come later. Values tied with the threshold
+    // are all kept, so more than N assignments can survive.
+    const double threshold = computeThreshold(maxNrAssignments);
+    auto thresholdFunc = [threshold](const double& value) {
+      return value < threshold ? 0.0 : value;
     };
     DecisionTree<Key, double> thresholded(*this, thresholdFunc);
 

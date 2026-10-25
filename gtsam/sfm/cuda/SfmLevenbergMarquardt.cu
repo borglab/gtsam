@@ -16,7 +16,6 @@
  * @date    Jun 17, 2026
  */
 
-#include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/base/cuda/Context.h>
 #include <gtsam/base/cuda/DeviceArray.h>
 #include <gtsam/base/cuda/Errors.h>
@@ -899,19 +898,15 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
       attemptProfile.iteration = iterationProfile.iteration;
       attemptProfile.attempt = attemptIndex++;
       attemptProfile.lambda = lambda;
-      bool rejectStep = false;
+      bool rejectPcgStep = false;
 
       if (solverMode == SfmLinearSolverType::DenseSchur) {
         stageStart = detailedProfileStart(detailedProfiling);
-        try {
-          if (params.dampingParams.diagonalDamping) {
-            denseSchurSolver.solveLinearized(lambda, dampingDiagonal, &delta,
-                                             context.stream());
-          } else {
-            denseSchurSolver.solveLinearized(lambda, &delta, context.stream());
-          }
-        } catch (const gtsam::CholeskyFailed&) {
-          rejectStep = true;
+        if (params.dampingParams.diagonalDamping) {
+          denseSchurSolver.solveLinearized(lambda, dampingDiagonal, &delta,
+                                           context.stream());
+        } else {
+          denseSchurSolver.solveLinearized(lambda, &delta, context.stream());
         }
         attemptProfile.denseSchurSolveElapsed =
             detailedElapsedSinceAfterSync(detailedProfiling, stageStart,
@@ -978,9 +973,9 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
         attemptProfile.pcgIterations = stats.lastPcgIterations;
         attemptProfile.pcgConverged = stats.lastPcgConverged;
         attemptProfile.pcgBreakdown = stats.lastPcgBreakdown;
-        rejectStep = classifyPcgLmStep(stats) ==
+        rejectPcgStep = classifyPcgLmStep(stats) ==
                         PcgLmStepDisposition::RejectAndRetry;
-        if (!rejectStep) {
+        if (!rejectPcgStep) {
           if (params.dampingParams.diagonalDamping) {
             sparseSchurProblem.recoverPoints(lambda, dampingDiagonal,
                                              cameraDelta, &delta,
@@ -998,8 +993,8 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
       }
       ++result.innerIterations;
 
-      if (rejectStep) {
-        if (reducedSession) reducedSession->invalidateWarmStart();
+      if (rejectPcgStep) {
+        reducedSession->invalidateWarmStart();
         stageStart = detailedProfileStart(detailedProfiling);
         gtsam::internal::increaseLevenbergMarquardtLambda(
             params, &lambda, &currentFactor);

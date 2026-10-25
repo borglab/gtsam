@@ -63,12 +63,4 @@ GTSAM_EXPORT std::pair<size_t,bool> choleskyCareful(Matrix& ATA, int order = -1)
  */
 GTSAM_EXPORT bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft=0);
 
-/**
- * Factor with nFrontal reference entries in frontal scalar order. Entries must
- * describe the system before any elimination, including applied damping.
- * A null pointer uses the input frontal block's diagonal.
- */
-GTSAM_EXPORT bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft,
-                                const double* referenceDiagonal);
-
 }  // namespace gtsam

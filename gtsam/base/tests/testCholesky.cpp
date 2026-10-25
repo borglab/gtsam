@@ -168,21 +168,6 @@ TEST(cholesky, underconstrained) {
 }
 
 /* ************************************************************************* */
-
-// A split factorization must retain the pre-elimination reference scale.
-TEST(cholesky, OriginalDiagonalAcrossPartitions) {
-  for (double strength : {1e8, 1e10}) {
-    Matrix full{{strength + 1.0, -strength}, {-strength, strength}};
-    const Vector reference = full.diagonal();
-    Matrix split = full;
-    const bool expected = strength == 1e8;
-    EXPECT(choleskyPartial(full, 2) == expected);
-    CHECK(choleskyPartial(split, 1, 0, reference.data()));
-    Matrix remainder = split.bottomRightCorner(1, 1);
-    EXPECT(choleskyPartial(remainder, 1, 0, reference.data() + 1) == expected);
-  }
-}
-
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

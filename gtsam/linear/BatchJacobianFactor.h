@@ -780,23 +780,21 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
     (addVectorValuesRowBlock<Slots>(rowIndex, values, residual), ...);
   }
 
-  /// Add one compact block's weighted column squared norms to a keyed diagonal.
+  /// Add one compact block's column squared norms to a keyed diagonal.
   template <size_t Slot>
   void hessianDiagonalVectorRowAdd(size_t rowIndex,
-                                   const RhsVector& weights,
                                    VectorValues* diagonal) const {
     const size_t keySlot = static_cast<size_t>(rowSlots_[rowIndex][Slot]);
     const auto& block = std::get<Slot>(blocks_)[rowIndex];
-    diagonal->at(keys_[keySlot]).noalias() +=
-        block.array().square().matrix().transpose() * weights;
+    diagonal->at(keys_[keySlot]).array() +=
+        block.array().square().colwise().sum().transpose();
   }
 
-  /// Add every compact block's weighted column squared norms to keyed diagonals.
+  /// Add every compact block's column squared norms to keyed diagonals.
   template <size_t... Slots>
-  void hessianDiagonalVectorRowAdds(size_t rowIndex, const RhsVector& weights,
-                                    VectorValues* diagonal,
+  void hessianDiagonalVectorRowAdds(size_t rowIndex, VectorValues* diagonal,
                                     std::index_sequence<Slots...>) const {
-    (hessianDiagonalVectorRowAdd<Slots>(rowIndex, weights, diagonal), ...);
+    (hessianDiagonalVectorRowAdd<Slots>(rowIndex, diagonal), ...);
   }
 
   /// Scatter one transposed compact block product into a flat vector.
@@ -1035,13 +1033,17 @@ class BatchJacobianFactor : public BatchJacobianFactorBase {
 
   /** Accumulate the Hessian scalar diagonal directly from compact rows. */
   void hessianDiagonalAdd(VectorValues& diagonal) const override {
+    if (model_ && !model_->isUnit()) {
+      Base::hessianDiagonalAdd(diagonal);
+      return;
+    }
     for (size_t position = 0; position < keys_.size(); ++position) {
       auto [entry, inserted] =
           diagonal.emplace(keys_[position], keyDims_[position]);
       if (inserted) entry->second.setZero();
     }
     for (size_t row = 0; row < rowSlots_.size(); ++row) {
-      hessianDiagonalVectorRowAdds(row, rowWeights(row), &diagonal,
+      hessianDiagonalVectorRowAdds(row, &diagonal,
                                    std::make_index_sequence<NumSlots>{});
     }
   }

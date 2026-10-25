@@ -1132,41 +1132,6 @@ TEST(MultifrontalSolver, Load) {
 }
 
 /* ************************************************************************* */
-// Reloading compatible factors must use their current numerical noise models.
-TEST(MultifrontalSolver, ReloadChangedNoiseModel) {
-  for (bool batch : {false, true}) {
-    const auto makeGraph = [batch](double sigma) {
-      GaussianFactorGraph graph;
-      graph.emplace_shared<JacobianFactor>(0, I_1x1, Vector1::Zero());
-      const auto model = noiseModel::Isotropic::Sigma(1, sigma);
-      if (batch) {
-        auto factor = std::make_shared<BatchJacobianFactor<1, 1>>(
-            KeyVector{0}, std::vector<size_t>{1}, model);
-        factor->addRow({0}, {I_1x1}, Vector1(2.0));
-        graph.push_back(factor);
-      } else {
-        graph.emplace_shared<JacobianFactor>(0, I_1x1, Vector1(2.0), model);
-      }
-      return graph;
-    };
-    for (auto mode : {MultifrontalParameters::QRMode::Off,
-                      MultifrontalParameters::QRMode::Force}) {
-      auto params = noMergeParams();
-      params.qrMode = mode;
-      const GaussianFactorGraph initial = makeGraph(1.0);
-      MultifrontalSolver solver(initial, Ordering{0}, params);
-      solver.eliminateInPlace(initial);
-      EXPECT_DOUBLES_EQUAL(1.0, solver.updateSolution().at(0)(0), 1e-12);
-
-      const GaussianFactorGraph reweighted = makeGraph(0.5);
-      solver.load(reweighted);
-      solver.eliminateInPlace();
-      EXPECT_DOUBLES_EQUAL(1.6, solver.updateSolution().at(0)(0), 1e-12);
-    }
-  }
-}
-
-/* ************************************************************************* */
 // Compare solver output against multifrontal elimination baseline.
 TEST(MultifrontalSolver, Eliminate) {
   MultifrontalSolver solver(chain, chainOrdering, noMergeParams());
@@ -1724,48 +1689,7 @@ TEST(MultifrontalSolver, BalancedSmoother) {
 }
 
 /* ************************************************************************* */
-
-// Merging changes frontal grouping, not the scale used for rejecting pivots.
-TEST(MultifrontalSolver, CholeskyAgreementWithAndWithoutMerging) {
-  const Ordering ordering{0, 1};
-  for (double sigma : {1e-4, 1e-5}) {
-    GaussianFactorGraph graph;
-    graph.emplace_shared<JacobianFactor>(0, Matrix11{1.0}, Vector1{0.1});
-    graph.emplace_shared<JacobianFactor>(0, Matrix11{-1.0}, 1,
-        Matrix11{1.0}, Vector1{0.0}, noiseModel::Isotropic::Sigma(1, sigma));
-    const auto expected = graph.optimize(ordering, EliminateQR);
-    for (size_t merge : {size_t(0), size_t(32)}) {
-      auto params = noMergeParams();
-      params.mergeDimCap = merge;
-      params.qrMode = MultifrontalParameters::QRMode::Off;
-      MultifrontalSolver solver(graph, ordering, params);
-      if (sigma == 1e-4) {
-        solver.eliminateInPlace(graph);
-        EXPECT(assert_equal(expected, solver.updateSolution(), 1e-8));
-        solver.load(graph);
-        solver.eliminateInPlace();
-        EXPECT(assert_equal(expected, solver.updateSolution(), 1e-8));
-      } else {
-        CHECK_EXCEPTION(solver.eliminateInPlace(graph), IndeterminateSystemException);
-      }
-    }
-  }
-}
-
-// The fused CPU kernel applies the same check to an externally supplied scale.
-TEST(CompactLeafSchurKernel, OriginalReferenceDiagonal) {
-  const Vector1 reference{1e8};
-  for (double pivotSquared : {1.0, 0.01}) {
-    VerticalBlockMatrix rows(std::vector<size_t>{1}, 1, true);
-    rows.matrix() << pivotSquared, 0.0;
-    EXPECT(internal::CompactLeafSchurKernel::factorFrontalRows(
-        &rows, 1, reference.data()) == (pivotSquared == 1.0));
-  }
-}
-
-
-// Exercise the ordinary, compact-storage, and fused batch CPU kernels on the
-// same weak frontal block, with an uneliminated separator.
+// Ordinary, compact, and fused kernels agree on a weak frontal block.
 TEST(MultifrontalSolver, SharedCheckInLeafKernels) {
   for (double strength : {1e8, 1e10}) {
     const double w = std::sqrt(strength);
@@ -1809,18 +1733,6 @@ TEST(MultifrontalSolver, SharedCheckInLeafKernels) {
       }
     }
   }
-}
-
-// A zero-row factor is numerically singular, with known variable dimensions.
-TEST(MultifrontalSolver, ZeroRowsReportIndeterminateSystem) {
-  GaussianFactorGraph graph;
-  graph.emplace_shared<JacobianFactor>(0, Matrix::Zero(0, 2), Vector::Zero(0));
-  auto params = noMergeParams();
-  params.qrMode = MultifrontalParameters::QRMode::Off;
-  MultifrontalSolver solver(graph, Ordering{0}, params);
-  solver.load(graph);
-  CHECK_EXCEPTION(solver.eliminateInPlace(), IndeterminateSystemException);
-  CHECK_EXCEPTION(solver.eliminateInPlace(graph), IndeterminateSystemException);
 }
 
 int main() {

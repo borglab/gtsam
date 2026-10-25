@@ -167,47 +167,14 @@ const Values& NonlinearOptimizer::optimizeSafely() {
 }
 
 /* ************************************************************************* */
-VectorValues NonlinearOptimizer::solveWithReferenceDiagonal(
-    const GaussianFactorGraph& graph, const NonlinearOptimizerParams& params,
-    const VectorValues& diagonal) const {
-  // Keep existing subclass solve overrides and restore context on exceptions.
-  struct Restore {
-    const GaussianFactorGraph*& graph;
-    const VectorValues*& diagonal;
-    const GaussianFactorGraph* oldGraph;
-    const VectorValues* oldDiagonal;
-    ~Restore() {
-      graph = oldGraph;
-      diagonal = oldDiagonal;
-    }
-  } restore{referenceGraph_, referenceDiagonal_, referenceGraph_,
-            referenceDiagonal_};
-  referenceGraph_ = &graph;
-  referenceDiagonal_ = &diagonal;
-  return solve(graph, params);
-}
-
 VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
                                        const NonlinearOptimizerParams& params) const {
-  return solve(gfg, params,
-               referenceGraph_ == &gfg ? referenceDiagonal_ : nullptr);
-}
-
-VectorValues NonlinearOptimizer::solve(
-    const GaussianFactorGraph& gfg, const NonlinearOptimizerParams& params,
-    const VectorValues* diagonal) const {
   // solution of linear solver is an update to the linearization point
   VectorValues delta;
-  const auto elimination = (params.isMultifrontal() || params.isSequential())
-      ? (diagonal && !hasConstraints(gfg)
-          ? internal::withCholeskyDiagonal(params.getEliminationFunction(),
-                                          *diagonal)
-          : params.getEliminationFunction())
-      : GaussianFactorGraph::Eliminate{};
 
   // Check which solver we are using
   if (params.isMultifrontal()) {
-    // Multifrontal QR or Cholesky (decided by elimination)
+    // Multifrontal QR or Cholesky (decided by params.getEliminationFunction())
     if (params.ordering) {
       if (!indexedJunctionTreeCache_ ||
           !indexedJunctionTreeCache_->matches(gfg, *params.ordering)) {
@@ -216,19 +183,19 @@ VectorValues NonlinearOptimizer::solve(
       }
 
       delta = gfg.eliminateMultifrontal(indexedJunctionTreeCache_->tree,
-                                        elimination)
+                                        params.getEliminationFunction())
                   ->optimize();
     } else
-      delta = gfg.optimize(elimination);
+      delta = gfg.optimize(params.getEliminationFunction());
   } else if (params.isSequential()) {
-    // Sequential QR or Cholesky (decided by elimination)
+    // Sequential QR or Cholesky (decided by params.getEliminationFunction())
     if (params.ordering)
       delta = gfg.eliminateSequential(*params.ordering,
-                                      elimination)
+                                      params.getEliminationFunction())
                   ->optimize();
     else
       delta = gfg.eliminateSequential(params.orderingType,
-                                      elimination)
+                                      params.getEliminationFunction())
                   ->optimize();
   } else if (params.isIterative()) {
     // Conjugate Gradient -> needs params.iterativeParams

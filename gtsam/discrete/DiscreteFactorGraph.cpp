@@ -71,7 +71,11 @@ namespace gtsam {
         result = result ? result->multiply(factor) : factor;
       }
     }
-    if (result->max() == 0.0 && result->nrValues() == 1) {
+    // Discrete factors are nonnegative, so a zero maximum means the product is
+    // zero everywhere.
+    // Also don't require a single stored value, since an all-zero
+    // TableFactor stores nothing.
+    if (result->max() == 0.0) {
       throw std::runtime_error(
           "Product factor is 0.0, possibly due to disjointed discrete "
           "factors.");

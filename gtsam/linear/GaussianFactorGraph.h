@@ -53,9 +53,9 @@ namespace gtsam {
     typedef GaussianBayesTree BayesTreeType;             ///< Type of Bayes tree
     typedef GaussianJunctionTree JunctionTreeType;       ///< Type of Junction tree
     /// The default dense elimination function
-    static GTSAM_EXPORT
-    std::pair<std::shared_ptr<ConditionalType>, std::shared_ptr<FactorType>>
-    DefaultEliminate(const FactorGraphType& factors, const Ordering& keys);
+    static std::pair<std::shared_ptr<ConditionalType>, std::shared_ptr<FactorType> >
+      DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
+        return EliminatePreferCholesky(factors, keys); }
     /// The default ordering generation function
     static Ordering DefaultOrderingFunc(
         const FactorGraphType& graph,
@@ -63,14 +63,6 @@ namespace gtsam {
       return Ordering::Colamd((*variableIndex).get());
     }
   };
-
-  /// Bind original diagonals for the built-in Cholesky elimination callbacks.
-  // Declare before the exported derived class: MSVC instantiates its template
-  // bases when exporting the class, so a later specialization is too late.
-  template <>
-  GTSAM_EXPORT EliminateableFactorGraph<GaussianFactorGraph>::Eliminate
-  EliminateableFactorGraph<GaussianFactorGraph>::prepareElimination(
-      const Eliminate& function) const;
 
   /* ************************************************************************* */
   /**
@@ -441,14 +433,5 @@ namespace gtsam {
 template<>
 struct traits<GaussianFactorGraph> : public Testable<GaussianFactorGraph> {
 };
-
-  namespace internal {
-  /// Bind a complete-system diagonal; leave custom/QR callbacks intact.
-  GTSAM_EXPORT GaussianFactorGraph::Eliminate withCholeskyDiagonal(
-      const GaussianFactorGraph::Eliminate& function,
-      const VectorValues& referenceDiagonal);
-  /// Whether a callback is one of the built-in Cholesky elimination functions.
-  GTSAM_EXPORT bool usesCholesky(const GaussianFactorGraph::Eliminate& function);
-  }
 
 } // \ namespace gtsam
