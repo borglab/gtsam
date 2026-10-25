@@ -18,6 +18,8 @@
  * @date   Mar 11, 2022
  */
 
+#include <gtsam/hybrid/internal/HybridElimination.h>
+#include <gtsam/linear/internal/GaussianElimination.h>
 #include <gtsam/base/utilities.h>
 #include <gtsam/discrete/Assignment.h>
 #include <gtsam/discrete/DiscreteEliminationTree.h>
@@ -45,11 +47,19 @@
 #include <cstddef>
 #include <iostream>
 #include <memory>
+#include <optional>
+#include <set>
 #include <stdexcept>
 #include <utility>
 #include <vector>
 
 namespace gtsam {
+
+std::pair<std::shared_ptr<HybridConditional>, std::shared_ptr<Factor>>
+EliminationTraits<HybridGaussianFactorGraph>::DefaultEliminate(
+    const HybridGaussianFactorGraph& factors, const Ordering& keys) {
+  return EliminateHybrid(factors, keys);
+}
 
 /// Specialize EliminateableFactorGraph for HybridGaussianFactorGraph:
 template class EliminateableFactorGraph<HybridGaussianFactorGraph>;
@@ -217,7 +227,8 @@ HybridGaussianProductFactor HybridGaussianFactorGraph::collectProductFactor()
 /* ************************************************************************ */
 static std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>>
 continuousElimination(const HybridGaussianFactorGraph &factors,
-                      const Ordering &frontalKeys) {
+                      const Ordering &frontalKeys,
+                      const HybridGaussianFactorGraph* referenceFactors) {
   GaussianFactorGraph gfg;
   for (auto &f : factors) {
     if (auto gf = dynamic_pointer_cast<GaussianFactor>(f)) {
@@ -234,7 +245,10 @@ continuousElimination(const HybridGaussianFactorGraph &factors,
     }
   }
 
-  auto result = EliminatePreferCholesky(gfg, frontalKeys);
+  const auto eliminate = referenceFactors
+      ? internal::GaussianElimination(referenceFactors->choose({}), EliminatePreferCholesky).function()
+      : GaussianFactorGraph::Eliminate(EliminatePreferCholesky);
+  auto result = eliminate(gfg, frontalKeys);
   return {std::make_shared<HybridConditional>(result.first), result.second};
 }
 
@@ -408,19 +422,67 @@ static std::shared_ptr<Factor> createHybridGaussianFactor(
 }
 
 /* *******************************************************************************/
-/// Get the discrete keys from the HybridGaussianFactorGraph as DiscreteKeys.
-static auto GetDiscreteKeys =
-    [](const HybridGaussianFactorGraph &hfg) -> DiscreteKeys {
-  const std::set<DiscreteKey> discreteKeySet = hfg.discreteKeys();
-  return {discreteKeySet.begin(), discreteKeySet.end()};
-};
+// Bind original Gaussian scales to matching hypotheses without expanding any
+// discrete variables outside this clique's original frontal factors.
+static ResultTree eliminateHybridProduct(
+    const HybridGaussianProductFactor& product,
+    const HybridGaussianProductFactor* referenceProduct, const Ordering& keys,
+    bool* someContinuousLeft) {
+  const auto eliminate = [&](const GaussianFactorGraphValuePair& pair,
+                             const GaussianFactorGraph::Eliminate& function) {
+    const auto& [graph, scalar] = pair;
+    if (graph.empty() || std::any_of(graph.begin(), graph.end(),
+                                   [](const auto& factor) { return !factor; })) {
+      return Result{nullptr, 0.0, nullptr, 0.0};
+    }
+    auto [conditional, factor] = function(graph, keys);
+    *someContinuousLeft |= !factor->empty();
+    return Result{conditional, conditional->negLogConstant(), factor, scalar};
+  };
+  if (!referenceProduct) {
+    return ResultTree(product, [&](const auto& pair) {
+      return eliminate(pair, EliminatePreferCholesky);
+    });
+  }
+
+  using Branch = std::pair<GaussianFactorGraphValuePair,
+                           std::shared_ptr<GaussianFactorGraph::Eliminate>>;
+  using Branches = DecisionTree<Key, Branch>;
+  const Branches graphs(product, [](const auto& pair) {
+    return Branch{pair, nullptr};
+  });
+  const Branches callbacks(*referenceProduct, [](const auto& pair) {
+    const auto& graph = pair.first;
+    if (graph.empty() || std::any_of(graph.begin(), graph.end(),
+                                   [](const auto& factor) { return !factor; })) {
+      return Branch{};
+    }
+    return Branch{{}, std::make_shared<GaussianFactorGraph::Eliminate>(
+                          internal::GaussianElimination(graph, EliminatePreferCholesky).function())};
+  });
+  const Branches prepared = graphs.apply(callbacks, [](const Branch& graph,
+                                                       const Branch& callback) {
+    return Branch{graph.first, callback.second};
+  });
+  return ResultTree(prepared, [&](const Branch& branch) {
+    return branch.second ? eliminate(branch.first, *branch.second)
+                         : Result{nullptr, 0.0, nullptr, 0.0};
+  });
+}
 
 /* *******************************************************************************/
-std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>>
-HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
+static std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>>
+eliminateHybridMixture(const HybridGaussianFactorGraph& factors,
+                       const Ordering& keys,
+                       const HybridGaussianFactorGraph* referenceFactors) {
   // Since we eliminate all continuous variables first,
   // the discrete separator will be *all* the discrete keys.
-  DiscreteKeys discreteSeparator = GetDiscreteKeys(*this);
+  std::set<DiscreteKey> discreteKeys = factors.discreteKeys();
+  if (referenceFactors) {
+    const auto originalKeys = referenceFactors->discreteKeys();
+    discreteKeys.insert(originalKeys.begin(), originalKeys.end());
+  }
+  const DiscreteKeys discreteSeparator(discreteKeys.begin(), discreteKeys.end());
 
 #if GTSAM_HYBRID_TIMING
   gttic_(HybridCollectProductFactor);
@@ -430,42 +492,23 @@ HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
   // factor, every assignment also has a scalar error, in this case the sum of
   // all errors in the graph. This error is assignment-specific and accounts for
   // any difference in noise models used.
-  HybridGaussianProductFactor productFactor = collectProductFactor();
+  HybridGaussianProductFactor productFactor = factors.collectProductFactor();
 #if GTSAM_HYBRID_TIMING
   gttoc_(HybridCollectProductFactor);
 #endif
 
-  // Check if a factor is null
-  auto isNull = [](const GaussianFactor::shared_ptr &ptr) { return !ptr; };
-
-  // This is the elimination method on the leaf nodes
   bool someContinuousLeft = false;
-  auto eliminate =
-      [&](const std::pair<GaussianFactorGraph, double> &pair) -> Result {
-    const auto &[graph, scalar] = pair;
-
-    // If any product contains a pruned factor, prune it here. Done here as it's
-    // non non-trivial to do within collectProductFactor.
-    if (graph.empty() || std::any_of(graph.begin(), graph.end(), isNull)) {
-      return {nullptr, 0.0, nullptr, 0.0};
-    }
-
-    // Expensive elimination of product factor.
-    auto [conditional, factor] =
-        EliminatePreferCholesky(graph, keys);  /// <<<<<< MOST COMPUTE IS HERE
-
-    // Record whether there any continuous variables left
-    someContinuousLeft |= !factor->empty();
-
-    // We pass on the scalar unmodified.
-    return {conditional, conditional->negLogConstant(), factor, scalar};
-  };
+  const auto referenceProduct = referenceFactors
+      ? std::make_optional(referenceFactors->collectProductFactor())
+      : std::nullopt;
 
 #if GTSAM_HYBRID_TIMING
   gttic_(HybridEliminate);
 #endif
   // Perform elimination!
-  const ResultTree eliminationResults(productFactor, eliminate);
+  const ResultTree eliminationResults = eliminateHybridProduct(
+      productFactor, referenceProduct ? &*referenceProduct : nullptr, keys,
+      &someContinuousLeft);
 #if GTSAM_HYBRID_TIMING
   gttoc_(HybridEliminate);
 #endif
@@ -489,6 +532,12 @@ HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
   return {std::make_shared<HybridConditional>(hybridGaussian), newFactor};
 }
 
+/* ************************************************************************ */
+std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>>
+HybridGaussianFactorGraph::eliminate(const Ordering& keys) const {
+  return eliminateHybridMixture(*this, keys, nullptr);
+}
+
 /* ************************************************************************
  * Function to eliminate variables **under the following assumptions**:
  * 1. When the ordering is fully continuous, and the graph only contains
@@ -503,9 +552,9 @@ HybridGaussianFactorGraph::eliminate(const Ordering &keys) const {
  * eliminate a discrete variable (as specified in the ordering), the result will
  * be INCORRECT and there will be NO error raised.
  */
-std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>>  //
-EliminateHybrid(const HybridGaussianFactorGraph &factors,
-                const Ordering &keys) {
+static std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>>
+eliminateHybrid(const HybridGaussianFactorGraph& factors, const Ordering& keys,
+                const HybridGaussianFactorGraph* referenceFactors) {
   // NOTE: Because we are in the Conditional Gaussian regime there are only
   // a few cases:
   // 1. continuous variable, make a hybrid Gaussian conditional if there are
@@ -581,13 +630,72 @@ EliminateHybrid(const HybridGaussianFactorGraph &factors,
   if (only_discrete) {
     // Case 1: we are only dealing with discrete
     return discreteElimination(factors, keys);
-  } else if (only_continuous) {
+  } else if (only_continuous &&
+             (!referenceFactors || referenceFactors->discreteKeySet().empty())) {
     // Case 2: we are only dealing with continuous
-    return continuousElimination(factors, keys);
+    return continuousElimination(factors, keys, referenceFactors);
   } else {
     // Case 3: We are now in the hybrid land!
-    return factors.eliminate(keys);
+    return eliminateHybridMixture(factors, keys, referenceFactors);
   }
+}
+
+/* ************************************************************************ */
+std::pair<HybridConditional::shared_ptr, std::shared_ptr<Factor>>
+EliminateHybrid(const HybridGaussianFactorGraph& factors, const Ordering& keys) {
+  return eliminateHybrid(factors, keys, nullptr);
+}
+
+/* ************************************************************************ */
+internal::HybridElimination::HybridElimination(
+    const HybridGaussianFactorGraph& graph, const Eliminate& function) {
+  if (const auto* operation = function.target<HybridElimination>()) {
+    *this = *operation;
+    return;
+  }
+  const auto target = function.target<decltype(&EliminateHybrid)>();
+  if (!target || (*target != &EliminateHybrid &&
+                 *target != &EliminationTraits<HybridGaussianFactorGraph>::
+                                DefaultEliminate)) {
+    function_ = function;
+    return;
+  }
+  // Exact constraints can change coordinates through QR. Preserve the local
+  // policy for the whole hybrid operation if any component is constrained,
+  // inspecting factors separately to avoid a full hypothesis cross-product.
+  for (const auto& factor : graph) {
+    if (!factor) continue;
+    const auto product =
+        HybridGaussianFactorGraph{factor}.collectProductFactor();
+    bool constrained = false;
+    if (!product.empty()) {
+      product.visit([&](const auto& pair) {
+        constrained |= hasConstraints(pair.first);
+      });
+    }
+    if (constrained) {
+      // Keep composed graph/tree calls from rebinding a reduced system.
+      function_ = [function](const HybridGaussianFactorGraph& factors,
+                         const Ordering& keys) { return function(factors, keys); };
+      return;
+    }
+  }
+  const auto original = std::make_shared<HybridGaussianFactorGraph>(graph);
+  const auto index = std::make_shared<VariableIndex>(*original);
+  const KeySet continuousKeys = original->continuousKeySet();
+  function_ = [original, index, continuousKeys](const HybridGaussianFactorGraph& factors,
+                                           const Ordering& keys) {
+    std::set<FactorIndex> indices;
+    for (Key key : keys) {
+      if (!continuousKeys.count(key)) continue;
+      const auto& incident = index->at(key);
+      indices.insert(incident.begin(), incident.end());
+    }
+    if (indices.empty()) return EliminateHybrid(factors, keys);
+    HybridGaussianFactorGraph referenceFactors;
+    for (FactorIndex i : indices) referenceFactors.push_back(original->at(i));
+    return eliminateHybrid(factors, keys, &referenceFactors);
+  };
 }
 
 /* ************************************************************************ */
@@ -664,6 +772,89 @@ DiscreteFactorGraph HybridGaussianFactorGraph::discreteFactors() const {
     }
   }
   return dfg;
+}
+
+std::shared_ptr<HybridGaussianFactorGraph::BayesTreeType>
+HybridGaussianFactorGraph::eliminateMultifrontal(const IndexedJunctionTree& indexedJunctionTree,
+    const Eliminate& function) const {
+  const internal::HybridElimination operation(*this, function);
+  return BaseEliminateable::eliminateMultifrontal(indexedJunctionTree, operation.function());
+}
+
+std::shared_ptr<HybridGaussianFactorGraph::BayesNetType>
+HybridGaussianFactorGraph::marginalMultifrontalBayesNet(const Ordering& variables,
+    const Eliminate& function,
+    OptionalVariableIndex variableIndex) const {
+  const internal::HybridElimination operation(*this, function);
+  return BaseEliminateable::marginalMultifrontalBayesNet(variables,
+      operation.function(), variableIndex);
+}
+
+std::shared_ptr<HybridGaussianFactorGraph::BayesNetType>
+HybridGaussianFactorGraph::marginalMultifrontalBayesNet(const Ordering& variables,
+    const Ordering& marginalizedVariableOrdering,
+    const Eliminate& function,
+    OptionalVariableIndex variableIndex) const {
+  const internal::HybridElimination operation(*this, function);
+  return BaseEliminateable::marginalMultifrontalBayesNet(variables, marginalizedVariableOrdering,
+      operation.function(), variableIndex);
+}
+
+std::shared_ptr<HybridGaussianFactorGraph::BayesNetType>
+HybridGaussianFactorGraph::marginalMultifrontalBayesNet(const KeyVector& variables,
+    const Eliminate& function,
+    OptionalVariableIndex variableIndex) const {
+  const internal::HybridElimination operation(*this, function);
+  return BaseEliminateable::marginalMultifrontalBayesNet(variables,
+      operation.function(), variableIndex);
+}
+
+std::shared_ptr<HybridGaussianFactorGraph::BayesNetType>
+HybridGaussianFactorGraph::marginalMultifrontalBayesNet(const KeyVector& variables,
+    const Ordering& marginalizedVariableOrdering,
+    const Eliminate& function,
+    OptionalVariableIndex variableIndex) const {
+  const internal::HybridElimination operation(*this, function);
+  return BaseEliminateable::marginalMultifrontalBayesNet(variables, marginalizedVariableOrdering,
+      operation.function(), variableIndex);
+}
+
+std::shared_ptr<HybridGaussianFactorGraph::BayesTreeType>
+HybridGaussianFactorGraph::marginalMultifrontalBayesTree(const Ordering& variables,
+    const Eliminate& function,
+    OptionalVariableIndex variableIndex) const {
+  const internal::HybridElimination operation(*this, function);
+  return BaseEliminateable::marginalMultifrontalBayesTree(variables,
+      operation.function(), variableIndex);
+}
+
+std::shared_ptr<HybridGaussianFactorGraph::BayesTreeType>
+HybridGaussianFactorGraph::marginalMultifrontalBayesTree(const Ordering& variables,
+    const Ordering& marginalizedVariableOrdering,
+    const Eliminate& function,
+    OptionalVariableIndex variableIndex) const {
+  const internal::HybridElimination operation(*this, function);
+  return BaseEliminateable::marginalMultifrontalBayesTree(variables, marginalizedVariableOrdering,
+      operation.function(), variableIndex);
+}
+
+std::shared_ptr<HybridGaussianFactorGraph::BayesTreeType>
+HybridGaussianFactorGraph::marginalMultifrontalBayesTree(const KeyVector& variables,
+    const Eliminate& function,
+    OptionalVariableIndex variableIndex) const {
+  const internal::HybridElimination operation(*this, function);
+  return BaseEliminateable::marginalMultifrontalBayesTree(variables,
+      operation.function(), variableIndex);
+}
+
+std::shared_ptr<HybridGaussianFactorGraph::BayesTreeType>
+HybridGaussianFactorGraph::marginalMultifrontalBayesTree(const KeyVector& variables,
+    const Ordering& marginalizedVariableOrdering,
+    const Eliminate& function,
+    OptionalVariableIndex variableIndex) const {
+  const internal::HybridElimination operation(*this, function);
+  return BaseEliminateable::marginalMultifrontalBayesTree(variables, marginalizedVariableOrdering,
+      operation.function(), variableIndex);
 }
 
 }  // namespace gtsam

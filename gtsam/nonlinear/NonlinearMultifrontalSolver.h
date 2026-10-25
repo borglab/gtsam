@@ -64,7 +64,7 @@ class GTSAM_EXPORT NonlinearMultifrontalSolver : public MultifrontalSolver {
 
   /**
    * Load new numerical values from the factor graph.
-   * This overrides the base load() to optionally cache `diag(J^T J)` for
+   * The base load() caches `diag(J^T J)` for both pivot validation and
    * exact diagonal damping when enabled.
    */
   void load(const GaussianFactorGraph& graph);
@@ -86,8 +86,6 @@ class GTSAM_EXPORT NonlinearMultifrontalSolver : public MultifrontalSolver {
 
  private:
   DampingParams dampingParams_;
-  VectorValues exactHessianDiagonal_;
-  bool hasExactHessianDiagonal_ = false;
 };
 
 }  // namespace gtsam

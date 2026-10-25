@@ -16,6 +16,7 @@
  * @author  Michael Kaess, Richard Roberts, Frank Dellaert
  */
 
+#include <gtsam/linear/internal/GaussianElimination.h>
 #include <gtsam/nonlinear/ISAM2-impl.h>
 #include <gtsam/nonlinear/ISAM2.h>
 #include <gtsam/nonlinear/ISAM2Result.h>
@@ -252,11 +253,13 @@ void ISAM2::recalculateBatch(const ISAM2UpdateParams& updateParams,
   if (params_.cacheLinearizedFactors) linearFactors_ = *linearized;
   gttoc(linearize);
 
+  const internal::GaussianElimination operation(
+      *linearized, params_.getEliminationFunction());
   gttic(eliminate);
   ISAM2BayesTree::shared_ptr bayesTree =
       ISAM2JunctionTree(
           GaussianEliminationTree(*linearized, affectedFactorsVarIndex, order))
-          .eliminate(params_.getEliminationFunction())
+          .eliminate(operation.function())
           .first;
   gttoc(eliminate);
 
@@ -379,9 +382,11 @@ void ISAM2::recalculateIncremental(const ISAM2UpdateParams& updateParams,
   gttoc(Ordering);
 
   // Do elimination
+  const internal::GaussianElimination operation(
+      factors, params_.getEliminationFunction());
   GaussianEliminationTree etree(factors, affectedFactorsVarIndex, ordering);
   auto bayesTree = ISAM2JunctionTree(etree)
-                       .eliminate(params_.getEliminationFunction())
+                       .eliminate(operation.function())
                        .first;
   gttoc(reorder_and_eliminate);
 

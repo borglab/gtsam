@@ -1288,6 +1288,39 @@ TEST(NonlinearOptimizer, SingularGraphReportsIndeterminateSystem) {
   }
 }
 
+// The same damped system triggers matching retries in all native Cholesky modes.
+TEST(NonlinearOptimizer, SharedCholeskyRejectionRetries) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<PriorFactor<double>>(0, 0.0,
+      noiseModel::Isotropic::Sigma(1, 1.0));
+  graph.emplace_shared<BetweenFactor<double>>(0, 1, 0.0,
+      noiseModel::Isotropic::Sigma(1, 1e-5));
+  Values initial;
+  initial.insert(0, 0.1);
+  initial.insert(1, 0.1);
+  size_t expectedAttempts = 0;
+  double expectedError = 0;
+  for (const std::string solver : {"SEQUENTIAL_CHOLESKY", "MULTIFRONTAL_CHOLESKY",
+                                  "MULTIFRONTAL_SOLVER"}) {
+    LevenbergMarquardtParams params;
+    params.setOrdering(Ordering{0, 1});
+    params.setLinearSolverType(solver);
+    params.multifrontalParams.qrMode = MultifrontalParameters::QRMode::Off;
+    params.multifrontalParams.mergeDimCap = 0;
+    LevenbergMarquardtOptimizer lm(graph, initial, params);
+    lm.iterate();
+    EXPECT(lm.getInnerIterations() > 1);
+    EXPECT(lm.error() < graph.error(initial));
+    if (!expectedAttempts) {
+      expectedAttempts = lm.getInnerIterations();
+      expectedError = lm.error();
+    } else {
+      LONGS_EQUAL(expectedAttempts, lm.getInnerIterations());
+      DOUBLES_EQUAL(expectedError, lm.error(), 1e-10);
+    }
+  }
+}
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

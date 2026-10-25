@@ -51,6 +51,10 @@ namespace gtsam {
     * @return The elimination tree
     */
     GaussianJunctionTree(const GaussianEliminationTree& eliminationTree);
+  /** Eliminate using one numerical operation for the tree input system. */
+  std::pair<std::shared_ptr<GaussianBayesTree>, std::shared_ptr<GaussianFactorGraph>>
+  eliminate(const Eliminate& function) const;
+
   };
 
 }

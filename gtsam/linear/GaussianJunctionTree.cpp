@@ -16,6 +16,8 @@
  * @author Richard Roberts
  */
 
+#include <gtsam/linear/internal/GaussianElimination.h>
+#include <gtsam/linear/internal/EliminationTreeFactors.h>
 #include <gtsam/inference/JunctionTree-inst.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
 #include <gtsam/linear/GaussianEliminationTree.h>
@@ -31,4 +33,11 @@ namespace gtsam {
     const GaussianEliminationTree& eliminationTree) :
   Base(eliminationTree) {}
 
+
+std::pair<std::shared_ptr<GaussianBayesTree>, std::shared_ptr<GaussianFactorGraph>>
+GaussianJunctionTree::eliminate(const Eliminate& function) const {
+  const internal::GaussianElimination operation(
+      internal::eliminationTreeFactors(*this), function);
+  return Base::eliminate(operation.function());
+}
 }

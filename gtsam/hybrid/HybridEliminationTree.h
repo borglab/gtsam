@@ -67,6 +67,10 @@ class GTSAM_EXPORT HybridEliminationTree
 
   /** Test whether the tree is equal to another */
   bool equals(const This& other, double tol = 1e-9) const;
+  /** Eliminate using one numerical operation for the tree input system. */
+  std::pair<std::shared_ptr<HybridBayesNet>, std::shared_ptr<HybridGaussianFactorGraph>>
+  eliminate(const Eliminate& function) const;
+
 };
 
 }  // namespace gtsam

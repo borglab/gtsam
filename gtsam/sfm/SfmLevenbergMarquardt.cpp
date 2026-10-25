@@ -14,6 +14,7 @@
  * @brief CPU SFM Levenberg-Marquardt implementation.
  */
 
+#include <gtsam/linear/internal/GaussianElimination.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/sfm/SfmLevenbergMarquardt.h>
@@ -298,6 +299,9 @@ VectorValues SfmLevenbergMarquardtOptimizer::solve(
         pointEliminationParams);
   }
 
+  const auto function = (params.isMultifrontal() || params.isSequential())
+      ? params.getEliminationFunction() : GaussianFactorGraph::Eliminate{};
+  const internal::GaussianElimination operation(graph, function);
   state.partialSolver->eliminatePartialInPlace(graph);
   const GaussianFactorGraph reduced =
       state.partialSolver->remainingFactorGraph();
@@ -308,7 +312,7 @@ VectorValues SfmLevenbergMarquardtOptimizer::solve(
   reducedParams.ordering = reducedOrdering;
   reducedParams.orderingType = Ordering::CUSTOM;
   const VectorValues reducedDelta =
-      NonlinearOptimizer::solve(reduced, reducedParams);
+      NonlinearOptimizer::solve(reduced, reducedParams, operation);
 
   return state.partialSolver->updateSolution(reducedDelta);
 }

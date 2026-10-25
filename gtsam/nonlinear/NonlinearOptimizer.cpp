@@ -16,6 +16,7 @@
  * @date Jul 17, 2010
  */
 
+#include <gtsam/linear/internal/GaussianElimination.h>
 #include <gtsam/nonlinear/NonlinearOptimizer.h>
 #include <gtsam/nonlinear/NonlinearMultifrontalSolver.h>
 #include <gtsam/nonlinear/internal/NonlinearOptimizerState.h>
@@ -169,6 +170,18 @@ const Values& NonlinearOptimizer::optimizeSafely() {
 /* ************************************************************************* */
 VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
                                        const NonlinearOptimizerParams& params) const {
+  const auto function = (params.isMultifrontal() || params.isSequential())
+      ? params.getEliminationFunction() : GaussianFactorGraph::Eliminate{};
+  const internal::GaussianElimination operation(gfg, function);
+  return solve(gfg, params, operation);
+}
+
+VectorValues NonlinearOptimizer::solve(
+    const GaussianFactorGraph& gfg, const NonlinearOptimizerParams& params,
+    const internal::GaussianElimination& operation) const {
+  const auto elimination = (params.isMultifrontal() || params.isSequential())
+      ? operation.function()
+      : GaussianFactorGraph::Eliminate{};
   // solution of linear solver is an update to the linearization point
   VectorValues delta;
 
@@ -183,19 +196,19 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
       }
 
       delta = gfg.eliminateMultifrontal(indexedJunctionTreeCache_->tree,
-                                        params.getEliminationFunction())
+                                        elimination)
                   ->optimize();
     } else
-      delta = gfg.optimize(params.getEliminationFunction());
+      delta = gfg.optimize(elimination);
   } else if (params.isSequential()) {
     // Sequential QR or Cholesky (decided by params.getEliminationFunction())
     if (params.ordering)
       delta = gfg.eliminateSequential(*params.ordering,
-                                      params.getEliminationFunction())
+                                      elimination)
                   ->optimize();
     else
       delta = gfg.eliminateSequential(params.orderingType,
-                                      params.getEliminationFunction())
+                                      elimination)
                   ->optimize();
   } else if (params.isIterative()) {
     // Conjugate Gradient -> needs params.iterativeParams

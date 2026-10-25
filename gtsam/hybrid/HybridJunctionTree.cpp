@@ -15,6 +15,8 @@
  * @author Fan Jiang
  */
 
+#include <gtsam/hybrid/internal/HybridElimination.h>
+#include <gtsam/linear/internal/EliminationTreeFactors.h>
 #include <gtsam/hybrid/HybridEliminationTree.h>
 #include <gtsam/hybrid/HybridGaussianFactorGraph.h>
 #include <gtsam/hybrid/HybridJunctionTree.h>
@@ -174,4 +176,11 @@ HybridJunctionTree::HybridJunctionTree(
   Base::remainingFactors_ = eliminationTree.remainingFactors();
 }
 
+
+std::pair<std::shared_ptr<HybridBayesTree>, std::shared_ptr<HybridGaussianFactorGraph>>
+HybridJunctionTree::eliminate(const Eliminate& function) const {
+  const internal::HybridElimination operation(
+      internal::eliminationTreeFactors(*this), function);
+  return Base::eliminate(operation.function());
+}
 }  // namespace gtsam

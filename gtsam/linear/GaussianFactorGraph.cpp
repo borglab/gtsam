@@ -18,6 +18,7 @@
  * @author  Frank Dellaert
  */
 
+#include <gtsam/linear/internal/GaussianElimination.h>
 #include <gtsam/base/debug.h>
 #include <gtsam/base/timing.h>
 #include <gtsam/inference/EliminateableFactorGraph-inst.h>
@@ -34,6 +35,13 @@ using namespace std;
 using namespace gtsam;
 
 namespace gtsam {
+
+  // Keep a single exported callback address across shared-library boundaries.
+  std::pair<std::shared_ptr<GaussianConditional>, std::shared_ptr<GaussianFactor>>
+  EliminationTraits<GaussianFactorGraph>::DefaultEliminate(
+      const GaussianFactorGraph& factors, const Ordering& keys) {
+    return EliminatePreferCholesky(factors, keys);
+  }
 
   // Instantiate base classes
   template class FactorGraph<GaussianFactor>;
@@ -567,4 +575,100 @@ namespace gtsam {
     }
   }
 
-} // namespace gtsam
+namespace internal {
+
+bool usesCholesky(const GaussianFactorGraph::Eliminate& function) {
+  if (const auto* target = function.target<decltype(&EliminateCholesky)>())
+    return *target == &EliminateCholesky;
+  if (const auto* target = function.target<decltype(&EliminatePreferCholesky)>())
+    return *target == &EliminatePreferCholesky ||
+           *target == &EliminationTraits<GaussianFactorGraph>::DefaultEliminate;
+  return false;
+}
+
+}  // namespace internal
+
+std::shared_ptr<GaussianFactorGraph::BayesTreeType>
+GaussianFactorGraph::eliminateMultifrontal(const IndexedJunctionTree& indexedJunctionTree,
+    const Eliminate& function) const {
+  const internal::GaussianElimination operation(*this, function);
+  return BaseEliminateable::eliminateMultifrontal(indexedJunctionTree, operation.function());
+}
+
+std::shared_ptr<GaussianFactorGraph::BayesNetType>
+GaussianFactorGraph::marginalMultifrontalBayesNet(const Ordering& variables,
+    const Eliminate& function,
+    OptionalVariableIndex variableIndex) const {
+  const internal::GaussianElimination operation(*this, function);
+  return BaseEliminateable::marginalMultifrontalBayesNet(variables,
+      operation.function(), variableIndex);
+}
+
+std::shared_ptr<GaussianFactorGraph::BayesNetType>
+GaussianFactorGraph::marginalMultifrontalBayesNet(const Ordering& variables,
+    const Ordering& marginalizedVariableOrdering,
+    const Eliminate& function,
+    OptionalVariableIndex variableIndex) const {
+  const internal::GaussianElimination operation(*this, function);
+  return BaseEliminateable::marginalMultifrontalBayesNet(variables, marginalizedVariableOrdering,
+      operation.function(), variableIndex);
+}
+
+std::shared_ptr<GaussianFactorGraph::BayesNetType>
+GaussianFactorGraph::marginalMultifrontalBayesNet(const KeyVector& variables,
+    const Eliminate& function,
+    OptionalVariableIndex variableIndex) const {
+  const internal::GaussianElimination operation(*this, function);
+  return BaseEliminateable::marginalMultifrontalBayesNet(variables,
+      operation.function(), variableIndex);
+}
+
+std::shared_ptr<GaussianFactorGraph::BayesNetType>
+GaussianFactorGraph::marginalMultifrontalBayesNet(const KeyVector& variables,
+    const Ordering& marginalizedVariableOrdering,
+    const Eliminate& function,
+    OptionalVariableIndex variableIndex) const {
+  const internal::GaussianElimination operation(*this, function);
+  return BaseEliminateable::marginalMultifrontalBayesNet(variables, marginalizedVariableOrdering,
+      operation.function(), variableIndex);
+}
+
+std::shared_ptr<GaussianFactorGraph::BayesTreeType>
+GaussianFactorGraph::marginalMultifrontalBayesTree(const Ordering& variables,
+    const Eliminate& function,
+    OptionalVariableIndex variableIndex) const {
+  const internal::GaussianElimination operation(*this, function);
+  return BaseEliminateable::marginalMultifrontalBayesTree(variables,
+      operation.function(), variableIndex);
+}
+
+std::shared_ptr<GaussianFactorGraph::BayesTreeType>
+GaussianFactorGraph::marginalMultifrontalBayesTree(const Ordering& variables,
+    const Ordering& marginalizedVariableOrdering,
+    const Eliminate& function,
+    OptionalVariableIndex variableIndex) const {
+  const internal::GaussianElimination operation(*this, function);
+  return BaseEliminateable::marginalMultifrontalBayesTree(variables, marginalizedVariableOrdering,
+      operation.function(), variableIndex);
+}
+
+std::shared_ptr<GaussianFactorGraph::BayesTreeType>
+GaussianFactorGraph::marginalMultifrontalBayesTree(const KeyVector& variables,
+    const Eliminate& function,
+    OptionalVariableIndex variableIndex) const {
+  const internal::GaussianElimination operation(*this, function);
+  return BaseEliminateable::marginalMultifrontalBayesTree(variables,
+      operation.function(), variableIndex);
+}
+
+std::shared_ptr<GaussianFactorGraph::BayesTreeType>
+GaussianFactorGraph::marginalMultifrontalBayesTree(const KeyVector& variables,
+    const Ordering& marginalizedVariableOrdering,
+    const Eliminate& function,
+    OptionalVariableIndex variableIndex) const {
+  const internal::GaussianElimination operation(*this, function);
+  return BaseEliminateable::marginalMultifrontalBayesTree(variables, marginalizedVariableOrdering,
+      operation.function(), variableIndex);
+}
+
+}  // namespace gtsam
