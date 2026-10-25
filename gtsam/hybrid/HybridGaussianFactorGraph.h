@@ -82,11 +82,9 @@ struct EliminationTraits<HybridGaussianFactorGraph> {
   typedef HybridBayesTree BayesTreeType;        ///< Type of Bayes tree
   typedef HybridJunctionTree JunctionTreeType;  ///< Type of Junction tree
   /// The default dense elimination function
-  static std::pair<std::shared_ptr<ConditionalType>,
-                   std::shared_ptr<FactorType>>
-  DefaultEliminate(const FactorGraphType& factors, const Ordering& keys) {
-    return EliminateHybrid(factors, keys);
-  }
+  static GTSAM_EXPORT std::pair<std::shared_ptr<ConditionalType>,
+                               std::shared_ptr<FactorType>>
+  DefaultEliminate(const FactorGraphType& factors, const Ordering& keys);
   /// The default ordering generation function
   static Ordering DefaultOrderingFunc(
       const FactorGraphType& graph,
@@ -120,6 +118,64 @@ class GTSAM_EXPORT HybridGaussianFactorGraph
 
   using Values = gtsam::Values;  ///< backwards compatibility
   using Indices = KeyVector;     ///< map from keys to values
+
+  using BaseEliminateable::eliminateMultifrontal;
+  /** Eliminate an indexed tree within one numerical operation. */
+  std::shared_ptr<BayesTreeType> eliminateMultifrontal(
+      const IndexedJunctionTree& indexedJunctionTree,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate) const;
+
+  /** Compute a marginal while sharing one numerical operation across stages. */
+  std::shared_ptr<BayesNetType> marginalMultifrontalBayesNet(
+      const Ordering& variables,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+      OptionalVariableIndex variableIndex = {}) const;
+
+  /** Compute a marginal while sharing one numerical operation across stages. */
+  std::shared_ptr<BayesNetType> marginalMultifrontalBayesNet(
+      const Ordering& variables,
+      const Ordering& marginalizedVariableOrdering,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+      OptionalVariableIndex variableIndex = {}) const;
+
+  /** Compute a marginal while sharing one numerical operation across stages. */
+  std::shared_ptr<BayesNetType> marginalMultifrontalBayesNet(
+      const KeyVector& variables,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+      OptionalVariableIndex variableIndex = {}) const;
+
+  /** Compute a marginal while sharing one numerical operation across stages. */
+  std::shared_ptr<BayesNetType> marginalMultifrontalBayesNet(
+      const KeyVector& variables,
+      const Ordering& marginalizedVariableOrdering,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+      OptionalVariableIndex variableIndex = {}) const;
+
+  /** Compute a marginal while sharing one numerical operation across stages. */
+  std::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
+      const Ordering& variables,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+      OptionalVariableIndex variableIndex = {}) const;
+
+  /** Compute a marginal while sharing one numerical operation across stages. */
+  std::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
+      const Ordering& variables,
+      const Ordering& marginalizedVariableOrdering,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+      OptionalVariableIndex variableIndex = {}) const;
+
+  /** Compute a marginal while sharing one numerical operation across stages. */
+  std::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
+      const KeyVector& variables,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+      OptionalVariableIndex variableIndex = {}) const;
+
+  /** Compute a marginal while sharing one numerical operation across stages. */
+  std::shared_ptr<BayesTreeType> marginalMultifrontalBayesTree(
+      const KeyVector& variables,
+      const Ordering& marginalizedVariableOrdering,
+      const Eliminate& function = EliminationTraitsType::DefaultEliminate,
+      OptionalVariableIndex variableIndex = {}) const;
 
   /// @name Constructors
   /// @{

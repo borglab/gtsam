@@ -59,6 +59,10 @@ class GTSAM_EXPORT HybridJunctionTree
 
   /// Construct the junction tree from an elimination tree
   HybridJunctionTree(const HybridEliminationTree& eliminationTree);
+  /** Eliminate using one numerical operation for the tree input system. */
+  std::pair<std::shared_ptr<HybridBayesTree>, std::shared_ptr<HybridGaussianFactorGraph>>
+  eliminate(const Eliminate& function) const;
+
 };
 
 }  // namespace gtsam

@@ -29,6 +29,7 @@
 #include <gtsam/discrete/DiscreteKey.h>
 #include <gtsam/discrete/DiscreteValues.h>
 #include <gtsam/hybrid/HybridBayesNet.h>
+#include <gtsam/hybrid/HybridBayesTree.h>
 #include <gtsam/hybrid/HybridConditional.h>
 #include <gtsam/hybrid/HybridFactor.h>
 #include <gtsam/hybrid/HybridGaussianConditional.h>
@@ -840,6 +841,127 @@ TEST(HybridGaussianFactorGraph, EliminateSwitchingNetwork) {
 }
 
 /* ************************************************************************* */
+namespace cholesky_reference {
+
+// Two hypotheses have the same conditioning but information scales 1e12 apart.
+HybridGaussianFactorGraph mixture(double secondSigma, bool pruneSecond = false) {
+  HybridGaussianFactorGraph graph;
+  graph.emplace_shared<HybridGaussianFactor>(
+      m0, std::vector<GaussianFactor::shared_ptr>{
+              std::make_shared<JacobianFactor>(0, Matrix11{1.0}, Vector1{0.1}),
+              std::make_shared<JacobianFactor>(0, Matrix11{1e-6}, Vector1{2e-7})});
+  graph.emplace_shared<HybridGaussianFactor>(
+      m0, std::vector<GaussianFactor::shared_ptr>{
+              std::make_shared<JacobianFactor>(
+                  0, Matrix11{-1e4}, 1, Matrix11{1e4}, Vector1{0.0}),
+              pruneSecond ? nullptr : std::make_shared<JacobianFactor>(
+                  0, Matrix11{-1e-6 / secondSigma},
+                  1, Matrix11{1e-6 / secondSigma}, Vector1{0.0})});
+  return graph;
+}
+
+// Pure Gaussian input has the same acceptance policy in either graph type.
+TEST(HybridGaussianFactorGraph, ContinuousCholeskyReference) {
+  const Ordering ordering{0, 1};
+  for (double sigma : {1e-4, 1e-5}) {
+    GaussianFactorGraph gaussian;
+    gaussian.emplace_shared<JacobianFactor>(0, Matrix11{1.0}, Vector1{0.1});
+    gaussian.emplace_shared<JacobianFactor>(
+        0, Matrix11{-1.0}, 1, Matrix11{1.0}, Vector1{0.0},
+        noiseModel::Isotropic::Sigma(1, sigma));
+    HybridGaussianFactorGraph graph(gaussian);
+    if (sigma == 1e-4) {
+      const auto expected = gaussian.optimize(ordering, EliminateQR);
+      EXPECT(assert_equal(expected,
+          graph.eliminateSequential(ordering)->optimize({}), 1e-8));
+      EXPECT(assert_equal(expected,
+          graph.eliminateMultifrontal(ordering)->optimize({}), 1e-8));
+    } else {
+      CHECK_EXCEPTION(graph.eliminateSequential(ordering),
+                      IndeterminateSystemException);
+      CHECK_EXCEPTION(graph.eliminateMultifrontal(ordering),
+                      IndeterminateSystemException);
+      // Wrapping the dense callback is an explicit custom-policy opt-out.
+      size_t calls = 0;
+      auto custom = [&calls](const HybridGaussianFactorGraph& factors,
+                             const Ordering& keys) {
+        ++calls;
+        return EliminateHybrid(factors, keys);
+      };
+      graph.eliminateSequential(ordering, custom);
+      EXPECT_LONGS_EQUAL(2, calls);
+    }
+  }
+}
+
+// Match each clique's Gaussian product to that hypothesis's original scale.
+TEST(HybridGaussianFactorGraph, MixtureCholeskyReference) {
+  const Ordering continuous{0, 1};
+  const auto graph = mixture(1e-4);
+  const auto sequential = graph.eliminatePartialSequential(continuous).first;
+  const auto multifrontal = graph.eliminatePartialMultifrontal(continuous).first;
+  for (size_t mode : {0, 1}) {
+    const DiscreteValues assignment{{M(0), mode}};
+    const auto expected = graph.choose(assignment).optimize(continuous, EliminateQR);
+    EXPECT(assert_equal(expected, sequential->optimize(assignment), 1e-8));
+    EXPECT(assert_equal(expected, multifrontal->optimize(assignment), 1e-8));
+  }
+  const auto weak = mixture(1e-5);
+  CHECK_EXCEPTION(weak.eliminatePartialSequential(continuous),
+                  IndeterminateSystemException);
+  CHECK_EXCEPTION(weak.eliminatePartialMultifrontal(continuous),
+                  IndeterminateSystemException);
+}
+
+// A pruned weak branch must not be factorized while binding its reference.
+TEST(HybridGaussianFactorGraph, PrunedCholeskyReference) {
+  const auto graph = mixture(1e-5, true);
+  const Ordering continuous{0, 1};
+  const auto sequential = graph.eliminatePartialSequential(continuous).first;
+  const auto multifrontal = graph.eliminatePartialMultifrontal(continuous).first;
+  const DiscreteValues retained{{M(0), 0}}, pruned{{M(0), 1}};
+  const auto expected = graph.choose(retained).optimize(continuous, EliminateQR);
+  EXPECT(assert_equal(expected, sequential->optimize(retained), 1e-8));
+  EXPECT(assert_equal(expected, multifrontal->optimize(retained), 1e-8));
+  EXPECT(!sequential->at(0)->asHybrid()->choose(pruned));
+}
+
+// A later frontal can depend on an exact constraint without appearing in it.
+TEST(HybridGaussianFactorGraph, ConstrainedCholeskyReference) {
+  GaussianFactorGraph gaussian;
+  gaussian.emplace_shared<JacobianFactor>(1, Matrix11{1.0}, Vector1{0.1});
+  gaussian.emplace_shared<JacobianFactor>(
+      0, Matrix11{1.0}, 1, Matrix11{-1.0}, Vector1{0.0},
+      noiseModel::Constrained::All(1));
+  gaussian.emplace_shared<JacobianFactor>(
+      0, Matrix11{-1.0}, 2, Matrix11{1.0}, Vector1{0.0},
+      noiseModel::Isotropic::Sigma(1, 1e-5));
+  const Ordering ordering{0, 1, 2};
+  const auto expected = gaussian.optimize(ordering, EliminateQR);
+  HybridGaussianFactorGraph graph(gaussian);
+  EXPECT(assert_equal(expected,
+      graph.eliminateSequential(ordering)->optimize({}), 1e-8));
+  EXPECT(assert_equal(expected,
+      graph.eliminateMultifrontal(ordering)->optimize({}), 1e-8));
+
+  // Detect constraints inside mixture components, not just Gaussian factors.
+  graph[1] = std::make_shared<HybridGaussianFactor>(
+      m0, std::vector<GaussianFactor::shared_ptr>{gaussian[1],
+          std::make_shared<JacobianFactor>(
+              0, Matrix11{1e5}, 1, Matrix11{-1e5}, Vector1{0.0},
+              noiseModel::Constrained::All(1))});
+  const auto sequential = graph.eliminatePartialSequential(ordering).first;
+  const auto multifrontal = graph.eliminatePartialMultifrontal(ordering).first;
+  for (size_t mode : {0, 1}) {
+    const DiscreteValues assignment{{M(0), mode}};
+    EXPECT(assert_equal(expected, sequential->optimize(assignment), 1e-8));
+    EXPECT(assert_equal(expected, multifrontal->optimize(assignment), 1e-8));
+  }
+}
+
+}  // namespace cholesky_reference
+/* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
