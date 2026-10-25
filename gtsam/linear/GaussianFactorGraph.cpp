@@ -590,8 +590,9 @@ GaussianFactorGraph::Eliminate withCholeskyDiagonal(
     const VectorValues& referenceDiagonal) {
   if (!usesCholesky(function)) return function;
   const bool preferCholesky = !function.target<decltype(&EliminateCholesky)>();
-  return [referenceDiagonal, preferCholesky](const GaussianFactorGraph& factors,
-                                           const Ordering& keys)
+  const auto reference = std::make_shared<const VectorValues>(referenceDiagonal);
+  return [reference, preferCholesky](const GaussianFactorGraph& factors,
+                                    const Ordering& keys)
       -> GaussianFactorGraph::EliminationResult {
     if (preferCholesky && hasConstraints(factors)) return EliminateQR(factors, keys);
     HessianFactor::shared_ptr joint;
@@ -601,7 +602,7 @@ GaussianFactorGraph::Eliminate withCholeskyDiagonal(
       throw InvalidDenseElimination(
           "EliminateCholesky requested variables absent from its factors.");
     }
-    const Vector diagonal = referenceDiagonal.vector(keys);
+    const Vector diagonal = reference->vector(keys);
     auto conditional = joint->eliminateCholesky(keys, diagonal);
     return {conditional, joint};
   };
@@ -613,7 +614,16 @@ template <>
 GaussianFactorGraph::Eliminate
 EliminateableFactorGraph<GaussianFactorGraph>::prepareElimination(
     const Eliminate& function) const {
+  // Exact constraints have no finite normal-equation diagonal: their arbitrary
+  // row scaling must not become the reference for a later Cholesky step.
+  // Preserve the existing local QR/Cholesky fallback for these systems.
   if (!internal::usesCholesky(function)) return function;
+  if (hasConstraints(asDerived())) {
+    // Keep this policy through composed calls even after constraints disappear.
+    return [function](const GaussianFactorGraph& factors, const Ordering& keys) {
+      return function(factors, keys);
+    };
+  }
   return internal::withCholeskyDiagonal(function, asDerived().hessianDiagonal());
 }
 

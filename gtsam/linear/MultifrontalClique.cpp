@@ -576,8 +576,9 @@ size_t MultifrontalClique::addJacobianFactor(const JacobianFactor& factor,
   assert(blockIt == plan.blockIndices.end());
 
   Ab_(rhsBlockIdx).middleRows(rowOffset, plan.rows) = factor.getb();
-  if (plan.model && !plan.model->isConstrained()) {
-    plan.model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, plan.rows));
+  const auto& model = factor.get_model();
+  if (model && !model->isConstrained()) {
+    model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, plan.rows));
   }
   return plan.rows;
 }
@@ -587,8 +588,9 @@ size_t MultifrontalClique::addBatchJacobianFactor(
     const FactorLoadPlan& plan) {
   const size_t rows = internal::BatchJacobianFactorElimination::scatterRows(
       batchFactor, Ab_, rowOffset, plan.blockIndices);
-  if (plan.model && !plan.model->isConstrained()) {
-    plan.model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
+  const auto& model = batchFactor.get_model();
+  if (model && !model->isConstrained()) {
+    model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
   }
   return rows;
 }

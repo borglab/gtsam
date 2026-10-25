@@ -189,12 +189,19 @@ VectorValues NonlinearOptimizer::solveWithReferenceDiagonal(
 
 VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
                                        const NonlinearOptimizerParams& params) const {
+  return solve(gfg, params,
+               referenceGraph_ == &gfg ? referenceDiagonal_ : nullptr);
+}
+
+VectorValues NonlinearOptimizer::solve(
+    const GaussianFactorGraph& gfg, const NonlinearOptimizerParams& params,
+    const VectorValues* diagonal) const {
   // solution of linear solver is an update to the linearization point
   VectorValues delta;
   const auto elimination = (params.isMultifrontal() || params.isSequential())
-      ? (referenceGraph_ == &gfg && referenceDiagonal_
+      ? (diagonal && !hasConstraints(gfg)
           ? internal::withCholeskyDiagonal(params.getEliminationFunction(),
-                                          *referenceDiagonal_)
+                                          *diagonal)
           : params.getEliminationFunction())
       : GaussianFactorGraph::Eliminate{};
 

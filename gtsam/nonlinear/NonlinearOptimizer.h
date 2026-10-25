@@ -99,6 +99,11 @@ class GTSAM_EXPORT NonlinearOptimizer {
       const GaussianFactorGraph& graph, const NonlinearOptimizerParams& params,
       const VectorValues& diagonal) const;
 
+  /** Run the built-in solver with an optional original-system diagonal. */
+  VectorValues solve(const GaussianFactorGraph& graph,
+                     const NonlinearOptimizerParams& params,
+                     const VectorValues* diagonal) const;
+
  private:
   // Borrowed only for the duration of solveWithReferenceDiagonal(). Keeping
   // this context preserves existing subclasses' two-argument solve overrides.

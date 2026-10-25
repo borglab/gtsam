@@ -1373,6 +1373,32 @@ TEST(NonlinearOptimizer, ReusesHessianDiagonalAcrossRetries) {
   }
 }
 
+// Cached LM reference diagonals must not normalize pivots by exact-row scales.
+TEST(NonlinearOptimizer, ConstrainedReferenceDiagonal) {
+  class ReferenceLM : public LevenbergMarquardtOptimizer {
+   public:
+    using LevenbergMarquardtOptimizer::LevenbergMarquardtOptimizer;
+    using NonlinearOptimizer::solveWithReferenceDiagonal;
+  };
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, Matrix11{1.0}, Vector1{0.1});
+  graph.emplace_shared<JacobianFactor>(1, Matrix11{1.0}, Vector1{0.2});
+  graph.emplace_shared<JacobianFactor>(
+      0, Matrix11{1e5}, 1, Matrix11{1e5}, 2, Matrix11{1e5}, Vector1{0.0},
+      noiseModel::Constrained::All(1));
+  const VectorValues expected{{0, Vector1{0.1}}, {1, Vector1{0.2}},
+                              {2, Vector1{-0.3}}};
+  for (const auto solver : {NonlinearOptimizerParams::SEQUENTIAL_CHOLESKY,
+                             NonlinearOptimizerParams::MULTIFRONTAL_CHOLESKY}) {
+    LevenbergMarquardtParams params;
+    params.setLinearSolver(solver);
+    params.setOrdering(Ordering{0, 1, 2});
+    ReferenceLM optimizer(NonlinearFactorGraph{}, Values{}, params);
+    EXPECT(assert_equal(expected, optimizer.solveWithReferenceDiagonal(
+                                      graph, params, graph.hessianDiagonal())));
+  }
+}
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

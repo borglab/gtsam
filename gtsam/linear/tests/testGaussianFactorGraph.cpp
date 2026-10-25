@@ -620,6 +620,36 @@ TEST(GaussianFactorGraph, HessianDiagonalSkipsOrphanWrappers) {
   EXPECT(assert_equal(expected, graph.hessianDiagonal()));
 }
 
+// Rescaling an exact equality must not change later finite-pivot acceptance.
+TEST(GaussianFactorGraph, ConstrainedReferenceScale) {
+  const Ordering ordering{0, 1, 2};
+  const VectorValues expected{{0, Vector1{0.1}}, {1, Vector1{0.2}},
+                              {2, Vector1{-0.3}}};
+  for (double scale : {1.0, 1e5}) {
+    GaussianFactorGraph graph;
+    graph.emplace_shared<JacobianFactor>(0, Matrix11{1.0}, Vector1{0.1});
+    graph.emplace_shared<JacobianFactor>(1, Matrix11{1.0}, Vector1{0.2});
+    graph.emplace_shared<JacobianFactor>(
+        0, Matrix11{scale}, 1, Matrix11{scale}, 2, Matrix11{scale},
+        Vector1{0.0}, noiseModel::Constrained::All(1));
+    EXPECT(assert_equal(expected, graph.eliminateSequential(ordering)->optimize()));
+    EXPECT(assert_equal(expected, graph.eliminateMultifrontal(ordering)->optimize()));
+    EXPECT(assert_equal(expected,
+        graph.eliminateMultifrontal(graph.buildIndexedJunctionTree(ordering))->optimize()));
+    EXPECT(assert_equal(expected,
+        graph.eliminateSequential(ordering, EliminatePreferCholesky)->optimize()));
+  }
+}
+
+// Numerical zero-row factors retain their keys and report a singular system.
+TEST(GaussianFactorGraph, ZeroRowsReportIndeterminateSystem) {
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, Matrix::Zero(0, 2), Vector::Zero(0));
+  CHECK_EXCEPTION(graph.eliminateSequential(Ordering{0}), IndeterminateSystemException);
+  CHECK_EXCEPTION(graph.eliminateMultifrontal(Ordering{0}), IndeterminateSystemException);
+  CHECK_EXCEPTION(graph.optimizeDensely(), IndeterminateSystemException);
+}
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

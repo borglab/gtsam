@@ -307,8 +307,17 @@ VectorValues SfmLevenbergMarquardtOptimizer::solve(
   LevenbergMarquardtParams reducedParams = sfmParams_;
   reducedParams.ordering = reducedOrdering;
   reducedParams.orderingType = Ordering::CUSTOM;
+  // Schur reduction is part of this solve, so retain the original damped
+  // system's scale for the remaining pivots. Hard constraints use local checks.
+  const bool useReferenceDiagonal =
+      (reducedParams.isMultifrontal() || reducedParams.isSequential()) &&
+      internal::usesCholesky(reducedParams.getEliminationFunction()) &&
+      !hasConstraints(graph);
+  const VectorValues diagonal =
+      useReferenceDiagonal ? graph.hessianDiagonal() : VectorValues();
   const VectorValues reducedDelta =
-      NonlinearOptimizer::solve(reduced, reducedParams);
+      NonlinearOptimizer::solve(reduced, reducedParams,
+                                useReferenceDiagonal ? &diagonal : nullptr);
 
   return state.partialSolver->updateSolution(reducedDelta);
 }
