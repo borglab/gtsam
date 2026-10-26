@@ -37,7 +37,7 @@ using namespace gtsam;
 namespace point2_fixture {
 
 using Point = Eigen::Matrix<double, 2, 1>;
-using Factor = KnownLandmarkSquaredRangeFactor<2>;
+using Factor = KnownLandmarkSquaredRangeFactor<Point>;
 
 const Key kKey = 3;
 
@@ -99,7 +99,7 @@ TEST(KnownLandmarkSquaredRangeFactor, RejectsWrongLandmarkDimension2D) {
 namespace point3_fixture {
 
 using Point = Eigen::Matrix<double, 3, 1>;
-using Factor = KnownLandmarkSquaredRangeFactor<3>;
+using Factor = KnownLandmarkSquaredRangeFactor<Point>;
 
 const Key kKey = 4;
 
@@ -278,7 +278,7 @@ namespace augmented_factor1_fixture {
 
 using VectorType = Eigen::Matrix<double, 1, 1>;
 using Point = AugmentedPoint<1>;
-using Factor = KnownLandmarkSquaredRangeFactor<1, Point>;
+using Factor = KnownLandmarkSquaredRangeFactor<Point>;
 
 const Key kKey = 11;
 
@@ -322,8 +322,8 @@ namespace augmented_factor2_fixture {
 
 using VectorType = Eigen::Vector2d;
 using Point = AugmentedPoint<2>;
-using Factor = KnownLandmarkSquaredRangeFactor<2, Point>;
-using EigenFactor = KnownLandmarkSquaredRangeFactor<2>;
+using Factor = KnownLandmarkSquaredRangeFactor<Point>;
+using EigenFactor = KnownLandmarkSquaredRangeFactor<VectorType>;
 
 const Key kKey = 12;
 
@@ -427,7 +427,7 @@ namespace augmented_factor3_fixture {
 
 using VectorType = Eigen::Vector3d;
 using Point = AugmentedPoint<3>;
-using Factor = KnownLandmarkSquaredRangeFactor<3, Point>;
+using Factor = KnownLandmarkSquaredRangeFactor<Point>;
 
 const Key kKey = 13;
 

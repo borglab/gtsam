@@ -353,26 +353,26 @@ class AugmentedPoint {
   bool equals(const gtsam::AugmentedPoint<N>& other, double tol = 1e-9) const;
 };
 
-// Instantiate only the dimension/state combinations we support.
-template <N, STATE>
+ // Instantiate the supported position types.
+template <POSITION>
 virtual class KnownLandmarkSquaredRangeFactor : gtsam::NoiseModelFactor {
   KnownLandmarkSquaredRangeFactor(
       gtsam::Key key, const gtsam::Vector& wL, double measuredRange,
       const gtsam::noiseModel::Base* model);
 
-  gtsam::Vector evaluateError(const STATE& wX) const;
+  gtsam::Vector evaluateError(const POSITION& wX) const;
 };
 
 // Ordinary nonlinear factors.
-typedef gtsam::KnownLandmarkSquaredRangeFactor<2, gtsam::Vector2>
+typedef gtsam::KnownLandmarkSquaredRangeFactor<gtsam::Vector2>
     KnownLandmarkSquaredRangeFactor2;
-typedef gtsam::KnownLandmarkSquaredRangeFactor<3, gtsam::Vector3>
+typedef gtsam::KnownLandmarkSquaredRangeFactor<gtsam::Vector3>
     KnownLandmarkSquaredRangeFactor3;
 
 // Factors supporting both nonlinear optimization and QCQP conversion.
-typedef gtsam::KnownLandmarkSquaredRangeFactor<2, gtsam::AugmentedPoint<2>>
+typedef gtsam::KnownLandmarkSquaredRangeFactor<gtsam::AugmentedPoint<2>>
     KnownLandmarkSquaredRangeFactorAugmentedPoint2;
-typedef gtsam::KnownLandmarkSquaredRangeFactor<3, gtsam::AugmentedPoint<3>>
+typedef gtsam::KnownLandmarkSquaredRangeFactor<gtsam::AugmentedPoint<3>>
     KnownLandmarkSquaredRangeFactorAugmentedPoint3;
 
 #include <gtsam/slam/WahbaFactor.h>

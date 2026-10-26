@@ -273,33 +273,33 @@ Values extractQcqpValues(const Values& qcqpValues) {
  * the scalar residual is ||x-L||^2 - d^2. The supplied noise model weights
  * this squared-range residual (not the unsquared range).
  *
- * By default the state is an Eigen vector, preserving the existing nonlinear
- * factor interface. To enable the exact D=1 QCQP representation, instantiate
- * with State = AugmentedPoint<N>, which is also suitable for nonlinear
- * optimization via its vector-space traits. The QCQP lift has N+2 coordinates.
+ * Supports fixed-size Eigen vectors and AugmentedPoint<N> as position types.
+ * The latter enables exact D=1 QCQP conversion while retaining compatibility
+ * with nonlinear optimization. The QCQP lift has N+2 coordinates.
  *
- * @tparam N Euclidean point and landmark dimension.
- * @tparam State Optimized state: Eigen::Matrix<double,N,1> (default) or
- *         AugmentedPoint<N> (QCQP-enabled).
+ * @tparam Position Euclidean point representing robot location.
  * @ingroup slam
  *
  * See `gtsam/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb` for usage.
  */
-template <int N, typename State = Eigen::Matrix<double, N, 1>>
-class KnownLandmarkSquaredRangeFactor : public NoiseModelFactorN<State> {
+template <typename Position>
+class KnownLandmarkSquaredRangeFactor : public NoiseModelFactorN<Position> {
  public:
-  static_assert(N > 0, "KnownLandmarkSquaredRangeFactor requires N > 0");
+  static constexpr int N = traits<Position>::dimension;
+  static_assert(N > 0,
+                "KnownLandmarkSquaredRangeFactor requires a fixed positive "
+                "position dimension.");
   using VectorType = Eigen::Matrix<double, N, 1>;
-  using Point = State;
-  using Base = NoiseModelFactorN<Point>;
-  using This = KnownLandmarkSquaredRangeFactor<N, State>;
-  static_assert(std::is_same_v<Point, VectorType> ||
-                    std::is_same_v<Point, AugmentedPoint<N>>,
+  using Point = Position;
+  using Base = NoiseModelFactorN<Position>;
+  using This = KnownLandmarkSquaredRangeFactor<Position>;
+  static_assert(std::is_same_v<Position, VectorType> ||
+                    std::is_same_v<Position, AugmentedPoint<N>>,
                 "KnownLandmarkSquaredRangeFactor requires an Eigen vector "
-                "or AugmentedPoint<N> state.");
+                "or AugmentedPoint<N> position.");
 
  private:
-  VectorType wL_;            ///< Known landmark in world coordinates.
+  VectorType wL_;                ///< Known landmark in world coordinates.
   double measuredRangeSquared_;  ///< Squared measured range (d^2).
 
   /** Validate the dimension of a dynamically sized landmark. */
@@ -380,7 +380,7 @@ class KnownLandmarkSquaredRangeFactor : public NoiseModelFactorN<State> {
   void print(
       const std::string& s = "",
       const KeyFormatter& keyFormatter = DefaultKeyFormatter) const override {
-    std::cout << s << "KnownLandmarkSquaredRangeFactor<" << N << "> on "
+    std::cout << s << "KnownLandmarkSquaredRangeFactor on "
               << keyFormatter(this->key1()) << "\n";
     traits<VectorType>::Print(wL_, "  landmark: ");
     std::cout << "  measured range squared: " << measuredRangeSquared_ << "\n";
@@ -428,7 +428,7 @@ class KnownLandmarkSquaredRangeFactor : public NoiseModelFactorN<State> {
    * GTSAM's HessianFactor adds a final constant slot, whose coefficient is
    * zero because h is already part of the lifted state.
    *
-   * The method is supported only when State = AugmentedPoint<N>.
+   * The method is supported only when Position = AugmentedPoint<N>.
    *
    * @throws std::invalid_argument for null outputs or columnDimension != 1.
    * @throws std::runtime_error for a non-augmented state or an unsupported
