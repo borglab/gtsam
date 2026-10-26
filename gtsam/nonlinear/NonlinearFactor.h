@@ -22,6 +22,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/ParameterTag.h>
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/JacobianFactor.h>
@@ -32,6 +33,7 @@
 #include <boost/serialization/base_object.hpp>
 #endif
 #include <cstddef>
+#include <optional>
 
 namespace gtsam {
 
@@ -275,6 +277,30 @@ public:
    */
   Vector unwhitenedError(const Values& x, std::vector<Matrix>& H) const {
     return unwhitenedError(x, &H);
+  }
+
+  /**
+   * Apply the transpose of this factor's unwhitened factor residual Jacobian
+   * with respect to a parameter vector to factorResidualCotangent. The states
+   * in values and the supplied cotangent are held fixed. Gradients supplies
+   * the noise weighting and implicit sign; implementations only differentiate
+   * their unwhitened factor residuals with respect to the requested parameter.
+   *
+   * parameter identifies a parameter vector by shared tag identity.
+   * Return std::nullopt when this factor does not depend on that tag.
+   * A participating factor returns a finite, nonempty vector, including an
+   * explicit zero vector when its contribution is zero. Factors recognizing
+   * the same tag must use the same parameter coordinates and dimension.
+   * For e = prediction(values) - scale * measurement, the scale contribution
+   * is Vector1{-measurement.dot(factorResidualCotangent)}. No noise-model
+   * operation is needed in the implementation.
+   * Noise-model parameters are held fixed and are not supported by this hook.
+   * The default implementation declares no parameter dependencies.
+   */
+  virtual std::optional<Vector> parameterVjp(
+      const Values& values, const ParameterTag& parameter,
+      const Vector& factorResidualCotangent) const {
+    return std::nullopt;
   }
 
   /**

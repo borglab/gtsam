@@ -23,4 +23,18 @@ if(NOT GTSAM_USE_MOSEK)
       "Rot2RingQcqpToMonolithicSDP.cpp")
 endif()
 
+find_package(Torch QUIET CONFIG)
+if(NOT Torch_FOUND)
+  list(APPEND excluded_examples "GradientsTorchExample.cpp")
+endif()
+
 gtsamAddExamplesGlob("*.cpp" "${excluded_examples}" "gtsam;${Boost_PROGRAM_OPTIONS_LIBRARY}" ${GTSAM_BUILD_EXAMPLES_ALWAYS})
+
+if(Torch_FOUND)
+  target_link_libraries(GradientsTorchExample ${TORCH_LIBRARIES})
+  # Honor LibTorch's required standard on this example only.
+  get_target_property(torch_cxx_standard torch CXX_STANDARD)
+  if(torch_cxx_standard)
+    target_compile_features(GradientsTorchExample PRIVATE cxx_std_${torch_cxx_standard})
+  endif()
+endif()

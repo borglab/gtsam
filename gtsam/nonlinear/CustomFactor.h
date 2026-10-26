@@ -45,6 +45,15 @@ using OptionalJacobianVector = std::optional<std::reference_wrapper<JacobianVect
 using CustomErrorFunction = std::function<Vector(const CustomFactor &, const Values &, OptionalJacobianVector)>;
 
 /**
+ * Optional parameter VJP callback, with the contract of
+ * NoiseModelFactor::parameterVjp. A missing callback or std::nullopt result
+ * means the factor does not depend on the requested parameter tag. The tag is
+ * passed by value so callbacks can retain it safely across language boundaries.
+ */
+using CustomParameterVjpFunction = std::function<std::optional<Vector>(
+    const CustomFactor&, const Values&, ParameterTag, const Vector&)>;
+
+/**
  * @brief Custom factor that takes a std::function as the error
  * @addtogroup nonlinear
  * \nosubgrouping
@@ -54,6 +63,7 @@ using CustomErrorFunction = std::function<Vector(const CustomFactor &, const Val
 class GTSAM_EXPORT CustomFactor: public NoiseModelFactor {
 protected:
   CustomErrorFunction error_function_;
+  CustomParameterVjpFunction parameter_vjp_function_;
 
 protected:
 
@@ -72,17 +82,25 @@ public:
    * @param noiseModel shared pointer to noise model
    * @param keys keys of the variables
    * @param errorFunction the error functional
+   * @param parameterVjpFunction optional unwhitened factor residual parameter VJP
    */
-  CustomFactor(const SharedNoiseModel &noiseModel, const KeyVector &keys, const CustomErrorFunction &errorFunction) :
-      Base(noiseModel, keys) {
-    this->error_function_ = errorFunction;
-  }
+  CustomFactor(const SharedNoiseModel& noiseModel, const KeyVector& keys,
+               const CustomErrorFunction& errorFunction,
+               const CustomParameterVjpFunction& parameterVjpFunction = {})
+      : Base(noiseModel, keys),
+        error_function_(errorFunction),
+        parameter_vjp_function_(parameterVjpFunction) {}
 
   /**
     * Calls the errorFunction closure, which is a std::function object
     * One can check if a derivative is needed in the errorFunction by checking the length of Jacobian array
     */
   Vector unwhitenedError(const Values &x, OptionalMatrixVecType H = nullptr) const override;
+
+  /** Invoke the optional callback, or return std::nullopt when none is set. */
+  std::optional<Vector> parameterVjp(
+      const Values& values, const ParameterTag& parameter,
+      const Vector& factorResidualCotangent) const override;
 
   /** print */
   void print(const std::string &s,

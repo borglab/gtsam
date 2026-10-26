@@ -24,6 +24,28 @@ The following examples illustrate some concepts from Georgia Tech's research pap
 * **VisualISAM2Example**: uses iSAM2 [IJRR12]
 * **SFMExample_SmartFactor**: uses smartFactors [ICRA14]
 
+## Learning factor parameters
+
+* [GradientsTorchExample.cpp](GradientsTorchExample.cpp) trains a small LibTorch
+  MLP to correct odometry measurements using a loss on GTSAM's estimated
+  positions. It includes parameter VJPs, Adam updates,
+  and held-out evaluation. The [PyTorch notebook](../python/gtsam/examples/nonlinear/GradientsPyTorchExample.ipynb)
+  explains the model and derivatives in more detail.
+
+The examples directory searches for LibTorch with `find_package(Torch QUIET)`.
+When it is unavailable, this example is skipped. Set `Torch_DIR` to the
+directory containing `TorchConfig.cmake` to build and run it:
+
+```sh
+cmake -S . -B build -DTorch_DIR=/path/to/libtorch/share/cmake/Torch
+cmake --build build --target GradientsTorchExample.run -j6
+```
+
+A Python PyTorch installation can also supply this package. In the Python
+environment containing PyTorch, `python -c "import torch; print(torch.utils.cmake_prefix_path)"`
+prints its CMake prefix; `TorchConfig.cmake` is in the `Torch` subdirectory.
+The example adopts LibTorch's C++ standard requirement without changing GTSAM's.
+
 ## Kalman Filter Examples
 * **elaboratePoint2KalmanFilter**: simple linear Kalman filter on a moving 2D point, but done using factor graphs
 * **easyPoint2KalmanFilter**: uses the generic templated Kalman filter class to do the same
