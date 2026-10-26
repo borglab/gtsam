@@ -1,7 +1,17 @@
 /* ----------------------------------------------------------------------------
- * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation.
- * See LICENSE for the license information.
+ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+ * See LICENSE for the license information
  * -------------------------------------------------------------------------- */
+
+/**
+ * @file GaussianElimination.cpp
+ * @brief Apply an operation's stored diagonal through elimination callbacks.
+ * @author Frank Dellaert
+ */
+
 #include <gtsam/linear/internal/GaussianElimination.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>

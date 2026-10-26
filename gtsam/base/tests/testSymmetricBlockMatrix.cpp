@@ -13,6 +13,7 @@
  * @file   testSymmetricBlockMatrix.cpp
  * @brief  Unit tests for SymmetricBlockMatrix class
  * @author Richard Roberts
+ * @author Frank Dellaert
  **/
 
 #include <CppUnitLite/TestHarness.h>
@@ -360,6 +361,28 @@ TEST(SymmetricBlockMatrix, inverseInPlace) {
   // invert in place
   symmMatrix.invertInPlace();
   EXPECT(assert_equal(expectedInverse, symmMatrix.selfadjointView()));
+}
+
+/* ************************************************************************* */
+// Validate scalar dimensions rather than block counts, including active views
+// beginning after the first physical block.
+TEST(SymmetricBlockMatrix, CholeskyReferenceDimensions) {
+  const Matrix original = (Vector4{9.0, 4.0, 3.0, 1.0}).asDiagonal();
+  SymmetricBlockMatrix input(std::vector<size_t>{1, 2, 1}, original);
+  input.blockStart() = 1;
+  for (DenseIndex dimension : {0, 1, 3}) {
+    SymmetricBlockMatrix actual = input;
+    const Vector reference = Vector::Ones(dimension);
+    CHECK_EXCEPTION(actual.choleskyPartial(1, reference), std::invalid_argument);
+    EXPECT_LONGS_EQUAL(1, actual.blockStart());
+    actual.blockStart() = 0;
+    EXPECT(assert_equal(original, actual.selfadjointView()));
+  }
+  SymmetricBlockMatrix local = input, supplied = input;
+  const Vector3 reference{9.0, 4.0, 3.0};
+  local.choleskyPartial(1);
+  supplied.choleskyPartial(1, reference.segment(1, 2));
+  EXPECT(assert_equal(Matrix(local.selfadjointView()), supplied.selfadjointView()));
 }
 
 /* ************************************************************************* */

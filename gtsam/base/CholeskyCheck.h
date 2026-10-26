@@ -1,7 +1,16 @@
 /* ----------------------------------------------------------------------------
  * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
- * Atlanta, Georgia 30332-0415. See LICENSE for the license information.
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+ * See LICENSE for the license information
  * -------------------------------------------------------------------------- */
+
+/**
+ * @file CholeskyCheck.h
+ * @brief Compare Cholesky pivots with local or operation-wide reference diagonals.
+ * @author Frank Dellaert
+ */
 
 #pragma once
 
@@ -16,14 +25,14 @@ struct CholeskyCheck {
   // #2653. Keep this value shared by every Cholesky implementation.
   static constexpr double minimumNormalizedPivotSquared = 0x1p-28;
 
-  /** Test a squared pivot against its diagonal at entry to this factorization. */
+  /// Test a squared pivot against the diagonal selected by the caller's policy.
   static bool acceptSquared(
       double pivotSquared, double referenceDiagonal) {
     return positiveFinite(referenceDiagonal) && positiveFinite(pivotSquared) &&
            pivotSquared >= minimumNormalizedPivotSquared * referenceDiagonal;
   }
 
-  /** Test a Cholesky diagonal without overflowing when squaring it. */
+  /// Test a Cholesky diagonal without overflowing when squaring it.
   static bool accept(double pivot,
                      double referenceDiagonal) {
     if (!positiveFinite(pivot) || !positiveFinite(referenceDiagonal))
@@ -33,6 +42,7 @@ struct CholeskyCheck {
   }
 
  private:
+  /// Return whether a value is finite and strictly positive.
   static bool positiveFinite(double value) {
     return value > 0.0 && value <= std::numeric_limits<double>::max();
   }

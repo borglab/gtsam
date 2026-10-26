@@ -12,6 +12,7 @@
 /**
  * @file    testHessianFactor.cpp
  * @author  Richard Roberts
+ * @author  Frank Dellaert
  * @date    Dec 15, 2010
  */
 
@@ -27,6 +28,7 @@
 
 #include <utility>
 #include <vector>
+#include <stdexcept>
 
 using namespace std;
 using namespace gtsam;
@@ -53,6 +55,31 @@ TEST(HessianFactor, emptyConstructor)
   //EXPECT(assert_equal(Vector(), f.linearTerm()));    // Linear term should be empty
   EXPECT(assert_equal((Matrix) Z_1x1, f.info().selfadjointView())); // Full matrix should be 1-by-1 zero matrix
   DOUBLES_EQUAL(0.0, f.error(VectorValues()), 1e-9); // Should have zero error
+}
+
+// Invalid supplied references must not silently select the local policy or
+// change the factor's numerical contents and keys.
+TEST(HessianFactor, CholeskyReferenceDimensions) {
+  const HessianFactor original(42, Matrix2{{4.0, 1.0}, {1.0, 3.0}},
+                               Vector2{1.0, 2.0}, 0.0);
+  GaussianFactorGraph graph;
+  graph.emplace_shared<HessianFactor>(original);
+  for (DenseIndex dimension : {0, 1, 3}) {
+    HessianFactor actual = original;
+    const Vector reference = Vector::Ones(dimension);
+    CHECK_EXCEPTION(actual.eliminateCholesky(Ordering{42}, reference),
+                    std::invalid_argument);
+    EXPECT(assert_equal(original, actual));
+    CHECK_EXCEPTION(internal::eliminateCholeskyWithReference(
+                        graph, Ordering{42}, reference),
+                    std::invalid_argument);
+  }
+  HessianFactor local = original, supplied = original;
+  const auto expected = local.eliminateCholesky(Ordering{42});
+  const Vector3 reference{9.0, 4.0, 3.0};
+  const auto actual = supplied.eliminateCholesky(Ordering{42}, reference.tail(2));
+  EXPECT(assert_equal(*expected, *actual));
+  EXPECT(assert_equal(local, supplied));
 }
 
 // Dense factor solves report a graph key when numerical factorization fails.

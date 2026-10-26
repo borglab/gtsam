@@ -24,6 +24,8 @@
 #include <Eigen/Cholesky>
 #include <cassert>
 #include <cmath>
+#include <optional>
+#include <stdexcept>
 
 using namespace std;
 
@@ -105,13 +107,15 @@ pair<size_t, bool> choleskyCareful(Matrix& ATA, int order) {
 }
 
 /* ************************************************************************* */
-bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft) {
-  return choleskyPartial(ABC, nFrontal, topleft, nullptr);
-}
-
-bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft,
-                     const double* referenceDiagonal) {
+// Share the numerical kernel without copying the local input diagonal.
+static bool choleskyPartialImpl(
+    Matrix& ABC, size_t nFrontal, size_t topleft,
+    std::optional<Eigen::Ref<const Vector>> referenceDiagonal) {
   gttic(choleskyPartial);
+  if (referenceDiagonal &&
+      static_cast<size_t>(referenceDiagonal->size()) != nFrontal) {
+    throw std::invalid_argument("Cholesky reference diagonal dimension mismatch");
+  }
   if (nFrontal == 0)
     return true;
 
@@ -139,7 +143,7 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft,
   for (DenseIndex index = 0; index < upperFactor.rows(); ++index) {
     const double pivot = upperFactor(index, index);
     if (!internal::CholeskyCheck::accept(
-            pivot, referenceDiagonal ? referenceDiagonal[index]
+            pivot, referenceDiagonal ? (*referenceDiagonal)[index]
                                      : A(index, index))) {
       return false;
     }
@@ -161,5 +165,14 @@ bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft,
   gttoc(compute_L);
 
   return true;
+}
+
+bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft) {
+  return choleskyPartialImpl(ABC, nFrontal, topleft, std::nullopt);
+}
+
+bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft,
+                     const Eigen::Ref<const Vector>& referenceDiagonal) {
+  return choleskyPartialImpl(ABC, nFrontal, topleft, referenceDiagonal);
 }
 }  // namespace gtsam

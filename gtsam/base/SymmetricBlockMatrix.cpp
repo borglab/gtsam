@@ -14,6 +14,7 @@
  * @brief   Access to matrices via blocks of pre-defined sizes.  Used in
  * GaussianFactor and GaussianConditional.
  * @author  Richard Roberts
+ * @author  Frank Dellaert
  * @date    Sep 18, 2010
  */
 
@@ -86,11 +87,15 @@ void SymmetricBlockMatrix::invertInPlace() {
 
 /* ************************************************************************* */
 void SymmetricBlockMatrix::choleskyPartial(DenseIndex nFrontals) {
-  choleskyPartial(nFrontals, nullptr);
+  gttic(VerticalBlockMatrix_choleskyPartial);
+  const DenseIndex topleft = variableColOffsets_[blockStart_];
+  if (!gtsam::choleskyPartial(matrix_, offset(nFrontals) - topleft, topleft)) {
+    throw CholeskyFailed();
+  }
 }
 
-void SymmetricBlockMatrix::choleskyPartial(DenseIndex nFrontals,
-                                          const double* referenceDiagonal) {
+void SymmetricBlockMatrix::choleskyPartial(
+    DenseIndex nFrontals, const Eigen::Ref<const Vector>& referenceDiagonal) {
   gttic(VerticalBlockMatrix_choleskyPartial);
   DenseIndex topleft = variableColOffsets_[blockStart_];
   if (!gtsam::choleskyPartial(matrix_, offset(nFrontals) - topleft, topleft,

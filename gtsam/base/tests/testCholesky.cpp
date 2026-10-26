@@ -12,6 +12,7 @@
 /**
  * @file    testCholesky.cpp
  * @author  Richard Roberts
+ * @author  Frank Dellaert
  * @date    Nov 5, 2010
  */
 
@@ -22,6 +23,7 @@
 #include <Eigen/Cholesky>
 #include <cmath>
 #include <limits>
+#include <stdexcept>
 
 using namespace gtsam;
 using namespace std;
@@ -177,10 +179,44 @@ TEST(cholesky, OriginalDiagonalAcrossPartitions) {
     Matrix split = full;
     const bool expected = strength == 1e8;
     EXPECT(choleskyPartial(full, 2) == expected);
-    CHECK(choleskyPartial(split, 1, 0, reference.data()));
+    CHECK(choleskyPartial(split, 1, 0, reference.head(1)));
     Matrix remainder = split.bottomRightCorner(1, 1);
-    EXPECT(choleskyPartial(remainder, 1, 0, reference.data() + 1) == expected);
+    EXPECT(choleskyPartial(remainder, 1, 0, reference.segment(1, 1)) == expected);
   }
+}
+
+/* ************************************************************************* */
+// A supplied reference must have exactly the scalar frontal dimension, even
+// for a no-op factorization; invalid calls leave the matrix unchanged.
+TEST(cholesky, ReferenceDimensions) {
+  const Matrix original{{4.0, 1.0}, {1.0, 3.0}};
+  for (DenseIndex dimension : {0, 1, 3}) {
+    Matrix actual = original;
+    const Vector reference = Vector::Ones(dimension);
+    CHECK_EXCEPTION(choleskyPartial(actual, 2, 0, reference),
+                    std::invalid_argument);
+    EXPECT(assert_equal(original, actual));
+  }
+  Matrix actual = original;
+  const Vector empty;
+  EXPECT(choleskyPartial(actual, 0, 0, empty));
+  CHECK_EXCEPTION(choleskyPartial(actual, 0, 0, Vector1{1.0}),
+                  std::invalid_argument);
+  EXPECT(assert_equal(original, actual));
+}
+
+/* ************************************************************************* */
+// References can be slices or temporary expressions, and a nonzero matrix
+// offset does not shift the supplied reference's first scalar entry.
+TEST(cholesky, ReferenceViewsAndTemporaries) {
+  const Matrix original{{9.0, 0.0, 0.0}, {0.0, 4.0, 1.0}, {0.0, 1.0, 3.0}};
+  const Vector3 reference{9.0, 4.0, 3.0};
+  Matrix local = original, sliced = original, temporary = original;
+  CHECK(choleskyPartial(local, 2, 1));
+  CHECK(choleskyPartial(sliced, 2, 1, reference.segment(1, 2)));
+  CHECK(choleskyPartial(temporary, 2, 1, reference.tail(2) * 1.0));
+  EXPECT(assert_equal(local, sliced));
+  EXPECT(assert_equal(local, temporary));
 }
 
 int main() {

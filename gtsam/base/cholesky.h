@@ -13,6 +13,7 @@
  * @file    cholesky.h
  * @brief   Efficient incomplete Cholesky on rank-deficient matrices, todo: constrained Cholesky
  * @author  Richard Roberts
+ * @author  Frank Dellaert
  * @date    Nov 5, 2010
  */
 #pragma once
@@ -59,16 +60,19 @@ GTSAM_EXPORT std::pair<size_t,bool> choleskyCareful(Matrix& ATA, int order = -1)
  *
  * @return \c true if the decomposition is successful, \c false if \c A was
  * not positive-definite or has a Cholesky pivot that is too small relative to
- * its original diagonal entry.
+ * its local input diagonal entry.
  */
 GTSAM_EXPORT bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft=0);
 
 /**
  * Factor with nFrontal reference entries in frontal scalar order. Entries must
  * describe the system before any elimination, including applied damping.
- * A null pointer uses the input frontal block's diagonal.
+ * The reference is read only during this call and must have exactly nFrontal
+ * entries; a size mismatch throws std::invalid_argument, including an empty
+ * reference when nFrontal is nonzero. Omit the reference argument to use the
+ * local input diagonal instead.
  */
 GTSAM_EXPORT bool choleskyPartial(Matrix& ABC, size_t nFrontal, size_t topleft,
-                                const double* referenceDiagonal);
+                                const Eigen::Ref<const Vector>& referenceDiagonal);
 
 }  // namespace gtsam

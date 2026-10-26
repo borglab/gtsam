@@ -1,10 +1,22 @@
 /* ----------------------------------------------------------------------------
- * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
  * Atlanta, Georgia 30332-0415
  * All Rights Reserved
  * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
  * See LICENSE for the license information
  * -------------------------------------------------------------------------- */
+
+/**
+ * @file testNativeElimination.cpp
+ * @brief Test input-diagonal lifetime through direct trees and marginal queries.
+ * @author Frank Dellaert
+ *
+ * Direct elimination trees and both stages of a marginal query must share one
+ * input reference. A returned partial graph solved independently starts a new
+ * reference, while QR, custom callbacks, and constrained fallback retain their
+ * policies. The anchored-pair fixtures are full rank; their two noise levels
+ * exercise acceptance and rejection by the empirical normalized-pivot cutoff.
+ */
 
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/linear/internal/GaussianElimination.h>
@@ -24,6 +36,7 @@ using namespace gtsam;
 /* ************************************************************************* */
 namespace native_elimination {
 
+/// Build an anchored scalar pair whose coupling controls its weak pivot.
 GaussianFactorGraph anchoredPair(double sigma) {
   GaussianFactorGraph graph;
   graph.emplace_shared<JacobianFactor>(0, Matrix11{1.0}, Vector1{0.1});

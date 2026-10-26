@@ -13,6 +13,7 @@
  * @file    HessianFactor.h
  * @brief   Contains the HessianFactor class, a general quadratic factor
  * @author  Richard Roberts
+ * @author  Frank Dellaert
  * @date    Dec 8, 2010
  */
 
@@ -23,6 +24,7 @@
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/FastVector.h>
 
+#include <optional>
 #include <utility>
 
 namespace gtsam {
@@ -384,9 +386,14 @@ namespace gtsam {
      */
     std::shared_ptr<GaussianConditional> eliminateCholesky(const Ordering& keys);
 
-    /** Eliminate using the original system's scalar frontal diagonals. */
+    /**
+     * Eliminate using the original system's scalar frontal diagonals, read
+     * only during this call. The reference must match the total dimension of
+     * keys; a mismatch throws std::invalid_argument without modifying the
+     * factor. Omit the reference argument to use the local input diagonal.
+     */
     std::shared_ptr<GaussianConditional> eliminateCholesky(
-        const Ordering& keys, const Vector& referenceDiagonal);
+        const Ordering& keys, const Eigen::Ref<const Vector>& referenceDiagonal);
 
     /**
      * Solve A'*A delta = A'*b in-place, returning delta as VectorValues.
@@ -395,6 +402,11 @@ namespace gtsam {
     VectorValues solve();
 
  private:
+    /// Share elimination and conditional extraction between reference policies.
+    std::shared_ptr<GaussianConditional> eliminateCholeskyImpl(
+        const Ordering& keys,
+        std::optional<Eigen::Ref<const Vector>> referenceDiagonal);
+
     /// Validate the shared augmented-information constructor contract.
     static void CheckAugmentedInformation(
         size_t keyCount, const SymmetricBlockMatrix& augmentedInformation);
@@ -461,11 +473,16 @@ template<>
 struct traits<HessianFactor> : public Testable<HessianFactor> {};
 
 namespace internal {
-/** Eliminate a frontal block using an operation's original scalar diagonal. */
+/**
+ * Eliminate a frontal block using an operation's original scalar diagonal.
+ * The reference must match the total dimension of keys; a size mismatch
+ * throws std::invalid_argument. The reference is not retained after the call.
+ */
 GTSAM_EXPORT std::pair<std::shared_ptr<GaussianConditional>,
                       std::shared_ptr<HessianFactor>>
 eliminateCholeskyWithReference(const GaussianFactorGraph& factors,
-                               const Ordering& keys, const Vector& diagonal);
+                               const Ordering& keys,
+                               const Eigen::Ref<const Vector>& diagonal);
 }
 
 } // \ namespace gtsam

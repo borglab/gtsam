@@ -12,6 +12,7 @@
 /**
  * @file    HessianFactor.cpp
  * @author  Richard Roberts
+ * @author  Frank Dellaert
  * @date    Dec 8, 2010
  */
 
@@ -560,11 +561,17 @@ Vector HessianFactor::gradient(Key key, const VectorValues& x) const {
 /* ************************************************************************* */
 std::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(
     const Ordering& keys) {
-  return eliminateCholesky(keys, Vector());
+  return eliminateCholeskyImpl(keys, std::nullopt);
 }
 
 std::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(
-    const Ordering& keys, const Vector& referenceDiagonal) {
+    const Ordering& keys, const Eigen::Ref<const Vector>& referenceDiagonal) {
+  return eliminateCholeskyImpl(keys, referenceDiagonal);
+}
+
+std::shared_ptr<GaussianConditional> HessianFactor::eliminateCholeskyImpl(
+    const Ordering& keys,
+    std::optional<Eigen::Ref<const Vector>> referenceDiagonal) {
   gttic(HessianFactor_eliminateCholesky);
 
   GaussianConditional::shared_ptr conditional;
@@ -573,12 +580,11 @@ std::shared_ptr<GaussianConditional> HessianFactor::eliminateCholesky(
     // Do dense elimination
     size_t nFrontals = keys.size();
     assert(nFrontals <= size());
-    const DenseIndex frontalDim = info_.blockScalarOffset(nFrontals) -
-                                  info_.blockScalarOffset(0);
-    if (referenceDiagonal.size() && referenceDiagonal.size() != frontalDim)
-      throw std::invalid_argument("Cholesky reference diagonal dimension mismatch");
-    info_.choleskyPartial(nFrontals, referenceDiagonal.size()
-                                       ? referenceDiagonal.data() : nullptr);
+    if (referenceDiagonal) {
+      info_.choleskyPartial(nFrontals, *referenceDiagonal);
+    } else {
+      info_.choleskyPartial(nFrontals);
+    }
 
     // TODO(frank): pre-allocate GaussianConditional and write into it
     VerticalBlockMatrix Ab = info_.split(nFrontals);
@@ -631,15 +637,11 @@ VectorValues HessianFactor::solve() {
 }
 
 /* ************************************************************************* */
-std::pair<std::shared_ptr<GaussianConditional>, std::shared_ptr<HessianFactor> >
-EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys) {
-  return internal::eliminateCholeskyWithReference(factors, keys, Vector());
-}
-
-std::pair<std::shared_ptr<GaussianConditional>, std::shared_ptr<HessianFactor>>
-internal::eliminateCholeskyWithReference(const GaussianFactorGraph& factors,
-                                        const Ordering& keys,
-                                        const Vector& diagonal) {
+// Keep joint-factor assembly common to the local and supplied-reference paths.
+static std::pair<std::shared_ptr<GaussianConditional>,
+                 std::shared_ptr<HessianFactor>>
+eliminateCholeskyImpl(const GaussianFactorGraph& factors, const Ordering& keys,
+                     std::optional<Eigen::Ref<const Vector>> diagonal) {
   gttic(EliminateCholesky);
 
   // Build joint factor
@@ -655,10 +657,23 @@ internal::eliminateCholeskyWithReference(const GaussianFactorGraph& factors,
   }
 
   // Do dense elimination
-  auto conditional = jointFactor->eliminateCholesky(keys, diagonal);
+  auto conditional = diagonal ? jointFactor->eliminateCholesky(keys, *diagonal)
+                              : jointFactor->eliminateCholesky(keys);
 
   // Return result
   return make_pair(conditional, jointFactor);
+}
+
+std::pair<std::shared_ptr<GaussianConditional>, std::shared_ptr<HessianFactor>>
+EliminateCholesky(const GaussianFactorGraph& factors, const Ordering& keys) {
+  return eliminateCholeskyImpl(factors, keys, std::nullopt);
+}
+
+std::pair<std::shared_ptr<GaussianConditional>, std::shared_ptr<HessianFactor>>
+internal::eliminateCholeskyWithReference(
+    const GaussianFactorGraph& factors, const Ordering& keys,
+    const Eigen::Ref<const Vector>& diagonal) {
+  return eliminateCholeskyImpl(factors, keys, diagonal);
 }
 
 /* ************************************************************************* */

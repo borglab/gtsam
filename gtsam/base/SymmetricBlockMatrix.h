@@ -14,6 +14,7 @@
  * @brief   Access to matrices via blocks of pre-defined sizes.  Used in
  * GaussianFactor and GaussianConditional.
  * @author  Richard Roberts
+ * @author  Frank Dellaert
  * @date    Sep 18, 2010
  */
 #pragma once
@@ -507,8 +508,14 @@ class GTSAM_EXPORT SymmetricBlockMatrix {
    */
   void choleskyPartial(DenseIndex nFrontals);
 
-  /** Factor with scalar frontal reference diagonals from the original system. */
-  void choleskyPartial(DenseIndex nFrontals, const double* referenceDiagonal);
+  /**
+   * Factor with reference diagonals in scalar frontal order. The reference
+   * must match the total dimension of the nFrontals blocks, not their count;
+   * a mismatch throws std::invalid_argument before modifying the matrix.
+   * Omit the reference argument to use the local input diagonal.
+   */
+  void choleskyPartial(DenseIndex nFrontals,
+                       const Eigen::Ref<const Vector>& referenceDiagonal);
 
   /**
    * After partial Cholesky, we can optionally split off R and Sd, to be
