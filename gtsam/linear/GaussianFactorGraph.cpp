@@ -358,19 +358,7 @@ namespace gtsam {
     Scatter scatter(*this);
     HessianFactor combined(*this, scatter);
 
-    // TODO(frank): cast to large dynamic matrix :-(
-    // NOTE(frank): info only valid (I think) in upper triangle. No problem for LLT...
-    Matrix augmented = combined.info().selfadjointView();
-
-    // Do Cholesky Factorization
-    size_t n = augmented.rows() - 1;
-    auto AtA = augmented.topLeftCorner(n, n);
-    auto eta = augmented.topRightCorner(n, 1);
-    Eigen::LLT<Matrix, Eigen::Upper> llt(AtA);
-
-    // Solve and convert, re-using scatter data structure
-    Vector solution = llt.solve(eta);
-    return VectorValues(solution, scatter);
+    return combined.solve();
   }
 
   /* ************************************************************************* */

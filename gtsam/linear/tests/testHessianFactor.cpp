@@ -55,6 +55,17 @@ TEST(HessianFactor, emptyConstructor)
   DOUBLES_EQUAL(0.0, f.error(VectorValues()), 1e-9); // Should have zero error
 }
 
+// Dense factor solves report a graph key when numerical factorization fails.
+TEST(HessianFactor, SolveReportsIndeterminateSystem) {
+  HessianFactor factor(42, Matrix11{0.0}, Vector1{1.0}, 0.0);
+  try {
+    factor.solve();
+    FAIL("Expected an indeterminate system");
+  } catch (const IndeterminateSystemException& exception) {
+    EXPECT_LONGS_EQUAL(42, exception.nearbyVariable());
+  }
+}
+
 /* ************************************************************************* */
 // Copying and taking ownership of the same block matrix produce identical
 // Hessian factors.

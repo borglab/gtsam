@@ -554,6 +554,22 @@ TEST(GaussianFactorGraph, InconsistentEliminationMessage) {
   }
 }
 /* ************************************************************************* */
+// Dense graph solving uses the same checked Cholesky path as dense factors.
+TEST(GaussianFactorGraph, DenseCholeskySafeguard) {
+  for (double strength : {1e8, 1e10}) {
+    GaussianFactorGraph graph;
+    graph.emplace_shared<HessianFactor>(
+        0, Matrix2{{strength + 1.0, -strength}, {-strength, strength}},
+        Vector2::Zero(), 0.0);
+    if (strength == 1e8) {
+      EXPECT(assert_equal(VectorValues{{0, Vector2::Zero()}},
+                          graph.optimizeDensely()));
+    } else {
+      CHECK_EXCEPTION(graph.optimizeDensely(), IndeterminateSystemException);
+    }
+  }
+}
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
