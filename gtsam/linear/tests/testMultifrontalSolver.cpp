@@ -1132,6 +1132,41 @@ TEST(MultifrontalSolver, Load) {
 }
 
 /* ************************************************************************* */
+// Reloading compatible factors must use their current numerical noise models.
+TEST(MultifrontalSolver, ReloadChangedNoiseModel) {
+  for (bool batch : {false, true}) {
+    const auto makeGraph = [batch](double sigma) {
+      GaussianFactorGraph graph;
+      graph.emplace_shared<JacobianFactor>(0, I_1x1, Vector1::Zero());
+      const auto model = noiseModel::Isotropic::Sigma(1, sigma);
+      if (batch) {
+        auto factor = std::make_shared<BatchJacobianFactor<1, 1>>(
+            KeyVector{0}, std::vector<size_t>{1}, model);
+        factor->addRow({0}, {I_1x1}, Vector1(2.0));
+        graph.push_back(factor);
+      } else {
+        graph.emplace_shared<JacobianFactor>(0, I_1x1, Vector1(2.0), model);
+      }
+      return graph;
+    };
+    for (auto mode : {MultifrontalParameters::QRMode::Off,
+                      MultifrontalParameters::QRMode::Force}) {
+      auto params = noMergeParams();
+      params.qrMode = mode;
+      const GaussianFactorGraph initial = makeGraph(1.0);
+      MultifrontalSolver solver(initial, Ordering{0}, params);
+      solver.eliminateInPlace(initial);
+      EXPECT_DOUBLES_EQUAL(1.0, solver.updateSolution().at(0)(0), 1e-12);
+
+      const GaussianFactorGraph reweighted = makeGraph(0.5);
+      solver.load(reweighted);
+      solver.eliminateInPlace();
+      EXPECT_DOUBLES_EQUAL(1.6, solver.updateSolution().at(0)(0), 1e-12);
+    }
+  }
+}
+
+/* ************************************************************************* */
 // Compare solver output against multifrontal elimination baseline.
 TEST(MultifrontalSolver, Eliminate) {
   MultifrontalSolver solver(chain, chainOrdering, noMergeParams());
