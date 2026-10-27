@@ -334,26 +334,8 @@ virtual class KnownLandmarkFactor2 : gtsam::NoiseModelFactor {
 };
 
 #include <gtsam/slam/KnownLandmarkSquaredRangeFactor.h>
-// Only the wrappers restrict spatial dimensions to 2 and 3.
-template <N = {2, 3}>
-class AugmentedPoint {
-  AugmentedPoint();
-  AugmentedPoint(const gtsam::Vector& point);
 
-  static gtsam::AugmentedPoint<N> Identity();
-
-  int dim() const;
-  double norm() const;
-  double dot(const gtsam::AugmentedPoint<N>& other) const;
-  // MATLAB needs a numeric vector type; the lambda preserves the C++ return type.
-  @pybind_lambda
-  gtsam::Vector vector() const;
-
-  void print(const std::string& s = "") const;
-  bool equals(const gtsam::AugmentedPoint<N>& other, double tol = 1e-9) const;
-};
-
- // Instantiate the supported position types.
+// Instantiate the supported position types.
 template <POSITION>
 virtual class KnownLandmarkSquaredRangeFactor : gtsam::NoiseModelFactor {
   KnownLandmarkSquaredRangeFactor(

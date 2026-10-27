@@ -142,6 +142,31 @@ class Point3Pairs {
   void push_back(const gtsam::Point3Pair& point_pair);
 };
 
+#include <gtsam/slam/KnownLandmarkSquaredRangeFactor.h>
+// Only the wrappers restrict spatial dimensions to 2 and 3.
+template <N = {2, 3}>
+class AugmentedPoint {
+  // Standard Constructors
+  AugmentedPoint();
+  AugmentedPoint(const gtsam::Vector& point);
+
+  // Group
+  static gtsam::AugmentedPoint<N> Identity();
+
+  // Standard Interface
+  int dim() const;
+  double norm() const;
+  double dot(const gtsam::AugmentedPoint<N>& other) const;
+
+  // MATLAB needs a numeric vector type; the lambda preserves the C++ return type.
+  @pybind_lambda
+  gtsam::Vector vector() const;
+
+  // Testable
+  void print(const std::string& s = "") const;
+  bool equals(const gtsam::AugmentedPoint<N>& other, double tol = 1e-9) const;
+};
+
 #include <gtsam/geometry/Rot2.h>
 class Rot2 {
   // Standard Constructors and Named Constructors
