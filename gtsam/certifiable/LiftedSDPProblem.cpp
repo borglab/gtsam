@@ -236,8 +236,24 @@ SymbolicBayesTree BuildSymbolicBayesTree(const QcqpProblem& problem,
   switch (orderingType) {
     case ChordalOrderingType::Metis:
 #ifdef GTSAM_SUPPORT_NESTED_DISSECTION
-      ordering = Ordering::Metis(sfg);
+    {
+      // MetisIndex gives keys without neighbors no adjacency rows, so METIS
+      // would see inconsistent arrays. Order the coupled keys with METIS and
+      // put the uncoupled ones, each its own clique, first.
+      SymbolicFactorGraph coupled;
+      for (const auto& factor : sfg) {
+        if (factor->size() > 1) coupled.push_back(factor);
+      }
+      const KeySet coupledKeys = coupled.keys();
+      for (Key key : sfg.keys()) {
+        if (!coupledKeys.count(key)) ordering.push_back(key);
+      }
+      if (!coupled.empty()) {
+        const Ordering metis = Ordering::Metis(coupled);
+        ordering.insert(ordering.end(), metis.begin(), metis.end());
+      }
       break;
+    }
 #else
       throw std::runtime_error(
           "BuildSymbolicBayesTree: METIS ordering requested but GTSAM was "
