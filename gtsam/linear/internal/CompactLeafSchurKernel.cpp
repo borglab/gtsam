@@ -23,13 +23,20 @@
 #include <cassert>
 #include <cmath>
 #include <numeric>
+#include <optional>
+#include <stdexcept>
 
 namespace gtsam {
 namespace internal {
 namespace {
 
-
-bool factorUpper(Matrix* matrix, DenseIndex dimension, const double* referenceDiagonal) {
+bool factorUpper(Matrix* matrix, DenseIndex dimension,
+                 std::optional<Eigen::Ref<const Vector>> referenceDiagonal) {
+  if (referenceDiagonal && referenceDiagonal->size() != dimension) {
+    throw std::invalid_argument("Cholesky reference diagonal dimension mismatch");
+  }
+  assert(dimension >= 0 && matrix->rows() == dimension);
+  assert(matrix->cols() >= dimension);
   for (DenseIndex column = 0; column < dimension; ++column) {
     const double originalDiagonal = (*matrix)(column, column);
     if (!std::isfinite(originalDiagonal) || originalDiagonal <= 0.0) {
@@ -41,7 +48,7 @@ bool factorUpper(Matrix* matrix, DenseIndex dimension, const double* referenceDi
       pivotSquared -= (*matrix)(k, column) * (*matrix)(k, column);
     }
     if (!CholeskyCheck::acceptSquared(pivotSquared, referenceDiagonal
-            ? referenceDiagonal[column] : originalDiagonal)) {
+            ? (*referenceDiagonal)[column] : originalDiagonal)) {
       return false;
     }
 
@@ -65,14 +72,16 @@ bool factorUpper(Matrix* matrix, DenseIndex dimension, const double* referenceDi
 }  // namespace
 
 bool CompactLeafSchurKernel::factorFrontalRows(VerticalBlockMatrix* frontalRows,
-                                               DenseIndex frontalDimension,
-                                               const double* referenceDiagonal) {
+                                               DenseIndex frontalDimension) {
   assert(frontalRows);
-  Matrix& matrix = frontalRows->matrix();
-  assert(frontalDimension >= 0 && frontalDimension <= matrix.rows());
-  assert(matrix.rows() == frontalDimension);
-  assert(matrix.cols() >= frontalDimension);
-  return factorUpper(&matrix, frontalDimension, referenceDiagonal);
+  return factorUpper(&frontalRows->matrix(), frontalDimension, std::nullopt);
+}
+
+bool CompactLeafSchurKernel::factorFrontalRows(
+    VerticalBlockMatrix* frontalRows, DenseIndex frontalDimension,
+    const Eigen::Ref<const Vector>& referenceDiagonal) {
+  assert(frontalRows);
+  return factorUpper(&frontalRows->matrix(), frontalDimension, referenceDiagonal);
 }
 
 std::vector<DenseIndex> CompactLeafSchurKernel::expandScalarOffsets(

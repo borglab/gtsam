@@ -1759,8 +1759,31 @@ TEST(CompactLeafSchurKernel, OriginalReferenceDiagonal) {
     VerticalBlockMatrix rows(std::vector<size_t>{1}, 1, true);
     rows.matrix() << pivotSquared, 0.0;
     EXPECT(internal::CompactLeafSchurKernel::factorFrontalRows(
-        &rows, 1, reference.data()) == (pivotSquared == 1.0));
+        &rows, 1, reference) == (pivotSquared == 1.0));
   }
+}
+
+// Invalid reference sizes leave fused input rows unchanged; slices and
+// temporary expressions use the same policy as an explicit full reference.
+TEST(CompactLeafSchurKernel, ReferenceDimensionsAndViews) {
+  VerticalBlockMatrix original(std::vector<size_t>{2}, 2, true);
+  original.matrix() << 4.0, 1.0, 2.0, 1.0, 3.0, 1.0;
+  for (DenseIndex dimension : {0, 1, 3}) {
+    VerticalBlockMatrix actual = original;
+    const Vector reference = Vector::Ones(dimension);
+    CHECK_EXCEPTION(internal::CompactLeafSchurKernel::factorFrontalRows(
+                        &actual, 2, reference), std::invalid_argument);
+    EXPECT(assert_equal(original.matrix(), actual.matrix()));
+  }
+  const Vector3 reference{9.0, 4.0, 3.0};
+  VerticalBlockMatrix local = original, sliced = original, temporary = original;
+  CHECK(internal::CompactLeafSchurKernel::factorFrontalRows(&local, 2));
+  CHECK(internal::CompactLeafSchurKernel::factorFrontalRows(
+      &sliced, 2, reference.segment(1, 2)));
+  CHECK(internal::CompactLeafSchurKernel::factorFrontalRows(
+      &temporary, 2, reference.tail(2) * 1.0));
+  EXPECT(assert_equal(local.matrix(), sliced.matrix()));
+  EXPECT(assert_equal(local.matrix(), temporary.matrix()));
 }
 
 

@@ -927,8 +927,11 @@ void MultifrontalClique::factorize() {
     } else if (useCompactCholesky()) {
       factorizeCompactCholesky();
     } else {
-      info_.choleskyPartial(numFrontals(), referenceDiagonal_.size()
-                                             ? referenceDiagonal_.data() : nullptr);
+      if (referenceDiagonal_.size()) {
+        info_.choleskyPartial(numFrontals(), referenceDiagonal_);
+      } else {
+        info_.choleskyPartial(numFrontals());
+      }
       // Split exposes [R S d] while info_ retains the separator Schur complement.
       info_.split(numFrontals(), &RSd_);
       info_.blockStart() = 0;
@@ -940,9 +943,12 @@ void MultifrontalClique::factorize() {
 }
 
 void MultifrontalClique::factorizeFusedStarCholesky() {
-  if (!internal::CompactLeafSchurKernel::factorFrontalRows(
-          &RSd_, static_cast<DenseIndex>(frontalDim),
-          referenceDiagonal_.size() ? referenceDiagonal_.data() : nullptr)) {
+  const DenseIndex dimension = static_cast<DenseIndex>(frontalDim);
+  const bool success = referenceDiagonal_.size()
+      ? internal::CompactLeafSchurKernel::factorFrontalRows(
+            &RSd_, dimension, referenceDiagonal_)
+      : internal::CompactLeafSchurKernel::factorFrontalRows(&RSd_, dimension);
+  if (!success) {
     throw CholeskyFailed();
   }
 }

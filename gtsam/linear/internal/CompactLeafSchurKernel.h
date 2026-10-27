@@ -18,6 +18,7 @@
 #pragma once
 
 #include <gtsam/base/types.h>
+#include <gtsam/base/Vector.h>
 #include <gtsam/dllexport.h>
 
 #include <cstddef>
@@ -38,10 +39,21 @@ class GTSAM_EXPORT CompactLeafSchurKernel {
    *
    * On success, `frontalRows` changes from `[Hff Hfs gf]` to `[R S d]`,
    * where `R'R=Hff` and `R'[S d]=[Hfs gf]`.
+   * Pivots are checked against the local input diagonal.
    */
   static bool factorFrontalRows(VerticalBlockMatrix* frontalRows,
-                                DenseIndex frontalDimension,
-                                const double* referenceDiagonal = nullptr);
+                                DenseIndex frontalDimension);
+
+  /**
+   * Factor using the supplied original-system diagonal in frontal scalar order.
+   * The reference is read only during this call and must have exactly
+   * frontalDimension entries. A mismatch, including an empty reference for
+   * nonzero frontalDimension, throws std::invalid_argument before mutation.
+   * Omit the reference argument to use the local input diagonal.
+   */
+  static bool factorFrontalRows(
+      VerticalBlockMatrix* frontalRows, DenseIndex frontalDimension,
+      const Eigen::Ref<const Vector>& referenceDiagonal);
 
   /** Expand block scalar offsets into one destination per scalar column. */
   static std::vector<DenseIndex> expandScalarOffsets(
