@@ -228,12 +228,7 @@ if(${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang")
 endif()
 
 if ((NOT MSVC) AND (NOT QNX))
-  # Default OFF to match HandleGeneralOptions.cmake.
-  # Downstream projects include this file directly, and must not 
-  # enable -march=native unless GTSAM itself was built with it.
-  # When GTSAM is built with it, -march=native is already propagated to
-  # consumers through the gtsam target's public compile options.
-  option(GTSAM_BUILD_WITH_MARCH_NATIVE  "Enable/Disable building with all instructions supported by native architecture (binary may not be portable!)" OFF)
+  option(GTSAM_BUILD_WITH_MARCH_NATIVE  "Enable/Disable building with all instructions supported by native architecture (binary may not be portable!)" ON)
   if(GTSAM_BUILD_WITH_MARCH_NATIVE)
     # Check if Apple OS and compiler is [Apple]Clang
     if(APPLE AND (${CMAKE_CXX_COMPILER_ID} MATCHES "^(Apple)?Clang$"))
