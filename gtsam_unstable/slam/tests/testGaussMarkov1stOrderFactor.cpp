@@ -124,21 +124,24 @@ TEST (GaussMarkovFactor, jacobian ) {
 
 /* ************************************************************************* */
 namespace discrete_noise {
-Matrix discreteCovariance(double delta_t, const Vector& tau, const SharedGaussian& model) {
+Matrix discreteCovariance(double delta_t, const Vector& tau,
+                          const SharedGaussian& model) {
   const GaussMarkov1stOrderFactor<Vector> factor(1, 2, delta_t, tau, model);
-  return std::dynamic_pointer_cast<noiseModel::Gaussian>(factor.noiseModel())->covariance();
+  return std::dynamic_pointer_cast<noiseModel::Gaussian>(factor.noiseModel())
+      ->covariance();
 }
 
 // The discrete noise is the continuous noise integrated exactly over delta_t.
 TEST(GaussMarkovFactor, exactDiscreteNoise) {
   const Vector3 tau(100.0, 150.0, 10.0);
   const double delta_t = 2.0, variance = 0.25;
-  const Matrix actual =
-      discreteCovariance(delta_t, tau, noiseModel::Isotropic::Variance(3, variance));
+  const Matrix actual = discreteCovariance(
+      delta_t, tau, noiseModel::Isotropic::Variance(3, variance));
 
   Vector3 expected;
   for (int i = 0; i < 3; i++)
-    expected(i) = variance * tau(i) / 2.0 * (1.0 - exp(-2.0 * delta_t / tau(i)));
+    expected(i) =
+        variance * tau(i) / 2.0 * (1.0 - exp(-2.0 * delta_t / tau(i)));
   EXPECT(assert_equal(Matrix(expected.asDiagonal()), actual, 1e-12));
 }
 
@@ -147,10 +150,13 @@ TEST(GaussMarkovFactor, exactDiscreteNoise) {
 TEST(GaussMarkovFactor, discreteNoiseLimits) {
   const Vector1 tau(10.0);
   const SharedGaussian model = noiseModel::Isotropic::Variance(1, 0.25);
-  EXPECT_DOUBLES_EQUAL(1.0, discreteCovariance(1e-4, tau, model)(0, 0) / (0.25 * 1e-4), 1e-4);
-  EXPECT_DOUBLES_EQUAL(0.25 * 10.0 / 2.0, discreteCovariance(1000.0, tau, model)(0, 0), 1e-12);
+  EXPECT_DOUBLES_EQUAL(
+      1.0, discreteCovariance(1e-4, tau, model)(0, 0) / (0.25 * 1e-4), 1e-4);
+  EXPECT_DOUBLES_EQUAL(0.25 * 10.0 / 2.0,
+                       discreteCovariance(1000.0, tau, model)(0, 0), 1e-12);
   const Vector1 randomWalk(numeric_limits<double>::infinity());
-  EXPECT_DOUBLES_EQUAL(0.25 * 3.0, discreteCovariance(3.0, randomWalk, model)(0, 0), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.25 * 3.0,
+                       discreteCovariance(3.0, randomWalk, model)(0, 0), 1e-12);
 }
 
 // Correlated continuous noise decays with the sum of the two axes' rates.
@@ -158,11 +164,12 @@ TEST(GaussMarkovFactor, correlatedDiscreteNoise) {
   const Vector2 tau(20.0, 5.0);
   const Matrix2 continuous{{1.0, 0.3}, {0.3, 2.0}};
   const double delta_t = 3.0;
-  const Matrix actual =
-      discreteCovariance(delta_t, tau, noiseModel::Gaussian::Covariance(continuous));
+  const Matrix actual = discreteCovariance(
+      delta_t, tau, noiseModel::Gaussian::Covariance(continuous));
 
   const double rate = 1.0 / tau(0) + 1.0 / tau(1);
-  EXPECT_DOUBLES_EQUAL(0.3 * (1.0 - exp(-rate * delta_t)) / rate, actual(0, 1), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.3 * (1.0 - exp(-rate * delta_t)) / rate, actual(0, 1),
+                       1e-12);
   EXPECT_DOUBLES_EQUAL(actual(0, 1), actual(1, 0), 1e-12);
 }
 
@@ -171,7 +178,8 @@ TEST(GaussMarkovFactor, invalidArguments) {
   const SharedGaussian model = noiseModel::Isotropic::Sigma(3, 1.0);
   CHECK_EXCEPTION(discreteCovariance(0.0, Vector3(1.0, 1.0, 1.0), model),
                   std::invalid_argument);
-  CHECK_EXCEPTION(discreteCovariance(1.0, Vector2(1.0, 1.0), model), std::invalid_argument);
+  CHECK_EXCEPTION(discreteCovariance(1.0, Vector2(1.0, 1.0), model),
+                  std::invalid_argument);
 }
 
 }  // namespace discrete_noise

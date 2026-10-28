@@ -33,9 +33,9 @@ namespace gtsam {
  * - The 1st order GaussMarkov factor relates two keys of the same type. This relation is given via
  *          key_2 = exp(-1/tau*delta_t) * key1 + w_d
  *     where tau is the time constant and delta_t is the time difference between the two keys.
- *     w_d is the equivalent discrete noise: the continuous noise model (spectral density Q)
- *     integrated exactly over delta_t. For a stationary standard deviation sigma, use
- *     Q = 2 sigma^2 / tau.
+ *     w_d is the equivalent discrete noise: the continuous noise model
+ *     (spectral density Q) integrated exactly over delta_t. For a stationary
+ *     standard deviation sigma, use Q = 2 sigma^2 / tau.
  * - In the multi-dimensional case, tau is a vector, and the above equation is applied on each element
  *      in the state (represented by keys), using the appropriate time constant in the vector tau.
  */
@@ -72,10 +72,11 @@ public:
   GaussMarkov1stOrderFactor() {}
 
   /** Constructor */
-  GaussMarkov1stOrderFactor(const Key& key1, const Key& key2, double delta_t, Vector tau,
-      const SharedGaussian& model) :
-        Base(calcDiscreteNoiseModel(model, delta_t, tau), key1, key2), dt_(delta_t), tau_(tau) {
-  }
+  GaussMarkov1stOrderFactor(const Key& key1, const Key& key2, double delta_t,
+                            Vector tau, const SharedGaussian& model)
+      : Base(calcDiscreteNoiseModel(model, delta_t, tau), key1, key2),
+        dt_(delta_t),
+        tau_(tau) {}
 
   ~GaussMarkov1stOrderFactor() override {}
 
@@ -134,27 +135,33 @@ private:
 #endif
 
   /**
-   * Exact covariance of the noise that the continuous-time model accumulates over delta_t.
+   * Exact covariance of the noise that the continuous-time model accumulates
+   * over delta_t.
    *
-   * Integrating dx/dt = -x / tau + w, with white noise w of spectral density Q, gives
-   *   Q_d(i, j) = Q(i, j) (1 - exp(-(1/tau_i + 1/tau_j) delta_t)) / (1/tau_i + 1/tau_j),
-   * which tends to Q delta_t for delta_t << tau and to the stationary covariance
-   * Q tau / 2 for delta_t >> tau. An infinite tau is a random walk, Q delta_t.
+   * Integrating dx/dt = -x / tau + w, with white noise w of spectral density Q,
+   * gives
+   *   Q_d(i, j) = Q(i, j) (1 - exp(-(1/tau_i + 1/tau_j) delta_t))
+   *               / (1/tau_i + 1/tau_j),
+   * which tends to Q delta_t for delta_t << tau and to the stationary
+   * covariance Q tau / 2 for delta_t >> tau. An infinite tau is a random walk,
+   * Q delta_t.
    */
-  static SharedGaussian calcDiscreteNoiseModel(const SharedGaussian& model, double delta_t,
+  static SharedGaussian calcDiscreteNoiseModel(const SharedGaussian& model,
+                                               double delta_t,
                                                const Vector& tau) {
     if (!(delta_t > 0.0) || static_cast<size_t>(tau.size()) != model->dim()) {
       throw std::invalid_argument(
-          "GaussMarkov1stOrderFactor: delta_t must be positive and tau must match the "
-          "noise model dimension");
+          "GaussMarkov1stOrderFactor: delta_t must be positive and tau must "
+          "match the noise model dimension");
     }
     const Matrix continuous = model->covariance();
     Matrix discrete(continuous.rows(), continuous.cols());
     for (Eigen::Index i = 0; i < discrete.rows(); ++i) {
       for (Eigen::Index j = 0; j < discrete.cols(); ++j) {
         const double rate = 1.0 / tau(i) + 1.0 / tau(j);
-        discrete(i, j) = continuous(i, j) *
-                         (rate != 0.0 ? -std::expm1(-rate * delta_t) / rate : delta_t);
+        discrete(i, j) =
+            continuous(i, j) *
+            (rate != 0.0 ? -std::expm1(-rate * delta_t) / rate : delta_t);
       }
     }
     return noiseModel::Gaussian::Covariance(discrete);
