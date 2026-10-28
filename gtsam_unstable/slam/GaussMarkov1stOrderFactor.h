@@ -143,8 +143,8 @@ private:
    *   Q_d(i, j) = Q(i, j) (1 - exp(-(1/tau_i + 1/tau_j) delta_t))
    *               / (1/tau_i + 1/tau_j),
    * which tends to Q delta_t for delta_t << tau and to the stationary
-   * covariance Q tau / 2 for delta_t >> tau. An infinite tau is a random walk,
-   * Q delta_t.
+   * covariance Q tau / 2 for delta_t >> tau. Each tau must be positive; an
+   * infinite tau is a random walk, Q delta_t.
    */
   static SharedGaussian calcDiscreteNoiseModel(const SharedGaussian& model,
                                                double delta_t,
@@ -153,6 +153,12 @@ private:
       throw std::invalid_argument(
           "GaussMarkov1stOrderFactor: delta_t must be positive and tau must "
           "match the noise model dimension");
+    }
+    // Written so that NaN fails too; +infinity (a random walk) passes.
+    if (!(tau.array() > 0.0).all()) {
+      throw std::invalid_argument(
+          "GaussMarkov1stOrderFactor: time constants must be positive "
+          "(infinity for a random walk)");
     }
     const Matrix continuous = model->covariance();
     Matrix discrete(continuous.rows(), continuous.cols());
@@ -164,7 +170,14 @@ private:
             (rate != 0.0 ? -std::expm1(-rate * delta_t) / rate : delta_t);
       }
     }
-    return noiseModel::Gaussian::Covariance(discrete);
+    // Take the structure from the continuous model, not from the size of the
+    // entries: Q_d(i, j) is zero exactly where Q(i, j) is, whereas the smart
+    // constructor drops off-diagonal entries below an absolute 1e-9, which
+    // discards the correlation of a small Q.
+    if (std::dynamic_pointer_cast<noiseModel::Diagonal>(model)) {
+      return noiseModel::Diagonal::Variances(discrete.diagonal());
+    }
+    return noiseModel::Gaussian::Covariance(discrete, false);
   }
 
 }; // \class GaussMarkov1stOrderFactor

@@ -173,13 +173,46 @@ TEST(GaussMarkovFactor, correlatedDiscreteNoise) {
   EXPECT_DOUBLES_EQUAL(actual(0, 1), actual(1, 0), 1e-12);
 }
 
-// A non-positive interval or a time constant of the wrong size is rejected.
+// Regression: a small correlated covariance keeps its correlation, although
+// its cross-covariance (about 5e-10) is below the threshold for treating a
+// covariance as diagonal.
+TEST(GaussMarkovFactor, smallCorrelatedDiscreteNoise) {
+  const Vector2 tau(10.0, 10.0);
+  const Matrix2 continuous{{1e-6, 5e-7}, {5e-7, 1e-6}};
+  const double delta_t = 1e-3;
+  const Matrix actual = discreteCovariance(
+      delta_t, tau, noiseModel::Gaussian::Covariance(continuous));
+
+  const double rate = 2.0 / tau(0);
+  const double expected = 5e-7 * -expm1(-rate * delta_t) / rate;
+  EXPECT_DOUBLES_EQUAL(1.0, actual(0, 1) / expected, 1e-9);
+  // Equal time constants scale every entry alike, so the correlation stays.
+  EXPECT_DOUBLES_EQUAL(0.5, actual(0, 1) / sqrt(actual(0, 0) * actual(1, 1)),
+                       1e-9);
+}
+
+// A diagonal continuous noise model gives a diagonal discrete one.
+TEST(GaussMarkovFactor, diagonalDiscreteNoise) {
+  const GaussMarkov1stOrderFactor<Vector> factor(
+      1, 2, 2.0, Vector2(100.0, 10.0),
+      noiseModel::Diagonal::Sigmas(Vector2(0.5, 0.2)));
+  const auto diagonal =
+      std::dynamic_pointer_cast<noiseModel::Diagonal>(factor.noiseModel());
+  EXPECT(diagonal != nullptr);
+}
+
+// A non-positive interval, a time constant of the wrong size, or a zero,
+// negative or NaN time constant is rejected.
 TEST(GaussMarkovFactor, invalidArguments) {
   const SharedGaussian model = noiseModel::Isotropic::Sigma(3, 1.0);
   CHECK_EXCEPTION(discreteCovariance(0.0, Vector3(1.0, 1.0, 1.0), model),
                   std::invalid_argument);
   CHECK_EXCEPTION(discreteCovariance(1.0, Vector2(1.0, 1.0), model),
                   std::invalid_argument);
+  for (const double badTau : {0.0, -1.0, numeric_limits<double>::quiet_NaN()}) {
+    CHECK_EXCEPTION(discreteCovariance(1.0, Vector3(1.0, badTau, 1.0), model),
+                    std::invalid_argument);
+  }
 }
 
 }  // namespace discrete_noise
