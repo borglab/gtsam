@@ -92,10 +92,10 @@ params.emplace('intpntCoTolRelGap', 1e-8);
 solver.solve(params);
 ```
 
-In a D=1 `QcqpProblem`, a hard `FrobeniusPrior` fixes its variable, so
-`problem.fixedVariables()` contains its QCQP value. `orderedKeys()`, `orderedKeyDims()`, and
-`variableEVRs()` describe only the free SDP variables; `qcqpValues()` also
-returns the fixed values after solving.
+A hard `FrobeniusPrior` fixes its variable: the SDP solvers substitute it out
+before lifting. `orderedKeys()`, `orderedKeyDims()`, and `variableEVRs()`
+describe only the free SDP variables; `qcqpValues()` also returns the fixed
+values after solving.
 
 `orderedKeyDims()` returns a wrapped map with `size()` and `at(key)` methods.
 `variableEVRs()` returns a wrapped vector with `size()` and zero-based `at(i)`

@@ -88,25 +88,6 @@ class TestCertifiableWrappers(unittest.TestCase):
         with self.assertRaises(TypeError):
             params.pMin = -1
 
-    def test_fixed_variables(self):
-        """A hard FrobeniusPrior's variable is substituted out of the QCQP."""
-        problem, _ = rot2_ring_qcqp()
-        fixed_variables = problem.fixedVariables()
-        self.assertEqual(list(fixed_variables.keys()), [X(0)])
-        np.testing.assert_allclose(
-            fixed_variables.atMatrix(X(0)), [[1.0], [0.0]]
-        )
-        np.testing.assert_allclose(
-            problem.fixedVariables().atMatrix(X(0)),
-            fixed_variables.atMatrix(X(0)),
-        )
-        self.assertNotIn(X(0), problem.costs().keys())
-        self.assertNotIn(X(0), problem.eConstraints().keys())
-        temporary_fixed_variables = rot2_ring_qcqp()[0].fixedVariables()
-        np.testing.assert_allclose(
-            temporary_fixed_variables.atMatrix(X(0)), [[1.0], [0.0]]
-        )
-
     def test_params_and_rot2_staircase(self):
         """Configure nested ALM parameters and certify a small Rot2 ring."""
         num_rotations = 5

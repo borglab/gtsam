@@ -236,8 +236,25 @@ SymbolicBayesTree BuildSymbolicBayesTree(const QcqpProblem& problem,
   switch (orderingType) {
     case ChordalOrderingType::Metis:
 #ifdef GTSAM_SUPPORT_NESTED_DISSECTION
-      ordering = Ordering::Metis(sfg);
+    {
+      // MetisIndex gives keys without neighbors no adjacency rows, so METIS
+      // would see inconsistent arrays. Order the coupled keys with METIS and
+      // put the uncoupled ones, each its own clique, first. Substituting
+      // fixed variables can leave keys with unary costs only.
+      SymbolicFactorGraph coupled;
+      for (const auto& factor : sfg) {
+        if (factor->size() > 1) coupled.push_back(factor);
+      }
+      const KeySet coupledKeys = coupled.keys();
+      for (Key key : sfg.keys()) {
+        if (!coupledKeys.count(key)) ordering.push_back(key);
+      }
+      if (!coupled.empty()) {
+        const Ordering metis = Ordering::Metis(coupled);
+        ordering.insert(ordering.end(), metis.begin(), metis.end());
+      }
       break;
+    }
 #else
       throw std::runtime_error(
           "BuildSymbolicBayesTree: METIS ordering requested but GTSAM was "
@@ -553,6 +570,137 @@ void AddQcqpConstraints(
   }
 }
 
+// Return true if any of the keys is a fixed variable.
+bool InvolvesFixedVariable(const KeyVector& keys,
+                           const Values& fixedVariables) {
+  return std::any_of(keys.begin(), keys.end(), [&fixedVariables](Key key) {
+    return fixedVariables.exists(key);
+  });
+}
+
+// Detect fixed variables: a unary linear equality I x = v, which a hard
+// FrobeniusPrior emits, fixes x to v. Lifting it would pin a rank-one block
+// of the SDP variable and leave the SDP without an interior.
+void DetectFixedVariables(const NonlinearEqualityConstraints& constraints,
+                          Values* fixedVariables) {
+  for (const auto& factor : constraints) {
+    const auto* linear =
+        dynamic_cast<const LinearEqualityConstraintFactor*>(factor.get());
+    if (!linear) continue;
+    const JacobianFactor& jacobian = linear->linearConstraint().factor();
+    if (jacobian.size() != 1) continue;
+    const Matrix A = jacobian.getA(jacobian.begin());
+    // A must be exactly the square identity, so that A x = b reads x = b.
+    // isIdentity() also accepts rectangular [I 0], which pins only part of x,
+    // hence the explicit square check; precision 0 admits no deviation.
+    if (A.rows() != A.cols() || !A.isIdentity(0.0)) continue;
+    // The first constraint on a key sets its value v = b.
+    if (!fixedVariables->exists(jacobian.front())) {
+      fixedVariables->insert(jacobian.front(), Matrix(jacobian.getb()));
+    }
+  }
+}
+
+// Substitute the fixed variables into one QpCost. Its error
+// ½xᵀGx − xᵀg + ½f, split into free positions F and fixed positions K with
+// x_K = v, becomes a cost on x_F with
+//   G' = G_FF,  g' = g_F − G_FK v,  f' = f + vᵀG_KK v − 2g_Kᵀv.
+// A binary cost with a fixed variable thus becomes a unary cost on the other
+// variable, which keeps the gauge fixed. Returns null when no free variable
+// is left, and adds f' to *constant.
+QpCost::shared_ptr SubstituteFixedVariables(const QpCost& cost,
+                                            const Values& fixedVariables,
+                                            double* constant) {
+  const HessianFactor& hessian = cost.hessianFactor();
+  KeyVector freeKeys;
+  std::vector<DenseIndex> freeDims;
+  std::vector<Eigen::Index> F, K;
+  Vector v_K(0);
+  DenseIndex offset = 0;
+  for (auto it = hessian.begin(); it != hessian.end(); ++it) {
+    const DenseIndex dim = hessian.getDim(it);
+    const bool fixed = fixedVariables.exists(*it);
+    for (DenseIndex i = 0; i < dim; ++i) (fixed ? K : F).push_back(offset + i);
+    if (fixed) {
+      const Matrix& value = fixedVariables.at<Matrix>(*it);
+      v_K.conservativeResize(v_K.size() + dim);
+      v_K.tail(dim) = Eigen::Map<const Vector>(value.data(), dim);
+    } else {
+      freeKeys.push_back(*it);
+      freeDims.push_back(dim);
+    }
+    offset += dim;
+  }
+
+  const Matrix G = hessian.information();
+  const Vector g = hessian.linearTerm();
+  const double f = hessian.constantTerm();
+  const double fSubstituted =
+      f + v_K.dot(G(K, K) * v_K) - 2.0 * g(K).dot(v_K);
+  if (freeKeys.empty()) {
+    *constant += fSubstituted;
+    return nullptr;
+  }
+
+  // Augmented [G' g'; g'ᵀ f'] with one block per free variable plus a size-1
+  // block, as in the factors' own QCQP costs.
+  const DenseIndex n = F.size();
+  Matrix Q = Matrix::Zero(n + 1, n + 1);
+  Q.topLeftCorner(n, n) = G(F, F);
+  Q.topRightCorner(n, 1) = g(F) - G(F, K) * v_K;
+  Q.bottomLeftCorner(1, n) = Q.topRightCorner(n, 1).transpose();
+  Q(n, n) = fSubstituted;
+  freeDims.push_back(1);
+  return std::make_shared<QpCost>(
+      HessianFactor(freeKeys, SymmetricBlockMatrix(freeDims, Q)));
+}
+
+// Substitute the fixed variables out of a QCQP before it is lifted. Costs are
+// rewritten on the free variables. The constraints that involve a fixed
+// variable are dropped: from a factor graph these are its unary manifold
+// constraints and its I x = v. The input problem is not modified.
+QcqpProblem SubstituteFixedVariables(const QcqpProblem& problem,
+                                     Values* fixedVariables) {
+  DetectFixedVariables(problem.eConstraints(), fixedVariables);
+  if (fixedVariables->empty()) return problem;
+
+  NonlinearFactorGraph costs;
+  double constant = 0.0;
+  for (const auto& factor : problem.costs()) {
+    const auto* cost = dynamic_cast<const QpCost*>(factor.get());
+    if (!cost || !InvolvesFixedVariable(factor->keys(), *fixedVariables)) {
+      costs.push_back(factor);
+    } else if (auto substituted = SubstituteFixedVariables(
+                   *cost, *fixedVariables, &constant)) {
+      costs.push_back(substituted);
+    }
+  }
+  // Keep the objective exact: fold the constant left by costs on fixed
+  // variables only into the first remaining cost.
+  for (size_t i = 0; constant != 0.0 && i < costs.size(); ++i) {
+    if (const auto* cost = dynamic_cast<const QpCost*>(costs[i].get())) {
+      HessianFactor hessian = cost->hessianFactor();
+      hessian.constantTerm() += constant;
+      costs.replace(i, std::make_shared<QpCost>(hessian));
+      break;
+    }
+  }
+
+  NonlinearEqualityConstraints eqConstraints;
+  for (const auto& factor : problem.eConstraints()) {
+    if (!InvolvesFixedVariable(factor->keys(), *fixedVariables)) {
+      eqConstraints.push_back(factor);
+    }
+  }
+  NonlinearInequalityConstraints ineqConstraints;
+  for (const auto& factor : problem.iConstraints()) {
+    if (!InvolvesFixedVariable(factor->keys(), *fixedVariables)) {
+      ineqConstraints.push_back(factor);
+    }
+  }
+  return QcqpProblem(costs, eqConstraints, ineqConstraints);
+}
+
 }  // namespace
 
 struct LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::Impl {
@@ -717,11 +865,12 @@ struct LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::Impl {
 };
 
 LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::LiftedSDPProblem(
-    const QcqpProblem& problem)
+    const QcqpProblem& qcqp)
     : impl_(std::make_unique<Impl>()) {
+  const QcqpProblem problem =
+      SubstituteFixedVariables(qcqp, &impl_->fixedVariables);
   CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                             &impl_->orderedKeyDims);
-  impl_->fixedVariables = problem.fixedVariables();
   int sdpVariableDimension;
   const auto keyToSDPVariableRanges = ComputeKeyToSDPVariableRanges(
       impl_->orderedKeys, impl_->orderedKeyDims, &sdpVariableDimension);
@@ -810,11 +959,12 @@ LiftedSDPProblem<MonolithicSDP, MosekSDPSolver>::orderedKeyDims() const {
 }
 
 LiftedSDPProblem<ChordalSDP, MosekSDPSolver>::LiftedSDPProblem(
-    const QcqpProblem& problem, ChordalOrderingType orderingType)
+    const QcqpProblem& qcqp, ChordalOrderingType orderingType)
     : impl_(std::make_unique<Impl>()) {
+  const QcqpProblem problem =
+      SubstituteFixedVariables(qcqp, &impl_->fixedVariables);
   CollectOrderedKeysAndDims(problem, &impl_->orderedKeys,
                             &impl_->orderedKeyDims);
-  impl_->fixedVariables = problem.fixedVariables();
   impl_->M = new mf::Model("ChordalSDP_MosekSDPSolver");
   impl_->bayesTree_ = BuildSymbolicBayesTree(problem, orderingType);
   // Use one positive semidefinite variable per symbolic clique.

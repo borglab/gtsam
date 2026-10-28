@@ -76,6 +76,12 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
    * Every PSD block is the lifted matrix [1 x'; x X] of its keys, with one
    * constant entry.
    *
+   * Fixed variables are substituted out before lifting: a unary linear
+   * equality I x = v, which a hard FrobeniusPrior emits, fixes x to v. The
+   * costs that involve it are rewritten on the remaining variables, the
+   * constraints that involve it are dropped, and it gets no SDP block, so no
+   * singular rank-one block is pinned. The QCQP itself is unchanged.
+   *
    * @param problem QCQP to relax.
    */
   explicit LiftedSDPProblem(const QcqpProblem& problem);
@@ -102,7 +108,7 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
 
   /**
    * Return one keyed D=1 QCQP vector per diagonal SDP block after solve(),
-   * together with the QCQP's fixed variables, which are not in the SDP.
+   * together with the fixed variables, which are not in the SDP.
    */
   Values qcqpValues() const;
 
@@ -138,6 +144,12 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
    * Every PSD block is the lifted matrix [1 x'; x X] of its keys, with one
    * constant entry.
    *
+   * Fixed variables are substituted out before lifting: a unary linear
+   * equality I x = v, which a hard FrobeniusPrior emits, fixes x to v. The
+   * costs that involve it are rewritten on the remaining variables, the
+   * constraints that involve it are dropped, and it gets no SDP block, so no
+   * singular rank-one block is pinned. The QCQP itself is unchanged.
+   *
    * @param problem QCQP to relax.
    * @param orderingType Ordering used for symbolic elimination.
    */
@@ -166,7 +178,7 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
 
   /**
    * Return one keyed D=1 QCQP vector per diagonal SDP block after solve(),
-   * together with the QCQP's fixed variables, which are not in the SDP.
+   * together with the fixed variables, which are not in the SDP.
    */
   Values qcqpValues() const;
 
