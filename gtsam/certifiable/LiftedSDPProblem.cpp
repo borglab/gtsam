@@ -471,8 +471,10 @@ mf::Expression::t BuildObjective(
 }
 
 // Lower x'Ax + 2a'x ~ b to the affine SDP constraint <A, X> + 2a'y ~ b.
+// Equality factors enforce the boundary even when the descriptor is an
+// inequality.
 void AddQuadraticConstraint(
-    const mf::Model::t& M, const QuadraticConstraint& constraint,
+    const mf::Model::t& M, const QuadraticConstraint& constraint, bool isEquality,
     const KeyiToLiftedVectorxiViewInSDPVariableMap& xiMap,
     const KeysijToLiftedVariableXijViewInSDPVariableMap& xijMap) {
   const Key key = constraint.key();
@@ -485,16 +487,12 @@ void AddQuadraticConstraint(
                            xiMap.at(key)->asExpr()));
   }
 
-  switch (constraint.sense()) {
-    case QuadraticConstraint::Sense::Equal:
-      M->constraint(lhs, mf::Domain::equalsTo(constraint.b()));
-      break;
-    case QuadraticConstraint::Sense::LessEqual:
-      M->constraint(lhs, mf::Domain::lessThan(constraint.b()));
-      break;
-    case QuadraticConstraint::Sense::GreaterEqual:
-      M->constraint(lhs, mf::Domain::greaterThan(constraint.b()));
-      break;
+  if (isEquality) {
+    M->constraint(lhs, mf::Domain::equalsTo(constraint.b()));
+  } else if (constraint.sense() == QuadraticConstraint::Sense::GreaterEqual) {
+    M->constraint(lhs, mf::Domain::greaterThan(constraint.b()));
+  } else {
+    M->constraint(lhs, mf::Domain::lessThan(constraint.b()));
   }
 }
 
@@ -535,7 +533,7 @@ void AddQcqpConstraints(
     if (const auto* quadratic =
             dynamic_cast<const QuadraticEqualityConstraintFactor*>(
                 factor.get())) {
-      AddQuadraticConstraint(M, quadratic->quadraticConstraint(),
+      AddQuadraticConstraint(M, quadratic->quadraticConstraint(), true,
                              xiMap, xijMap);
       continue;
     }
@@ -556,7 +554,7 @@ void AddQcqpConstraints(
     if (const auto* quadratic =
             dynamic_cast<const QuadraticInequalityConstraintFactor*>(
                 factor.get())) {
-      AddQuadraticConstraint(M, quadratic->quadraticConstraint(),
+      AddQuadraticConstraint(M, quadratic->quadraticConstraint(), false,
                              xiMap, xijMap);
       continue;
     }
