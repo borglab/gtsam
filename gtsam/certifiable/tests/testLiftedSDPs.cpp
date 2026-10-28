@@ -400,6 +400,35 @@ TEST(LiftedSDPs, Pose3_MonolithicAndChordal) {
                        kObjectiveTolerance);
 }
 
+// Redundant constraints added to the QCQP are lifted like the others: the
+// exact Pose3 ring stays rank one and recovered, with the same objective as the
+// plain relaxation.
+TEST(LiftedSDPs, Pose3_RedundantConstraints) {
+  const std::vector<Pose3> groundTruth =
+      lifted_sdp_tests::Pose3RingPoses(kNumPoses);
+  const NonlinearFactorGraph graph = ExactPoseRingGraph(groundTruth, 16);
+  const QcqpProblem problem(graph, 1, /*useRedundantConstraints=*/true);
+  LONGS_EQUAL(QcqpProblem(graph).eConstraints().size() + 11 * kNumPoses,
+              problem.eConstraints().size());
+
+  LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> monolithic(problem);
+  LiftedSDPProblem<ChordalSDP, MosekSDPSolver> chordal(
+      problem, ChordalOrderingType::Metis);
+  const SdpSolutionSummary monolithicResult =
+      SolveAndSummarize(&monolithic, groundTruth);
+  const SdpSolutionSummary chordalResult =
+      SolveAndSummarize(&chordal, groundTruth);
+
+  EXPECT(monolithicResult.minimumEigenvalueRatio > kRankOneEigenRatioThreshold);
+  EXPECT(chordalResult.minimumEigenvalueRatio > kRankOneEigenRatioThreshold);
+  EXPECT(monolithicResult.maximumPoseError < kPoseErrorTolerance);
+  EXPECT(chordalResult.maximumPoseError < kPoseErrorTolerance);
+  EXPECT(monolithicResult.objective < kObjectiveTolerance);
+  EXPECT(chordalResult.objective < kObjectiveTolerance);
+  EXPECT_DOUBLES_EQUAL(monolithicResult.objective, chordalResult.objective,
+                       kObjectiveTolerance);
+}
+
 }  // namespace pose_ring_sdp_fixture
 /* ************************************************************************* */
 

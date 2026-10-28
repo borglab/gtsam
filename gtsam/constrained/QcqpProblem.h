@@ -270,9 +270,19 @@ class GTSAM_EXPORT QcqpProblem : public ConstrainedOptProblem {
               const NonlinearInequalityConstraints& ineqConstraints)
       : Base(costs, eqConstraints, ineqConstraints) {}
 
-  /** Convert a supported nonlinear factor graph into QCQP costs/constraints. */
+  /**
+   * Convert a supported nonlinear factor graph into QCQP costs/constraints.
+   *
+   * With useRedundantConstraints, the variables' redundant constraints, such
+   * as the eleven of Rot3 and Pose3 at columnDimension 1, are added to the
+   * equality constraints. They are implied by the manifold constraints, so
+   * they leave the feasible set unchanged, but the QCQP then violates LICQ,
+   * which local QCQP solvers may not handle. They tighten the SDP
+   * relaxations, which lift them like any other equality constraint.
+   */
   explicit QcqpProblem(const NonlinearFactorGraph& graph,
-                       size_t columnDimension = 1);
+                       size_t columnDimension = 1,
+                       bool useRedundantConstraints = false);
 
   /** Add a quadratic cost. */
   void addCost(const QpCost& cost) { costs_.emplace_shared<QpCost>(cost); }

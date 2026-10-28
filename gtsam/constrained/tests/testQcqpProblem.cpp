@@ -869,6 +869,38 @@ TEST(QcqpProblem, HardPriorPinsRot2RingSign) {
                        1e-12);
 }
 
+// Redundant constraints join the equality constraints only on request: each
+// Rot3 key then has its eleven, once despite two factors per key, next to its
+// nine manifold constraints. D > 1 has none, and a hard FrobeniusPrior keeps
+// its variable's constraints in the QCQP.
+TEST(QcqpProblem, RedundantConstraintsRot3Ring) {
+  constexpr size_t N = 3;
+  NonlinearFactorGraph graph;
+  Values qcqpValues;
+  for (size_t i = 0; i < N; ++i) {
+    graph.emplace_shared<FrobeniusBetweenFactor<Rot3>>(
+        Symbol('x', i), Symbol('x', (i + 1) % N), Rot3::Rz(2.0 * M_PI / N));
+    InsertQcqpValue<Rot3, 1>(Symbol('x', i), Rot3::Rz(2.0 * M_PI * i / N),
+                             &qcqpValues);
+  }
+
+  LONGS_EQUAL(9 * N, QcqpProblem(graph).eConstraints().size());
+  const QcqpProblem problem(graph, 1, /*useRedundantConstraints=*/true);
+  LONGS_EQUAL(20 * N, problem.eConstraints().size());
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(qcqpValues),
+                       1e-12);
+
+  const QcqpProblem stiefel(graph, 3, /*useRedundantConstraints=*/true);
+  LONGS_EQUAL(QcqpProblem(graph, 3).eConstraints().size(),
+              stiefel.eConstraints().size());
+
+  graph.emplace_shared<FrobeniusPrior<Rot3>>(Symbol('x', 0),
+                                             Matrix3::Identity(),
+                                             noiseModel::Constrained::All(9));
+  const QcqpProblem anchored(graph, 1, /*useRedundantConstraints=*/true);
+  LONGS_EQUAL(20 * N + 1, anchored.eConstraints().size());
+}
+
 }  // namespace QcqpRingFixture
 /* ************************************************************************* */
 namespace QcqpRot2VariableFixture {
