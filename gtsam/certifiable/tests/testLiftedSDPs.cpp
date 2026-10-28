@@ -361,6 +361,15 @@ TEST(LiftedSDPs, Pose2_MonolithicAndChordal) {
   EXPECT(chordalResult.objective < kObjectiveTolerance);
   EXPECT_DOUBLES_EQUAL(monolithicResult.objective, chordalResult.objective,
                        kObjectiveTolerance);
+
+  // Pose 0 is a fixed variable: it has no SDP block, but qcqpValues()
+  // returns it.
+  LONGS_EQUAL(kNumPoses - 1, monolithic.orderedKeys().size());
+  LONGS_EQUAL(kNumPoses - 1, chordal.orderedKeys().size());
+  LONGS_EQUAL(kNumPoses - 1, monolithic.variableEVRs().size());
+  EXPECT(!monolithic.orderedKeyDims().count(0));
+  EXPECT(monolithic.qcqpValues().exists(0));
+  EXPECT(chordal.qcqpValues().exists(0));
 }
 
 // Verifies rank-one Pose3 slices and matching monolithic/chordal solutions.
@@ -438,11 +447,19 @@ ApplicationSolution SolveApplication(Solver* solver) {
 }
 
 // Both MOSEK formulations solve a D=1 graph containing every new QCQP factor
-// role added by PR #2713 and recover all six keyed variables.
+// role added by PR #2713 and recover all six keyed variables. The anchors
+// R0 = [1, 0] and T0 = 0 are unary I x = v constraints, so R0 and T0 are fixed
+// variables without SDP blocks.
 TEST(LiftedSDPs, Pr2713ApplicationFactorsMonolithicAndChordal) {
   const QcqpProblem problem = ApplicationQcqp();
   MosekMonolithicSDP monolithic(problem);
   MosekChordalSDP chordal(problem, ChordalOrderingType::Metis);
+  for (const KeyVector& keys :
+       {monolithic.orderedKeys(), chordal.orderedKeys()}) {
+    LONGS_EQUAL(4, keys.size());
+    EXPECT(std::find(keys.begin(), keys.end(), kR0) == keys.end());
+    EXPECT(std::find(keys.begin(), keys.end(), kT0) == keys.end());
+  }
   const ApplicationSolution monolithicResult = SolveApplication(&monolithic);
   const ApplicationSolution chordalResult = SolveApplication(&chordal);
   for (const ApplicationSolution* result :
@@ -450,7 +467,7 @@ TEST(LiftedSDPs, Pr2713ApplicationFactorsMonolithicAndChordal) {
     EXPECT(result->solved);
     EXPECT(result->objective < 1e-5);
     EXPECT_LONGS_EQUAL(6, result->valueCount);
-    EXPECT_LONGS_EQUAL(6, result->evrs.size());
+    EXPECT_LONGS_EQUAL(4, result->evrs.size());
     EXPECT(std::all_of(result->evrs.begin(), result->evrs.end(),
                        [](double evr) { return evr > 1e3; }));
   }
@@ -619,6 +636,103 @@ TEST(LiftedSDPs, LinearConstraintTerm) {
 }
 
 }  // namespace natural_form_fixture
+/* ************************************************************************* */
+namespace fixed_variable_fixture {
+
+constexpr size_t kCount = 4;
+constexpr double kDelta = 0.2;
+const Key x0 = Symbol('x', 0), x1 = Symbol('x', 1);
+
+// A noisy Rot2 ring, so the optimum is nonzero.
+NonlinearFactorGraph RingWithHardPriors(
+    const std::vector<std::pair<Key, Rot2>>& priors) {
+  NonlinearFactorGraph graph = lifted_sdp_tests::Rot2RingGraph(kCount, kDelta);
+  for (const auto& [key, value] : priors) {
+    graph.emplace_shared<FrobeniusPrior<Rot2>>(
+        key, value.matrix(), noiseModel::Constrained::All(4));
+  }
+  return graph;
+}
+
+// Solve both formulations and check that the SDP objective equals the QCQP
+// cost of the recovered values, i.e. that substitution kept the objective
+// exact, and that the fixed variables are recovered but not lifted.
+void CheckFixedVariables(const QcqpProblem& problem,
+                         const std::vector<std::pair<Key, Rot2>>& fixed,
+                         double expectedObjective, TestResult& result_,
+                         const std::string& name_) {
+  auto check = [&](auto* solver) {
+    const KeyVector& keys = solver->orderedKeys();
+    LONGS_EQUAL(kCount - fixed.size(), keys.size());
+    LONGS_EQUAL(kCount - fixed.size(), solver->orderedKeyDims().size());
+    for (const auto& [key, value] : fixed) {
+      EXPECT(std::find(keys.begin(), keys.end(), key) == keys.end());
+    }
+    EXPECT(solver->solve());
+    LONGS_EQUAL(kCount - fixed.size(), solver->variableEVRs().size());
+    const Values values = solver->qcqpValues();
+    LONGS_EQUAL(kCount, values.size());
+    for (const auto& [key, value] : fixed) {
+      EXPECT(assert_equal(qcqpValue(value), values.at<Matrix>(key), 1e-12));
+    }
+    EXPECT_DOUBLES_EQUAL(expectedObjective, solver->objectiveValue(), 1e-6);
+    EXPECT_DOUBLES_EQUAL(problem.costs().error(values),
+                         solver->objectiveValue(), 1e-6);
+  };
+  MosekMonolithicSDP monolithic(problem);
+  check(&monolithic);
+  MosekChordalSDP chordal(problem, ChordalOrderingType::Colamd);
+  check(&chordal);
+}
+
+// A hard FrobeniusPrior stays the QCQP constraint x0 = v; the SDP substitutes
+// x0 out, and its two ring edges become unary costs on x1 and x3.
+TEST(LiftedSDPs, HardFrobeniusPriorIsFixedVariable) {
+  const std::vector<std::pair<Key, Rot2>> fixed{{x0, Rot2::fromAngle(0.3)}};
+  const QcqpProblem problem(RingWithHardPriors(fixed));
+  const bool hasAnchorConstraint = std::any_of(
+      problem.eConstraints().begin(), problem.eConstraints().end(),
+      [](const auto& factor) {
+        return dynamic_cast<const LinearEqualityConstraintFactor*>(
+                   factor.get()) != nullptr;
+      });
+  EXPECT(hasAnchorConstraint);
+  // Each Frobenius edge costs 2*(1-cos(delta)); the total winding is zero.
+  CheckFixedVariables(problem, fixed, 2.0 * kCount * (1.0 - std::cos(kDelta)),
+                      result_, name_);
+}
+
+// With x0 and x1 both fixed, their edge involves fixed variables only. Its
+// cost is a constant that the SDP objective keeps: the edge measures kDelta,
+// but the anchors differ by 0.5.
+TEST(LiftedSDPs, FixedVariableConstantIsKept) {
+  const std::vector<std::pair<Key, Rot2>> fixed{{x0, Rot2::fromAngle(0.0)},
+                                                {x1, Rot2::fromAngle(0.5)}};
+  const QcqpProblem problem(RingWithHardPriors(fixed));
+  // An edge with angle error e costs 2*(1-cos(e)). The errors around the ring
+  // sum to -kCount*kDelta = -0.8. The fixed edge x0-x1 has error
+  // 0.5 - kDelta = 0.3, so the three free edges share -1.1 equally.
+  const double fixedError = 0.5 - kDelta;
+  const double freeError = (kCount * kDelta + fixedError) / 3.0;
+  const double expected = 2.0 * (1.0 - std::cos(fixedError)) +
+                          3.0 * 2.0 * (1.0 - std::cos(freeError));
+  CheckFixedVariables(problem, fixed, expected, result_, name_);
+}
+
+// Only an identity I x = v fixes a variable: 2 x = 2v is lifted as before.
+TEST(LiftedSDPs, NonIdentityUnaryEqualityIsNotFixed) {
+  QcqpProblem problem(lifted_sdp_tests::Rot2RingGraph(kCount, kDelta), 1);
+  problem.addConstraint(LinearConstraint::Equal(JacobianFactor(
+      x0, Matrix(2.0 * Matrix2::Identity()), Vector2(1.2, 1.6))));
+  MosekMonolithicSDP solver(problem);
+  LONGS_EQUAL(kCount, solver.orderedKeys().size());
+  EXPECT(solver.solve());
+  EXPECT(assert_equal(Vector2(0.6, 0.8),
+                      Vector(solver.qcqpValues().at<Matrix>(x0).col(0)),
+                      1e-6));
+}
+
+}  // namespace fixed_variable_fixture
 /* ************************************************************************* */
 #endif
 
