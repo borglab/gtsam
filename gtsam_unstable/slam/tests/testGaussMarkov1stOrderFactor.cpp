@@ -201,8 +201,8 @@ TEST(GaussMarkovFactor, diagonalDiscreteNoise) {
   EXPECT(diagonal != nullptr);
 }
 
-// A non-positive interval, a time constant of the wrong size, or a zero,
-// negative or NaN time constant is rejected.
+// A non-positive interval, a time constant of the wrong size, a zero,
+// negative or NaN time constant, or a constrained noise model is rejected.
 TEST(GaussMarkovFactor, invalidArguments) {
   const SharedGaussian model = noiseModel::Isotropic::Sigma(3, 1.0);
   CHECK_EXCEPTION(discreteCovariance(0.0, Vector3(1.0, 1.0, 1.0), model),
@@ -213,6 +213,10 @@ TEST(GaussMarkovFactor, invalidArguments) {
     CHECK_EXCEPTION(discreteCovariance(1.0, Vector3(1.0, badTau, 1.0), model),
                     std::invalid_argument);
   }
+  const SharedGaussian constrained =
+      noiseModel::Constrained::MixedSigmas(Vector3(0.0, 1.0, 1.0));
+  CHECK_EXCEPTION(discreteCovariance(1.0, Vector3(1.0, 1.0, 1.0), constrained),
+                  std::invalid_argument);
 }
 
 }  // namespace discrete_noise

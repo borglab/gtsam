@@ -160,6 +160,12 @@ private:
           "GaussMarkov1stOrderFactor: time constants must be positive "
           "(infinity for a random walk)");
     }
+    // covariance() is NaN on a constrained axis, so it cannot be integrated.
+    if (model->isConstrained()) {
+      throw std::invalid_argument(
+          "GaussMarkov1stOrderFactor: constrained noise models are not "
+          "supported");
+    }
     const Matrix continuous = model->covariance();
     Matrix discrete(continuous.rows(), continuous.cols());
     for (Eigen::Index i = 0; i < discrete.rows(); ++i) {
