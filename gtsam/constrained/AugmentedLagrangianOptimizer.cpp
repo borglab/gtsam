@@ -19,6 +19,10 @@
 
 #include <gtsam/constrained/AugmentedLagrangianOptimizer.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/linearExceptions.h>
+#include <gtsam/nonlinear/NonlinearMultifrontalSolver.h>
+#include <gtsam/nonlinear/internal/LevenbergMarquardtPolicy.h>
 
 #include <algorithm>
 #include <chrono>
@@ -51,7 +55,9 @@ class BiasedFactor : public NoiseModelFactor {
 
   // Original factor whose raw error and Jacobians are reused.
   Base::shared_ptr originalFactor_;
+  Vector sigmas_;
   Vector bias_;
+  double penalty_ = 0.0;
 
  public:
   using shared_ptr = std::shared_ptr<This>;
@@ -63,12 +69,26 @@ class BiasedFactor : public NoiseModelFactor {
    * Construct a biased view of an existing factor.
    *
    * @param originalFactor Original factor on x.
-   * @param bias Constant added to its unwhitened error.
+   * @param sigmas Constraint sigmas before penalty scaling.
+   * @param lambda Multiplier in whitened constraint coordinates.
+   * @param penalty Direct penalty rho.
    */
-  BiasedFactor(const Base::shared_ptr& originalFactor, const Vector& bias)
+  BiasedFactor(const Base::shared_ptr& originalFactor, const Vector& sigmas,
+               const Vector& lambda, double penalty)
       : Base(originalFactor->noiseModel(), originalFactor->keys()),
         originalFactor_(originalFactor),
-        bias_(bias) {}
+        sigmas_(sigmas) {
+    setParameters(lambda, penalty);
+  }
+
+  /// Update numerical parameters while preserving factor structure.
+  void setParameters(const Vector& lambda, double penalty) {
+    bias_ = (lambda / penalty).cwiseProduct(sigmas_);
+    if (penalty != penalty_) {
+      noiseModel_ = noiseModel::Diagonal::Sigmas(sigmas_ / std::sqrt(penalty));
+      penalty_ = penalty;
+    }
+  }
 
   /**
    * Error function *without* the noise model, conventionally z-h(x). Override
@@ -136,6 +156,12 @@ class PhrInequalityFactor : public NoiseModelFactor {
     }
   }
 
+  /// Update numerical parameters while preserving factor structure.
+  void setParameters(double lambda, double penalty) {
+    lambda_ = lambda;
+    penalty_ = penalty;
+  }
+
   /// Evaluate the exact shifted-ramp residual and its piecewise Jacobians.
   Vector unwhitenedError(
       const Values& values,
@@ -184,6 +210,10 @@ struct Diagnostics {
   double generalizedConstraintViolation = 0.0;
   double primalInequalityViolation = 0.0;
   double complementarity = 0.0;
+  double squaredEqualityViolation = 0.0;
+  double squaredInequalityViolation = 0.0;
+  std::vector<Vector> equalityMultipliers;
+  std::vector<double> projectedMultipliers;
 };
 
 /* ************************************************************************* */
@@ -192,11 +222,27 @@ double InfinityNorm(const Vector& vector) {
 }
 
 /* ************************************************************************* */
-double AugmentedLagrangianStationarity(const NonlinearFactorGraph& graph,
-                                       const Values& values) {
-  const VectorValues gradient = graph.linearize(values)->gradientAtZero();
+double AugmentedLagrangianStationarity(const GaussianFactorGraph& linear,
+                                      VectorValues* gradient) {
+  // Keep the keyed gradient storage across inner and outer iterations. For
+  // ordinary Jacobians, accumulate directly instead of allocating a temporary
+  // VectorValues for every factor and then merging it into another map.
+  gradient->setZero();
+  for (const auto& factor : linear) {
+    if (!factor) continue;
+    if (const auto* jacobian = dynamic_cast<const JacobianFactor*>(factor.get())) {
+      Vector rhs = jacobian->getb();
+      if (jacobian->get_model()) jacobian->get_model()->whitenInPlace(rhs);
+      jacobian->transposeMultiplyAdd(-1.0, rhs, *gradient);
+    } else {
+      gradient->addInPlace_(factor->gradientAtZero());
+    }
+  }
   double infinityNorm = 0.0;
-  for (const auto& keyGradient : gradient) {
+  for (const auto& keyGradient : *gradient) {
+    if (!keyGradient.second.allFinite()) {
+      return std::numeric_limits<double>::infinity();
+    }
     infinityNorm = std::max(infinityNorm, InfinityNorm(keyGradient.second));
   }
   return infinityNorm;
@@ -204,29 +250,46 @@ double AugmentedLagrangianStationarity(const NonlinearFactorGraph& graph,
 
 /* ************************************************************************* */
 Diagnostics EvaluateDiagnostics(const ConstrainedOptProblem& problem,
-                                const Values& values,
+                                const GaussianFactorGraph& linear,
                                 const AugmentedLagrangianState& subproblem) {
   Diagnostics diagnostics;
+  size_t slot = problem.costs().size();
+  const double sqrtEqualityPenalty = std::sqrt(subproblem.muEq);
+  const double sqrtInequalityPenalty = std::sqrt(subproblem.muIneq);
 
-  // Equality feasibility contributes ||h(x)||_inf to theta.
-  for (const auto& constraint : problem.eConstraints()) {
-    diagnostics.generalizedConstraintViolation =
-        std::max(diagnostics.generalizedConstraintViolation,
-                 InfinityNorm(constraint->whitenedError(values)));
+  // Our augmented factors produce whitened Jacobian factors with b=-r.
+  // Recover h from r=sqrt(rho)*(h+lambda/rho), without evaluating h again.
+  for (size_t i = 0; i < problem.eConstraints().size(); ++i) {
+    const auto& factor = static_cast<const JacobianFactor&>(*linear.at(slot++));
+    diagnostics.equalityMultipliers.push_back(-sqrtEqualityPenalty *
+                                              factor.getb());
+    const Vector residual =
+        (diagnostics.equalityMultipliers.back() - subproblem.lambdaEq.at(i)) /
+        subproblem.muEq;
+    diagnostics.squaredEqualityViolation += residual.squaredNorm();
+    diagnostics.generalizedConstraintViolation = std::max(
+        diagnostics.generalizedConstraintViolation, InfinityNorm(residual));
   }
 
   const auto& inequalities = problem.iConstraints();
   for (size_t i = 0; i < inequalities.size(); ++i) {
-    const double expression = inequalities.at(i)->whitenedExpr(values)(0);
+    const auto& factor = static_cast<const JacobianFactor&>(*linear.at(slot++));
     const double lambda = subproblem.lambdaIneq.at(i);
 
     // q=max(g,-lambda/rho) makes the projected multiplier update
     // lambda^+=max(0,lambda+rho*g)=lambda+rho*q. Thus q=0 encodes primal
     // feasibility and complementarity, including inactive inequalities.
-    const double projectedResidual =
-        std::max(expression, -lambda / subproblem.muIneq);
     const double projectedLambda =
-        std::max(0.0, lambda + subproblem.muIneq * expression);
+        std::max(0.0, -sqrtInequalityPenalty * factor.getb()(0));
+    const double projectedResidual =
+        (projectedLambda - lambda) / subproblem.muIneq;
+    diagnostics.projectedMultipliers.push_back(projectedLambda);
+
+    // On the active PHR branch q=g. Otherwise g is not recoverable, but
+    // primal violation and projected complementarity are both zero.
+    const double expression = projectedLambda > 0.0 ? projectedResidual : 0.0;
+    const double violation = std::max(0.0, expression);
+    diagnostics.squaredInequalityViolation += violation * violation;
 
     // BCL accepts a multiplier update using
     // theta=max(||h||_inf,||q||_inf), not merely max(g,0).
@@ -234,8 +297,8 @@ Diagnostics EvaluateDiagnostics(const ConstrainedOptProblem& problem,
         std::max(diagnostics.generalizedConstraintViolation,
                  std::abs(projectedResidual));
     // Report primal violation and complementarity separately for diagnosis.
-    diagnostics.primalInequalityViolation = std::max(
-        diagnostics.primalInequalityViolation, std::max(0.0, expression));
+    diagnostics.primalInequalityViolation =
+        std::max(diagnostics.primalInequalityViolation, violation);
     diagnostics.complementarity = std::max(
         diagnostics.complementarity, std::abs(projectedLambda * expression));
   }
@@ -249,23 +312,24 @@ void InitializeBclSchedule(const AugmentedLagrangianParams& params,
   // Conn--Gould--Toint use an inverse penalty mu. With rho=1/mu, their
   // alpha=min(mu,gamma_1) becomes alpha=min(1/rho,gamma_1).
   state->bclAlpha = std::min(1.0 / penalty, params.bclGamma1);
-  state->bclOmega =
-      params.bclOmega0 * std::pow(state->bclAlpha, params.bclAlphaOmega);
+  state->bclOmega = std::max(
+      params.absoluteStationarityTolerance,
+      params.bclOmega0 * std::pow(state->bclAlpha, params.bclAlphaOmega));
   state->bclEta =
       params.bclEta0 * std::pow(state->bclAlpha, params.bclAlphaEta);
 }
 
 /* ************************************************************************* */
 bool AggressiveConverged(const AugmentedLagrangianState& state,
-                         const AugmentedLagrangianState& previousState,
+                         double previousViolation, double previousCost,
                          const AugmentedLagrangianParams& params) {
   if (state.violation() < params.absoluteViolationTolerance &&
       state.cost < params.absoluteCostTolerance) {
     return true;
   }
-  return std::abs(state.violation() - previousState.violation()) <
+  return std::abs(state.violation() - previousViolation) <
              params.relativeViolationTolerance &&
-         std::abs(state.cost - previousState.cost) <
+         std::abs(state.cost - previousCost) <
              params.relativeCostTolerance;
 }
 
@@ -287,6 +351,132 @@ AugmentedLagrangianUpdateType CombinedUpdateType(bool multiplierUpdated,
 }  // namespace
 
 /* ************************************************************************* */
+struct AugmentedLagrangianOptimizer::Workspace {
+  NonlinearFactorGraph graph;
+  std::unique_ptr<NonlinearMultifrontalSolver> solver;
+  VectorValues gradient;
+
+  struct Result {
+    Values values;
+    GaussianFactorGraph::shared_ptr linear;
+    size_t iterations = 0;
+    double stationarity = std::numeric_limits<double>::infinity();
+  };
+
+  explicit Workspace(NonlinearFactorGraph merit) : graph(std::move(merit)) {}
+
+  // Only numerical parameters change between subproblems. In particular, PHR
+  // activity never removes a factor or changes its keys or row count.
+  void update(const ConstrainedOptProblem& problem, const State& state) {
+    size_t slot = problem.costs().size();
+    for (const Vector& lambda : state.lambdaEq) {
+      static_cast<BiasedFactor&>(*graph.at(slot++))
+          .setParameters(lambda, state.muEq);
+    }
+    for (double lambda : state.lambdaIneq) {
+      static_cast<PhrInequalityFactor&>(*graph.at(slot++))
+          .setParameters(lambda, state.muIneq);
+    }
+  }
+
+  // Retry damping against the same loaded linearization. Return false when
+  // no acceptable step can be found; values and error then remain unchanged.
+  bool step(const LevenbergMarquardtParams& params, Values* values,
+            double* error, double* damping, double* dampingFactor) {
+    while (true) {
+      bool stopSearching = false;
+      try {
+        solver->eliminateInPlace(*damping);
+        const VectorValues& delta = solver->updateSolution();
+        double oldLinearError = 0.0;
+        const double predictedDecrease = solver->deltaError(&oldLinearError);
+        if (predictedDecrease >= 0.0) {
+          Values candidate = values->retract(delta);
+          const double candidateError = graph.error(candidate);
+          const double decrease = *error - candidateError;
+          if (std::isfinite(candidateError) &&
+              predictedDecrease > std::numeric_limits<double>::epsilon() *
+                                      std::abs(oldLinearError)) {
+            const double fidelity = decrease / predictedDecrease;
+            if (fidelity > params.minModelFidelity) {
+              *values = std::move(candidate);
+              *error = candidateError;
+              internal::decreaseLevenbergMarquardtLambda(
+                  params, fidelity, damping, dampingFactor);
+              return true;
+            }
+          }
+          stopSearching = std::abs(decrease) < params.relativeErrorTol * *error;
+        }
+      } catch (const IndeterminateSystemException&) {
+        // Retry with more damping, using the same numerical model.
+      }
+      if (stopSearching) return false;
+      internal::increaseLevenbergMarquardtLambda(params, damping,
+                                                 dampingFactor);
+      // A long sequence of accepted steps can underflow zero-bounded damping.
+      // A rejected step must still be able to restart the damping search.
+      if (*damping == 0.0) *damping = std::numeric_limits<double>::epsilon();
+      if (!std::isfinite(*damping) || *damping >= params.lambdaUpperBound) {
+        return false;
+      }
+    }
+  }
+
+  Result solve(Values initialValues, const State& state, const Params& params) {
+    const auto& lm = params.lmParams;
+    const bool bcl =
+        params.updatePolicy == AugmentedLagrangianUpdatePolicy::BCL;
+    Result result;
+    result.values = std::move(initialValues);
+    double error = graph.error(result.values);
+    double damping = lm.lambdaInitial;
+    double dampingFactor = lm.lambdaFactor;
+    bool converged = !bcl && error <= lm.errorTol;
+
+    while (true) {
+      // BCL tests the actual gradient at the current point, then uses this
+      // very same linearization for the next step. The terminal model also
+      // supplies the outer feasibility test and projected multiplier update.
+      result.linear = graph.linearize(result.values);
+      const bool stopping = converged ||
+                            result.iterations >= lm.maxIterations ||
+                            !std::isfinite(error);
+      if (bcl || stopping) {
+        result.stationarity =
+            AugmentedLagrangianStationarity(*result.linear, &gradient);
+      }
+      if ((bcl && result.stationarity <= state.bclOmega) || stopping ||
+          (bcl && !std::isfinite(result.stationarity))) {
+        return result;
+      }
+      if (!solver) {
+        const Ordering ordering =
+            lm.ordering ? *lm.ordering
+                        : Ordering::Create(lm.orderingType, graph);
+        solver = std::make_unique<NonlinearMultifrontalSolver>(
+            graph, result.values, ordering, lm.multifrontalParams,
+            lm.dampingParams);
+      }
+      solver->load(*result.linear);
+      const double previousError = error;
+      if (!step(lm, &result.values, &error, &damping, &dampingFactor)) {
+        // The point did not change: its stationarity/model are still valid.
+        if (!bcl) {
+          result.stationarity =
+              AugmentedLagrangianStationarity(*result.linear, &gradient);
+        }
+        return result;
+      }
+      ++result.iterations;
+      converged = !bcl && gtsam::checkConvergence(
+                              lm.relativeErrorTol, lm.absoluteErrorTol,
+                              lm.errorTol, previousError, error);
+    }
+  }
+};
+
+/* ************************************************************************* */
 void AugmentedLagrangianState::initializeLagrangeMultipliers(
     const ConstrainedOptProblem& problem) {
   lambdaEq.clear();
@@ -301,6 +491,15 @@ void AugmentedLagrangianState::initializeLagrangeMultipliers(
 std::tuple<AugmentedLagrangianOptimizer::State, double, double>
 AugmentedLagrangianOptimizer::iterate(const State& state, double muEq,
                                       double muIneq) const {
+  std::unique_ptr<Workspace> workspace;
+  return iterate(state, muEq, muIneq, workspace);
+}
+
+/* ************************************************************************* */
+std::tuple<AugmentedLagrangianOptimizer::State, double, double>
+AugmentedLagrangianOptimizer::iterate(
+    const State& state, double muEq, double muIneq,
+    std::unique_ptr<Workspace>& workspace) const {
   // Validate the fixed-parameter augmented-Lagrangian subproblem.
   validateConfiguration();
   if (muEq <= 0.0 || muIneq <= 0.0) {
@@ -339,51 +538,41 @@ AugmentedLagrangianOptimizer::iterate(const State& state, double muEq,
     // Initialize omega_k and eta_k when iterate() is called directly.
     InitializeBclSchedule(*p_, muEq, &subproblemState);
   }
+  // Do not demand inner accuracy beyond the requested final stationarity.
+  // On badly scaled problems omega can otherwise fall below rounding error
+  // while feasibility still needs additional outer multiplier updates.
+  subproblemState.bclOmega =
+      std::max(subproblemState.bclOmega, p_->absoluteStationarityTolerance);
 
   const auto start = std::chrono::steady_clock::now();
 
-  // Construct the merit function at (lambda_k,rho_k), then run unconstrained
-  // LM from x_k. Multiplier updates happen only after x_{k+1} is available.
-  const NonlinearFactorGraph augmentedLagrangian =
-      augmentedLagrangianFunction(subproblemState);
-  const SharedOptimizer optimizer =
-      createUnconstrainedOptimizer(augmentedLagrangian, state.values);
-
-  double stationarity =
-      AugmentedLagrangianStationarity(augmentedLagrangian, optimizer->values());
-  if (p_->updatePolicy == AugmentedLagrangianUpdatePolicy::BCL) {
-    // The paper stops its projected inner solve when the projected gradient is
-    // at most omega_k. Because this implementation substitutes unconstrained
-    // LM, it uses s_k=||grad_x L_rho(x,lambda_k)||_inf <= omega_k.
-    while (stationarity > subproblemState.bclOmega &&
-           optimizer->iterations() < p_->lmParams.maxIterations) {
-      const size_t previousIterations = optimizer->iterations();
-      optimizer->iterate();
-      stationarity = AugmentedLagrangianStationarity(augmentedLagrangian,
-                                                     optimizer->values());
-      if (optimizer->iterations() == previousIterations) {
-        break;
-      }
-    }
-  } else {
-    // Preserve the historical Aggressive behavior of letting LM use its own
-    // convergence checks and iteration cap for every outer subproblem.
-    optimizer->optimize();
-    stationarity = AugmentedLagrangianStationarity(augmentedLagrangian,
-                                                   optimizer->values());
+  if (!workspace) {
+    workspace = std::make_unique<Workspace>(
+        augmentedLagrangianFunction(subproblemState));
   }
+  workspace->update(problem_, subproblemState);
+  Workspace::Result inner = workspace->solve(
+      std::move(subproblemState.values), subproblemState, *p_);
+  const double stationarity = inner.stationarity;
 
   // Evaluate objective and all policy diagnostics at the returned point
   // x_{k+1}; evaluating at x_k was the old sequencing error.
+  // The subproblem's Values have moved into the inner solve. This copies only
+  // its primal-dual metadata; keep the old multipliers for diagnostics/updates.
   State solvedState = subproblemState;
   solvedState.iteration = state.iteration + 1;
-  solvedState.setValues(optimizer->values(), problem_);
-  solvedState.unconstrainedIterations = optimizer->iterations();
+  solvedState.values = std::move(inner.values);
+  solvedState.cost = problem_.costs().error(solvedState.values);
+  solvedState.unconstrainedIterations = inner.iterations;
   solvedState.totalUnconstrainedIterations =
       state.totalUnconstrainedIterations + solvedState.unconstrainedIterations;
   solvedState.augmentedLagrangianStationarity = stationarity;
   const Diagnostics diagnostics =
-      EvaluateDiagnostics(problem_, solvedState.values, subproblemState);
+      EvaluateDiagnostics(problem_, *inner.linear, subproblemState);
+  solvedState.eqConstraintViolation =
+      std::sqrt(diagnostics.squaredEqualityViolation);
+  solvedState.ineqConstraintViolation =
+      std::sqrt(diagnostics.squaredInequalityViolation);
   solvedState.generalizedConstraintViolation =
       diagnostics.generalizedConstraintViolation;
   solvedState.primalInequalityViolation = diagnostics.primalInequalityViolation;
@@ -418,23 +607,19 @@ AugmentedLagrangianOptimizer::iterate(const State& state, double muEq,
         //   lambda_g^+ = max(0,lambda_g + rho*g),
         // while rho stays fixed.
         for (size_t i = 0; i < problem_.eConstraints().size(); ++i) {
-          solvedState.lambdaEq.at(i) +=
-              muEq *
-              problem_.eConstraints().at(i)->whitenedError(solvedState.values);
+          solvedState.lambdaEq.at(i) = diagnostics.equalityMultipliers.at(i);
         }
         for (size_t i = 0; i < problem_.iConstraints().size(); ++i) {
-          const double expression = problem_.iConstraints().at(i)->whitenedExpr(
-              solvedState.values)(0);
-          solvedState.lambdaIneq.at(i) =
-              std::max(0.0, solvedState.lambdaIneq.at(i) + muEq * expression);
+          solvedState.lambdaIneq.at(i) = diagnostics.projectedMultipliers.at(i);
         }
         solvedState.updateType = AugmentedLagrangianUpdateType::Multiplier;
 
         // Tighten the next inner and feasibility targets using the unchanged
         // alpha_k, as in the accepted branch of Algorithm 1.
         solvedState.bclOmega =
-            subproblemState.bclOmega *
-            std::pow(subproblemState.bclAlpha, p_->bclBetaOmega);
+            std::max(p_->absoluteStationarityTolerance,
+                     subproblemState.bclOmega *
+                         std::pow(subproblemState.bclAlpha, p_->bclBetaOmega));
         solvedState.bclEta = subproblemState.bclEta *
                              std::pow(subproblemState.bclAlpha, p_->bclBetaEta);
       } else {
@@ -451,13 +636,16 @@ AugmentedLagrangianOptimizer::iterate(const State& state, double muEq,
   solvedState.time =
       std::chrono::duration<double>(std::chrono::steady_clock::now() - start)
           .count();
-  return {solvedState, nextMuEq, nextMuIneq};
+  return {std::move(solvedState), nextMuEq, nextMuIneq};
 }
 
 /* ************************************************************************* */
 Values AugmentedLagrangianOptimizer::optimize() const {
   validateConfiguration();
   progress_.clear();
+  // Growing this vector can copy every saved Values snapshot because Values'
+  // move constructor is not noexcept. The outer iteration cap is known.
+  if (p_->storeOptProgress) progress_.reserve(p_->maxIterations + 1);
 
   // Construct the initial primal-dual state with zero multipliers.
   State state(0, initialValues_, problem_);
@@ -477,9 +665,12 @@ Values AugmentedLagrangianOptimizer::optimize() const {
   logInitialState(state);
 
   // Solve fixed-parameter subproblems and apply the selected outer policy.
+  std::unique_ptr<Workspace> workspace;
   while (true) {
-    const State previousState = state;
-    std::tie(state, muEq, muIneq) = iterate(previousState, muEq, muIneq);
+    const double previousViolation = state.violation();
+    const double previousCost = state.cost;
+    std::tie(state, muEq, muIneq) =
+        iterate(state, muEq, muIneq, workspace);
 
     if (p_->updatePolicy == AugmentedLagrangianUpdatePolicy::BCL) {
       state.converged = state.innerConverged &&
@@ -488,7 +679,8 @@ Values AugmentedLagrangianOptimizer::optimize() const {
                         state.generalizedConstraintViolation <=
                             p_->absoluteViolationTolerance;
     } else {
-      state.converged = AggressiveConverged(state, previousState, *p_);
+      state.converged = AggressiveConverged(
+          state, previousViolation, previousCost, *p_);
     }
     logIteration(state);
 
@@ -524,10 +716,9 @@ NonlinearFactorGraph AugmentedLagrangianOptimizer::augmentedLagrangianFunction(
   const auto& equalities = problem_.eConstraints();
   for (size_t i = 0; i < equalities.size(); ++i) {
     const auto& constraint = equalities.at(i);
-    Vector bias = state.lambdaEq.at(i) / state.muEq;
-    bias = bias.cwiseProduct(constraint->sigmas());
-    graph.emplace_shared<BiasedFactor>(constraint->penaltyFactor(state.muEq),
-                                       bias);
+    graph.emplace_shared<BiasedFactor>(constraint->penaltyFactor(1.0),
+                                       constraint->sigmas(),
+                                       state.lambdaEq.at(i), state.muEq);
   }
 
   // Add exact PHR factors for scalar g<=0. Each graph error is
@@ -595,18 +786,15 @@ std::pair<double, double> AugmentedLagrangianOptimizer::updatePenaltyParameter(
 }
 
 /* ************************************************************************* */
-ConstrainedOptimizer::SharedOptimizer
-AugmentedLagrangianOptimizer::createUnconstrainedOptimizer(
-    const NonlinearFactorGraph& graph, const Values& values) const {
-  // TODO(yetong): make compatible with all NonlinearOptimizers.
-  return std::make_shared<LevenbergMarquardtOptimizer>(graph, values,
-                                                       p_->lmParams);
-}
-
-/* ************************************************************************* */
 void AugmentedLagrangianOptimizer::validateConfiguration() const {
   if (!p_) {
     throw std::invalid_argument("AugmentedLagrangianParams must not be null");
+  }
+  if (!(p_->lmParams.lambdaInitial > 0.0) ||
+      !(p_->lmParams.lambdaFactor > 1.0) ||
+      !(p_->lmParams.lambdaUpperBound > 0.0)) {
+    throw std::invalid_argument(
+        "ALM requires positive LM damping and factor > 1");
   }
   if (p_->ineqConstraintPenaltyFunction) {
     throw std::invalid_argument(

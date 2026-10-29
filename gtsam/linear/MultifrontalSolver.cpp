@@ -413,15 +413,16 @@ void mergeLeafChildren(const SymbolicJunctionTree::sharedNode& cluster,
 // Bottom-up merge of child clusters whose merged total dimension stays below
 // a threshold.
 void mergeSmallClusters(const SymbolicJunctionTree::sharedNode& cluster,
-                        const std::map<Key, size_t>& dims, size_t mergeDimCap) {
+                        const std::map<Key, size_t>& dims, size_t mergeDimCap,
+                        SymbolicJunctionTree::Cluster::KeySetMap* separatorCache) {
   if (!cluster) return;
   for (const auto& child : cluster->children) {
-    mergeSmallClusters(child, dims, mergeDimCap);
+    mergeSmallClusters(child, dims, mergeDimCap, separatorCache);
   }
   if (cluster->children.empty()) return;
 
   const size_t parentTotalDim =
-      totalDimForSymbolicCluster(cluster, dims, nullptr);
+      totalDimForSymbolicCluster(cluster, dims, separatorCache);
   std::vector<bool> merge(cluster->children.size(), false);
   bool any = false;
   for (size_t i = 0; i < cluster->children.size(); ++i) {
@@ -597,8 +598,12 @@ MultifrontalSolver::MultifrontalSolver(PrecomputedData data,
 
   // If applicable, merge small child cliques bottom-up.
   if (params_.mergeDimCap > 0) {
+    // Absorbing children changes frontal keys but not a cluster's external
+    // separator. Cache separators across the bottom-up pass to avoid visiting
+    // every descendant again at every ancestor (quadratic work on chains).
+    SymbolicJunctionTree::Cluster::KeySetMap separatorCache;
     for (const auto& rootCluster : data.indexedJunctionTree.roots()) {
-      mergeSmallClusters(rootCluster, dims_, params_.mergeDimCap);
+      mergeSmallClusters(rootCluster, dims_, params_.mergeDimCap, &separatorCache);
     }
     reportStructure(data.indexedJunctionTree, dims_,
                     "Clique structure after merge", params_.reportStream);
