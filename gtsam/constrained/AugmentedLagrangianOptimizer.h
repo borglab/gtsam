@@ -59,7 +59,11 @@ class GTSAM_EXPORT AugmentedLagrangianParams : public PenaltyOptimizerParams {
   /// Required violation reduction before Aggressive keeps its penalty fixed.
   double muIncreaseThreshold = 0.25;
 
-  /// Absolute full augmented-Lagrangian gradient tolerance for BCL convergence.
+  /**
+   * Absolute full augmented-Lagrangian gradient tolerance for BCL convergence.
+   * Also bounds the inner stationarity target from below, so feasibility
+   * updates do not require solving subproblems beyond the final accuracy.
+   */
   double absoluteStationarityTolerance = 1e-5;
 
   /**
@@ -154,6 +158,14 @@ class GTSAM_EXPORT AugmentedLagrangianState : public PenaltyOptimizerState {
  *
  * Custom smoothed inequality penalties are intentionally unsupported because
  * they invalidate the projected PHR multiplier identity.
+ *
+ * Each optimize() call owns a persistent NonlinearMultifrontalSolver and merit
+ * graph. Inner solves share their linearization with the BCL stationarity test
+ * and terminal multiplier update. Costs must linearize to Gaussian factors
+ * supported by that solver, with fixed factor slots, keys, and dimensions.
+ * lmParams controls damping, ordering, multifrontal storage, iteration limits,
+ * and Aggressive convergence tolerances; its linearSolverType, iterationHook,
+ * verbosity, and logFile settings are not used.
  */
 class GTSAM_EXPORT AugmentedLagrangianOptimizer : public ConstrainedOptimizer {
  public:
@@ -209,9 +221,13 @@ class GTSAM_EXPORT AugmentedLagrangianOptimizer : public ConstrainedOptimizer {
                                                    double epsilon = 1.0) const;
 
  protected:
-  /// Create the LM optimizer used for an augmented-Lagrangian subproblem.
-  SharedOptimizer createUnconstrainedOptimizer(
-      const NonlinearFactorGraph& graph, const Values& values) const;
+  /// Private workspace shared by all subproblems in one optimize() call.
+  struct Workspace;
+
+  /** Solve and update using a lazily initialized, persistent workspace. */
+  std::tuple<State, double, double> iterate(
+      const State& state, double muEq, double muIneq,
+      std::unique_ptr<Workspace>& workspace) const;
 
   /// Update Aggressive multipliers from the newly solved point.
   void updateLagrangeMultiplier(const State& subproblemState,

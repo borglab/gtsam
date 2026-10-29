@@ -93,6 +93,37 @@ which controls behavior near the active constraint boundary in
 inequality terms and rejects custom smooth penalties so its projected
 multiplier update remains mathematically consistent.
 
+ALM keeps one augmented graph and one `NonlinearMultifrontalSolver` workspace
+throughout each `optimize()` call. Multipliers and penalties update the graph's
+numerical parameters in place; the ordering, symbolic structure, and solve
+storage persist across outer iterations. Costs may produce Jacobian, batch
+Jacobian, or Hessian factors, with fixed factor slots, keys, and dimensions.
+`lmParams` supplies damping, ordering, multifrontal settings, and iteration
+limits; ALM always uses the imperative solver and does not use the optimizer's
+backend selection, logging, verbosity, or iteration hook. A standalone
+`iterate()` call creates its own workspace.
+
+BCL uses each linearization both to test stationarity and to compute the next
+step. For a model `A delta - b`, the gradient at the current point is
+`-A.transpose() * b`. The terminal constraint rows also give the candidate
+multipliers directly: `lambdaEqPlus = -sqrt(rhoEq) * bEq` and
+`lambdaIneqPlus = -sqrt(rhoIneq) * bIneq`. Thus the whitened equality residual
+and generalized inequality residual are `(lambdaPlus - lambda) / rho`, with
+no further constraint evaluation. Inactive PHR rows have zero residual and
+Jacobian, so their factor slots remain intact. On an accepted multiplier
+update, the terminal augmented gradient is also the ordinary Lagrangian
+gradient at the updated multipliers; it is **not** the gradient of the next
+augmented subproblem. That next subproblem must be relinearized after its
+parameters change.
+
+The BCL inner stationarity schedule is bounded below by
+`absoluteStationarityTolerance`. This lets feasibility updates continue
+without demanding inner accuracy beyond the requested final tolerance.
+
+`timeAugmentedLagrangianPolicies --warmup 3 --repeats 21` benchmarks the policy
+examples and sparse inequality chains with 512 and 2,048 variables, reporting
+time, iteration counts, success, and final KKT residuals.
+
 ### 1) Build the Problem
 
 This stage is about modeling: you separate what you want to minimize
