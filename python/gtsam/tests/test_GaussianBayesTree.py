@@ -5,7 +5,7 @@ All Rights Reserved
 
 See LICENSE for the license information.
 
-Unit tests for wrapped GaussianBayesTree methods added for covariance recovery.
+Unit tests for wrapped GaussianBayesTree covariance queries and triangular solves.
 Author: Codex, prompted by Frank Dellaert
 """
 
@@ -46,6 +46,30 @@ def subset_vector_values(values, keys):
     for key in keys:
         result.insert(key, values.at(key))
     return result
+
+
+def create_triangular_tree():
+    """Return a tree and its independently specified whitened triangular matrix."""
+    keys = (X(30), X(2), X(21), X(7))
+    diagonal = np.array([2.0, 3.0, 4.0, 5.0])
+    upper = np.array([-1.0, 0.5, -0.7])
+    sigmas = np.array([0.4, 0.7, 0.3, 1.2])
+    matrix = (np.diag(diagonal) + np.diag(upper, 1)) / sigmas[:, None]
+    graph = gtsam.GaussianFactorGraph()
+    ordering = gtsam.Ordering()
+    for index, key in enumerate(keys):
+        ordering.push_back(key)
+        noise = gtsam.noiseModel.Isotropic.Sigma(1, sigmas[index])
+        # Stored RHS values deliberately differ from the query RHS.
+        if index + 1 < len(keys):
+            graph.add(
+                key, np.array([[diagonal[index]]]),
+                keys[index + 1], np.array([[upper[index]]]),
+                np.array([10.0 + index]), noise,
+            )
+        else:
+            graph.add(key, np.array([[diagonal[index]]]), np.array([13.0]), noise)
+    return graph.eliminateMultifrontal(ordering), keys, matrix
 
 
 class TestGaussianBayesTree(GtsamTestCase):
@@ -137,6 +161,50 @@ class TestGaussianBayesTree(GtsamTestCase):
 
         bayes_tree.deleteCachedShortcuts()
         self.assertEqual(bayes_tree.numCachedSeparatorMarginals(), 0)
+
+    def test_arbitrary_rhs_triangular_solves(self):
+        """Both passes use supplied sparse blocks and preserve 64-bit key order."""
+        tree, keys, matrix = create_triangular_tree()
+        self.assertGreater(tree.size(), 1)
+        self.assertGreater(keys[0], 2**53)
+        dense_rhs = np.array([1.25, 0.0, -0.75, 0.5])
+        rhs = gtsam.VectorValues()
+        for index in (0, 2, 3):
+            rhs.insert(keys[index], dense_rhs[index:index + 1])
+        upper_solution = tree.backSubstitute(rhs)
+        transpose_solution = tree.backSubstituteTranspose(rhs)
+        np.testing.assert_allclose(
+            upper_solution.vector(list(keys)),
+            np.linalg.solve(matrix, dense_rhs), atol=1e-12,
+        )
+        np.testing.assert_allclose(
+            transpose_solution.vector(list(keys)),
+            np.linalg.solve(matrix.T, dense_rhs), atol=1e-12,
+        )
+        np.testing.assert_allclose(
+            tree.backSubstitute(transpose_solution).vector(list(keys)),
+            np.linalg.solve(matrix.T @ matrix, dense_rhs), atol=1e-12,
+        )
+        self.assertEqual(rhs.size(), 3)
+        self.assertFalse(rhs.exists(keys[1]))
+        for index in (0, 2, 3):
+            np.testing.assert_array_equal(rhs.at(keys[index]), dense_rhs[index:index + 1])
+
+    def test_triangular_solve_zero_and_invalid_rhs(self):
+        """Omitted blocks are zero; unknown keys and wrong dimensions fail."""
+        tree, keys, _ = create_triangular_tree()
+        for solve in (tree.backSubstitute, tree.backSubstituteTranspose):
+            np.testing.assert_array_equal(
+                solve(gtsam.VectorValues()).vector(list(keys)), np.zeros(4)
+            )
+            for key, value in ((X(99), np.ones(1)), (keys[0], np.ones(2))):
+                rhs = gtsam.VectorValues()
+                rhs.insert(key, value)
+                with self.assertRaises(ValueError):
+                    solve(rhs)
+        empty = gtsam.GaussianBayesTree()
+        self.assertEqual(empty.backSubstitute(gtsam.VectorValues()).size(), 0)
+        self.assertEqual(empty.backSubstituteTranspose(gtsam.VectorValues()).size(), 0)
 
 
 if __name__ == "__main__":

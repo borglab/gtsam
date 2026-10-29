@@ -34,6 +34,7 @@
 #include <array>
 #include <cassert>
 #include <cmath>
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 
@@ -990,6 +991,11 @@ EliminateQR(const GaussianFactorGraph& factors, const Ordering& keys) {
         "involved in the provided factors.");
   }
 
+  // Preserve incoming whitened column scales for unconstrained frontal pivots.
+  Vector referenceDiagonal;
+  if (!jointFactor->isConstrained() && !keys.empty())
+    referenceDiagonal = jointFactor->hessianDiagonal().vector(keys);
+
   // Do dense elimination
   // The following QR variants eliminate to fully triangular or trapezoidal
   SharedDiagonal noiseModel;
@@ -1011,6 +1017,16 @@ EliminateQR(const GaussianFactorGraph& factors, const Ordering& keys) {
   // Split elimination result into conditional and remaining factor
   GaussianConditional::shared_ptr conditional =  //
       jointFactor->splitConditional(keys.size());
+
+  // Local roundoff safeguard, not a rank-revealing decomposition.
+  constexpr double tolerance = 64.0 * std::numeric_limits<double>::epsilon();
+  for (Eigen::Index i = 0; i < referenceDiagonal.size(); ++i) {
+    const double columnNorm = std::sqrt(referenceDiagonal(i));
+    const double pivot = std::abs(conditional->R()(i, i));
+    if (!(columnNorm > 0.0) || !std::isfinite(columnNorm) ||
+        !std::isfinite(pivot) || pivot / columnNorm <= tolerance)
+      throw IndeterminateSystemException(keys.front());
+  }
 
   return make_pair(conditional, jointFactor);
 }

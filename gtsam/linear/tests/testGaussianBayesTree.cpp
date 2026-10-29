@@ -23,8 +23,12 @@
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianJunctionTree.h>
+#include <gtsam/linear/MultifrontalSolver.h>
+#include <gtsam/linear/linearExceptions.h>
 
+#include <future>
 #include <iostream>
+#include <limits>
 #include <vector>
 
 using namespace std::placeholders;
@@ -335,6 +339,202 @@ TEST(GaussianBayesTree, LogDeterminant) {
   EXPECT_DOUBLES_EQUAL(bn->logDeterminant(), bt->logDeterminant(), 1e-9);
 }
 
+/* ************************************************************************* */
+namespace substitution_fixture {
+
+using Clique = GaussianBayesTreeClique;
+
+struct Forest {
+  const Ordering ordering{10, 20, 30, 40, 50, 90};
+  const VectorValues::Dims dimensions{{10, 2}, {20, 2}, {30, 1},
+                                       {40, 2}, {50, 1}, {90, 1}};
+  const Matrix raw{{2., .7, .2, .1, 0., 0., 0., .6, 0.},
+                   {0., 3., -.3, .4, 0., 0., 0., -.1, 0.},
+                   {0., 0., 1.4, -.2, 0., .5, -.7, .2, 0.},
+                   {0., 0., 0., 1.7, 0., .2, .9, -.4, 0.},
+                   {0., 0., 0., 0., 1.8, 0., 0., .8, 0.},
+                   {0., 0., 0., 0., 0., 2.1, .5, -.2, 0.},
+                   {0., 0., 0., 0., 0., 0., 2.3, .6, 0.},
+                   {0., 0., 0., 0., 0., 0., 0., 1.2, 0.},
+                   {0., 0., 0., 0., 0., 0., 0., 0., .9}};
+  const Vector9 sigmas{2., 4., .6, 1.3, .8, 1.2, .7, 1.6, 3.};
+  const Vector9 stored{1., -.3, .4, 2., -.2, .7, .5, -.9, 3.};
+  GaussianBayesTree tree;
+
+  Forest() {
+    const auto root = add({40, 50}, 2, 5, 3);
+    const auto child = add({20, 40, 50}, 1, 2, 2, root);
+    add({10, 20, 50}, 1, 0, 2, child);
+    add({30, 50}, 1, 4, 1, root);
+    add({90}, 1, 8, 1);
+  }
+
+  Clique::shared_ptr add(const KeyVector& keys, size_t frontals, size_t row,
+                        size_t rows, const Clique::shared_ptr& parent = {}) {
+    Pairs terms;
+    for (Key key : keys) {
+      size_t column = 0;
+      for (const auto& [candidate, dimension] : dimensions) {
+        if (candidate == key) break;
+        column += dimension;
+      }
+      terms.emplace_back(key, raw.block(row, column, rows, dimensions.at(key)));
+    }
+    auto conditional = std::make_shared<GaussianConditional>(
+        terms, frontals, stored.segment(row, rows),
+        noiseModel::Diagonal::Sigmas(sigmas.segment(row, rows)));
+    auto clique = std::make_shared<Clique>(conditional);
+    clique->problemSize_ = 100;  // Exercise task splitting in TBB builds.
+    tree.addClique(clique, parent);
+    return clique;
+  }
+
+  Matrix whitened() const { return sigmas.cwiseInverse().asDiagonal() * raw; }
+};
+
+// Each pass matches a dense oracle with coupled R, non-unit sigmas, multiple
+// frontals, disconnected roots, and a separator reaching past the parent.
+TEST(GaussianBayesTree, SubstitutionsWhitenedForest) {
+  const Forest fixture;
+  const Matrix matrix = fixture.whitened();
+  const Vector9 seed{.3, -.6, .5, 1.2, -.8, .4, .9, -.1, 2.};
+  const VectorValues rhs(seed, fixture.dimensions);
+  const Vector expected = matrix.triangularView<Eigen::Upper>().solve(seed);
+  const Vector expectedTranspose =
+      matrix.transpose().triangularView<Eigen::Lower>().solve(seed);
+  EXPECT(assert_equal(expected,
+                      fixture.tree.backSubstitute(rhs).vector(fixture.ordering),
+                      1e-12));
+  EXPECT(assert_equal(expectedTranspose,
+                      fixture.tree.backSubstituteTranspose(rhs).vector(fixture.ordering),
+                      1e-12));
+  const VectorValues adjoint = fixture.tree.backSubstitute(
+      fixture.tree.backSubstituteTranspose(rhs));
+  const Vector recovered = matrix.transpose() * matrix * adjoint.vector(fixture.ordering);
+  EXPECT(assert_equal(Vector(seed), recovered, 1e-12));
+}
+
+// Substitution with the stored RHS agrees with optimize().
+TEST(GaussianBayesTree, SubstitutionMatchesOptimize) {
+  const Forest fixture;
+  const Vector rhs = fixture.stored.cwiseQuotient(fixture.sigmas);
+  EXPECT(assert_equal(fixture.tree.optimize(),
+                      fixture.tree.backSubstitute(VectorValues(rhs, fixture.dimensions)),
+                      1e-12));
+  const Vector expected = fixture.raw.triangularView<Eigen::Upper>().solve(fixture.stored);
+  EXPECT(assert_equal(expected, fixture.tree.optimize().vector(fixture.ordering), 1e-12));
+}
+
+// Omitted frontal blocks are zero, including an unsupervised disconnected root.
+TEST(GaussianBayesTree, SubstitutionsSparseSeedsAndEmptyForest) {
+  const Forest fixture;
+  Vector seed = Vector::Zero(9);
+  seed.head<2>() << .5, -.7;
+  const VectorValues sparse{{10, Vector2{.5, -.7}}};
+  const VectorValues complete(seed, fixture.dimensions);
+  EXPECT(assert_equal(fixture.tree.backSubstitute(complete),
+                      fixture.tree.backSubstitute(sparse), 1e-12));
+  EXPECT(assert_equal(fixture.tree.backSubstituteTranspose(complete),
+                      fixture.tree.backSubstituteTranspose(sparse), 1e-12));
+  const GaussianBayesTree empty;
+  EXPECT_LONGS_EQUAL(0, empty.backSubstitute({}).size());
+  EXPECT_LONGS_EQUAL(0, empty.backSubstituteTranspose({}).size());
+  CHECK_EXCEPTION(empty.backSubstitute(sparse), std::invalid_argument);
+  CHECK_EXCEPTION(empty.backSubstituteTranspose(sparse), std::invalid_argument);
+}
+
+// Invalid seeds fail before parallel arithmetic starts.
+TEST(GaussianBayesTree, SubstitutionsInvalidSeeds) {
+  const Forest fixture;
+  const std::vector<VectorValues> invalid{
+      {{99, Vector1{1.}}}, {{10, Vector1{1.}}},
+      {{10, Vector2{1., std::numeric_limits<double>::quiet_NaN()}}},
+      {{50, Vector1{std::numeric_limits<double>::infinity()}}}};
+  for (const auto& rhs : invalid) {
+    CHECK_EXCEPTION(fixture.tree.backSubstitute(rhs), std::invalid_argument);
+    CHECK_EXCEPTION(fixture.tree.backSubstituteTranspose(rhs), std::invalid_argument);
+  }
+}
+
+// Singular conditionals and hard constraints have no finite inverse operator.
+TEST(GaussianBayesTree, SubstitutionsSingularAndConstrained) {
+  Forest fixture;
+  fixture.tree.clique(10)->conditional()->getA()(0, 0) = 0.;
+  CHECK_EXCEPTION(fixture.tree.backSubstitute({}), IndeterminateSystemException);
+  CHECK_EXCEPTION(fixture.tree.backSubstituteTranspose({}), IndeterminateSystemException);
+  GaussianBayesTree constrained;
+  constrained.addClique(std::make_shared<Clique>(std::make_shared<GaussianConditional>(
+      0, Vector1{2.}, Matrix11{{1.}}, noiseModel::Constrained::All(1))));
+  CHECK_EXCEPTION(constrained.backSubstitute({}), std::invalid_argument);
+  CHECK_EXCEPTION(constrained.backSubstituteTranspose({}), std::invalid_argument);
+  EXPECT(assert_equal(Vector1{2.}, constrained.optimize().at(0), 1e-12));
+}
+
+// Tree, sequential, and MultifrontalSolver factorizations give matching solves.
+TEST(GaussianBayesTree, SubstitutionsExistingFactorizations) {
+  const VectorValues rhs{{x1, Vector1{.3}}, {x2, Vector1{-.5}},
+                         {x3, Vector1{.7}}, {x4, Vector1{1.1}}};
+  for (const GaussianFactorGraph::Eliminate& eliminate :
+       {GaussianFactorGraph::Eliminate(EliminateQR),
+        GaussianFactorGraph::Eliminate(EliminateCholesky)}) {
+    const auto net = chain.eliminateSequential(chainOrdering, eliminate);
+    const auto tree = chain.eliminateMultifrontal(chainOrdering, eliminate);
+    // QR can choose different row signs for sequential/multifrontal cliques;
+    // the composed information inverse is independent of those choices.
+    EXPECT(assert_equal(net->backSubstitute(net->backSubstituteTranspose(rhs)),
+                        tree->backSubstitute(tree->backSubstituteTranspose(rhs)),
+                        1e-12));
+  }
+  MultifrontalSolver solver(chain, chainOrdering);
+  solver.eliminateInPlace(chain);
+  const auto tree = solver.computeBayesTree();
+  const Vector actual = tree.backSubstitute(tree.backSubstituteTranspose(rhs)).vector();
+  const Matrix information = chain.hessian().first;
+  EXPECT(assert_equal(rhs.vector(), information * actual, 1e-12));
+}
+
+// Many siblings contribute to one separator without races or query mutation.
+TEST(GaussianBayesTree, SubstitutionsParallelSiblingsAndConcurrentQueries) {
+  constexpr Key rootKey = 1000;
+  GaussianBayesTree tree;
+  auto root = std::make_shared<Clique>(std::make_shared<GaussianConditional>(
+      rootKey, Vector1{7.}, Matrix11{{2.}}));
+  root->problemSize_ = 100;
+  tree.addClique(root);
+  VectorValues rhs, expected;
+  double sum = 0.;
+  for (Key key = 0; key < 64; ++key) {
+    auto child = std::make_shared<Clique>(std::make_shared<GaussianConditional>(
+        key, Vector1{3.}, Matrix11{{2.}}, rootKey, Matrix11{{.5}}));
+    child->problemSize_ = 100;
+    tree.addClique(child, root);
+    rhs.insert(key, Vector1{.1 * (key + 1)});
+    expected.insert(key, rhs.at(key) / 2.);
+    sum += expected.at(key)[0];
+  }
+  expected.insert(rootKey, Vector1{-.25 * sum});
+  VectorValues expectedAdjoint;
+  const double rootAdjoint = expected.at(rootKey)[0] / 2.;
+  expectedAdjoint.insert(rootKey, Vector1{rootAdjoint});
+  for (Key key = 0; key < 64; ++key)
+    expectedAdjoint.insert(key, Vector1{rhs.at(key)[0] / 4. - .25 * rootAdjoint});
+  const auto query = [&tree, &rhs, &expected, &expectedAdjoint] {
+    for (size_t repeat = 0; repeat < 8; ++repeat) {
+      const auto intermediate = tree.backSubstituteTranspose(rhs);
+      if (!intermediate.equals(expected, 1e-12) ||
+          !tree.backSubstitute(intermediate).equals(expectedAdjoint, 1e-12))
+        return false;
+    }
+    return true;
+  };
+  auto first = std::async(std::launch::async, query);
+  auto second = std::async(std::launch::async, query);
+  EXPECT(first.get());
+  EXPECT(second.get());
+  EXPECT_DOUBLES_EQUAL(7., root->conditional()->d()[0], 0.);
+}
+
+}  // namespace substitution_fixture
 /* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

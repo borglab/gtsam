@@ -21,6 +21,9 @@ testJacobianFactor
 display 'Starting: testValues'
 testValues
 
+display 'Starting: testGradients'
+testGradients
+
 display 'Starting: testCustomFactor'
 testCustomFactor
 

@@ -90,7 +90,7 @@ TEST(PriorityScheduler, DestructorReturns) {
   std::thread([done] {
     for (int i = 0; i < 10000; ++i) {
       PriorityScheduler<int> scheduler(2);
-      scheduler.schedule(0, [] { return 1; }).get();
+      (void)scheduler.schedule(0, [] { return 1; }).get();
     }
     done->set_value();
   }).detach();
