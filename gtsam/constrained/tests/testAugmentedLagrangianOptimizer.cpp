@@ -21,6 +21,7 @@
 #include <gtsam/constrained/AugmentedLagrangianOptimizer.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam/nonlinear/expressions.h>
 
 #include <cmath>
@@ -436,6 +437,25 @@ TEST(AugmentedLagrangianBCL, MixedChangingActiveSetOptimization) {
 
 /* ************************************************************************* */
 namespace persistent_solver_tests {
+
+// Direct gradient accumulation must apply both noise-whitening factors when
+// a cost supplies an unwhitened Jacobian rather than the usual unit model.
+TEST(AugmentedLagrangianBCL, StationarityWithUnwhitenedJacobian) {
+  using namespace scalar_problem;
+  NonlinearFactorGraph costs;
+  costs.emplace_shared<LinearContainerFactor>(
+      JacobianFactor(kX, Matrix11::Constant(2.0), Vector1(4.0),
+                     noiseModel::Isotropic::Sigma(1, 2.0)),
+      ValuesAt(0.0));
+  const auto problem = Problem(costs, {}, {});
+  auto params = BclParams();
+  params->lmParams.maxIterations = 0;
+  const auto state = StateAt(problem, 0.0, 10.0);
+  const AugmentedLagrangianOptimizer optimizer(problem, state.values, params);
+  const auto result = std::get<0>(optimizer.iterate(state, 10.0, 10.0));
+  EXPECT_DOUBLES_EQUAL(2.0, result.augmentedLagrangianStationarity, 1e-12);
+  EXPECT(assert_equal(state.values, result.values));
+}
 
 class CountingCost : public NoiseModelFactor1<double> {
  public:

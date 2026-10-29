@@ -1831,6 +1831,44 @@ TEST(MultifrontalSolver, SharedCheckInLeafKernels) {
   }
 }
 
+/* ************************************************************************* */
+namespace deep_chain_merging_tests {
+
+// Separators remain valid as descendants are absorbed bottom-up. Exercise
+// several merge boundaries and reload the same deeply nested chain.
+TEST(MultifrontalSolver, DeepChainMergingPreservesSeparators) {
+  constexpr size_t count = 128;
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, Matrix11::Identity(), Vector1::Zero());
+  Ordering ordering;
+  for (size_t i = 0; i < count; ++i) {
+    ordering.push_back(i);
+    if (i > 0) {
+      graph.emplace_shared<JacobianFactor>(
+          i - 1, -Matrix11::Identity(), i, Matrix11::Identity(), Vector1::Ones());
+    }
+  }
+  for (size_t cap : {4, 16, 32}) {
+    auto params = noMergeParams();
+    params.mergeDimCap = cap;
+    MultifrontalSolver solver(graph, ordering, params);
+    EXPECT(solver.cliqueCount() < count);
+    for (double increment : {1.0, 2.0}) {
+      for (size_t i = 1; i < count; ++i) {
+        std::static_pointer_cast<JacobianFactor>(graph[i])->getb()(0) = increment;
+      }
+      solver.eliminateInPlace(graph);
+      const VectorValues& result = solver.updateSolution();
+      for (size_t i = 0; i < count; ++i) {
+        EXPECT_DOUBLES_EQUAL(increment * i, result.at(i)(0), 1e-8);
+      }
+    }
+  }
+}
+
+}  // namespace deep_chain_merging_tests
+/* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

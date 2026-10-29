@@ -103,6 +103,13 @@ limits; ALM always uses the imperative solver and does not use the optimizer's
 backend selection, logging, verbosity, or iteration hook. A standalone
 `iterate()` call creates its own workspace.
 
+The workspace also reuses keyed gradient storage, accumulates ordinary
+Jacobian gradients without per-factor gradient maps, and moves intermediate
+`Values` instead of copying them. When progress recording is enabled, its
+snapshot vector is reserved up front. Symbolic clique merging caches external
+separators, which remain invariant when children are absorbed; this avoids
+quadratic subtree traversal on long chains.
+
 BCL uses each linearization both to test stationarity and to compute the next
 step. For a model `A delta - b`, the gradient at the current point is
 `-A.transpose() * b`. The terminal constraint rows also give the candidate

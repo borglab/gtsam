@@ -222,10 +222,24 @@ double InfinityNorm(const Vector& vector) {
 }
 
 /* ************************************************************************* */
-double AugmentedLagrangianStationarity(const GaussianFactorGraph& linear) {
-  const VectorValues gradient = linear.gradientAtZero();
+double AugmentedLagrangianStationarity(const GaussianFactorGraph& linear,
+                                      VectorValues* gradient) {
+  // Keep the keyed gradient storage across inner and outer iterations. For
+  // ordinary Jacobians, accumulate directly instead of allocating a temporary
+  // VectorValues for every factor and then merging it into another map.
+  gradient->setZero();
+  for (const auto& factor : linear) {
+    if (!factor) continue;
+    if (const auto* jacobian = dynamic_cast<const JacobianFactor*>(factor.get())) {
+      Vector rhs = jacobian->getb();
+      if (jacobian->get_model()) jacobian->get_model()->whitenInPlace(rhs);
+      jacobian->transposeMultiplyAdd(-1.0, rhs, *gradient);
+    } else {
+      gradient->addInPlace_(factor->gradientAtZero());
+    }
+  }
   double infinityNorm = 0.0;
-  for (const auto& keyGradient : gradient) {
+  for (const auto& keyGradient : *gradient) {
     if (!keyGradient.second.allFinite()) {
       return std::numeric_limits<double>::infinity();
     }
@@ -307,15 +321,15 @@ void InitializeBclSchedule(const AugmentedLagrangianParams& params,
 
 /* ************************************************************************* */
 bool AggressiveConverged(const AugmentedLagrangianState& state,
-                         const AugmentedLagrangianState& previousState,
+                         double previousViolation, double previousCost,
                          const AugmentedLagrangianParams& params) {
   if (state.violation() < params.absoluteViolationTolerance &&
       state.cost < params.absoluteCostTolerance) {
     return true;
   }
-  return std::abs(state.violation() - previousState.violation()) <
+  return std::abs(state.violation() - previousViolation) <
              params.relativeViolationTolerance &&
-         std::abs(state.cost - previousState.cost) <
+         std::abs(state.cost - previousCost) <
              params.relativeCostTolerance;
 }
 
@@ -340,6 +354,7 @@ AugmentedLagrangianUpdateType CombinedUpdateType(bool multiplierUpdated,
 struct AugmentedLagrangianOptimizer::Workspace {
   NonlinearFactorGraph graph;
   std::unique_ptr<NonlinearMultifrontalSolver> solver;
+  VectorValues gradient;
 
   struct Result {
     Values values;
@@ -408,12 +423,12 @@ struct AugmentedLagrangianOptimizer::Workspace {
     }
   }
 
-  Result solve(const State& state, const Params& params) {
+  Result solve(Values initialValues, const State& state, const Params& params) {
     const auto& lm = params.lmParams;
     const bool bcl =
         params.updatePolicy == AugmentedLagrangianUpdatePolicy::BCL;
     Result result;
-    result.values = state.values;
+    result.values = std::move(initialValues);
     double error = graph.error(result.values);
     double damping = lm.lambdaInitial;
     double dampingFactor = lm.lambdaFactor;
@@ -428,7 +443,8 @@ struct AugmentedLagrangianOptimizer::Workspace {
                             result.iterations >= lm.maxIterations ||
                             !std::isfinite(error);
       if (bcl || stopping) {
-        result.stationarity = AugmentedLagrangianStationarity(*result.linear);
+        result.stationarity =
+            AugmentedLagrangianStationarity(*result.linear, &gradient);
       }
       if ((bcl && result.stationarity <= state.bclOmega) || stopping ||
           (bcl && !std::isfinite(result.stationarity))) {
@@ -447,7 +463,8 @@ struct AugmentedLagrangianOptimizer::Workspace {
       if (!step(lm, &result.values, &error, &damping, &dampingFactor)) {
         // The point did not change: its stationarity/model are still valid.
         if (!bcl) {
-          result.stationarity = AugmentedLagrangianStationarity(*result.linear);
+          result.stationarity =
+              AugmentedLagrangianStationarity(*result.linear, &gradient);
         }
         return result;
       }
@@ -534,11 +551,14 @@ AugmentedLagrangianOptimizer::iterate(
         augmentedLagrangianFunction(subproblemState));
   }
   workspace->update(problem_, subproblemState);
-  Workspace::Result inner = workspace->solve(subproblemState, *p_);
+  Workspace::Result inner = workspace->solve(
+      std::move(subproblemState.values), subproblemState, *p_);
   const double stationarity = inner.stationarity;
 
   // Evaluate objective and all policy diagnostics at the returned point
   // x_{k+1}; evaluating at x_k was the old sequencing error.
+  // The subproblem's Values have moved into the inner solve. This copies only
+  // its primal-dual metadata; keep the old multipliers for diagnostics/updates.
   State solvedState = subproblemState;
   solvedState.iteration = state.iteration + 1;
   solvedState.values = std::move(inner.values);
@@ -616,13 +636,16 @@ AugmentedLagrangianOptimizer::iterate(
   solvedState.time =
       std::chrono::duration<double>(std::chrono::steady_clock::now() - start)
           .count();
-  return {solvedState, nextMuEq, nextMuIneq};
+  return {std::move(solvedState), nextMuEq, nextMuIneq};
 }
 
 /* ************************************************************************* */
 Values AugmentedLagrangianOptimizer::optimize() const {
   validateConfiguration();
   progress_.clear();
+  // Growing this vector can copy every saved Values snapshot because Values'
+  // move constructor is not noexcept. The outer iteration cap is known.
+  if (p_->storeOptProgress) progress_.reserve(p_->maxIterations + 1);
 
   // Construct the initial primal-dual state with zero multipliers.
   State state(0, initialValues_, problem_);
@@ -644,9 +667,10 @@ Values AugmentedLagrangianOptimizer::optimize() const {
   // Solve fixed-parameter subproblems and apply the selected outer policy.
   std::unique_ptr<Workspace> workspace;
   while (true) {
-    const State previousState = state;
+    const double previousViolation = state.violation();
+    const double previousCost = state.cost;
     std::tie(state, muEq, muIneq) =
-        iterate(previousState, muEq, muIneq, workspace);
+        iterate(state, muEq, muIneq, workspace);
 
     if (p_->updatePolicy == AugmentedLagrangianUpdatePolicy::BCL) {
       state.converged = state.innerConverged &&
@@ -655,7 +679,8 @@ Values AugmentedLagrangianOptimizer::optimize() const {
                         state.generalizedConstraintViolation <=
                             p_->absoluteViolationTolerance;
     } else {
-      state.converged = AggressiveConverged(state, previousState, *p_);
+      state.converged = AggressiveConverged(
+          state, previousViolation, previousCost, *p_);
     }
     logIteration(state);
 
