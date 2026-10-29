@@ -869,6 +869,44 @@ TEST(QcqpProblem, HardPriorPinsRot2RingSign) {
                        1e-12);
 }
 
+// Templated providers add nothing for variable types without redundant equalities.
+TEST(QcqpProblem, RedundantProviderWithoutRedundantEqualities) {
+  const Key x0 = Symbol('x', 0), x1 = Symbol('x', 1);
+
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(x0, x1, Rot2::Identity());
+  LONGS_EQUAL(QcqpProblem(graph).eConstraints().size(),
+              QcqpProblem(graph, 1, true).eConstraints().size());
+}
+
+// Providers preserve existing sets by key, even empty or different sets, and
+// still populate new keys. No comparison of individual constraints is needed.
+TEST(QcqpProblem, RedundantProvidersPreserveExistingKeys) {
+  const Key x0 = Symbol('x', 0), x1 = Symbol('x', 1), x2 = Symbol('x', 2);
+  RedundantQcqpConstraintMap byKey;
+  const auto existing =
+      QuadraticConstraint::Equal(x0, Matrix3::Identity(), 1.0)
+          .createEqualityFactor();
+  byKey[x0].push_back(existing);
+  byKey.try_emplace(x1);
+
+  const FrobeniusBetweenFactor<Rot3> first(x0, x2, Rot3::Identity());
+  const FrobeniusLeftBetweenFactor<Rot3> second(x1, x2, Rot3::Identity());
+  first.appendRedundantConstraints(1, &byKey);
+  const auto inserted = byKey.at(x2);
+  second.appendRedundantConstraints(1, &byKey);
+
+  LONGS_EQUAL(3, byKey.size());
+  LONGS_EQUAL(1, byKey.at(x0).size());
+  EXPECT(byKey.at(x0).at(0) == existing);
+  EXPECT(byKey.at(x1).empty());
+  LONGS_EQUAL(11, inserted.size());
+  LONGS_EQUAL(inserted.size(), byKey.at(x2).size());
+  for (size_t i = 0; i < inserted.size(); ++i) {
+    EXPECT(byKey.at(x2).at(i) == inserted.at(i));
+  }
+}
+
 // Redundant constraints join the equality constraints only on request: each
 // Rot3 key then has its eleven, once despite two factors per key, next to its
 // nine manifold constraints. D > 1 has none, and a hard FrobeniusPrior keeps
@@ -884,6 +922,8 @@ TEST(QcqpProblem, RedundantConstraintsRot3Ring) {
                              &qcqpValues);
   }
 
+  EXPECT(dynamic_cast<const RedundantQcqpProvider*>(graph.at(0).get()) !=
+         nullptr);
   LONGS_EQUAL(9 * N, QcqpProblem(graph).eConstraints().size());
   const QcqpProblem problem(graph, 1, /*useRedundantConstraints=*/true);
   LONGS_EQUAL(20 * N, problem.eConstraints().size());
@@ -935,7 +975,7 @@ TEST(QcqpProblem, Rot2D2QcqpValueConstraints) {
   EXPECT(assert_equal(Matrix(Matrix2::Identity()), X * X.transpose(), 1e-12));
 
   NonlinearEqualityConstraints constraints;
-  InsertQcqpConstraints<Rot2, 2>(x0, &constraints, nullptr);
+  InsertQcqpConstraints<Rot2, 2>(x0, &constraints);
   Values values;
   values.insert(x0, X);
 
@@ -962,7 +1002,7 @@ TEST(QcqpProblem, Rot2D3QcqpValueConstraints) {
   }
 
   NonlinearEqualityConstraints constraints;
-  InsertQcqpConstraints<Rot2, 3>(x0, &constraints, nullptr);
+  InsertQcqpConstraints<Rot2, 3>(x0, &constraints);
   Values values;
   values.insert(x0, X);
 
@@ -1101,7 +1141,7 @@ TEST(QcqpProblem, Rot3D1QcqpValueConstraints) {
   }
 
   NonlinearEqualityConstraints insertedConstraints;
-  InsertQcqpConstraints<Rot3, 1>(x0, &insertedConstraints, nullptr);
+  InsertQcqpConstraints<Rot3, 1>(x0, &insertedConstraints);
   Values values;
   values.insert(x0, X);
   EXPECT_DOUBLES_EQUAL(0.0, insertedConstraints.violationNorm(values), 1e-12);
@@ -1167,7 +1207,7 @@ TEST(QcqpProblem, Pose2D1QcqpValueConstraints) {
   }
 
   NonlinearEqualityConstraints insertedConstraints;
-  InsertQcqpConstraints<Pose2, 1>(x0, &insertedConstraints, nullptr);
+  InsertQcqpConstraints<Pose2, 1>(x0, &insertedConstraints);
   Values values;
   values.insert(x0, X);
   EXPECT_DOUBLES_EQUAL(0.0, insertedConstraints.violationNorm(values), 1e-12);
@@ -1248,7 +1288,7 @@ TEST(QcqpProblem, Pose3D1QcqpValueConstraints) {
   }
 
   NonlinearEqualityConstraints insertedConstraints;
-  InsertQcqpConstraints<Pose3, 1>(x0, &insertedConstraints, nullptr);
+  InsertQcqpConstraints<Pose3, 1>(x0, &insertedConstraints);
   Values values;
   values.insert(x0, X);
   EXPECT_DOUBLES_EQUAL(0.0, insertedConstraints.violationNorm(values), 1e-12);
@@ -1378,7 +1418,7 @@ TEST(QcqpProblem, Rot3D3QcqpValueConstraints) {
   LONGS_EQUAL(6, cs.size());
 
   NonlinearEqualityConstraints constraints;
-  InsertQcqpConstraints<Rot3, 3>(x0, &constraints, nullptr);
+  InsertQcqpConstraints<Rot3, 3>(x0, &constraints);
   Values values;
   values.insert(x0, X);
   EXPECT_DOUBLES_EQUAL(0.0, constraints.violationNorm(values), 1e-12);
@@ -1494,9 +1534,9 @@ TEST(QcqpProblem, InsertQcqpConstraintsMatchesExactQuadratics) {
       LinearConstraint::Equal(JacobianFactor(x0, selector, Vector1(1.0)))
           .createEqualityFactor());
 
-  InsertQcqpConstraints<Rot2, 2>(x0, &constraints, nullptr);
+  InsertQcqpConstraints<Rot2, 2>(x0, &constraints);
   LONGS_EQUAL(4, constraints.size());
-  InsertQcqpConstraints<Rot2, 2>(x0, &constraints, nullptr);
+  InsertQcqpConstraints<Rot2, 2>(x0, &constraints);
   LONGS_EQUAL(4, constraints.size());
 }
 
@@ -1550,7 +1590,7 @@ class QuadraticConstraintEmitter : public NonlinearFactor {
 
   void qcqpFactors(NonlinearFactorGraph*,
                    NonlinearEqualityConstraints* constraints,
-                   NonlinearEqualityConstraints*, size_t) const override {
+                   size_t) const override {
     for (const auto& constraint : constraints_) {
       constraints->push_back(constraint.createEqualityFactor());
     }
@@ -1578,7 +1618,7 @@ class NonquadraticConstraintEmitter : public NonlinearFactor {
 
   void qcqpFactors(NonlinearFactorGraph*,
                    NonlinearEqualityConstraints* constraints,
-                   NonlinearEqualityConstraints*, size_t) const override {
+                   size_t) const override {
     constraints->push_back(constraint_);
   }
 
@@ -1589,6 +1629,24 @@ class NonquadraticConstraintEmitter : public NonlinearFactor {
  private:
   NonlinearEqualityConstraint::shared_ptr constraint_;
 };
+
+// A factor without the provider interface still contributes its usual constraints.
+TEST(QcqpProblem, RedundantConstraintsSkipNonProviders) {
+  const auto constraint =
+      QuadraticConstraint::Equal(x0, Matrix2::Identity(), 1.0);
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<QuadraticConstraintEmitter>(
+      std::vector<QuadraticConstraint>{constraint});
+  EXPECT(dynamic_cast<const RedundantQcqpProvider*>(graph.at(0).get()) ==
+         nullptr);
+
+  const QcqpProblem problem(graph, 1, /*useRedundantConstraints=*/true);
+  LONGS_EQUAL(1, problem.eConstraints().size());
+  Values values;
+  values.insert(x0, Matrix(Vector2(1.0, 0.0)));
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(values),
+                       1e-12);
+}
 
 // Indexed merging removes exact repeats across source factors without
 // suppressing distinct quadratic equations on the same key or reordering them.

@@ -91,11 +91,9 @@ class CountingFrobeniusBetweenFactor : public FrobeniusBetweenFactor<Rot2> {
 
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
-                   NonlinearEqualityConstraints* redundantConstraints,
                    size_t columnDimension) const override {
     ++*buildCount_;
-    Base::qcqpFactors(costs, constraints, redundantConstraints,
-                      columnDimension);
+    Base::qcqpFactors(costs, constraints, columnDimension);
   }
 
  private:

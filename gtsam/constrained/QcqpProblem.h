@@ -24,6 +24,7 @@
 #include <gtsam/constrained/QuadraticConstraint.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
+#include <map>
 #include <stdexcept>
 #include <tuple>
 #include <type_traits>
@@ -31,6 +32,29 @@
 #include <vector>
 
 namespace gtsam {
+
+/** Redundant quadratic equalities, grouped by their variable key. */
+using RedundantQcqpConstraintMap = std::map<Key, NonlinearEqualityConstraints>;
+
+/**
+ * Optional interface for factors with variables that have redundant QCQP
+ * equalities. Deriving from this interface opts a factor in and requires an
+ * appendRedundantConstraints override. Factors without this interface are
+ * skipped when collecting redundant constraints.
+ */
+class GTSAM_EXPORT RedundantQcqpProvider {
+ public:
+  virtual ~RedundantQcqpProvider() = default;
+
+  /**
+   * Add redundant equalities only for variable keys absent from the map.
+   * All providers are assumed to supply the same set for a given key, so
+   * existing entries must be left untouched, even if empty.
+   * May add nothing for variable types or column dimensions without them.
+   */
+  virtual void appendRedundantConstraints(
+      size_t columnDimension, RedundantQcqpConstraintMap* byKey) const = 0;
+};
 
 namespace internal {
 
@@ -59,14 +83,6 @@ struct HasQcqpVectorDim : std::false_type {};
 
 template <typename T>
 struct HasQcqpVectorDim<T, std::void_t<decltype(traits<T>::QcqpVectorDim)>>
-    : std::true_type {};
-
-template <typename T, typename = void>
-struct HasQcqpRedundantConstraints : std::false_type {};
-
-template <typename T>
-struct HasQcqpRedundantConstraints<
-    T, std::void_t<decltype(traits<T>::QcqpRedundantConstraints())>>
     : std::true_type {};
 
 /// Insert (A, a, b) quadratic equalities on one key, skipping exact duplicates.
@@ -135,16 +151,9 @@ void InsertQcqpValue(Key key, const T& value, Values* qcqpValues) {
  * already-present quadratic equality with the same key, matrix, linear term,
  * and right-hand side is considered a duplicate. Other unary constraints on
  * the key are preserved and do not suppress the manifold constraints.
- *
- * At D=1, types whose traits define QcqpRedundantConstraints() also have
- * redundant constraints: identities implied by the manifold constraints, so
- * they add nothing to the QCQP, but not implied after the SDP relaxation,
- * which they tighten. They go to redundantConstraints, with the same
- * duplicate check, unless it is nullptr.
  */
 template <typename T, int D = 1>
-void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints,
-                           NonlinearEqualityConstraints* redundantConstraints) {
+void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
   static_assert(internal::HasQcqpVariableTraits<T, D>::value,
                 "InsertQcqpConstraints requires traits<T>::QcqpValue<D> and "
                 "traits<T>::QcqpConstraints<D>.");
@@ -154,10 +163,26 @@ void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints,
 
   internal::InsertQuadraticEqualities(
       key, traits<T>::template QcqpConstraints<D>(), constraints);
-  if constexpr (D == 1 && internal::HasQcqpRedundantConstraints<T>::value) {
-    if (redundantConstraints) {
-      internal::InsertQuadraticEqualities(
-          key, traits<T>::QcqpRedundantConstraints(), redundantConstraints);
+}
+
+/**
+ * Add a type's D=1 redundant equalities once per key.
+ * The caller selects a type whose traits define QcqpRedundantConstraints().
+ * An existing key is left untouched: its constraints are neither regenerated
+ * nor compared with this type's set. All providers for a key are assumed to
+ * agree on that set.
+ */
+template <typename T>
+void InsertQcqpRedundantConstraints(Key key,
+                                    RedundantQcqpConstraintMap* byKey) {
+  if (!byKey) {
+    throw std::invalid_argument("InsertQcqpRedundantConstraints: map is null.");
+  }
+  auto [it, inserted] = byKey->try_emplace(key);
+  if (inserted) {
+    for (const auto& [A, a, b] : traits<T>::QcqpRedundantConstraints()) {
+      it->second.push_back(
+          QuadraticConstraint::Equal(key, A, a, b).createEqualityFactor());
     }
   }
 }

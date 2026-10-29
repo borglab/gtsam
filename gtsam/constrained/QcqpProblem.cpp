@@ -74,21 +74,26 @@ QcqpProblem::QcqpProblem(const NonlinearFactorGraph& graph,
   }
 
   QuadraticConstraintIndex quadraticConstraintIndex;
+  RedundantQcqpConstraintMap redundantByKey;
   for (const auto& factor : graph) {
     if (!factor) continue;
 
     NonlinearFactorGraph factorCosts;
     NonlinearEqualityConstraints factorConstraints;
-    NonlinearEqualityConstraints factorRedundantConstraints;
-    factor->qcqpFactors(
-        &factorCosts, &factorConstraints,
-        useRedundantConstraints ? &factorRedundantConstraints : nullptr,
-        columnDimension);
+    factor->qcqpFactors(&factorCosts, &factorConstraints, columnDimension);
+    if (useRedundantConstraints) {
+      const auto* provider =
+          dynamic_cast<const RedundantQcqpProvider*>(factor.get());
+      if (provider) {
+        provider->appendRedundantConstraints(columnDimension, &redundantByKey);
+      }
+    }
     costs_.add(factorCosts);
     MergeEqualityConstraints(factorConstraints, &eqConstraints_,
                              &quadraticConstraintIndex);
-    MergeEqualityConstraints(factorRedundantConstraints, &eqConstraints_,
-                             &quadraticConstraintIndex);
+  }
+  for (const auto& entry : redundantByKey) {
+    eqConstraints_.add(entry.second);
   }
 }
 

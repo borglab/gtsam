@@ -46,7 +46,8 @@ template <int d>
 class RelativeTranslationFactor
     : public NoiseModelFactorN<
           typename std::conditional<d == 2, Rot2, Rot3>::type,
-          Eigen::Matrix<double, d, 1>, Eigen::Matrix<double, d, 1>> {
+          Eigen::Matrix<double, d, 1>, Eigen::Matrix<double, d, 1>>,
+      public RedundantQcqpProvider {
   static_assert(d == 2 || d == 3,
                 "RelativeTranslationFactor supports d = 2 or 3.");
 
@@ -124,7 +125,6 @@ class RelativeTranslationFactor
   /// Add this translation factor as a QCQP cost when traits exist.
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
-                   NonlinearEqualityConstraints* redundantConstraints,
                    size_t columnDimension = 1) const override {
     if (columnDimension == 0) {
       throw std::invalid_argument(
@@ -132,7 +132,7 @@ class RelativeTranslationFactor
           "columnDimension.");
     }
     if (columnDimension == 1) {
-      qcqpFactorsForVector(costs, constraints, redundantConstraints);
+      qcqpFactorsForVector(costs, constraints);
       return;
     }
     if (columnDimension < static_cast<size_t>(d)) {
@@ -158,11 +158,21 @@ class RelativeTranslationFactor
         columnDimension));
   }
 
+  /** Add redundant D=1 equalities for the 3D rotation; 2D adds none. */
+  void appendRedundantConstraints(
+      size_t columnDimension,
+      RedundantQcqpConstraintMap* byKey) const override {
+    if constexpr (d == 3) {
+      if (columnDimension == 1) {
+        InsertQcqpRedundantConstraints<Rot>(this->key1(), byKey);
+      }
+    }
+  }
+
  private:
   /// Add the exact D=1 vector cost and variable constraints.
-  void qcqpFactorsForVector(
-      NonlinearFactorGraph* costs, NonlinearEqualityConstraints* constraints,
-      NonlinearEqualityConstraints* redundantConstraints) const {
+  void qcqpFactorsForVector(NonlinearFactorGraph* costs,
+                            NonlinearEqualityConstraints* constraints) const {
     if (!costs) {
       throw std::invalid_argument(
           "RelativeTranslationFactor::qcqpFactors: costs is null.");
@@ -193,12 +203,9 @@ class RelativeTranslationFactor
     B.block(0, kRotationDim, d, d) = -sw * Matrix::Identity(d, d);
     B.block(0, kRotationDim + kPointDim, d, d) = sw * Matrix::Identity(d, d);
 
-    InsertQcqpConstraints<Rot, 1>(this->key1(), constraints,
-                                  redundantConstraints);
-    InsertQcqpConstraints<Point, 1>(this->key2(), constraints,
-                                    redundantConstraints);
-    InsertQcqpConstraints<Point, 1>(this->key3(), constraints,
-                                    redundantConstraints);
+    InsertQcqpConstraints<Rot, 1>(this->key1(), constraints);
+    InsertQcqpConstraints<Point, 1>(this->key2(), constraints);
+    InsertQcqpConstraints<Point, 1>(this->key3(), constraints);
 
     const Matrix Q = B.transpose() * B;
     const SymmetricBlockMatrix blockQ(

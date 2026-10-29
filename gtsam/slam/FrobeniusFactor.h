@@ -97,7 +97,8 @@ using FrobeniusErrorVector = Eigen::Matrix<
  * fixed-size matrix Lie group element.
  */
 template <class T>
-class FrobeniusPrior : public NoiseModelFactorN<T> {
+class FrobeniusPrior : public NoiseModelFactorN<T>,
+                       public RedundantQcqpProvider {
   GTSAM_CONCEPT_ASSERT(IsMatrixLieGroup<T>);
   inline constexpr static auto N = T::LieAlgebra::RowsAtCompileTime;
   inline constexpr static auto Dim = N * N;
@@ -140,17 +141,26 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
    */
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
-                   NonlinearEqualityConstraints* redundantConstraints,
                    size_t columnDimension = 1) const override {
     if (columnDimension == 0) {
       throw std::invalid_argument(
           "FrobeniusPrior::qcqpFactors: columnDimension must be >= 1");
     }
     if (columnDimension == 1) {
-      qcqpFactorsForVec(costs, constraints, redundantConstraints);
+      qcqpFactorsForVec(costs, constraints);
     } else {
-      qcqpFactorsForMatrix(costs, constraints, redundantConstraints,
-                           columnDimension);
+      qcqpFactorsForMatrix(costs, constraints, columnDimension);
+    }
+  }
+
+  /** Add redundant D=1 equalities for Rot3 and Pose3; other types add none. */
+  void appendRedundantConstraints(
+      size_t columnDimension,
+      RedundantQcqpConstraintMap* byKey) const override {
+    if constexpr (std::is_same_v<T, Rot3> || std::is_same_v<T, Pose3>) {
+      if (columnDimension == 1) {
+        InsertQcqpRedundantConstraints<T>(this->key(), byKey);
+      }
     }
   }
 
@@ -159,13 +169,11 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
   /// The stored measurement is vecM_ = vec(M), where M is the matrix passed to
   /// the FrobeniusPrior constructor. Pose lifts retain only the variable top
   /// rows of M; Rot3 retains the full matrix and compact Rot2 retains c,s.
-  void qcqpFactorsForVec(
-      NonlinearFactorGraph* costs, NonlinearEqualityConstraints* constraints,
-      NonlinearEqualityConstraints* redundantConstraints) const {
+  void qcqpFactorsForVec(NonlinearFactorGraph* costs,
+                         NonlinearEqualityConstraints* constraints) const {
     if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
       (void)costs;
       (void)constraints;
-      (void)redundantConstraints;
       throw std::runtime_error(
           "FrobeniusPrior::qcqpFactors requires QCQP variable traits for this "
           "type and column dimension 1.");
@@ -174,15 +182,13 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
                            std::is_same_v<T, Pose3>)) {
       (void)costs;
       (void)constraints;
-      (void)redundantConstraints;
       throw std::runtime_error(
           "FrobeniusPrior::qcqpFactors D=1 is implemented only for Rot2, "
           "Rot3, Pose2, and Pose3.");
     } else {
       (void)costs;
       if (this->noiseModel_->isConstrained()) {
-        InsertQcqpConstraints<T, 1>(this->key(), constraints,
-                                    redundantConstraints);
+        InsertQcqpConstraints<T, 1>(this->key(), constraints);
 
         constexpr int LiftedDim = traits<T>::QcqpVectorDim;
         Vector target = Vector::Zero(LiftedDim);
@@ -219,11 +225,9 @@ class FrobeniusPrior : public NoiseModelFactorN<T> {
    */
   void qcqpFactorsForMatrix(NonlinearFactorGraph* costs,
                             NonlinearEqualityConstraints* constraints,
-                            NonlinearEqualityConstraints* redundantConstraints,
                             size_t columnDimension) const {
     (void)costs;
     (void)constraints;
-    (void)redundantConstraints;
     (void)columnDimension;
     throw std::runtime_error(
         "FrobeniusPrior::qcqpFactors does not support matrix-form priors; "
@@ -370,7 +374,8 @@ class FrobeniusBetweenFactorNL
  * Frobenius error is invariant to multiplying with an arbitrary element T.
  */
 template <class T>
-class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
+class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T>,
+                               public RedundantQcqpProvider {
   inline constexpr static auto N = T::LieAlgebra::RowsAtCompileTime;
   inline constexpr static auto Dim = N * N;
   using Base = FrobeniusBetweenFactorNL<T>;
@@ -409,17 +414,27 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
    */
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
-                   NonlinearEqualityConstraints* redundantConstraints,
                    size_t columnDimension = 1) const override {
     if (columnDimension == 0) {
       throw std::invalid_argument(
           "FrobeniusBetweenFactor::qcqpFactors: columnDimension must be >= 1");
     }
     if (columnDimension == 1) {
-      qcqpFactorsForVec(costs, constraints, redundantConstraints);
+      qcqpFactorsForVec(costs, constraints);
     } else {
-      qcqpFactorsForMatrix(costs, constraints, redundantConstraints,
-                           columnDimension);
+      qcqpFactorsForMatrix(costs, constraints, columnDimension);
+    }
+  }
+
+  /** Add redundant D=1 equalities for Rot3 and Pose3; other types add none. */
+  void appendRedundantConstraints(
+      size_t columnDimension,
+      RedundantQcqpConstraintMap* byKey) const override {
+    if constexpr (std::is_same_v<T, Rot3> || std::is_same_v<T, Pose3>) {
+      if (columnDimension == 1) {
+        InsertQcqpRedundantConstraints<T>(this->key1(), byKey);
+        InsertQcqpRedundantConstraints<T>(this->key2(), byKey);
+      }
     }
   }
 
@@ -443,13 +458,11 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
 
   /// D=1 retained-row vector form: build the full Frobenius residual for
   /// whitening, then embed its quadratic matrix in the lifted coordinates.
-  void qcqpFactorsForVec(
-      NonlinearFactorGraph* costs, NonlinearEqualityConstraints* constraints,
-      NonlinearEqualityConstraints* redundantConstraints) const {
+  void qcqpFactorsForVec(NonlinearFactorGraph* costs,
+                         NonlinearEqualityConstraints* constraints) const {
     if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
       (void)costs;
       (void)constraints;
-      (void)redundantConstraints;
       throw std::runtime_error(
           "FrobeniusBetweenFactor::qcqpFactors requires QCQP variable traits "
           "for this type and column dimension 1.");
@@ -458,7 +471,6 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
                            std::is_same_v<T, Pose3>)) {
       (void)costs;
       (void)constraints;
-      (void)redundantConstraints;
       throw std::runtime_error(
           "FrobeniusBetweenFactor::qcqpFactors D=1 is implemented only for "
           "Rot2, Rot3, Pose2, and Pose3.");
@@ -511,10 +523,8 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
         Q_trunc = whitenedB.transpose() * whitenedB;
       }
 
-      InsertQcqpConstraints<T, 1>(this->key1(), constraints,
-                                  redundantConstraints);
-      InsertQcqpConstraints<T, 1>(this->key2(), constraints,
-                                  redundantConstraints);
+      InsertQcqpConstraints<T, 1>(this->key1(), constraints);
+      InsertQcqpConstraints<T, 1>(this->key2(), constraints);
 
       const SymmetricBlockMatrix blockQ(
           std::vector<DenseIndex>{LiftedDim, LiftedDim}, Q_trunc);
@@ -526,12 +536,10 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   /// Matrix form (D>=N): N-by-D row-Stiefel variables and isotropic noise.
   void qcqpFactorsForMatrix(NonlinearFactorGraph* costs,
                             NonlinearEqualityConstraints* constraints,
-                            NonlinearEqualityConstraints* redundantConstraints,
                             size_t columnDimension) const {
     if constexpr (!internal::HasQcqpVariableTraits<T, N>::value) {
       (void)costs;
       (void)constraints;
-      (void)redundantConstraints;
       (void)columnDimension;
       throw std::runtime_error(
           "FrobeniusBetweenFactor::qcqpFactors requires QCQP variable traits "
@@ -560,10 +568,8 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
             "requires an isotropic noise model");
       }
 
-      InsertQcqpConstraints<T, N>(this->key1(), constraints,
-                                  redundantConstraints);
-      InsertQcqpConstraints<T, N>(this->key2(), constraints,
-                                  redundantConstraints);
+      InsertQcqpConstraints<T, N>(this->key1(), constraints);
+      InsertQcqpConstraints<T, N>(this->key2(), constraints);
 
       const MatrixN measurement = this->T12_.matrix();
       const MatrixN I = MatrixN::Identity();
@@ -590,7 +596,8 @@ class FrobeniusBetweenFactor : public FrobeniusBetweenFactorNL<T> {
  * with inverse-state certifiable localization.
  */
 template <class T>
-class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
+class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T>,
+                                   public RedundantQcqpProvider {
   inline constexpr static auto N = T::LieAlgebra::RowsAtCompileTime;
   inline constexpr static auto Dim = N * N;
   using Base = FrobeniusBetweenFactorNL<T>;
@@ -656,14 +663,25 @@ class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
    */
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
-                   NonlinearEqualityConstraints* redundantConstraints,
                    size_t columnDimension = 1) const override {
     if (columnDimension != 1) {
       throw std::invalid_argument(
           "FrobeniusLeftBetweenFactor::qcqpFactors only supports column "
           "dimension 1");
     }
-    qcqpFactorsForVec(costs, constraints, redundantConstraints);
+    qcqpFactorsForVec(costs, constraints);
+  }
+
+  /** Add redundant D=1 equalities for Rot3 and Pose3; other types add none. */
+  void appendRedundantConstraints(
+      size_t columnDimension,
+      RedundantQcqpConstraintMap* byKey) const override {
+    if constexpr (std::is_same_v<T, Rot3> || std::is_same_v<T, Pose3>) {
+      if (columnDimension == 1) {
+        InsertQcqpRedundantConstraints<T>(this->key1(), byKey);
+        InsertQcqpRedundantConstraints<T>(this->key2(), byKey);
+      }
+    }
   }
 
  private:
@@ -696,13 +714,11 @@ class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
   }
 
   /// Build the exact retained-row D=1 QCQP cost.
-  void qcqpFactorsForVec(
-      NonlinearFactorGraph* costs, NonlinearEqualityConstraints* constraints,
-      NonlinearEqualityConstraints* redundantConstraints) const {
+  void qcqpFactorsForVec(NonlinearFactorGraph* costs,
+                         NonlinearEqualityConstraints* constraints) const {
     if constexpr (!internal::HasQcqpVariableTraits<T, 1>::value) {
       (void)costs;
       (void)constraints;
-      (void)redundantConstraints;
       throw std::runtime_error(
           "FrobeniusLeftBetweenFactor::qcqpFactors requires QCQP variable "
           "traits for this type and column dimension 1.");
@@ -711,7 +727,6 @@ class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
                            std::is_same_v<T, Pose3>)) {
       (void)costs;
       (void)constraints;
-      (void)redundantConstraints;
       throw std::runtime_error(
           "FrobeniusLeftBetweenFactor::qcqpFactors D=1 is implemented only "
           "for Rot2, Rot3, Pose2, and Pose3.");
@@ -771,10 +786,8 @@ class FrobeniusLeftBetweenFactor : public FrobeniusBetweenFactorNL<T> {
         Q = whitenedB.transpose() * whitenedB;
       }
 
-      InsertQcqpConstraints<T, 1>(this->key1(), constraints,
-                                  redundantConstraints);
-      InsertQcqpConstraints<T, 1>(this->key2(), constraints,
-                                  redundantConstraints);
+      InsertQcqpConstraints<T, 1>(this->key1(), constraints);
+      InsertQcqpConstraints<T, 1>(this->key2(), constraints);
 
       const SymmetricBlockMatrix blockQ(
           std::vector<DenseIndex>{LiftedDim, LiftedDim, 1}, Q);

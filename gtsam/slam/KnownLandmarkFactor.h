@@ -101,7 +101,8 @@ class KnownLandmarkFactor : public NoiseModelFactorN<T> {
  * its relationship to the conventional factor.
  */
 template <class T>
-class KnownLandmarkFactor2 : public NoiseModelFactorN<T> {
+class KnownLandmarkFactor2 : public NoiseModelFactorN<T>,
+                             public RedundantQcqpProvider {
  public:
   static_assert(std::is_same_v<T, Pose2> || std::is_same_v<T, Pose3>,
                 "KnownLandmarkFactor2 supports only Pose2 and Pose3");
@@ -143,7 +144,6 @@ class KnownLandmarkFactor2 : public NoiseModelFactorN<T> {
   /** Add the exact D=1 known-landmark cost to a QCQP. */
   void qcqpFactors(NonlinearFactorGraph* costs,
                    NonlinearEqualityConstraints* constraints,
-                   NonlinearEqualityConstraints* redundantConstraints,
                    size_t columnDimension = 1) const override {
     if (columnDimension != 1) {
       throw std::invalid_argument(
@@ -182,10 +182,21 @@ class KnownLandmarkFactor2 : public NoiseModelFactorN<T> {
     const Matrix whitenedB = this->noiseModel_->Whiten(B);
     const Matrix Q = whitenedB.transpose() * whitenedB;
 
-    InsertQcqpConstraints<T, 1>(this->key(), constraints, redundantConstraints);
+    InsertQcqpConstraints<T, 1>(this->key(), constraints);
     const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{LiftedDim, 1}, Q);
     costs->push_back(std::make_shared<QpCost>(
         HessianFactor(KeyVector{this->key()}, blockQ)));
+  }
+
+  /** Add redundant D=1 equalities for Pose3; Pose2 adds none. */
+  void appendRedundantConstraints(
+      size_t columnDimension,
+      RedundantQcqpConstraintMap* byKey) const override {
+    if constexpr (std::is_same_v<T, Pose3>) {
+      if (columnDimension == 1) {
+        InsertQcqpRedundantConstraints<T>(this->key(), byKey);
+      }
+    }
   }
 };
 
