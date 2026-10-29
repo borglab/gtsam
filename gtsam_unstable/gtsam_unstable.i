@@ -422,6 +422,14 @@ virtual class InvDepthFactorVariant3b : gtsam::NoiseModelFactor {
   InvDepthFactorVariant3b(gtsam::Key poseKey1, gtsam::Key poseKey2, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
 };
 
+#include <gtsam_unstable/slam/GaussMarkov1stOrderFactor.h>
+template <VALUE = {gtsam::Vector, gtsam::Point3}>
+virtual class GaussMarkov1stOrderFactor : gtsam::NoiseModelFactor {
+  GaussMarkov1stOrderFactor(gtsam::Key key1, gtsam::Key key2, double delta_t,
+                            const gtsam::Vector& tau,
+                            const gtsam::noiseModel::Gaussian* model);
+};
+
 
 // Tectonic SAM Factors
 
