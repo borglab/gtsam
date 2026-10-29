@@ -67,8 +67,9 @@ class GTSAM_EXPORT MultifrontalSolverNotSupported : public std::runtime_error {
  * packed Jacobian fallback rows on the first compatible load and reuses that
  * storage thereafter.
  *
- * @note Only JacobianFactor and BatchJacobianFactor inputs are supported. Other
- * Gaussian factor types will throw during construction/precompute or load.
+ * @note JacobianFactor, BatchJacobianFactor, and HessianFactor inputs are
+ * supported. Cliques containing Hessian factors use ordinary Cholesky storage
+ * and assemble those contributions directly, without taking a square root.
  *
  * @note Clique merging has two symbolic phases. First, leafMergeDimCap merges
  * compatible multi-factor leaf siblings with identical separators into
@@ -122,7 +123,7 @@ class GTSAM_EXPORT MultifrontalSolver
    * load.
    * Call load() before eliminating to populate numerical values.
    * @param graph The factor graph to solve.
-   *              Must contain only JacobianFactor or BatchJacobianFactor
+   *              Must contain only JacobianFactor, BatchJacobianFactor, or HessianFactor
    *              instances.
    * @param ordering The variable ordering to use for elimination.
    * @param params Tunable parameters for traversal and reporting.
@@ -158,9 +159,9 @@ class GTSAM_EXPORT MultifrontalSolver
    * Precompute symbolic structure and sizing data from a factor graph.
    * This builds an IndexedJunctionTree that can be reused across multiple
    * solver instances when the graph structure and ordering remain unchanged.
-   * Only JacobianFactor and BatchJacobianFactor inputs are supported.
+   * JacobianFactor, BatchJacobianFactor, and HessianFactor inputs are supported.
    *
-   * @param graph The factor graph (must contain only supported Jacobian-style
+   * @param graph The factor graph (must contain only supported Gaussian
    *              factor instances)
    * @param ordering The variable elimination ordering
    * @return PrecomputedData containing the indexed junction tree and sizing
