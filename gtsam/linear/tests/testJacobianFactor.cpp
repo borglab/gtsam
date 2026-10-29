@@ -28,6 +28,7 @@
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/linearExceptions.h>
 
 using namespace std;
 using namespace gtsam;
@@ -967,5 +968,41 @@ TEST(JacobianFactor, updateHessianWithColumnRangeOnlyUpdatesSpecifiedBlocks) {
 }
 
 /* ************************************************************************* */
+namespace qr_pivots {
+
+// Identical columns must not yield a conditional with a roundoff-sized pivot.
+TEST(JacobianFactor, QRDependentColumns) {
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(
+      0, Matrix{{1., 1.}, {2., 2.}, {3., 3.}}, Vector3::Zero());
+  CHECK_EXCEPTION(EliminateQR(graph, Ordering{0}), IndeterminateSystemException);
+}
+
+// Column units, diagonal signs, and Gaussian whitening preserve a valid solve.
+TEST(JacobianFactor, QRColumnScales) {
+  const Vector2 expected{2., -3.};
+  for (double scale : {1e-100, 1., 1e100}) {
+    const Matrix A{{-scale, 0.}, {0., 2. / scale}, {0., -1. / scale}};
+    GaussianFactorGraph graph;
+    graph.emplace_shared<JacobianFactor>(
+        0, A, A * expected, noiseModel::Diagonal::Sigmas(Vector3{2., 3., 4.}));
+    const auto conditional = EliminateQR(graph, Ordering{0}).first;
+    EXPECT(assert_equal(expected, conditional->solve(VectorValues{}).at(0)));
+  }
+}
+
+// QR retains weak directions that would be lost in normal equations.
+TEST(JacobianFactor, QRWeakFullRankColumns) {
+  const Matrix A{{1., 1.}, {0., 1e-12}, {0., 0.}};
+  const Vector2 expected{1., -2.};
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, A, A * expected);
+  const auto conditional = EliminateQR(graph, Ordering{0}).first;
+  EXPECT(assert_equal(expected, conditional->solve(VectorValues{}).at(0)));
+}
+
+}  // namespace qr_pivots
+/* ************************************************************************* */
+
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */
