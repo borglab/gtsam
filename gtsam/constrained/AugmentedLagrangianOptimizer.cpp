@@ -641,6 +641,12 @@ AugmentedLagrangianOptimizer::iterate(
 
 /* ************************************************************************* */
 Values AugmentedLagrangianOptimizer::optimize() const {
+  return optimizeWithState().values;
+}
+
+/* ************************************************************************* */
+AugmentedLagrangianOptimizer::State
+AugmentedLagrangianOptimizer::optimizeWithState() const {
   validateConfiguration();
   progress_.clear();
   // Growing this vector can copy every saved Values snapshot because Values'
@@ -690,7 +696,7 @@ Values AugmentedLagrangianOptimizer::optimize() const {
     }
   }
 
-  return state.values;
+  return state;
 }
 
 /* ************************************************************************* */
