@@ -89,6 +89,12 @@ again = imported.adjoint(seed);
 assert(norm(saved.at(second) - again.at(second)) < 1e-12);
 zero = imported.pullback(gtsam.VectorValues);
 assert(gtsam.dot(zero, zero) == 0);
+% Dot products reject incompatible factor blocks through the MATLAB wrapper.
+assert(gtsam.dot(gtsam.Errors, gtsam.Errors) == 0);
+assertThrows(@() gtsam.dot(zero, gtsam.Errors));
+assertThrows(@() gtsam.dot(gtsam.Errors, zero));
+assertThrows(@() gtsam.dot(makeErrors({1, [2; 3]}), makeErrors({4, 5})));
+assertThrows(@() gtsam.dot(makeErrors({4, 5}), makeErrors({1, [2; 3]})));
 assert(imported.pushforward(zero).norm() == 0);
 assertThrows(@() imported.pushforward(gtsam.Errors));
 assertThrows(@() imported.pushforward(makeErrors({zeros(1, 1), zeros(2, 1), zeros(2, 1)})));
@@ -212,5 +218,5 @@ try
 catch
     threw = true;
 end
-assert(threw, 'Expected Gradients to reject the invalid query.');
+assert(threw, 'Expected the invalid query to throw.');
 end
