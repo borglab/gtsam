@@ -420,6 +420,16 @@ MultifrontalClique::FactorLoadPlan::forJacobian(
   return plan;
 }
 
+MultifrontalClique::FactorLoadPlan MultifrontalClique::FactorLoadPlan::forHessian(
+    size_t factorIndex, const HessianFactor& factor,
+    const MultifrontalClique& clique) {
+  FactorLoadPlan plan;
+  plan.kind = FactorLoadKind::Hessian;
+  plan.factorIndex = factorIndex;
+  plan.mapKeys(factor.keys(), clique);
+  return plan;
+}
+
 MultifrontalClique::FactorLoadPlan MultifrontalClique::FactorLoadPlan::forBatch(
     size_t factorIndex, const BatchJacobianFactorBase& factor,
     const MultifrontalClique& clique) {
@@ -440,7 +450,7 @@ MultifrontalClique::FactorLoadPlan MultifrontalClique::FactorLoadPlan::forBatch(
 
 bool MultifrontalClique::FactorLoadPlan::needsMaterializedRows(
     const MultifrontalClique& clique) const {
-  if (kind == FactorLoadKind::Empty) return false;
+  if (kind == FactorLoadKind::Empty || kind == FactorLoadKind::Hessian) return false;
   if (kind == FactorLoadKind::Jacobian) return true;
   return clique.useQR() || !canDirectUpdate || !kUseDirectBatchHessianUpdate;
 }
@@ -596,6 +606,18 @@ size_t MultifrontalClique::addBatchJacobianFactor(
 }
 
 void MultifrontalClique::resolveLeafSolveMode() {
+  // Hessians need no square root and may be individually indefinite. Assemble
+  // them directly with the other contributions before factoring the clique.
+  if (hasHessianFactors_) {
+    if (solveMode_ != SolveMode::Cholesky || RSd_.nBlocks() == 0) {
+      solveMode_ = SolveMode::Cholesky;
+      RSd_ = VerticalBlockMatrix(blockDims_, static_cast<DenseIndex>(frontalDim),
+                                true);
+    }
+    if (info_.nBlocks() == 0) info_ = SymmetricBlockMatrix(blockDims_, true);
+    deferredSingleFactorAutoQr_ = false;
+    return;
+  }
   // Auto-QR defers allocation until the sole factor's representation is known.
   const bool needsDeferredStorage = deferredSingleFactorAutoQr_;
   if (deferredSingleFactorAutoQr_) {
@@ -657,9 +679,13 @@ void MultifrontalClique::buildLoadPlans(const GaussianFactorGraph& graph) {
     } else if (const auto* batchFactor =
                    dynamic_cast<const BatchJacobianFactorBase*>(factor.get())) {
       plan = FactorLoadPlan::forBatch(factorIndex, *batchFactor, *this);
+    } else if (const auto* hessianFactor =
+                   dynamic_cast<const HessianFactor*>(factor.get())) {
+      plan = FactorLoadPlan::forHessian(factorIndex, *hessianFactor, *this);
+      hasHessianFactors_ = true;
     } else {
       throw MultifrontalSolverNotSupported(
-          "only JacobianFactor or BatchJacobianFactor inputs are supported");
+          "only JacobianFactor, BatchJacobianFactor, or HessianFactor inputs are supported");
     }
 
     allBatchFactors_ &= plan.isDirectBatch();
@@ -752,6 +778,7 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
   for (const FactorLoadPlan& plan : loadPlans_) {
     const auto* factor = graph[plan.factorIndex].get();
     if (!factor) continue;
+    if (plan.kind == FactorLoadKind::Hessian) continue;
     if (plan.kind == FactorLoadKind::Jacobian) {
       auto* jacobianFactor = dynamic_cast<const JacobianFactor*>(factor);
       assert(jacobianFactor);
@@ -772,7 +799,7 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
       continue;
     }
     throw MultifrontalSolverNotSupported(
-        "only JacobianFactor or BatchJacobianFactor inputs are supported");
+        "only JacobianFactor, BatchJacobianFactor, or HessianFactor inputs are supported");
   }
 
   assert((useQR() && RSd_.matrix().rows() ==
@@ -827,6 +854,26 @@ void MultifrontalClique::prepareForElimination() {
   } else if (Ab_.matrix().rows() > 0 && fillRows_ > 0) {
     info_.selfadjointView().rankUpdate(
         Ab_.matrix().topRows(static_cast<DenseIndex>(fillRows_)).transpose());
+  }
+
+  if (hasHessianFactors_) {
+    for (const FactorLoadPlan& plan : loadPlans_) {
+      if (plan.kind != FactorLoadKind::Hessian) continue;
+      const auto& factor = static_cast<const HessianFactor&>(
+          *activeLoadGraph_->at(plan.factorIndex));
+      const size_t size = factor.size();
+      const DenseIndex rhs = info_.nBlocks() - 1;
+      for (size_t i = 0; i <= size; ++i) {
+        const DenseIndex I = i == size ? rhs : plan.blockIndices[i];
+        if (I < 0) continue;  // Fixed variables have zero delta.
+        info_.updateDiagonalBlock(I, factor.info().block(i, i));
+        for (size_t j = i + 1; j <= size; ++j) {
+          const DenseIndex J = j == size ? rhs : plan.blockIndices[j];
+          if (J < 0) continue;
+          info_.updateOffDiagonalBlock(I, J, factor.info().block(i, j));
+        }
+      }
+    }
   }
 
   // Heuristic: avoid parallel overhead on small cliques.

@@ -24,6 +24,7 @@
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
 #include <gtsam/linear/MultifrontalSolver.h>
 #include <gtsam/linear/NoiseModel.h>
@@ -101,13 +102,21 @@ PrecomputeScratch precomputeFromGraph(const GaussianFactorGraph& graph) {
     const auto& factor = graph[i];
     if (!factor) continue;
 
+    if (const auto* hessian = dynamic_cast<const HessianFactor*>(factor.get())) {
+      // Hessians are assembled directly and consume no packed Jacobian rows.
+      for (auto it = hessian->begin(); it != hessian->end(); ++it) {
+        out.dims[*it] = hessian->getDim(it);
+      }
+      continue;
+    }
+
     auto jacobianFactor = std::dynamic_pointer_cast<JacobianFactor>(factor);
     if (!jacobianFactor) {
       auto batchFactor =
           std::dynamic_pointer_cast<BatchJacobianFactorBase>(factor);
       if (!batchFactor) {
         throw MultifrontalSolverNotSupported(
-            "only JacobianFactor or BatchJacobianFactor inputs are supported");
+            "only JacobianFactor, BatchJacobianFactor, or HessianFactor inputs are supported");
       }
       if (auto model = batchFactor->get_model()) {
         if (model->isConstrained()) {

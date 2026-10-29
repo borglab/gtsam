@@ -23,6 +23,8 @@
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/constrained/NonlinearEquality.h>
+#include <gtsam/constrained/QpCost.h>
+#include <gtsam/linear/linearExceptions.h>
 #include <gtsam/nonlinear/NonlinearMultifrontalSolver.h>
 #include <gtsam/nonlinear/NonlinearOptimizerParams.h>
 #include <gtsam/nonlinear/Values.h>
@@ -434,6 +436,31 @@ TEST(NonlinearMultifrontalSolver, Bal16ErrorOneIteration) {
 #endif
 
 /* ************************************************************************* */
+namespace quadratic_damping_tests {
+
+// Damping can regularize a loaded indefinite quadratic, and retrying must
+// reassemble the original Hessian rather than accumulate previous damping.
+TEST(NonlinearMultifrontalSolver, IndefiniteHessianDampingRetries) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<QpCost>(
+      HessianFactor(0, Matrix{{-2.0}}, Vector{{1.0}}, 0.0));
+  Values values;
+  values.insert<Vector>(0, Vector::Zero(1));
+  const Ordering ordering{0};
+  NonlinearMultifrontalSolver solver(graph, values, ordering);
+  const auto linear = graph.linearize(values);
+  solver.load(*linear);
+  CHECK_EXCEPTION(solver.eliminateInPlace(1.0), IndeterminateSystemException);
+  for (double damping : {3.0, 4.0, 3.0}) {
+    solver.eliminateInPlace(damping);
+    EXPECT_DOUBLES_EQUAL(1.0 / (damping - 2.0),
+                         solver.updateSolution().at(0)(0), 1e-12);
+  }
+}
+
+}  // namespace quadratic_damping_tests
+/* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

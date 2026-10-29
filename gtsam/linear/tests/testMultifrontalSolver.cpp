@@ -1625,20 +1625,26 @@ TEST(MultifrontalSolver, BatchJacobianFactorMixedNoiseModels) {
 }
 
 /* ************************************************************************* */
-// Hessian factors are rejected by the multifrontal solver.
+// Direct Hessian assembly preserves affine terms, including negative minima.
 TEST(MultifrontalSolver, HessianFactors) {
   GaussianFactorGraph graph;
   graph.emplace_shared<HessianFactor>(x1, Matrix{{4.0}}, Vector{{8.0}}, 0.0);
 
   const Ordering ordering{x1};
-  CHECK_EXCEPTION(
-      { MultifrontalSolver solver(graph, ordering, noMergeParams()); },
-      std::runtime_error);
+  MultifrontalSolver solver(graph, ordering, noMergeParams());
+  solver.eliminateInPlace(graph);
+  const auto& result = solver.updateSolution();
+  EXPECT_DOUBLES_EQUAL(2.0, result.at(x1)(0), 1e-12);
+  double oldError, newError;
+  EXPECT_DOUBLES_EQUAL(8.0, solver.deltaError(&oldError, &newError), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, oldError, 1e-12);
+  EXPECT_DOUBLES_EQUAL(-8.0, newError, 1e-12);
 }
 
 /* ************************************************************************* */
-// Loading a HessianFactor into precomputed Jacobian-only structure is rejected.
-TEST(MultifrontalSolver, LoadRejectsHessianFactor) {
+// Symbolic structure can come from nonlinear row counts; the first load
+// selects Hessian assembly even if the initial leaf was configured for QR.
+TEST(MultifrontalSolver, LoadHessianIntoPrecomputedStructure) {
   GaussianFactorGraph jacobianGraph;
   jacobianGraph.emplace_shared<JacobianFactor>(
       x1, I_1x1, Vector{{2.0}}, noiseModel::Isotropic::Sigma(1, 1.0));
@@ -1649,10 +1655,65 @@ TEST(MultifrontalSolver, LoadRejectsHessianFactor) {
 
   const Ordering ordering{x1};
   auto data = MultifrontalSolver::Precompute(jacobianGraph, ordering);
-  MultifrontalSolver solver(std::move(data), ordering, noMergeParams());
+  auto params = noMergeParams();
+  params.qrMode = MultifrontalParameters::QRMode::Force;
+  MultifrontalSolver solver(std::move(data), ordering, params);
 
-  CHECK_EXCEPTION(solver.load(hessianGraph), MultifrontalSolverNotSupported);
+  solver.eliminateInPlace(hessianGraph);
+  EXPECT_DOUBLES_EQUAL(2.0, solver.updateSolution().at(x1)(0), 1e-12);
 }
+
+/* ************************************************************************* */
+namespace hessian_reload_tests {
+
+// Individual Hessians can be indefinite: only their assembled sum needs to
+// be positive definite. Check permuted block mappings, mixed rows, and reload.
+TEST(MultifrontalSolver, MixedIndefiniteHessianReload) {
+  GaussianFactorGraph graph;
+  graph.emplace_shared<HessianFactor>(x2, x1, Matrix{{-1.0}}, Matrix{{0.3}},
+                                      Vector{{0.5}}, Matrix{{-2.0}},
+                                      Vector{{-0.2}}, -3.0);
+  graph.emplace_shared<JacobianFactor>(x1, Matrix{{2.0}}, x2, Matrix{{0.5}},
+                                       Vector{{1.0}});
+  graph.emplace_shared<JacobianFactor>(x2, Matrix{{2.0}}, Vector{{0.0}});
+  const Ordering ordering{x1, x2};
+  auto params = noMergeParams();
+  params.compactCholeskySeparatorDimThreshold = 0;
+  MultifrontalSolver solver(graph, ordering, params);
+  for (double scale : {1.0, 2.0}) {
+    graph[0] = std::make_shared<HessianFactor>(
+        x2, x1, Matrix{{-1.0}}, Matrix{{0.3}}, Vector{{0.5 * scale}},
+        Matrix{{-2.0}}, Vector{{-0.2 * scale}}, -3.0);
+    solver.eliminateInPlace(graph);
+    const auto& result = solver.updateSolution();
+    const VectorValues expected = graph.optimize(ordering, EliminateCholesky);
+    EXPECT(assert_equal(expected, result, 1e-10));
+    VectorValues zero = result;
+    zero.setZero();
+    EXPECT_DOUBLES_EQUAL(graph.error(zero) - graph.error(result),
+                         solver.deltaError(), 1e-10);
+  }
+}
+
+// Fixed deltas contribute no Hessian columns, including when factor key order
+// differs from elimination order.
+TEST(MultifrontalSolver, HessianWithFixedKey) {
+  GaussianFactorGraph graph;
+  graph.emplace_shared<HessianFactor>(x2, x1, Matrix{{4.0}}, Matrix{{1.0}},
+                                      Vector{{8.0}}, Matrix{{3.0}},
+                                      Vector{{7.0}}, 20.0);
+  graph.emplace_shared<JacobianFactor>(
+      x1, I_1x1, Vector{{0.0}}, noiseModel::Constrained::All(1));
+  const Ordering ordering{x1, x2};
+  MultifrontalSolver solver(graph, ordering, noMergeParams());
+  solver.eliminateInPlace(graph);
+  const auto& result = solver.updateSolution();
+  EXPECT_DOUBLES_EQUAL(0.0, result.at(x1)(0), 1e-12);
+  EXPECT_DOUBLES_EQUAL(2.0, result.at(x2)(0), 1e-12);
+}
+
+}  // namespace hessian_reload_tests
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 // Merge threshold changes the clique count.
