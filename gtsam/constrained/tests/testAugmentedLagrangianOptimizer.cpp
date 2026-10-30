@@ -529,6 +529,73 @@ TEST(AugmentedLagrangianBCL, VectorMultiplierFromTerminalModel) {
                        result.augmentedLagrangianStationarity, 1e-10);
 }
 
+// Final diagnostics remain available without retaining intermediate Values,
+// and both public optimization entry points start a fresh identical solve.
+TEST(AugmentedLagrangianBCL, FinalStateWithoutHistory) {
+  using namespace scalar_problem;
+  const auto problem = Problem(CostTo(2.0), {}, LessEqual(0.0));
+  auto params = BclParams();
+  const AugmentedLagrangianOptimizer optimizer(problem, ValuesAt(1.0), params);
+  const Values expectedValues = optimizer.optimize();
+  const auto expected = optimizer.progress().back();
+  EXPECT(expected.converged);
+  EXPECT(expected.iteration > 1);
+
+  params->storeOptProgress = false;
+  const auto result = optimizer.optimizeWithState();
+  EXPECT(optimizer.progress().empty());
+  EXPECT(result.converged);
+  EXPECT(result.innerConverged);
+  EXPECT(assert_equal(expectedValues, result.values, 1e-12));
+  EXPECT_LONGS_EQUAL(expected.iteration, result.iteration);
+  EXPECT_LONGS_EQUAL(expected.totalUnconstrainedIterations,
+                    result.totalUnconstrainedIterations);
+  EXPECT_DOUBLES_EQUAL(expected.augmentedLagrangianStationarity,
+                       result.augmentedLagrangianStationarity, 1e-12);
+  EXPECT_DOUBLES_EQUAL(expected.generalizedConstraintViolation,
+                       result.generalizedConstraintViolation, 1e-12);
+  EXPECT_DOUBLES_EQUAL(expected.lambdaIneq[0], result.lambdaIneq[0], 1e-12);
+  EXPECT(assert_equal(result.values, optimizer.optimize(), 1e-12));
+  EXPECT(optimizer.progress().empty());
+}
+
+// A feasible initial point with an unmet inner target must be reported as
+// nonconverged even though optimize() can return its Values normally.
+TEST(AugmentedLagrangianBCL, FinalStateReportsInnerFailure) {
+  using namespace scalar_problem;
+  const auto problem = Problem(CostTo(2.0), {}, LessEqual(0.0));
+  auto params = BclParams();
+  params->storeOptProgress = false;
+  params->lmParams.maxIterations = 0;
+  const AugmentedLagrangianOptimizer optimizer(problem, ValuesAt(0.0), params);
+  const auto result = optimizer.optimizeWithState();
+  EXPECT(!result.converged);
+  EXPECT(!result.innerConverged);
+  EXPECT_LONGS_EQUAL(1, result.iteration);
+  EXPECT_LONGS_EQUAL(0, result.totalUnconstrainedIterations);
+  EXPECT_DOUBLES_EQUAL(0.0, result.values.at<double>(kX), 0.0);
+  EXPECT(result.augmentedLagrangianStationarity >
+         params->absoluteStationarityTolerance);
+  EXPECT(optimizer.progress().empty());
+}
+
+// Exhausting the outer budget returns diagnostics rather than claiming success.
+TEST(AugmentedLagrangianBCL, FinalStateReportsOuterLimit) {
+  using namespace scalar_problem;
+  const auto problem = Problem(CostTo(2.0), {}, LessEqual(0.0));
+  auto params = BclParams();
+  params->storeOptProgress = false;
+  params->maxIterations = 1;
+  const AugmentedLagrangianOptimizer optimizer(problem, ValuesAt(1.0), params);
+  const auto result = optimizer.optimizeWithState();
+  EXPECT(!result.converged);
+  EXPECT(result.innerConverged);
+  EXPECT_LONGS_EQUAL(1, result.iteration);
+  EXPECT(result.generalizedConstraintViolation >
+         params->absoluteViolationTolerance);
+  EXPECT(optimizer.progress().empty());
+}
+
 // Reusing numerical storage across changed penalties and multipliers must
 // match independently constructed solves, including changing PHR activity.
 TEST(AugmentedLagrangianBCL, PersistentMatchesFreshSubproblems) {

@@ -194,8 +194,16 @@ class GTSAM_EXPORT AugmentedLagrangianOptimizer : public ConstrainedOptimizer {
       Params::shared_ptr p = std::make_shared<Params>())
       : Base(graph, initialValues), p_(p), progress_() {}
 
-  /// Run the selected augmented-Lagrangian update policy.
+  /// Run the selected augmented-Lagrangian update policy and return its values.
   Values optimize() const override;
+
+  /** Run the same optimization and return its final values and diagnostics.
+   * Each call starts from initialValues_ with fresh multipliers and retains one
+   * workspace across its outer iterations. The returned state describes either
+   * convergence or the stopping condition; callers must check converged.
+   * No iteration history is stored unless storeOptProgress is enabled.
+   */
+  State optimizeWithState() const;
 
   /**
    * Solve one fixed-multiplier subproblem and perform one outer update.
