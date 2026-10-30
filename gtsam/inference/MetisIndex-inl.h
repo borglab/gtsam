@@ -47,6 +47,8 @@ void MetisIndex::augment(const FactorGraphType& factors) {
         keySet.insert(keySet.end(), key); // Keep a track of all unique keys
         if (intKeyBMap_.left.find(key) == intKeyBMap_.left.end()) {
           intKeyBMap_.insert(key, keyCounter);
+          // Isolated keys still need an empty CSR row.
+          iAdjMap.try_emplace(keyCounter);
           keyCounter++;
         }
       }

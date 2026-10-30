@@ -35,8 +35,6 @@ namespace gtsam
       struct OptimizeData {
         OptimizeData* parentData = nullptr;
         FastMap<Key, VectorValues::const_iterator> cliqueResults;
-        //VectorValues ancestorResults;
-        //VectorValues results;
       };
 
       /* ************************************************************************* */
@@ -50,7 +48,12 @@ namespace gtsam
       struct OptimizeClique
       {
         VectorValues collectedResult;
+        const VectorValues* rhs = nullptr;
 
+        /** Optimize with stored d, or solve against a complete whitened rhs. */
+        explicit OptimizeClique(const VectorValues* rhs = nullptr) : rhs(rhs) {}
+
+        /** Solve this clique after its separator solution is available. */
         OptimizeData operator()(
           const std::shared_ptr<CLIQUE>& clique,
           OptimizeData& parentData)
@@ -63,7 +66,7 @@ namespace gtsam
 
           // Solve and store in our results
           {
-            GaussianConditional& c = *clique->conditional();
+            const GaussianConditional& c = *clique->conditional();
             // Solve matrix
             Vector xS;
             {
@@ -86,10 +89,23 @@ namespace gtsam
               }
             }
 
+            // Stored d is already in the raw conditional coordinates. An
+            // arbitrary RHS uses whitened coordinates, so scale it before the
+            // triangular solve: R x = D rhs - S xS, with D = diag(sigmas).
             Vector solution;
-            internal::solveUpperConditional(c.R(), c.S(), c.getb(), xS,
-                                            &solution);
-            if (solution.hasNaN()) {
+            if (rhs) {
+              Vector frontalRhs(c.rows());
+              rhs->fillVector(c.frontals(), frontalRhs);
+              if (c.get_model())
+                frontalRhs.array() *= c.get_model()->sigmasRef().array();
+              internal::solveUpperConditional(c.R(), c.S(), frontalRhs, xS,
+                                              &solution);
+            } else {
+              internal::solveUpperConditional(c.R(), c.S(), c.getb(), xS,
+                                              &solution);
+            }
+            // RHS solves reject nonfinite values; optimize() rejects NaNs.
+            if (rhs ? !solution.allFinite() : solution.hasNaN()) {
               throw IndeterminateSystemException(c.keys().front());
             }
 
@@ -112,37 +128,14 @@ namespace gtsam
       };
 
       /* ************************************************************************* */
-      //OptimizeData OptimizePreVisitor(const GaussianBayesTreeClique::shared_ptr& clique, OptimizeData& parentData)
-      //{
-      //  // Create data - holds a pointer to our parent, a copy of parent solution, and our results
-      //  OptimizeData myData;
-      //  myData.parentData = parentData;
-      //  // Take any ancestor results we'll need
-      //  for(Key parent: clique->conditional_->parents())
-      //    myData.ancestorResults.insert(parent, myData.parentData->ancestorResults[parent]);
-      //  // Solve and store in our results
-      //  myData.results.insert(clique->conditional()->solve(myData.ancestorResults));
-      //  myData.ancestorResults.insert(myData.results);
-      //  return myData;
-      //}
-
-      /* ************************************************************************* */
-      //void OptimizePostVisitor(const GaussianBayesTreeClique::shared_ptr& clique, OptimizeData& myData)
-      //{
-      //  // Conglomerate our results to the parent
-      //  myData.parentData->results.insert(myData.results);
-      //}
-
-      /* ************************************************************************* */
+      /** Back-substitute stored d, or a complete whitened rhs, through a tree. */
       template<class BAYESTREE>
-      VectorValues optimizeBayesTree(const BAYESTREE& bayesTree)
+      VectorValues optimizeBayesTree(const BAYESTREE& bayesTree,
+                                    const VectorValues* rhs = nullptr)
       {
         gttic(linear_optimizeBayesTree);
-        //internal::OptimizeData rootData; // Will hold final solution
-        //treeTraversal::DepthFirstForest(*this, rootData, internal::OptimizePreVisitor, internal::OptimizePostVisitor);
-        //return rootData.results;
         OptimizeData rootData;
-        OptimizeClique<typename BAYESTREE::Clique> preVisitor;
+        OptimizeClique<typename BAYESTREE::Clique> preVisitor(rhs);
         treeTraversal::no_op postVisitor;
         TbbOpenMPMixedScope threadLimiter; // Limits OpenMP threads since we're mixing TBB and OpenMP
         treeTraversal::DepthFirstForestParallel(bayesTree, rootData, preVisitor, postVisitor);

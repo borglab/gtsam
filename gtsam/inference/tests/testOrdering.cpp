@@ -17,6 +17,7 @@
 
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
+#include <gtsam/symbolic/SymbolicBayesTree.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/MetisIndex.h>
 #include <gtsam/base/TestableAssertions.h>
@@ -301,6 +302,7 @@ TEST(Ordering, MetisEdgelessGraph) {
   symbolicGraph.push_factor(0);
   symbolicGraph.push_factor(1);
 
+  EXPECT((vector<int32_t>{0, 0, 0}) == MetisIndex(symbolicGraph).xadj());
   const Ordering metis = Ordering::Metis(symbolicGraph);
 
   EXPECT_LONGS_EQUAL(2, metis.size());
@@ -308,6 +310,45 @@ TEST(Ordering, MetisEdgelessGraph) {
   EXPECT(metis.contains(1));
 }
 
+/* ************************************************************************* */
+namespace isolated_keys_fixture {
+
+// Interleave isolated keys with a connected component in internal index order.
+SymbolicFactorGraph MixedGraph() {
+  SymbolicFactorGraph graph;
+  graph.push_factor(100);
+  graph.push_factor(10, 30);
+  graph.push_factor(200);
+  graph.push_factor(30, 20);
+  graph.push_factor(300);
+  return graph;
+}
+
+// Every vertex needs a CSR row, including isolated vertices at any position.
+TEST(Ordering, MetisIsolatedKeysCsr) {
+  const MetisIndex index(MixedGraph());
+  EXPECT_LONGS_EQUAL(6, index.nValues());
+  EXPECT((vector<int32_t>{0, 0, 1, 3, 3, 4, 4}) == index.xadj());
+  EXPECT((vector<int32_t>{2, 1, 4, 2}) == index.adj());
+}
+
+// Mixed connected and isolated keys must order and eliminate into all components.
+TEST(Ordering, MetisIsolatedKeysElimination) {
+  const SymbolicFactorGraph graph = MixedGraph();
+  for (int seed : {0, 42, 4321}) {
+    const Ordering ordering = Ordering::Metis(graph, seed);
+    EXPECT_LONGS_EQUAL(6, ordering.size());
+    for (Key key : graph.keys()) EXPECT(ordering.contains(key));
+    const auto tree = graph.eliminateMultifrontal(ordering);
+    EXPECT_LONGS_EQUAL(6, tree->nodes().size());
+    EXPECT_LONGS_EQUAL(4, tree->roots().size());
+    for (Key key : {100, 200, 300}) {
+      EXPECT_LONGS_EQUAL(1, (*tree)[key]->conditional()->size());
+    }
+  }
+}
+
+}  // namespace isolated_keys_fixture
 /* ************************************************************************* */
 namespace {
 // 3x5 grid from the METIS manual (same graph as the csr_format test).

@@ -21,6 +21,7 @@
 #include <gtsam/constrained/AugmentedLagrangianOptimizer.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/nonlinear/LinearContainerFactor.h>
 #include <gtsam/nonlinear/expressions.h>
 
 #include <cmath>
@@ -432,6 +433,248 @@ TEST(AugmentedLagrangianBCL, MixedChangingActiveSetOptimization) {
 }
 
 }  // namespace optimization_tests
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace persistent_solver_tests {
+
+// Direct gradient accumulation must apply both noise-whitening factors when
+// a cost supplies an unwhitened Jacobian rather than the usual unit model.
+TEST(AugmentedLagrangianBCL, StationarityWithUnwhitenedJacobian) {
+  using namespace scalar_problem;
+  NonlinearFactorGraph costs;
+  costs.emplace_shared<LinearContainerFactor>(
+      JacobianFactor(kX, Matrix11::Constant(2.0), Vector1(4.0),
+                     noiseModel::Isotropic::Sigma(1, 2.0)),
+      ValuesAt(0.0));
+  const auto problem = Problem(costs, {}, {});
+  auto params = BclParams();
+  params->lmParams.maxIterations = 0;
+  const auto state = StateAt(problem, 0.0, 10.0);
+  const AugmentedLagrangianOptimizer optimizer(problem, state.values, params);
+  const auto result = std::get<0>(optimizer.iterate(state, 10.0, 10.0));
+  EXPECT_DOUBLES_EQUAL(2.0, result.augmentedLagrangianStationarity, 1e-12);
+  EXPECT(assert_equal(state.values, result.values));
+}
+
+class CountingCost : public NoiseModelFactor1<double> {
+ public:
+  mutable size_t linearizations = 0;
+
+  CountingCost()
+      : NoiseModelFactor1<double>(noiseModel::Unit::Create(1),
+                                  scalar_problem::kX) {}
+
+  Vector evaluateError(const double& x, OptionalMatrixType H) const override {
+    if (H) {
+      ++linearizations;
+      *H = Matrix11::Constant(2.0 * x);
+    }
+    return Vector1(x * x - 1.0);
+  }
+};
+
+// Nonlinear steps, damping retries, and BCL stationarity share one Jacobian
+// evaluation per visited point, including the terminal point.
+TEST(AugmentedLagrangianBCL, SharesStationarityLinearization) {
+  using namespace scalar_problem;
+  auto cost = std::make_shared<CountingCost>();
+  NonlinearFactorGraph costs;
+  costs.push_back(cost);
+  const auto problem = Problem(costs, {}, {});
+  auto params = BclParams();
+  auto state = StateAt(problem, 0.1, 10.0);
+  state.bclOmega = 1e-8;
+  state.bclEta = 1.0;
+  const AugmentedLagrangianOptimizer optimizer(problem, state.values, params);
+  const auto result = std::get<0>(optimizer.iterate(state, 10.0, 10.0));
+  EXPECT(result.innerConverged);
+  EXPECT_DOUBLES_EQUAL(1.0, result.values.at<double>(kX), 1e-7);
+  EXPECT_LONGS_EQUAL(result.unconstrainedIterations + 1, cost->linearizations);
+  const double x = result.values.at<double>(kX);
+  EXPECT_DOUBLES_EQUAL(std::abs(2.0 * x * (x * x - 1.0)),
+                       result.augmentedLagrangianStationarity, 1e-12);
+}
+
+// Terminal residuals recover vector equality updates with unequal sigmas.
+// The terminal AL gradient is the ordinary Lagrangian gradient at lambda+.
+TEST(AugmentedLagrangianBCL, VectorMultiplierFromTerminalModel) {
+  const Symbol key('v', 0);
+  const Vector3 sigmas(1.0, 2.0, 4.0);
+  NonlinearEqualityConstraints equalities;
+  equalities.emplace_shared<ExpressionEqualityConstraint<Vector3>>(
+      Vector3_(key), Vector3::Zero(), sigmas);
+  NonlinearFactorGraph costs;
+  const Vector3 target(1.0, -2.0, 3.0);
+  costs.addPrior(key, target, noiseModel::Unit::Create(3));
+  const ConstrainedOptProblem problem(costs, equalities, {});
+  Values initial;
+  initial.insert(key, Vector3(2.0, 1.0, -1.0));
+  auto params = scalar_problem::BclParams();
+  AugmentedLagrangianState state(0, initial, problem);
+  state.initializeLagrangeMultipliers(problem);
+  state.lambdaEq[0] = Vector3(0.3, -0.5, 1.2);
+  state.bclOmega = 1e-6;
+  state.bclEta = 100.0;
+  const AugmentedLagrangianOptimizer optimizer(problem, initial, params);
+  const auto result = std::get<0>(optimizer.iterate(state, 10.0, 10.0));
+  EXPECT(result.innerConverged);
+  const Vector3 x = result.values.at<Vector3>(key);
+  EXPECT(
+      assert_equal(Vector(state.lambdaEq[0] + 10.0 * x.cwiseQuotient(sigmas)),
+                   result.lambdaEq[0], 1e-10));
+  const Vector3 lagrangianGradient =
+      x - target + result.lambdaEq[0].cwiseQuotient(sigmas);
+  EXPECT_DOUBLES_EQUAL(lagrangianGradient.lpNorm<Eigen::Infinity>(),
+                       result.augmentedLagrangianStationarity, 1e-10);
+}
+
+// Final diagnostics remain available without retaining intermediate Values,
+// and both public optimization entry points start a fresh identical solve.
+TEST(AugmentedLagrangianBCL, FinalStateWithoutHistory) {
+  using namespace scalar_problem;
+  const auto problem = Problem(CostTo(2.0), {}, LessEqual(0.0));
+  auto params = BclParams();
+  const AugmentedLagrangianOptimizer optimizer(problem, ValuesAt(1.0), params);
+  const Values expectedValues = optimizer.optimize();
+  const auto expected = optimizer.progress().back();
+  EXPECT(expected.converged);
+  EXPECT(expected.iteration > 1);
+
+  params->storeOptProgress = false;
+  const auto result = optimizer.optimizeWithState();
+  EXPECT(optimizer.progress().empty());
+  EXPECT(result.converged);
+  EXPECT(result.innerConverged);
+  EXPECT(assert_equal(expectedValues, result.values, 1e-12));
+  EXPECT_LONGS_EQUAL(expected.iteration, result.iteration);
+  EXPECT_LONGS_EQUAL(expected.totalUnconstrainedIterations,
+                    result.totalUnconstrainedIterations);
+  EXPECT_DOUBLES_EQUAL(expected.augmentedLagrangianStationarity,
+                       result.augmentedLagrangianStationarity, 1e-12);
+  EXPECT_DOUBLES_EQUAL(expected.generalizedConstraintViolation,
+                       result.generalizedConstraintViolation, 1e-12);
+  EXPECT_DOUBLES_EQUAL(expected.lambdaIneq[0], result.lambdaIneq[0], 1e-12);
+  EXPECT(assert_equal(result.values, optimizer.optimize(), 1e-12));
+  EXPECT(optimizer.progress().empty());
+}
+
+// A feasible initial point with an unmet inner target must be reported as
+// nonconverged even though optimize() can return its Values normally.
+TEST(AugmentedLagrangianBCL, FinalStateReportsInnerFailure) {
+  using namespace scalar_problem;
+  const auto problem = Problem(CostTo(2.0), {}, LessEqual(0.0));
+  auto params = BclParams();
+  params->storeOptProgress = false;
+  params->lmParams.maxIterations = 0;
+  const AugmentedLagrangianOptimizer optimizer(problem, ValuesAt(0.0), params);
+  const auto result = optimizer.optimizeWithState();
+  EXPECT(!result.converged);
+  EXPECT(!result.innerConverged);
+  EXPECT_LONGS_EQUAL(1, result.iteration);
+  EXPECT_LONGS_EQUAL(0, result.totalUnconstrainedIterations);
+  EXPECT_DOUBLES_EQUAL(0.0, result.values.at<double>(kX), 0.0);
+  EXPECT(result.augmentedLagrangianStationarity >
+         params->absoluteStationarityTolerance);
+  EXPECT(optimizer.progress().empty());
+}
+
+// Exhausting the outer budget returns diagnostics rather than claiming success.
+TEST(AugmentedLagrangianBCL, FinalStateReportsOuterLimit) {
+  using namespace scalar_problem;
+  const auto problem = Problem(CostTo(2.0), {}, LessEqual(0.0));
+  auto params = BclParams();
+  params->storeOptProgress = false;
+  params->maxIterations = 1;
+  const AugmentedLagrangianOptimizer optimizer(problem, ValuesAt(1.0), params);
+  const auto result = optimizer.optimizeWithState();
+  EXPECT(!result.converged);
+  EXPECT(result.innerConverged);
+  EXPECT_LONGS_EQUAL(1, result.iteration);
+  EXPECT(result.generalizedConstraintViolation >
+         params->absoluteViolationTolerance);
+  EXPECT(optimizer.progress().empty());
+}
+
+// Reusing numerical storage across changed penalties and multipliers must
+// match independently constructed solves, including changing PHR activity.
+TEST(AugmentedLagrangianBCL, PersistentMatchesFreshSubproblems) {
+  using namespace constrained_example2;
+  for (bool diagonal : {false, true}) {
+    auto params = scalar_problem::BclParams();
+    params->maxIterations = 40;
+    params->lmParams.dampingParams.diagonalDamping = diagonal;
+    params->lmParams.dampingParams.exactHessianDiagonal = diagonal;
+    params->lmParams.useFixedLambdaFactor = false;
+    params->lmParams.ordering = Ordering{x2_key, x1_key};
+    const AugmentedLagrangianOptimizer optimizer(problem, init_values, params);
+    const Values result = optimizer.optimize();
+    const auto progress = optimizer.progress();
+    EXPECT(assert_equal(optimal_values, result, 5e-4));
+    EXPECT(progress.size() > 2);
+    for (size_t i = 1; i < progress.size(); ++i) {
+      const auto& expected = progress[i];
+      const auto fresh = std::get<0>(
+          optimizer.iterate(progress[i - 1], expected.muEq, expected.muIneq));
+      EXPECT(assert_equal(expected.values, fresh.values, 1e-9));
+      EXPECT_DOUBLES_EQUAL(expected.augmentedLagrangianStationarity,
+                           fresh.augmentedLagrangianStationarity, 1e-9);
+      EXPECT(expected.updateType == fresh.updateType);
+    }
+    // A second optimize() starts from the original primal/dual state.
+    EXPECT(assert_equal(result, optimizer.optimize(), 1e-9));
+  }
+}
+
+// A failed damping search leaves the current point/model intact and cannot
+// authorize a BCL multiplier update merely because the cost stopped changing.
+TEST(AugmentedLagrangianBCL, RejectedStepKeepsTerminalModel) {
+  using namespace scalar_problem;
+  const auto problem = Problem(CostTo(2.0), {}, LessEqual(0.0));
+  auto params = BclParams();
+  params->lmParams.minModelFidelity = 2.0;
+  params->lmParams.lambdaUpperBound = 1.0;
+  auto state = StateAt(problem, 1.0, 10.0);
+  state.bclOmega = 1e-12;
+  state.bclEta = 100.0;
+  const AugmentedLagrangianOptimizer optimizer(problem, state.values, params);
+  const auto result = std::get<0>(optimizer.iterate(state, 10.0, 10.0));
+  EXPECT(!result.innerConverged);
+  EXPECT(result.updateType == AugmentedLagrangianUpdateType::None);
+  EXPECT_LONGS_EQUAL(0, result.unconstrainedIterations);
+  EXPECT(assert_equal(state.values, result.values));
+  EXPECT_DOUBLES_EQUAL(9.0, result.augmentedLagrangianStationarity, 1e-12);
+}
+
+// Once the inner gradient is accurate enough for the requested final result,
+// BCL must continue feasibility updates rather than demand sub-roundoff steps.
+TEST(AugmentedLagrangianBCL, PoorScalingRespectsFinalStationarityTolerance) {
+  using namespace constrained_example;
+  NonlinearFactorGraph costs;
+  costs.addPrior(x1_key, 1.5, noiseModel::Unit::Create(1));
+  costs.addPrior(x2_key, 1.2, noiseModel::Unit::Create(1));
+  NonlinearEqualityConstraints equalities;
+  equalities.emplace_shared<ExpressionEqualityConstraint<double>>(
+      x1 + x2, 1.0, Vector1(0.01));
+  NonlinearInequalityConstraints inequalities;
+  inequalities.emplace_shared<ScalarExpressionInequalityConstraint>(
+      x1 - Double_(0.4), 10.0);
+  const ConstrainedOptProblem problem(costs, equalities, inequalities);
+  Values initial;
+  initial.insert(x1_key, 2.0);
+  initial.insert(x2_key, -1.0);
+  auto params = scalar_problem::BclParams();
+  const AugmentedLagrangianOptimizer optimizer(problem, initial, params);
+  const Values result = optimizer.optimize();
+  EXPECT(optimizer.progress().back().converged);
+  EXPECT_DOUBLES_EQUAL(0.4, result.at<double>(x1_key), 1e-5);
+  EXPECT_DOUBLES_EQUAL(0.6, result.at<double>(x2_key), 1e-5);
+  for (const auto& state : optimizer.progress()) {
+    EXPECT(state.bclOmega >= params->absoluteStationarityTolerance);
+  }
+}
+
+}  // namespace persistent_solver_tests
 /* ************************************************************************* */
 
 /* ************************************************************************* */

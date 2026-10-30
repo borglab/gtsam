@@ -66,7 +66,8 @@ void MergeEqualityConstraints(
 
 /* ************************************************************************* */
 QcqpProblem::QcqpProblem(const NonlinearFactorGraph& graph,
-                         size_t columnDimension) {
+                         size_t columnDimension,
+                         bool useRedundantConstraints) {
   if (columnDimension == 0) {
     throw std::invalid_argument(
         "QcqpProblem: columnDimension must be positive.");
@@ -78,9 +79,15 @@ QcqpProblem::QcqpProblem(const NonlinearFactorGraph& graph,
 
     NonlinearFactorGraph factorCosts;
     NonlinearEqualityConstraints factorConstraints;
-    factor->qcqpFactors(&factorCosts, &factorConstraints, columnDimension);
+    NonlinearEqualityConstraints factorRedundantConstraints;
+    factor->qcqpFactors(
+        &factorCosts, &factorConstraints,
+        useRedundantConstraints ? &factorRedundantConstraints : nullptr,
+        columnDimension);
     costs_.add(factorCosts);
     MergeEqualityConstraints(factorConstraints, &eqConstraints_,
+                             &quadraticConstraintIndex);
+    MergeEqualityConstraints(factorRedundantConstraints, &eqConstraints_,
                              &quadraticConstraintIndex);
   }
 }

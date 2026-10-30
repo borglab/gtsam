@@ -3,6 +3,22 @@
 //*************************************************************************
 namespace gtsam {
 
+#include <gtsam/linear/Errors.h>
+// MATLAB proxy; Python uses native lists of vectors.
+class Errors {
+  Errors();
+  Errors(const gtsam::Errors& other);
+  size_t size() const;
+  bool empty() const;
+  void clear();
+  void push_back(const gtsam::Vector& value);
+  gtsam::Vector front() const;
+  gtsam::Vector back() const;
+  void pop_front();
+};
+
+double dot(const gtsam::Errors& a, const gtsam::Errors& b);
+
 #include <gtsam/base/SymmetricBlockMatrix.h>
 class SymmetricBlockMatrix {
   SymmetricBlockMatrix();
@@ -956,6 +972,8 @@ virtual class GaussianBayesTree {
                  gtsam::DefaultKeyFormatter) const;
 
   gtsam::VectorValues optimize() const;
+  gtsam::VectorValues backSubstitute(const gtsam::VectorValues& rhs) const;
+  gtsam::VectorValues backSubstituteTranspose(const gtsam::VectorValues& rhs) const;
   gtsam::VectorValues optimizeGradientSearch() const;
   gtsam::VectorValues gradient(const gtsam::VectorValues& x0) const;
   gtsam::VectorValues gradientAtZero() const;

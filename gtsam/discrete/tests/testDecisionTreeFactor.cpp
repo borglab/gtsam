@@ -29,6 +29,11 @@
 #include <gtsam/inference/Key.h>
 #include <gtsam/inference/Ordering.h>
 
+#include <algorithm>
+#include <functional>
+#include <limits>
+#include <vector>
+
 using namespace std;
 using namespace gtsam;
 
@@ -311,6 +316,84 @@ TEST(DecisionTreeFactor, PruneKeepsLargestValues) {
 
   DecisionTreeFactor expected(X, "0.2 0.2 0.0 0.2 0.3");
   EXPECT(assert_equal(expected, *pruned));
+}
+
+// Check that each leaf counts all the assignments it covers, including those
+// of keys the tree no longer branches on after compression.
+TEST(DecisionTreeFactor, PruneCompressedKey) {
+  DiscreteKey X(0, 2), Y(1, 2);
+  DecisionTreeFactor f(X & Y, "0.1 0.4 0.1 0.4");
+
+  // The values don't depend on X, so compression removes it from the tree.
+  EXPECT_LONGS_EQUAL(1, f.labels().size());
+
+  // Each 0.4 leaf stands for two assignments, so it alone fills the top 2.
+  EXPECT_DOUBLES_EQUAL(0.4, f.computeThreshold(2), 1e-9);
+
+  auto pruned = std::dynamic_pointer_cast<DecisionTreeFactor>(f.prune(2));
+  DecisionTreeFactor expected(X & Y, "0 0.4 0 0.4");
+  EXPECT(assert_equal(expected, *pruned));
+}
+
+// Check that keeping zero assignments prunes everything, as TableFactor does.
+TEST(DecisionTreeFactor, PruneToZero) {
+  DiscreteKey X(0, 3);
+  DecisionTreeFactor f(X, "0.2 0.5 0.3");
+
+  auto pruned = std::dynamic_pointer_cast<DecisionTreeFactor>(f.prune(0));
+  DecisionTreeFactor expected(X, "0 0 0");
+  EXPECT(assert_equal(expected, *pruned));
+}
+
+// Check that a leaf's assignment count saturates instead of overflowing when
+// compression removes as many binary keys as size_t has bits.
+TEST(DecisionTreeFactor, PruneCompressedMultiplicityOverflow) {
+  const size_t bits = std::numeric_limits<size_t>::digits;
+  const DiscreteKey Y(bits, 2);
+  DecisionTreeFactor f(Y, "0.1 0.9");
+  for (size_t k = 0; k < bits; ++k)
+    f = f * DecisionTreeFactor(DiscreteKey(k, 2), "1 1");
+
+  EXPECT_LONGS_EQUAL(2, f.nrLeaves());
+  EXPECT_DOUBLES_EQUAL(0.9, f.computeThreshold(1), 1e-12);
+  const auto pruned = f.prune(1);
+  EXPECT_DOUBLES_EQUAL(0.0, (*pruned)(DiscreteValues{{Y.first, 0}}), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.9, (*pruned)(DiscreteValues{{Y.first, 1}}), 1e-12);
+}
+
+// Check that the threshold is the N-th largest value over many leaves, both
+// for small N, where the heap stays bounded, and for N up to the total count.
+TEST(DecisionTreeFactor, ComputeThresholdManyLeaves) {
+  // 1024 assignments over 10 binary keys, where every value appears twice in
+  // branches that don't merge, so ties must be counted across leaves.
+  DiscreteKeys keys;
+  for (size_t k = 0; k < 10; ++k) keys.emplace_back(k, 2);
+  std::vector<double> table;
+  for (size_t i = 0; i < 1024; ++i) table.push_back(((i * 37) % 1024) / 2);
+  const DecisionTreeFactor f(keys, table);
+  EXPECT_LONGS_EQUAL(1024, f.nrLeaves());
+
+  std::vector<double> sorted = table;
+  std::sort(sorted.begin(), sorted.end(), std::greater<double>());
+  for (size_t N : {1, 2, 3, 5, 100, 1023, 1024}) {
+    EXPECT_DOUBLES_EQUAL(sorted[N - 1], f.computeThreshold(N), 1e-12);
+  }
+  EXPECT_DOUBLES_EQUAL(0.0, f.computeThreshold(1025), 1e-12);
+}
+
+// Check that pruning a leaf covering 2^30 assignments uses one weighted entry
+// rather than materializing a copy of its value per assignment.
+TEST(DecisionTreeFactor, PruneCompressedLeafWithoutExpanding) {
+  DecisionTreeFactor f(DiscreteKey(0, 2), "0.4 0.4");
+  for (size_t k = 1; k < 30; ++k)
+    f = f * DecisionTreeFactor(DiscreteKey(k, 2), "1 1");
+  EXPECT_LONGS_EQUAL(1, f.nrLeaves());
+
+  const size_t nrAssignments = size_t(1) << 30;
+  EXPECT_DOUBLES_EQUAL(0.4, f.computeThreshold(nrAssignments), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, f.computeThreshold(nrAssignments + 1), 1e-12);
+  const auto pruned = f.prune(nrAssignments);
+  EXPECT_DOUBLES_EQUAL(0.4, (*pruned)(DiscreteValues{}), 1e-12);
 }
 
 /* ************************************************************************** */

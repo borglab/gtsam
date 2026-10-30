@@ -15,6 +15,7 @@
  * @author Frank Dellaert
  */
 
+#include <gtsam/base/CholeskyCheck.h>
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/base/VerticalBlockMatrix.h>
 #include <gtsam/linear/internal/CompactLeafSchurKernel.h>
@@ -27,8 +28,6 @@ namespace gtsam {
 namespace internal {
 namespace {
 
-constexpr double kMinimumNormalizedPivotSquared = 1.0 / (4096.0 * 4096.0);
-
 bool factorUpper(Matrix* matrix, DenseIndex dimension) {
   for (DenseIndex column = 0; column < dimension; ++column) {
     const double originalDiagonal = (*matrix)(column, column);
@@ -40,8 +39,7 @@ bool factorUpper(Matrix* matrix, DenseIndex dimension) {
     for (DenseIndex k = 0; k < column; ++k) {
       pivotSquared -= (*matrix)(k, column) * (*matrix)(k, column);
     }
-    if (!std::isfinite(pivotSquared) || pivotSquared <= 0.0 ||
-        pivotSquared < kMinimumNormalizedPivotSquared * originalDiagonal) {
+    if (!CholeskyCheck::acceptSquared(pivotSquared, originalDiagonal)) {
       return false;
     }
 

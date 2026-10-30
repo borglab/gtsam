@@ -597,7 +597,11 @@ VectorValues HessianFactor::solve() {
   // Do Cholesky Factorization
   const size_t n = size();
   assert(size_t(info_.nBlocks()) == n + 1);
-  info_.choleskyPartial(n);
+  try {
+    info_.choleskyPartial(n);
+  } catch (const CholeskyFailed&) {
+    throw IndeterminateSystemException(keys_.front());
+  }
   auto R = info_.triangularView(0, n);
   auto eta = linearTerm();
 

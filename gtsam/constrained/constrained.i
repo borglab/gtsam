@@ -245,7 +245,8 @@ class QpProblem : gtsam::ConstrainedOptProblem {
 class QcqpProblem : gtsam::ConstrainedOptProblem {
   QcqpProblem();
   QcqpProblem(const gtsam::NonlinearFactorGraph& graph,
-               size_t columnDimension = 1);
+               size_t columnDimension = 1,
+               bool useRedundantConstraints = false);
 
   void addCost(const gtsam::QpCost& cost);
   void addConstraint(const gtsam::LinearConstraint& constraint);

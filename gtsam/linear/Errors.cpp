@@ -20,6 +20,8 @@
 #include <gtsam/linear/Errors.h>
 #include <gtsam/linear/VectorValues.h>
 
+#include <stdexcept>
+
 using namespace std;
 
 namespace gtsam {
@@ -94,15 +96,16 @@ Errors operator-(const Errors& a) {
 
 /* ************************************************************************* */
 double dot(const Errors& a, const Errors& b) {
-#ifndef NDEBUG
-  size_t m = a.size();
-  if (b.size()!=m)
-    throw(std::invalid_argument("Errors::dot: incompatible sizes"));
-#endif
+  if (a.size() != b.size())
+    throw std::invalid_argument("Errors::dot: incompatible sizes");
   double result = 0.0;
   Errors::const_iterator it = b.begin();
-  for(const Vector& ai: a)
-    result += gtsam::dot<Vector,Vector>(ai, *(it++));
+  for (const Vector& ai : a) {
+    const Vector& bi = *(it++);
+    if (ai.size() != bi.size())
+      throw std::invalid_argument("Errors::dot: incompatible vector dimensions");
+    result += gtsam::dot<Vector, Vector>(ai, bi);
+  }
   return result;
 }
 

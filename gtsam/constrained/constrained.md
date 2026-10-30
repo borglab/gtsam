@@ -41,7 +41,7 @@ It includes classes for representing constraints, building constrained problems,
 - [`QcqpProblem`](doc/QcqpProblem.ipynb): Holds quadratic costs and linear/quadratic constraints over vector or matrix variables.
 - [`QpCost`](doc/QcqpProblem.ipynb): Also used for QCQP objectives; `QpCost(keys, Q, columnDim)` creates a pure row-space quadratic cost $\frac{1}{2}\sum_{ij}\operatorname{tr}(X_i^\top Q_{ij}X_j)$ over vectors or matrices $X_i \in \mathbb{R}^{r_i \times d}$.
 - [`QuadraticConstraint`](doc/QcqpProblem.ipynb): Scalar quadratic constraint $\operatorname{tr}(X^\top A X) \sim b$, where $\sim$ is equal, less-equal, or greater-equal. For vector variables it may carry a linear term, $x^\top A x + 2a^\top x \sim b$, following Luo et al. (2010); `QuadraticConstraint::FromPqr` accepts the Boyd and Vandenberghe form $\frac{1}{2}x^\top P x + q^\top x + r \sim 0$ (*Convex Optimization*, Eq. (4.35)).
-- `QcqpProblem(graph, columnDim)`: Opt-in conversion hook for supported nonlinear factors that can populate `QpCost` objectives and `QuadraticConstraint` equalities over matrix-valued QCQP variables.
+- `QcqpProblem(graph, columnDim, useRedundantConstraints)`: Opt-in conversion hook for supported nonlinear factors that can populate `QpCost` objectives and `QuadraticConstraint` equalities over matrix-valued QCQP variables. With `useRedundantConstraints`, it also adds redundant constraints implied by the manifold constraints, at D=1 the column-orthonormality and cyclic cross-product identities of SO(3) for Rot3 and Pose3: they tighten SDP relaxations, but the QCQP then violates LICQ.
 - `InsertQcqpValue<T, D>` and `InsertQcqpConstraints<T, D>`: Helpers for inserting supported QCQP variable values and their equality constraints.
 - `ExtractQcqpValues<T, D>`: Projection of exact-shape D=1 vectors or matrix
   slices back to manifold values. Absolute results from unanchored matrix
@@ -92,6 +92,44 @@ which controls behavior near the active constraint boundary in
 `PenaltyOptimizer`. `AugmentedLagrangianOptimizer` instead requires exact PHR
 inequality terms and rejects custom smooth penalties so its projected
 multiplier update remains mathematically consistent.
+
+ALM keeps one augmented graph and one `NonlinearMultifrontalSolver` workspace
+throughout each `optimize()` call. Multipliers and penalties update the graph's
+numerical parameters in place; the ordering, symbolic structure, and solve
+storage persist across outer iterations. Costs may produce Jacobian, batch
+Jacobian, or Hessian factors, with fixed factor slots, keys, and dimensions.
+`lmParams` supplies damping, ordering, multifrontal settings, and iteration
+limits; ALM always uses the imperative solver and does not use the optimizer's
+backend selection, logging, verbosity, or iteration hook. A standalone
+`iterate()` call creates its own workspace.
+
+The workspace also reuses keyed gradient storage, accumulates ordinary
+Jacobian gradients without per-factor gradient maps, and moves intermediate
+`Values` instead of copying them. When progress recording is enabled, its
+snapshot vector is reserved up front. Symbolic clique merging caches external
+separators, which remain invariant when children are absorbed; this avoids
+quadratic subtree traversal on long chains.
+
+BCL uses each linearization both to test stationarity and to compute the next
+step. For a model `A delta - b`, the gradient at the current point is
+`-A.transpose() * b`. The terminal constraint rows also give the candidate
+multipliers directly: `lambdaEqPlus = -sqrt(rhoEq) * bEq` and
+`lambdaIneqPlus = -sqrt(rhoIneq) * bIneq`. Thus the whitened equality residual
+and generalized inequality residual are `(lambdaPlus - lambda) / rho`, with
+no further constraint evaluation. Inactive PHR rows have zero residual and
+Jacobian, so their factor slots remain intact. On an accepted multiplier
+update, the terminal augmented gradient is also the ordinary Lagrangian
+gradient at the updated multipliers; it is **not** the gradient of the next
+augmented subproblem. That next subproblem must be relinearized after its
+parameters change.
+
+The BCL inner stationarity schedule is bounded below by
+`absoluteStationarityTolerance`. This lets feasibility updates continue
+without demanding inner accuracy beyond the requested final tolerance.
+
+`timeAugmentedLagrangianPolicies --warmup 3 --repeats 21` benchmarks the policy
+examples and sparse inequality chains with 512 and 2,048 variables, reporting
+time, iteration counts, success, and final KKT residuals.
 
 ### 1) Build the Problem
 

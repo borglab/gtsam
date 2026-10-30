@@ -24,6 +24,7 @@
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
 #include <gtsam/linear/MultifrontalSolver.h>
 #include <gtsam/linear/NoiseModel.h>
@@ -101,13 +102,21 @@ PrecomputeScratch precomputeFromGraph(const GaussianFactorGraph& graph) {
     const auto& factor = graph[i];
     if (!factor) continue;
 
+    if (const auto* hessian = dynamic_cast<const HessianFactor*>(factor.get())) {
+      // Hessians are assembled directly and consume no packed Jacobian rows.
+      for (auto it = hessian->begin(); it != hessian->end(); ++it) {
+        out.dims[*it] = hessian->getDim(it);
+      }
+      continue;
+    }
+
     auto jacobianFactor = std::dynamic_pointer_cast<JacobianFactor>(factor);
     if (!jacobianFactor) {
       auto batchFactor =
           std::dynamic_pointer_cast<BatchJacobianFactorBase>(factor);
       if (!batchFactor) {
         throw MultifrontalSolverNotSupported(
-            "only JacobianFactor or BatchJacobianFactor inputs are supported");
+            "only JacobianFactor, BatchJacobianFactor, or HessianFactor inputs are supported");
       }
       if (auto model = batchFactor->get_model()) {
         if (model->isConstrained()) {
@@ -404,15 +413,16 @@ void mergeLeafChildren(const SymbolicJunctionTree::sharedNode& cluster,
 // Bottom-up merge of child clusters whose merged total dimension stays below
 // a threshold.
 void mergeSmallClusters(const SymbolicJunctionTree::sharedNode& cluster,
-                        const std::map<Key, size_t>& dims, size_t mergeDimCap) {
+                        const std::map<Key, size_t>& dims, size_t mergeDimCap,
+                        SymbolicJunctionTree::Cluster::KeySetMap* separatorCache) {
   if (!cluster) return;
   for (const auto& child : cluster->children) {
-    mergeSmallClusters(child, dims, mergeDimCap);
+    mergeSmallClusters(child, dims, mergeDimCap, separatorCache);
   }
   if (cluster->children.empty()) return;
 
   const size_t parentTotalDim =
-      totalDimForSymbolicCluster(cluster, dims, nullptr);
+      totalDimForSymbolicCluster(cluster, dims, separatorCache);
   std::vector<bool> merge(cluster->children.size(), false);
   bool any = false;
   for (size_t i = 0; i < cluster->children.size(); ++i) {
@@ -588,8 +598,12 @@ MultifrontalSolver::MultifrontalSolver(PrecomputedData data,
 
   // If applicable, merge small child cliques bottom-up.
   if (params_.mergeDimCap > 0) {
+    // Absorbing children changes frontal keys but not a cluster's external
+    // separator. Cache separators across the bottom-up pass to avoid visiting
+    // every descendant again at every ancestor (quadratic work on chains).
+    SymbolicJunctionTree::Cluster::KeySetMap separatorCache;
     for (const auto& rootCluster : data.indexedJunctionTree.roots()) {
-      mergeSmallClusters(rootCluster, dims_, params_.mergeDimCap);
+      mergeSmallClusters(rootCluster, dims_, params_.mergeDimCap, &separatorCache);
     }
     reportStructure(data.indexedJunctionTree, dims_,
                     "Clique structure after merge", params_.reportStream);

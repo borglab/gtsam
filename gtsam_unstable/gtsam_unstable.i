@@ -397,6 +397,13 @@ virtual class RelativeElevationFactor: gtsam::NoiseModelFactor {
   //void print(string s) const;
 };
 
+#include <gtsam_unstable/slam/BiasedGPSFactor.h>
+virtual class BiasedGPSFactor : gtsam::NoiseModelFactor {
+  BiasedGPSFactor(gtsam::Key posekey, gtsam::Key biaskey, const gtsam::Point3& measured,
+                  const gtsam::noiseModel::Base* model);
+  const gtsam::Point3& measured() const;
+};
+
 #include <gtsam_unstable/slam/InvDepthFactorVariant1.h>
 virtual class InvDepthFactorVariant1 : gtsam::NoiseModelFactor {
   InvDepthFactorVariant1(gtsam::Key poseKey, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
@@ -413,6 +420,14 @@ virtual class InvDepthFactorVariant3a : gtsam::NoiseModelFactor {
 };
 virtual class InvDepthFactorVariant3b : gtsam::NoiseModelFactor {
   InvDepthFactorVariant3b(gtsam::Key poseKey1, gtsam::Key poseKey2, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
+};
+
+#include <gtsam_unstable/slam/GaussMarkov1stOrderFactor.h>
+template <VALUE = {gtsam::Vector, gtsam::Point3}>
+virtual class GaussMarkov1stOrderFactor : gtsam::NoiseModelFactor {
+  GaussMarkov1stOrderFactor(gtsam::Key key1, gtsam::Key key2, double delta_t,
+                            const gtsam::Vector& tau,
+                            const gtsam::noiseModel::Gaussian* model);
 };
 
 

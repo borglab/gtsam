@@ -1217,6 +1217,77 @@ TEST(NonlinearOptimizer, DerivedGraphVirtualDispatch) {
 }
 
 /* ************************************************************************* */
+// An anchored graph with a tight relative measurement accepts useful LM steps.
+TEST(NonlinearOptimizer, IllConditionedAnchoredGraph) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<PriorFactor<double>>(0, 0.0,
+      noiseModel::Isotropic::Sigma(1, 1.0));
+  graph.emplace_shared<BetweenFactor<double>>(0, 1, 0.0,
+      noiseModel::Isotropic::Sigma(1, 1e-4));
+  Values initial;
+  initial.insert(0, 0.1);
+  initial.insert(1, 0.1);
+  for (const std::string solver : {"SEQUENTIAL_CHOLESKY", "MULTIFRONTAL_CHOLESKY",
+                                  "MULTIFRONTAL_SOLVER", "MULTIFRONTAL_QR"}) {
+    LevenbergMarquardtParams params;
+    params.setOrdering(Ordering{0, 1});
+    params.setLinearSolverType(solver);
+    params.multifrontalParams.qrMode = MultifrontalParameters::QRMode::Off;
+    for (bool diagonalDamping : {false, true}) {
+      params.setDiagonalDamping(diagonalDamping);
+      LevenbergMarquardtOptimizer lm(graph, initial, params);
+      // The identity-damped solve should accept its first small lambda.
+      if (!diagonalDamping) {
+        lm.iterate();
+        EXPECT(lm.lambda() < params.lambdaInitial);
+      }
+      const Values result = lm.optimize();
+      if (!diagonalDamping) {
+        EXPECT(graph.error(result) < 1e-16);
+        EXPECT(lm.iterations() <= 4);
+      } else {
+        // Diagonal damping can independently slow this graph; check progress.
+        EXPECT(graph.error(result) < graph.error(initial));
+      }
+    }
+    GaussNewtonParams gnParams;
+    gnParams.setOrdering(Ordering{0, 1});
+    gnParams.setLinearSolverType(solver);
+    gnParams.multifrontalParams = params.multifrontalParams;
+    EXPECT(graph.error(GaussNewtonOptimizer(graph, initial, gnParams).optimize()) < 1e-16);
+    DoglegParams dlParams;
+    dlParams.setOrdering(Ordering{0, 1});
+    dlParams.setLinearSolverType(solver);
+    dlParams.multifrontalParams = params.multifrontalParams;
+    EXPECT(graph.error(DoglegOptimizer(graph, initial, dlParams).optimize()) < 1e-16);
+  }
+}
+
+// Undamped optimizers report the same graph exception for a missing gauge.
+TEST(NonlinearOptimizer, SingularGraphReportsIndeterminateSystem) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<BetweenFactor<double>>(
+      0, 1, 0.0, noiseModel::Isotropic::Sigma(1, 1.0));
+  Values initial;
+  initial.insert(0, 0.1);
+  initial.insert(1, 0.2);
+  for (const std::string solver : {"SEQUENTIAL_CHOLESKY", "MULTIFRONTAL_CHOLESKY",
+                                  "MULTIFRONTAL_SOLVER"}) {
+    GaussNewtonParams gnParams;
+    gnParams.setOrdering(Ordering{0, 1});
+    gnParams.setLinearSolverType(solver);
+    gnParams.multifrontalParams.qrMode = MultifrontalParameters::QRMode::Off;
+    CHECK_EXCEPTION(GaussNewtonOptimizer(graph, initial, gnParams).iterate(),
+                    IndeterminateSystemException);
+    DoglegParams dlParams;
+    dlParams.setOrdering(Ordering{0, 1});
+    dlParams.setLinearSolverType(solver);
+    dlParams.multifrontalParams = gnParams.multifrontalParams;
+    CHECK_EXCEPTION(DoglegOptimizer(graph, initial, dlParams).iterate(),
+                    IndeterminateSystemException);
+  }
+}
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

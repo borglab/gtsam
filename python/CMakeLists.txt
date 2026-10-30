@@ -62,6 +62,7 @@ add_custom_target(gtsam_unstable_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam_uns
 
 # ignoring the non-concrete types (type aliases)
 set(ignore
+    gtsam::Errors
     gtsam::Point2
     gtsam::Point3
     gtsam::ISAM2ThresholdMapValue
