@@ -132,6 +132,17 @@ class TestConstrainedWrappers(unittest.TestCase):
         )
         self.assertAlmostEqual(constraint.sigma(), 1.0)
 
+    def test_qcqp_redundant_constraints(self):
+        """useRedundantConstraints adds eleven equalities per Rot3 variable."""
+        graph = gtsam.NonlinearFactorGraph()
+        graph.add(
+            gtsam.FrobeniusBetweenFactorRot3(X(0), X(1), gtsam.Rot3.Rz(0.3))
+        )
+        plain = gtsam.QcqpProblem(graph)
+        redundant = gtsam.QcqpProblem(graph, useRedundantConstraints=True)
+        self.assertEqual(plain.dim()[1], 2 * 9)
+        self.assertEqual(redundant.dim()[1], 2 * (9 + 11))
+
     def test_exact_qcqp_value_conversion_wrappers(self):
         """Insert and recover every supported exact D=1 manifold value."""
         typed_values = [
