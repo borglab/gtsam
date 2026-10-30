@@ -24,16 +24,12 @@
 #include <gtsam/constrained/QuadraticConstraint.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
-#include <map>
 #include <stdexcept>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
 namespace gtsam {
-
-/** Redundant quadratic equalities, grouped by their variable key. */
-using RedundantQcqpConstraintMap = std::map<Key, NonlinearEqualityConstraints>;
 
 /**
  * Optional interface for factors with variables that have redundant QCQP
@@ -52,7 +48,7 @@ class GTSAM_EXPORT RedundantQcqpProvider {
    * May add nothing for variable types or column dimensions without them.
    */
   virtual void appendRedundantConstraints(
-      size_t columnDimension, RedundantQcqpConstraintMap* byKey) const = 0;
+      size_t columnDimension, QcqpConstraintMap* byKey) const = 0;
 };
 
 namespace internal {
@@ -116,62 +112,23 @@ void InsertQcqpValue(Key key, const T& value, Values* qcqpValues) {
 }
 
 /**
- * Insert the QCQP equality constraints for one variable.
+ * Insert a variable's quadratic equalities once per key.
  *
- * traits<T>::QcqpConstraints<D>() returns (A, a, b) triples for
- * trace(X' A X) + 2 a' x = b, where an empty a means no linear term; only D=1
- * constraints may have one. Only an
- * already-present quadratic equality with the same key, matrix, linear term,
- * and right-hand side is considered a duplicate. Other unary constraints on
- * the key are preserved and do not suppress the manifold constraints.
+ * generateConstraints returns (A, a, b) triples for trace(X' A X) + 2 a' x = b.
+ * It is called only when the key is absent, so existing entries incur no
+ * constraint generation or comparison. All factors providing constraints for
+ * a key must agree on the set. Use separate maps for ordinary and redundant
+ * variable constraints; factor-specific constraints do not belong in either.
  */
-template <typename T, int D = 1>
-void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
-  static_assert(internal::HasQcqpVariableTraits<T, D>::value,
-                "InsertQcqpConstraints requires traits<T>::QcqpValue<D> and "
-                "traits<T>::QcqpConstraints<D>.");
-  if (!constraints) {
-    throw std::invalid_argument("InsertQcqpConstraints: constraints is null.");
-  }
-
-  for (const auto& [A, a, b] : traits<T>::template QcqpConstraints<D>()) {
-    const QuadraticConstraint candidate =
-        QuadraticConstraint::Equal(key, A, a, b);
-    bool alreadyPresent = false;
-    for (const auto& factor : *constraints) {
-      const auto* quadratic =
-          dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
-      if (!quadratic) continue;
-      const QuadraticConstraint& existing = quadratic->quadraticConstraint();
-      if (existing.key() == key && existing.A().isApprox(A, 0.0) &&
-          existing.a().isApprox(candidate.a(), 0.0) && existing.b() == b &&
-          existing.sigma() == 1.0) {
-        alreadyPresent = true;
-        break;
-      }
-    }
-    if (!alreadyPresent) {
-      constraints->push_back(candidate.createEqualityFactor());
-    }
-  }
-}
-
-/**
- * Add a type's D=1 redundant equalities once per key.
- * The caller selects a type whose traits define QcqpRedundantConstraints().
- * An existing key is left untouched: its constraints are neither regenerated
- * nor compared with this type's set. All providers for a key are assumed to
- * agree on that set.
- */
-template <typename T>
-void InsertQcqpRedundantConstraints(Key key,
-                                    RedundantQcqpConstraintMap* byKey) {
+template <typename Generator>
+void InsertQcqpVariableConstraints(Key key, Generator generateConstraints,
+                                   QcqpConstraintMap* byKey) {
   if (!byKey) {
-    throw std::invalid_argument("InsertQcqpRedundantConstraints: map is null.");
+    throw std::invalid_argument("InsertQcqpVariableConstraints: map is null.");
   }
   auto [it, inserted] = byKey->try_emplace(key);
   if (inserted) {
-    for (const auto& [A, a, b] : traits<T>::QcqpRedundantConstraints()) {
+    for (const auto& [A, a, b] : generateConstraints()) {
       it->second.push_back(
           QuadraticConstraint::Equal(key, A, a, b).createEqualityFactor());
     }

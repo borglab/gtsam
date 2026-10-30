@@ -883,7 +883,7 @@ TEST(QcqpProblem, RedundantProviderWithoutRedundantEqualities) {
 // still populate new keys. No comparison of individual constraints is needed.
 TEST(QcqpProblem, RedundantProvidersPreserveExistingKeys) {
   const Key x0 = Symbol('x', 0), x1 = Symbol('x', 1), x2 = Symbol('x', 2);
-  RedundantQcqpConstraintMap byKey;
+  QcqpConstraintMap byKey;
   const auto existing =
       QuadraticConstraint::Equal(x0, Matrix3::Identity(), 1.0)
           .createEqualityFactor();
@@ -974,8 +974,9 @@ TEST(QcqpProblem, Rot2D2QcqpValueConstraints) {
   LONGS_EQUAL(2, X.cols());
   EXPECT(assert_equal(Matrix(Matrix2::Identity()), X * X.transpose(), 1e-12));
 
-  NonlinearEqualityConstraints constraints;
-  InsertQcqpConstraints<Rot2, 2>(x0, &constraints);
+  QcqpConstraintMap byKey;
+  InsertQcqpVariableConstraints(x0, traits<Rot2>::QcqpConstraints<2>, &byKey);
+  const auto& constraints = byKey.at(x0);
   Values values;
   values.insert(x0, X);
 
@@ -1001,8 +1002,9 @@ TEST(QcqpProblem, Rot2D3QcqpValueConstraints) {
     EXPECT_DOUBLES_EQUAL(b2, b3, 1e-12);
   }
 
-  NonlinearEqualityConstraints constraints;
-  InsertQcqpConstraints<Rot2, 3>(x0, &constraints);
+  QcqpConstraintMap byKey;
+  InsertQcqpVariableConstraints(x0, traits<Rot2>::QcqpConstraints<3>, &byKey);
+  const auto& constraints = byKey.at(x0);
   Values values;
   values.insert(x0, X);
 
@@ -1140,8 +1142,9 @@ TEST(QcqpProblem, Rot3D1QcqpValueConstraints) {
     EXPECT_DOUBLES_EQUAL(RRt(row, col), ConstraintForm(A, a, rawX), 1e-12);
   }
 
-  NonlinearEqualityConstraints insertedConstraints;
-  InsertQcqpConstraints<Rot3, 1>(x0, &insertedConstraints);
+  QcqpConstraintMap byKey;
+  InsertQcqpVariableConstraints(x0, traits<Rot3>::QcqpConstraints<1>, &byKey);
+  const auto& insertedConstraints = byKey.at(x0);
   Values values;
   values.insert(x0, X);
   EXPECT_DOUBLES_EQUAL(0.0, insertedConstraints.violationNorm(values), 1e-12);
@@ -1206,8 +1209,9 @@ TEST(QcqpProblem, Pose2D1QcqpValueConstraints) {
                          ConstraintForm(A, a, translatedX), 1e-12);
   }
 
-  NonlinearEqualityConstraints insertedConstraints;
-  InsertQcqpConstraints<Pose2, 1>(x0, &insertedConstraints);
+  QcqpConstraintMap byKey;
+  InsertQcqpVariableConstraints(x0, traits<Pose2>::QcqpConstraints<1>, &byKey);
+  const auto& insertedConstraints = byKey.at(x0);
   Values values;
   values.insert(x0, X);
   EXPECT_DOUBLES_EQUAL(0.0, insertedConstraints.violationNorm(values), 1e-12);
@@ -1287,8 +1291,9 @@ TEST(QcqpProblem, Pose3D1QcqpValueConstraints) {
                          ConstraintForm(A, a, translatedX), 1e-12);
   }
 
-  NonlinearEqualityConstraints insertedConstraints;
-  InsertQcqpConstraints<Pose3, 1>(x0, &insertedConstraints);
+  QcqpConstraintMap byKey;
+  InsertQcqpVariableConstraints(x0, traits<Pose3>::QcqpConstraints<1>, &byKey);
+  const auto& insertedConstraints = byKey.at(x0);
   Values values;
   values.insert(x0, X);
   EXPECT_DOUBLES_EQUAL(0.0, insertedConstraints.violationNorm(values), 1e-12);
@@ -1417,8 +1422,9 @@ TEST(QcqpProblem, Rot3D3QcqpValueConstraints) {
   const auto cs = traits<Rot3>::template QcqpConstraints<3>();
   LONGS_EQUAL(6, cs.size());
 
-  NonlinearEqualityConstraints constraints;
-  InsertQcqpConstraints<Rot3, 3>(x0, &constraints);
+  QcqpConstraintMap byKey;
+  InsertQcqpVariableConstraints(x0, traits<Rot3>::QcqpConstraints<3>, &byKey);
+  const auto& constraints = byKey.at(x0);
   Values values;
   values.insert(x0, X);
   EXPECT_DOUBLES_EQUAL(0.0, constraints.violationNorm(values), 1e-12);
@@ -1525,19 +1531,34 @@ namespace QcqpConstraintInsertionFixture {
 
 const Key x0 = Symbol('x', 0);
 
-// Deduplication compares the actual trace(X'AX)=b equations: an unrelated
-// unary linear constraint stays, all three St(2,D) equations appear once.
-TEST(QcqpProblem, InsertQcqpConstraintsMatchesExactQuadratics) {
-  NonlinearEqualityConstraints constraints;
-  const Matrix selector{{1.0, 0.0, 0.0, 0.0}};
-  constraints.push_back(
-      LinearConstraint::Equal(JacobianFactor(x0, selector, Vector1(1.0)))
-          .createEqualityFactor());
+// Ordinary and redundant variable sets are generated only for absent keys.
+// Empty existing entries are also authoritative; the two maps are independent.
+TEST(QcqpProblem, VariableConstraintsGeneratedOncePerKey) {
+  const Key x1 = Symbol('x', 1);
+  size_t calls = 0;
+  const auto generate = [&calls] {
+    ++calls;
+    return traits<Rot3>::QcqpConstraints<1>();
+  };
+  QcqpConstraintMap ordinary, redundant;
+  InsertQcqpVariableConstraints(x0, generate, &ordinary);
+  const auto first = ordinary.at(x0);
+  InsertQcqpVariableConstraints(x0, generate, &ordinary);
+  ordinary.try_emplace(x1);
+  InsertQcqpVariableConstraints(x1, generate, &ordinary);
+  LONGS_EQUAL(1, calls);
+  LONGS_EQUAL(9, ordinary.at(x0).size());
+  EXPECT(ordinary.at(x1).empty());
+  for (size_t i = 0; i < first.size(); ++i) {
+    EXPECT(first.at(i) == ordinary.at(x0).at(i));
+  }
 
-  InsertQcqpConstraints<Rot2, 2>(x0, &constraints);
-  LONGS_EQUAL(4, constraints.size());
-  InsertQcqpConstraints<Rot2, 2>(x0, &constraints);
-  LONGS_EQUAL(4, constraints.size());
+  InsertQcqpVariableConstraints(x0, traits<Rot3>::QcqpRedundantConstraints,
+                                &redundant);
+  LONGS_EQUAL(11, redundant.at(x0).size());
+  CHECK_EXCEPTION(InsertQcqpVariableConstraints(x0, generate, nullptr),
+                  std::invalid_argument);
+  LONGS_EQUAL(1, calls);
 }
 
 // Repeated graph factors retain every cost but register the six Rot3
@@ -1590,7 +1611,7 @@ class QuadraticConstraintEmitter : public NonlinearFactor {
 
   void qcqpFactors(NonlinearFactorGraph*,
                    NonlinearEqualityConstraints* constraints,
-                   size_t) const override {
+                   QcqpConstraintMap*, size_t) const override {
     for (const auto& constraint : constraints_) {
       constraints->push_back(constraint.createEqualityFactor());
     }
@@ -1618,7 +1639,7 @@ class NonquadraticConstraintEmitter : public NonlinearFactor {
 
   void qcqpFactors(NonlinearFactorGraph*,
                    NonlinearEqualityConstraints* constraints,
-                   size_t) const override {
+                   QcqpConstraintMap*, size_t) const override {
     constraints->push_back(constraint_);
   }
 
@@ -1648,9 +1669,9 @@ TEST(QcqpProblem, RedundantConstraintsSkipNonProviders) {
                        1e-12);
 }
 
-// Indexed merging removes exact repeats across source factors without
-// suppressing distinct quadratic equations on the same key or reordering them.
-TEST(QcqpProblem, IndexedMergePreservesDistinctQuadratics) {
+// Factor-specific quadratic constraints are retained verbatim, even when
+// factors share keys or emit identical equations.
+TEST(QcqpProblem, PreservesFactorSpecificQuadratics) {
   const Matrix A0{{1.0, 0.0}, {0.0, 0.0}};
   const Matrix A1{{0.0, 0.0}, {0.0, 1.0}};
   const Matrix A2 = Matrix2::Identity();
@@ -1665,8 +1686,8 @@ TEST(QcqpProblem, IndexedMergePreservesDistinctQuadratics) {
       std::vector<QuadraticConstraint>{c0, c2});
 
   const QcqpProblem problem(graph, 2);
-  LONGS_EQUAL(3, problem.eConstraints().size());
-  const std::array<Matrix, 3> expected{A0, A1, A2};
+  LONGS_EQUAL(4, problem.eConstraints().size());
+  const std::array<Matrix, 4> expected{A0, A1, A0, A2};
   for (size_t i = 0; i < expected.size(); ++i) {
     const auto quadratic =
         std::dynamic_pointer_cast<QuadraticEqualityConstraintFactor>(
@@ -1682,9 +1703,9 @@ TEST(QcqpProblem, IndexedMergePreservesDistinctQuadratics) {
                        1e-12);
 }
 
-// Nonquadratic equalities are never deduplicated as a side effect of the
-// quadratic index, even when two source factors emit the same shared factor.
-TEST(QcqpProblem, IndexedMergePreservesNonquadraticConstraints) {
+// Factor-specific nonquadratic equalities are retained, even when two
+// source factors emit the same shared factor.
+TEST(QcqpProblem, PreservesFactorSpecificNonquadraticConstraints) {
   const Matrix A{{1.0, 0.0}};
   const auto constraint =
       LinearConstraint::Equal(JacobianFactor(x0, A, Vector1(1.0)))

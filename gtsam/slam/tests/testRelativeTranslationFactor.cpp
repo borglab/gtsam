@@ -97,7 +97,9 @@ TEST(RelativeTranslationFactor, QcqpFactorsMatchesNonlinearErrorAtRankD) {
 
   NonlinearFactorGraph costs;
   NonlinearEqualityConstraints constraints;
-  factor.qcqpFactors(&costs, &constraints, /*columnDimension=*/3);
+  QcqpConstraintMap variableConstraints;
+  factor.qcqpFactors(&costs, &constraints, &variableConstraints,
+                     /*columnDimension=*/3);
   EXPECT(constraints.empty());
   EXPECT_LONGS_EQUAL(1, static_cast<long>(costs.size()));
 
@@ -152,8 +154,9 @@ TEST(RelativeTranslationFactor, QcqpFactorsRejectsSmallColumnDimension) {
                                           1.0);
   NonlinearFactorGraph costs;
   NonlinearEqualityConstraints constraints;
+  QcqpConstraintMap variableConstraints;
   CHECK_EXCEPTION(
-      factor.qcqpFactors(&costs, &constraints, /*columnDimension=*/2),
+      factor.qcqpFactors(&costs, &constraints, &variableConstraints, /*columnDimension=*/2),
       std::invalid_argument);
 }
 
@@ -174,7 +177,9 @@ TEST(RelativeTranslationFactor, QcqpFactorsMatchesNonlinearErrorAtRankD2) {
 
   NonlinearFactorGraph costs;
   NonlinearEqualityConstraints constraints;
-  factor.qcqpFactors(&costs, &constraints, /*columnDimension=*/2);
+  QcqpConstraintMap variableConstraints;
+  factor.qcqpFactors(&costs, &constraints, &variableConstraints,
+                     /*columnDimension=*/2);
 
   Values Y;
   Y.insert(kR, Matrix(Ri.matrix().transpose()));

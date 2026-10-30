@@ -17,52 +17,7 @@
 
 #include <gtsam/constrained/QcqpProblem.h>
 
-#include <algorithm>
-#include <unordered_map>
-#include <vector>
-
 namespace gtsam {
-namespace {
-
-using QuadraticConstraintIndex =
-    std::unordered_map<Key, std::vector<QuadraticConstraint>>;
-
-/* ************************************************************************* */
-bool SameQuadraticEquality(const QuadraticConstraint& first,
-                           const QuadraticConstraint& second) {
-  return first.key() == second.key() && first.A().isApprox(second.A(), 0.0) &&
-         first.a().isApprox(second.a(), 0.0) && first.b() == second.b() &&
-         first.sigma() == second.sigma();
-}
-
-/* ************************************************************************* */
-void MergeEqualityConstraints(
-    const NonlinearEqualityConstraints& source,
-    NonlinearEqualityConstraints* destination,
-    QuadraticConstraintIndex* quadraticConstraintIndex) {
-  for (const auto& factor : source) {
-    const auto quadratic =
-        std::dynamic_pointer_cast<QuadraticEqualityConstraintFactor>(factor);
-    if (!quadratic) {
-      destination->push_back(factor);
-      continue;
-    }
-
-    const QuadraticConstraint& constraint = quadratic->quadraticConstraint();
-    auto& sameKeyConstraints = (*quadraticConstraintIndex)[constraint.key()];
-    const bool alreadyPresent =
-        std::any_of(sameKeyConstraints.begin(), sameKeyConstraints.end(),
-                    [&constraint](const QuadraticConstraint& existing) {
-                      return SameQuadraticEquality(existing, constraint);
-                    });
-    if (!alreadyPresent) {
-      destination->push_back(factor);
-      sameKeyConstraints.push_back(constraint);
-    }
-  }
-}
-
-}  // namespace
 
 /* ************************************************************************* */
 QcqpProblem::QcqpProblem(const NonlinearFactorGraph& graph,
@@ -73,14 +28,15 @@ QcqpProblem::QcqpProblem(const NonlinearFactorGraph& graph,
         "QcqpProblem: columnDimension must be positive.");
   }
 
-  QuadraticConstraintIndex quadraticConstraintIndex;
-  RedundantQcqpConstraintMap redundantByKey;
+  QcqpConstraintMap variableConstraints;
+  QcqpConstraintMap redundantByKey;
   for (const auto& factor : graph) {
     if (!factor) continue;
 
     NonlinearFactorGraph factorCosts;
     NonlinearEqualityConstraints factorConstraints;
-    factor->qcqpFactors(&factorCosts, &factorConstraints, columnDimension);
+    factor->qcqpFactors(&factorCosts, &factorConstraints, &variableConstraints,
+                        columnDimension);
     if (useRedundantConstraints) {
       const auto* provider =
           dynamic_cast<const RedundantQcqpProvider*>(factor.get());
@@ -89,8 +45,10 @@ QcqpProblem::QcqpProblem(const NonlinearFactorGraph& graph,
       }
     }
     costs_.add(factorCosts);
-    MergeEqualityConstraints(factorConstraints, &eqConstraints_,
-                             &quadraticConstraintIndex);
+    eqConstraints_.add(factorConstraints);
+  }
+  for (const auto& entry : variableConstraints) {
+    eqConstraints_.add(entry.second);
   }
   for (const auto& entry : redundantByKey) {
     eqConstraints_.add(entry.second);
