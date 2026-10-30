@@ -156,6 +156,13 @@ class TestKnownLandmarkSquaredRangeFactor(unittest.TestCase):
                 self.assertAlmostEqual(inequalities, 0.0)
                 with self.assertRaisesRegex(ValueError, "only supports D=1"):
                     gtsam.QcqpProblem(graph, 2)
+                invalid_graph = gtsam.NonlinearFactorGraph()
+                invalid_graph.add(factor_type(
+                    0, np.zeros(dimension), 1.0,
+                    gtsam.noiseModel.Isotropic.Sigma(2, 1.0)
+                ))
+                with self.assertRaisesRegex(ValueError, "one-dimensional noise"):
+                    gtsam.QcqpProblem(invalid_graph)
                 ordinary_graph = gtsam.NonlinearFactorGraph()
                 ordinary_type = getattr(
                     gtsam, f"KnownLandmarkSquaredRangeFactor{dimension}"

@@ -34,7 +34,7 @@ namespace gtsam {
 #include <gtsam/geometry/SphericalCamera.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/navigation/NavState.h>
-#include <gtsam/slam/KnownLandmarkSquaredRangeFactor.h>
+#include <gtsam/geometry/AugmentedPoint.h>
 
 #include <gtsam/linear/VectorValues.h>
 

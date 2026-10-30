@@ -142,7 +142,7 @@ class Point3Pairs {
   void push_back(const gtsam::Point3Pair& point_pair);
 };
 
-#include <gtsam/slam/KnownLandmarkSquaredRangeFactor.h>
+#include <gtsam/geometry/AugmentedPoint.h>
 // Only the wrappers restrict spatial dimensions to 2 and 3.
 template <N = {2, 3}>
 class AugmentedPoint {

@@ -10,11 +10,8 @@
 
 /**
  * @file testKnownLandmarkSquaredRangeFactor.cpp
- * @brief Tests for KnownLandmarkSquaredRangeFactor and AugmentedPoint QCQP
- *        traits.
+ * @brief Tests for KnownLandmarkSquaredRangeFactor, including QCQP conversion.
  * @author Oluwatodimu Afolayan
- * @author Frederike Dümbgen
- * @author Frank Dellaert
  */
 
 #include <CppUnitLite/TestHarness.h>
@@ -25,11 +22,9 @@
 #include <gtsam/slam/KnownLandmarkSquaredRangeFactor.h>
 
 #include <Eigen/Core>
-#include <cmath>
 #include <limits>
 #include <memory>
 #include <stdexcept>
-#include <tuple>
 
 using namespace gtsam;
 
@@ -79,6 +74,8 @@ TEST(KnownLandmarkSquaredRangeFactor, AcceptsDynamicLandmark2D) {
 
   const Factor factor(kKey, wL, 4.0, model);
   EXPECT(assert_equal(Vector1(9.0), factor.evaluateError(wX)));
+  const Factor expression(kKey, Point::Zero(), 1.0, model);
+  EXPECT(assert_equal(Vector1(4.0), expression.evaluateError(wX)));
 }
 
 // Verifies that short and long 2D landmark vectors throw before Eigen
@@ -90,6 +87,8 @@ TEST(KnownLandmarkSquaredRangeFactor, RejectsWrongLandmarkDimension2D) {
 
   CHECK_EXCEPTION(Factor(kKey, tooShort, 4.0, model), std::invalid_argument);
   CHECK_EXCEPTION(Factor(kKey, tooLong, 4.0, model), std::invalid_argument);
+  CHECK_EXCEPTION(Factor(kKey, Matrix::Zero(1, 2), 4.0, model),
+                  std::invalid_argument);
 }
 
 }  // namespace point2_fixture
@@ -158,122 +157,6 @@ TEST(KnownLandmarkSquaredRangeFactor, CloneAndEquals) {
 /* ************************************************************************* */
 
 /* ************************************************************************* */
-namespace augmented_point3_fixture {
-
-using Point = AugmentedPoint<3>;
-using Traits = traits<Point>;
-
-// Dynamic wrapper inputs must be validated before conversion to fixed storage.
-TEST(AugmentedPoint, DynamicCoordinates) {
-  const Vector coordinates = (Vector(3) << 1.0, -2.0, 3.0).finished();
-  EXPECT(Point(coordinates).vector().isApprox(coordinates));
-  CHECK_EXCEPTION(Point(Vector::Zero(2)), std::invalid_argument);
-  CHECK_EXCEPTION(Point(Vector::Zero(4)), std::invalid_argument);
-  CHECK_EXCEPTION(Point(Matrix::Zero(1, 3)), std::invalid_argument);
-}
-
-// Verifies the additive group operations and vector-space traits.
-TEST(AugmentedPoint, VectorSpace) {
-  const Point origin = Point::Identity();
-  const Point point(Eigen::Vector3d(1.0, -2.0, 3.0));
-  const Point other(Eigen::Vector3d(4.0, 5.0, 6.0));
-
-  // Compare Eigen vectors directly: avoids ambiguity between GTSAM's
-  // assert_equal(Vector, Vector) and assert_equal(Matrix, Matrix) overloads.
-  EXPECT(origin.vector().isZero(1e-12));
-  EXPECT((point + other).vector().isApprox(
-      point.vector() + other.vector(), 1e-12));
-  EXPECT((point - other).vector().isApprox(
-      point.vector() - other.vector(), 1e-12));
-  EXPECT((-point).vector().isApprox(-point.vector(), 1e-12));
-  EXPECT((2.0 * point).vector().isApprox(2.0 * point.vector(), 1e-12));
-  EXPECT((point * 2.0).vector().isApprox(2.0 * point.vector(), 1e-12));
-
-  const Vector tangent = Vector::Ones(3);
-  const Point shifted = point + tangent;
-  EXPECT(shifted.vector().isApprox(point.vector() + tangent, 1e-12));
-  EXPECT(Traits::Local(point, shifted).isApprox(tangent, 1e-12));
-  EXPECT(Traits::Retract(point, tangent).equals(shifted));
-
-  CHECK_EXCEPTION(point + Vector::Zero(2), std::invalid_argument);
-}
-
-// Verifies the lifted coordinates and both quadratic equalities.
-TEST(AugmentedPoint, QcqpLiftAndConstraints3D) {
-  const Point point(Eigen::Vector3d(1.0, -2.0, 3.0));
-  const Matrix X = Traits::QcqpValue<1>(point);
-
-  EXPECT_LONGS_EQUAL(5, X.rows());
-  EXPECT_LONGS_EQUAL(1, X.cols());
-  const Vector expected = (Vector(5) << 1.0, 1.0, -2.0, 3.0, 14.0).finished();
-  EXPECT(expected.isApprox(X.col(0), 1e-12));
-
-  const auto constraints = Traits::QcqpConstraints<1>();
-  EXPECT_LONGS_EQUAL(2, constraints.size());
-  if (constraints.size() != 2) return;
-
-  // Each tuple represents X^T A X + 2 a^T X = b.
-  for (const auto& constraint : constraints) {
-    const Matrix& A = std::get<0>(constraint);
-    const Vector& a = std::get<1>(constraint);
-    const double b = std::get<2>(constraint);
-
-    EXPECT_LONGS_EQUAL(5, A.rows());
-    EXPECT_LONGS_EQUAL(5, A.cols());
-    EXPECT_LONGS_EQUAL(0, a.size());
-    EXPECT(A.isApprox(A.transpose(), 1e-12));
-    EXPECT_DOUBLES_EQUAL(b, (X.transpose() * A * X)(0, 0), 1e-12);
-  }
-
-  const Matrix& A = std::get<0>(constraints.at(0));
-  const Matrix& H = std::get<0>(constraints.at(1));
-  EXPECT_DOUBLES_EQUAL(0.0, std::get<2>(constraints.at(0)), 1e-12);
-  EXPECT_DOUBLES_EQUAL(1.0, std::get<2>(constraints.at(1)), 1e-12);
-  EXPECT_DOUBLES_EQUAL(-0.5, A(0, 4), 1e-12);
-  EXPECT_DOUBLES_EQUAL(-0.5, A(4, 0), 1e-12);
-  EXPECT_DOUBLES_EQUAL(1.0, H(0, 0), 1e-12);
-
-  // Changing u violates x^T x - h*u = 0.
-  Matrix inconsistent = X;
-  inconsistent(4, 0) += 1.0;
-  EXPECT(std::abs((inconsistent.transpose() * A * inconsistent)(0, 0)) > 1e-9);
-}
-
-// Verifies round-trip recovery and global sign invariance.
-TEST(AugmentedPoint, QcqpRoundTripAndSign) {
-  const Point point(Eigen::Vector3d(1.0, -2.0, 3.0));
-  const Matrix X = qcqpValue<3>(point);
-  EXPECT(point.equals(fromQcqpValue<3>(X)));
-
-  // h^2 = 1 permits h = -1; recovery must cancel the global sign.
-  EXPECT(point.equals(fromQcqpValue<3>(-X)));
-
-  CHECK_EXCEPTION(Traits::FromQcqpValue<1>(Matrix::Zero(4, 1)),
-                  std::invalid_argument);
-  CHECK_EXCEPTION(Traits::FromQcqpValue<1>(Matrix::Zero(5, 2)),
-                  std::invalid_argument);
-  CHECK_EXCEPTION(Traits::FromQcqpValue<1>(Matrix::Zero(5, 1)),
-                  std::invalid_argument);
-
-  Matrix invalidH = X;
-  invalidH(0, 0) = std::numeric_limits<double>::quiet_NaN();
-  CHECK_EXCEPTION(Traits::FromQcqpValue<1>(invalidH), std::invalid_argument);
-}
-
-// Verifies unsupported multi-column QCQP conversions are rejected.
-TEST(AugmentedPoint, RejectsUnsupportedQcqpColumns) {
-  const Point point(Eigen::Vector3d(1.0, 2.0, 3.0));
-
-  CHECK_EXCEPTION(Traits::QcqpValue<2>(point), std::invalid_argument);
-  CHECK_EXCEPTION(Traits::QcqpConstraints<2>(), std::invalid_argument);
-  CHECK_EXCEPTION(Traits::FromQcqpValue<2>(Matrix::Zero(5, 1)),
-                  std::invalid_argument);
-}
-
-}  // namespace augmented_point3_fixture
-/* ************************************************************************* */
-
-/* ************************************************************************* */
 namespace augmented_factor1_fixture {
 
 using VectorType = Eigen::Matrix<double, 1, 1>;
@@ -308,10 +191,8 @@ TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint1D) {
   insertQcqpValue<1>(kKey, point, lifted);
   EXPECT_LONGS_EQUAL(1, qcqp.costs().size());
   EXPECT_LONGS_EQUAL(2, qcqp.eConstraints().size());
-  EXPECT_DOUBLES_EQUAL(graph.error(values), qcqp.costs().error(lifted),
-                       1e-12);
-  EXPECT_DOUBLES_EQUAL(0.0, qcqp.eConstraints().violationNorm(lifted),
-                       1e-12);
+  EXPECT_DOUBLES_EQUAL(graph.error(values), qcqp.costs().error(lifted), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, qcqp.eConstraints().violationNorm(lifted), 1e-12);
 }
 
 }  // namespace augmented_factor1_fixture
@@ -389,8 +270,7 @@ TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint2DWeightedQcqpCost) {
   EXPECT_DOUBLES_EQUAL(162.0, graph.error(nonlinearValues), 1e-12);
   EXPECT_DOUBLES_EQUAL(graph.error(nonlinearValues),
                        qcqp.costs().error(liftedValues), 1e-10);
-  EXPECT_DOUBLES_EQUAL(0.0,
-                       qcqp.eConstraints().violationNorm(liftedValues),
+  EXPECT_DOUBLES_EQUAL(0.0, qcqp.eConstraints().violationNorm(liftedValues),
                        1e-12);
 
   // X and -X represent the same original point and quadratic cost.
@@ -399,8 +279,7 @@ TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint2DWeightedQcqpCost) {
   negativeValues.insert(kKey, negativeLift);
   EXPECT_DOUBLES_EQUAL(qcqp.costs().error(liftedValues),
                        qcqp.costs().error(negativeValues), 1e-10);
-  EXPECT_DOUBLES_EQUAL(0.0,
-                       qcqp.eConstraints().violationNorm(negativeValues),
+  EXPECT_DOUBLES_EQUAL(0.0, qcqp.eConstraints().violationNorm(negativeValues),
                        1e-12);
 
   const Values recovered = extractQcqpValues<2>(negativeValues);
@@ -415,8 +294,7 @@ TEST(KnownLandmarkSquaredRangeFactor, RejectsEigenStateQcqpConversion) {
   const EigenFactor factor(kKey, landmark, 4.0, model);
   NonlinearFactorGraph costs;
   NonlinearEqualityConstraints constraints;
-  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints),
-                  std::runtime_error);
+  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints), std::runtime_error);
 }
 
 }  // namespace augmented_factor2_fixture
@@ -457,10 +335,8 @@ TEST(KnownLandmarkSquaredRangeFactor, MultipleAugmentedQcqpFactors3D) {
   const auto model = noiseModel::Unit::Create(1);
 
   NonlinearFactorGraph graph;
-  graph.emplace_shared<Factor>(kKey, VectorType(3.0, 5.0, 9.0), 5.0,
-                               model);
-  graph.emplace_shared<Factor>(kKey, VectorType(-1.0, 2.0, 4.0), 3.0,
-                               model);
+  graph.emplace_shared<Factor>(kKey, VectorType(3.0, 5.0, 9.0), 5.0, model);
+  graph.emplace_shared<Factor>(kKey, VectorType(-1.0, 2.0, 4.0), 3.0, model);
 
   Values nonlinearValues;
   nonlinearValues.insert(kKey, point);
@@ -472,8 +348,7 @@ TEST(KnownLandmarkSquaredRangeFactor, MultipleAugmentedQcqpFactors3D) {
   EXPECT_LONGS_EQUAL(2, qcqp.eConstraints().size());
   EXPECT_DOUBLES_EQUAL(graph.error(nonlinearValues),
                        qcqp.costs().error(qcqpValues), 1e-10);
-  EXPECT_DOUBLES_EQUAL(0.0,
-                       qcqp.eConstraints().violationNorm(qcqpValues),
+  EXPECT_DOUBLES_EQUAL(0.0, qcqp.eConstraints().violationNorm(qcqpValues),
                        1e-12);
 }
 
@@ -487,19 +362,31 @@ TEST(KnownLandmarkSquaredRangeFactor, AugmentedQcqpRejectsInvalidInputs) {
   NonlinearEqualityConstraints constraints;
   CHECK_EXCEPTION(factor.qcqpFactors(nullptr, &constraints),
                   std::invalid_argument);
-  CHECK_EXCEPTION(factor.qcqpFactors(&costs, nullptr),
-                  std::invalid_argument);
+  CHECK_EXCEPTION(factor.qcqpFactors(&costs, nullptr), std::invalid_argument);
   CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, 2),
                   std::invalid_argument);
 
   const Factor missingNoise(kKey, landmark, 5.0, SharedNoiseModel());
   CHECK_EXCEPTION(missingNoise.qcqpFactors(&costs, &constraints),
                   std::runtime_error);
-  CHECK_EXCEPTION(Factor(kKey, landmark, -1.0, model),
+  const Factor wrongNoiseDimension(kKey, landmark, 5.0,
+                                   noiseModel::Isotropic::Sigma(2, 1.0));
+  CHECK_EXCEPTION(wrongNoiseDimension.qcqpFactors(&costs, &constraints),
                   std::invalid_argument);
+  const Factor constrainedNoise(kKey, landmark, 5.0,
+                                noiseModel::Constrained::All(1));
+  CHECK_EXCEPTION(constrainedNoise.qcqpFactors(&costs, &constraints),
+                  std::runtime_error);
+  const Factor robustNoise(
+      kKey, landmark, 5.0,
+      noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.345),
+                                 model));
+  CHECK_EXCEPTION(robustNoise.qcqpFactors(&costs, &constraints),
+                  std::runtime_error);
+  CHECK_EXCEPTION(Factor(kKey, landmark, -1.0, model), std::invalid_argument);
   CHECK_EXCEPTION(
       Factor(kKey, landmark, std::numeric_limits<double>::infinity(), model),
-                  std::invalid_argument);
+      std::invalid_argument);
 }
 
 }  // namespace augmented_factor3_fixture

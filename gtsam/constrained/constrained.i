@@ -25,7 +25,7 @@ namespace gtsam {
 #include <gtsam/geometry/SphericalCamera.h>
 #include <gtsam/geometry/StereoPoint2.h>
 #include <gtsam/navigation/ImuBias.h>
-#include <gtsam/slam/KnownLandmarkSquaredRangeFactor.h>
+#include <gtsam/geometry/AugmentedPoint.h>
 #include <gtsam/constrained/NonlinearEquality.h>
 template <T = {gtsam::Point2,
                gtsam::StereoPoint2,
