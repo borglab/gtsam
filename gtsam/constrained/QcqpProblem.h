@@ -26,7 +26,6 @@
 
 #include <map>
 #include <stdexcept>
-#include <tuple>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -85,32 +84,6 @@ template <typename T>
 struct HasQcqpVectorDim<T, std::void_t<decltype(traits<T>::QcqpVectorDim)>>
     : std::true_type {};
 
-/// Insert (A, a, b) quadratic equalities on one key, skipping exact duplicates.
-inline void InsertQuadraticEqualities(
-    Key key, const std::vector<std::tuple<Matrix, Vector, double>>& triples,
-    NonlinearEqualityConstraints* constraints) {
-  for (const auto& [A, a, b] : triples) {
-    const QuadraticConstraint candidate =
-        QuadraticConstraint::Equal(key, A, a, b);
-    bool alreadyPresent = false;
-    for (const auto& factor : *constraints) {
-      const auto* quadratic =
-          dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
-      if (!quadratic) continue;
-      const QuadraticConstraint& existing = quadratic->quadraticConstraint();
-      if (existing.key() == key && existing.A().isApprox(A, 0.0) &&
-          existing.a().isApprox(candidate.a(), 0.0) && existing.b() == b &&
-          existing.sigma() == 1.0) {
-        alreadyPresent = true;
-        break;
-      }
-    }
-    if (!alreadyPresent) {
-      constraints->push_back(candidate.createEqualityFactor());
-    }
-  }
-}
-
 }  // namespace internal
 
 /**
@@ -161,8 +134,26 @@ void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
     throw std::invalid_argument("InsertQcqpConstraints: constraints is null.");
   }
 
-  internal::InsertQuadraticEqualities(
-      key, traits<T>::template QcqpConstraints<D>(), constraints);
+  for (const auto& [A, a, b] : traits<T>::template QcqpConstraints<D>()) {
+    const QuadraticConstraint candidate =
+        QuadraticConstraint::Equal(key, A, a, b);
+    bool alreadyPresent = false;
+    for (const auto& factor : *constraints) {
+      const auto* quadratic =
+          dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
+      if (!quadratic) continue;
+      const QuadraticConstraint& existing = quadratic->quadraticConstraint();
+      if (existing.key() == key && existing.A().isApprox(A, 0.0) &&
+          existing.a().isApprox(candidate.a(), 0.0) && existing.b() == b &&
+          existing.sigma() == 1.0) {
+        alreadyPresent = true;
+        break;
+      }
+    }
+    if (!alreadyPresent) {
+      constraints->push_back(candidate.createEqualityFactor());
+    }
+  }
 }
 
 /**
