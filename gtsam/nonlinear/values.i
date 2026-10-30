@@ -34,6 +34,7 @@ namespace gtsam {
 #include <gtsam/geometry/SphericalCamera.h>
 #include <gtsam/navigation/ImuBias.h>
 #include <gtsam/navigation/NavState.h>
+#include <gtsam/geometry/AugmentedPoint.h>
 
 #include <gtsam/linear/VectorValues.h>
 
@@ -83,6 +84,8 @@ class Values {
   void insert(gtsam::Key j, const gtsam::Matrix& matrix);
   void insert(gtsam::Key j, const gtsam::Point2& point2);
   void insert(gtsam::Key j, const gtsam::Point3& point3);
+  void insert(gtsam::Key j, const gtsam::AugmentedPoint<2>& val);
+  void insert(gtsam::Key j, const gtsam::AugmentedPoint<3>& val);
   void insertPoint3(gtsam::Key j, const gtsam::Point3& point3);
   void insert(gtsam::Key j, const gtsam::Gal3& T);
   void insert(gtsam::Key j, const gtsam::Se23& T);
@@ -132,6 +135,8 @@ class Values {
   void update(gtsam::Key j, const gtsam::Matrix& matrix);
   void update(gtsam::Key j, const gtsam::Point2& point2);
   void update(gtsam::Key j, const gtsam::Point3& point3);
+  void update(gtsam::Key j, const gtsam::AugmentedPoint<2>& val);
+  void update(gtsam::Key j, const gtsam::AugmentedPoint<3>& val);
   void update(gtsam::Key j, const gtsam::Gal3& T);
   void update(gtsam::Key j, const gtsam::Se23& T);
   void update(gtsam::Key j, const gtsam::ExtendedPose3d& T);
@@ -180,6 +185,8 @@ class Values {
   void insert_or_assign(gtsam::Key j, const gtsam::Matrix& matrix);
   void insert_or_assign(gtsam::Key j, const gtsam::Point2& point2);
   void insert_or_assign(gtsam::Key j, const gtsam::Point3& point3);
+  void insert_or_assign(gtsam::Key j, const gtsam::AugmentedPoint<2>& val);
+  void insert_or_assign(gtsam::Key j, const gtsam::AugmentedPoint<3>& val);
   void insert_or_assign(gtsam::Key j, const gtsam::Gal3& T);
   void insert_or_assign(gtsam::Key j, const gtsam::Se23& T);
   void insert_or_assign(gtsam::Key j, const gtsam::ExtendedPose3d& T);
@@ -226,6 +233,8 @@ class Values {
                  gtsam::Matrix,
                  gtsam::Point2,
                  gtsam::Point3,
+                 gtsam::AugmentedPoint<2>,
+                 gtsam::AugmentedPoint<3>,
                  gtsam::Gal3,
                  gtsam::Se23,
                  gtsam::ExtendedPose3d,
