@@ -236,25 +236,8 @@ SymbolicBayesTree BuildSymbolicBayesTree(const QcqpProblem& problem,
   switch (orderingType) {
     case ChordalOrderingType::Metis:
 #ifdef GTSAM_SUPPORT_NESTED_DISSECTION
-    {
-      // MetisIndex gives keys without neighbors no adjacency rows, so METIS
-      // would see inconsistent arrays. Order the coupled keys with METIS and
-      // put the uncoupled ones, each its own clique, first. Substituting
-      // fixed variables can leave keys with unary costs only.
-      SymbolicFactorGraph coupled;
-      for (const auto& factor : sfg) {
-        if (factor->size() > 1) coupled.push_back(factor);
-      }
-      const KeySet coupledKeys = coupled.keys();
-      for (Key key : sfg.keys()) {
-        if (!coupledKeys.count(key)) ordering.push_back(key);
-      }
-      if (!coupled.empty()) {
-        const Ordering metis = Ordering::Metis(coupled);
-        ordering.insert(ordering.end(), metis.begin(), metis.end());
-      }
+      ordering = Ordering::Metis(sfg);
       break;
-    }
 #else
       throw std::runtime_error(
           "BuildSymbolicBayesTree: METIS ordering requested but GTSAM was "
@@ -471,8 +454,10 @@ mf::Expression::t BuildObjective(
 }
 
 // Lower x'Ax + 2a'x ~ b to the affine SDP constraint <A, X> + 2a'y ~ b.
+// Equality factors enforce the boundary even when the descriptor is an
+// inequality.
 void AddQuadraticConstraint(
-    const mf::Model::t& M, const QuadraticConstraint& constraint,
+    const mf::Model::t& M, const QuadraticConstraint& constraint, bool isEquality,
     const KeyiToLiftedVectorxiViewInSDPVariableMap& xiMap,
     const KeysijToLiftedVariableXijViewInSDPVariableMap& xijMap) {
   const Key key = constraint.key();
@@ -485,16 +470,12 @@ void AddQuadraticConstraint(
                            xiMap.at(key)->asExpr()));
   }
 
-  switch (constraint.sense()) {
-    case QuadraticConstraint::Sense::Equal:
-      M->constraint(lhs, mf::Domain::equalsTo(constraint.b()));
-      break;
-    case QuadraticConstraint::Sense::LessEqual:
-      M->constraint(lhs, mf::Domain::lessThan(constraint.b()));
-      break;
-    case QuadraticConstraint::Sense::GreaterEqual:
-      M->constraint(lhs, mf::Domain::greaterThan(constraint.b()));
-      break;
+  if (isEquality) {
+    M->constraint(lhs, mf::Domain::equalsTo(constraint.b()));
+  } else if (constraint.sense() == QuadraticConstraint::Sense::GreaterEqual) {
+    M->constraint(lhs, mf::Domain::greaterThan(constraint.b()));
+  } else {
+    M->constraint(lhs, mf::Domain::lessThan(constraint.b()));
   }
 }
 
@@ -535,7 +516,7 @@ void AddQcqpConstraints(
     if (const auto* quadratic =
             dynamic_cast<const QuadraticEqualityConstraintFactor*>(
                 factor.get())) {
-      AddQuadraticConstraint(M, quadratic->quadraticConstraint(),
+      AddQuadraticConstraint(M, quadratic->quadraticConstraint(), true,
                              xiMap, xijMap);
       continue;
     }
@@ -556,7 +537,7 @@ void AddQcqpConstraints(
     if (const auto* quadratic =
             dynamic_cast<const QuadraticInequalityConstraintFactor*>(
                 factor.get())) {
-      AddQuadraticConstraint(M, quadratic->quadraticConstraint(),
+      AddQuadraticConstraint(M, quadratic->quadraticConstraint(), false,
                              xiMap, xijMap);
       continue;
     }

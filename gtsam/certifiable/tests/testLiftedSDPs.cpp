@@ -664,6 +664,42 @@ TEST(LiftedSDPs, LinearConstraintTerm) {
   check(&chordal);
 }
 
+// Boundary equalities retain the descriptor's inequality sense, but both SDP
+// formulations must enforce equality, including for negated coefficients.
+TEST(LiftedSDPs, QuadraticBoundaryEquality) {
+  const Matrix A = Matrix2::Identity();
+  for (double sign : {1.0, -1.0}) {
+    for (bool greaterEqual : {false, true}) {
+      const auto constraint = greaterEqual
+                                  ? QuadraticConstraint::GreaterEqual(
+                                        0, Matrix(sign * A), sign)
+                                  : QuadraticConstraint::LessEqual(
+                                        0, Matrix(sign * A), sign);
+      // Choose a target strictly inside the original inequality, so leaving
+      // it as an inequality would give objective zero instead of one half.
+      const bool exterior = greaterEqual == (sign > 0.0);
+      const Vector2 target{exterior ? 2.0 : 0.0, 0.0};
+      NonlinearFactorGraph costs;
+      costs.emplace_shared<QpCost>(HessianFactor(
+          0, A, Vector(target), target.squaredNorm()));
+      NonlinearEqualityConstraints equalities;
+      equalities.push_back(
+          greaterEqual
+              ? constraint.createInequalityFactor()->createEqualityConstraint()
+              : constraint.createEqualityFactor());
+      const QcqpProblem problem(costs, equalities);
+      auto check = [&](auto* solver) {
+        EXPECT(solver->solve());
+        EXPECT_DOUBLES_EQUAL(0.5, solver->objectiveValue(), 1e-6);
+      };
+      MosekMonolithicSDP monolithic(problem);
+      check(&monolithic);
+      MosekChordalSDP chordal(problem, ChordalOrderingType::Colamd);
+      check(&chordal);
+    }
+  }
+}
+
 }  // namespace natural_form_fixture
 /* ************************************************************************* */
 namespace fixed_variable_fixture {
