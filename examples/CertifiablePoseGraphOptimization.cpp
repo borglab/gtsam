@@ -109,7 +109,7 @@ Values g2oInitial(const Values& poses, const std::set<Key>& poseIndices) {
       throw std::invalid_argument("initialization is missing a graph key");
     }
     const PoseT& pose = poses.at<PoseT>(poseIndex);
-    InsertQcqpValue<RotT, d>(rotationKey(poseIndex), pose.rotation(), &initial);
+    insertQcqpValue<RotT, d>(rotationKey(poseIndex), pose.rotation(), &initial);
     const Point t(pose.translation());
     initial.insert(translationKey(poseIndex), Matrix(t.transpose()));
   }
@@ -155,11 +155,11 @@ Values randomInitial(const std::set<Key>& poseIndices) {
   std::uniform_real_distribution<double> uniform(-kPi, kPi);
   for (Key poseIndex : poseIndices) {
     if constexpr (std::is_same_v<RotT, Rot2>) {
-      InsertQcqpValue<Rot2, d>(rotationKey(poseIndex),
+      insertQcqpValue<Rot2, d>(rotationKey(poseIndex),
                                Rot2::fromAngle(uniform(rng)), &values);
     } else {
       const Vector3 rpy(uniform(rng), uniform(rng), uniform(rng));
-      InsertQcqpValue<Rot3, d>(rotationKey(poseIndex),
+      insertQcqpValue<Rot3, d>(rotationKey(poseIndex),
                                Rot3::RzRyRx(rpy(0), rpy(1), rpy(2)), &values);
     }
   }
@@ -279,7 +279,7 @@ int runCertifiablePGO(const std::string& dataPath,
       initial = Values();
       const Values rotations = fastSync<RotT>(graph);
       for (const auto& [key, rotation] : rotations.extract<RotT>()) {
-        InsertQcqpValue<RotT, d>(key, rotation, &initial);
+        insertQcqpValue<RotT, d>(key, rotation, &initial);
       }
       const Values translationInitial =
           randomTranslationInitial<d>(poseIndices);
@@ -314,7 +314,7 @@ int runCertifiablePGO(const std::string& dataPath,
     Values atRankD = result.layout.unstack(result.rounded->Yd);
     alignBlockDetSigns<d>(atRankD, poseIndices);
     poses = recoverPoses<d>(atRankD, poseIndices);
-    for (auto& [key, R] : ExtractQcqpValues<RotT, d>(atRankD)) {
+    for (auto& [key, R] : extractQcqpValues<RotT, d>(atRankD)) {
       rounded.insert(key, R);
     }
     for (Key poseIndex : poseIndices) {

@@ -48,7 +48,7 @@ bool solveAndReportSdp(const std::string& name, SdpProblem& sdp,
   }
 
   const auto keyedRecovered_kTws =
-      ExtractQcqpValues<Pose3, 1>(sdp.qcqpValues());
+      extractQcqpValues<Pose3, 1>(sdp.qcqpValues());
   const std::vector<double> recoveredPoseEVRs = sdp.variableEVRs();
   if (keyedRecovered_kTws.size() != recoveredPoseEVRs.size()) {
     std::cerr << name << " recovered pose and eigenvalue-ratio counts differ."

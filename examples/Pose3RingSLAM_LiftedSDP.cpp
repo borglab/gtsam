@@ -54,7 +54,7 @@ bool solveAndReport(const std::string& name, SdpProblem* sdp,
     return false;
   }
 
-  const auto recoveredPoses = ExtractQcqpValues<T, 1>(sdp->qcqpValues());
+  const auto recoveredPoses = extractQcqpValues<T, 1>(sdp->qcqpValues());
   if (recoveredPoses.size() != gt.size()) {
     std::cerr << "Recovered QCQP value count does not match ground truth."
               << std::endl;
