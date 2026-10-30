@@ -294,7 +294,8 @@ TEST(KnownLandmarkSquaredRangeFactor, RejectsEigenStateQcqpConversion) {
   const EigenFactor factor(kKey, landmark, 4.0, model);
   NonlinearFactorGraph costs;
   NonlinearEqualityConstraints constraints;
-  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints), std::runtime_error);
+  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, nullptr),
+                  std::runtime_error);
 }
 
 }  // namespace augmented_factor2_fixture
@@ -329,7 +330,8 @@ TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint3DResidualAndJacobian) {
 }
 
 // Multiple measurements on the same state must contribute separate costs but
-// must not duplicate the two shared point-lift constraints.
+// must not duplicate the two shared point-lift constraints, with or without
+// redundant constraints enabled.
 TEST(KnownLandmarkSquaredRangeFactor, MultipleAugmentedQcqpFactors3D) {
   const Point point(VectorType(1.0, 2.0, 3.0));
   const auto model = noiseModel::Unit::Create(1);
@@ -340,16 +342,18 @@ TEST(KnownLandmarkSquaredRangeFactor, MultipleAugmentedQcqpFactors3D) {
 
   Values nonlinearValues;
   nonlinearValues.insert(kKey, point);
-  const QcqpProblem qcqp(graph);
   Values qcqpValues;
   InsertQcqpValue<Point, 1>(kKey, point, &qcqpValues);
 
-  EXPECT_LONGS_EQUAL(2, qcqp.costs().size());
-  EXPECT_LONGS_EQUAL(2, qcqp.eConstraints().size());
-  EXPECT_DOUBLES_EQUAL(graph.error(nonlinearValues),
-                       qcqp.costs().error(qcqpValues), 1e-10);
-  EXPECT_DOUBLES_EQUAL(0.0, qcqp.eConstraints().violationNorm(qcqpValues),
-                       1e-12);
+  for (const bool useRedundantConstraints : {false, true}) {
+    const QcqpProblem qcqp(graph, 1, useRedundantConstraints);
+    EXPECT_LONGS_EQUAL(2, qcqp.costs().size());
+    EXPECT_LONGS_EQUAL(2, qcqp.eConstraints().size());
+    EXPECT_DOUBLES_EQUAL(graph.error(nonlinearValues),
+                         qcqp.costs().error(qcqpValues), 1e-10);
+    EXPECT_DOUBLES_EQUAL(0.0, qcqp.eConstraints().violationNorm(qcqpValues),
+                         1e-12);
+  }
 }
 
 // Validate qcqpFactors error handling without an SDP solve.
@@ -360,28 +364,30 @@ TEST(KnownLandmarkSquaredRangeFactor, AugmentedQcqpRejectsInvalidInputs) {
 
   NonlinearFactorGraph costs;
   NonlinearEqualityConstraints constraints;
-  CHECK_EXCEPTION(factor.qcqpFactors(nullptr, &constraints),
+  CHECK_EXCEPTION(factor.qcqpFactors(nullptr, &constraints, nullptr),
                   std::invalid_argument);
-  CHECK_EXCEPTION(factor.qcqpFactors(&costs, nullptr), std::invalid_argument);
-  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, 2),
+  CHECK_EXCEPTION(factor.qcqpFactors(&costs, nullptr, nullptr),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, nullptr, 2),
                   std::invalid_argument);
 
   const Factor missingNoise(kKey, landmark, 5.0, SharedNoiseModel());
-  CHECK_EXCEPTION(missingNoise.qcqpFactors(&costs, &constraints),
+  CHECK_EXCEPTION(missingNoise.qcqpFactors(&costs, &constraints, nullptr),
                   std::runtime_error);
   const Factor wrongNoiseDimension(kKey, landmark, 5.0,
                                    noiseModel::Isotropic::Sigma(2, 1.0));
-  CHECK_EXCEPTION(wrongNoiseDimension.qcqpFactors(&costs, &constraints),
-                  std::invalid_argument);
+  CHECK_EXCEPTION(
+      wrongNoiseDimension.qcqpFactors(&costs, &constraints, nullptr),
+      std::invalid_argument);
   const Factor constrainedNoise(kKey, landmark, 5.0,
                                 noiseModel::Constrained::All(1));
-  CHECK_EXCEPTION(constrainedNoise.qcqpFactors(&costs, &constraints),
+  CHECK_EXCEPTION(constrainedNoise.qcqpFactors(&costs, &constraints, nullptr),
                   std::runtime_error);
   const Factor robustNoise(
       kKey, landmark, 5.0,
       noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.345),
                                  model));
-  CHECK_EXCEPTION(robustNoise.qcqpFactors(&costs, &constraints),
+  CHECK_EXCEPTION(robustNoise.qcqpFactors(&costs, &constraints, nullptr),
                   std::runtime_error);
   CHECK_EXCEPTION(Factor(kKey, landmark, -1.0, model), std::invalid_argument);
   CHECK_EXCEPTION(
