@@ -506,7 +506,7 @@ ShonanAveraging3::Parameters shonanParameters(const string& method,
 Values qcqpInitialValues(const Values& rotations) {
   Values initial;
   for (const auto& [key, rotation] : rotations.extract<Rot3>()) {
-    gtsam::InsertQcqpValue<Rot3, 3>(key, rotation, &initial);
+    gtsam::insertQcqpValue<Rot3, 3>(key, rotation, &initial);
   }
   return initial;
 }
@@ -534,7 +534,7 @@ Values extractRoundedRotations(const gtsam::RiemannianStaircaseResult& result) {
   alignBlockDeterminants(&rounded);
   Values rotations;
   for (const auto& [key, rotation] :
-       gtsam::ExtractQcqpValues<Rot3, 3>(rounded)) {
+       gtsam::extractQcqpValues<Rot3, 3>(rounded)) {
     rotations.insert(key, rotation);
   }
   return rotations;

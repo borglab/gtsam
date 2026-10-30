@@ -123,9 +123,9 @@ class RelativeTranslationFactor
   }
 
   /// Add this translation factor as a QCQP cost when traits exist.
-  void qcqpFactors(NonlinearFactorGraph* costs,
-                   NonlinearEqualityConstraints* constraints,
-                   QcqpConstraintMap* variableConstraints,
+  void qcqpFactors(NonlinearFactorGraph& costs,
+                   NonlinearEqualityConstraints& constraints,
+                   QcqpVariableConstraints& variableConstraints,
                    size_t columnDimension = 1) const override {
     if (columnDimension == 0) {
       throw std::invalid_argument(
@@ -141,10 +141,6 @@ class RelativeTranslationFactor
           "RelativeTranslationFactor::qcqpFactors requires columnDimension "
           ">= d.");
     }
-    if (!costs) {
-      throw std::invalid_argument(
-          "RelativeTranslationFactor::qcqpFactors: costs is null.");
-    }
 
     const double sw = std::sqrt(weight_);
     Matrix B = Matrix::Zero(1, d + 2);
@@ -154,33 +150,26 @@ class RelativeTranslationFactor
 
     const Matrix Q = B.transpose() * B;
     const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{d, 1, 1}, Q);
-    costs->push_back(std::make_shared<QpCost>(
+    costs.push_back(std::make_shared<QpCost>(
         KeyVector{this->key1(), this->key2(), this->key3()}, blockQ,
         columnDimension));
   }
 
   /** Add redundant D=1 equalities for the 3D rotation; 2D adds none. */
   void appendRedundantConstraints(
-      size_t columnDimension,
-      QcqpConstraintMap* byKey) const override {
+      size_t columnDimension, QcqpVariableConstraints& constraints) const override {
     if constexpr (d == 3) {
       if (columnDimension == 1) {
-        InsertQcqpVariableConstraints(
-            this->key1(), traits<Rot>::QcqpRedundantConstraints, byKey);
+        constraints.add(this->key1(), traits<Rot>::QcqpRedundantConstraints);
       }
     }
   }
 
  private:
   /// Add the exact D=1 vector cost and variable constraints.
-  void qcqpFactorsForVector(NonlinearFactorGraph* costs,
-                            NonlinearEqualityConstraints* constraints,
-                            QcqpConstraintMap* variableConstraints) const {
-    if (!costs) {
-      throw std::invalid_argument(
-          "RelativeTranslationFactor::qcqpFactors: costs is null.");
-    }
-
+  void qcqpFactorsForVector(NonlinearFactorGraph& costs,
+                            NonlinearEqualityConstraints& constraints,
+                            QcqpVariableConstraints& variableConstraints) const {
     constexpr int kRotationDim = traits<Rot>::QcqpVectorDim;
     constexpr int kPointDim = traits<Point>::QcqpVectorDim;
     const double sw = std::sqrt(weight_);
@@ -206,20 +195,17 @@ class RelativeTranslationFactor
     B.block(0, kRotationDim, d, d) = -sw * Matrix::Identity(d, d);
     B.block(0, kRotationDim + kPointDim, d, d) = sw * Matrix::Identity(d, d);
 
-    InsertQcqpVariableConstraints(
-        this->key1(), traits<Rot>::template QcqpConstraints<1>,
-        variableConstraints);
-    InsertQcqpVariableConstraints(
-        this->key2(), traits<Point>::template QcqpConstraints<1>,
-        variableConstraints);
-    InsertQcqpVariableConstraints(
-        this->key3(), traits<Point>::template QcqpConstraints<1>,
-        variableConstraints);
+    variableConstraints.add(
+        this->key1(), traits<Rot>::template QcqpConstraints<1>);
+    variableConstraints.add(
+        this->key2(), traits<Point>::template QcqpConstraints<1>);
+    variableConstraints.add(
+        this->key3(), traits<Point>::template QcqpConstraints<1>);
 
     const Matrix Q = B.transpose() * B;
     const SymmetricBlockMatrix blockQ(
         std::vector<DenseIndex>{kRotationDim, kPointDim, kPointDim}, Q);
-    costs->push_back(std::make_shared<QpCost>(
+    costs.push_back(std::make_shared<QpCost>(
         KeyVector{this->key1(), this->key2(), this->key3()}, blockQ));
   }
 };

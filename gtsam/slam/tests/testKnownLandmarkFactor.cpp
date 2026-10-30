@@ -219,7 +219,7 @@ TEST(KnownLandmarkFactor2, CertifiableLocalizationQcqpError) {
   const QcqpProblem qcqp(certifiableProblem.graph, 1);
   Values qcqpValues;
   for (const Key k : certifiableProblem.poseKeys) {
-    InsertQcqpValue<Pose3, 1>(k, certifiableProblem.initial_kTws.at<Pose3>(k),
+    insertQcqpValue<Pose3, 1>(k, certifiableProblem.initial_kTws.at<Pose3>(k),
                               &qcqpValues);
   }
 

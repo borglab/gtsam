@@ -97,8 +97,8 @@ TEST(RelativeTranslationFactor, QcqpFactorsMatchesNonlinearErrorAtRankD) {
 
   NonlinearFactorGraph costs;
   NonlinearEqualityConstraints constraints;
-  QcqpConstraintMap variableConstraints;
-  factor.qcqpFactors(&costs, &constraints, &variableConstraints,
+  QcqpVariableConstraints variableConstraints;
+  factor.qcqpFactors(costs, constraints, variableConstraints,
                      /*columnDimension=*/3);
   EXPECT(constraints.empty());
   EXPECT_LONGS_EQUAL(1, static_cast<long>(costs.size()));
@@ -127,9 +127,9 @@ TEST(RelativeTranslationFactor, QcqpFactorsMatchesNonlinearErrorAtD1) {
   const QcqpProblem problem(graph, 1);
 
   Values qcqpValues;
-  InsertQcqpValue<Rot3, 1>(kR, Ri, &qcqpValues);
-  InsertQcqpValue<Vector3, 1>(kT1, ti, &qcqpValues);
-  InsertQcqpValue<Vector3, 1>(kT2, tj, &qcqpValues);
+  insertQcqpValue<Rot3, 1>(kR, Ri, &qcqpValues);
+  insertQcqpValue<Vector3, 1>(kT1, ti, &qcqpValues);
+  insertQcqpValue<Vector3, 1>(kT2, tj, &qcqpValues);
 
   const double directCost =
       0.5 * factor.evaluateError(Ri, ti, tj, {}, {}, {}).squaredNorm();
@@ -154,9 +154,9 @@ TEST(RelativeTranslationFactor, QcqpFactorsRejectsSmallColumnDimension) {
                                           1.0);
   NonlinearFactorGraph costs;
   NonlinearEqualityConstraints constraints;
-  QcqpConstraintMap variableConstraints;
+  QcqpVariableConstraints variableConstraints;
   CHECK_EXCEPTION(
-      factor.qcqpFactors(&costs, &constraints, &variableConstraints, /*columnDimension=*/2),
+      factor.qcqpFactors(costs, constraints, variableConstraints, /*columnDimension=*/2),
       std::invalid_argument);
 }
 
@@ -177,8 +177,8 @@ TEST(RelativeTranslationFactor, QcqpFactorsMatchesNonlinearErrorAtRankD2) {
 
   NonlinearFactorGraph costs;
   NonlinearEqualityConstraints constraints;
-  QcqpConstraintMap variableConstraints;
-  factor.qcqpFactors(&costs, &constraints, &variableConstraints,
+  QcqpVariableConstraints variableConstraints;
+  factor.qcqpFactors(costs, constraints, variableConstraints,
                      /*columnDimension=*/2);
 
   Values Y;
@@ -203,9 +203,9 @@ TEST(RelativeTranslationFactor, QcqpFactorsMatchesNonlinearErrorAtD1In2D) {
   const QcqpProblem problem(graph, 1);
 
   Values qcqpValues;
-  InsertQcqpValue<Rot2, 1>(kR, Ri, &qcqpValues);
-  InsertQcqpValue<Vector2, 1>(kT1, ti, &qcqpValues);
-  InsertQcqpValue<Vector2, 1>(kT2, tj, &qcqpValues);
+  insertQcqpValue<Rot2, 1>(kR, Ri, &qcqpValues);
+  insertQcqpValue<Vector2, 1>(kT1, ti, &qcqpValues);
+  insertQcqpValue<Vector2, 1>(kT2, tj, &qcqpValues);
 
   const double directCost =
       0.5 * factor.evaluateError(Ri, ti, tj, {}, {}, {}).squaredNorm();

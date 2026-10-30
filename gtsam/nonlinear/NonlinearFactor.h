@@ -33,16 +33,13 @@
 #include <boost/serialization/base_object.hpp>
 #endif
 #include <cstddef>
-#include <map>
 #include <optional>
 
 namespace gtsam {
 
 class NonlinearEqualityConstraints;
 class NonlinearFactorGraph;
-
-/** Variable QCQP equalities, grouped by key and generated once per key. */
-using QcqpConstraintMap = std::map<Key, NonlinearEqualityConstraints>;
+class QcqpVariableConstraints;
 
 /* ************************************************************************* */
 
@@ -159,9 +156,9 @@ public:
    * variableConstraints. The default implementation throws for unsupported
    * factors.
    */
-  virtual void qcqpFactors(NonlinearFactorGraph* costs,
-                           NonlinearEqualityConstraints* constraints,
-                           QcqpConstraintMap* variableConstraints,
+  virtual void qcqpFactors(NonlinearFactorGraph& costs,
+                           NonlinearEqualityConstraints& constraints,
+                           QcqpVariableConstraints& variableConstraints,
                            size_t columnDimension = 1) const;
 
   /**

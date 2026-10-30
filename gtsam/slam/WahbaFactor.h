@@ -87,16 +87,13 @@ class WahbaFactor : public NoiseModelFactorN<Rot3>,
   }
 
   /** Add the exact D=1 chordal Wahba cost to a QCQP. */
-  void qcqpFactors(NonlinearFactorGraph* costs,
-                   NonlinearEqualityConstraints* constraints,
-                   QcqpConstraintMap* variableConstraints,
+  void qcqpFactors(NonlinearFactorGraph& costs,
+                   NonlinearEqualityConstraints& constraints,
+                   QcqpVariableConstraints& variableConstraints,
                    size_t columnDimension = 1) const override {
     if (columnDimension != 1) {
       throw std::invalid_argument(
           "WahbaFactor::qcqpFactors only supports column dimension 1");
-    }
-    if (!costs) {
-      throw std::invalid_argument("WahbaFactor::qcqpFactors costs is null");
     }
     if (!this->noiseModel_ ||
         std::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_) ||
@@ -124,21 +121,18 @@ class WahbaFactor : public NoiseModelFactorN<Rot3>,
     const Matrix whitenedB = this->noiseModel_->Whiten(B);
     const Matrix Q = whitenedB.transpose() * whitenedB;
 
-    InsertQcqpVariableConstraints(
-        this->key(), traits<Rot3>::template QcqpConstraints<1>,
-        variableConstraints);
+    variableConstraints.add(
+        this->key(), traits<Rot3>::template QcqpConstraints<1>);
     const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{LiftedDim, 1}, Q);
-    costs->push_back(std::make_shared<QpCost>(
+    costs.push_back(std::make_shared<QpCost>(
         HessianFactor(KeyVector{this->key()}, blockQ)));
   }
 
   /** Add the rotation variable's redundant D=1 equalities once per key. */
   void appendRedundantConstraints(
-      size_t columnDimension,
-      QcqpConstraintMap* byKey) const override {
+      size_t columnDimension, QcqpVariableConstraints& constraints) const override {
     if (columnDimension == 1) {
-      InsertQcqpVariableConstraints(
-          this->key(), traits<Rot3>::QcqpRedundantConstraints, byKey);
+      constraints.add(this->key(), traits<Rot3>::QcqpRedundantConstraints);
     }
   }
 };

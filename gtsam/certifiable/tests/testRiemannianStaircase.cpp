@@ -58,7 +58,7 @@ NonlinearFactorGraph RingGraph(size_t numPoses, double delta) {
 Values RingQcqpValuesD2(size_t numPoses, double delta, double perturbation) {
   Values values;
   for (size_t i = 0; i < numPoses; ++i) {
-    InsertQcqpValue<Rot2, 2>(
+    insertQcqpValue<Rot2, 2>(
         Symbol('x', i),
         Rot2::fromAngle(i * delta + perturbation * static_cast<double>(i)),
         &values);
@@ -89,9 +89,9 @@ class CountingFrobeniusBetweenFactor : public FrobeniusBetweenFactor<Rot2> {
                                  const std::shared_ptr<size_t>& buildCount)
       : Base(key1, key2, measured, noise), buildCount_(buildCount) {}
 
-  void qcqpFactors(NonlinearFactorGraph* costs,
-                   NonlinearEqualityConstraints* constraints,
-                   QcqpConstraintMap* variableConstraints,
+  void qcqpFactors(NonlinearFactorGraph& costs,
+                   NonlinearEqualityConstraints& constraints,
+                   QcqpVariableConstraints& variableConstraints,
                    size_t columnDimension) const override {
     ++*buildCount_;
     Base::qcqpFactors(costs, constraints, variableConstraints, columnDimension);
@@ -183,7 +183,7 @@ TEST(RiemannianStaircase, FastSyncRot3QcqpInitialization) {
   const Values rotations = fastSync<Rot3>(graph);
   Values initial;
   for (const auto& [key, rotation] : rotations.extract<Rot3>()) {
-    InsertQcqpValue<Rot3, 3>(key, rotation, &initial);
+    insertQcqpValue<Rot3, 3>(key, rotation, &initial);
   }
 
   RiemannianStaircaseParams params;
@@ -473,8 +473,8 @@ TEST(RiemannianStaircase, RejectsNonQcqpFactor) {
       Symbol('x', 0), Symbol('x', 1), Pose2(),
       noiseModel::Isotropic::Sigma(3, 1.0));
   Values values;
-  InsertQcqpValue<Rot2, 2>(Symbol('x', 0), Rot2::fromAngle(0.0), &values);
-  InsertQcqpValue<Rot2, 2>(Symbol('x', 1), Rot2::fromAngle(0.0), &values);
+  insertQcqpValue<Rot2, 2>(Symbol('x', 0), Rot2::fromAngle(0.0), &values);
+  insertQcqpValue<Rot2, 2>(Symbol('x', 1), Rot2::fromAngle(0.0), &values);
 
   CHECK_EXCEPTION(
       RiemannianStaircaseOptimizer(graph, values, RiemannianStaircaseParams{}),
@@ -489,8 +489,8 @@ TEST(RiemannianStaircase, RejectsInvertedPMinPMax) {
   graph.emplace_shared<FrobeniusBetweenFactor<Rot2>>(
       Symbol('x', 0), Symbol('x', 1), Rot2::fromAngle(0.3), noise);
   Values values;
-  InsertQcqpValue<Rot2, 2>(Symbol('x', 0), Rot2::fromAngle(0.0), &values);
-  InsertQcqpValue<Rot2, 2>(Symbol('x', 1), Rot2::fromAngle(0.0), &values);
+  insertQcqpValue<Rot2, 2>(Symbol('x', 0), Rot2::fromAngle(0.0), &values);
+  insertQcqpValue<Rot2, 2>(Symbol('x', 1), Rot2::fromAngle(0.0), &values);
 
   RiemannianStaircaseParams params;
   params.pMin = 3;

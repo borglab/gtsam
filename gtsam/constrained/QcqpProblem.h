@@ -26,10 +26,40 @@
 
 #include <stdexcept>
 #include <type_traits>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
 namespace gtsam {
+
+/**
+ * Collect variable QCQP equalities once per key, in insertion order.
+ * Use separate collectors for ordinary and redundant variable constraints.
+ * Factor-specific constraints do not belong in either collector.
+ */
+class QcqpVariableConstraints {
+  std::unordered_set<Key> keys_;
+  NonlinearEqualityConstraints constraints_;
+
+ public:
+  /**
+   * Generate and append a variable's equalities only on its first visit.
+   * generateConstraints returns (A, a, b) triples for
+   * trace(X' A X) + 2 a' x = b. All providers for a key must agree on the set.
+   * An empty set still marks the key as visited.
+   */
+  template <typename Generator>
+  void add(Key key, Generator generateConstraints) {
+    if (!keys_.insert(key).second) return;
+    for (const auto& [A, a, b] : generateConstraints()) {
+      constraints_.push_back(
+          QuadraticConstraint::Equal(key, A, a, b).createEqualityFactor());
+    }
+  }
+
+  /// Return the collected variable constraints.
+  const NonlinearEqualityConstraints& constraints() const { return constraints_; }
+};
 
 /**
  * Optional interface for factors with variables that have redundant QCQP
@@ -42,13 +72,13 @@ class GTSAM_EXPORT RedundantQcqpProvider {
   virtual ~RedundantQcqpProvider() = default;
 
   /**
-   * Add redundant equalities only for variable keys absent from the map.
+   * Add redundant equalities through the collector, once per variable key.
    * All providers are assumed to supply the same set for a given key, so
-   * existing entries must be left untouched, even if empty.
+   * previously visited keys must be left untouched, even for empty sets.
    * May add nothing for variable types or column dimensions without them.
    */
   virtual void appendRedundantConstraints(
-      size_t columnDimension, QcqpConstraintMap* byKey) const = 0;
+      size_t columnDimension, QcqpVariableConstraints& constraints) const = 0;
 };
 
 namespace internal {
@@ -90,12 +120,12 @@ struct HasQcqpVectorDim<T, std::void_t<decltype(traits<T>::QcqpVectorDim)>>
  * variables without changing the row-space cost matrices.
  */
 template <typename T, int D = 1>
-void InsertQcqpValue(Key key, const T& value, Values* qcqpValues) {
+void insertQcqpValue(Key key, const T& value, Values* qcqpValues) {
   static_assert(internal::HasQcqpVariableTraits<T, D>::value,
-                "InsertQcqpValue requires traits<T>::QcqpValue<D> and "
+                "insertQcqpValue requires traits<T>::QcqpValue<D> and "
                 "traits<T>::QcqpConstraints<D>.");
   if (!qcqpValues) {
-    throw std::invalid_argument("InsertQcqpValue: qcqpValues is null.");
+    throw std::invalid_argument("insertQcqpValue: qcqpValues is null.");
   }
 
   const Matrix qcqpValue = traits<T>::template QcqpValue<D>(value);
@@ -104,35 +134,11 @@ void InsertQcqpValue(Key key, const T& value, Values* qcqpValues) {
     if (existing.rows() != qcqpValue.rows() ||
         existing.cols() != qcqpValue.cols()) {
       throw std::invalid_argument(
-          "InsertQcqpValue: inconsistent QCQP variable dimensions.");
+          "insertQcqpValue: inconsistent QCQP variable dimensions.");
     }
     return;
   }
   qcqpValues->insert(key, qcqpValue);
-}
-
-/**
- * Insert a variable's quadratic equalities once per key.
- *
- * generateConstraints returns (A, a, b) triples for trace(X' A X) + 2 a' x = b.
- * It is called only when the key is absent, so existing entries incur no
- * constraint generation or comparison. All factors providing constraints for
- * a key must agree on the set. Use separate maps for ordinary and redundant
- * variable constraints; factor-specific constraints do not belong in either.
- */
-template <typename Generator>
-void InsertQcqpVariableConstraints(Key key, Generator generateConstraints,
-                                   QcqpConstraintMap* byKey) {
-  if (!byKey) {
-    throw std::invalid_argument("InsertQcqpVariableConstraints: map is null.");
-  }
-  auto [it, inserted] = byKey->try_emplace(key);
-  if (inserted) {
-    for (const auto& [A, a, b] : generateConstraints()) {
-      it->second.push_back(
-          QuadraticConstraint::Equal(key, A, a, b).createEqualityFactor());
-    }
-  }
 }
 
 /**
@@ -149,12 +155,12 @@ void InsertQcqpVariableConstraints(Key key, Generator generateConstraints,
  * absolute rotations are intentionally best-effort and gauge-dependent.
  */
 template <typename T, int D>
-std::vector<std::pair<Key, T>> ExtractQcqpValues(const Values& qcqpValues) {
+std::vector<std::pair<Key, T>> extractQcqpValues(const Values& qcqpValues) {
   static_assert(internal::HasQcqpExtractionTraits<T, D>::value,
-                "ExtractQcqpValues requires traits<T>::QcqpValue<D>, "
+                "extractQcqpValues requires traits<T>::QcqpValue<D>, "
                 "QcqpConstraints<D>, and FromQcqpValue<D>.");
   static_assert(D != 1 || internal::HasQcqpVectorDim<T>::value,
-                "ExtractQcqpValues<T, 1> requires "
+                "extractQcqpValues<T, 1> requires "
                 "traits<T>::QcqpVectorDim.");
   constexpr int expectedRows = [] {
     if constexpr (D == 1) {
@@ -191,7 +197,7 @@ void insertQcqpValue(Key key, const T& typedValue, Values& qcqpValues) {
   static_assert(internal::HasQcqpVariableTraits<T, 1>::value,
                 "insertQcqpValue requires traits<T>::QcqpValue<1> and "
                 "traits<T>::QcqpConstraints<1>.");
-  InsertQcqpValue<T, 1>(key, typedValue, &qcqpValues);
+  insertQcqpValue<T, 1>(key, typedValue, &qcqpValues);
 }
 
 /** Recover a typed value from an exact D=1 QCQP vector. */
@@ -214,7 +220,7 @@ Values extractQcqpValues(const Values& qcqpValues) {
   static_assert(internal::HasQcqpVectorDim<T>::value,
                 "extractQcqpValues requires traits<T>::QcqpVectorDim.");
   Values typedValues;
-  for (const auto& [key, typedValue] : ExtractQcqpValues<T, 1>(qcqpValues)) {
+  for (const auto& [key, typedValue] : extractQcqpValues<T, 1>(qcqpValues)) {
     typedValues.insert(key, typedValue);
   }
   return typedValues;

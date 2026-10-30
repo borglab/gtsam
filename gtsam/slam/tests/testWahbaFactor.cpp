@@ -82,7 +82,7 @@ TEST(WahbaFactor, QcqpError) {
   aRbs.insert(kKey, aRb);
   const QcqpProblem qcqp(graph, 1);
   Values qcqpValues;
-  InsertQcqpValue<Rot3, 1>(kKey, aRb, &qcqpValues);
+  insertQcqpValue<Rot3, 1>(kKey, aRb, &qcqpValues);
 
   const double nonlinearError = graph.error(aRbs);
   EXPECT(nonlinearError > 0.0);
@@ -93,20 +93,17 @@ TEST(WahbaFactor, QcqpError) {
 TEST(WahbaFactor, QcqpValidation) {
   NonlinearFactorGraph costs;
   NonlinearEqualityConstraints constraints;
-  QcqpConstraintMap variableConstraints;
+  QcqpVariableConstraints variableConstraints;
   const WahbaFactor factor(kKey, bDirection, measured_aDirection,
                            noiseModel::Unit::Create(3));
   CHECK_EXCEPTION(
-      factor.qcqpFactors(&costs, &constraints, &variableConstraints, 2),
-      std::invalid_argument);
-  CHECK_EXCEPTION(
-      factor.qcqpFactors(nullptr, &constraints, &variableConstraints, 1),
+      factor.qcqpFactors(costs, constraints, variableConstraints, 2),
       std::invalid_argument);
 
   const WahbaFactor nullModelFactor(kKey, bDirection, measured_aDirection,
                                     nullptr);
   CHECK_EXCEPTION(
-      nullModelFactor.qcqpFactors(&costs, &constraints, &variableConstraints, 1),
+      nullModelFactor.qcqpFactors(costs, constraints, variableConstraints, 1),
       std::runtime_error);
 
   const auto robustModel = noiseModel::Robust::Create(
@@ -114,13 +111,13 @@ TEST(WahbaFactor, QcqpValidation) {
   const WahbaFactor robustFactor(kKey, bDirection, measured_aDirection,
                                  robustModel);
   CHECK_EXCEPTION(
-      robustFactor.qcqpFactors(&costs, &constraints, &variableConstraints, 1),
+      robustFactor.qcqpFactors(costs, constraints, variableConstraints, 1),
       std::runtime_error);
 
   const WahbaFactor constrainedFactor(kKey, bDirection, measured_aDirection,
                                       noiseModel::Constrained::All(3));
   CHECK_EXCEPTION(
-      constrainedFactor.qcqpFactors(&costs, &constraints, &variableConstraints, 1),
+      constrainedFactor.qcqpFactors(costs, constraints, variableConstraints, 1),
       std::runtime_error);
 }
 

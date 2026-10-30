@@ -59,7 +59,7 @@ NonlinearFactorGraph Rot2RingGraph(size_t numPoses, double delta) {
 Values Rot2RingQcqpValues(size_t numPoses, double delta, double perturbation) {
   Values values;
   for (size_t i = 0; i < numPoses; ++i) {
-    InsertQcqpValue<Rot2, 1>(
+    insertQcqpValue<Rot2, 1>(
         Symbol('x', i),
         Rot2::fromAngle(i * delta + perturbation * static_cast<double>(i)),
         &values);
@@ -84,7 +84,7 @@ template <typename T>
 Values PoseRingQcqpValues(const std::vector<T>& poses) {
   Values values;
   for (size_t i = 0; i < poses.size(); ++i) {
-    InsertQcqpValue<T, 1>(Symbol('x', i), poses[i], &values);
+    insertQcqpValue<T, 1>(Symbol('x', i), poses[i], &values);
   }
   return values;
 }
@@ -303,7 +303,7 @@ SdpSolutionSummary SolveAndSummarize(SdpProblem* sdp,
       repeatedRatiosMatch &&
       assert_equal(qcqpValues, repeatedQcqpValues, 1e-12);
 
-  const auto recovered = ExtractQcqpValues<T, 1>(qcqpValues);
+  const auto recovered = extractQcqpValues<T, 1>(qcqpValues);
   if (recovered.size() != groundTruth.size()) {
     throw std::runtime_error(
         "Recovered QCQP value count does not match ground truth.");

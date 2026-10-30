@@ -28,31 +28,24 @@ QcqpProblem::QcqpProblem(const NonlinearFactorGraph& graph,
         "QcqpProblem: columnDimension must be positive.");
   }
 
-  QcqpConstraintMap variableConstraints;
-  QcqpConstraintMap redundantByKey;
+  QcqpVariableConstraints variableConstraints;
+  QcqpVariableConstraints redundantConstraints;
   for (const auto& factor : graph) {
     if (!factor) continue;
 
-    NonlinearFactorGraph factorCosts;
-    NonlinearEqualityConstraints factorConstraints;
-    factor->qcqpFactors(&factorCosts, &factorConstraints, &variableConstraints,
+    factor->qcqpFactors(costs_, eqConstraints_, variableConstraints,
                         columnDimension);
     if (useRedundantConstraints) {
       const auto* provider =
           dynamic_cast<const RedundantQcqpProvider*>(factor.get());
       if (provider) {
-        provider->appendRedundantConstraints(columnDimension, &redundantByKey);
+        provider->appendRedundantConstraints(columnDimension,
+                                              redundantConstraints);
       }
     }
-    costs_.add(factorCosts);
-    eqConstraints_.add(factorConstraints);
   }
-  for (const auto& entry : variableConstraints) {
-    eqConstraints_.add(entry.second);
-  }
-  for (const auto& entry : redundantByKey) {
-    eqConstraints_.add(entry.second);
-  }
+  eqConstraints_.add(variableConstraints.constraints());
+  eqConstraints_.add(redundantConstraints.constraints());
 }
 
 /* ************************************************************************* */

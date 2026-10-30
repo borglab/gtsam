@@ -346,7 +346,7 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
       RotT rotation;
       if (rotationEstimate.exists(rotationKey(index)))
         rotation = rotationEstimate.at<RotT>(rotationKey(index));
-      InsertQcqpValue<RotT, d>(rotationKey(index), rotation, &initial);
+      insertQcqpValue<RotT, d>(rotationKey(index), rotation, &initial);
       initial.insert(translationKey(index), randomBlock(1, p, rng, false));
     }
     for (const auto& [name, index] : data.landmarkIds)
@@ -395,7 +395,7 @@ int runCertifiableRangeAidedSLAM(const std::string& path,
     Values atRankD = atRankDInput;
     alignBlockDetSigns<d>(atRankD, data.poseIds.size());
     Values typed;
-    // ExtractQcqpValues selects by block shape, and a lifted Rot2 auxiliary
+    // extractQcqpValues selects by block shape, and a lifted Rot2 auxiliary
     // has the same shape as a lifted rotation, so select by key instead.
     for (size_t i = 0; i < data.poseIds.size(); ++i)
       typed.insert(rotationKey(i), traits<RotT>::template FromQcqpValue<d>(
