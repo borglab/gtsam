@@ -398,7 +398,9 @@ TEST(GradientsParameters, DiagonalNoiseModelSigma) {
                       bakedSolution.at<Vector>(kPosition), 1e-10));
   const auto bakedGradient =
       Gradients(baked, bakedSolution).parameterGradient(cotangents, kNoise);
-  EXPECT(assert_equal(analytic.value(), bakedGradient.value(), 1e-10));
+  // Baking r = e ⊘ σ into residual VJP is only the Jacobian-held-fixed half.
+  EXPECT(assert_equal((0.5 * analytic.value()).eval(), bakedGradient.value(),
+                      1e-10));
 
   const double step = 1e-6;
   for (size_t coordinate = 0; coordinate < 2; ++coordinate) {
@@ -410,9 +412,7 @@ TEST(GradientsParameters, DiagonalNoiseModelSigma) {
             kPosition) -
         sigmaSolve(noiseModel::Diagonal::Sigmas(minus, false)).at<Vector>(
             kPosition);
-    // Re-solving includes dJ_w/dσ, which Gradients omits. That term equals
-    // the GN σ VJP, so the true IFT is twice the analytic value.
-    EXPECT_DOUBLES_EQUAL(2.0 * (*analytic)[coordinate],
+    EXPECT_DOUBLES_EQUAL((*analytic)[coordinate],
                          cotangents.at(kPosition).dot(dx) / (2 * step), 1e-6);
   }
 
@@ -475,7 +475,7 @@ TEST(GradientsParameters, SharedNoiseTagAccumulates) {
         GaussNewtonOptimizer(makeGraph(minus), sigmaInitial())
             .optimize()
             .at<Vector>(kPosition);
-    EXPECT_DOUBLES_EQUAL(2.0 * (*analytic)[coordinate],
+    EXPECT_DOUBLES_EQUAL((*analytic)[coordinate],
                          cotangents.at(kPosition).dot(dx) / (2 * step), 1e-6);
   }
   EXPECT(!Gradients(factors, solution)

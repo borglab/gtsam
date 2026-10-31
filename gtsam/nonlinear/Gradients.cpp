@@ -274,7 +274,9 @@ void addParameterContribution(std::optional<Vector>& result,
     throw std::runtime_error("Gradients: nonfinite accumulated parameter gradient");
 }
 
-/// Gauss-Newton dL/dσ from r = e ⊘ σ, holding J fixed: ν_w ⊙ (-e / σ²).
+/// Exact dL/dσ for diagonal whitening r = e ⊘ σ: 2 ν_w ⊙ (-e / σ²).
+/// The residual and dJ_w/dσ halves are equal, so this is twice the
+/// Jacobian-held-fixed term.
 std::optional<Vector> diagonalSigmaVjp(const NoiseModelFactor& factor,
                                       const Values& solution,
                                       const ParameterTag& parameter,
@@ -292,8 +294,8 @@ std::optional<Vector> diagonalSigmaVjp(const NoiseModelFactor& factor,
   if (residual.size() != whitenedCotangent.size() ||
       residual.size() != sigmas.size())
     throw factorError(index, "noise-model σ VJP dimension mismatch");
-  Vector contribution =
-      -whitenedCotangent.array() * residual.array() / sigmas.array().square();
+  Vector contribution = -2.0 * whitenedCotangent.array() * residual.array() /
+                        sigmas.array().square();
   if (std::dynamic_pointer_cast<const noiseModel::Isotropic>(noise))
     return Vector1(contribution.sum());
   return contribution;

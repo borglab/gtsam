@@ -72,10 +72,10 @@ class GaussianBayesTree;
  * cotangent fixed while differentiating the unwhitened factor residual with
  * respect to the requested parameter. Add any direct parameter derivative of
  * the loss separately to parameterGradient's result. Diagonal and isotropic
- * noise models that carry the same ParameterTag also contribute the
- * Gauss-Newton term on σ: each residual row i adds ν_w,i * (-e_i / σ_i²).
- * Isotropic models return one shared scalar (the sum). Full Gaussian and
- * robust noise parameters are not differentiated.
+ * noise models that carry the same ParameterTag also contribute dL/dσ:
+ * each residual row i adds 2 ν_w,i * (-e_i / σ_i²). Isotropic models return
+ * one shared scalar (the sum). Full Gaussian and robust noise parameters
+ * are not differentiated.
  *
  * \par Advanced differentiation model
  * These derivatives use a Gauss-Newton approximation. Let J be the whitened
@@ -83,10 +83,11 @@ class GaussianBayesTree;
  * H = J.transpose() * J. Queries apply H inverse using two sparse Bayes-tree
  * triangular solves; they never assemble a global J, H, or inverse. The caller
  * owns optimization and must establish stationarity. Both the state Hessian
- * and the mixed state/parameter derivative use their Gauss-Newton terms.
- * The omitted second-derivative terms, weighted by factor residuals, vanish
- * when factor residuals are zero or jointly affine. Convergence alone does not
- * make them vanish. No damping or pseudoinverse fallback is applied.
+ * and residual-parameter mixed derivatives use their Gauss-Newton terms.
+ * Tagged diagonal σ is exact: the omitted dJ_w/dσ term equals the residual
+ * term. The omitted second-derivative terms, weighted by factor residuals,
+ * vanish when factor residuals are zero or jointly affine. Convergence alone
+ * does not make them vanish. No damping or pseudoinverse fallback is applied.
  */
 class GTSAM_EXPORT Gradients {
  public:
@@ -166,9 +167,10 @@ class GTSAM_EXPORT Gradients {
    *
    * Requires construction from a nonlinear graph and solution; Gaussian-only
    * construction throws std::logic_error because it has no parameter VJPs.
-   * Tagged diagonal or isotropic noise models add their σ VJP. This applies
-   * the same Gauss-Newton approximation as pullback and excludes any direct
-   * parameter dependence of the outer loss.
+   * Tagged diagonal or isotropic noise models add their σ VJP, which is
+   * exact for diagonal whitening. Residual parameterVjp still uses the
+   * Gauss-Newton approximation as pullback. Excludes any direct parameter
+   * dependence of the outer loss.
    * Each call reuses the factorization and performs one adjoint calculation.
    */
   std::optional<Vector> parameterGradient(

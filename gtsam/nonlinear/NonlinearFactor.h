@@ -299,8 +299,8 @@ public:
    * operation is needed in the implementation.
    * Noise-model σ is not part of this hook: attach a ParameterTag to a
    * Diagonal or Isotropic model and Gradients::parameterGradient will add
-   * that Gauss-Newton term. The default implementation declares no residual
-   * parameter dependencies.
+   * ∂L/∂σ. The default implementation declares no residual parameter
+   * dependencies.
    */
   virtual std::optional<Vector> parameterVjp(
       const Values& values, const ParameterTag& parameter,
