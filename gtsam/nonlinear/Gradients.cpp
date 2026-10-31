@@ -8,6 +8,7 @@
 #include <gtsam/nonlinear/Gradients.h>
 
 #include <gtsam/linear/GaussianBayesTree.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/linearExceptions.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -258,6 +259,46 @@ VectorValues Gradients::adjoint(const VectorValues& stateCotangents) const {
   return bayesTree_->backSubstitute(intermediate);
 }
 
+void addParameterContribution(std::optional<Vector>& result,
+                              const std::optional<Vector>& contribution,
+                              size_t index) {
+  if (!contribution) return;
+  if (contribution->size() == 0 || !contribution->allFinite() ||
+      (result && result->size() != contribution->size()))
+    throw factorError(index, "invalid parameter VJP dimension or value");
+  if (result)
+    *result += *contribution;
+  else
+    result = *contribution;
+  if (!result->allFinite())
+    throw std::runtime_error("Gradients: nonfinite accumulated parameter gradient");
+}
+
+/// Gauss-Newton dL/dσ from r = e ⊘ σ, holding J fixed: ν_w ⊙ (-e / σ²).
+std::optional<Vector> diagonalSigmaVjp(const NoiseModelFactor& factor,
+                                      const Values& solution,
+                                      const ParameterTag& parameter,
+                                      const Vector& whitenedCotangent,
+                                      size_t index) {
+  const auto& noise = factor.noiseModel();
+  if (!noise) return std::nullopt;
+  const auto diagonal =
+      std::dynamic_pointer_cast<const noiseModel::Diagonal>(noise);
+  if (!diagonal || !diagonal->hasParameterTag() ||
+      diagonal->parameterTag() != parameter)
+    return std::nullopt;
+  const Vector residual = factor.unwhitenedError(solution);
+  const Vector& sigmas = diagonal->sigmasRef();
+  if (residual.size() != whitenedCotangent.size() ||
+      residual.size() != sigmas.size())
+    throw factorError(index, "noise-model σ VJP dimension mismatch");
+  Vector contribution =
+      -whitenedCotangent.array() * residual.array() / sigmas.array().square();
+  if (std::dynamic_pointer_cast<const noiseModel::Isotropic>(noise))
+    return Vector1(contribution.sum());
+  return contribution;
+}
+
 std::optional<Vector> Gradients::parameterGradient(
     const VectorValues& stateCotangents, const ParameterTag& parameter) const {
   if (!solution_)
@@ -270,7 +311,8 @@ std::optional<Vector> Gradients::parameterGradient(
     const auto& factor = nonlinearGraph_[index];
     if (!factor || !factor->active(*solution_)) continue;
     const auto& noiseFactor = static_cast<const NoiseModelFactor&>(*factor);
-    Vector factorResidualCotangent = *cotangent;
+    const Vector whitenedCotangent = *cotangent;
+    Vector factorResidualCotangent = whitenedCotangent;
     // The cotangent conversion uses W transpose, not the inverse whitening.
     if (const auto& noise = noiseFactor.noiseModel()) {
       if (const auto diagonal =
@@ -286,18 +328,15 @@ std::optional<Vector> Gradients::parameterGradient(
     if (!factorResidualCotangent.allFinite())
       throw std::runtime_error(
           "Gradients: nonfinite unwhitened factor residual cotangent");
-    const auto contribution =
-        noiseFactor.parameterVjp(*solution_, parameter, factorResidualCotangent);
-    if (!contribution) continue;
-    if (contribution->size() == 0 || !contribution->allFinite() ||
-        (result && result->size() != contribution->size()))
-      throw factorError(index, "invalid parameter VJP dimension or value");
-    if (result)
-      *result += *contribution;
-    else
-      result = *contribution;
-    if (!result->allFinite())
-      throw std::runtime_error("Gradients: nonfinite accumulated parameter gradient");
+    addParameterContribution(
+        result,
+        noiseFactor.parameterVjp(*solution_, parameter, factorResidualCotangent),
+        index);
+    addParameterContribution(
+        result,
+        diagonalSigmaVjp(noiseFactor, *solution_, parameter, whitenedCotangent,
+                         index),
+        index);
   }
   return result;
 }

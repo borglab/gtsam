@@ -45,6 +45,16 @@ class JointMarginal {
                                 gtsam::DefaultKeyFormatter) const;
 };
 
+#include <gtsam/nonlinear/ParameterTag.h>
+class ParameterTag {
+  ParameterTag(string name = "");
+  ParameterTag(const gtsam::ParameterTag& other);
+  const string& name() const;
+  bool equals(const gtsam::ParameterTag& other) const;
+  size_t hash() const;
+  void print(string prefix = "ParameterTag: ") const;
+};
+
 namespace noiseModel {
 #include <gtsam/linear/NoiseModel.h>
 virtual class Base {
@@ -98,8 +108,12 @@ virtual class Gaussian : gtsam::noiseModel::Base {
 
 virtual class Diagonal : gtsam::noiseModel::Gaussian {
   static gtsam::noiseModel::Diagonal* Sigmas(const gtsam::Vector& sigmas, bool smart = true);
+  static gtsam::noiseModel::Diagonal* Sigmas(const gtsam::Vector& sigmas, const gtsam::ParameterTag& parameter, bool smart = true);
   static gtsam::noiseModel::Diagonal* Variances(const gtsam::Vector& variances, bool smart = true);
+  static gtsam::noiseModel::Diagonal* Variances(const gtsam::Vector& variances, const gtsam::ParameterTag& parameter, bool smart = true);
   static gtsam::noiseModel::Diagonal* Precisions(const gtsam::Vector& precisions, bool smart = true);
+  bool hasParameterTag() const;
+  const gtsam::ParameterTag& parameterTag() const;
   // access to noise model
   gtsam::Vector sigmas() const;
   const gtsam::Vector& invsigmas() const;
@@ -128,7 +142,9 @@ virtual class Constrained : gtsam::noiseModel::Diagonal {
 
 virtual class Isotropic : gtsam::noiseModel::Diagonal {
   static gtsam::noiseModel::Isotropic* Sigma(size_t dim, double sigma, bool smart = true);
+  static gtsam::noiseModel::Isotropic* Sigma(size_t dim, double sigma, const gtsam::ParameterTag& parameter, bool smart = true);
   static gtsam::noiseModel::Isotropic* Variance(size_t dim, double varianace, bool smart = true);
+  static gtsam::noiseModel::Isotropic* Variance(size_t dim, double variance, const gtsam::ParameterTag& parameter, bool smart = true);
   static gtsam::noiseModel::Isotropic* Precision(size_t dim, double precision, bool smart = true);
 
   // access to noise model

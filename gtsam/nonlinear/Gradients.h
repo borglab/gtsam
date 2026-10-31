@@ -71,8 +71,11 @@ class GaussianBayesTree;
  * A parameter VJP holds the solved states and supplied factor residual
  * cotangent fixed while differentiating the unwhitened factor residual with
  * respect to the requested parameter. Add any direct parameter derivative of
- * the loss separately to parameterGradient's result. Noise-model parameters
- * are not differentiated.
+ * the loss separately to parameterGradient's result. Diagonal and isotropic
+ * noise models that carry the same ParameterTag also contribute the
+ * Gauss-Newton term on σ: each residual row i adds ν_w,i * (-e_i / σ_i²).
+ * Isotropic models return one shared scalar (the sum). Full Gaussian and
+ * robust noise parameters are not differentiated.
  *
  * \par Advanced differentiation model
  * These derivatives use a Gauss-Newton approximation. Let J be the whitened
@@ -163,8 +166,9 @@ class GTSAM_EXPORT Gradients {
    *
    * Requires construction from a nonlinear graph and solution; Gaussian-only
    * construction throws std::logic_error because it has no parameter VJPs.
-   * Noise models are fixed. This applies the same Gauss-Newton approximation
-   * as pullback and excludes any direct parameter dependence of the outer loss.
+   * Tagged diagonal or isotropic noise models add their σ VJP. This applies
+   * the same Gauss-Newton approximation as pullback and excludes any direct
+   * parameter dependence of the outer loss.
    * Each call reuses the factorization and performs one adjoint calculation.
    */
   std::optional<Vector> parameterGradient(

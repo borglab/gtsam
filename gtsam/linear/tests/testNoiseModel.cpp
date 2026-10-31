@@ -23,8 +23,10 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/nonlinear/ParameterTag.h>
 
 #include <cmath>
+#include <memory>
 #include <iostream>
 #include <limits>
 #include <map>
@@ -109,6 +111,29 @@ TEST(NoiseModel, constructors)
   // can only test inplace version once :-)
   m[0]->WhitenInPlace(H);
   EXPECT(assert_equal(expected,H));
+}
+
+/* ************************************************************************* */
+TEST(NoiseModel, TaggedDiagonalDoesNotCollapse) {
+  const ParameterTag tag{"sigmas"};
+  const auto equal = Diagonal::Sigmas(Vector2(0.5, 0.5), tag, true);
+  EXPECT(equal->hasParameterTag());
+  EXPECT(equal->parameterTag() == tag);
+  EXPECT(!std::dynamic_pointer_cast<Isotropic>(equal));
+  EXPECT(assert_equal(Vector2(0.5, 0.5), equal->sigmas()));
+
+  const auto variances = Diagonal::Variances(Vector2(0.25, 0.25), tag, true);
+  EXPECT(!std::dynamic_pointer_cast<Isotropic>(variances));
+  EXPECT(assert_equal(Vector2(0.5, 0.5), variances->sigmas(), 1e-12));
+
+  const auto isotropic = Isotropic::Sigma(2, 1.0, tag, true);
+  EXPECT(isotropic->hasParameterTag());
+  EXPECT(!std::dynamic_pointer_cast<Unit>(isotropic));
+  EXPECT_DOUBLES_EQUAL(1.0, isotropic->sigma(), 1e-12);
+
+  const auto untagged = Diagonal::Sigmas(Vector2(0.5, 0.5), true);
+  EXPECT(!untagged->hasParameterTag());
+  EXPECT(std::dynamic_pointer_cast<Isotropic>(untagged));
 }
 
 /* ************************************************************************* */

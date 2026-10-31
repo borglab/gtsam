@@ -237,6 +237,35 @@ class TestParameterGradients(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "parameter callback failed"):
             gtsam.Gradients(graph, values).parameterGradient(cotangents, SCALE)
 
+    def test_diagonal_noise_model_tag(self):
+        tag = gtsam.ParameterTag("visual sigma")
+        sigmas = np.array([0.4, 1.3])
+        noise = gtsam.noiseModel.Diagonal.Sigmas(sigmas, tag)
+        self.assertTrue(noise.hasParameterTag())
+        self.assertEqual(noise.parameterTag(), tag)
+        self.assertIsInstance(noise, gtsam.noiseModel.Diagonal)
+        self.assertNotIsInstance(noise, gtsam.noiseModel.Isotropic)
+
+        graph = gtsam.NonlinearFactorGraph()
+        graph.add(gtsam.PriorFactorPoint2(KEY, np.zeros(2), noise))
+        graph.add(gtsam.PriorFactorPoint2(
+            KEY, np.array([1.0, -0.5]), gtsam.noiseModel.Isotropic.Sigma(2, 0.5)
+        ))
+        initial = gtsam.Values()
+        initial.insert(KEY, np.zeros(2))
+        solution = gtsam.GaussNewtonOptimizer(graph, initial).optimize()
+        cotangents = gtsam.VectorValues()
+        cotangents.insert(KEY, solution.atPoint2(KEY) - np.array([0.2, -0.3]))
+        gradient = gtsam.Gradients(graph, solution).parameterGradient(cotangents, tag)
+        self.assertIsNotNone(gradient)
+        self.assertEqual(gradient.size, 2)
+        self.assertTrue(np.all(np.isfinite(gradient)))
+        self.assertIsNone(
+            gtsam.Gradients(graph, solution).parameterGradient(
+                cotangents, gtsam.ParameterTag("visual sigma")
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

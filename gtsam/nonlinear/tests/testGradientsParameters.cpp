@@ -10,6 +10,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/Matrix.h>
 #include <gtsam/nonlinear/CustomFactor.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/Gradients.h>
@@ -321,6 +322,172 @@ TEST(GradientsParameters, InvalidContributions) {
   CHECK_EXCEPTION(
       Gradients(factors, initial()).parameterGradient(cotangents, kScale),
       std::runtime_error);
+}
+
+const ParameterTag kNoise{"noise"};
+constexpr Key kPosition = 7;
+const Vector2 kLearnedMeasurement{0., 0.}, kAnchorMeasurement{1., -0.5};
+const Vector2 kUnequalSigmas{0.4, 1.3};
+const Vector2 kTarget{0.2, -0.3};
+
+NonlinearFactorGraph sigmaGraph(const SharedNoiseModel& learned) {
+  NonlinearFactorGraph result;
+  result.emplace_shared<PriorFactor<Vector>>(kPosition, kLearnedMeasurement,
+                                             learned);
+  result.emplace_shared<PriorFactor<Vector>>(
+      kPosition, kAnchorMeasurement, noiseModel::Isotropic::Sigma(2, 0.5));
+  return result;
+}
+
+Values sigmaInitial() {
+  Values result;
+  result.insert(kPosition, Vector(Vector2::Zero()));
+  return result;
+}
+
+Values sigmaSolve(const SharedNoiseModel& learned) {
+  return GaussNewtonOptimizer(sigmaGraph(learned), sigmaInitial()).optimize();
+}
+
+VectorValues sigmaCotangents(const Values& solution) {
+  return {{kPosition, solution.at<Vector>(kPosition) - kTarget}};
+}
+
+// Tagged Diagonal σ matches baking r = e ⊘ σ under unit noise.
+TEST(GradientsParameters, DiagonalNoiseModelSigma) {
+  const auto learned =
+      noiseModel::Diagonal::Sigmas(kUnequalSigmas, kNoise, true);
+  const Values solution = sigmaSolve(learned);
+  EXPECT(sigmaGraph(learned).linearize(solution)->gradientAtZero().norm() <
+         1e-10);
+  const VectorValues cotangents = sigmaCotangents(solution);
+  const Gradients gradients(sigmaGraph(learned), solution);
+  const auto analytic = gradients.parameterGradient(cotangents, kNoise);
+  EXPECT(analytic.has_value());
+  EXPECT_LONGS_EQUAL(2, analytic->size());
+
+  NonlinearFactorGraph baked;
+  baked.emplace_shared<CustomFactor>(
+      noiseModel::Unit::Create(2), KeyVector{kPosition},
+      [](const CustomFactor&, const Values& values,
+         OptionalJacobianVector jacobians) -> Vector {
+        const Vector error =
+            (values.at<Vector>(kPosition) - kLearnedMeasurement).array() /
+            kUnequalSigmas.array();
+        if (jacobians) {
+          Matrix2 jacobian = Matrix2::Zero();
+          jacobian.diagonal() = kUnequalSigmas.array().inverse();
+          jacobians->get()[0] = jacobian;
+        }
+        return error;
+      },
+      [](const CustomFactor&, const Values& values, const ParameterTag& parameter,
+         const Vector& cotangent) -> std::optional<Vector> {
+        if (parameter != kNoise) return std::nullopt;
+        const Vector residual =
+            values.at<Vector>(kPosition) - kLearnedMeasurement;
+        return Vector((-cotangent.array() * residual.array() /
+                       kUnequalSigmas.array().square())
+                          .matrix());
+      });
+  baked.emplace_shared<PriorFactor<Vector>>(
+      kPosition, kAnchorMeasurement, noiseModel::Isotropic::Sigma(2, 0.5));
+  const Values bakedSolution =
+      GaussNewtonOptimizer(baked, sigmaInitial()).optimize();
+  EXPECT(assert_equal(solution.at<Vector>(kPosition),
+                      bakedSolution.at<Vector>(kPosition), 1e-10));
+  const auto bakedGradient =
+      Gradients(baked, bakedSolution).parameterGradient(cotangents, kNoise);
+  EXPECT(assert_equal(analytic.value(), bakedGradient.value(), 1e-10));
+
+  const double step = 1e-6;
+  for (size_t coordinate = 0; coordinate < 2; ++coordinate) {
+    Vector2 plus = kUnequalSigmas, minus = kUnequalSigmas;
+    plus[coordinate] += step;
+    minus[coordinate] -= step;
+    const Vector dx =
+        sigmaSolve(noiseModel::Diagonal::Sigmas(plus, false)).at<Vector>(
+            kPosition) -
+        sigmaSolve(noiseModel::Diagonal::Sigmas(minus, false)).at<Vector>(
+            kPosition);
+    // Re-solving includes dJ_w/dσ, which Gradients omits. That term equals
+    // the GN σ VJP, so the true IFT is twice the analytic value.
+    EXPECT_DOUBLES_EQUAL(2.0 * (*analytic)[coordinate],
+                         cotangents.at(kPosition).dot(dx) / (2 * step), 1e-6);
+  }
+
+  EXPECT(!gradients.parameterGradient(cotangents, ParameterTag{"noise"}));
+  EXPECT(!Gradients(sigmaGraph(noiseModel::Diagonal::Sigmas(kUnequalSigmas)),
+                    solution)
+              .parameterGradient(cotangents, kNoise));
+}
+
+// Tagged Isotropic σ is the sum of the equal-sigma Diagonal components.
+TEST(GradientsParameters, IsotropicNoiseModelSigma) {
+  const double sigma = 0.7;
+  const auto isotropic = noiseModel::Isotropic::Sigma(2, sigma, kNoise);
+  const auto diagonal =
+      noiseModel::Diagonal::Sigmas(Vector2::Constant(sigma), kNoise, true);
+  const Values solution = sigmaSolve(isotropic);
+  const VectorValues cotangents = sigmaCotangents(solution);
+  const auto isoGrad =
+      Gradients(sigmaGraph(isotropic), solution).parameterGradient(cotangents, kNoise);
+  const auto diagGrad =
+      Gradients(sigmaGraph(diagonal), solution).parameterGradient(cotangents, kNoise);
+  EXPECT(isoGrad.has_value());
+  EXPECT(diagGrad.has_value());
+  EXPECT_LONGS_EQUAL(1, isoGrad->size());
+  EXPECT_LONGS_EQUAL(2, diagGrad->size());
+  EXPECT_DOUBLES_EQUAL(diagGrad->sum(), (*isoGrad)[0], 1e-12);
+}
+
+// Two factors sharing a noise tag accumulate; a second tag is ignored.
+TEST(GradientsParameters, SharedNoiseTagAccumulates) {
+  const auto makeGraph = [](const Vector2& sigmas) {
+    NonlinearFactorGraph factors;
+    const ParameterTag tag = kNoise;
+    factors.emplace_shared<PriorFactor<Vector>>(
+        kPosition, kLearnedMeasurement,
+        noiseModel::Diagonal::Sigmas(sigmas, tag));
+    factors.emplace_shared<PriorFactor<Vector>>(
+        kPosition, Vector2{0.3, 0.4}, noiseModel::Diagonal::Sigmas(sigmas, tag));
+    factors.emplace_shared<PriorFactor<Vector>>(
+        kPosition, kAnchorMeasurement, noiseModel::Isotropic::Sigma(2, 0.5));
+    return factors;
+  };
+  const auto factors = makeGraph(kUnequalSigmas);
+  const Values solution =
+      GaussNewtonOptimizer(factors, sigmaInitial()).optimize();
+  const VectorValues cotangents = sigmaCotangents(solution);
+  const auto analytic =
+      Gradients(factors, solution).parameterGradient(cotangents, kNoise);
+  EXPECT(analytic.has_value());
+  EXPECT_LONGS_EQUAL(2, analytic->size());
+  const double step = 1e-6;
+  for (size_t coordinate = 0; coordinate < 2; ++coordinate) {
+    Vector2 plus = kUnequalSigmas, minus = kUnequalSigmas;
+    plus[coordinate] += step;
+    minus[coordinate] -= step;
+    const Vector dx =
+        GaussNewtonOptimizer(makeGraph(plus), sigmaInitial())
+            .optimize()
+            .at<Vector>(kPosition) -
+        GaussNewtonOptimizer(makeGraph(minus), sigmaInitial())
+            .optimize()
+            .at<Vector>(kPosition);
+    EXPECT_DOUBLES_EQUAL(2.0 * (*analytic)[coordinate],
+                         cotangents.at(kPosition).dot(dx) / (2 * step), 1e-6);
+  }
+  EXPECT(!Gradients(factors, solution)
+              .parameterGradient(cotangents, ParameterTag{"noise"}));
+}
+
+// Zero σ is rejected when constructing Gradients, tagged or not.
+TEST(GradientsParameters, NonPositiveTaggedSigma) {
+  CHECK_EXCEPTION(
+      Gradients(sigmaGraph(noiseModel::Diagonal::Sigmas(Vector2{0., 0.4}, kNoise)),
+                sigmaInitial()),
+      std::invalid_argument);
 }
 
 }  // namespace parameter_fixture

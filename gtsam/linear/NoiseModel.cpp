@@ -276,15 +276,22 @@ double Gaussian::negLogConstant() const {
 Diagonal::Diagonal() : Gaussian() {}
 
 /* ************************************************************************* */
-Diagonal::Diagonal(const Vector& sigmas)
+Diagonal::Diagonal(const Vector& sigmas, std::optional<ParameterTag> parameter)
     : Gaussian(sigmas.size()),
       sigmas_(sigmas),
       invsigmas_(sigmas.array().inverse()),
-      precisions_(invsigmas_.array().square()) {
+      precisions_(invsigmas_.array().square()),
+      parameterTag_(std::move(parameter)) {
   if ((sigmas.array() < 0).any()) {
     throw invalid_argument(
         "Diagonal noise model: sigma values must be non-negative");
   }
+}
+
+const ParameterTag& Diagonal::parameterTag() const {
+  if (!parameterTag_)
+    throw runtime_error("Diagonal: no ParameterTag is attached");
+  return *parameterTag_;
 }
 
 /* ************************************************************************* */
@@ -293,6 +300,12 @@ Diagonal::shared_ptr Diagonal::Variances(const Vector& variances, bool smart) {
   return (smart && (variances.array() == variances(0)).all())
              ? Isotropic::Variance(variances.size(), variances(0), true)
              : shared_ptr(new Diagonal(variances.cwiseSqrt()));
+}
+
+Diagonal::shared_ptr Diagonal::Variances(const Vector& variances,
+                                         const ParameterTag& parameter,
+                                         bool /*smart*/) {
+  return shared_ptr(new Diagonal(variances.cwiseSqrt(), parameter));
 }
 
 /* ************************************************************************* */
@@ -313,6 +326,12 @@ Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas, bool smart) {
   }
 full:
   return Diagonal::shared_ptr(new Diagonal(sigmas));
+}
+
+Diagonal::shared_ptr Diagonal::Sigmas(const Vector& sigmas,
+                                      const ParameterTag& parameter,
+                                      bool /*smart*/) {
+  return shared_ptr(new Diagonal(sigmas, parameter));
 }
 
 /* ************************************************************************* */
@@ -710,12 +729,28 @@ Isotropic::shared_ptr Isotropic::Sigma(size_t dim, double sigma, bool smart)  {
   return shared_ptr(new Isotropic(dim, sigma));
 }
 
+Isotropic::shared_ptr Isotropic::Sigma(size_t dim, double sigma,
+                                       const ParameterTag& parameter,
+                                       bool /*smart*/) {
+  if (sigma < 0)
+    throw invalid_argument("Isotropic::Sigma: sigma value must be non-negative");
+  return shared_ptr(new Isotropic(dim, sigma, parameter));
+}
+
 /* ************************************************************************* */
 Isotropic::shared_ptr Isotropic::Variance(size_t dim, double variance, bool smart)  {
   if (variance < 0)
     throw invalid_argument("Isotropic::Variance: variance must be non-negative");
   if (smart && std::abs(variance-1.0)<1e-9) return Unit::Create(dim);
   return shared_ptr(new Isotropic(dim, sqrt(variance)));
+}
+
+Isotropic::shared_ptr Isotropic::Variance(size_t dim, double variance,
+                                          const ParameterTag& parameter,
+                                          bool /*smart*/) {
+  if (variance < 0)
+    throw invalid_argument("Isotropic::Variance: variance must be non-negative");
+  return shared_ptr(new Isotropic(dim, sqrt(variance), parameter));
 }
 
 /* ************************************************************************* */

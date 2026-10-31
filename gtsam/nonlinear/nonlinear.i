@@ -136,16 +136,6 @@ virtual class NonlinearFactorGraph {
   void serialize() const;
 };
 
-#include <gtsam/nonlinear/ParameterTag.h>
-class ParameterTag {
-  ParameterTag(string name = "");
-  ParameterTag(const gtsam::ParameterTag& other);
-  const string& name() const;
-  bool equals(const gtsam::ParameterTag& other) const;
-  size_t hash() const;
-  void print(string prefix = "ParameterTag: ") const;
-};
-
 #include <gtsam/nonlinear/NonlinearFactor.h>
 virtual class NonlinearFactor : gtsam::Factor {
   // NonlinearFactor

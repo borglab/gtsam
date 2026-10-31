@@ -25,6 +25,7 @@
 #include <gtsam/base/std_optional_serialization.h>
 #include <gtsam/dllexport.h>
 #include <gtsam/linear/LossFunctions.h>
+#include <gtsam/nonlinear/ParameterTag.h>
 
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/nvp.hpp>
@@ -333,9 +334,11 @@ namespace gtsam {
        * where computation is done only once, the common use case in many problems.
        */
       Vector sigmas_, invsigmas_, precisions_;
+      std::optional<ParameterTag> parameterTag_;
 
       /** constructor to allow for disabling initialization of invsigmas */
-      Diagonal(const Vector& sigmas);
+      Diagonal(const Vector& sigmas,
+               std::optional<ParameterTag> parameter = {});
 
       /// Compute the log of |R|. Used for computing log(|Σ|)
       virtual double logDetR() const override;
@@ -355,12 +358,34 @@ namespace gtsam {
       static shared_ptr Sigmas(const Vector& sigmas, bool smart = true);
 
       /**
+       * Same as Sigmas, and attach parameter so Gradients can differentiate σ.
+       * A tag disables smart collapse to Isotropic or Constrained.
+       */
+      static shared_ptr Sigmas(const Vector& sigmas,
+                               const ParameterTag& parameter,
+                               bool smart = true);
+
+      /**
        * A diagonal noise model created by specifying a Vector of variances, i.e.
        * i.e. the diagonal of the covariance matrix.
        * @param variances A vector containing the variances of this noise model
        * @param smart check if can be simplified to derived class
        */
       static shared_ptr Variances(const Vector& variances, bool smart = true);
+
+      /**
+       * Same as Variances, and attach parameter so Gradients can differentiate σ.
+       * A tag disables smart collapse to Isotropic.
+       */
+      static shared_ptr Variances(const Vector& variances,
+                                  const ParameterTag& parameter,
+                                  bool smart = true);
+
+      /// True when this model carries a Gradients parameter tag.
+      bool hasParameterTag() const { return parameterTag_.has_value(); }
+
+      /// Shared identity of the attached parameter; throws if none is set.
+      const ParameterTag& parameterTag() const;
 
       /**
        * A diagonal noise model created by specifying a Vector of precisions, i.e.
@@ -583,8 +608,11 @@ namespace gtsam {
       double sigma_, invsigma_;
 
       /** protected constructor takes sigma */
-      Isotropic(size_t dim, double sigma) :
-        Diagonal(Vector::Constant(dim, sigma)),sigma_(sigma),invsigma_(1.0/sigma) {}
+      Isotropic(size_t dim, double sigma,
+                std::optional<ParameterTag> parameter = {})
+          : Diagonal(Vector::Constant(dim, sigma), parameter),
+            sigma_(sigma),
+            invsigma_(1.0 / sigma) {}
 
       /// Compute the log of |R|. Used for computing log(|Σ|)
       virtual double logDetR() const override;
@@ -604,12 +632,26 @@ namespace gtsam {
       static shared_ptr Sigma(size_t dim, double sigma, bool smart = true);
 
       /**
+       * Same as Sigma, and attach parameter so Gradients can differentiate the
+       * shared σ. A tag disables smart collapse to Unit.
+       */
+      static shared_ptr Sigma(size_t dim, double sigma,
+                              const ParameterTag& parameter, bool smart = true);
+
+      /**
        * An isotropic noise model created by specifying a variance = sigma^2.
        * @param dim The dimension of this noise model
        * @param variance The variance of this noise model
        * @param smart check if can be simplified to derived class
        */
       static shared_ptr Variance(size_t dim, double variance, bool smart = true);
+
+      /**
+       * Same as Variance, and attach parameter so Gradients can differentiate σ.
+       */
+      static shared_ptr Variance(size_t dim, double variance,
+                                 const ParameterTag& parameter,
+                                 bool smart = true);
 
       /**
        * An isotropic noise model created by specifying a precision
