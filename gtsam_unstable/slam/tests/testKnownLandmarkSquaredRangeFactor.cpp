@@ -19,7 +19,7 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/factorTesting.h>
-#include <gtsam/slam/KnownLandmarkSquaredRangeFactor.h>
+#include <gtsam_unstable/slam/KnownLandmarkSquaredRangeFactor.h>
 
 #include <Eigen/Core>
 #include <limits>

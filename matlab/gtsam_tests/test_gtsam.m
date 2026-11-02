@@ -18,6 +18,9 @@ display 'Starting: testJacobianFactor'
 testJacobianFactor
 
 %% nonlinear
+display 'Starting: testAugmentedPoint'
+testAugmentedPoint
+
 display 'Starting: testValues'
 testValues
 

@@ -1,4 +1,4 @@
-# SLAM Factors
+# Unstable SLAM Factors
 
 ## SmartFactors
 
@@ -38,3 +38,11 @@ values contain (for each 2D observation) two consecutive camera poses from
 which the 2D observation pose can be interpolated.
 
 TODO: the dimensions seem to be hardcoded and the types defined in the SmartFactorBase have been re-defined. Also, possibly a lot of copy/paste computation of things that (should) happen in base class.
+
+### KnownLandmarkSquaredRangeFactor
+
+[KnownLandmarkSquaredRangeFactor](doc/KnownLandmarkSquaredRangeFactor.ipynb) models squared ranges to fixed known landmarks from Euclidean point states. It supports ordinary nonlinear optimization and QCQP conversion through the stable `AugmentedPoint<N>` type. The factor is exposed in Python by `gtsam_unstable`; MATLAB uses `gtsam.KnownLandmarkSquaredRangeFactor*` through the unstable toolbox.
+
+See the [3D localization example](../../python/gtsam_unstable/examples/slam/KnownLandmarkSquaredRangeLocalizationExample.ipynb) for nonlinear, QCQP, and optional SDP solutions.
+
+The MATLAB regression test is in `matlab/gtsam_unstable_tests/testKnownLandmarkSquaredRangeFactor.m`; add that directory to the MATLAB path and run `testKnownLandmarkSquaredRangeFactor` after building both toolboxes.

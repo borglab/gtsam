@@ -53,6 +53,9 @@ project:
       - file: ./gtsam/hybrid/hybrid.md
         children:
         - pattern: ./gtsam/hybrid/doc/*
+      - file: ./gtsam_unstable/slam/README.md
+        children:
+        - pattern: ./gtsam_unstable/slam/doc/*.ipynb
     - file: ./doc/examples.md
       children:
       - title: Geometry
@@ -88,6 +91,9 @@ project:
       - title: SLAM
         children:
         - pattern: ./python/gtsam/examples/slam/*.ipynb
+      - title: Unstable SLAM
+        children:
+        - pattern: ./python/gtsam_unstable/examples/slam/*.ipynb
     - file: ./doc/expressions.md
 site:
   nav: 

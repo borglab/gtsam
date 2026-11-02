@@ -45,7 +45,7 @@ namespace gtsam {
  * @tparam Position Euclidean point representing robot location.
  * @ingroup slam
  *
- * See `gtsam/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb` for usage.
+ * See `gtsam_unstable/slam/doc/KnownLandmarkSquaredRangeFactor.ipynb` for usage.
  */
 template <typename Position>
 class KnownLandmarkSquaredRangeFactor : public NoiseModelFactorN<Position> {

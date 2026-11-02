@@ -286,6 +286,30 @@ virtual class TransformBtwRobotsUnaryFactor : gtsam::NonlinearFactor {
   void serializable() const; // enabling serialization functionality
 };
 
+#include <gtsam_unstable/slam/KnownLandmarkSquaredRangeFactor.h>
+
+// Instantiate the supported position types.
+template <POSITION>
+virtual class KnownLandmarkSquaredRangeFactor : gtsam::NoiseModelFactor {
+  KnownLandmarkSquaredRangeFactor(
+      gtsam::Key key, const gtsam::Vector& wL, double measuredRange,
+      const gtsam::noiseModel::Base* model);
+
+  gtsam::Vector evaluateError(const POSITION& wX) const;
+};
+
+// Ordinary nonlinear factors.
+typedef gtsam::KnownLandmarkSquaredRangeFactor<gtsam::Vector2>
+    KnownLandmarkSquaredRangeFactor2;
+typedef gtsam::KnownLandmarkSquaredRangeFactor<gtsam::Vector3>
+    KnownLandmarkSquaredRangeFactor3;
+
+// Factors supporting both nonlinear optimization and QCQP conversion.
+typedef gtsam::KnownLandmarkSquaredRangeFactor<gtsam::AugmentedPoint<2>>
+    KnownLandmarkSquaredRangeFactorAugmentedPoint2;
+typedef gtsam::KnownLandmarkSquaredRangeFactor<gtsam::AugmentedPoint<3>>
+    KnownLandmarkSquaredRangeFactorAugmentedPoint3;
+
 #include <gtsam_unstable/slam/SmartRangeFactor.h>
 virtual class SmartRangeFactor : gtsam::NoiseModelFactor {
   SmartRangeFactor(double s);
