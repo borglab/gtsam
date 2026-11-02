@@ -170,8 +170,8 @@ TEST(Gradients, SharedParameterGradientAndDirectTerm) {
   parameter.block<2, 2>(2, 0) = Matrix2{{1., 2.}, {-1., .5}};
   parameter.block<2, 2>(6, 0) = Matrix2{{.5, 1.}, {1., -1.}};
   const Vector2 direct{.3, -.2}, direction{.7, -.4};
-  const Vector parameterGradient = parameter.transpose() * stack(gradients.pullback(source())) + direct;
-  const Vector expected =
+  const Vector2 parameterGradient = parameter.transpose() * stack(gradients.pullback(source())) + direct;
+  const Vector2 expected =
       -parameter.transpose() * jacobian *
           (jacobian.transpose() * jacobian).ldlt().solve(source().vector()) + direct;
   EXPECT(assert_equal(expected, parameterGradient, 1e-10));
