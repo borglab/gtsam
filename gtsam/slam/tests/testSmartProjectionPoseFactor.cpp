@@ -23,9 +23,11 @@
 #include <gtsam/base/VectorConstants.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/slam/PoseTranslationPrior.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/SmartProjectionFactor.h>
+#include <gtsam/slam/TriangulationFactor.h>
 
 #include <iostream>
 #include <type_traits>
@@ -1361,6 +1363,313 @@ TEST( SmartProjectionPoseFactor, Cal3BundlerRotationOnly ) {
               Point3(0.0897734171, -0.110201006, 0.901022872)),
           values.at<Pose3>(x3)));
 }
+
+/* ************************************************************************* */
+namespace fixed_cameras {
+using namespace vanillaPose;
+
+// Poses perturbed from the truth, so Jacobians and residuals are generic.
+Values perturbedPoses() {
+  Values values;
+  values.insert(
+      x1, level_pose.retract(Vector6{0.01, -0.02, 0.015, 0.05, -0.03, 0.02}));
+  values.insert(
+      x2, pose_right.retract(Vector6{-0.015, 0.01, 0.02, -0.04, 0.02, 0.03}));
+  values.insert(
+      x3, pose_above.retract(Vector6{0.02, 0.015, -0.01, 0.03, 0.04, -0.02}));
+  return values;
+}
+
+// Measurements of landmark1 with pixel offsets, so residuals do not vanish.
+Point2Vector measurements() {
+  return {Camera(level_pose, sharedK).project(landmark1) + Point2(0.3, -0.2),
+          Camera(pose_right, sharedK).project(landmark1) + Point2(-0.1, 0.4),
+          Camera(pose_above, sharedK).project(landmark1) + Point2(0.2, 0.1)};
+}
+
+SmartFactor::shared_ptr threeCameraFactor(
+    const SmartProjectionParams& params = SmartProjectionParams()) {
+  auto factor = std::make_shared<SmartFactor>(model, sharedK, params);
+  const Point2Vector z = measurements();
+  factor->add(z[0], x1);
+  factor->add(z[1], x2);
+  factor->add(z[2], x3);
+  return factor;
+}
+
+// Hessian and information vector of one linear factor over the given ordering.
+std::pair<Matrix, Vector> hessian(const GaussianFactor::shared_ptr& factor,
+                                  const Ordering& ordering) {
+  GaussianFactorGraph graph;
+  graph.push_back(factor);
+  return graph.hessian(ordering);
+}
+
+// Fixing a camera removes its key and keeps its measurement and camera.
+TEST(SmartProjectionPoseFactor, fixCameraStructure) {
+  const Values values = perturbedPoses();
+  auto factor = threeCameraFactor();
+  // The copy has the concrete factor type, with no cast needed.
+  const SmartFactor::shared_ptr fixed = factor->fixCamera(x1, values);
+  EXPECT(fixed != nullptr);
+  EXPECT_LONGS_EQUAL(3, factor->size());
+  EXPECT_LONGS_EQUAL(2, fixed->size());
+  EXPECT(fixed->keys() == KeyVector({x2, x3}));
+  EXPECT_LONGS_EQUAL(6, fixed->dim());
+  EXPECT_LONGS_EQUAL(3, fixed->measured().size());
+  EXPECT_LONGS_EQUAL(1, fixed->fixedCameras().size());
+  EXPECT(fixed->isFixedMeasurement(0));
+  EXPECT(!fixed->isFixedMeasurement(1));
+  EXPECT(
+      fixed->fixedCameras()[0].equals(Camera(values.at<Pose3>(x1), sharedK)));
+  EXPECT(fixed->activeMeasurements() == FastVector<size_t>({1, 2}));
+  // The original factor is untouched and the copies compare as different.
+  EXPECT(!factor->equals(*fixed));
+  EXPECT(fixed->equals(*factor->fixCamera(x1, values)));
+  // Fixing a key the factor does not have, or its last camera, is an error.
+  CHECK_EXCEPTION(factor->fixCamera(L(1), values), std::invalid_argument);
+  CHECK_EXCEPTION(fixed->fixCamera(x2, values)->fixCamera(x3, values),
+                  std::invalid_argument);
+}
+
+// The error of the fixed factor equals the error of the original factor
+// evaluated with the same value for the fixed pose.
+TEST(SmartProjectionPoseFactor, fixCameraError) {
+  const Values values = perturbedPoses();
+  auto factor = threeCameraFactor();
+  auto fixed = factor->fixCamera(x1, values);
+  Values liveValues = values;
+  liveValues.erase(x1);
+  EXPECT_DOUBLES_EQUAL(factor->error(values), fixed->error(liveValues), 1e-9);
+  EXPECT(assert_equal(*factor->point(values), *fixed->point(liveValues), 1e-9));
+}
+
+// The fixed factor linearizes to the Schur complement of the explicit graph
+// with a TriangulationFactor for the fixed camera.
+TEST(SmartProjectionPoseFactor, fixCameraExplicitLandmark) {
+  const Values values = perturbedPoses();
+  const Point2Vector z = measurements();
+  auto fixed = threeCameraFactor()->fixCamera(x1, values);
+  Values liveValues = values;
+  liveValues.erase(x1);
+  const Point3 point = *fixed->point(liveValues);
+
+  NonlinearFactorGraph explicitGraph;
+  explicitGraph.emplace_shared<TriangulationFactor<Camera>>(
+      Camera(values.at<Pose3>(x1), sharedK), z[0], model, L(1));
+  explicitGraph.emplace_shared<GenericProjectionFactor<Pose3, Point3>>(
+      z[1], model, x2, L(1), sharedK);
+  explicitGraph.emplace_shared<GenericProjectionFactor<Pose3, Point3>>(
+      z[2], model, x3, L(1), sharedK);
+  Values explicitValues = liveValues;
+  explicitValues.insert(L(1), point);
+  const auto marginal =
+      EliminateCholesky(*explicitGraph.linearize(explicitValues),
+                        Ordering{L(1)})
+          .second;
+
+  const Ordering ordering{x2, x3};
+  const auto [expectedHessian, expectedInformation] =
+      hessian(marginal, ordering);
+  const auto [actualHessian, actualInformation] =
+      hessian(fixed->linearize(liveValues), ordering);
+  EXPECT(assert_equal(expectedHessian, actualHessian, 1e-6));
+  EXPECT(assert_equal(expectedInformation, actualInformation, 1e-6));
+}
+
+// Fixing a pose equals marginalizing it with an arbitrarily tight prior: here
+// 1e14 against about 1e6 for the factor, so 1e-8 relative truncation error.
+TEST(SmartProjectionPoseFactor, fixCameraTightPriorLimit) {
+  const Values values = perturbedPoses();
+  auto factor = threeCameraFactor();
+  auto fixed = factor->fixCamera(x1, values);
+  Values liveValues = values;
+  liveValues.erase(x1);
+
+  GaussianFactorGraph graph;
+  graph.push_back(factor->linearize(values));
+  graph.push_back(PriorFactor<Pose3>(x1, values.at<Pose3>(x1),
+                                     noiseModel::Isotropic::Sigma(6, 1e-7))
+                      .linearize(values));
+  const auto marginal = EliminateCholesky(graph, Ordering{x1}).second;
+
+  const Ordering ordering{x2, x3};
+  const auto [expectedHessian, expectedInformation] =
+      hessian(marginal, ordering);
+  const auto [actualHessian, actualInformation] =
+      hessian(fixed->linearize(liveValues), ordering);
+  EXPECT(assert_equal(expectedHessian, actualHessian,
+                      1e-6 * expectedHessian.norm()));
+  EXPECT(assert_equal(expectedInformation, actualInformation,
+                      1e-6 * expectedInformation.norm()));
+}
+
+// With optimal triangulation the information vector is minus the gradient of
+// the nonlinear error, by the implicit function theorem.
+TEST(SmartProjectionPoseFactor, fixCameraGradient) {
+  SmartProjectionParams params;
+  params.setEnableEPI(true);
+  params.setRetriangulationThreshold(1e-12);
+  const Values values = perturbedPoses();
+  auto fixed = threeCameraFactor(params)->fixCamera(x1, values);
+  Values liveValues = values;
+  liveValues.erase(x1);
+
+  const Vector information =
+      hessian(fixed->linearize(liveValues), Ordering{x2, x3}).second;
+  const auto gradient = [&](Key key) -> Vector6 {
+    return numericalGradient<Pose3>(
+        [&](const Pose3& pose) {
+          Values shifted = liveValues;
+          shifted.update(key, pose);
+          return fixed->error(shifted);
+        },
+        liveValues.at<Pose3>(key), 1e-6);
+  };
+  const double scale = 1e-4 * std::max(1.0, information.norm());
+  EXPECT(assert_equal(gradient(x2), Vector6(-information.head<6>()), scale));
+  EXPECT(assert_equal(gradient(x3), Vector6(-information.tail<6>()), scale));
+}
+
+// All eliminable linearization modes agree on the fixed factor.
+TEST(SmartProjectionPoseFactor, fixCameraLinearizationModes) {
+  const Values values = perturbedPoses();
+  Values liveValues = values;
+  liveValues.erase(x1);
+  const Ordering ordering{x2, x3};
+  const auto [expectedHessian, expectedInformation] =
+      hessian(threeCameraFactor()->fixCamera(x1, values)->linearize(liveValues),
+              ordering);
+  for (LinearizationMode mode : {JACOBIAN_Q, JACOBIAN_SVD}) {
+    SmartProjectionParams params(mode);
+    auto fixed = threeCameraFactor(params)->fixCamera(x1, values);
+    const auto [actualHessian, actualInformation] =
+        hessian(fixed->linearize(liveValues), ordering);
+    EXPECT(assert_equal(expectedHessian, actualHessian, 1e-6));
+    EXPECT(assert_equal(expectedInformation, actualInformation, 1e-6));
+  }
+  // Implicit Schur factors cannot hold fixed cameras.
+  auto implicitFactor =
+      threeCameraFactor(SmartProjectionParams(IMPLICIT_SCHUR));
+  CHECK_EXCEPTION(implicitFactor->fixCamera(x1, values), std::invalid_argument);
+  Values fixedValues;
+  fixedValues.insert(x1, values.at<Pose3>(x1));
+  EXPECT(!implicitFactor->conditionOn(fixedValues));
+}
+
+// Two live cameras that only rotate are degenerate on their own, but a fixed
+// camera with baseline keeps the landmark observable.
+TEST(SmartProjectionPoseFactor, fixCameraResolvesDegeneracy) {
+  SmartProjectionParams params;
+  params.setRankTolerance(rankTol);
+  auto factor = std::make_shared<SmartFactor>(model, sharedK, params);
+  const Pose3 rotated = level_pose * Pose3(Rot3::Yaw(0.1), Point3(0, 0, 0));
+  factor->add(Camera(level_pose, sharedK).project(landmark1), x1);
+  factor->add(Camera(rotated, sharedK).project(landmark1), x2);
+  factor->add(Camera(pose_right, sharedK).project(landmark1), x3);
+  Values values;
+  values.insert(x1, level_pose);
+  values.insert(x2, rotated);
+  values.insert(x3, pose_right);
+
+  auto rotationOnly = std::make_shared<SmartFactor>(model, sharedK, params);
+  rotationOnly->add(factor->measured()[0], x1);
+  rotationOnly->add(factor->measured()[1], x2);
+  EXPECT(rotationOnly->point(values).degenerate());
+
+  auto fixed = factor->fixCamera(x3, values);
+  Values liveValues = values;
+  liveValues.erase(x3);
+  EXPECT(fixed->point(liveValues).valid());
+  EXPECT(assert_equal(landmark1, *fixed->point(liveValues), 1e-6));
+}
+
+// conditionOn fixes every key with a value and refuses to remove all keys.
+TEST(SmartProjectionPoseFactor, conditionOn) {
+  const Values values = perturbedPoses();
+  auto factor = threeCameraFactor();
+  EXPECT(!factor->conditionOn(Values()));
+  EXPECT(!factor->conditionOn(values));
+  Values fixedValues;
+  fixedValues.insert(x1, values.at<Pose3>(x1));
+  fixedValues.insert(x3, values.at<Pose3>(x3));
+  auto conditioned = factor->conditionOn(fixedValues);
+  EXPECT(conditioned != nullptr);
+  EXPECT(conditioned->keys() == KeyVector({x2}));
+  auto expected = factor->fixCamera(x1, values)->fixCamera(x3, values);
+  EXPECT(expected->equals(*conditioned));
+  // Ordinary factors do not support conditioning.
+  PriorFactor<Pose3> prior(x1, values.at<Pose3>(x1),
+                           noiseModel::Unit::Create(6));
+  EXPECT(!prior.conditionOn(fixedValues));
+}
+
+// conditionOn keeps at most maxFixedCameras fixed measurements, dropping the
+// oldest, so a landmark that stays in view does not grow its factor forever.
+TEST(SmartProjectionPoseFactor, conditionOnMaxFixedCameras) {
+  const Values values = perturbedPoses();
+  SmartProjectionParams params;
+  params.setMaxFixedCameras(1);
+  auto factor = threeCameraFactor(params);
+  Values fixedValues;
+  fixedValues.insert(x1, values.at<Pose3>(x1));
+  fixedValues.insert(x2, values.at<Pose3>(x2));
+  auto conditioned =
+      std::dynamic_pointer_cast<SmartFactor>(factor->conditionOn(fixedValues));
+  EXPECT(conditioned != nullptr);
+  EXPECT(conditioned->keys() == KeyVector({x3}));
+  EXPECT_LONGS_EQUAL(1, conditioned->fixedCameras().size());
+  EXPECT_LONGS_EQUAL(2, conditioned->measured().size());
+  EXPECT_LONGS_EQUAL(4, conditioned->dim());
+  // The newer fixed measurement (x2) survives, the older one (x1) is dropped.
+  EXPECT(assert_equal(measurements()[1], conditioned->measured()[0]));
+  EXPECT(assert_equal(measurements()[2], conditioned->measured()[1]));
+  EXPECT(conditioned->isFixedMeasurement(0));
+  EXPECT(!conditioned->isFixedMeasurement(1));
+  EXPECT(conditioned->fixedCameras()[0].equals(
+      Camera(values.at<Pose3>(x2), sharedK)));
+  // It equals the factor built from those two measurements with x2 fixed.
+  auto expected = std::make_shared<SmartFactor>(model, sharedK, params);
+  expected->add(measurements()[1], x2);
+  expected->add(measurements()[2], x3);
+  EXPECT(expected->fixCamera(x2, values)->equals(*conditioned));
+  // Unbounded when zero.
+  params.setMaxFixedCameras(0);
+  auto unbounded = std::dynamic_pointer_cast<SmartFactor>(
+      threeCameraFactor(params)->conditionOn(fixedValues));
+  EXPECT_LONGS_EQUAL(2, unbounded->fixedCameras().size());
+}
+
+}  // namespace fixed_cameras
+/* ************************************************************************* */
+
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
+// A pose change below the retriangulation threshold can move the cached point
+// behind a camera: the factor must retriangulate, not project it.
+TEST(SmartProjectionPoseFactor, retriangulateBehindCamera) {
+  using namespace vanillaPose;
+  SmartProjectionParams params;
+  params.setRetriangulationThreshold(0.01);
+  params.setRankTolerance(1e-9);
+  params.setDegeneracyMode(ZERO_ON_DEGENERACY);
+
+  const Pose3 pose1, pose2(Rot3(), Point3(0.1, 0, 0));
+  const Point3 landmark(0, 0, 0.005);
+  SmartFactor factor(model, sharedK, params);
+  factor.add(Camera(pose1, sharedK).project(landmark), x1);
+  factor.add(Camera(pose2, sharedK).project(landmark), x2);
+
+  Values values;
+  values.insert(x1, pose1);
+  values.insert(x2, pose2);
+  EXPECT(factor.point(values).valid());
+
+  values.update(x1, Pose3(Rot3(), Point3(0, 0, 0.006)));
+  EXPECT_DOUBLES_EQUAL(0.0, factor.error(values), 1e-9);
+  CHECK(factor.linearize(values));
+  EXPECT(factor.point(values).behindCamera());
+}
+#endif
 
 /* ************************************************************************* */
 int main() {

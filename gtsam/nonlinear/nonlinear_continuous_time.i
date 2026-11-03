@@ -324,10 +324,14 @@ class FixedLagSmootherResult {
   gtsam::FactorIndices getDeletedFactorIndices() const;
   gtsam::KeySet getKeysOfDeletedNodes() const;
   gtsam::KeySet getExpiredPendingKeys() const;
+  gtsam::FactorIndices getNewFactorsIndices() const;
+  gtsam::FactorIndices getConditionedFactorIndices() const;
   void print() const;
 };
 
 virtual class FixedLagSmoother {
+  enum MarginalizationMode { MARGINALIZE, CONDITION };
+
   void print(const string& s = "FixedLagSmoother:\n",
              const gtsam::KeyFormatter& keyFormatter =
                  gtsam::DefaultKeyFormatter) const;
@@ -337,6 +341,9 @@ virtual class FixedLagSmoother {
   double smootherLag() const;
   void setSmootherLag(double smootherLag);
   const gtsam::KeySet& retainedKeys() const;
+  gtsam::FixedLagSmoother::MarginalizationMode marginalizationMode() const;
+  void setMarginalizationMode(
+      gtsam::FixedLagSmoother::MarginalizationMode marginalizationMode);
 
   gtsam::FixedLagSmootherResult update(
       const gtsam::NonlinearFactorGraph& newFactors =

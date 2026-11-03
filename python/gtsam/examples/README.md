@@ -34,6 +34,7 @@ MyST subsection discovers them automatically.
 | [elaboratePoint2KalmanFilter](nonlinear/elaboratePoint2KalmanFilter.ipynb) | GaussianSequentialSolver not yet exposed through Python |
 | [FisheyeExample](sfm/FisheyeExample.ipynb) | :heavy_check_mark: |
 | [FixedLagSmootherExample](nonlinear/FixedLagSmootherExample.ipynb) | :heavy_check_mark: |
+| [FixedLagSmootherExample_SmartFactor](nonlinear/FixedLagSmootherExample_SmartFactor.ipynb) | :heavy_check_mark: |
 | [HMMExample](discrete/HMMExample.ipynb) | :heavy_check_mark: |
 | ImuFactorsExample2                                    | :heavy_check_mark: |
 | ImuFactorsExample                                     |        |
@@ -77,6 +78,7 @@ MyST subsection discovers them automatically.
 | TimeTBB                                               |        |
 | UGM_chain                                             | discrete functionality not yet exposed |
 | UGM_small                                             | discrete functionality not yet exposed |
+| [VisualFixedLagSmootherExample_SmartFactor](nonlinear/VisualFixedLagSmootherExample_SmartFactor.ipynb) | :heavy_check_mark: |
 | VisualISAM2Example                                    | :heavy_check_mark: |
 | [VisualISAMExample](sfm/VisualISAMExample.ipynb) | :heavy_check_mark: |
 

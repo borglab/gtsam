@@ -125,7 +125,7 @@ FixedLagSmoother::Result BatchFixedLagSmoother::updateImpl(
   delta_.insert(newTheta.zeroVectors());
 
   // Add the new factors to the graph, updating the variable index
-  insertFactors(newFactors);
+  FactorIndices newFactorsIndices = insertFactors(newFactors);
   gttoc(augment_system);
 
   // Update timestamps before removing unused keys so a removed key cannot
@@ -139,7 +139,7 @@ FixedLagSmoother::Result BatchFixedLagSmoother::updateImpl(
   // Preserve this update's cutoff even if the newest state is removed below.
   const double current_timestamp = getCurrentTimestamp();
 
-  // Remove factors and keep the factor index and reusable slots synchronized.
+  // Remove factors and keep the reusable slots synchronized.
   removeFactors(factorSlotsToRemove);
 
   // Removing the last factor touching a key removes that state immediately. A
@@ -185,6 +185,17 @@ FixedLagSmoother::Result BatchFixedLagSmoother::updateImpl(
   result.expiredPendingKeys = KeySet(expiredPendingKeys);
   gttoc(optimize);
 
+  // With CONDITION, factors on the marginalizable keys are first replaced by
+  // their copies conditioned on the estimate just optimized.
+  if (marginalizationMode_ == CONDITION && marginalizableKeys.size() > 0) {
+    result.conditionedFactorIndices =
+        conditionFactorsOnKeys(&marginalizableKeys, newFactorsIndices);
+    newFactorsIndices.insert(newFactorsIndices.end(),
+                             result.conditionedFactorIndices.begin(),
+                             result.conditionedFactorIndices.end());
+  }
+  result.newFactorsIndices = newFactorsIndices;
+
   // Marginalize out old variables.
   gttic(marginalize);
   if (marginalizableKeys.size() > 0) {
@@ -196,8 +207,45 @@ FixedLagSmoother::Result BatchFixedLagSmoother::updateImpl(
 }
 
 /* ************************************************************************* */
-void BatchFixedLagSmoother::insertFactors(
+FactorIndices BatchFixedLagSmoother::conditionFactorsOnKeys(
+    KeyVector* marginalizableKeys, const FactorIndices& newFactorsIndices) {
+  const Values fixedValues = calculateEstimate(*marginalizableKeys);
+  const VariableIndex variableIndex(factors_);
+  set<size_t> slots;
+  for (Key key : *marginalizableKeys) {
+    const auto entry = variableIndex.find(key);
+    if (entry != variableIndex.end())
+      slots.insert(entry->second.begin(), entry->second.end());
+  }
+  const set<size_t> newSlots(newFactorsIndices.begin(),
+                             newFactorsIndices.end());
+  FactorIndices conditioned;
+  for (const size_t slot : slots) {
+    const auto replacement = factors_[slot]->conditionOn(fixedValues);
+    if (!replacement) continue;
+    factors_.replace(slot, replacement);
+    if (!newSlots.count(slot)) conditioned.push_back(slot);
+  }
+  // A key left without factors is erased instead of marginalized.
+  const KeySet activeKeys = factors_.keys();
+  KeyVector keysWithoutFactors;
+  marginalizableKeys->erase(
+      remove_if(marginalizableKeys->begin(), marginalizableKeys->end(),
+                [&](const Key key) {
+                  if (activeKeys.exists(key)) return false;
+                  keysWithoutFactors.push_back(key);
+                  return true;
+                }),
+      marginalizableKeys->end());
+  eraseKeys(keysWithoutFactors);
+  return conditioned;
+}
+
+/* ************************************************************************* */
+FactorIndices BatchFixedLagSmoother::insertFactors(
     const NonlinearFactorGraph& newFactors) {
+  FactorIndices slots;
+  slots.reserve(newFactors.size());
   for(const auto& factor: newFactors) {
     Key index;
     // Insert the factor into an existing hole in the factor graph, if possible
@@ -209,11 +257,9 @@ void BatchFixedLagSmoother::insertFactors(
       index = factors_.size();
       factors_.push_back(factor);
     }
-    // Update the FactorIndex
-    for(Key key: *factor) {
-      factorIndex_[key].insert(index);
-    }
+    slots.push_back(index);
   }
+  return slots;
 }
 
 /* ************************************************************************* */
@@ -221,10 +267,6 @@ void BatchFixedLagSmoother::removeFactors(
     const set<size_t>& deleteFactors) {
   for(size_t slot: deleteFactors) {
     if (factors_.at(slot)) {
-      // Remove references to this factor from the FactorIndex
-      for(Key key: *(factors_.at(slot))) {
-        factorIndex_[key].erase(slot);
-      }
       // Remove the factor from the factor graph
       factors_.remove(slot);
       // Add the factor's old slot to the list of available slots
@@ -243,9 +285,6 @@ void BatchFixedLagSmoother::eraseKeys(const KeyVector& keys) {
   for(Key key: keys) {
     // Erase the key from the values
     if (theta_.exists(key)) theta_.erase(key);
-
-    // Erase the key from the factor index
-    factorIndex_.erase(key);
 
     // Erase the key from the set of linearized keys
     if (linearValues_.exists(key)) {

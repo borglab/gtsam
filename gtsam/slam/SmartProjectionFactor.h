@@ -53,6 +53,16 @@ class SmartProjectionFactor : public SmartProjectionFactorBase<CAMERA> {
     return other && Base::equals(factor, tol);
   }
 
+  /// Copy of this factor, as a NonlinearFactor.
+  NonlinearFactor::shared_ptr clone() const override {
+    return std::make_shared<This>(*this);
+  }
+
+  /// SmartProjectionFactorBase::fixCamera, returning the concrete type.
+  shared_ptr fixCamera(Key key, const Values& values) const {
+    return std::static_pointer_cast<This>(Base::fixCamera(key, values));
+  }
+
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
   friend class boost::serialization::access;

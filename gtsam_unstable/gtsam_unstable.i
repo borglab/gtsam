@@ -525,6 +525,12 @@ virtual class SmartStereoProjectionFactor : gtsam::NonlinearFactor {
       const double _lambda = 0.0) const;
   gtsam::GaussianFactor* linearizeDamped(
       const gtsam::Values& values, const double _lambda = 0.0) const;
+
+  // Fixed cameras, see NonlinearFactor::conditionOn
+  const gtsam::FastVector<size_t>& fixedMeasurements() const;
+  bool isFixedMeasurement(size_t i) const;
+  gtsam::FastVector<size_t> activeMeasurements() const;
+  const gtsam::CameraSet<gtsam::StereoCamera>& fixedCameras() const;
 };
 
 #include <gtsam_unstable/slam/SmartStereoProjectionPoseFactor.h>
@@ -546,6 +552,8 @@ virtual class SmartStereoProjectionPoseFactor : gtsam::SmartStereoProjectionFact
       const std::shared_ptr<gtsam::Cal3_S2Stereo>& K);
 
   std::vector<std::shared_ptr<gtsam::Cal3_S2Stereo>> calibration() const;
+  gtsam::StereoCamera cameraForMeasurement(size_t i,
+                                           const gtsam::Pose3& world_P_body) const;
 };
 
 #include <gtsam_unstable/slam/ProjectionFactorRollingShutter.h>

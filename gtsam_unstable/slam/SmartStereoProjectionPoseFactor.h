@@ -126,6 +126,21 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
     return K_all_;
   }
 
+  /// Copy of this factor, as a NonlinearFactor.
+  NonlinearFactor::shared_ptr clone() const override {
+    return std::make_shared<This>(*this);
+  }
+
+  /// Fix the cameras of the keys in fixedValues, keeping at most
+  /// params_.maxFixedCameras fixed cameras, the newest.
+  NonlinearFactor::shared_ptr conditionOn(
+      const Values& fixedValues) const override {
+    return conditionOnKeys(fixedValues, params_.maxFixedCameras);
+  }
+
+  /// Stereo camera of measurement i for the given body pose.
+  StereoCamera cameraForMeasurement(size_t i, const Pose3& world_P_body) const;
+
   /**
    * Collect all cameras involved in this factor
    * @param values Values structure which must contain camera poses
@@ -134,6 +149,13 @@ class GTSAM_UNSTABLE_EXPORT SmartStereoProjectionPoseFactor
    * @return vector of Values
    */
   Base::Cameras cameras(const Values& values) const override;
+
+ protected:
+  /// Stereo camera of a pose key, with the calibration of its measurement.
+  StereoCamera camera(Key key, const Values& values) const override;
+
+  /// Erase the calibration of measurement i as well.
+  void eraseMeasurementAt(size_t i) override;
 
  private:
 #if GTSAM_ENABLE_BOOST_SERIALIZATION  ///

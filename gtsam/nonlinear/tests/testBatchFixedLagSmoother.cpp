@@ -29,6 +29,9 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/slam/BetweenFactor.h>
+
+#include "smartFactorFixedLagScenario.h"
+
 #include <random>
 #include <stdexcept>
 #include <string>
@@ -737,6 +740,215 @@ TEST(BatchFixedLagSmoother, ValidatesRemovalsBeforeTimestamps) {
 }
 
 }  // namespace removal_validation
+/* ************************************************************************* */
+namespace smart_factors {
+using namespace smart_factor_fixed_lag;
+
+// With MARGINALIZE (the default) the first marginalization consumes every
+// smart factor that touches the leaving pose into one dense marginal over the
+// whole window, and the consumed track restarts.
+TEST(BatchFixedLagSmoother, SmartFactorsConsumedByMarginalization) {
+  Scenario scenario;
+  scenario.numFrames = 8;  // x0 leaves the window at frame 7
+  BatchFixedLagSmoother smoother(scenario.lag);
+  std::vector<Track> tracks;
+  const auto statistics =
+      runReplaceProtocol(smoother, scenario, &tracks, noBatchComparison());
+  const FrameStatistics& last = statistics.back();
+  EXPECT_LONGS_EQUAL(0, last.conditionedFactors);
+  EXPECT_LONGS_EQUAL(1, last.consumedTracks);
+  EXPECT_LONGS_EQUAL(1, last.linearContainerFactors);
+  EXPECT_LONGS_EQUAL(7, last.largestLinearContainer);  // x1 .. x7
+  EXPECT_LONGS_EQUAL(1, tracks[0].restarts);
+  EXPECT_LONGS_EQUAL(7, tracks[0].longestFactor);
+}
+
+// With CONDITION the smart factors touching the leaving pose survive with
+// that pose fixed at the estimate just optimized, and the only marginal is
+// the odometry one on the neighbour.
+TEST(BatchFixedLagSmoother, SmartFactorsSurviveConditioning) {
+  Scenario scenario;
+  scenario.numFrames = 8;
+  BatchFixedLagSmoother reference(1000.0);  // never marginalizes
+  runReplaceProtocol(reference, scenario, nullptr, noBatchComparison());
+  const Pose3 estimateOfX0 = reference.calculateEstimate<Pose3>(X(0));
+
+  BatchFixedLagSmoother smoother(scenario.lag);
+  smoother.setMarginalizationMode(FixedLagSmoother::CONDITION);
+  std::vector<Track> tracks;
+  const auto statistics =
+      runReplaceProtocol(smoother, scenario, &tracks, noBatchComparison());
+  const FrameStatistics& last = statistics.back();
+  EXPECT_LONGS_EQUAL(0, last.consumedTracks);
+  EXPECT_LONGS_EQUAL(6, last.smartFactors);
+  EXPECT_LONGS_EQUAL(1, last.linearContainerFactors);
+  EXPECT_LONGS_EQUAL(1, last.largestLinearContainer);  // x1 only
+  EXPECT_LONGS_EQUAL(0, tracks[0].restarts);
+  EXPECT_LONGS_EQUAL(8, tracks[0].longestFactor);
+  CHECK(tracks[0].factor);
+  const SmartFactor& factor = *tracks[0].factor;
+  EXPECT(std::find(factor.keys().begin(), factor.keys().end(), X(0)) ==
+         factor.keys().end());
+  EXPECT_LONGS_EQUAL(1, factor.fixedCameras().size());
+  EXPECT(assert_equal(estimateOfX0, factor.fixedCameras()[0].pose(), 1e-6));
+}
+
+// Conditioning replaces factors in place: a new factor keeps the slot it was
+// added at, an existing one keeps its slot, and only the latter is reported.
+TEST(BatchFixedLagSmoother, ConditionedFactorsKeepTheirSlots) {
+  const auto noise = noiseModel::Isotropic::Sigma(3, 0.1);
+  BatchFixedLagSmoother smoother(1.5);
+  smoother.setMarginalizationMode(FixedLagSmoother::CONDITION);
+  NonlinearFactorGraph factors;
+  factors.addPrior(X(0), Pose2(), noise);
+  factors.emplace_shared<ConditionableBetween>(X(0), X(1), Pose2(1, 0, 0),
+                                               noise);
+  Values values;
+  values.insert(X(0), Pose2());
+  values.insert(X(1), Pose2(1, 0, 0));
+  smoother.update(factors, values, {{X(0), 0.0}, {X(1), 1.0}});
+
+  // x0 leaves: the existing between factor and a new one on x0 are conditioned.
+  NonlinearFactorGraph newFactors;
+  newFactors.emplace_shared<BetweenFactor<Pose2>>(X(1), X(2), Pose2(1, 0, 0),
+                                                  noise);
+  newFactors.emplace_shared<ConditionableBetween>(X(0), X(2), Pose2(2, 0, 0),
+                                                  noise);
+  Values newValues;
+  newValues.insert(X(2), Pose2(2, 0, 0));
+  const auto result = smoother.update(newFactors, newValues, {{X(2), 2.0}});
+  EXPECT(result.conditionedFactorIndices == FactorIndices{1});
+  EXPECT(result.newFactorsIndices == FactorIndices({2, 3, 1}));
+  const NonlinearFactorGraph& graph = smoother.getFactors();
+  EXPECT(graph[1]->keys() == KeyVector{X(1)});
+  EXPECT(graph[3]->keys() == KeyVector{X(2)});
+  EXPECT(assert_equal(Pose2(2, 0, 0), smoother.calculateEstimate<Pose2>(X(2)),
+                      1e-6));
+}
+
+// A pose whose factors are all conditioned away is erased, not marginalized.
+TEST(BatchFixedLagSmoother, KeyWithoutFactorsAfterConditioning) {
+  const auto noise = noiseModel::Isotropic::Sigma(3, 0.1);
+  BatchFixedLagSmoother smoother(1.5);
+  smoother.setMarginalizationMode(FixedLagSmoother::CONDITION);
+  NonlinearFactorGraph factors;
+  factors.addPrior(X(1), Pose2(1, 0, 0), noise);
+  factors.emplace_shared<ConditionableBetween>(X(0), X(1), Pose2(1, 0, 0),
+                                               noise);
+  Values values;
+  values.insert(X(0), Pose2());
+  values.insert(X(1), Pose2(1, 0, 0));
+  smoother.update(factors, values, {{X(0), 0.0}, {X(1), 1.0}});
+
+  NonlinearFactorGraph newFactors;
+  newFactors.emplace_shared<BetweenFactor<Pose2>>(X(1), X(2), Pose2(1, 0, 0),
+                                                  noise);
+  Values newValues;
+  newValues.insert(X(2), Pose2(2, 0, 0));
+  const auto result = smoother.update(newFactors, newValues, {{X(2), 2.0}});
+  EXPECT(result.conditionedFactorIndices == FactorIndices{1});
+  EXPECT(!smoother.calculateEstimate().exists(X(0)));
+  EXPECT(!smoother.timestamps().count(X(0)));
+}
+
+// Real example, see the IncrementalFixedLagSmoother test of the same name.
+TEST(BatchFixedLagSmoother, SmartFactorsRealExample) {
+  Scenario scenario;
+  BatchFixedLagSmoother marginalizing(scenario.lag);
+  std::vector<Track> marginalizedTracks;
+  const auto marginalized =
+      runReplaceProtocol(marginalizing, scenario, &marginalizedTracks);
+  double worstToBatch = 0.0;
+  size_t longest = 0;
+  for (const auto& frame : marginalized)
+    worstToBatch = std::max(worstToBatch, frame.translationErrorToFullBatch);
+  for (const auto& track : marginalizedTracks)
+    longest = std::max(longest, track.longestFactor);
+  EXPECT(worstToBatch < 2.0);  // observed 1.45 m
+  EXPECT_LONGS_EQUAL(7, longest);
+
+  BatchFixedLagSmoother conditioning(scenario.lag);
+  conditioning.setMarginalizationMode(FixedLagSmoother::CONDITION);
+  std::vector<Track> conditionedTracks;
+  const auto conditioned =
+      runReplaceProtocol(conditioning, scenario, &conditionedTracks);
+  size_t replacements = 0;
+  longest = 0;
+  double worstToTruth = 0.0;
+  for (const auto& frame : conditioned) {
+    replacements += frame.conditionedFactors;
+    worstToTruth = std::max(worstToTruth, frame.translationErrorToTruth);
+  }
+  for (const auto& track : conditionedTracks)
+    longest = std::max(longest, track.longestFactor);
+  EXPECT(replacements > 0);
+  EXPECT_LONGS_EQUAL(scenario.trackLength, longest);
+  EXPECT(worstToTruth < 2.5);  // observed 1.30 m, full batch up to 0.99 m
+}
+
+// A factor may grow in place with add() inside the batch smoother: tracks and
+// estimates match the replace protocol in both modes.
+TEST(BatchFixedLagSmoother, SmartFactorsGrownInPlace) {
+  Scenario scenario;
+  ProtocolOptions inPlace = noBatchComparison();
+  inPlace.growInPlace = true;
+  for (auto mode :
+       {FixedLagSmoother::MARGINALIZE, FixedLagSmoother::CONDITION}) {
+    BatchFixedLagSmoother grown(scenario.lag), replaced(scenario.lag);
+    grown.setMarginalizationMode(mode);
+    replaced.setMarginalizationMode(mode);
+    std::vector<Track> grownTracks, replacedTracks;
+    runReplaceProtocol(grown, scenario, &grownTracks, inPlace);
+    runReplaceProtocol(replaced, scenario, &replacedTracks,
+                       noBatchComparison());
+    for (size_t j = 0; j < grownTracks.size(); ++j) {
+      EXPECT_LONGS_EQUAL(replacedTracks[j].restarts, grownTracks[j].restarts);
+      EXPECT_LONGS_EQUAL(replacedTracks[j].longestFactor,
+                         grownTracks[j].longestFactor);
+    }
+    EXPECT(assert_equal(replaced.calculateEstimate(), grown.calculateEstimate(),
+                        1e-6));
+  }
+}
+
+// A landmark seen once has no factor in the smoother, and its pose may leave
+// the window before the next sighting. A factor on that pose cannot enter the
+// smoother; the frontend restarts the track, as the examples do.
+TEST(BatchFixedLagSmoother, TrackSeenOnceWhosePoseExpired) {
+  Scenario scenario;
+  scenario.lag = 2.0;
+  BatchFixedLagSmoother smoother(scenario.lag);
+  for (size_t i = 0; i < 5; ++i) {
+    NonlinearFactorGraph factors;
+    Values values;
+    scenario.frameFactors(i, &factors, &values);
+    smoother.update(factors, values, {{X(i), double(i)}});
+  }
+  EXPECT(!smoother.timestamps().count(X(0)));
+
+  // Landmark 0, seen at frame 0 and again at frames 4 and 5: the restarted
+  // track enters the smoother with its two new measurements.
+  auto restarted =
+      std::make_shared<SmartFactor>(scenario.pixelNoise, scenario.K);
+  restarted->add(*scenario.measurements[4][0], X(4));
+  restarted->add(*scenario.measurements[5][0], X(5));
+  NonlinearFactorGraph factors;
+  Values values;
+  scenario.frameFactors(5, &factors, &values);
+  factors.push_back(restarted);
+  const auto result = smoother.update(factors, values, {{X(5), 5.0}});
+  EXPECT(smoother.getFactors()[result.newFactorsIndices[1]] == restarted);
+
+  // Keeping the measurement of the expired pose instead is an error.
+  auto stale = std::make_shared<SmartFactor>(scenario.pixelNoise, scenario.K);
+  stale->add(*scenario.measurements[0][0], X(0));
+  stale->add(*scenario.measurements[5][0], X(5));
+  NonlinearFactorGraph staleFactors;
+  staleFactors.push_back(stale);
+  CHECK_EXCEPTION(smoother.update(staleFactors), ValuesKeyDoesNotExist);
+}
+
+}  // namespace smart_factors
 /* ************************************************************************* */
 
 /* ************************************************************************* */

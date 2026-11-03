@@ -34,6 +34,12 @@ virtual class SmartFactorBase : gtsam::NonlinearFactor {
            const gtsam::KeyVector& cameraKeys);
   const CAMERA::MeasurementVector& measured() const;
   gtsam::CameraSet<CAMERA> cameras(const gtsam::Values& values) const;
+
+  // Fixed cameras, see NonlinearFactor::conditionOn
+  const gtsam::FastVector<size_t>& fixedMeasurements() const;
+  bool isFixedMeasurement(size_t i) const;
+  gtsam::FastVector<size_t> activeMeasurements() const;
+  const gtsam::CameraSet<CAMERA>& fixedCameras() const;
 };
 
 #include <gtsam/slam/SmartProjectionFactor.h>
@@ -58,6 +64,8 @@ class SmartProjectionParams {
   void setEnableEPI(bool enableEPI);
   void setLandmarkDistanceThreshold(double landmarkDistanceThreshold);
   void setDynamicOutlierRejectionThreshold(double dynOutRejectionThreshold);
+  void setMaxFixedCameras(size_t maximum);
+  size_t getMaxFixedCameras() const;
 
   void print(const std::string& str = "") const;
 };
@@ -119,6 +127,9 @@ virtual class SmartProjectionFactor : gtsam::SmartFactorBase<CAMERA> {
   bool isPointBehindCamera() const;
   bool isOutlier() const;
   bool isFarPoint() const;
+
+  gtsam::SmartProjectionFactor<CAMERA>* fixCamera(
+      gtsam::Key key, const gtsam::Values& values) const;
 };
 
 #include <gtsam/slam/SmartProjectionPoseFactor.h>
@@ -147,6 +158,15 @@ virtual class SmartProjectionPoseFactor : gtsam::NonlinearFactor {
 
   gtsam::TriangulationResult point() const;
   gtsam::TriangulationResult point(const gtsam::Values& values) const;
+
+  gtsam::SmartProjectionPoseFactor<CALIBRATION>* fixCamera(
+      gtsam::Key key, const gtsam::Values& values) const;
+
+  // Fixed cameras, see NonlinearFactor::conditionOn
+  const gtsam::FastVector<size_t>& fixedMeasurements() const;
+  bool isFixedMeasurement(size_t i) const;
+  gtsam::FastVector<size_t> activeMeasurements() const;
+  const gtsam::This::Cameras& fixedCameras() const;
 };
 
 #include <gtsam/slam/SmartProjectionRigFactor.h>
@@ -174,6 +194,10 @@ virtual class SmartProjectionRigFactor : gtsam::SmartProjectionFactor<CAMERA> {
   const gtsam::KeyVector& nonUniqueKeys() const;
   const std::shared_ptr<gtsam::This::Cameras>& cameraRig() const;
   const gtsam::FastVector<size_t>& cameraIds() const;
+
+  gtsam::SmartProjectionRigFactor<CAMERA>* fixCamera(
+      gtsam::Key key, const gtsam::Values& values) const;
+  CAMERA cameraForMeasurement(size_t i, const gtsam::Pose3& world_P_body) const;
 };
 
 }  // namespace gtsam

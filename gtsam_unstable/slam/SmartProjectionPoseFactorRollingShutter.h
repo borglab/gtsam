@@ -255,6 +255,17 @@ class SmartProjectionPoseFactorRollingShutter
                       e->cameraIds().begin());
   }
 
+  /// Not cloneable: SmartProjectionFactor::clone would drop the pose pairs.
+  NonlinearFactor::shared_ptr clone() const override {
+    return NonlinearFactor::clone();
+  }
+
+  /// Not supported: fixing one pose leaves a camera that is still a variable.
+  NonlinearFactor::shared_ptr conditionOn(
+      const Values& fixedValues) const override {
+    return nullptr;
+  }
+
   /**
    * Collect all cameras involved in this factor
    * @param values Values structure which must contain camera poses

@@ -24,6 +24,7 @@
 #include <gtsam/slam/PoseTranslationPrior.h>
 #include <gtsam/slam/ProjectionFactor.h>
 #include <gtsam/slam/StereoFactor.h>
+#include <gtsam/slam/TriangulationFactor.h>
 #include <CppUnitLite/TestHarness.h>
 #include <iostream>
 
@@ -1458,6 +1459,117 @@ TEST( SmartStereoProjectionPoseFactor, HessianWithRotationNonDegenerate ) {
 }
 
 /* ************************************************************************* */
+namespace fixed_cameras {
+
+// Sensor mounted with a translation only, so the level poses see landmark1.
+const Pose3 bodyOffset(Rot3(), Point3(0.25, -0.10, 0.2));
+
+// Three stereo cameras with a body-to-sensor offset observing landmark1 at
+// perturbed poses, with measurement offsets so residuals do not vanish.
+Values perturbedPoses() {
+  Values values;
+  values.insert(
+      x1, level_pose.retract(Vector6{0.01, -0.02, 0.015, 0.05, -0.03, 0.02}));
+  values.insert(
+      x2, pose_right.retract(Vector6{-0.015, 0.01, 0.02, -0.04, 0.02, 0.03}));
+  values.insert(
+      x3, pose_above.retract(Vector6{0.02, 0.015, -0.01, 0.03, 0.04, -0.02}));
+  return values;
+}
+
+SmartStereoProjectionPoseFactor::shared_ptr threeCameraFactor(
+    const SmartStereoProjectionParams& p = SmartStereoProjectionParams()) {
+  auto factor =
+      std::make_shared<SmartStereoProjectionPoseFactor>(model, p, bodyOffset);
+  const std::vector<Pose3> truth = {level_pose, pose_right, pose_above};
+  const std::vector<Key> keys = {x1, x2, x3};
+  for (size_t i = 0; i < 3; ++i) {
+    const StereoPoint2 z =
+        StereoCamera(truth[i] * bodyOffset, K2).project(landmark1);
+    factor->add(StereoPoint2(z.uL() + 0.3 * i, z.uR() - 0.2, z.v() + 0.1 * i),
+                keys[i], K2);
+  }
+  return factor;
+}
+
+std::pair<Matrix, Vector> hessianOf(const GaussianFactor::shared_ptr& factor,
+                                    const Ordering& ordering) {
+  GaussianFactorGraph graph;
+  graph.push_back(factor);
+  return graph.hessian(ordering);
+}
+
+// Fixing a pose keeps its stereo measurement and its per-measurement
+// calibration, keeps the error, and linearizes to the Schur complement of the
+// explicit graph with a TriangulationFactor for the fixed camera.
+TEST(SmartStereoProjectionPoseFactor, conditionOn) {
+  const Values values = perturbedPoses();
+  auto factor = threeCameraFactor();
+  Values fixedValues;
+  fixedValues.insert(x1, values.at<Pose3>(x1));
+  auto conditioned = std::dynamic_pointer_cast<SmartStereoProjectionPoseFactor>(
+      factor->conditionOn(fixedValues));
+  EXPECT(conditioned != nullptr);
+  EXPECT(conditioned->keys() == KeyVector({x2, x3}));
+  EXPECT_LONGS_EQUAL(3, conditioned->measured().size());
+  EXPECT_LONGS_EQUAL(3, conditioned->calibration().size());
+  EXPECT_LONGS_EQUAL(1, conditioned->fixedCameras().size());
+  EXPECT_LONGS_EQUAL(9, conditioned->dim());
+
+  Values liveValues = values;
+  liveValues.erase(x1);
+  EXPECT_DOUBLES_EQUAL(factor->error(values), conditioned->error(liveValues),
+                       1e-9);
+  const Point3 point = *conditioned->point(liveValues);
+
+  NonlinearFactorGraph explicitGraph;
+  const auto& z = factor->measured();
+  explicitGraph.emplace_shared<TriangulationFactor<StereoCamera>>(
+      StereoCamera(values.at<Pose3>(x1) * bodyOffset, K2), z[0], model, L(1));
+  explicitGraph.emplace_shared<GenericStereoFactor<Pose3, Point3>>(
+      z[1], model, x2, L(1), K2, bodyOffset);
+  explicitGraph.emplace_shared<GenericStereoFactor<Pose3, Point3>>(
+      z[2], model, x3, L(1), K2, bodyOffset);
+  Values explicitValues = liveValues;
+  explicitValues.insert(L(1), point);
+  const auto marginal =
+      EliminateCholesky(*explicitGraph.linearize(explicitValues),
+                        Ordering{L(1)})
+          .second;
+  const Ordering ordering{x2, x3};
+  const auto [expectedHessian, expectedInformation] =
+      hessianOf(marginal, ordering);
+  const auto [actualHessian, actualInformation] =
+      hessianOf(conditioned->linearize(liveValues), ordering);
+  EXPECT(assert_equal(expectedHessian, actualHessian, 1e-6));
+  EXPECT(assert_equal(expectedInformation, actualInformation, 1e-6));
+
+  // The cap drops the oldest fixed measurement and its calibration.
+  SmartStereoProjectionParams capped;
+  capped.setMaxFixedCameras(1);
+  fixedValues.insert(x2, values.at<Pose3>(x2));
+  auto cappedFactor =
+      std::dynamic_pointer_cast<SmartStereoProjectionPoseFactor>(
+          threeCameraFactor(capped)->conditionOn(fixedValues));
+  EXPECT(cappedFactor->keys() == KeyVector({x3}));
+  EXPECT_LONGS_EQUAL(2, cappedFactor->measured().size());
+  EXPECT_LONGS_EQUAL(2, cappedFactor->calibration().size());
+  EXPECT_LONGS_EQUAL(1, cappedFactor->fixedCameras().size());
+}
+
+// A stereo factor on camera variables does not support conditioning.
+TEST(SmartStereoProjectionFactor, conditionOn) {
+  SmartStereoProjectionFactor factor(model);
+  factor.add(StereoPoint2(320, 300, 240), x1);
+  factor.add(StereoPoint2(300, 280, 240), x2);
+  Values fixedValues;
+  fixedValues.insert(x1, StereoCamera(Pose3(), K2));
+  EXPECT(!factor.conditionOn(fixedValues));
+}
+
+}  // namespace fixed_cameras
+/* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

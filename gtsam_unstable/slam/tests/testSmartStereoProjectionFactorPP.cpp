@@ -1273,6 +1273,18 @@ TEST( SmartStereoProjectionFactorPP, dynamicOutlierRejection ) {
 }
 
 /* ************************************************************************* */
+// A measurement depends on a body pose and an extrinsic pose, so the factor
+// does not support conditioning.
+TEST(SmartStereoProjectionFactorPP, conditionOn) {
+  SmartStereoProjectionFactorPP factor(model);
+  factor.add(measurement1, poseKey1, poseExtrinsicKey1, K);
+  factor.add(measurement2, x2, poseExtrinsicKey1, K);
+  Values fixedValues;
+  fixedValues.insert(poseKey1, Pose3());
+  EXPECT(!factor.conditionOn(fixedValues));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

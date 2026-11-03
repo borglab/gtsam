@@ -157,6 +157,7 @@ virtual class NonlinearFactor : gtsam::Factor {
   gtsam::GaussianFactor* linearize(const gtsam::Values& c) const;
   gtsam::NonlinearFactor* clone() const;
   gtsam::NonlinearFactor* rekey(const gtsam::KeyVector& newKeys) const;
+  gtsam::NonlinearFactor* conditionOn(const gtsam::Values& fixedValues) const;
 };
 
 #include <gtsam/nonlinear/NonlinearFactor.h>

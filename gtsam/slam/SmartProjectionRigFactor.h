@@ -222,6 +222,45 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
                       e->cameraIds().begin());
   }
 
+  /// Copy of this factor, as a NonlinearFactor.
+  NonlinearFactor::shared_ptr clone() const override {
+    return std::make_shared<This>(*this);
+  }
+
+  /// SmartProjectionFactorBase::fixCamera, returning the concrete type.
+  shared_ptr fixCamera(Key key, const Values& values) const {
+    return std::static_pointer_cast<This>(Base::fixCamera(key, values));
+  }
+
+  /// Rekey; the base version clones and renames keys_ only, so rename the
+  /// key of every measurement as well.
+  NonlinearFactor::shared_ptr rekey(
+      const std::map<Key, Key>& rekey_mapping) const override {
+    auto factor = std::static_pointer_cast<This>(Base::rekey(rekey_mapping));
+    for (Key& key : factor->nonUniqueKeys_) {
+      const auto mapping = rekey_mapping.find(key);
+      if (mapping != rekey_mapping.end()) key = mapping->second;
+    }
+    return factor;
+  }
+
+  /// Rekey with a full replacement of keys_, see above.
+  NonlinearFactor::shared_ptr rekey(const KeyVector& new_keys) const override {
+    assert(new_keys.size() == this->keys_.size());
+    std::map<Key, Key> rekey_mapping;
+    for (size_t i = 0; i < new_keys.size(); ++i)
+      rekey_mapping[this->keys_[i]] = new_keys[i];
+    return rekey(rekey_mapping);
+  }
+
+  /// Camera of measurement i for the given body pose.
+  Camera cameraForMeasurement(size_t i, const Pose3& world_P_body) const {
+    const typename Base::Camera& camera_i = (*cameraRig_)[cameraIds_[i]];
+    return Camera(world_P_body * camera_i.pose(),  // = world_P_cam_i
+                  std::make_shared<typename CAMERA::CalibrationType>(
+                      camera_i.calibration()));
+  }
+
   /**
    * Collect all cameras involved in this factor
    * @param values Values structure which must contain body poses corresponding
@@ -229,18 +268,9 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
    * @return vector of cameras
    */
   typename Base::Cameras cameras(const Values& values) const override {
-    typename Base::Cameras cameras;
-    cameras.reserve(nonUniqueKeys_.size());  // preallocate
-    for (size_t i = 0; i < nonUniqueKeys_.size(); i++) {
-      const typename Base::Camera& camera_i = (*cameraRig_)[cameraIds_[i]];
-      const Pose3 world_P_sensor_i =
-          values.at<Pose3>(nonUniqueKeys_[i])  // = world_P_body
-          * camera_i.pose();                   // = body_P_cam_i
-      cameras.emplace_back(world_P_sensor_i,
-                           std::make_shared<typename CAMERA::CalibrationType>(
-                               camera_i.calibration()));
-    }
-    return cameras;
+    return this->assembleCameras([&](size_t i, size_t) {
+      return cameraForMeasurement(i, values.at<Pose3>(nonUniqueKeys_[i]));
+    });
   }
 
   /**
@@ -277,6 +307,8 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
         world_P_body.compose(body_P_sensor, H);
         Fs.at(i) = Fs.at(i) * H;
       }
+      // Fixed cameras are constants: their rows only constrain the landmark.
+      for (size_t i : this->fixedMeasurements_) Fs.at(i).setZero();
     }
   }
 
@@ -336,9 +368,13 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
     // Build augmented Hessian (with last row/column being the information
     // vector) Note: we need to get the augumented hessian wrt the unique keys
     // in key_
+    // Fixed measurements have zero F blocks: any key can take them.
+    KeyVector jacobianKeys = nonUniqueKeys_;
+    for (size_t i : this->fixedMeasurements_)
+      jacobianKeys[i] = this->keys_.front();
     SymmetricBlockMatrix augmentedHessianUniqueKeys =
         Base::Cameras::template SchurComplementAndRearrangeBlocks<3, 6, 6>(
-            Fs, E, P, b, nonUniqueKeys_, this->keys_);
+            Fs, E, P, b, jacobianKeys, this->keys_);
 
     return std::make_shared<RegularHessianFactor<DimPose> >(
         this->keys_, augmentedHessianUniqueKeys);
@@ -368,6 +404,24 @@ class SmartProjectionRigFactor : public SmartProjectionFactor<CAMERA> {
   std::shared_ptr<GaussianFactor> linearize(
       const Values& values) const override {
     return this->linearizeDamped(values);
+  }
+
+ protected:
+  /// Fix every measurement taken from the body pose key at its value.
+  void fixKeyInPlace(Key key, const Values& values) override {
+    const auto keyIterator = this->findKey(key);
+    const Pose3 world_P_body = values.at<Pose3>(key);
+    for (size_t i = 0; i < nonUniqueKeys_.size(); i++)
+      if (nonUniqueKeys_[i] == key && !this->isFixedMeasurement(i))
+        this->fixMeasurementInPlace(i, cameraForMeasurement(i, world_P_body));
+    this->keys_.erase(keyIterator);
+  }
+
+  /// Erase the key and camera id of measurement i as well.
+  void eraseMeasurementAt(size_t i) override {
+    nonUniqueKeys_.erase(nonUniqueKeys_.begin() + i);
+    cameraIds_.erase(cameraIds_.begin() + i);
+    Base::eraseMeasurementAt(i);
   }
 
  private:
