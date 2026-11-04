@@ -23,7 +23,6 @@ using Matrix20 = Eigen::Matrix<double, 20, 20>; // 20 x 20 matricies
 // GNSS jacobians (GNSS) - position, 3 rows 10 columns eq.40
 using Matrix3x10 = Eigen::Matrix<double, 3, 10>;
 using Matrix3x20 = Eigen::Matrix<double, 3, 20>;
-
 // Eq.26 G = Gal(3) ⋉ gal(3) (A, a)
 using Group = TangentLieGroup<Gal3>; // A  Gal 3 , galilean transormation, a Vector 10
 
@@ -64,17 +63,18 @@ struct GTSAM_UNSTABLE_EXPORT IMUInput {
   /// Extended inertial input w_N = (ω, a, 0, 1) ∈ ℝ¹⁰ (eq. 24).
   Vector10 extended() const {Vector10 w;w << gyr, acc, Vector3::Zero(), 1.0;return w;}
 };
-
+still 
 /// A GNSS position fix, reported at arrival time but taken at t - δ.
 struct GTSAM_UNSTABLE_EXPORT GnssMeasurement {
+
   double stamp = -1.0;                         ///< Optional arrival time [s].
   Point3 position = Point3::Zero();            ///< Antenna position [m].
   Matrix3 covariance = Matrix3::Identity();    ///< Position covariance [m²].
 
   GnssMeasurement() = default;
-  GnssMeasurement(const Point3& position_, const Matrix3& covariance_,
-                  double stamp_ = -1.0)
-      : stamp(stamp_), position(position_), covariance(covariance_) {}
+
+  // simple constructor that sets the values (stamp position, and covariance);
+  GnssMeasurement(const Point3& position_, const Matrix3& covariance_, double stamp_ = -1.0) : stamp(stamp_), position(position_), covariance(covariance_) {}
 };
 
 /// Constant Earth input g_N = (ω_E, -g, 0, 1) ∈ ℝ¹⁰ (eq. 24).

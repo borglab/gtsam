@@ -14,6 +14,7 @@ struct ErrorBlocks {
   Matrix10 A1;   ///< Ad_{exp(-g_N dt)}
   Matrix10 JL;   ///< left Jacobian of exp at -ẘ dt
   Matrix10 A2;   ///< A1 Ad_{exp(ẘ dt)}
+                 ///
 };
 
 ErrorBlocks errorBlocks(const Group& X, const Vector10& gN,
@@ -29,11 +30,11 @@ ErrorBlocks errorBlocks(const Group& X, const Vector10& gN,
 }  // namespace
 
 /* ************************************************************************* */
-State Symmetry::operator()(const State& xi, const Group& X,
-                           OptionalJacobian<20, 20> H_xi,
-                           OptionalJacobian<20, 20> H_X) const {
+State Symmetry::operator()(const State& xi, const Group& X, OptionalJacobian<20, 20> H_xi, OptionalJacobian<20, 20> H_X) const {
+
   const Gal3& F = xi.first;
   const Vector10& b = xi.second;
+
   const Gal3& A = X.first;
   const Vector10& a = X.second;
 
@@ -108,8 +109,7 @@ Matrix20 EqFInputMatrixB(const Group& X, const Vector10& gN,
 }
 
 /* ************************************************************************* */
-Point3 GnssOutput(const Gal3& F, const Gal3& Upsilon, const Vector10& wStart,
-                  const Point3& leverArm, OptionalJacobian<3, 10> H) {
+Point3 GnssOutput(const Gal3& F, const Gal3& Upsilon, const Vector10& wStart, const Point3& leverArm, OptionalJacobian<3, 10> H) {
   const Gal3 T = F * Upsilon.inverse();  // T(t - δ), eq. 17
   const Matrix3 R = T.rotation().matrix();
   const Point3 y = R * leverArm + T.translation();  // eq. 38
