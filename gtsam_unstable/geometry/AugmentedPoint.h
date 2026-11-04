@@ -247,6 +247,33 @@ struct traits<AugmentedPoint<N>>
 template <int N>
 struct traits<const AugmentedPoint<N>> : public traits<AugmentedPoint<N>> {};
 
+/** Insert an augmented point into Values, rejecting an existing key. */
+template <int N>
+void insertAugmentedPoint(Key key, const AugmentedPoint<N>& point,
+                          Values& values) {
+  values.insert(key, point);
+}
+
+/** Update an existing augmented point in Values. */
+template <int N>
+void updateAugmentedPoint(Key key, const AugmentedPoint<N>& point,
+                          Values& values) {
+  values.update(key, point);
+}
+
+/** Insert or replace an augmented point in Values. */
+template <int N>
+void insertOrAssignAugmentedPoint(Key key, const AugmentedPoint<N>& point,
+                                  Values& values) {
+  values.insert_or_assign(key, point);
+}
+
+/** Return a copy of the augmented point stored under key in Values. */
+template <int N>
+AugmentedPoint<N> atAugmentedPoint(Key key, const Values& values) {
+  return values.at<AugmentedPoint<N>>(key);
+}
+
 /// Return the exact QCQP column for an N-dimensional augmented point.
 template <int N>
 Matrix qcqpValue(const AugmentedPoint<N>& typedValue) {

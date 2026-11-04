@@ -50,6 +50,64 @@ class gtsam::StereoPoint2;
 
 namespace gtsam {
 
+#include <gtsam_unstable/geometry/AugmentedPoint.h>
+// Only the wrappers restrict spatial dimensions to 2 and 3.
+template <N = {2, 3}>
+class AugmentedPoint {
+  // Standard Constructors
+  AugmentedPoint();
+  AugmentedPoint(const gtsam::Vector& point);
+
+  // Group
+  static gtsam::AugmentedPoint<N> Identity();
+
+  // Standard Interface
+  int dim() const;
+  double norm() const;
+  double dot(const gtsam::AugmentedPoint<N>& other) const;
+
+  // MATLAB needs a numeric vector type; the lambda preserves the C++ return type.
+  @pybind_lambda
+  gtsam::Vector vector() const;
+
+  // Testable
+  void print(const std::string& s = "") const;
+  bool equals(const gtsam::AugmentedPoint<N>& other, double tol = 1e-9) const;
+};
+
+// Typed access belongs to unstable rather than the stable Values wrapper.
+template <N = {2, 3}>
+void insertAugmentedPoint(gtsam::Key key, const gtsam::AugmentedPoint<N>& point,
+                          gtsam::Values& values);
+
+template <N = {2, 3}>
+void updateAugmentedPoint(gtsam::Key key, const gtsam::AugmentedPoint<N>& point,
+                          gtsam::Values& values);
+
+template <N = {2, 3}>
+void insertOrAssignAugmentedPoint(gtsam::Key key,
+                                  const gtsam::AugmentedPoint<N>& point,
+                                  gtsam::Values& values);
+
+template <N = {2, 3}>
+gtsam::AugmentedPoint<N> atAugmentedPoint(gtsam::Key key,
+                                         const gtsam::Values& values);
+
+// Dimension overloads avoid nested type arguments in wrapped free functions.
+template <N = {2, 3}>
+gtsam::Matrix qcqpValue(const gtsam::AugmentedPoint<N>& typedValue);
+
+template <N = {2, 3}>
+void insertQcqpValue(gtsam::Key key,
+                     const gtsam::AugmentedPoint<N>& typedValue,
+                     gtsam::Values& qcqpValues);
+
+template <N = {2, 3}>
+gtsam::AugmentedPoint<N> fromQcqpValue(const gtsam::Matrix& qcqpValue);
+
+template <N = {2, 3}>
+gtsam::Values extractQcqpValues(const gtsam::Values& qcqpValues);
+
 #include <gtsam_unstable/geometry/Pose3Upright.h>
 class Pose3Upright {
   Pose3Upright();

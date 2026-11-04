@@ -6,7 +6,7 @@
 %
 % See LICENSE for the license information
 %
-% @brief Tests unstable squared-range factors with stable points and graphs.
+% @brief Tests unstable squared-range factors with unstable points and stable graphs.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function testKnownLandmarkSquaredRangeFactor()
@@ -33,7 +33,7 @@ assert(abs(ordinary.evaluateError(coordinates) - residual) < 1e-12);
 exact = factorType(0, zeros(dimension, 1), norm(coordinates), model);
 assert(abs(exact.evaluateError(point)) < 1e-12);
 values = gtsam.Values();
-values.insert(0, point);
+feval(sprintf('gtsam.insertAugmentedPoint%d', dimension), 0, point, values);
 graph = gtsam.NonlinearFactorGraph();
 graph.add(factor);
 assert(abs(graph.error(values) - 0.5 * residual^2) < 1e-12);

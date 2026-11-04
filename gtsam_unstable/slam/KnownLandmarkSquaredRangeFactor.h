@@ -16,7 +16,7 @@
 #pragma once
 
 #include <gtsam/constrained/QpCost.h>
-#include <gtsam/geometry/AugmentedPoint.h>
+#include <gtsam_unstable/geometry/AugmentedPoint.h>
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 
 #include <Eigen/Core>
@@ -40,7 +40,7 @@ namespace gtsam {
  * Supports fixed-size Eigen vectors (e.g., Point3) and AugmentedPoint<N>
  * as position types. Both support nonlinear optimization, but AugmentedPoint<N>
  * additionally enables exact D=1 QCQP conversion using N+2 lifted coordinates.
- * AugmentedPoint<N> is defined in gtsam/geometry/AugmentedPoint.h.
+ * AugmentedPoint<N> is defined in gtsam_unstable/geometry/AugmentedPoint.h.
  *
  * @tparam Position Euclidean point representing robot location.
  * @ingroup slam

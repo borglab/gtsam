@@ -12,17 +12,18 @@ Tests for augmented points, typed Values access, and QCQP bindings.
 import unittest
 
 import gtsam
+import gtsam_unstable
 import numpy as np
 
 
 class TestAugmentedPoint(unittest.TestCase):
-    """Exercise stable augmented-point bindings without the unstable module."""
+    """Exercise unstable points with stable Values and optimization APIs."""
 
     def test_augmented_points(self):
         """Point methods marshal coordinates and validate input dimensions."""
         for dimension in (2, 3):
             with self.subTest(dimension=dimension):
-                point_type = getattr(gtsam, f"AugmentedPoint{dimension}")
+                point_type = getattr(gtsam_unstable, f"AugmentedPoint{dimension}")
                 coordinates = np.arange(1.0, dimension + 1)
                 point = point_type(coordinates)
                 np.testing.assert_allclose(point.vector(), coordinates)
@@ -43,48 +44,53 @@ class TestAugmentedPoint(unittest.TestCase):
         """Typed Values access preserves coordinates, lifetimes, and 64-bit keys."""
         for dimension in (2, 3):
             with self.subTest(dimension=dimension):
-                point_type = getattr(gtsam, f"AugmentedPoint{dimension}")
+                point_type = getattr(gtsam_unstable, f"AugmentedPoint{dimension}")
                 coordinates = np.arange(1.0, dimension + 1)
                 key = (1 << 40) + dimension
                 point = point_type(coordinates)
                 values = gtsam.Values()
-                values.insert(key, point)
-                read = getattr(values, f"atAugmentedPoint{dimension}")
-                values.update(key, point_type(coordinates + 1))
-                np.testing.assert_allclose(read(key).vector(), coordinates + 1)
-                values.insert_or_assign(key, point)
-                values.insert_or_assign(key + 1, point)
+                insert = getattr(gtsam_unstable, f"insertAugmentedPoint{dimension}")
+                update = getattr(gtsam_unstable, f"updateAugmentedPoint{dimension}")
+                assign = getattr(
+                    gtsam_unstable, f"insertOrAssignAugmentedPoint{dimension}"
+                )
+                read = getattr(gtsam_unstable, f"atAugmentedPoint{dimension}")
+                insert(key, point, values)
+                update(key, point_type(coordinates + 1), values)
+                np.testing.assert_allclose(read(key, values).vector(), coordinates + 1)
+                assign(key, point, values)
+                assign(key + 1, point, values)
                 del point
                 for _ in range(3):
-                    np.testing.assert_allclose(read(key).vector(), coordinates)
-                    np.testing.assert_allclose(read(key + 1).vector(), coordinates)
+                    np.testing.assert_allclose(read(key, values).vector(), coordinates)
+                    np.testing.assert_allclose(read(key + 1, values).vector(), coordinates)
 
     def test_qcqp_conversions(self):
         """Lift, recovery, insertion, and extraction work for both dimensions."""
         for dimension in (2, 3):
             with self.subTest(dimension=dimension):
                 coordinates = np.arange(1.0, dimension + 1)
-                point = getattr(gtsam, f"AugmentedPoint{dimension}")(coordinates)
+                point = getattr(gtsam_unstable, f"AugmentedPoint{dimension}")(coordinates)
                 key = (1 << 40) + dimension
-                lift = getattr(gtsam, f"qcqpValue{dimension}")(point)
+                lift = getattr(gtsam_unstable, f"qcqpValue{dimension}")(point)
                 expected = np.r_[
                     1.0, coordinates, coordinates @ coordinates
                 ].reshape(-1, 1)
                 np.testing.assert_allclose(lift, expected)
-                recover = getattr(gtsam, f"fromQcqpValue{dimension}")
+                recover = getattr(gtsam_unstable, f"fromQcqpValue{dimension}")
                 self.assertTrue(recover(lift).equals(point))
                 self.assertTrue(recover(-lift).equals(point))
                 for invalid in (np.zeros((dimension + 1, 1)), np.zeros_like(lift)):
                     with self.assertRaises(ValueError):
                         recover(invalid)
                 lifted = gtsam.Values()
-                insert = getattr(gtsam, f"insertQcqpValue{dimension}")
+                insert = getattr(gtsam_unstable, f"insertQcqpValue{dimension}")
                 insert(key, point, lifted)
                 insert(key, point, lifted)
                 np.testing.assert_allclose(lifted.atMatrix(key), expected)
-                recovered = getattr(gtsam, f"extractQcqpValues{dimension}")(lifted)
-                read = getattr(recovered, f"atAugmentedPoint{dimension}")
-                self.assertTrue(read(key).equals(point))
+                recovered = getattr(gtsam_unstable, f"extractQcqpValues{dimension}")(lifted)
+                read = getattr(gtsam_unstable, f"atAugmentedPoint{dimension}")
+                self.assertTrue(read(key, recovered).equals(point))
 
 
 if __name__ == "__main__":

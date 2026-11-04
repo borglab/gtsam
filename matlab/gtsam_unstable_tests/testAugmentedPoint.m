@@ -6,7 +6,7 @@
 %
 % See LICENSE for the license information
 %
-% @brief Tests stable augmented points, Values access, and QCQP bindings.
+% @brief Tests unstable augmented points, Values access, and QCQP bindings.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function testAugmentedPoint()
@@ -44,13 +44,15 @@ coordinates = (1:dimension)';
 key = bitshift(uint64(1), 40) + uint64(dimension);
 point = pointType(coordinates);
 values = gtsam.Values();
-values.insert(key, point);
-read = @(key) feval(sprintf('atAugmentedPoint%d', dimension), values, key);
-values.update(key, pointType(coordinates + 1));
+feval(sprintf('gtsam.insertAugmentedPoint%d', dimension), key, point, values);
+read = @(key) feval(sprintf('gtsam.atAugmentedPoint%d', dimension), key, values);
+feval(sprintf('gtsam.updateAugmentedPoint%d', dimension), ...
+    key, pointType(coordinates + 1), values);
 updated = read(key);
 assert(isequal(updated.vector(), coordinates + 1));
-values.insert_or_assign(key, point);
-values.insert_or_assign(key + uint64(1), point);
+feval(sprintf('gtsam.insertOrAssignAugmentedPoint%d', dimension), key, point, values);
+feval(sprintf('gtsam.insertOrAssignAugmentedPoint%d', dimension), ...
+    key + uint64(1), point, values);
 clear point;
 for repeat = 1:3
     point = read(key);
@@ -83,7 +85,7 @@ insert(key, point, lifted);
 insert(key, point, lifted);
 assert(isequal(lifted.atMatrix(key), expected));
 extracted = feval(sprintf('gtsam.extractQcqpValues%d', dimension), lifted);
-extractedPoint = feval(sprintf('atAugmentedPoint%d', dimension), extracted, key);
+extractedPoint = feval(sprintf('gtsam.atAugmentedPoint%d', dimension), key, extracted);
 assert(extractedPoint.equals(point));
 end
 

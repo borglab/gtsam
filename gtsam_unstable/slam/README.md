@@ -41,8 +41,8 @@ TODO: the dimensions seem to be hardcoded and the types defined in the SmartFact
 
 ### KnownLandmarkSquaredRangeFactor
 
-[KnownLandmarkSquaredRangeFactor](doc/KnownLandmarkSquaredRangeFactor.ipynb) models squared ranges to fixed known landmarks from Euclidean point states. It supports ordinary nonlinear optimization and QCQP conversion through the stable `AugmentedPoint<N>` type. The factor is exposed in Python by `gtsam_unstable`; MATLAB uses `gtsam.KnownLandmarkSquaredRangeFactor*` through the unstable toolbox.
+[KnownLandmarkSquaredRangeFactor](doc/KnownLandmarkSquaredRangeFactor.ipynb) models squared ranges to fixed known landmarks from Euclidean point states. It supports ordinary nonlinear optimization and QCQP conversion through the unstable `AugmentedPoint<N>` type. Both types and their typed Values/QCQP helpers are exposed in Python by `gtsam_unstable`; MATLAB uses `gtsam.KnownLandmarkSquaredRangeFactor*` through the unstable toolbox.
 
 See the [3D localization example](../../python/gtsam_unstable/examples/slam/KnownLandmarkSquaredRangeLocalizationExample.ipynb) for nonlinear, QCQP, and optional SDP solutions.
 
-The MATLAB regression test is in `matlab/gtsam_unstable_tests/testKnownLandmarkSquaredRangeFactor.m`; add that directory to the MATLAB path and run `testKnownLandmarkSquaredRangeFactor` after building both toolboxes.
+The MATLAB regression tests are in `matlab/gtsam_unstable_tests/`; add that directory to the MATLAB path and run `testAugmentedPoint` and `testKnownLandmarkSquaredRangeFactor` after building both toolboxes.

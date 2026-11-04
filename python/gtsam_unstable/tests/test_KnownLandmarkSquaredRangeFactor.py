@@ -17,7 +17,7 @@ import numpy as np
 
 
 class TestKnownLandmarkSquaredRangeFactor(unittest.TestCase):
-    """Exercise unstable factors with stable point and graph bindings."""
+    """Exercise unstable points and factors with stable graph bindings."""
 
     def test_module_ownership(self):
         """Only the unstable extension exposes all four factor specializations."""
@@ -26,7 +26,9 @@ class TestKnownLandmarkSquaredRangeFactor(unittest.TestCase):
                 name = f"KnownLandmarkSquaredRangeFactor{state}{dimension}"
                 self.assertFalse(hasattr(gtsam, name))
                 self.assertTrue(hasattr(gtsam_unstable, name))
-            self.assertTrue(hasattr(gtsam, f"AugmentedPoint{dimension}"))
+            self.assertFalse(hasattr(gtsam.Values, f"atAugmentedPoint{dimension}"))
+            self.assertFalse(hasattr(gtsam, f"AugmentedPoint{dimension}"))
+            self.assertTrue(hasattr(gtsam_unstable, f"AugmentedPoint{dimension}"))
 
     def test_invalid_landmark_dimensions(self):
         """Both state types reject undersized and oversized landmarks."""
@@ -49,7 +51,7 @@ class TestKnownLandmarkSquaredRangeFactor(unittest.TestCase):
         for dimension in (2, 3):
             with self.subTest(dimension=dimension):
                 coordinates = np.arange(1.0, dimension + 1)
-                point = getattr(gtsam, f"AugmentedPoint{dimension}")(coordinates)
+                point = getattr(gtsam_unstable, f"AugmentedPoint{dimension}")(coordinates)
                 factor_type = getattr(
                     gtsam_unstable, f"KnownLandmarkSquaredRangeFactorAugmentedPoint{dimension}"
                 )
@@ -70,7 +72,7 @@ class TestKnownLandmarkSquaredRangeFactor(unittest.TestCase):
                     exact.evaluateError(point), [0.0], atol=1e-12
                 )
                 values = gtsam.Values()
-                values.insert(0, point)
+                getattr(gtsam_unstable, f"insertAugmentedPoint{dimension}")(0, point, values)
                 graph = gtsam.NonlinearFactorGraph()
                 graph.add(factor)
                 self.assertAlmostEqual(graph.error(values), float(0.5 * residual**2))
@@ -81,16 +83,16 @@ class TestKnownLandmarkSquaredRangeFactor(unittest.TestCase):
         for dimension in (2, 3):
             with self.subTest(dimension=dimension):
                 coordinates = np.arange(1.0, dimension + 1)
-                point = getattr(gtsam, f"AugmentedPoint{dimension}")(coordinates)
+                point = getattr(gtsam_unstable, f"AugmentedPoint{dimension}")(coordinates)
                 graph = gtsam.NonlinearFactorGraph()
                 factor_type = getattr(
                     gtsam_unstable, f"KnownLandmarkSquaredRangeFactorAugmentedPoint{dimension}"
                 )
                 graph.add(factor_type(0, np.zeros(dimension), 1.0, model))
                 values = gtsam.Values()
-                values.insert(0, point)
+                getattr(gtsam_unstable, f"insertAugmentedPoint{dimension}")(0, point, values)
                 lifted = gtsam.Values()
-                getattr(gtsam, f"insertQcqpValue{dimension}")(0, point, lifted)
+                getattr(gtsam_unstable, f"insertQcqpValue{dimension}")(0, point, lifted)
                 problem = gtsam.QcqpProblem(graph)
                 cost, equalities, inequalities = problem.evaluate(lifted)
                 self.assertAlmostEqual(cost, graph.error(values))

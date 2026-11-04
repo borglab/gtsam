@@ -12,7 +12,7 @@
  * @author Oluwatodimu Afolayan
  */
 
-#include <gtsam/geometry/AugmentedPoint.h>
+#include <gtsam_unstable/geometry/AugmentedPoint.h>
 
 namespace gtsam {
 

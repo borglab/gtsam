@@ -16,7 +16,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/constrained/QcqpProblem.h>
-#include <gtsam/geometry/AugmentedPoint.h>
+#include <gtsam_unstable/geometry/AugmentedPoint.h>
 
 #include <Eigen/Core>
 #include <cmath>
