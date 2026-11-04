@@ -39,6 +39,7 @@ namespace gtsam {
 
 class NonlinearEqualityConstraints;
 class NonlinearFactorGraph;
+class QcqpVariableConstraints;
 
 /* ************************************************************************* */
 
@@ -150,14 +151,14 @@ public:
 
   /**
    * Add this factor's QCQP cost and constraints over matrix-valued QCQP
-   * variables with the given column dimension. Redundant constraints, implied
-   * by the others on the QCQP but tightening its SDP relaxation, go to
-   * redundantConstraints; pass nullptr to skip them. The default
-   * implementation throws for unsupported factors.
+   * variables with the given column dimension. Factor-specific constraints go
+   * to constraints; variable constraints are inserted once per key into
+   * variableConstraints. The default implementation throws for unsupported
+   * factors.
    */
-  virtual void qcqpFactors(NonlinearFactorGraph* costs,
-                           NonlinearEqualityConstraints* constraints,
-                           NonlinearEqualityConstraints* redundantConstraints,
+  virtual void qcqpFactors(NonlinearFactorGraph& costs,
+                           NonlinearEqualityConstraints& constraints,
+                           QcqpVariableConstraints& variableConstraints,
                            size_t columnDimension = 1) const;
 
   /**
