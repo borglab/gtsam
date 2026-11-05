@@ -506,7 +506,7 @@ void ActiveSetSolver::initializeObjective() {
 
   for (const auto& factor : qpProblem_->costs()) {
     const auto cost = std::dynamic_pointer_cast<QpCost>(factor);
-    qpCostGraph_.push_back(cost->hessianFactor());
+    qpCostGraph_.push_back(cost->gaussianFactor().clone());
   }
   if (params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense) {
     initializeDenseQpWorkspace();
@@ -964,8 +964,19 @@ ActiveSetSolver::InternalState ActiveSetSolver::iterate(
     std::tie(candidate, subproblemDuals) =
         solveDenseQpSubproblem(state.activeInequalityRows);
   } else {
-    candidate =
-        buildWorkingGraph(state.values, state.activeInequalityRows).optimize();
+    // Keep least-squares QPs in square-root form throughout elimination.
+    // Forming normal equations can erase weak finite directions, including
+    // after an active row leaves the working set.
+    const bool squareRootQp =
+        problemType_ == ProblemType::QP &&
+        std::all_of(qpCostGraph_.begin(), qpCostGraph_.end(),
+                    [](const GaussianFactor::shared_ptr& factor) {
+                      return dynamic_cast<const JacobianFactor*>(factor.get());
+                    });
+    const GaussianFactorGraph workingGraph =
+        buildWorkingGraph(state.values, state.activeInequalityRows);
+    candidate = squareRootQp ? workingGraph.optimize(EliminateQR)
+                            : workingGraph.optimize();
     CompleteMissingKeys(&candidate, state.values, keyDims_);
   }
 
@@ -1000,10 +1011,11 @@ ActiveSetSolver::InternalState ActiveSetSolver::iterate(
 bool ActiveSetSolver::shouldInspectOptimality(const InternalState& state,
                                               const VectorValues& candidate,
                                               bool useDenseQp) const {
-  if (!useDenseQp && problemType_ == ProblemType::QP &&
-      params_->regularization > 0.0) {
-    // The proximal gradient perturbation bounds the difference between the
-    // working QP and original QP stationarity equations.
+  if (!useDenseQp && problemType_ == ProblemType::QP) {
+    // A feasible working-set minimum can be inspected immediately, without
+    // repeating the same factorization just to observe a zero step. When
+    // regularization is positive, its proximal residual bounds the difference
+    // from original stationarity, including movement along flat directions.
     double bound = 0.0;
     for (const auto& [key, _] : keyDims_)
       bound = std::max(bound, params_->regularization *

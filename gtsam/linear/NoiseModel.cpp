@@ -657,7 +657,10 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
       Vector pseudo(m);     // allocate storage for pseudo-inverse
       for (size_t i = 0; i < m; i++) {
         double ai = a(i, 0);
-        if (std::abs(ai) > 1e-9) {  // also catches remaining sigma==0 rows
+        // Rank is determined from weighted precision below. A small raw
+        // coefficient may carry substantial information when sigma is small.
+        // Ignore only hard rows, which were handled by check_if_constraint.
+        if (std::isfinite(weights[i])) {
           pseudo[i] = weights[i] * ai;
           precision += pseudo[i] * ai;
         } else

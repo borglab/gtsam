@@ -776,6 +776,61 @@ TEST(ActiveSetSolver, SparseEqualityFirstInfeasible) {
 }  // namespace sparse_equality_first
 /* ************************************************************************* */
 
+/* ************************************************************************* */
+namespace square_root_qp {
+
+// Releasing a bound must preserve a weak finite least-squares direction.
+TEST(ActiveSetSolver, SquareRootWeakDirection) {
+  QpProblem problem;
+  problem.addCost(JacobianFactor(0, Matrix{{1e8, 1e8}, {1.0, 0.0}},
+                                Vector2{1e8, 1.0}));
+  problem.addConstraint(LinearConstraint::LessEqual(
+      JacobianFactor(0, Matrix{{-1.0, 0.0}}, Vector1(0.0))));
+  auto params = std::make_shared<ActiveSetSolverParams>();
+  params->regularization = 0;
+  params->maxIterations = 10;
+  Values initial;
+  initial.insert(0, Vector(Vector2::Zero()));
+  const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
+  CHECK(result.second.converged);
+  CHECK(assert_equal(Vector2{1.0, 0.0}, result.first.at<Vector>(0), 1e-7));
+}
+
+// A feasible exact subproblem minimum needs no duplicate factorization.
+TEST(ActiveSetSolver, InspectUnregularizedMinimumImmediately) {
+  QpProblem problem;
+  problem.addCost(JacobianFactor(0, Matrix::Identity(1, 1), Vector1(2.0)));
+  auto params = std::make_shared<ActiveSetSolverParams>();
+  params->regularization = 0;
+  params->maxIterations = 1;
+  Values initial;
+  initial.insert(0, Vector(Vector1(0.0)));
+  const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
+  CHECK(result.second.converged);
+  CHECK(assert_equal(Vector1(2.0), result.first.at<Vector>(0), 1e-9));
+  CHECK(result.second.iterations == 1);
+}
+
+// Releasing a bound requires one constrained solve and one free solve.
+TEST(ActiveSetSolver, ReleaseUnregularizedBoundWithoutDuplicateSolve) {
+  QpProblem problem;
+  problem.addCost(JacobianFactor(0, Matrix::Identity(1, 1), Vector1(2.0)));
+  problem.addConstraint(LinearConstraint::GreaterEqual(
+      JacobianFactor(0, Matrix::Identity(1, 1), Vector1(0.0))));
+  auto params = std::make_shared<ActiveSetSolverParams>();
+  params->regularization = 0;
+  params->maxIterations = 2;
+  Values initial;
+  initial.insert(0, Vector(Vector1(0.0)));
+  const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
+  CHECK(result.second.converged);
+  CHECK(assert_equal(Vector1(2.0), result.first.at<Vector>(0), 1e-9));
+  CHECK(result.second.iterations == 2);
+}
+
+}  // namespace square_root_qp
+/* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
