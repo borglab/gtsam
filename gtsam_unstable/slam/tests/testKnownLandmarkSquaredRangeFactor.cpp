@@ -294,7 +294,8 @@ TEST(KnownLandmarkSquaredRangeFactor, RejectsEigenStateQcqpConversion) {
   const EigenFactor factor(kKey, landmark, 4.0, model);
   NonlinearFactorGraph costs;
   NonlinearEqualityConstraints constraints;
-  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, nullptr),
+  QcqpVariableConstraints variableConstraints;
+  CHECK_EXCEPTION(factor.qcqpFactors(costs, constraints, variableConstraints),
                   std::runtime_error);
 }
 
@@ -343,7 +344,7 @@ TEST(KnownLandmarkSquaredRangeFactor, MultipleAugmentedQcqpFactors3D) {
   Values nonlinearValues;
   nonlinearValues.insert(kKey, point);
   Values qcqpValues;
-  InsertQcqpValue<Point, 1>(kKey, point, &qcqpValues);
+  insertQcqpValue<Point, 1>(kKey, point, &qcqpValues);
 
   for (const bool useRedundantConstraints : {false, true}) {
     const QcqpProblem qcqp(graph, 1, useRedundantConstraints);
@@ -356,6 +357,42 @@ TEST(KnownLandmarkSquaredRangeFactor, MultipleAugmentedQcqpFactors3D) {
   }
 }
 
+// Virtual dispatch must keep variable equalities separate from factor-specific
+// constraints and collect them once per key, including distinct point keys.
+TEST(KnownLandmarkSquaredRangeFactor, CollectsVariableConstraintsByKey) {
+  const Point point(VectorType(1.0, 2.0, 3.0));
+  const auto model = noiseModel::Unit::Create(1);
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<Factor>(kKey, VectorType(3.0, 5.0, 9.0), 5.0, model);
+  graph.emplace_shared<Factor>(kKey, VectorType(-1.0, 2.0, 4.0), 3.0, model);
+  graph.emplace_shared<Factor>(kKey + 1, VectorType(3.0, 5.0, 9.0), 5.0, model);
+
+  NonlinearFactorGraph costs;
+  NonlinearEqualityConstraints constraints;
+  QcqpVariableConstraints variableConstraints;
+  for (const auto& factor : graph) {
+    factor->qcqpFactors(costs, constraints, variableConstraints);
+  }
+  EXPECT_LONGS_EQUAL(3, costs.size());
+  EXPECT_LONGS_EQUAL(0, constraints.size());
+  EXPECT_LONGS_EQUAL(4, variableConstraints.constraints().size());
+
+  Values nonlinearValues, liftedValues;
+  for (const Key key : {kKey, kKey + 1}) {
+    nonlinearValues.insert(key, point);
+    insertQcqpValue(key, point, liftedValues);
+  }
+  EXPECT_DOUBLES_EQUAL(graph.error(nonlinearValues), costs.error(liftedValues),
+                       1e-10);
+  EXPECT_DOUBLES_EQUAL(
+      0.0, variableConstraints.constraints().violationNorm(liftedValues), 1e-12);
+
+  Matrix invalidLift = liftedValues.at<Matrix>(kKey + 1);
+  invalidLift(4, 0) += 1.0;
+  liftedValues.update(kKey + 1, invalidLift);
+  EXPECT(variableConstraints.constraints().violationNorm(liftedValues) > 0.0);
+}
+
 // Validate qcqpFactors error handling without an SDP solve.
 TEST(KnownLandmarkSquaredRangeFactor, AugmentedQcqpRejectsInvalidInputs) {
   const VectorType landmark(3.0, 5.0, 9.0);
@@ -364,35 +401,36 @@ TEST(KnownLandmarkSquaredRangeFactor, AugmentedQcqpRejectsInvalidInputs) {
 
   NonlinearFactorGraph costs;
   NonlinearEqualityConstraints constraints;
-  CHECK_EXCEPTION(factor.qcqpFactors(nullptr, &constraints, nullptr),
-                  std::invalid_argument);
-  CHECK_EXCEPTION(factor.qcqpFactors(&costs, nullptr, nullptr),
-                  std::invalid_argument);
-  CHECK_EXCEPTION(factor.qcqpFactors(&costs, &constraints, nullptr, 2),
+  QcqpVariableConstraints variableConstraints;
+  CHECK_EXCEPTION(factor.qcqpFactors(costs, constraints, variableConstraints, 2),
                   std::invalid_argument);
 
   const Factor missingNoise(kKey, landmark, 5.0, SharedNoiseModel());
-  CHECK_EXCEPTION(missingNoise.qcqpFactors(&costs, &constraints, nullptr),
+  CHECK_EXCEPTION(missingNoise.qcqpFactors(costs, constraints, variableConstraints),
                   std::runtime_error);
   const Factor wrongNoiseDimension(kKey, landmark, 5.0,
                                    noiseModel::Isotropic::Sigma(2, 1.0));
   CHECK_EXCEPTION(
-      wrongNoiseDimension.qcqpFactors(&costs, &constraints, nullptr),
+      wrongNoiseDimension.qcqpFactors(costs, constraints, variableConstraints),
       std::invalid_argument);
   const Factor constrainedNoise(kKey, landmark, 5.0,
                                 noiseModel::Constrained::All(1));
-  CHECK_EXCEPTION(constrainedNoise.qcqpFactors(&costs, &constraints, nullptr),
+  CHECK_EXCEPTION(constrainedNoise.qcqpFactors(costs, constraints,
+                                             variableConstraints),
                   std::runtime_error);
   const Factor robustNoise(
       kKey, landmark, 5.0,
       noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.345),
                                  model));
-  CHECK_EXCEPTION(robustNoise.qcqpFactors(&costs, &constraints, nullptr),
+  CHECK_EXCEPTION(robustNoise.qcqpFactors(costs, constraints, variableConstraints),
                   std::runtime_error);
   CHECK_EXCEPTION(Factor(kKey, landmark, -1.0, model), std::invalid_argument);
   CHECK_EXCEPTION(
       Factor(kKey, landmark, std::numeric_limits<double>::infinity(), model),
       std::invalid_argument);
+  EXPECT_LONGS_EQUAL(0, costs.size());
+  EXPECT_LONGS_EQUAL(0, constraints.size());
+  EXPECT_LONGS_EQUAL(0, variableConstraints.constraints().size());
 }
 
 }  // namespace augmented_factor3_fixture
