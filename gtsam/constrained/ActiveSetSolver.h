@@ -162,19 +162,37 @@ class GTSAM_EXPORT ActiveSetSolver {
   SparseConstraintData constraints_;
   std::shared_ptr<DenseQpWorkspace> denseQpWorkspace_;
 
+  /// Run the active-set loop from the supplied initial values and state.
+  std::pair<Values, State> optimizeWithState(const Values& initialValues,
+                                             const State* warmStart) const;
+  /// Advance the current active set by one subproblem solve.
+  InternalState iterate(const InternalState& state) const;
+
+ private:
+  // Internal helpers: setup and value representation.
+  /// Record the dimensions of all keys in the problem.
   void initializeDimensions();
+  /// Build the stored QP graph or LP gradient.
   void initializeObjective();
+  /// Allocate the workspace used only by dense QP mode.
   void initializeDenseQpWorkspace();
   /// Factor the dense-mode cost, retrying with its regularization floor.
   void factorDenseQpCost();
+  /// Split and normalize constraints into scalar rows.
   void initializeConstraints();
+  /// Check the types and dimensions of supplied initial values.
   void validateInitialValues(const Values& values) const;
+  /// Create zero vectors for every key in the problem.
   Values zeroVectorValues() const;
-  Values findVectorFeasiblePoint() const;
+  /// Record whether each initial value was a vector or matrix.
   std::map<Key, ValueShape> valueShapes(const Values& values) const;
+  /// Flatten supported Values entries into vector-valued entries.
   VectorValues valuesToVectorValues(const Values& values) const;
+  /// Restore the original vector and matrix value shapes.
   Values vectorValuesToValues(const VectorValues& values,
                               const Values& prototype) const;
+
+  // Internal helpers: sparse working set and optimality.
   /// Assemble the cost, proximal or LP descent term, and active constraints.
   GaussianFactorGraph buildWorkingGraph(
       const VectorValues& values,
@@ -201,24 +219,35 @@ class GTSAM_EXPORT ActiveSetSolver {
   void moveTowardCandidate(const InternalState& state,
                            const VectorValues& candidate,
                            InternalState* next) const;
+  /// Evaluate the QP or LP objective gradient at one key.
+  Vector objectiveGradient(Key key, const VectorValues& values) const;
+
+  // Internal helpers: dense QP subproblems.
+  /// Flatten vector values using the dense workspace ordering.
   Vector vectorValuesToDenseVector(const VectorValues& values) const;
+  /// Recover vector values from the dense workspace ordering.
   VectorValues denseVectorToVectorValues(const Vector& vector) const;
+  /// Apply the cached inverse Hessian through its factorization.
   Vector applyInverseDenseHessian(const Vector& vector) const;
+  /// Solve the current equality-constrained dense QP.
   std::pair<VectorValues, VectorValues> solveDenseQpSubproblem(
       const std::vector<bool>& activeInequalityRows) const;
   /// Assemble active rows in the dense workspace's stable variable order.
   DenseConstraintSystem denseConstraintSystem(
       const std::vector<bool>& activeInequalityRows) const;
+  /// Test whether the dense QP step is within the configured tolerance.
   bool denseQpStepIsSmall(const VectorValues& candidateValues,
                           const VectorValues& values) const;
-  Vector objectiveGradient(Key key, const VectorValues& values) const;
+
+  // Internal helpers: state and cold-start feasibility.
+  /// Initialize active rows from values or a warm start.
   InternalState initialState(const Values& values,
                              const State* warmStart) const;
-  std::pair<Values, State> optimizeWithState(const Values& initialValues,
-                                             const State* warmStart) const;
-  InternalState iterate(const InternalState& state) const;
+  /// Restore constraint row order and value shapes in the public state.
   State buildPublicState(const InternalState& state,
                          const Values& prototype) const;
+  /// Find a feasible starting point for a vector-valued problem.
+  Values findVectorFeasiblePoint() const;
   /// Try the sparse QP's minimum-norm projection onto its equalities.
   bool tryEqualityProjection(const Values& zeroValues, Values* feasible) const;
   /// Solve phase one and discard its synthetic slack variable.
