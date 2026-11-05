@@ -23,6 +23,7 @@
 #include <gtsam/linear/linearExceptions.h>
 
 #include <Eigen/Cholesky>
+#include <Eigen/SparseQR>
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -194,6 +195,60 @@ bool DenseSchurComplementIsSingular(const Eigen::LDLT<Matrix>& ldlt,
                            static_cast<double>(diagonal.size()) *
                            std::max(1.0, schurComplement.norm());
   return diagonal.cwiseAbs().minCoeff() <= tolerance;
+}
+
+/* ************************************************************************* */
+VectorValues SolveSparseDualGraph(const GaussianFactorGraph& graph,
+                                  double tolerance) {
+  if (graph.empty()) return {};
+  try {
+    return graph.optimize();
+  } catch (const IndeterminateSystemException&) {
+    // Active constraint normals can be redundant even when the primal
+    // solution is well defined. Recover one set of multipliers with sparse QR.
+    const Ordering ordering(graph.keys());
+    std::map<Key, int> columns;
+    for (size_t column = 0; column < ordering.size(); ++column)
+      columns[ordering[column]] = static_cast<int>(column);
+
+    size_t rowCount = 0;
+    for (const auto& factor : graph) rowCount += JacobianFactor(*factor).rows();
+    using SparseMatrix = Eigen::SparseMatrix<double>;
+    std::vector<Eigen::Triplet<double>> entries;
+    Vector rhs = Vector::Zero(rowCount);
+    size_t offset = 0;
+    for (const auto& factor : graph) {
+      const JacobianFactor whitened = JacobianFactor(*factor).whiten();
+      rhs.segment(offset, whitened.rows()) = whitened.getb();
+      for (auto key = whitened.begin(); key != whitened.end(); ++key) {
+        const auto block = whitened.getA(key);
+        if (block.cols() != 1)
+          throw std::logic_error("Expected scalar multiplier keys");
+        for (Eigen::Index row = 0; row < block.rows(); ++row)
+          if (block(row, 0) != 0.0)
+            entries.emplace_back(offset + row, columns.at(*key), block(row, 0));
+      }
+      offset += whitened.rows();
+    }
+
+    SparseMatrix matrix(rowCount, ordering.size());
+    matrix.setFromTriplets(entries.begin(), entries.end());
+    Eigen::SparseQR<SparseMatrix, Eigen::COLAMDOrdering<int>> qr;
+    qr.compute(matrix);
+    if (qr.info() != Eigen::Success)
+      throw std::runtime_error("Sparse multiplier QR factorization failed");
+    const Vector solution = qr.solve(rhs);
+    const double residual = (matrix * solution - rhs).lpNorm<Eigen::Infinity>();
+    if (!solution.allFinite() ||
+        residual > std::max(1e-12, tolerance) *
+                       (1.0 + rhs.lpNorm<Eigen::Infinity>()))
+      throw std::runtime_error("Sparse multiplier QR: inconsistent stationarity");
+
+    VectorValues values;
+    for (size_t column = 0; column < ordering.size(); ++column)
+      values.insert(ordering[column], Vector::Constant(1, solution(column)));
+    return values;
+  }
 }
 
 }  // namespace
@@ -798,7 +853,7 @@ ActiveSetSolver::InternalState ActiveSetSolver::iterate(
     } else {
       const GaussianFactorGraph dualGraph = buildDualGraph(
           constraints_, state.activeInequalityRows, candidateValues);
-      next.duals = dualGraph.empty() ? VectorValues() : dualGraph.optimize();
+      next.duals = SolveSparseDualGraph(dualGraph, params_->multiplierTolerance);
     }
 
     int leavingRow = -1;

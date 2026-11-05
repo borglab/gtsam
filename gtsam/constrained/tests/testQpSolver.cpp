@@ -535,6 +535,61 @@ TEST(QpSolver, QPS_QPTEST) {
 
 }  // namespace qps_file_examples
 /* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace redundant_sparse_multipliers {
+
+// Opposing bounds fix a variable although their multipliers are nonunique.
+TEST(ActiveSetSolver, SparseOpposingBounds) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Ones(1, 1), Vector::Ones(1), 0));
+  problem.addConstraint(LinearConstraint::LessEqual(
+      JacobianFactor(0, Matrix::Ones(1, 1), Vector::Zero(1))));
+  problem.addConstraint(LinearConstraint::LessEqual(
+      JacobianFactor(0, -Matrix::Ones(1, 1), Vector::Zero(1))));
+  Values initial;
+  initial.insert(0, Vector::Zero(1).eval());
+
+  const auto solved = ActiveSetSolver(problem).optimizeWithState(initial);
+  CHECK(solved.second.converged);
+  EXPECT_DOUBLES_EQUAL(0, solved.first.at<Vector>(0)(0), 1e-8);
+  const auto& duals = solved.second.inequalityMultipliers;
+  CHECK(duals[0](0) <= 1e-8 && duals[1](0) <= 1e-8);
+  EXPECT_DOUBLES_EQUAL(-1, duals[0](0) - duals[1](0), 1e-8);
+}
+
+// Duplicate equality rows need a valid multiplier combination, not uniqueness.
+TEST(ActiveSetSolver, SparseDuplicateEqualities) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Ones(1, 1), Vector::Ones(1), 0));
+  const auto equality = LinearConstraint::Equal(
+      JacobianFactor(0, Matrix::Ones(1, 1), Vector::Zero(1)));
+  problem.addConstraint(equality);
+  problem.addConstraint(equality);
+  Values initial;
+  initial.insert(0, Vector::Zero(1).eval());
+
+  const auto solved = ActiveSetSolver(problem).optimizeWithState(initial);
+  CHECK(solved.second.converged);
+  const auto& duals = solved.second.equalityMultipliers;
+  EXPECT_DOUBLES_EQUAL(-1, duals[0](0) + duals[1](0), 1e-8);
+}
+
+// Cold feasibility search and QP optimization tolerate duplicate normals.
+TEST(ActiveSetSolver, SparseColdSolveDuplicateBounds) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Identity(2, 2), Vector::Ones(2), 0));
+  problem.addConstraint(LinearConstraint::LessEqual(JacobianFactor(
+      0, Matrix{{1, 0}, {2, 0}, {0, 1}}, Vector3{0, 0, 0.5})));
+
+  const auto solved = ActiveSetSolver(problem).optimizeWithState();
+  CHECK(solved.second.converged);
+  CHECK(assert_equal(Vector2{0, 0.5}, solved.first.at<Vector>(0), 1e-7));
+}
+
+}  // namespace redundant_sparse_multipliers
+/* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
