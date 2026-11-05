@@ -185,8 +185,6 @@ class GTSAM_EXPORT ActiveSetSolver {
       const SparseConstraintData& constraints,
       const std::vector<bool>& activeInequalityRows, const VectorValues& values,
       const VectorValues* proximalCenter = nullptr) const;
-  /// Check every original constraint at the requested primal tolerance.
-  bool primalFeasible(const VectorValues& values) const;
   /// Decide when a working-set point is ready for a multiplier check.
   bool shouldInspectOptimality(const InternalState& state,
                                const VectorValues& candidate,
@@ -195,9 +193,6 @@ class GTSAM_EXPORT ActiveSetSolver {
   bool recoverSparseMultipliers(const InternalState& state,
                                 const VectorValues& candidate,
                                 VectorValues* duals) const;
-  /// Find the active inequality with the largest invalid multiplier.
-  int leavingInequality(const std::vector<bool>& activeRows,
-                        const VectorValues& duals) const;
   /// Certify the original sparse QP's primal residual, stationarity, and gap.
   bool originalSparseKktSatisfied(const VectorValues& values,
                                   const std::vector<bool>& activeRows,
@@ -226,8 +221,6 @@ class GTSAM_EXPORT ActiveSetSolver {
                          const Values& prototype) const;
   /// Try the sparse QP's minimum-norm projection onto its equalities.
   bool tryEqualityProjection(const Values& zeroValues, Values* feasible) const;
-  /// Construct the slack-minimizing LP used when projection is insufficient.
-  LpProblem buildPhaseOneProblem(Key slackKey, double* initialSlack) const;
   /// Solve phase one and discard its synthetic slack variable.
   Values solvePhaseOne(const Values& zeroValues) const;
 };

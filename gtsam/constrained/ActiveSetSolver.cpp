@@ -307,6 +307,83 @@ DualSolveResult SolveSparseDualGraph(const GaussianFactorGraph& graph,
   return result;
 }
 
+/* ************************************************************************* */
+// These row helpers need no solver state. Templates keep ConstraintRow private
+// to ActiveSetSolver while accepting its row containers at the call site.
+template <typename Row>
+bool primalFeasible(const std::vector<Row>& equalities,
+                    const std::vector<Row>& inequalities,
+                    const VectorValues& values, double tolerance) {
+  for (const Row& row : equalities) {
+    const double residual = RowResidual(*row.factor, values);
+    if (!std::isfinite(residual) || std::abs(residual) > tolerance)
+      return false;
+  }
+  for (const Row& row : inequalities) {
+    const double residual = RowResidual(*row.factor, values);
+    if (!std::isfinite(residual) || residual > tolerance) return false;
+  }
+  return true;
+}
+
+/* ************************************************************************* */
+template <typename Row>
+int leavingInequality(const std::vector<Row>& inequalities,
+                      const std::vector<bool>& activeRows,
+                      const VectorValues& duals, double tolerance) {
+  int leavingRow = -1;
+  double largestMultiplier = tolerance;
+  for (size_t row = 0; row < inequalities.size(); ++row) {
+    if (!activeRows[row]) continue;
+    const Key key = inequalities[row].multiplierKey;
+    const double multiplier = duals.exists(key) ? duals.at(key)(0) : 0.0;
+    if (multiplier > largestMultiplier) {
+      leavingRow = static_cast<int>(row);
+      largestMultiplier = multiplier;
+    }
+  }
+  return leavingRow;
+}
+
+/* ************************************************************************* */
+template <typename Row>
+LpProblem buildPhaseOneProblem(const std::vector<Row>& equalities,
+                               const std::vector<Row>& inequalities,
+                               Key slackKey, double* initialSlack) {
+  // Minimize a nonnegative scalar slack. Each equality becomes two relaxed
+  // inequalities, and all rows share the same slack variable.
+  LpProblem problem;
+  problem.addCost(
+      JacobianFactor(slackKey, Matrix::Identity(1, 1), Vector::Zero(1)));
+  auto rowTerms = [&](const Row& row, double sign) {
+    std::vector<std::pair<Key, Matrix>> terms;
+    terms.reserve(row.factor->size() + 1);
+    for (auto key = row.factor->begin(); key != row.factor->end(); ++key)
+      terms.emplace_back(*key, sign * row.factor->getA(key));
+    terms.emplace_back(slackKey, -Matrix::Identity(1, 1));
+    return terms;
+  };
+
+  *initialSlack = 1.0;
+  for (const Row& row : equalities) {
+    const double rhs = row.factor->getb()(0);
+    problem.addConstraint(LinearConstraint::LessEqual(
+        JacobianFactor(rowTerms(row, 1.0), SingleValue(rhs))));
+    problem.addConstraint(LinearConstraint::LessEqual(
+        JacobianFactor(rowTerms(row, -1.0), SingleValue(-rhs))));
+    *initialSlack = std::max(*initialSlack, std::abs(rhs) + 1.0);
+  }
+  for (const Row& row : inequalities) {
+    const double rhs = row.factor->getb()(0);
+    problem.addConstraint(LinearConstraint::LessEqual(
+        JacobianFactor(rowTerms(row, 1.0), SingleValue(rhs))));
+    *initialSlack = std::max(*initialSlack, -rhs + 1.0);
+  }
+  problem.addConstraint(LinearConstraint::LessEqual(
+      JacobianFactor(slackKey, -Matrix::Identity(1, 1), Vector::Zero(1))));
+  return problem;
+}
+
 }  // namespace
 
 /* ************************************************************************* */
@@ -846,22 +923,6 @@ ActiveSetSolver::InternalState ActiveSetSolver::initialState(
 }
 
 /* ************************************************************************* */
-bool ActiveSetSolver::primalFeasible(const VectorValues& values) const {
-  for (const ConstraintRow& row : constraints_.equalities) {
-    const double residual = RowResidual(*row.factor, values);
-    if (!std::isfinite(residual) ||
-        std::abs(residual) > params_->feasibilityTolerance)
-      return false;
-  }
-  for (const ConstraintRow& row : constraints_.inequalities) {
-    const double residual = RowResidual(*row.factor, values);
-    if (!std::isfinite(residual) || residual > params_->feasibilityTolerance)
-      return false;
-  }
-  return true;
-}
-
-/* ************************************************************************* */
 bool ActiveSetSolver::shouldInspectOptimality(const InternalState& state,
                                               const VectorValues& candidate,
                                               bool useDenseQp) const {
@@ -874,7 +935,9 @@ bool ActiveSetSolver::shouldInspectOptimality(const InternalState& state,
       bound = std::max(bound, params_->regularization *
                                   (candidate.at(key) - state.values.at(key))
                                       .lpNorm<Eigen::Infinity>());
-    return bound <= params_->multiplierTolerance && primalFeasible(candidate);
+    return bound <= params_->multiplierTolerance &&
+           primalFeasible(constraints_.equalities, constraints_.inequalities,
+                          candidate, params_->feasibilityTolerance);
   }
   return useDenseQp ? denseQpStepIsSmall(candidate, state.values)
                     : candidate.equals(state.values, params_->stepTolerance);
@@ -921,27 +984,12 @@ bool ActiveSetSolver::recoverSparseMultipliers(const InternalState& state,
 }
 
 /* ************************************************************************* */
-int ActiveSetSolver::leavingInequality(const std::vector<bool>& activeRows,
-                                       const VectorValues& duals) const {
-  int leavingRow = -1;
-  double largestMultiplier = params_->multiplierTolerance;
-  for (size_t row = 0; row < constraints_.inequalities.size(); ++row) {
-    if (!activeRows[row]) continue;
-    const Key key = constraints_.inequalities[row].multiplierKey;
-    const double multiplier = duals.exists(key) ? duals.at(key)(0) : 0.0;
-    if (multiplier > largestMultiplier) {
-      leavingRow = static_cast<int>(row);
-      largestMultiplier = multiplier;
-    }
-  }
-  return leavingRow;
-}
-
-/* ************************************************************************* */
 bool ActiveSetSolver::originalSparseKktSatisfied(
     const VectorValues& values, const std::vector<bool>& activeRows,
     const VectorValues& duals) const {
-  if (!primalFeasible(values)) return false;
+  if (!primalFeasible(constraints_.equalities, constraints_.inequalities,
+                      values, params_->feasibilityTolerance))
+    return false;
   VectorValues stationarity;
   double gap = 0.0;
   for (const auto& [key, _] : keyDims_) {
@@ -1030,7 +1078,8 @@ ActiveSetSolver::InternalState ActiveSetSolver::iterate(
   }
   next.values = candidate;
   const int leavingRow =
-      leavingInequality(state.activeInequalityRows, next.duals);
+      leavingInequality(constraints_.inequalities, state.activeInequalityRows,
+                        next.duals, params_->multiplierTolerance);
   if (leavingRow >= 0) {
     next.activeInequalityRows[leavingRow] = false;
   } else {
@@ -1144,7 +1193,9 @@ bool ActiveSetSolver::tryEqualityProjection(const Values& zeroValues,
     for (const auto& [key, _] : keyDims_)
       if (!candidate.exists(key) || !candidate.at(key).allFinite())
         return false;
-    if (!primalFeasible(candidate)) return false;
+    if (!primalFeasible(constraints_.equalities, constraints_.inequalities,
+                        candidate, params_->feasibilityTolerance))
+      return false;
     *feasible = vectorValuesToValues(candidate, zeroValues);
     return true;
   } catch (const IndeterminateSystemException&) {
@@ -1154,47 +1205,12 @@ bool ActiveSetSolver::tryEqualityProjection(const Values& zeroValues,
 }
 
 /* ************************************************************************* */
-LpProblem ActiveSetSolver::buildPhaseOneProblem(Key slackKey,
-                                                double* initialSlack) const {
-  // Minimize a nonnegative scalar slack. Each equality becomes two relaxed
-  // inequalities, and all rows share the same slack variable.
-  LpProblem problem;
-  problem.addCost(
-      JacobianFactor(slackKey, Matrix::Identity(1, 1), Vector::Zero(1)));
-  auto rowTerms = [&](const ConstraintRow& row, double sign) {
-    std::vector<std::pair<Key, Matrix>> terms;
-    terms.reserve(row.factor->size() + 1);
-    for (auto key = row.factor->begin(); key != row.factor->end(); ++key)
-      terms.emplace_back(*key, sign * row.factor->getA(key));
-    terms.emplace_back(slackKey, -Matrix::Identity(1, 1));
-    return terms;
-  };
-
-  *initialSlack = 1.0;
-  for (const ConstraintRow& row : constraints_.equalities) {
-    const double rhs = row.factor->getb()(0);
-    problem.addConstraint(LinearConstraint::LessEqual(
-        JacobianFactor(rowTerms(row, 1.0), SingleValue(rhs))));
-    problem.addConstraint(LinearConstraint::LessEqual(
-        JacobianFactor(rowTerms(row, -1.0), SingleValue(-rhs))));
-    *initialSlack = std::max(*initialSlack, std::abs(rhs) + 1.0);
-  }
-  for (const ConstraintRow& row : constraints_.inequalities) {
-    const double rhs = row.factor->getb()(0);
-    problem.addConstraint(LinearConstraint::LessEqual(
-        JacobianFactor(rowTerms(row, 1.0), SingleValue(rhs))));
-    *initialSlack = std::max(*initialSlack, -rhs + 1.0);
-  }
-  problem.addConstraint(LinearConstraint::LessEqual(
-      JacobianFactor(slackKey, -Matrix::Identity(1, 1), Vector::Zero(1))));
-  return problem;
-}
-
-/* ************************************************************************* */
 Values ActiveSetSolver::solvePhaseOne(const Values& zeroValues) const {
   const Key slackKey = NextAvailableKey(keyDims_);
   double initialSlack;
-  const LpProblem phaseProblem = buildPhaseOneProblem(slackKey, &initialSlack);
+  const LpProblem phaseProblem =
+      buildPhaseOneProblem(constraints_.equalities, constraints_.inequalities,
+                           slackKey, &initialSlack);
   Values initial = zeroValues;
   initial.insert(slackKey, Vector::Constant(1, initialSlack).eval());
   const Values result =
