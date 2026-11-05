@@ -954,6 +954,49 @@ ActiveSetSolver::InternalState ActiveSetSolver::initialState(
 }
 
 /* ************************************************************************* */
+ActiveSetSolver::InternalState ActiveSetSolver::iterate(
+    const InternalState& state) const {
+  const bool useDenseQp =
+      problemType_ == ProblemType::QP &&
+      params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense;
+  VectorValues candidate, subproblemDuals;
+  if (useDenseQp) {
+    std::tie(candidate, subproblemDuals) =
+        solveDenseQpSubproblem(state.activeInequalityRows);
+  } else {
+    candidate =
+        buildWorkingGraph(state.values, state.activeInequalityRows).optimize();
+    CompleteMissingKeys(&candidate, state.values, keyDims_);
+  }
+
+  InternalState next = state;
+  next.iterations = state.iterations + 1;
+  if (!shouldInspectOptimality(state, candidate, useDenseQp)) {
+    moveTowardCandidate(state, candidate, &next);
+    return next;
+  }
+
+  if (useDenseQp) {
+    next.duals = subproblemDuals;
+  } else if (!recoverSparseMultipliers(state, candidate, &next.duals)) {
+    next.values = candidate;
+    return next;
+  }
+  next.values = candidate;
+  const int leavingRow =
+      leavingInequality(constraints_.inequalities, state.activeInequalityRows,
+                        next.duals, params_->multiplierTolerance);
+  if (leavingRow >= 0) {
+    next.activeInequalityRows[leavingRow] = false;
+  } else {
+    next.converged = useDenseQp || problemType_ == ProblemType::LP ||
+                     originalSparseKktSatisfied(
+                         candidate, state.activeInequalityRows, next.duals);
+  }
+  return next;
+}
+
+/* ************************************************************************* */
 bool ActiveSetSolver::shouldInspectOptimality(const InternalState& state,
                                               const VectorValues& candidate,
                                               bool useDenseQp) const {
@@ -1079,49 +1122,6 @@ void ActiveSetSolver::moveTowardCandidate(const InternalState& state,
 }
 
 /* ************************************************************************* */
-ActiveSetSolver::InternalState ActiveSetSolver::iterate(
-    const InternalState& state) const {
-  const bool useDenseQp =
-      problemType_ == ProblemType::QP &&
-      params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense;
-  VectorValues candidate, subproblemDuals;
-  if (useDenseQp) {
-    std::tie(candidate, subproblemDuals) =
-        solveDenseQpSubproblem(state.activeInequalityRows);
-  } else {
-    candidate =
-        buildWorkingGraph(state.values, state.activeInequalityRows).optimize();
-    CompleteMissingKeys(&candidate, state.values, keyDims_);
-  }
-
-  InternalState next = state;
-  next.iterations = state.iterations + 1;
-  if (!shouldInspectOptimality(state, candidate, useDenseQp)) {
-    moveTowardCandidate(state, candidate, &next);
-    return next;
-  }
-
-  if (useDenseQp) {
-    next.duals = subproblemDuals;
-  } else if (!recoverSparseMultipliers(state, candidate, &next.duals)) {
-    next.values = candidate;
-    return next;
-  }
-  next.values = candidate;
-  const int leavingRow =
-      leavingInequality(constraints_.inequalities, state.activeInequalityRows,
-                        next.duals, params_->multiplierTolerance);
-  if (leavingRow >= 0) {
-    next.activeInequalityRows[leavingRow] = false;
-  } else {
-    next.converged = useDenseQp || problemType_ == ProblemType::LP ||
-                     originalSparseKktSatisfied(
-                         candidate, state.activeInequalityRows, next.duals);
-  }
-  return next;
-}
-
-/* ************************************************************************* */
 ActiveSetSolver::State ActiveSetSolver::buildPublicState(
     const InternalState& state, const Values& prototype) const {
   State publicState;
@@ -1209,6 +1209,16 @@ Values ActiveSetSolver::zeroVectorValues() const {
 }
 
 /* ************************************************************************* */
+Values ActiveSetSolver::findVectorFeasiblePoint() const {
+  const Values zeroValues = zeroVectorValues();
+  Values feasible;
+  if (problemType_ == ProblemType::QP &&
+      params_->qpSubproblemSolver == Params::QpSubproblemSolver::Sparse &&
+      tryEqualityProjection(zeroValues, &feasible))
+    return feasible;
+  return solvePhaseOne(zeroValues);
+}
+/* ************************************************************************* */
 bool ActiveSetSolver::tryEqualityProjection(const Values& zeroValues,
                                             Values* feasible) const {
   // Unit unary factors select a minimum-norm point on the equality manifold.
@@ -1257,15 +1267,5 @@ Values ActiveSetSolver::solvePhaseOne(const Values& zeroValues) const {
   return feasible;
 }
 
-/* ************************************************************************* */
-Values ActiveSetSolver::findVectorFeasiblePoint() const {
-  const Values zeroValues = zeroVectorValues();
-  Values feasible;
-  if (problemType_ == ProblemType::QP &&
-      params_->qpSubproblemSolver == Params::QpSubproblemSolver::Sparse &&
-      tryEqualityProjection(zeroValues, &feasible))
-    return feasible;
-  return solvePhaseOne(zeroValues);
-}
 
 }  // namespace gtsam
