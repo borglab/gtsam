@@ -540,22 +540,26 @@ TEST(QpSolver, QPS_QPTEST) {
 namespace redundant_sparse_multipliers {
 
 // Opposing bounds fix a variable although their multipliers are nonunique.
+// Either gradient sign must eventually produce dual-feasible multipliers.
 TEST(ActiveSetSolver, SparseOpposingBounds) {
-  QpProblem problem;
-  problem.addCost(HessianFactor(0, Matrix::Ones(1, 1), Vector::Ones(1), 0));
-  problem.addConstraint(LinearConstraint::LessEqual(
-      JacobianFactor(0, Matrix::Ones(1, 1), Vector::Zero(1))));
-  problem.addConstraint(LinearConstraint::LessEqual(
-      JacobianFactor(0, -Matrix::Ones(1, 1), Vector::Zero(1))));
-  Values initial;
-  initial.insert(0, Vector::Zero(1).eval());
+  for (double sign : {-1.0, 1.0}) {
+    QpProblem problem;
+    problem.addCost(
+        HessianFactor(0, Matrix::Ones(1, 1), Vector::Constant(1, sign), 0));
+    problem.addConstraint(LinearConstraint::LessEqual(
+        JacobianFactor(0, Matrix::Ones(1, 1), Vector::Zero(1))));
+    problem.addConstraint(LinearConstraint::LessEqual(
+        JacobianFactor(0, -Matrix::Ones(1, 1), Vector::Zero(1))));
+    Values initial;
+    initial.insert(0, Vector::Zero(1).eval());
 
-  const auto solved = ActiveSetSolver(problem).optimizeWithState(initial);
-  CHECK(solved.second.converged);
-  EXPECT_DOUBLES_EQUAL(0, solved.first.at<Vector>(0)(0), 1e-8);
-  const auto& duals = solved.second.inequalityMultipliers;
-  CHECK(duals[0](0) <= 1e-8 && duals[1](0) <= 1e-8);
-  EXPECT_DOUBLES_EQUAL(-1, duals[0](0) - duals[1](0), 1e-8);
+    const auto solved = ActiveSetSolver(problem).optimizeWithState(initial);
+    CHECK(solved.second.converged);
+    EXPECT_DOUBLES_EQUAL(0, solved.first.at<Vector>(0)(0), 1e-8);
+    const auto& duals = solved.second.inequalityMultipliers;
+    CHECK(duals[0](0) <= 1e-8 && duals[1](0) <= 1e-8);
+    EXPECT_DOUBLES_EQUAL(-sign, duals[0](0) - duals[1](0), 1e-8);
+  }
 }
 
 // Duplicate equality rows need a valid multiplier combination, not uniqueness.
@@ -585,6 +589,59 @@ TEST(ActiveSetSolver, SparseColdSolveDuplicateBounds) {
   const auto solved = ActiveSetSolver(problem).optimizeWithState();
   CHECK(solved.second.converged);
   CHECK(assert_equal(Vector2{0, 0.5}, solved.first.at<Vector>(0), 1e-7));
+}
+
+// A dependency spanning a cycle must survive elimination of earlier cliques.
+// Changing row units must preserve stationarity in the original equations.
+TEST(ActiveSetSolver, SparseDependentEqualityCycle) {
+  constexpr size_t count = 8;
+  for (double scale : {1e-3, 1.0, 1e3}) {
+    QpProblem problem;
+    Values initial;
+    for (Key key = 0; key < count; ++key) {
+      problem.addCost(HessianFactor(key, Matrix::Ones(1, 1),
+                                    Vector::Constant(1, key + 1), 0));
+      problem.addConstraint(LinearConstraint::Equal(
+          JacobianFactor(key, scale * Matrix::Ones(1, 1), (key + 1) % count,
+                         -scale * Matrix::Ones(1, 1), Vector::Zero(1))));
+      initial.insert(key, Vector::Zero(1).eval());
+    }
+    problem.addConstraint(LinearConstraint::Equal(
+        JacobianFactor(0, Matrix::Ones(1, 1), Vector::Zero(1))));
+
+    const auto [values, state] =
+        ActiveSetSolver(problem).optimizeWithState(initial);
+    CHECK(state.converged);
+    Vector residual = -Vector::LinSpaced(count, 1, count);
+    for (Key key = 0; key < count; ++key) {
+      EXPECT_DOUBLES_EQUAL(0.0, values.at<Vector>(key)(0), 1e-8);
+      const double multiplier = scale * state.equalityMultipliers[key](0);
+      residual(key) -= multiplier;
+      residual((key + 1) % count) += multiplier;
+    }
+    residual(0) -= state.equalityMultipliers.back()(0);
+    CHECK(residual.lpNorm<Eigen::Infinity>() < 1e-7);
+  }
+}
+
+// Gauging a redundant row must retain a weak but independent normal direction.
+TEST(ActiveSetSolver, SparseDependentAndWeakEqualityNormals) {
+  const Matrix normals{{1, 0}, {1, 1e-5}, {2, 0}};
+  const Vector2 gradient{-1, -1e-5};
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Identity(2, 2), -gradient, 0));
+  problem.addConstraint(
+      LinearConstraint::Equal(JacobianFactor(0, normals, Vector3::Zero())));
+  Values initial;
+  initial.insert(0, Vector::Zero(2).eval());
+
+  const auto [values, state] =
+      ActiveSetSolver(problem).optimizeWithState(initial);
+  CHECK(state.converged);
+  CHECK(assert_equal(Vector2::Zero(), values.at<Vector>(0), 1e-8));
+  const Vector2 residual =
+      gradient - normals.transpose() * state.equalityMultipliers[0];
+  CHECK(residual.lpNorm<Eigen::Infinity>() < 1e-8);
 }
 
 }  // namespace redundant_sparse_multipliers
