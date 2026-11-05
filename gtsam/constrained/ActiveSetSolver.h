@@ -42,12 +42,20 @@ class GTSAM_EXPORT ActiveSetSolverParams {
     Dense
   };
 
+  /// Maximum number of active-set or proximal iterations.
   size_t maxIterations = 1000;
+  /// Distance at which an inequality is initially considered active.
   double activeTolerance = 1e-7;
+  /// Step size used to inspect LP and unregularized QP optimality.
   double stepTolerance = 1e-7;
+  /// Maximum allowed primal constraint residual.
   double feasibilityTolerance = 1e-7;
+  /// Tolerance for multiplier signs, stationarity, and QP gap checks.
   double multiplierTolerance = 1e-7;
+  /// Sparse QPs use this as a recentered proximal weight; dense QPs add it to
+  /// the factored Hessian.
   double regularization = 1e-9;
+  /// Maximum residual accepted from the cold-start feasibility phase.
   double phaseOneFeasibilityTolerance = 1e-6;
   QpSubproblemSolver qpSubproblemSolver = QpSubproblemSolver::Sparse;
 };
@@ -69,10 +77,11 @@ class GTSAM_EXPORT ActiveSetSolverState {
  * Active-set solver for LPs and QPs with shared LinearConstraint constraints.
  *
  * QP subproblems can either rebuild sparse working factor graphs or reuse one
- * Hessian factorization with dense active-set Schur complements. LP subproblems
- * project the negative objective gradient onto the active constraint surface
- * and detect unbounded descent when no inactive inequality blocks that
- * direction.
+ * Hessian factorization with dense active-set Schur complements. Sparse QPs
+ * regularize each working graph around the current feasible point and check
+ * convergence against the original, unregularized QP. LP subproblems project
+ * the negative objective gradient onto the active constraint surface and
+ * detect unbounded descent when no inactive inequality blocks that direction.
  */
 class GTSAM_EXPORT ActiveSetSolver {
  public:
@@ -109,6 +118,7 @@ class GTSAM_EXPORT ActiveSetSolver {
  private:
   enum class ProblemType { LP, QP };
   struct DenseQpWorkspace;
+  struct DenseConstraintSystem;
 
   struct ValueShape {
     enum class Type { Vector, Matrix };
@@ -155,6 +165,8 @@ class GTSAM_EXPORT ActiveSetSolver {
   void initializeDimensions();
   void initializeObjective();
   void initializeDenseQpWorkspace();
+  /// Factor the dense-mode cost, retrying with its regularization floor.
+  void factorDenseQpCost();
   void initializeConstraints();
   void validateInitialValues(const Values& values) const;
   Values zeroVectorValues() const;
@@ -163,17 +175,44 @@ class GTSAM_EXPORT ActiveSetSolver {
   VectorValues valuesToVectorValues(const Values& values) const;
   Values vectorValuesToValues(const VectorValues& values,
                               const Values& prototype) const;
+  /// Assemble the cost, proximal or LP descent term, and active constraints.
   GaussianFactorGraph buildWorkingGraph(
       const VectorValues& values,
       const std::vector<bool>& activeInequalityRows) const;
+  /// Assemble A_active^T lambda = gradient for the original or proximal QP.
+  /// A nonnull center adds regularization * (values - center) to the gradient.
   GaussianFactorGraph buildDualGraph(
       const SparseConstraintData& constraints,
-      const std::vector<bool>& activeInequalityRows,
-      const VectorValues& values) const;
+      const std::vector<bool>& activeInequalityRows, const VectorValues& values,
+      const VectorValues* proximalCenter = nullptr) const;
+  /// Check every original constraint at the requested primal tolerance.
+  bool primalFeasible(const VectorValues& values) const;
+  /// Decide when a working-set point is ready for a multiplier check.
+  bool shouldInspectOptimality(const InternalState& state,
+                               const VectorValues& candidate,
+                               bool useDenseQp) const;
+  /// Recover original-QP multipliers, or return false for a proximal-only step.
+  bool recoverSparseMultipliers(const InternalState& state,
+                                const VectorValues& candidate,
+                                VectorValues* duals) const;
+  /// Find the active inequality with the largest invalid multiplier.
+  int leavingInequality(const std::vector<bool>& activeRows,
+                        const VectorValues& duals) const;
+  /// Certify the original sparse QP's primal residual, stationarity, and gap.
+  bool originalSparseKktSatisfied(const VectorValues& values,
+                                  const std::vector<bool>& activeRows,
+                                  const VectorValues& duals) const;
+  /// Line-search toward a working-set point and add the first blocking row.
+  void moveTowardCandidate(const InternalState& state,
+                           const VectorValues& candidate,
+                           InternalState* next) const;
   Vector vectorValuesToDenseVector(const VectorValues& values) const;
   VectorValues denseVectorToVectorValues(const Vector& vector) const;
   Vector applyInverseDenseHessian(const Vector& vector) const;
   std::pair<VectorValues, VectorValues> solveDenseQpSubproblem(
+      const std::vector<bool>& activeInequalityRows) const;
+  /// Assemble active rows in the dense workspace's stable variable order.
+  DenseConstraintSystem denseConstraintSystem(
       const std::vector<bool>& activeInequalityRows) const;
   bool denseQpStepIsSmall(const VectorValues& candidateValues,
                           const VectorValues& values) const;
@@ -185,6 +224,12 @@ class GTSAM_EXPORT ActiveSetSolver {
   InternalState iterate(const InternalState& state) const;
   State buildPublicState(const InternalState& state,
                          const Values& prototype) const;
+  /// Try the sparse QP's minimum-norm projection onto its equalities.
+  bool tryEqualityProjection(const Values& zeroValues, Values* feasible) const;
+  /// Construct the slack-minimizing LP used when projection is insufficient.
+  LpProblem buildPhaseOneProblem(Key slackKey, double* initialSlack) const;
+  /// Solve phase one and discard its synthetic slack variable.
+  Values solvePhaseOne(const Values& zeroValues) const;
 };
 
 }  // namespace gtsam
