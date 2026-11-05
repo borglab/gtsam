@@ -557,7 +557,7 @@ GaussianFactorGraph ActiveSetSolver::buildWorkingGraph(
       for (const auto& [key, dim] : keyDims_) {
         workingGraph.emplace_shared<JacobianFactor>(
             key, sqrtRegularization * Matrix::Identity(dim, dim),
-            Vector::Zero(dim));
+            sqrtRegularization * values.at(key));
       }
     }
   } else {
@@ -783,7 +783,9 @@ Vector ActiveSetSolver::objectiveGradient(Key key,
       gradient += factor->gradient(key, values);
     }
   }
-  if (params_->regularization > 0.0) {
+  // Sparse QPs regularize only the working subproblem, not the target cost.
+  if (params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense &&
+      params_->regularization > 0.0) {
     gradient += params_->regularization * values.at(key);
   }
   return gradient;
@@ -844,10 +846,33 @@ ActiveSetSolver::InternalState ActiveSetSolver::iterate(
   const bool smallStep =
       useDenseQp ? denseQpStepIsSmall(candidateValues, state.values)
                  : candidateValues.equals(state.values, params_->stepTolerance);
-  if (smallStep) {
-    // No primal movement is left for this working set. Check KKT multipliers:
-    // if every active inequality multiplier has the correct sign, we are done;
-    // otherwise remove the most offending row and solve the reduced set.
+  bool inspectOptimality = smallStep;
+  if (!useDenseQp && problemType_ == ProblemType::QP &&
+      params_->regularization > 0.0) {
+    // Movement along a flat direction need not prevent optimality. The
+    // proximal residual bounds the difference from original stationarity.
+    double proximalResidualBound = 0.0;
+    for (const auto& [key, _] : keyDims_)
+      proximalResidualBound = std::max(
+          proximalResidualBound,
+          params_->regularization *
+              (candidateValues.at(key) - state.values.at(key))
+                  .lpNorm<Eigen::Infinity>());
+    inspectOptimality =
+        proximalResidualBound <= params_->multiplierTolerance;
+    if (inspectOptimality) {
+      for (const auto& row : constraints_.equalities)
+        if (std::abs(RowResidual(*row.factor, candidateValues)) >
+            params_->feasibilityTolerance)
+          inspectOptimality = false;
+      for (const auto& row : constraints_.inequalities)
+        if (RowResidual(*row.factor, candidateValues) >
+            params_->feasibilityTolerance)
+          inspectOptimality = false;
+    }
+  }
+  if (inspectOptimality) {
+    // Use the original QP gradient for multipliers and stationarity.
     if (useDenseQp) {
       next.duals = subproblemDuals;
     } else {
@@ -874,6 +899,42 @@ ActiveSetSolver::InternalState ActiveSetSolver::iterate(
     next.values = candidateValues;
     if (leavingRow < 0) {
       next.converged = true;
+      if (!useDenseQp && problemType_ == ProblemType::QP) {
+        // Certify the original objective and every primal constraint.
+        VectorValues stationarity;
+        double gap = 0.0;
+        for (const auto& [key, _] : keyDims_) {
+          const Vector gradient = objectiveGradient(key, candidateValues);
+          stationarity.insert(key, gradient);
+          gap += candidateValues.at(key).dot(gradient);
+        }
+        auto checkRow = [&](const ConstraintRow& row, bool equality,
+                            bool active) {
+          const double residual = RowResidual(*row.factor, candidateValues);
+          if ((equality ? std::abs(residual) : residual) >
+              params_->feasibilityTolerance)
+            next.converged = false;
+          if (!active || !next.duals.exists(row.multiplierKey)) return;
+          const double multiplier = next.duals.at(row.multiplierKey)(0);
+          gap -= row.factor->getb()(0) * multiplier;
+          for (auto key = row.factor->begin(); key != row.factor->end(); ++key)
+            stationarity.at(*key) -= row.factor->getA(key).transpose() *
+                                    Vector::Constant(1, multiplier);
+        };
+        for (const auto& row : constraints_.equalities)
+          checkRow(row, true, true);
+        for (size_t row = 0; row < constraints_.inequalities.size(); ++row)
+          checkRow(constraints_.inequalities[row], false,
+                   state.activeInequalityRows[row]);
+        for (const auto& [_, residual] : stationarity)
+          if (!residual.allFinite() ||
+              residual.lpNorm<Eigen::Infinity>() >
+                  params_->multiplierTolerance)
+            next.converged = false;
+        if (!std::isfinite(gap) ||
+            std::abs(gap) > params_->multiplierTolerance)
+          next.converged = false;
+      }
     } else {
       next.activeInequalityRows[leavingRow] = false;
     }

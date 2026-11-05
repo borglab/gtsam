@@ -590,6 +590,88 @@ TEST(ActiveSetSolver, SparseColdSolveDuplicateBounds) {
 }  // namespace redundant_sparse_multipliers
 /* ************************************************************************* */
 
+/* ************************************************************************* */
+namespace sparse_proximal_qp {
+
+ActiveSetSolverParams::shared_ptr Parameters(double regularization) {
+  auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpSubproblemSolver =
+      ActiveSetSolverParams::QpSubproblemSolver::Sparse;
+  params->regularization = regularization;
+  params->stepTolerance = 1e-8;
+  params->multiplierTolerance = 1e-9;
+  return params;
+}
+
+// Proximal regularization must not shrink the unconstrained optimum.
+TEST(ActiveSetSolver, SparseProximalOriginalOptimum) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(10), 0));
+  Values initial;
+  initial.insert(0, Vector(Vector1(0)));
+
+  const auto solved =
+      ActiveSetSolver(problem, Parameters(1)).optimizeWithState(initial);
+  CHECK(solved.second.converged);
+  EXPECT_DOUBLES_EQUAL(10, solved.first.at<Vector>(0)(0), 1e-9);
+  CHECK(solved.second.iterations > 2);
+}
+
+// Active-bound multipliers must describe the original QP gradient.
+TEST(ActiveSetSolver, SparseProximalOriginalBoundMultiplier) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(10), 0));
+  problem.addConstraint(LinearConstraint::LessEqual(
+      JacobianFactor(0, Matrix::Identity(1, 1), Vector1(3))));
+
+  const auto solved =
+      ActiveSetSolver(problem, Parameters(1)).optimizeWithState();
+  EXPECT_DOUBLES_EQUAL(3, solved.first.at<Vector>(0)(0), 1e-9);
+  EXPECT_DOUBLES_EQUAL(-7, solved.second.inequalityMultipliers[0](0), 1e-9);
+}
+
+// A free direction retains its current value under a proximal solve.
+TEST(ActiveSetSolver, SparseProximalPreservesFreeDirection) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix{{1, 0}, {0, 0}}, Vector2{10, 0}, 0));
+  Values initial;
+  initial.insert(0, Vector(Vector2{0, 7}));
+
+  const auto solved =
+      ActiveSetSolver(problem, Parameters(0.1)).optimizeWithState(initial);
+  CHECK(assert_equal(Vector2{10, 7}, solved.first.at<Vector>(0), 1e-9));
+}
+
+// Tiny steps caused by large regularization do not prove original optimality.
+TEST(ActiveSetSolver, SparseProximalRejectsPrematureConvergence) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(1), 0));
+  auto params = Parameters(1e6);
+  params->stepTolerance = 1e-5;
+  params->maxIterations = 3;
+  Values initial;
+  initial.insert(0, Vector(Vector1(0)));
+
+  CHECK_EXCEPTION(ActiveSetSolver(problem, params).optimizeWithState(initial),
+                  std::runtime_error);
+}
+
+// The original primal-dual gap must be small at a large-magnitude solution.
+TEST(ActiveSetSolver, SparseProximalOriginalGap) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(1000), 0));
+  Values initial;
+  initial.insert(0, Vector(Vector1(0)));
+
+  const auto solved =
+      ActiveSetSolver(problem, Parameters(1e-3)).optimizeWithState(initial);
+  const double x = solved.first.at<Vector>(0)(0);
+  CHECK(std::abs(x * (x - 1000)) <= 1e-9);
+}
+
+}  // namespace sparse_proximal_qp
+/* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
