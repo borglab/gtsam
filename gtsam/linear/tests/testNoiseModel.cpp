@@ -484,6 +484,22 @@ TEST(NoiseModel, ConstrainedQRRetainsSmallWeightedCoefficients) {
     EXPECT(assert_equal(Vector2{0.0, 1.0}, result->sigmas()));
 }
 
+// Exact substitution must give newly populated finite columns a rank scale.
+// The two copies of x=1 observe only y+z; roundoff must not add a third pivot.
+TEST(NoiseModel, ConstrainedQRPropagatesFiniteColumnScale) {
+  Matrix augmented{{1.0, -0.008, -0.008, 0.0},
+                   {1.0, 0.0, 0.0, 1.0},
+                   {1.0, 0.0, 0.0, 1.0}};
+  const auto model = noiseModel::Constrained::MixedSigmas(Vector3{0.0, 1.0, 1.0});
+
+  const auto result = model->QR(augmented);
+  EXPECT_LONGS_EQUAL(2, result->dim());
+  EXPECT(assert_equal(Matrix{{1.0, -0.008, -0.008, 0.0},
+                             {0.0, 1.0, 1.0, 125.0},
+                             {0.0, 0.0, 0.0, 0.0}},
+                      augmented, 1e-12));
+}
+
 // A truly absent direction must still be rejected by the local rank test.
 TEST(NoiseModel, ConstrainedQRRejectsNullDirection) {
   Matrix augmented = Matrix::Zero(2, 3);

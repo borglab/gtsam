@@ -597,8 +597,9 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
   Vector invsigmas = sigmas_.array().inverse();
   Vector weights = invsigmas.array().square();  // calculate weights once
 
-  // Measure finite-information column scales before any elimination. Comparing
-  // residual column norms to these scales avoids an absolute precision floor.
+  // Initialize finite-information column scales. Exact substitutions below
+  // propagate norm bounds when information moves into separator columns.
+  // Comparing residual norms to these scales avoids an absolute precision floor.
   Vector referencePrecisions = Vector::Zero(n);
   for (size_t i = 0; i < m; ++i) {
     if (std::isfinite(weights(i)))
@@ -644,6 +645,16 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
       // get a reduced a-column which is now shorter
       Eigen::Block<Matrix> a_reduced = Ab.block(0, j, m, 1);
       a_reduced *= (1.0/rd(0, j)); // NOTE(frank): this is the 1/a[i] = 1/rd(0,j) factor we need!
+
+      // Substitution changes finite columns as A_k -= A_j * rd_k / rd_j.
+      // Propagate a norm bound by the triangle inequality, including into
+      // columns with zero input scale, so cancellation still has a rank scale.
+      for (size_t k = j + 1; k < n; ++k) {
+        const double normBound =
+            std::sqrt(referencePrecisions(k)) +
+            std::abs(rd(0, k) / rd(0, j)) * std::sqrt(referencePrecisions(j));
+        referencePrecisions(k) = normBound * normBound;
+      }
 
       // Rank-1 down-date of Ab, expensive, using outer product
       Ab.block(0, j + 1, m, n - j).noalias() -= a_reduced * rd.middleCols(j + 1, n - j);
