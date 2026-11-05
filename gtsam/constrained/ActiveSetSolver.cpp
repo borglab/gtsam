@@ -1067,6 +1067,38 @@ Values ActiveSetSolver::zeroVectorValues() const {
 /* ************************************************************************* */
 Values ActiveSetSolver::findVectorFeasiblePoint() const {
   const Values zeroValues = zeroVectorValues();
+  if (problemType_ == ProblemType::QP &&
+      params_->qpSubproblemSolver == Params::QpSubproblemSolver::Sparse) {
+    // Project zero onto the equality manifold before invoking the phase-one
+    // LP. Unit unary factors select a minimum-norm point in free directions;
+    // constrained equality factors still enforce their rows exactly.
+    GaussianFactorGraph equalityGraph;
+    for (const auto& [key, dim] : keyDims_)
+      equalityGraph.emplace_shared<JacobianFactor>(
+          key, Matrix::Identity(dim, dim), Vector::Zero(dim));
+    for (const ConstraintRow& row : constraints_.equalities)
+      equalityGraph.push_back(row.factor);
+
+    try {
+      const VectorValues candidate = equalityGraph.optimize();
+      bool feasible = true;
+      for (const auto& [key, _] : keyDims_)
+        if (!candidate.exists(key) || !candidate.at(key).allFinite())
+          feasible = false;
+      if (feasible) {
+        for (const ConstraintRow& row : constraints_.equalities)
+          feasible &= std::abs(RowResidual(*row.factor, candidate)) <=
+                      params_->feasibilityTolerance;
+        for (const ConstraintRow& row : constraints_.inequalities)
+          feasible &= RowResidual(*row.factor, candidate) <=
+                      params_->feasibilityTolerance;
+      }
+      if (feasible) return vectorValuesToValues(candidate, zeroValues);
+    } catch (const IndeterminateSystemException&) {
+      // Phase one remains responsible for inconsistent or singular systems.
+    }
+  }
+
   LpProblem phaseProblem;
   const Key slackKey = NextAvailableKey(keyDims_);
   // Phase one minimizes a non-negative scalar slack s. If the optimum slack is

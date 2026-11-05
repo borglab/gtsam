@@ -672,6 +672,53 @@ TEST(ActiveSetSolver, SparseProximalOriginalGap) {
 }  // namespace sparse_proximal_qp
 /* ************************************************************************* */
 
+/* ************************************************************************* */
+namespace sparse_equality_first {
+
+// A feasible equality projection avoids the iterative cold-start LP.
+TEST(ActiveSetSolver, SparseEqualityFirstFeasiblePoint) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(2), 0));
+  problem.addConstraint(LinearConstraint::Equal(
+      JacobianFactor(0, Matrix::Identity(1, 1), Vector1(2))));
+  auto params = std::make_shared<ActiveSetSolverParams>();
+  params->maxIterations = 1;
+
+  const auto solved = ActiveSetSolver(problem, params).optimizeWithState();
+  CHECK(solved.second.converged);
+  EXPECT_DOUBLES_EQUAL(2, solved.first.at<Vector>(0)(0), 1e-9);
+}
+
+// A projected point that violates an inequality still uses phase one.
+TEST(ActiveSetSolver, SparseEqualityFirstFallsBack) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Identity(2, 2), Vector2::Zero(), 0));
+  problem.addConstraint(LinearConstraint::Equal(
+      JacobianFactor(0, Matrix{{1, 1}}, Vector1(1))));
+  problem.addConstraint(LinearConstraint::GreaterEqual(
+      JacobianFactor(0, Matrix{{1, 0}}, Vector1(0.8))));
+
+  const auto solved = ActiveSetSolver(problem).optimizeWithState();
+  CHECK(solved.second.converged);
+  CHECK(assert_equal(Vector2{0.8, 0.2}, solved.first.at<Vector>(0), 1e-7));
+}
+
+// Inconsistent equality and inequality rows still report infeasibility.
+TEST(ActiveSetSolver, SparseEqualityFirstInfeasible) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(0), 0));
+  problem.addConstraint(LinearConstraint::Equal(
+      JacobianFactor(0, Matrix::Identity(1, 1), Vector1(0))));
+  problem.addConstraint(LinearConstraint::GreaterEqual(
+      JacobianFactor(0, Matrix::Identity(1, 1), Vector1(1))));
+
+  CHECK_EXCEPTION(ActiveSetSolver(problem).optimizeWithState(),
+                  std::runtime_error);
+}
+
+}  // namespace sparse_equality_first
+/* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
