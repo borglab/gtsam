@@ -297,10 +297,8 @@ public:
    * For e = prediction(values) - scale * measurement, the scale contribution
    * is Vector1{-measurement.dot(factorResidualCotangent)}. No noise-model
    * operation is needed in the implementation.
-   * Noise-model σ is not part of this hook: attach a ParameterTag to a
-   * Diagonal or Isotropic model and Gradients::parameterGradient will add
-   * ∂L/∂σ. The default implementation declares no residual parameter
-   * dependencies.
+   * Noise-model parameters are held fixed and are not supported by this hook.
+   * The default implementation declares no parameter dependencies.
    */
   virtual std::optional<Vector> parameterVjp(
       const Values& values, const ParameterTag& parameter,

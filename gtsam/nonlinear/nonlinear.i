@@ -136,6 +136,16 @@ virtual class NonlinearFactorGraph {
   void serialize() const;
 };
 
+#include <gtsam/nonlinear/ParameterTag.h>
+class ParameterTag {
+  ParameterTag(string name = "");
+  ParameterTag(const gtsam::ParameterTag& other);
+  const string& name() const;
+  bool equals(const gtsam::ParameterTag& other) const;
+  size_t hash() const;
+  void print(string prefix = "ParameterTag: ") const;
+};
+
 #include <gtsam/nonlinear/NonlinearFactor.h>
 virtual class NonlinearFactor : gtsam::Factor {
   // NonlinearFactor
@@ -209,6 +219,9 @@ class Gradients {
   std::optional<gtsam::Vector> parameterGradient(
       const gtsam::VectorValues& stateCotangents,
       const gtsam::ParameterTag& parameter) const;
+  std::optional<gtsam::Vector> noiseGradient(
+      const gtsam::VectorValues& stateCotangents,
+      const gtsam::noiseModel::Base* model) const;
   gtsam::VectorValues pushforward(const gtsam::Errors& factorResidualDirection) const;
   gtsam::Errors pullback(const gtsam::VectorValues& stateCotangents) const;
   void print(string prefix = "Gradients: ") const;

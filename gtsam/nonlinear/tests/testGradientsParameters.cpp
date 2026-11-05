@@ -324,7 +324,11 @@ TEST(GradientsParameters, InvalidContributions) {
       std::runtime_error);
 }
 
-const ParameterTag kNoise{"noise"};
+}  // namespace parameter_fixture
+/* ************************************************************************* */
+
+namespace noise_fixture {
+
 constexpr Key kPosition = 7;
 const Vector2 kLearnedMeasurement{0., 0.}, kAnchorMeasurement{1., -0.5};
 const Vector2 kUnequalSigmas{0.4, 1.3};
@@ -345,29 +349,53 @@ Values sigmaInitial() {
   return result;
 }
 
-Values sigmaSolve(const SharedNoiseModel& learned) {
-  return GaussNewtonOptimizer(sigmaGraph(learned), sigmaInitial()).optimize();
+Vector sigmaSolve(const NonlinearFactorGraph& graph) {
+  return GaussNewtonOptimizer(graph, sigmaInitial())
+      .optimize()
+      .at<Vector>(kPosition);
 }
 
 VectorValues sigmaCotangents(const Values& solution) {
   return {{kPosition, solution.at<Vector>(kPosition) - kTarget}};
 }
 
-// Tagged Diagonal σ matches baking r = e ⊘ σ under unit noise.
-TEST(GradientsParameters, DiagonalNoiseModelSigma) {
-  const auto learned =
-      noiseModel::Diagonal::Sigmas(kUnequalSigmas, kNoise, true);
-  const Values solution = sigmaSolve(learned);
-  EXPECT(sigmaGraph(learned).linearize(solution)->gradientAtZero().norm() <
-         1e-10);
-  const VectorValues cotangents = sigmaCotangents(solution);
-  const Gradients gradients(sigmaGraph(learned), solution);
-  const auto analytic = gradients.parameterGradient(cotangents, kNoise);
-  EXPECT(analytic.has_value());
-  EXPECT_LONGS_EQUAL(2, analytic->size());
+/// Central-difference dL/dσ_i with L = ½|x - target|², graph built per σ.
+template <class MakeGraph>
+double finiteDifference(const MakeGraph& makeGraph, const Vector2& sigmas,
+                        const Vector& cotangent, size_t coordinate) {
+  const double step = 1e-6;
+  Vector2 plus = sigmas, minus = sigmas;
+  plus[coordinate] += step;
+  minus[coordinate] -= step;
+  const Vector dx = sigmaSolve(makeGraph(plus)) - sigmaSolve(makeGraph(minus));
+  return cotangent.dot(dx) / (2 * step);
+}
 
-  NonlinearFactorGraph baked;
-  baked.emplace_shared<CustomFactor>(
+// Diagonal σ gradient matches finite differences and is twice the
+// Jacobian-held-fixed term obtained by baking r = e ⊘ σ into the residual.
+TEST(GradientsNoise, DiagonalSigma) {
+  const auto learned = noiseModel::Diagonal::Sigmas(kUnequalSigmas, false);
+  const NonlinearFactorGraph graph = sigmaGraph(learned);
+  const Values solution = GaussNewtonOptimizer(graph, sigmaInitial()).optimize();
+  EXPECT(graph.linearize(solution)->gradientAtZero().norm() < 1e-10);
+  const VectorValues cotangents = sigmaCotangents(solution);
+  const Vector analytic =
+      Gradients(graph, solution).noiseGradient(cotangents, learned).value();
+  EXPECT_LONGS_EQUAL(2, analytic.size());
+
+  const auto makeGraph = [](const Vector2& sigmas) {
+    return sigmaGraph(noiseModel::Diagonal::Sigmas(sigmas, false));
+  };
+  for (size_t coordinate = 0; coordinate < 2; ++coordinate)
+    EXPECT_DOUBLES_EQUAL(
+        analytic[coordinate],
+        finiteDifference(makeGraph, kUnequalSigmas, cotangents.at(kPosition),
+                         coordinate),
+        1e-6);
+
+  const ParameterTag baked{"baked sigma"};
+  NonlinearFactorGraph bakedGraph;
+  bakedGraph.emplace_shared<CustomFactor>(
       noiseModel::Unit::Create(2), KeyVector{kPosition},
       [](const CustomFactor&, const Values& values,
          OptionalJacobianVector jacobians) -> Vector {
@@ -381,116 +409,133 @@ TEST(GradientsParameters, DiagonalNoiseModelSigma) {
         }
         return error;
       },
-      [](const CustomFactor&, const Values& values, const ParameterTag& parameter,
-         const Vector& cotangent) -> std::optional<Vector> {
-        if (parameter != kNoise) return std::nullopt;
+      [baked](const CustomFactor&, const Values& values,
+              const ParameterTag& parameter,
+              const Vector& cotangent) -> std::optional<Vector> {
+        if (parameter != baked) return std::nullopt;
         const Vector residual =
             values.at<Vector>(kPosition) - kLearnedMeasurement;
         return Vector((-cotangent.array() * residual.array() /
                        kUnequalSigmas.array().square())
                           .matrix());
       });
-  baked.emplace_shared<PriorFactor<Vector>>(
+  bakedGraph.emplace_shared<PriorFactor<Vector>>(
       kPosition, kAnchorMeasurement, noiseModel::Isotropic::Sigma(2, 0.5));
   const Values bakedSolution =
-      GaussNewtonOptimizer(baked, sigmaInitial()).optimize();
+      GaussNewtonOptimizer(bakedGraph, sigmaInitial()).optimize();
   EXPECT(assert_equal(solution.at<Vector>(kPosition),
                       bakedSolution.at<Vector>(kPosition), 1e-10));
   const auto bakedGradient =
-      Gradients(baked, bakedSolution).parameterGradient(cotangents, kNoise);
-  // Baking r = e ⊘ σ into residual VJP is only the Jacobian-held-fixed half.
-  EXPECT(assert_equal((0.5 * analytic.value()).eval(), bakedGradient.value(),
-                      1e-10));
-
-  const double step = 1e-6;
-  for (size_t coordinate = 0; coordinate < 2; ++coordinate) {
-    Vector2 plus = kUnequalSigmas, minus = kUnequalSigmas;
-    plus[coordinate] += step;
-    minus[coordinate] -= step;
-    const Vector dx =
-        sigmaSolve(noiseModel::Diagonal::Sigmas(plus, false)).at<Vector>(
-            kPosition) -
-        sigmaSolve(noiseModel::Diagonal::Sigmas(minus, false)).at<Vector>(
-            kPosition);
-    EXPECT_DOUBLES_EQUAL((*analytic)[coordinate],
-                         cotangents.at(kPosition).dot(dx) / (2 * step), 1e-6);
-  }
-
-  EXPECT(!gradients.parameterGradient(cotangents, ParameterTag{"noise"}));
-  EXPECT(!Gradients(sigmaGraph(noiseModel::Diagonal::Sigmas(kUnequalSigmas)),
-                    solution)
-              .parameterGradient(cotangents, kNoise));
+      Gradients(bakedGraph, bakedSolution).parameterGradient(cotangents, baked);
+  EXPECT(assert_equal((0.5 * analytic).eval(), bakedGradient.value(), 1e-10));
 }
 
-// Tagged Isotropic σ is the sum of the equal-sigma Diagonal components.
-TEST(GradientsParameters, IsotropicNoiseModelSigma) {
+// An Isotropic model returns one shared σ: the sum of the per-row gradients
+// of an equal-sigma Diagonal built with smart = false.
+TEST(GradientsNoise, IsotropicSigma) {
   const double sigma = 0.7;
-  const auto isotropic = noiseModel::Isotropic::Sigma(2, sigma, kNoise);
+  const auto isotropic = noiseModel::Isotropic::Sigma(2, sigma);
   const auto diagonal =
-      noiseModel::Diagonal::Sigmas(Vector2::Constant(sigma), kNoise, true);
-  const Values solution = sigmaSolve(isotropic);
-  const VectorValues cotangents = sigmaCotangents(solution);
-  const auto isoGrad =
-      Gradients(sigmaGraph(isotropic), solution).parameterGradient(cotangents, kNoise);
-  const auto diagGrad =
-      Gradients(sigmaGraph(diagonal), solution).parameterGradient(cotangents, kNoise);
-  EXPECT(isoGrad.has_value());
-  EXPECT(diagGrad.has_value());
-  EXPECT_LONGS_EQUAL(1, isoGrad->size());
-  EXPECT_LONGS_EQUAL(2, diagGrad->size());
-  EXPECT_DOUBLES_EQUAL(diagGrad->sum(), (*isoGrad)[0], 1e-12);
-}
-
-// Two factors sharing a noise tag accumulate; a second tag is ignored.
-TEST(GradientsParameters, SharedNoiseTagAccumulates) {
-  const auto makeGraph = [](const Vector2& sigmas) {
-    NonlinearFactorGraph factors;
-    const ParameterTag tag = kNoise;
-    factors.emplace_shared<PriorFactor<Vector>>(
-        kPosition, kLearnedMeasurement,
-        noiseModel::Diagonal::Sigmas(sigmas, tag));
-    factors.emplace_shared<PriorFactor<Vector>>(
-        kPosition, Vector2{0.3, 0.4}, noiseModel::Diagonal::Sigmas(sigmas, tag));
-    factors.emplace_shared<PriorFactor<Vector>>(
-        kPosition, kAnchorMeasurement, noiseModel::Isotropic::Sigma(2, 0.5));
-    return factors;
-  };
-  const auto factors = makeGraph(kUnequalSigmas);
+      noiseModel::Diagonal::Sigmas(Vector2::Constant(sigma), false);
+  EXPECT(!std::dynamic_pointer_cast<noiseModel::Isotropic>(diagonal));
   const Values solution =
-      GaussNewtonOptimizer(factors, sigmaInitial()).optimize();
+      GaussNewtonOptimizer(sigmaGraph(isotropic), sigmaInitial()).optimize();
   const VectorValues cotangents = sigmaCotangents(solution);
-  const auto analytic =
-      Gradients(factors, solution).parameterGradient(cotangents, kNoise);
-  EXPECT(analytic.has_value());
-  EXPECT_LONGS_EQUAL(2, analytic->size());
-  const double step = 1e-6;
-  for (size_t coordinate = 0; coordinate < 2; ++coordinate) {
-    Vector2 plus = kUnequalSigmas, minus = kUnequalSigmas;
-    plus[coordinate] += step;
-    minus[coordinate] -= step;
-    const Vector dx =
-        GaussNewtonOptimizer(makeGraph(plus), sigmaInitial())
-            .optimize()
-            .at<Vector>(kPosition) -
-        GaussNewtonOptimizer(makeGraph(minus), sigmaInitial())
-            .optimize()
-            .at<Vector>(kPosition);
-    EXPECT_DOUBLES_EQUAL((*analytic)[coordinate],
-                         cotangents.at(kPosition).dot(dx) / (2 * step), 1e-6);
-  }
-  EXPECT(!Gradients(factors, solution)
-              .parameterGradient(cotangents, ParameterTag{"noise"}));
+  const Vector isotropicGradient = Gradients(sigmaGraph(isotropic), solution)
+                                       .noiseGradient(cotangents, isotropic)
+                                       .value();
+  const Vector diagonalGradient = Gradients(sigmaGraph(diagonal), solution)
+                                      .noiseGradient(cotangents, diagonal)
+                                      .value();
+  EXPECT_LONGS_EQUAL(1, isotropicGradient.size());
+  EXPECT_LONGS_EQUAL(2, diagonalGradient.size());
+  EXPECT_DOUBLES_EQUAL(diagonalGradient.sum(), isotropicGradient[0], 1e-12);
 }
 
-// Zero σ is rejected when constructing Gradients, tagged or not.
-TEST(GradientsParameters, NonPositiveTaggedSigma) {
-  CHECK_EXCEPTION(
-      Gradients(sigmaGraph(noiseModel::Diagonal::Sigmas(Vector2{0., 0.4}, kNoise)),
-                sigmaInitial()),
-      std::invalid_argument);
+/// Two learned factors plus an anchor; first and second may share a model.
+NonlinearFactorGraph twoFactorGraph(const SharedNoiseModel& first,
+                                    const SharedNoiseModel& second) {
+  NonlinearFactorGraph result;
+  result.emplace_shared<PriorFactor<Vector>>(kPosition, kLearnedMeasurement,
+                                             first);
+  result.emplace_shared<PriorFactor<Vector>>(kPosition, Vector2{0.3, 0.4},
+                                             second);
+  result.emplace_shared<PriorFactor<Vector>>(
+      kPosition, kAnchorMeasurement, noiseModel::Isotropic::Sigma(2, 0.5));
+  return result;
 }
 
-}  // namespace parameter_fixture
+// One instance shared by two factors accumulates both contributions.
+TEST(GradientsNoise, SharedInstanceAccumulates) {
+  const auto makeGraph = [](const Vector2& sigmas) {
+    const auto shared = noiseModel::Diagonal::Sigmas(sigmas, false);
+    return twoFactorGraph(shared, shared);
+  };
+  const auto shared = noiseModel::Diagonal::Sigmas(kUnequalSigmas, false);
+  const NonlinearFactorGraph graph = twoFactorGraph(shared, shared);
+  const Values solution = GaussNewtonOptimizer(graph, sigmaInitial()).optimize();
+  const VectorValues cotangents = sigmaCotangents(solution);
+  const Vector analytic =
+      Gradients(graph, solution).noiseGradient(cotangents, shared).value();
+  for (size_t coordinate = 0; coordinate < 2; ++coordinate)
+    EXPECT_DOUBLES_EQUAL(
+        analytic[coordinate],
+        finiteDifference(makeGraph, kUnequalSigmas, cotangents.at(kPosition),
+                         coordinate),
+        1e-6);
+}
+
+// Separately constructed models with equal sigmas are distinct parameters:
+// each gets only its own factor, and together they sum to the shared case.
+TEST(GradientsNoise, EqualModelsAreDistinct) {
+  const auto first = noiseModel::Diagonal::Sigmas(kUnequalSigmas, false);
+  const auto second = noiseModel::Diagonal::Sigmas(kUnequalSigmas, false);
+  const NonlinearFactorGraph separate = twoFactorGraph(first, second);
+  const NonlinearFactorGraph shared = twoFactorGraph(first, first);
+  const Values solution =
+      GaussNewtonOptimizer(separate, sigmaInitial()).optimize();
+  const VectorValues cotangents = sigmaCotangents(solution);
+  const Gradients gradients(separate, solution);
+  const Vector firstGradient = gradients.noiseGradient(cotangents, first).value();
+  const Vector secondGradient =
+      gradients.noiseGradient(cotangents, second).value();
+  const Vector sharedGradient =
+      Gradients(shared, solution).noiseGradient(cotangents, first).value();
+  EXPECT((sharedGradient - firstGradient).norm() > 1e-6);
+  EXPECT(assert_equal(sharedGradient, Vector(firstGradient + secondGradient),
+                      1e-12));
+}
+
+// Unsupported models and Gaussian-only construction are rejected; a model no
+// active factor holds, even with equal sigmas, has no gradient.
+TEST(GradientsNoise, Errors) {
+  const auto diagonal = noiseModel::Diagonal::Sigmas(kUnequalSigmas, false);
+  const NonlinearFactorGraph graph = sigmaGraph(diagonal);
+  const Values solution = GaussNewtonOptimizer(graph, sigmaInitial()).optimize();
+  const VectorValues cotangents = sigmaCotangents(solution);
+  const Gradients gradients(graph, solution);
+
+  // Equal values with smart = true collapse to Unit, which has no parameters.
+  const auto unit = noiseModel::Diagonal::Sigmas(Vector2::Ones());
+  EXPECT(unit->isUnit());
+  CHECK_EXCEPTION(Gradients(sigmaGraph(unit), solution)
+                      .noiseGradient(cotangents, unit),
+                  std::invalid_argument);
+
+  const auto robust = noiseModel::Robust::Create(
+      noiseModel::mEstimator::Huber::Create(1.0), diagonal);
+  CHECK_EXCEPTION(gradients.noiseGradient(cotangents, robust),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(gradients.noiseGradient(cotangents, nullptr),
+                  std::invalid_argument);
+  EXPECT(!gradients.noiseGradient(
+      cotangents, noiseModel::Diagonal::Sigmas(kUnequalSigmas, false)));
+  CHECK_EXCEPTION(Gradients(*graph.linearize(solution))
+                      .noiseGradient(cotangents, diagonal),
+                  std::logic_error);
+}
+
+}  // namespace noise_fixture
 /* ************************************************************************* */
 
 int main() {

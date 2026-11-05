@@ -71,11 +71,9 @@ class GaussianBayesTree;
  * A parameter VJP holds the solved states and supplied factor residual
  * cotangent fixed while differentiating the unwhitened factor residual with
  * respect to the requested parameter. Add any direct parameter derivative of
- * the loss separately to parameterGradient's result. Diagonal and isotropic
- * noise models that carry the same ParameterTag also contribute dL/dσ:
- * each residual row i adds 2 ν_w,i * (-e_i / σ_i²). Isotropic models return
- * one shared scalar (the sum). Full Gaussian and robust noise parameters
- * are not differentiated.
+ * the loss separately to parameterGradient's result. Noise-model sigmas are
+ * differentiated separately by noiseGradient, which identifies the model by
+ * its shared pointer rather than by a ParameterTag.
  *
  * \par Advanced differentiation model
  * These derivatives use a Gauss-Newton approximation. Let J be the whitened
@@ -83,11 +81,10 @@ class GaussianBayesTree;
  * H = J.transpose() * J. Queries apply H inverse using two sparse Bayes-tree
  * triangular solves; they never assemble a global J, H, or inverse. The caller
  * owns optimization and must establish stationarity. Both the state Hessian
- * and residual-parameter mixed derivatives use their Gauss-Newton terms.
- * Tagged diagonal σ is exact: the omitted dJ_w/dσ term equals the residual
- * term. The omitted second-derivative terms, weighted by factor residuals,
- * vanish when factor residuals are zero or jointly affine. Convergence alone
- * does not make them vanish. No damping or pseudoinverse fallback is applied.
+ * and the mixed state/parameter derivative use their Gauss-Newton terms.
+ * The omitted second-derivative terms, weighted by factor residuals, vanish
+ * when factor residuals are zero or jointly affine. Convergence alone does not
+ * make them vanish. No damping or pseudoinverse fallback is applied.
  */
 class GTSAM_EXPORT Gradients {
  public:
@@ -167,14 +164,36 @@ class GTSAM_EXPORT Gradients {
    *
    * Requires construction from a nonlinear graph and solution; Gaussian-only
    * construction throws std::logic_error because it has no parameter VJPs.
-   * Tagged diagonal or isotropic noise models add their σ VJP, which is
-   * exact for diagonal whitening. Residual parameterVjp still uses the
-   * Gauss-Newton approximation as pullback. Excludes any direct parameter
-   * dependence of the outer loss.
+   * Noise models are fixed. This applies the same Gauss-Newton approximation
+   * as pullback and excludes any direct parameter dependence of the outer loss.
    * Each call reuses the factorization and performs one adjoint calculation.
    */
   std::optional<Vector> parameterGradient(
       const VectorValues& stateCotangents, const ParameterTag& parameter) const;
+
+  /**
+   * Return the gradient through the solved states with respect to the sigmas
+   * of model. Factors are matched by object identity: every active factor
+   * whose noiseModel() is this exact instance contributes, so one instance
+   * shared by several factors accumulates, while separately constructed models
+   * with equal sigmas are distinct parameters. As in parameterGradient, the
+   * result is std::nullopt if no active factor holds model.
+   *
+   * The result's size follows the model's dynamic type. A Diagonal returns one
+   * entry per sigma and an Isotropic returns its single shared sigma. Unit,
+   * Constrained, Robust and full Gaussian models are not supported and throw
+   * std::invalid_argument. Because Diagonal::Sigmas and Diagonal::Variances
+   * with smart = true return an Isotropic or Unit model when the sigmas are
+   * equal, construct learned Diagonal models with smart = false.
+   *
+   * For diagonal whitening r = e / σ the result is exact with respect to σ:
+   * the Gauss-Newton term omitted from the mixed derivative, through the
+   * whitened Jacobian, equals the residual term, giving 2 ν_i (-e_i / σ_i²)
+   * per row for whitened cotangent ν. Requires construction from a nonlinear
+   * graph and solution.
+   */
+  std::optional<Vector> noiseGradient(const VectorValues& stateCotangents,
+                                      const SharedNoiseModel model) const;
 
   /**
    * Propagate whitened factor residual changes to a change in the solved states.
