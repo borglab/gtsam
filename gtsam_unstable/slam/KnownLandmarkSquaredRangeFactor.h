@@ -197,18 +197,17 @@ class KnownLandmarkSquaredRangeFactor : public NoiseModelFactorN<Position> {
    * zero because h is already part of the lifted state.
    *
    * The method is supported only when Position = AugmentedPoint<N>.
-   * The optional redundant-constraint output is forwarded to the point traits;
-   * AugmentedPoint<N> does not currently define additional redundant
-   * constraints.
+   * Its two lift equalities are added once per key through variableConstraints;
+   * there are no factor-specific or redundant constraints.
    *
-   * @throws std::invalid_argument for null costs or constraints,
-   * columnDimension != 1, or a noise model whose dimension is not 1.
+   * @throws std::invalid_argument for columnDimension != 1 or a noise model
+   *         whose dimension is not 1.
    * @throws std::runtime_error for a non-augmented state or an unsupported
    *         noise model (null, robust, or constrained).
    */
-  void qcqpFactors(NonlinearFactorGraph* costs,
-                   NonlinearEqualityConstraints* constraints,
-                   NonlinearEqualityConstraints* redundantConstraints,
+  void qcqpFactors(NonlinearFactorGraph& costs,
+                   NonlinearEqualityConstraints& constraints,
+                   QcqpVariableConstraints& variableConstraints,
                    size_t columnDimension = 1) const override {
     if constexpr (!std::is_same_v<Point, AugmentedPoint<N>>) {
       throw std::runtime_error(
@@ -218,10 +217,6 @@ class KnownLandmarkSquaredRangeFactor : public NoiseModelFactorN<Position> {
       if (columnDimension != 1) {
         throw std::invalid_argument(
             "KnownLandmarkSquaredRangeFactor::qcqpFactors only supports D=1.");
-      }
-      if (!costs || !constraints) {
-        throw std::invalid_argument(
-            "KnownLandmarkSquaredRangeFactor::qcqpFactors: null output.");
       }
       if (!this->noiseModel_ ||
           std::dynamic_pointer_cast<noiseModel::Robust>(this->noiseModel_) ||
@@ -245,11 +240,11 @@ class KnownLandmarkSquaredRangeFactor : public NoiseModelFactorN<Position> {
 
       const Matrix whitenedB = this->noiseModel_->Whiten(B);
       const Matrix Q = whitenedB.transpose() * whitenedB;
-      InsertQcqpConstraints<Point, 1>(this->key(), constraints,
-                                      redundantConstraints);
+      variableConstraints.add(
+          this->key(), traits<Point>::template QcqpConstraints<1>);
       const SymmetricBlockMatrix blockQ(std::vector<DenseIndex>{LiftedDim, 1},
                                         Q);
-      costs->push_back(std::make_shared<QpCost>(
+      costs.push_back(std::make_shared<QpCost>(
           HessianFactor(KeyVector{this->key()}, blockQ)));
     }
   }
