@@ -597,6 +597,16 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
   Vector invsigmas = sigmas_.array().inverse();
   Vector weights = invsigmas.array().square();  // calculate weights once
 
+  // Measure finite-information column scales before any elimination. Comparing
+  // residual column norms to these scales avoids an absolute precision floor.
+  Vector referencePrecisions = Vector::Zero(n);
+  for (size_t i = 0; i < m; ++i) {
+    if (std::isfinite(weights(i)))
+      referencePrecisions.array() += weights(i) * Ab.row(i).head(n).transpose().array().square();
+  }
+  const double relativeTolerance = 64.0 * std::numeric_limits<double>::epsilon() *
+                                   std::max(m, n);
+
   // We loop over all columns, because the columns that can be eliminated
   // are not necessarily contiguous. For each one, estimate the corresponding
   // scalar variable x as d-rS, with S the separator (remaining columns).
@@ -654,7 +664,8 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
           pseudo[i] = 0;
       }
 
-      if (precision > 1e-8) {
+      if (std::isfinite(precision) && precision > 0.0 &&
+          std::sqrt(precision) > relativeTolerance * std::sqrt(referencePrecisions(j))) {
         pseudo /= precision;
 
         // create solution [r d], rhs is automatically r(n)

@@ -458,6 +458,34 @@ TEST(NoiseModel, QRNan )
 }
 
 /* ************************************************************************* */
+namespace scale_aware_constrained_qr {
+
+// A finite direction with weak information must survive next to a hard constraint.
+TEST(NoiseModel, ConstrainedQRRetainsWeakFiniteDirection) {
+  Matrix augmented = Matrix::Zero(2, 3);
+  augmented(0, 0) = 1.0;
+  augmented(1, 1) = 1.0;
+  const auto model = noiseModel::Constrained::MixedSigmas(Vector2{0.0, 1e6});
+
+  const auto result = model->QR(augmented);
+  EXPECT_LONGS_EQUAL(2, result->dim());
+  EXPECT_DOUBLES_EQUAL(1.0, augmented(1, 1), 1e-12);
+}
+
+// A truly absent direction must still be rejected by the local rank test.
+TEST(NoiseModel, ConstrainedQRRejectsNullDirection) {
+  Matrix augmented = Matrix::Zero(2, 3);
+  augmented(0, 0) = 1.0;
+  const auto model = noiseModel::Constrained::MixedSigmas(Vector2{0.0, 1e6});
+
+  const auto result = model->QR(augmented);
+  EXPECT_LONGS_EQUAL(1, result->dim());
+}
+
+}  // namespace scale_aware_constrained_qr
+/* ************************************************************************* */
+
+/* ************************************************************************* */
 TEST(NoiseModel, SmartSqrtInformation )
 {
   bool smart = true;
