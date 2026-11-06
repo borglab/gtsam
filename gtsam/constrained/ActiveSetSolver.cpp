@@ -64,6 +64,7 @@ struct ActiveSetSolver::SparseWorkspace {
   Ordering primalOrdering, dualOrdering;
   std::unique_ptr<GaussianISAM2> incrementalPrimal;
   std::vector<std::optional<FactorIndex>> inequalityFactors;
+  VectorValues referenceCenter;  // Registered factors keep this fixed RHS.
 };
 
 namespace {
@@ -875,46 +876,65 @@ VectorValues ActiveSetSolver::solveSparseSubproblem(
                   });
   GaussianFactorGraph::Eliminate eliminate = EliminatePreferCholesky;
   if (squareRootQp) eliminate = EliminateQR;
-  if (problemType_ == ProblemType::QP && params_->regularization == 0.0 &&
-      params_->useIncrementalSparseQp)
-    return solveIncrementalSparseQp(graph, state.activeInequalityRows, eliminate,
-                                    workspace);
+  if (problemType_ == ProblemType::QP && params_->useIncrementalSparseQp)
+    return solveIncrementalSparseQp(graph, state, eliminate, workspace);
   return graph.optimize(ordering, eliminate);
 }
 
 /* ************************************************************************* */
 VectorValues ActiveSetSolver::solveIncrementalSparseQp(
-    const GaussianFactorGraph& graph, const std::vector<bool>& activeRows,
+    const GaussianFactorGraph& graph, const InternalState& state,
     const GaussianFactorGraph::Eliminate& eliminate,
     SparseWorkspace* workspace) const {
+  const auto& activeRows = state.activeInequalityRows;
   auto& rowFactors = workspace->inequalityFactors;
   if (!workspace->incrementalPrimal) {
     workspace->incrementalPrimal =
         std::make_unique<GaussianISAM2>(workspace->primalOrdering, eliminate);
     const FactorIndices indices = workspace->incrementalPrimal->update(graph);
     rowFactors.assign(activeRows.size(), std::nullopt);
-    size_t position = qpCostGraph_.size() + constraints_.equalities.size();
+    workspace->referenceCenter = state.values;
+    size_t position = qpCostGraph_.size() + constraints_.equalities.size() +
+                      (params_->regularization > 0.0 ? keyDims_.size() : 0);
     for (size_t row = 0; row < activeRows.size(); ++row)
       if (activeRows[row]) rowFactors[row] = indices.at(position++);
   } else {
-    GaussianFactorGraph added;
-    FactorIndices removed;
-    std::vector<size_t> addedRows;
-    for (size_t row = 0; row < activeRows.size(); ++row) {
-      if (activeRows[row] && !rowFactors[row]) {
-        added.push_back(constraints_.inequalities[row].factor);
-        addedRows.push_back(row);
-      } else if (!activeRows[row] && rowFactors[row]) {
-        removed.push_back(*rowFactors[row]);
-        rowFactors[row].reset();
-      }
-    }
-    const FactorIndices indices =
-        workspace->incrementalPrimal->update(added, removed);
-    for (size_t index = 0; index < addedRows.size(); ++index)
-      rowFactors[addedRows[index]] = indices.at(index);
+    updateIncrementalWorkingSet(activeRows, workspace);
   }
-  return workspace->incrementalPrimal->optimize();
+  // Keep registered factors and orphan messages at the reference center.
+  // A new center changes only the objective forcing, never the factorization.
+  VectorValues forcing;
+  if (params_->regularization > 0.0) {
+    for (const auto& [key, value] : state.values) {
+      Vector change = params_->regularization *
+                      (value - workspace->referenceCenter.at(key));
+      if (!change.isZero(0.0)) forcing.insert(key, std::move(change));
+    }
+  }
+  return forcing.size() == 0 ? workspace->incrementalPrimal->optimize()
+                             : workspace->incrementalPrimal->optimize(forcing);
+}
+
+/* ************************************************************************* */
+void ActiveSetSolver::updateIncrementalWorkingSet(
+    const std::vector<bool>& activeRows, SparseWorkspace* workspace) const {
+  auto& rowFactors = workspace->inequalityFactors;
+  GaussianFactorGraph added;
+  FactorIndices removed;
+  std::vector<size_t> addedRows;
+  for (size_t row = 0; row < activeRows.size(); ++row) {
+    if (activeRows[row] && !rowFactors[row]) {
+      added.push_back(constraints_.inequalities[row].factor);
+      addedRows.push_back(row);
+    } else if (!activeRows[row] && rowFactors[row]) {
+      removed.push_back(*rowFactors[row]);
+      rowFactors[row].reset();
+    }
+  }
+  const FactorIndices indices =
+      workspace->incrementalPrimal->update(added, removed);
+  for (size_t index = 0; index < addedRows.size(); ++index)
+    rowFactors[addedRows[index]] = indices.at(index);
 }
 
 /* ************************************************************************* */
