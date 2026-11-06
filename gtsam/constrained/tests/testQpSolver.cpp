@@ -953,6 +953,98 @@ TEST(ActiveSetSolver, IncrementalOpposingAndDuplicateBounds) {
   }
 }
 
+
+// Proximal centers move repeatedly while affine bounds activate and release.
+TEST(ActiveSetSolver, IncrementalProximalMatchesBatch) {
+  for (double regularization : {0.0, 1e-9, 0.25}) {
+    for (bool jacobian : {false, true}) {
+      QpProblem problem;
+      const JacobianFactor cost(0, Matrix::Identity(2, 2), Vector2{2.0, -1.0});
+      if (jacobian) problem.addCost(cost);
+      else problem.addCost(HessianFactor(cost));
+      problem.addConstraint(LinearConstraint::Equal(
+          JacobianFactor(0, Matrix{{1.0, 1.0}}, Vector1{1.0})));
+      problem.addConstraint(LinearConstraint::GreaterEqual(
+          JacobianFactor(0, Matrix{{1.0, 0.0}}, Vector1{0.0})));
+      problem.addConstraint(LinearConstraint::LessEqual(
+          JacobianFactor(0, Matrix{{1.0, 0.0}}, Vector1{1.25})));
+      Values initial, batch;
+      initial.insert(0, Vector(Vector2{0.0, 1.0}));
+      for (bool incremental : {false, true}) {
+        auto params = sparse_proximal_qp::Parameters(regularization);
+        params->useIncrementalSparseQp = incremental;
+        const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
+        CHECK(result.second.converged);
+        CHECK(assert_equal(Vector2{1.25, -0.25}, result.first.at<Vector>(0), 1e-8));
+        if (incremental) {
+          CHECK(assert_equal(batch, result.first, 1e-8));
+        } else {
+          batch = result.first;
+        }
+      }
+    }
+  }
+}
+
+// Positive regularization preserves dependent/opposing working-row robustness.
+TEST(ActiveSetSolver, IncrementalProximalDependentRows) {
+  for (double regularization : {1e-9, 0.5}) {
+    QpProblem problem;
+    problem.addCost(JacobianFactor(0, Matrix22::Identity(), Vector2{2.0, 3.0}));
+    const JacobianFactor fixed(0, Matrix{{1.0, 0.0}}, Vector1{1.0});
+    problem.addConstraint(LinearConstraint::LessEqual(fixed));
+    problem.addConstraint(LinearConstraint::GreaterEqual(fixed));
+    problem.addConstraint(LinearConstraint::LessEqual(fixed));
+    Values initial, batch;
+    initial.insert(0, Vector(Vector2{1.0, 0.0}));
+    for (bool incremental : {false, true}) {
+      auto params = sparse_proximal_qp::Parameters(regularization);
+      params->useIncrementalSparseQp = incremental;
+      const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
+      CHECK(result.second.converged);
+      CHECK(assert_equal(Vector2{1.0, 3.0}, result.first.at<Vector>(0), 1e-8));
+      if (incremental) {
+        CHECK(assert_equal(batch, result.first, 1e-8));
+      } else {
+        batch = result.first;
+      }
+    }
+  }
+}
+
+
+// Weak finite information survives both proximal-center and working-row changes.
+TEST(ActiveSetSolver, IncrementalProximalWeakWeightedDirection) {
+  for (double regularization : {0.0, 1e-9}) {
+    QpProblem problem;
+    problem.addCost(JacobianFactor(
+        0, Matrix{{1e-10, 0.0}, {0.0, 1e-15}}, Vector2{1e-10, 2e-15},
+        noiseModel::Isotropic::Sigma(2, 1e-10)));
+    problem.addConstraint(LinearConstraint::Equal(
+        JacobianFactor(0, Matrix{{1.0, 0.0}}, Vector1{0.25})));
+    problem.addConstraint(LinearConstraint::GreaterEqual(
+        JacobianFactor(0, Matrix{{0.0, 1.0}}, Vector1{0.0})));
+    problem.addConstraint(LinearConstraint::LessEqual(
+        JacobianFactor(0, Matrix{{0.0, 1.0}}, Vector1{1.5})));
+    Values initial, batch;
+    initial.insert(0, Vector(Vector2{0.25, 0.0}));
+    for (bool incremental : {false, true}) {
+      auto params = sparse_proximal_qp::Parameters(regularization);
+      params->multiplierTolerance = 1e-13;
+      params->stepTolerance = 1e-12;
+      params->useIncrementalSparseQp = incremental;
+      const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
+      CHECK(result.second.converged);
+      CHECK(assert_equal(Vector2{0.25, 1.5}, result.first.at<Vector>(0), 1e-8));
+      if (incremental) {
+        CHECK(assert_equal(batch, result.first, 1e-8));
+      } else {
+        batch = result.first;
+      }
+    }
+  }
+}
+
 }  // namespace incremental_sparse_qp
 /* ************************************************************************* */
 

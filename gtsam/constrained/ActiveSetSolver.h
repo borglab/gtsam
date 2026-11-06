@@ -81,7 +81,8 @@ class GTSAM_EXPORT ActiveSetSolverParams {
   /// Maximum residual accepted from the cold-start feasibility phase.
   double phaseOneFeasibilityTolerance = 1e-6;
   QpSubproblemSolver qpSubproblemSolver = QpSubproblemSolver::Sparse;
-  /// Reuse sparse QP elimination when additional regularization is zero.
+  /// Reuse sparse QP elimination across working-set and objective RHS changes.
+  /// A proximal-center change uses cached triangular solves without elimination.
   bool useIncrementalSparseQp = true;
   /** Cold QP initialization, shared by optimize() and computeFeasibleStep().
    * FeasibleStepThenProjectedGradient requires a fully feasible starting point
@@ -334,11 +335,14 @@ class GTSAM_EXPORT ActiveSetSolver {
   /// Solve a sparse working graph using this call's ordering and tree caches.
   VectorValues solveSparseSubproblem(const InternalState& state,
                                      SparseWorkspace* workspace) const;
-  /// Update active inequality factors and solve the unregularized QP tree.
+  /// Update active factors, then apply any proximal-center forcing in the QP tree.
   VectorValues solveIncrementalSparseQp(
-      const GaussianFactorGraph& graph, const std::vector<bool>& activeRows,
+      const GaussianFactorGraph& graph, const InternalState& state,
       const GaussianFactorGraph::Eliminate& eliminate,
       SparseWorkspace* workspace) const;
+  /// Add entering rows and remove released rows, retaining reference objectives.
+  void updateIncrementalWorkingSet(const std::vector<bool>& activeRows,
+                                   SparseWorkspace* workspace) const;
   /// Assemble A_active^T lambda = gradient for the original or proximal QP.
   /// A nonnull center adds regularization * (values - center) to the gradient.
   GaussianFactorGraph buildDualGraph(
