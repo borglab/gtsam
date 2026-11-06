@@ -79,11 +79,21 @@ struct IterationLimitError : std::runtime_error {
 /* ************************************************************************* */
 // Any complete ordering remains valid when only factor connectivity changes.
 // Recompute COLAMD only when graph variables enter or leave the working set.
+Ordering restrictOrdering(const Ordering& requested, const KeySet& keys) {
+  Ordering result;
+  for (Key key : requested)
+    if (keys.count(key)) result.push_back(key);
+  return result;
+}
+
+/* ************************************************************************* */
 const Ordering& cachedOrdering(const GaussianFactorGraph& graph, KeySet* keys,
-                               Ordering* ordering) {
+                               Ordering* ordering,
+                               const std::optional<Ordering>& requested = {}) {
   const KeySet graphKeys = graph.keys();
   if (graphKeys != *keys) {
-    *ordering = Ordering::Colamd(graph);
+    *ordering = requested ? restrictOrdering(*requested, graphKeys)
+                          : Ordering::Colamd(graph);
     *keys = graphKeys;
   }
   return *ordering;
@@ -497,11 +507,9 @@ ActiveSetSolver::ActiveSetSolver(const QpProblem& problem,
                                  Params::shared_ptr params)
     : problemType_(ProblemType::QP),
       qpProblem_(&problem),
-      params_(std::move(params)) {
-  if (!params_) {
-    params_ = std::make_shared<Params>();
-  }
+      params_(params ? std::make_shared<Params>(*params) : std::make_shared<Params>()) {
   initializeDimensions();
+  validateParameters();
   initializeObjective();
   initializeConstraints();
 }
@@ -511,11 +519,9 @@ ActiveSetSolver::ActiveSetSolver(const LpProblem& problem,
                                  Params::shared_ptr params)
     : problemType_(ProblemType::LP),
       lpProblem_(&problem),
-      params_(std::move(params)) {
-  if (!params_) {
-    params_ = std::make_shared<Params>();
-  }
+      params_(params ? std::make_shared<Params>(*params) : std::make_shared<Params>()) {
   initializeDimensions();
+  validateParameters();
   initializeObjective();
   initializeConstraints();
 }
@@ -562,6 +568,22 @@ void ActiveSetSolver::initializeDimensions() {
 }
 
 /* ************************************************************************* */
+void ActiveSetSolver::validateParameters() const {
+  for (double value : {params_->activeTolerance, params_->stepTolerance,
+                       params_->feasibilityTolerance, params_->multiplierTolerance,
+                       params_->phaseOneFeasibilityTolerance, params_->regularization})
+    if (!std::isfinite(value) || value < 0)
+      throw std::invalid_argument("ActiveSetSolver: tolerances and regularization must be finite and nonnegative.");
+  if (!params_->ordering) return;
+  KeySet keys;
+  for (Key key : *params_->ordering)
+    if (!keyDims_.count(key) || !keys.insert(key).second)
+      throw std::invalid_argument("ActiveSetSolver: ordering has unknown or repeated keys.");
+  if (keys.size() != keyDims_.size())
+    throw std::invalid_argument("ActiveSetSolver: ordering must contain every problem key.");
+}
+
+/* ************************************************************************* */
 void ActiveSetSolver::initializeObjective() {
   if (problemType_ == ProblemType::LP) {
     for (const auto& [key, dim] : keyDims_) {
@@ -596,7 +618,9 @@ void ActiveSetSolver::initializeDenseQpWorkspace() {
 
   // Reuse the same ordering for the Hessian factorization and for all dense
   // vectors. This makes each key's offset stable across active-set iterations.
-  workspace.hessianOrdering = Ordering::Colamd(VariableIndex(qpCostGraph_));
+  workspace.hessianOrdering = params_->ordering
+      ? restrictOrdering(*params_->ordering, qpCostGraph_.keys())
+      : Ordering::Colamd(VariableIndex(qpCostGraph_));
   size_t offset = 0;
   for (Key key : workspace.hessianOrdering) {
     workspace.keyOffsets[key] = offset;
@@ -737,6 +761,9 @@ std::map<Key, ActiveSetSolver::ValueShape> ActiveSetSolver::valueShapes(
 /* ************************************************************************* */
 void ActiveSetSolver::validateInitialValues(const Values& values) const {
   (void)valueShapes(values);
+  for (const auto& [key, _] : keyDims_)
+    if (!DirectVectorOrMatrixValue(values, key).allFinite())
+      throw std::invalid_argument("ActiveSetSolver: initial values must be finite.");
 }
 
 /* ************************************************************************* */
@@ -824,7 +851,7 @@ VectorValues ActiveSetSolver::solveSparseSubproblem(
   if (graph.keys() != workspace->primalKeys)
     workspace->incrementalPrimal.reset();
   const Ordering& ordering = cachedOrdering(
-      graph, &workspace->primalKeys, &workspace->primalOrdering);
+      graph, &workspace->primalKeys, &workspace->primalOrdering, params_->ordering);
   // Preserve square-root costs through every clique, including separators.
   const bool squareRootQp =
       problemType_ == ProblemType::QP &&
@@ -1076,8 +1103,9 @@ ActiveSetSolver::InternalState ActiveSetSolver::initialState(
     }
   }
 
-  if (warmStart && warmStart->activeInequalityRows.size() ==
-                       constraints_.inequalities.size()) {
+  if (warmStart) {
+    if (warmStart->activeInequalityRows.size() != constraints_.inequalities.size())
+      throw std::invalid_argument("ActiveSetSolver: warm-start row count does not match the problem.");
     state.activeInequalityRows = warmStart->activeInequalityRows;
     return state;
   }
@@ -1164,6 +1192,9 @@ void ActiveSetSolver::initializeProjectedGradient(InternalState* state) const {
       zero.insert(key, Vector::Zero(dim).eval());
     }
     Values direction;
+    if (params_->ordering)
+      projectionParams->ordering = restrictOrdering(
+          *params_->ordering, KeySet(keys.begin(), keys.end()));
     try {
       direction = ActiveSetSolver(component.projection, projectionParams)
                       .optimize(zero);
@@ -1442,9 +1473,6 @@ ActiveSetFeasibleStepResult ActiveSetSolver::computeFeasibleStep(
     throw std::invalid_argument("ActiveSetSolver: feasible steps require a QP.");
   validateInitialValues(initialValues);
   const VectorValues initial = valuesToVectorValues(initialValues);
-  for (const auto& [key, value] : initial)
-    if (!value.allFinite())
-      throw std::invalid_argument("ActiveSetSolver: feasible step needs finite values.");
   if (!primalFeasible(constraints_.equalities, constraints_.inequalities, initial,
                       params_->feasibilityTolerance))
     throw std::invalid_argument("ActiveSetSolver: feasible step needs a feasible point.");
@@ -1587,7 +1615,8 @@ bool ActiveSetSolver::tryEqualityProjection(const Values& zeroValues,
     graph.push_back(row.factor);
 
   try {
-    const VectorValues candidate = graph.optimize();
+    const VectorValues candidate = params_->ordering
+        ? graph.optimize(*params_->ordering) : graph.optimize();
     for (const auto& [key, _] : keyDims_)
       if (!candidate.exists(key) || !candidate.at(key).allFinite())
         return false;
@@ -1611,8 +1640,18 @@ Values ActiveSetSolver::solvePhaseOne(const Values& zeroValues) const {
                            slackKey, &initialSlack);
   Values initial = zeroValues;
   initial.insert(slackKey, Vector::Constant(1, initialSlack).eval());
+  auto phaseParams = std::make_shared<Params>(*params_);
+  if (params_->ordering) {
+    KeySet phaseKeys;
+    for (const auto& row : constraints_.equalities)
+      phaseKeys.insert(row.factor->begin(), row.factor->end());
+    for (const auto& row : constraints_.inequalities)
+      phaseKeys.insert(row.factor->begin(), row.factor->end());
+    phaseParams->ordering = restrictOrdering(*params_->ordering, phaseKeys);
+    phaseParams->ordering->push_back(slackKey);
+  }
   const Values result =
-      ActiveSetSolver(phaseProblem, params_).optimize(initial);
+      ActiveSetSolver(phaseProblem, phaseParams).optimize(initial);
   if (result.at<Vector>(slackKey)(0) > params_->phaseOneFeasibilityTolerance)
     throw std::runtime_error(
         "ActiveSetSolver: could not find a feasible point.");
