@@ -91,7 +91,7 @@ TEST(ActiveSetFeasibleStep, FeasibleDoesNotMeanOptimal) {
   EXPECT(assert_equal(Vector2{1, 2}, optimum.first.at<Vector>(0), 1e-9));
 }
 
-// The step API uses projection even though the full-solve option defaults off.
+// Explicitly enabling projection releases a binding row without affecting optimize.
 TEST(ActiveSetFeasibleStep, ReleasesInwardBindingRow) {
   QpProblem problem;
   problem.addCost(JacobianFactor(0, Matrix22::Identity(), Vector2{2, 0}));
@@ -99,6 +99,7 @@ TEST(ActiveSetFeasibleStep, ReleasesInwardBindingRow) {
   upper(&problem, Matrix12{{1, 0}}, 1);
   auto settings = params();
   EXPECT(!settings->useProjectedGradientInitialization);
+  settings->useProjectedGradientInitialization = true;
   ActiveSetSolver solver(problem, settings);
   const auto before = solver.optimizeWithState(point(0));
   const auto result = solver.computeFeasibleStep(point(0));
@@ -153,6 +154,7 @@ TEST(ActiveSetFeasibleStep, OptimalAndProjectionExhaustion) {
   EXPECT(result.status == Status::IterationLimit);
   EXPECT_LONGS_EQUAL(0, result.iterations);
   upper(&problem, Matrix12{{-1, 0}}, 0);
+  settings->useProjectedGradientInitialization = true;
   settings->maxIterations = 1;
   result = ActiveSetSolver(problem, settings).computeFeasibleStep(point(0));
   EXPECT(result.status == Status::IterationLimit);
@@ -211,6 +213,7 @@ TEST(ActiveSetFeasibleStep, ZeroBlocksAndMainExhaustion) {
   const QpProblem qp = problem();
   auto settings = std::make_shared<ActiveSetSolverParams>();
   settings->regularization = 0;
+  settings->useProjectedGradientInitialization = true;
   settings->maxIterations = 2;
   const auto exhausted = ActiveSetSolver(qp, settings).computeFeasibleStep(initial);
   EXPECT(exhausted.status == Status::IterationLimit);
