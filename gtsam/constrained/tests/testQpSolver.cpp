@@ -138,8 +138,8 @@ TEST(ActiveSetSolver, DenseEqualityConstrained) {
   CHECK_EQUAL(1, state.equalityMultipliers.front().size());
 }
 
-// Verifies dense QP mode applies the configured Hessian regularization.
-TEST(ActiveSetSolver, DenseRegularizationAffectsSolution) {
+// A positive proximal weight must not change the original QP optimum.
+TEST(ActiveSetSolver, DenseRegularizationIsRecentered) {
   auto params = DenseQpParams();
   params->regularization = 1.0;
   QpProblem problem;
@@ -149,11 +149,11 @@ TEST(ActiveSetSolver, DenseRegularizationAffectsSolution) {
   initial.insert(x1, Vector1D(0.0));
   const Values result = ActiveSetSolver(problem, params).optimize(initial);
 
-  EXPECT_DOUBLES_EQUAL(1.0, result.at<Vector>(x1)(0), 1e-7);
+  EXPECT_DOUBLES_EQUAL(2.0, result.at<Vector>(x1)(0), 1e-7);
 }
 
-// Verifies dependent active constraints fail deterministically in dense mode.
-TEST(ActiveSetSolver, DenseDependentEqualityConstraintsThrow) {
+// Redundant equalities remain enforced without requiring unique multipliers.
+TEST(ActiveSetSolver, DenseDependentEqualityConstraints) {
   QpProblem problem;
   problem.addCost(HessianFactor(x1, Matrix1(1.0), Vector1D(0.0), 0.0));
   const JacobianFactor equality(x1, Matrix1(1.0), Vector1D(1.0));
@@ -162,8 +162,10 @@ TEST(ActiveSetSolver, DenseDependentEqualityConstraintsThrow) {
 
   Values initial;
   initial.insert(x1, Vector1D(1.0));
-  CHECK_EXCEPTION(ActiveSetSolver(problem, DenseQpParams()).optimize(initial),
-                  std::runtime_error);
+  const auto result =
+      ActiveSetSolver(problem, DenseQpParams()).optimizeWithState(initial);
+  CHECK(result.second.converged);
+  EXPECT_DOUBLES_EQUAL(1, result.first.at<Vector>(x1)(0), 1e-10);
 }
 
 // Verifies the Matlab QP example from the old solver tests.
@@ -1232,8 +1234,7 @@ TEST(ActiveSetSolver, FeasibleThenProjectedGradientQpsFixtures) {
   }
 }
 
-// Dense HS52 can miss exact equalities at default regularization. The new
-// initializer must reject that candidate rather than weaken its certificate.
+// Both dense initialization modes must certify HS52's original equalities.
 TEST(ActiveSetSolver, FeasibleInitializationChecksDenseCandidate) {
   const auto problem = qps_file_examples::ParseQpsProblem("HS52.QPS");
   auto params = Parameters(false);
@@ -1242,18 +1243,10 @@ TEST(ActiveSetSolver, FeasibleInitializationChecksDenseCandidate) {
   const auto baseline = ActiveSetSolver(problem, params).optimize();
   params->qpInitialization = ActiveSetSolverParams::QpInitialization::
       FeasibleStepThenProjectedGradient;
-  try {
-    const auto result = ActiveSetSolver(problem, params).optimize();
-    CHECK(problem.eConstraints()
-              .violationVector(result, false)
-              .lpNorm<Eigen::Infinity>() <= params->feasibilityTolerance);
-  } catch (const std::runtime_error& error) {
-    CHECK(std::string(error.what()) ==
-          "ActiveSetSolver: feasible step failed constraint checks.");
-    CHECK(problem.eConstraints()
-              .violationVector(baseline, false)
-              .lpNorm<Eigen::Infinity>() > params->feasibilityTolerance);
-  }
+  const auto result = ActiveSetSolver(problem, params).optimize();
+  CHECK(problem.eConstraints().violationVector(result, false)
+            .lpNorm<Eigen::Infinity>() <= params->feasibilityTolerance);
+  CHECK(assert_equal(baseline, result, 1e-5));
 }
 
 }  // namespace projected_gradient_initialization

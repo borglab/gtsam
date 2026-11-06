@@ -55,6 +55,33 @@ class TestConstrainedWrappers(unittest.TestCase):
             result = gtsam.ActiveSetSolver(problem, params).optimize(initial)
             np.testing.assert_allclose(result.atVector(key), [2.0, 3.0], atol=1e-9)
 
+    def test_dense_qp_semantics(self):
+        """Dense keeps the original optimum and honors every initialization mode."""
+        key = X(0)
+        problem = gtsam.QpProblem()
+        problem.addCost(gtsam.JacobianFactor(
+            key, np.eye(2), np.array([2.0, 3.0]),
+            gtsam.noiseModel.Unit.Create(2)))
+        # Redundant affine equalities retain their original row identities.
+        for scale in (1.0, 2.0):
+            problem.addConstraint(gtsam.LinearConstraint.Equal(
+                gtsam.JacobianFactor(key, np.array([[scale, 0.0]]),
+                                     np.array([scale]),
+                                     gtsam.noiseModel.Unit.Create(1))))
+        initial = gtsam.Values()
+        initial.insert(key, np.array([1.0, 0.0]))
+        modes = gtsam.ActiveSetSolverParams.QpInitialization
+        for weight in (0.0, 0.1):
+            for mode in (modes.TightConstraints, modes.ProjectedGradient,
+                         modes.FeasibleStepThenProjectedGradient):
+                params = gtsam.ActiveSetSolverParams()
+                params.qpSubproblemSolver = (
+                    gtsam.ActiveSetSolverParams.QpSubproblemSolver.Dense)
+                params.qpInitialization = mode
+                params.regularization = weight
+                result = gtsam.ActiveSetSolver(problem, params).optimize(initial)
+                np.testing.assert_allclose(result.atVector(key), [1.0, 3.0], atol=1e-7)
+
     def test_qp_two_stage_feasible_step(self):
         """Feasible descent keeps its distinct status and projected row mask."""
         key = X(0)

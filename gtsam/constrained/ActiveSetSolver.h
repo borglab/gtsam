@@ -41,8 +41,8 @@ class GTSAM_EXPORT ActiveSetSolverParams {
     /// Eliminate a sparse working graph, reusing its ordering and optionally
     /// its Bayes tree while the variable keys stay unchanged.
     Sparse,
-    /// Reuse one Hessian factorization and solve dense active-set Schur
-    /// systems.
+    /// Pack dense objective/constraint blocks and solve rank-aware working
+    /// systems, preserving original rows and square-root costs.
     Dense
   };
 
@@ -75,8 +75,8 @@ class GTSAM_EXPORT ActiveSetSolverParams {
   /// the absolute and relative tolerances for the constant-free QP gap, with
   /// an additional allowance for floating-point evaluation error.
   double multiplierTolerance = 1e-7;
-  /// Sparse QPs use this as a recentered proximal weight; dense QPs add it to
-  /// the factored Hessian.
+  /// Recentered proximal weight for QP working subproblems. Both backends
+  /// certify the original objective; this never adds a permanent penalty.
   double regularization = 1e-9;
   /// Maximum residual accepted from the cold-start feasibility phase.
   double phaseOneFeasibilityTolerance = 1e-6;
@@ -103,8 +103,8 @@ class GTSAM_EXPORT ActiveSetSolverParams {
 
   /** Optional complete permutation of the problem's variable keys. Sparse
    * working graphs and auxiliary projections restrict it to their current
-   * keys; phase one appends its slack key. Dense QPs use it for the cost
-   * factorization. Multiplier keys are internal and use a separate COLAMD
+   * keys; phase one appends its slack key. Dense QPs use it for vector
+   * packing and cost factorization. Multiplier keys are internal and use a separate COLAMD
    * ordering. Unset means automatic COLAMD.
    */
   std::optional<Ordering> ordering;
@@ -164,9 +164,9 @@ class GTSAM_EXPORT ActiveSetFeasibleStepResult {
 /**
  * Active-set solver for LPs and QPs with shared LinearConstraint constraints.
  *
- * QP subproblems can either rebuild sparse working factor graphs or reuse one
- * Hessian factorization with dense active-set Schur complements. Sparse QPs
- * regularize each working graph around the current feasible point and check
+ * QP subproblems use sparse working factor graphs with optional Bayes-tree
+ * reuse, or packed dense systems with rank-aware constraint handling. Both
+ * backends regularize working subproblems around the current point and check
  * convergence against the original, unregularized QP. LP subproblems project
  * the negative objective gradient onto the active constraint surface and
  * detect unbounded descent when no inactive inequality blocks that direction.
@@ -232,7 +232,6 @@ class GTSAM_EXPORT ActiveSetSolver {
  private:
   enum class ProblemType { LP, QP };
   struct DenseQpWorkspace;
-  struct DenseConstraintSystem;
   struct SparseWorkspace;
 
   struct ValueShape {
@@ -295,8 +294,12 @@ class GTSAM_EXPORT ActiveSetSolver {
   void initializeObjective();
   /// Allocate the workspace used only by dense QP mode.
   void initializeDenseQpWorkspace();
-  /// Factor the dense-mode cost, retrying with its regularization floor.
-  void factorDenseQpCost();
+  /// Pack original weighted Jacobians and separate Hessian-native curvature.
+  void packDenseObjective();
+  /// Convert native PSD Hessian curvature once without adding a damping floor.
+  void packDenseHessian(const Matrix& hessian, size_t rowStart);
+  /// Pack every original constraint row once in stable multiplier order.
+  void packDenseConstraints();
   /// Split and normalize constraints into scalar rows.
   void initializeConstraints();
   /// Check the types and dimensions of supplied initial values.
@@ -351,17 +354,16 @@ class GTSAM_EXPORT ActiveSetSolver {
       const VectorValues* proximalCenter = nullptr) const;
   /// Decide when a working-set point is ready for a multiplier check.
   bool shouldInspectOptimality(const InternalState& state,
-                               const VectorValues& candidate,
-                               bool useDenseQp) const;
+                               const VectorValues& candidate) const;
   /// Recover original-QP multipliers, or return false for a proximal-only step.
-  bool recoverSparseMultipliers(const InternalState& state,
-                                const VectorValues& candidate,
-                                SparseWorkspace* workspace,
-                                VectorValues* duals) const;
-  /// Certify the original sparse QP's primal residual, stationarity, and gap.
-  bool originalSparseKktSatisfied(const VectorValues& values,
-                                  const std::vector<bool>& activeRows,
-                                  const VectorValues& duals) const;
+  bool recoverMultipliers(const InternalState& state,
+                           const VectorValues& candidate,
+                           SparseWorkspace* workspace,
+                           VectorValues* duals) const;
+  /// Certify the original QP's primal residual, stationarity, and gap.
+  bool originalQpKktSatisfied(const VectorValues& values,
+                               const std::vector<bool>& activeRows,
+                               const VectorValues& duals) const;
   /// Line-search toward a working-set point and add the first blocking row.
   void moveTowardCandidate(const InternalState& state,
                            const VectorValues& candidate,
@@ -374,17 +376,9 @@ class GTSAM_EXPORT ActiveSetSolver {
   Vector vectorValuesToDenseVector(const VectorValues& values) const;
   /// Recover vector values from the dense workspace ordering.
   VectorValues denseVectorToVectorValues(const Vector& vector) const;
-  /// Apply the cached inverse Hessian through its factorization.
-  Vector applyInverseDenseHessian(const Vector& vector) const;
-  /// Solve the current equality-constrained dense QP.
-  std::pair<VectorValues, VectorValues> solveDenseQpSubproblem(
-      const std::vector<bool>& activeInequalityRows) const;
-  /// Assemble active rows in the dense workspace's stable variable order.
-  DenseConstraintSystem denseConstraintSystem(
-      const std::vector<bool>& activeInequalityRows) const;
-  /// Test whether the dense QP step is within the configured tolerance.
-  bool denseQpStepIsSmall(const VectorValues& candidateValues,
-                          const VectorValues& values) const;
+  /// Solve a dense working face with this optimization call's numerical cache.
+  VectorValues solveDenseQpSubproblem(const InternalState& state,
+                                      SparseWorkspace* workspace) const;
 
   // Internal helpers: state and cold-start feasibility.
   /** Complete cold QP initialization using the main solve's workspace.
