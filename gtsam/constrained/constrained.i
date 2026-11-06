@@ -175,6 +175,11 @@ class QuadraticConstraint {
 #include <gtsam/constrained/ActiveSetSolver.h>
 class ActiveSetSolverParams {
   enum class QpSubproblemSolver { Sparse, Dense };
+  enum class QpInitialization {
+    TightConstraints,
+    ProjectedGradient,
+    FeasibleStepThenProjectedGradient
+  };
 
   ActiveSetSolverParams();
 
@@ -187,7 +192,7 @@ class ActiveSetSolverParams {
   double phaseOneFeasibilityTolerance;
   gtsam::ActiveSetSolverParams::QpSubproblemSolver qpSubproblemSolver;
   bool useIncrementalSparseQp;
-  bool useProjectedGradientInitialization;
+  gtsam::ActiveSetSolverParams::QpInitialization qpInitialization;
   void setOrdering(const gtsam::Ordering& ordering);
   void clearOrdering();
   bool hasOrdering() const;

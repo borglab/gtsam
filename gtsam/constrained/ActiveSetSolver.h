@@ -46,7 +46,24 @@ class GTSAM_EXPORT ActiveSetSolverParams {
     Dense
   };
 
-  /// Maximum number of active-set or proximal iterations.
+  /** How a cold QP selects its initial point and working set. All modes keep
+   * the original objective and constraints; only the last mode may move the
+   * supplied point. An explicit working-set warm start bypasses these modes.
+   */
+  enum class QpInitialization {
+    /// Preserve the point and initially activate every tight inequality.
+    TightConstraints,
+    /// Preserve the point, then release strictly inward rows using the
+    /// negative objective gradient projected onto the feasible tangent cone.
+    ProjectedGradient,
+    /// Attempt one feasible working-face descent step before selecting tight
+    /// rows and projecting the gradient at the resulting point. An unhelpful
+    /// step retains the starting point; numerical failures propagate.
+    FeasibleStepThenProjectedGradient
+  };
+
+  /// Maximum number of main active-set or proximal iterations, including the
+  /// preliminary face solve in FeasibleStepThenProjectedGradient.
   size_t maxIterations = 1000;
   /// Distance at which an inequality is initially considered active.
   double activeTolerance = 1e-7;
@@ -66,13 +83,22 @@ class GTSAM_EXPORT ActiveSetSolverParams {
   QpSubproblemSolver qpSubproblemSolver = QpSubproblemSolver::Sparse;
   /// Reuse sparse QP elimination when additional regularization is zero.
   bool useIncrementalSparseQp = true;
-  /** Seed cold QP working sets using componentwise Euclidean projection of the
-   * negative gradient onto the feasible tangent cone. Explicit warm starts take
-   * precedence; LPs are unchanged. Each component projection uses maxIterations
-   * independently of the main solve and propagates failure. Disabled by
-   * default.
+  /** Cold QP initialization, shared by optimize() and computeFeasibleStep().
+   * FeasibleStepThenProjectedGradient requires a fully feasible starting point
+   * and counts its single face-solve attempt against maxIterations. Both
+   * projection modes solve independent tangent-cone components; each auxiliary
+   * projection has its own maxIterations budget and propagates failure. Their
+   * iterations are excluded from main iteration counts, but all initialization
+   * work is part of the call. LPs accept only TightConstraints. Supplied values
+   * are the starting point; supplying a working-set warm start bypasses this
+   * option. Backend, regularization, tolerances and ordering remain in effect.
+   * For example:
+   * @code
+   * params.qpInitialization = ActiveSetSolverParams::QpInitialization::
+   *     FeasibleStepThenProjectedGradient;
+   * @endcode
    */
-  bool useProjectedGradientInitialization = false;
+  QpInitialization qpInitialization = QpInitialization::TightConstraints;
 
   /** Optional complete permutation of the problem's variable keys. Sparse
    * working graphs and auxiliary projections restrict it to their current
@@ -100,19 +126,22 @@ class GTSAM_EXPORT ActiveSetSolverState {
   std::vector<Vector> inequalityMultipliers;
   std::vector<bool> activeInequalityRows;
   bool converged = false;
+  /// Main iterations including any preliminary initialization face solve;
+  /// excludes auxiliary projected-gradient solves.
   size_t iterations = 0;
 };
 
 /** A feasible-step outcome, with no claim of QP optimality or dual validity. */
 class GTSAM_EXPORT ActiveSetFeasibleStepResult {
  public:
-  /// Outcome of the bounded search, including projected-gradient initialization.
+  /// Outcome of the bounded search, including the selected QP initialization.
   enum class Status { FeasibleProgress, NoProgress, NumericalFailure, IterationLimit };
 
   Values values;
   std::vector<bool> activeInequalityRows;
   Status status = Status::NoProgress;
-  /// Main working-face solves attempted; excludes auxiliary projection solves.
+  /// Main working-face solves attempted, including the preliminary step;
+  /// excludes auxiliary projection solves.
   size_t iterations = 0;
   double initialObjective = 0;
   double objective = 0;
@@ -158,14 +187,17 @@ class GTSAM_EXPORT ActiveSetSolver {
       Params::shared_ptr params = std::make_shared<Params>());
 
   /** Optimize from finite, inequality-feasible values. Equality constraints
-   * are enforced by the working subproblems.
+   * are enforced by the working subproblems. The two-stage initialization mode
+   * additionally requires the supplied point to satisfy the equalities.
    */
   Values optimize(const Values& initialValues) const;
 
   /** Optimize from an initial point and return the final state. */
   std::pair<Values, State> optimizeWithState(const Values& initialValues) const;
 
-  /** Optimize with active-set warm start from a previous state. */
+  /** Optimize with active-set warm start from a previous state, bypassing
+   * qpInitialization and using initialValues as the starting point.
+   */
   std::pair<Values, State> optimizeWithState(const Values& initialValues,
                                              const State& warmStart) const;
 
@@ -183,6 +215,10 @@ class GTSAM_EXPORT ActiveSetSolver {
    * inequality; zero-length blocks update the working set within maxIterations.
    * A useful step must exceed stepTolerance in infinity norm and strictly
    * decrease the original objective. No multiplier or optimality test is made.
+   * FeasibleStepThenProjectedGradient completes its preliminary face solve and
+   * projected working-set selection, then returns any useful descent already
+   * obtained there without taking another face step. Its preliminary attempt
+   * shares the iteration budget and sparse workspace with subsequent search.
    *
    * Invalid initial values, infeasible points and LPs throw. Numerical failures
    * and iteration limits are returned explicitly, including initialization
@@ -252,7 +288,7 @@ class GTSAM_EXPORT ActiveSetSolver {
   // Internal helpers: setup and value representation.
   /// Record the dimensions of all keys in the problem.
   void initializeDimensions();
-  /// Validate finite nonnegative tolerances and a complete custom ordering.
+  /** Validate the initialization mode, tolerances and complete custom ordering. */
   void validateParameters() const;
   /// Build the stored QP graph or LP gradient.
   void initializeObjective();
@@ -275,9 +311,16 @@ class GTSAM_EXPORT ActiveSetSolver {
                               const Values& prototype) const;
 
   // Internal helpers: sparse working set and optimality.
-  /// Run bounded working-face solves, stopping at the first feasible descent.
-  void searchFeasibleStep(InternalState state, const Values& prototype,
+  /** Search for feasible descent using the shared main-iteration budget and
+   * elimination workspace. Failed attempts still update state.iterations.
+   */
+  void searchFeasibleStep(InternalState* state, const Values& prototype,
+                          SparseWorkspace* workspace,
                           ActiveSetFeasibleStepResult* result) const;
+  /** Solve the configured QP working face and truncate at the first blocker.
+   * Count the attempt before elimination and check every original constraint.
+   */
+  void takeFeasibleStep(InternalState* state, SparseWorkspace* workspace) const;
   /// Check and record a feasible displacement without assigning optimality.
   bool inspectFeasibleStep(const InternalState& next, const Values& prototype,
                            ActiveSetFeasibleStepResult* result) const;
@@ -340,13 +383,26 @@ class GTSAM_EXPORT ActiveSetSolver {
                           const VectorValues& values) const;
 
   // Internal helpers: state and cold-start feasibility.
+  /** Complete cold QP initialization using the main solve's workspace.
+   * Callers with explicit working-set warm starts bypass this helper.
+   */
+  void initializeQp(InternalState* state, SparseWorkspace* workspace) const;
+  /** Attempt one face step from a fully feasible point. Accept only useful
+   * original-objective descent, then rebuild all tight rows before projection.
+   */
+  void initializeFeasiblePoint(InternalState* state,
+                               SparseWorkspace* workspace) const;
+  /** Rebuild the working set from all tight rows at the current point. */
+  void initializeTightRows(InternalState* state) const;
   /** Select tight rows using the projected gradient without moving the point.
    * Components follow equality and tight-inequality connectivity, independently
    * of objective coupling. Strict inward derivatives release rows; all original
    * constraints remain in the main solve.
    */
   void initializeProjectedGradient(InternalState* state) const;
-  /// Initialize active rows from values or a warm start.
+  /** Preserve supplied values and select warm-start rows or all tight rows.
+   * The QP initialization strategy is applied separately by initializeQp().
+   */
   InternalState initialState(const Values& values,
                              const State* warmStart) const;
   /// Restore constraint row order and value shapes in the public state.

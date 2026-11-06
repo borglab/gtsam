@@ -962,7 +962,9 @@ namespace projected_gradient_initialization {
 ActiveSetSolverParams::shared_ptr Parameters(bool projected = true) {
   auto params = std::make_shared<ActiveSetSolverParams>();
   params->regularization = 0;
-  params->useProjectedGradientInitialization = projected;
+  params->qpInitialization =
+      projected ? ActiveSetSolverParams::QpInitialization::ProjectedGradient
+                : ActiveSetSolverParams::QpInitialization::TightConstraints;
   return params;
 }
 
@@ -1109,7 +1111,8 @@ TEST(ActiveSetSolver, ProjectedGradientQpsFixtures) {
       params->regularization = 1e-9;  // Match the existing QPS fixture defaults.
       const auto baseline =
           ActiveSetSolver(problem, params).optimizeWithState();
-      params->useProjectedGradientInitialization = true;
+      params->qpInitialization =
+          ActiveSetSolverParams::QpInitialization::ProjectedGradient;
       const auto projected =
           ActiveSetSolver(problem, params).optimizeWithState();
       CHECK(projected.second.converged);
@@ -1117,6 +1120,47 @@ TEST(ActiveSetSolver, ProjectedGradientQpsFixtures) {
       EXPECT_DOUBLES_EQUAL(problem.costs().error(baseline.first),
                            problem.costs().error(projected.first), 1e-6);
     }
+  }
+}
+
+// The two-stage mode preserves sparse standard-fixture solutions and phase one.
+TEST(ActiveSetSolver, FeasibleThenProjectedGradientQpsFixtures) {
+  for (const std::string name :
+       {"QPExample.QPS", "HS21.QPS", "HS35.QPS", "HS35MOD.QPS", "HS51.QPS",
+        "HS52.QPS", "HS268.QPS", "QPTEST.QPS"}) {
+    const auto problem = qps_file_examples::ParseQpsProblem(name);
+    auto params = Parameters(false);
+    const auto baseline = ActiveSetSolver(problem, params).optimizeWithState();
+    params->qpInitialization = ActiveSetSolverParams::QpInitialization::
+        FeasibleStepThenProjectedGradient;
+    const auto initialized =
+        ActiveSetSolver(problem, params).optimizeWithState();
+    CHECK(initialized.second.converged);
+    CHECK(assert_equal(baseline.first, initialized.first, 1e-5));
+  }
+}
+
+// Dense HS52 can miss exact equalities at default regularization. The new
+// initializer must reject that candidate rather than weaken its certificate.
+TEST(ActiveSetSolver, FeasibleInitializationChecksDenseCandidate) {
+  const auto problem = qps_file_examples::ParseQpsProblem("HS52.QPS");
+  auto params = Parameters(false);
+  params->qpSubproblemSolver = ActiveSetSolverParams::QpSubproblemSolver::Dense;
+  params->regularization = 1e-9;
+  const auto baseline = ActiveSetSolver(problem, params).optimize();
+  params->qpInitialization = ActiveSetSolverParams::QpInitialization::
+      FeasibleStepThenProjectedGradient;
+  try {
+    const auto result = ActiveSetSolver(problem, params).optimize();
+    CHECK(problem.eConstraints()
+              .violationVector(result, false)
+              .lpNorm<Eigen::Infinity>() <= params->feasibilityTolerance);
+  } catch (const std::runtime_error& error) {
+    CHECK(std::string(error.what()) ==
+          "ActiveSetSolver: feasible step failed constraint checks.");
+    CHECK(problem.eConstraints()
+              .violationVector(baseline, false)
+              .lpNorm<Eigen::Infinity>() > params->feasibilityTolerance);
   }
 }
 
