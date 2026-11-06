@@ -888,6 +888,73 @@ TEST(ActiveSetSolver, OrderingAcrossBoundSwap) {
 }  // namespace sparse_ordering
 /* ************************************************************************* */
 
+/* ************************************************************************* */
+namespace incremental_sparse_qp {
+
+// Batch and incremental solves agree when bounds swap or a row introduces a key.
+TEST(ActiveSetSolver, IncrementalWorkingSetMatchesBatch) {
+  for (bool constraintOnlyKey : {false, true}) {
+    QpProblem problem;
+    problem.addCost(JacobianFactor(10, Matrix::Identity(1, 1), Vector1(2.0)));
+    problem.addConstraint(LinearConstraint::GreaterEqual(
+        JacobianFactor(10, Matrix::Identity(1, 1), Vector1(0.0))));
+    const JacobianFactor upper = constraintOnlyKey
+        ? JacobianFactor(10, Matrix::Identity(1, 1), 30,
+                         Matrix::Identity(1, 1), Vector1(1.0))
+        : JacobianFactor(10, Matrix::Identity(1, 1), Vector1(1.0));
+    problem.addConstraint(LinearConstraint::LessEqual(upper));
+    Values initial, batch;
+    initial.insert(10, Vector(Vector1(0.0)));
+    if (constraintOnlyKey) initial.insert(30, Vector(Vector1(0.0)));
+    for (bool incremental : {false, true}) {
+      auto params = std::make_shared<ActiveSetSolverParams>();
+      params->regularization = 0;
+      params->useIncrementalSparseQp = incremental;
+      params->maxIterations = 3;
+      const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
+      CHECK(result.second.converged);
+      CHECK(result.second.iterations == 3);
+      CHECK(assert_equal(Vector1(constraintOnlyKey ? 2.0 : 1.0),
+                          result.first.at<Vector>(10), 1e-9));
+      if (incremental) {
+        CHECK(assert_equal(batch, result.first, 1e-9));
+      } else {
+        batch = result.first;
+      }
+    }
+  }
+}
+
+// Removing redundant active bounds retains feasibility and valid multipliers.
+TEST(ActiveSetSolver, IncrementalOpposingAndDuplicateBounds) {
+  for (double target : {-1.0, 1.0}) {
+    QpProblem problem;
+    problem.addCost(HessianFactor(0, Matrix::Ones(1, 1), Vector1(target), 0));
+    const auto upper = LinearConstraint::LessEqual(
+        JacobianFactor(0, Matrix::Ones(1, 1), Vector1(0.0)));
+    problem.addConstraint(upper);
+    problem.addConstraint(upper);
+    problem.addConstraint(LinearConstraint::GreaterEqual(
+        JacobianFactor(0, Matrix::Ones(1, 1), Vector1(0.0))));
+    Values initial;
+    initial.insert(0, Vector(Vector1(0.0)));
+    for (bool incremental : {false, true}) {
+      auto params = std::make_shared<ActiveSetSolverParams>();
+      params->regularization = 0;
+      params->useIncrementalSparseQp = incremental;
+      const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
+      CHECK(result.second.converged);
+      CHECK(assert_equal(Vector1(0.0), result.first.at<Vector>(0), 1e-9));
+      const auto& duals = result.second.inequalityMultipliers;
+      for (const Vector& dual : duals) CHECK(dual(0) <= 1e-9);
+      EXPECT_DOUBLES_EQUAL(-target, duals[0](0) + duals[1](0) - duals[2](0), 1e-9);
+    }
+  }
+}
+
+}  // namespace incremental_sparse_qp
+/* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

@@ -186,6 +186,7 @@ class ActiveSetSolverParams {
   double regularization;
   double phaseOneFeasibilityTolerance;
   gtsam::ActiveSetSolverParams::QpSubproblemSolver qpSubproblemSolver;
+  bool useIncrementalSparseQp;
 };
 
 #include <gtsam/constrained/LpProblem.h>
