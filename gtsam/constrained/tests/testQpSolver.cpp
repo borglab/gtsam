@@ -831,6 +831,63 @@ TEST(ActiveSetSolver, ReleaseUnregularizedBoundWithoutDuplicateSolve) {
 }  // namespace square_root_qp
 /* ************************************************************************* */
 
+/* ************************************************************************* */
+namespace sparse_ordering {
+
+// Activating a row can introduce a variable absent from the objective graph.
+TEST(ActiveSetSolver, OrderingIncludesNewConstraintVariable) {
+  QpProblem problem;
+  problem.addCost(JacobianFactor(10, Matrix::Identity(1, 1), Vector1(2.0)));
+  problem.addConstraint(LinearConstraint::LessEqual(JacobianFactor(
+      10, Matrix::Identity(1, 1), 30, Matrix::Identity(1, 1), Vector1(1.0))));
+  auto params = std::make_shared<ActiveSetSolverParams>();
+  params->regularization = 0;
+  params->maxIterations = 2;
+  Values initial;
+  initial.insert(10, Vector(Vector1(0.0)));
+  initial.insert(30, Vector(Vector1(0.0)));
+  const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
+  CHECK(result.second.converged);
+  CHECK(assert_equal(Vector1(2.0), result.first.at<Vector>(10), 1e-9));
+  CHECK(assert_equal(Vector1(-1.0), result.first.at<Vector>(30), 1e-9));
+  CHECK(result.second.iterations == 2);
+  CHECK(result.second.activeInequalityRows[0]);
+  EXPECT_DOUBLES_EQUAL(0, result.second.inequalityMultipliers[0](0), 1e-9);
+}
+
+// Reuse the primal ordering as rows change, but replace a dual ordering when
+// one bound replaces another, even though the multiplier key count is unchanged.
+TEST(ActiveSetSolver, OrderingAcrossBoundSwap) {
+  QpProblem problem;
+  problem.addCost(JacobianFactor(10, Matrix::Identity(1, 1), Vector1(2.0)));
+  problem.addCost(JacobianFactor(30, Matrix::Identity(1, 1), Vector1(3.0)));
+  problem.addConstraint(LinearConstraint::GreaterEqual(
+      JacobianFactor(10, Matrix::Identity(1, 1), Vector1(0.0))));
+  problem.addConstraint(LinearConstraint::LessEqual(
+      JacobianFactor(10, Matrix::Identity(1, 1), Vector1(1.0))));
+  auto params = std::make_shared<ActiveSetSolverParams>();
+  params->regularization = 0;
+  params->maxIterations = 3;
+  const ActiveSetSolver solver(problem, params);
+  for (double start : {0.0, 1.0}) {
+    Values initial;
+    initial.insert(10, Vector(Vector1(start)));
+    initial.insert(30, Vector(Vector1(0.0)));
+    const auto result = solver.optimizeWithState(initial);
+    CHECK(result.second.converged);
+    CHECK(assert_equal(Vector1(1.0), result.first.at<Vector>(10), 1e-9));
+    CHECK(assert_equal(Vector1(3.0), result.first.at<Vector>(30), 1e-9));
+    EXPECT_DOUBLES_EQUAL(0, result.second.inequalityMultipliers[0](0), 1e-9);
+    EXPECT_DOUBLES_EQUAL(-1, result.second.inequalityMultipliers[1](0), 1e-9);
+    CHECK(!result.second.activeInequalityRows[0]);
+    CHECK(result.second.activeInequalityRows[1]);
+    CHECK(result.second.iterations == (start == 0.0 ? 3 : 1));
+  }
+}
+
+}  // namespace sparse_ordering
+/* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

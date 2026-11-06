@@ -53,9 +53,30 @@ struct ActiveSetSolver::DenseConstraintSystem {
   std::vector<Key> multiplierKeys;
 };
 
+// Orderings belong to one optimization call, so concurrent calls do not share
+// mutable caches. Active-row changes can change the dual graph's variable set;
+// primal keys normally stay fixed even as its factor connectivity changes.
+struct ActiveSetSolver::SparseWorkspace {
+  KeySet primalKeys, dualKeys;
+  Ordering primalOrdering, dualOrdering;
+};
+
 namespace {
 
 constexpr double kMinimumDenseRegularization = 1e-6;
+
+/* ************************************************************************* */
+// Any complete ordering remains valid when only factor connectivity changes.
+// Recompute COLAMD only when graph variables enter or leave the working set.
+const Ordering& cachedOrdering(const GaussianFactorGraph& graph, KeySet* keys,
+                               Ordering* ordering) {
+  const KeySet graphKeys = graph.keys();
+  if (graphKeys != *keys) {
+    *ordering = Ordering::Colamd(graph);
+    *keys = graphKeys;
+  }
+  return *ordering;
+}
 
 /* ************************************************************************* */
 Vector DirectVectorOrMatrixValue(const Values& values, Key key) {
@@ -299,10 +320,12 @@ GaussianFactorGraph::EliminationResult eliminateDualWithGauge(
 
 /* ************************************************************************* */
 DualSolveResult solveRankDeficientDualGraph(const GaussianFactorGraph& graph,
+                                            const Ordering& ordering,
                                             double tolerance) {
   const auto scales = dualColumnScales(graph);
   DualSolveResult result;
   result.multipliers = graph.optimize(
+      ordering,
       [&](const GaussianFactorGraph& factors, const Ordering& frontals) {
         return eliminateDualWithGauge(factors, frontals, scales);
       });
@@ -315,6 +338,7 @@ DualSolveResult solveRankDeficientDualGraph(const GaussianFactorGraph& graph,
 
 /* ************************************************************************* */
 DualSolveResult SolveSparseDualGraph(const GaussianFactorGraph& graph,
+                                     const Ordering& ordering,
                                      double tolerance,
                                      bool checkStationarity = true) {
   if (graph.empty()) return {};
@@ -322,7 +346,7 @@ DualSolveResult SolveSparseDualGraph(const GaussianFactorGraph& graph,
     // The usual graph solve is faster, but a successful factorization alone
     // does not prove that an overdetermined stationarity equation is exact.
     DualSolveResult result;
-    result.multipliers = graph.optimize();
+    result.multipliers = graph.optimize(ordering);
     if (!checkStationarity) return result;
     double rhsNorm;
     std::tie(result.residual, rhsNorm) =
@@ -332,7 +356,8 @@ DualSolveResult SolveSparseDualGraph(const GaussianFactorGraph& graph,
   } catch (const IndeterminateSystemException&) {
     // The graph QR fallback fixes free multiplier coordinates clique by clique.
   }
-  DualSolveResult result = solveRankDeficientDualGraph(graph, tolerance);
+  DualSolveResult result =
+      solveRankDeficientDualGraph(graph, ordering, tolerance);
   if (!checkStationarity && !result.consistent())
     throw std::runtime_error("Multiplier graph QR: inconsistent stationarity");
   return result;
@@ -955,7 +980,7 @@ ActiveSetSolver::InternalState ActiveSetSolver::initialState(
 
 /* ************************************************************************* */
 ActiveSetSolver::InternalState ActiveSetSolver::iterate(
-    const InternalState& state) const {
+    const InternalState& state, SparseWorkspace* workspace) const {
   const bool useDenseQp =
       problemType_ == ProblemType::QP &&
       params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense;
@@ -975,8 +1000,10 @@ ActiveSetSolver::InternalState ActiveSetSolver::iterate(
                     });
     const GaussianFactorGraph workingGraph =
         buildWorkingGraph(state.values, state.activeInequalityRows);
-    candidate = squareRootQp ? workingGraph.optimize(EliminateQR)
-                            : workingGraph.optimize();
+    const Ordering& ordering = cachedOrdering(
+        workingGraph, &workspace->primalKeys, &workspace->primalOrdering);
+    candidate = squareRootQp ? workingGraph.optimize(ordering, EliminateQR)
+                            : workingGraph.optimize(ordering);
     CompleteMissingKeys(&candidate, state.values, keyDims_);
   }
 
@@ -989,7 +1016,8 @@ ActiveSetSolver::InternalState ActiveSetSolver::iterate(
 
   if (useDenseQp) {
     next.duals = subproblemDuals;
-  } else if (!recoverSparseMultipliers(state, candidate, &next.duals)) {
+  } else if (!recoverSparseMultipliers(state, candidate, workspace,
+                                       &next.duals)) {
     next.values = candidate;
     return next;
   }
@@ -1032,11 +1060,16 @@ bool ActiveSetSolver::shouldInspectOptimality(const InternalState& state,
 /* ************************************************************************* */
 bool ActiveSetSolver::recoverSparseMultipliers(const InternalState& state,
                                                const VectorValues& candidate,
+                                               SparseWorkspace* workspace,
                                                VectorValues* duals) const {
   // The original gradient is the only one that can certify a solution.
+  const GaussianFactorGraph dualGraph =
+      buildDualGraph(constraints_, state.activeInequalityRows, candidate);
+  const Ordering& ordering = cachedOrdering(
+      dualGraph, &workspace->dualKeys, &workspace->dualOrdering);
   const DualSolveResult original = SolveSparseDualGraph(
-      buildDualGraph(constraints_, state.activeInequalityRows, candidate),
-      params_->multiplierTolerance, problemType_ == ProblemType::QP);
+      dualGraph, ordering, params_->multiplierTolerance,
+      problemType_ == ProblemType::QP);
   if (original.consistent()) {
     *duals = original.multipliers;
     return true;
@@ -1046,7 +1079,7 @@ bool ActiveSetSolver::recoverSparseMultipliers(const InternalState& state,
     const DualSolveResult proximal = SolveSparseDualGraph(
         buildDualGraph(constraints_, state.activeInequalityRows, candidate,
                        &state.values),
-        params_->multiplierTolerance);
+        ordering, params_->multiplierTolerance);
     if (proximal.consistent()) {
       // Only the proximal subproblem is stationary. The next iteration must
       // recenter at candidate; its multipliers cannot certify the original QP.
@@ -1200,11 +1233,12 @@ std::pair<Values, ActiveSetSolver::State> ActiveSetSolver::optimizeWithState(
     const Values& initialValues, const State* warmStart) const {
   validateInitialValues(initialValues);
   InternalState state = initialState(initialValues, warmStart);
+  SparseWorkspace workspace;
   while (!state.converged) {
     if (state.iterations >= params_->maxIterations) {
       throw std::runtime_error("ActiveSetSolver: failed to converge.");
     }
-    state = iterate(state);
+    state = iterate(state, &workspace);
   }
   State publicState = buildPublicState(state, initialValues);
   return {publicState.values, publicState};

@@ -35,7 +35,8 @@ class GTSAM_EXPORT ActiveSetSolverParams {
 
   /// Strategy used to solve equality-constrained QP active-set subproblems.
   enum class QpSubproblemSolver {
-    /// Rebuild and eliminate a sparse working factor graph each iteration.
+    /// Rebuild and eliminate a sparse working graph, reusing its ordering
+    /// while the variable keys stay unchanged.
     Sparse,
     /// Reuse one Hessian factorization and solve dense active-set Schur
     /// systems.
@@ -119,6 +120,7 @@ class GTSAM_EXPORT ActiveSetSolver {
   enum class ProblemType { LP, QP };
   struct DenseQpWorkspace;
   struct DenseConstraintSystem;
+  struct SparseWorkspace;
 
   struct ValueShape {
     enum class Type { Vector, Matrix };
@@ -165,8 +167,9 @@ class GTSAM_EXPORT ActiveSetSolver {
   /// Run the active-set loop from the supplied initial values and state.
   std::pair<Values, State> optimizeWithState(const Values& initialValues,
                                              const State* warmStart) const;
-  /// Advance the current active set by one subproblem solve.
-  InternalState iterate(const InternalState& state) const;
+  /// Advance the active set, reusing this optimization call's sparse orderings.
+  InternalState iterate(const InternalState& state,
+                        SparseWorkspace* workspace) const;
 
  private:
   // Internal helpers: setup and value representation.
@@ -210,6 +213,7 @@ class GTSAM_EXPORT ActiveSetSolver {
   /// Recover original-QP multipliers, or return false for a proximal-only step.
   bool recoverSparseMultipliers(const InternalState& state,
                                 const VectorValues& candidate,
+                                SparseWorkspace* workspace,
                                 VectorValues* duals) const;
   /// Certify the original sparse QP's primal residual, stationarity, and gap.
   bool originalSparseKktSatisfied(const VectorValues& values,
