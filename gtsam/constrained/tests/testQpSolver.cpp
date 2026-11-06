@@ -955,6 +955,173 @@ TEST(ActiveSetSolver, IncrementalOpposingAndDuplicateBounds) {
 }  // namespace incremental_sparse_qp
 /* ************************************************************************* */
 
+/* ************************************************************************* */
+namespace projected_gradient_initialization {
+
+ActiveSetSolverParams::shared_ptr Parameters(bool projected = true) {
+  auto params = std::make_shared<ActiveSetSolverParams>();
+  params->regularization = 0;
+  params->useProjectedGradientInitialization = projected;
+  return params;
+}
+
+// Independent bounds can be released together despite a coupled objective.
+TEST(ActiveSetSolver, ProjectedGradientIndependentBounds) {
+  QpProblem problem;
+  Values initial;
+  for (Key key = 0; key < 6; ++key) {
+    initial.insert(key, Vector::Zero(1).eval());
+    problem.addCost(JacobianFactor(key, Matrix::Identity(1, 1), Vector1(2)));
+    problem.addConstraint(LinearConstraint::GreaterEqual(
+        JacobianFactor(key, Matrix::Identity(1, 1), Vector1(0))));
+    if (key > 0)
+      problem.addCost(JacobianFactor(key - 1, Matrix::Identity(1, 1), key,
+                                     -Matrix::Identity(1, 1), Vector1(0)));
+  }
+  const auto baseline =
+      ActiveSetSolver(problem, Parameters(false)).optimizeWithState(initial);
+  for (bool incremental : {false, true}) {
+    auto params = Parameters();
+    params->useIncrementalSparseQp = incremental;
+    params->maxIterations = 3;
+    const auto result =
+        ActiveSetSolver(problem, params).optimizeWithState(initial);
+    CHECK(result.second.converged);
+    CHECK(result.second.iterations == 1);
+    CHECK(baseline.second.iterations > result.second.iterations);
+    CHECK(assert_equal(baseline.first, result.first, 1e-9));
+  }
+}
+
+// Affine equalities join projection components; an initially slack upper bound
+// still blocks the main QP. Constraint scales and sigmas do not change the
+// seed.
+TEST(ActiveSetSolver, ProjectedGradientAffineEqualityAndInactiveBound) {
+  for (double scale : {1e-5, 1.0, 1e5}) {
+    QpProblem problem;
+    problem.addCost(JacobianFactor(0, Matrix::Identity(1, 1), Vector1(3)));
+    problem.addCost(JacobianFactor(1, Matrix::Identity(1, 1), Vector1(0)));
+    problem.addConstraint(LinearConstraint::Equal(JacobianFactor(
+        0, Matrix::Identity(1, 1), 1, Matrix::Identity(1, 1), Vector1(3))));
+    problem.addConstraint(LinearConstraint::GreaterEqual(
+        JacobianFactor(0, scale * Matrix::Identity(1, 1), Vector1(scale)),
+        Vector1(7)));
+    problem.addConstraint(LinearConstraint::LessEqual(
+        JacobianFactor(0, Matrix::Identity(1, 1), Vector1(2)), Vector1(3)));
+    Values initial;
+    initial.insert(0, Vector(Vector1(1)));
+    initial.insert(1, Vector(Vector1(2)));
+    const auto result =
+        ActiveSetSolver(problem, Parameters()).optimizeWithState(initial);
+    CHECK(result.second.converged);
+    CHECK(result.second.iterations == 2);
+    CHECK(assert_equal(Vector1(2), result.first.at<Vector>(0), 1e-8));
+    CHECK(assert_equal(Vector1(1), result.first.at<Vector>(1), 1e-8));
+    CHECK(!result.second.activeInequalityRows[0]);
+    CHECK(result.second.activeInequalityRows[1]);
+  }
+}
+
+// A vector block releases one row while dependent/opposing rows remain
+// feasible; an unconstrained matrix value retains its shape.
+TEST(ActiveSetSolver, ProjectedGradientDependentRowsAndMatrixValues) {
+  QpProblem problem;
+  problem.addCost(JacobianFactor(0, Matrix::Identity(2, 2), Vector2(2, -1)));
+  problem.addCost(JacobianFactor(1, Matrix::Identity(2, 2), Vector2(3, 4)));
+  problem.addConstraint(LinearConstraint::GreaterEqual(
+      JacobianFactor(0, Matrix::Identity(2, 2), Vector2::Zero()),
+      Vector2(2, 3)));
+  const Matrix row = (Matrix(1, 2) << 0, 1).finished();
+  problem.addConstraint(
+      LinearConstraint::GreaterEqual(JacobianFactor(0, 2 * row, Vector1(0))));
+  problem.addConstraint(
+      LinearConstraint::LessEqual(JacobianFactor(0, row, Vector1(0))));
+  Values initial;
+  initial.insert(0, Vector(Vector2::Zero()));
+  initial.insert(1, Matrix::Zero(1, 2).eval());
+  const auto result =
+      ActiveSetSolver(problem, Parameters()).optimizeWithState(initial);
+  CHECK(result.second.converged);
+  CHECK(assert_equal(Vector2(2, 0), result.first.at<Vector>(0), 1e-8));
+  CHECK(assert_equal((Matrix(1, 2) << 3, 4).finished(),
+                     result.first.at<Matrix>(1), 1e-8));
+  CHECK(!result.second.activeInequalityRows[0]);
+  for (const auto& multiplier : result.second.inequalityMultipliers)
+    CHECK(multiplier.maxCoeff() <= 1e-7);
+}
+
+// Warm starts bypass projection; an exhausted auxiliary solve fails explicitly.
+TEST(ActiveSetSolver, ProjectedGradientWarmStartAndFailure) {
+  QpProblem problem;
+  problem.addCost(JacobianFactor(0, Matrix::Identity(1, 1), Vector1(2)));
+  problem.addConstraint(LinearConstraint::GreaterEqual(
+      JacobianFactor(0, Matrix::Identity(1, 1), Vector1(0))));
+  Values initial;
+  initial.insert(0, Vector(Vector1(0)));
+  auto params = Parameters();
+  params->maxIterations = 1;
+  ActiveSetSolverState warm;
+  warm.activeInequalityRows = {false};
+  const ActiveSetSolver solver(problem, params);
+  CHECK(solver.optimizeWithState(initial, warm).second.converged);
+  bool failedProjection = false;
+  try {
+    solver.optimizeWithState(initial);
+  } catch (const std::runtime_error& error) {
+    failedProjection = std::string(error.what())
+                           .find("projected-gradient initialization failed") !=
+                       std::string::npos;
+  }
+  CHECK(failedProjection);
+}
+
+// No tight inequalities require a projection, including an unconstrained QP.
+TEST(ActiveSetSolver, ProjectedGradientNoTightInequalities) {
+  for (bool addSlack : {false, true}) {
+    QpProblem problem;
+    problem.addCost(JacobianFactor(0, Matrix::Identity(1, 1), Vector1(2)));
+    if (addSlack)
+      problem.addConstraint(LinearConstraint::GreaterEqual(
+          JacobianFactor(0, Matrix::Identity(1, 1), Vector1(-1))));
+    Values initial;
+    initial.insert(0, Vector(Vector1(0)));
+    auto params = Parameters();
+    params->maxIterations = 1;
+    const auto result =
+        ActiveSetSolver(problem, params).optimizeWithState(initial);
+    CHECK(result.second.iterations == 1);
+    CHECK(assert_equal(Vector1(2), result.first.at<Vector>(0), 1e-9));
+  }
+}
+
+// Standard fixtures retain their solutions, including cold feasibility recovery
+// and both main QP backends; projection always uses the sparse backend.
+TEST(ActiveSetSolver, ProjectedGradientQpsFixtures) {
+  for (const std::string name :
+       {"QPExample.QPS", "HS21.QPS", "HS35.QPS", "HS35MOD.QPS", "HS51.QPS",
+        "HS52.QPS", "HS268.QPS", "QPTEST.QPS"}) {
+    const auto problem = qps_file_examples::ParseQpsProblem(name);
+    for (auto backend : {ActiveSetSolverParams::QpSubproblemSolver::Sparse,
+                         ActiveSetSolverParams::QpSubproblemSolver::Dense}) {
+      auto params = Parameters(false);
+      params->qpSubproblemSolver = backend;
+      params->regularization = 1e-9;  // Match the existing QPS fixture defaults.
+      const auto baseline =
+          ActiveSetSolver(problem, params).optimizeWithState();
+      params->useProjectedGradientInitialization = true;
+      const auto projected =
+          ActiveSetSolver(problem, params).optimizeWithState();
+      CHECK(projected.second.converged);
+      CHECK(assert_equal(baseline.first, projected.first, 1e-5));
+      EXPECT_DOUBLES_EQUAL(problem.costs().error(baseline.first),
+                           problem.costs().error(projected.first), 1e-6);
+    }
+  }
+}
+
+}  // namespace projected_gradient_initialization
+/* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

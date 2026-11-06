@@ -61,6 +61,13 @@ class GTSAM_EXPORT ActiveSetSolverParams {
   QpSubproblemSolver qpSubproblemSolver = QpSubproblemSolver::Sparse;
   /// Reuse sparse QP elimination when additional regularization is zero.
   bool useIncrementalSparseQp = true;
+  /** Seed cold QP working sets using componentwise Euclidean projection of the
+   * negative gradient onto the feasible tangent cone. Explicit warm starts take
+   * precedence; LPs are unchanged. Each component projection uses maxIterations
+   * independently of the main solve and propagates failure. Disabled by
+   * default.
+   */
+  bool useProjectedGradientInitialization = false;
 };
 
 /** Final active-set state, including row-ordered multipliers. */
@@ -254,6 +261,12 @@ class GTSAM_EXPORT ActiveSetSolver {
                           const VectorValues& values) const;
 
   // Internal helpers: state and cold-start feasibility.
+  /** Select tight rows using the projected gradient without moving the point.
+   * Components follow equality and tight-inequality connectivity, independently
+   * of objective coupling. Strict inward derivatives release rows; all original
+   * constraints remain in the main solve.
+   */
+  void initializeProjectedGradient(InternalState* state) const;
   /// Initialize active rows from values or a warm start.
   InternalState initialState(const Values& values,
                              const State* warmStart) const;
