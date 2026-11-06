@@ -18,13 +18,14 @@
 #include <gtsam/base/DSFMap.h>
 #include <gtsam/base/GenericValue.h>
 #include <gtsam/constrained/ActiveSetSolver.h>
+#include <gtsam/constrained/internal/DenseQpSolver.h>
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianISAM2.h>
 #include <gtsam/linear/linearExceptions.h>
 
-#include <Eigen/Cholesky>
+#include <Eigen/Eigenvalues>
 #include <Eigen/QR>
 #include <algorithm>
 #include <cmath>
@@ -38,28 +39,20 @@
 
 namespace gtsam {
 
-// Dense QP mode is allocated only when requested. It stores the reusable
-// Hessian factorization and the key-to-offset map needed by dense vectors.
+// Dense inputs are packed once behind the factor-graph API. Mutable numerical
+// workspaces live in SparseWorkspace, which belongs to one optimization call.
 struct ActiveSetSolver::DenseQpWorkspace {
   Ordering hessianOrdering;
-  GaussianBayesNet::shared_ptr costBayesNet;
   std::map<Key, size_t> keyOffsets;
   size_t totalDim = 0;
-  Vector unconstrainedMinimum;
-};
-
-// Dense rows are assembled only in dense mode, in the same order as their
-// multiplier keys. Sparse mode keeps each row as a factor instead.
-struct ActiveSetSolver::DenseConstraintSystem {
-  Matrix normals;
-  Vector rhs;
-  std::vector<Key> multiplierKeys;
+  internal::DenseQpData data;
 };
 
 // Orderings belong to one optimization call, so concurrent calls do not share
 // mutable caches. Active-row changes can change the dual graph's variable set;
 // primal keys normally stay fixed even as its factor connectivity changes.
 struct ActiveSetSolver::SparseWorkspace {
+  std::unique_ptr<internal::DenseQpSolver> dense;
   KeySet primalKeys, dualKeys;
   Ordering primalOrdering, dualOrdering;
   std::unique_ptr<GaussianISAM2> incrementalPrimal;
@@ -68,8 +61,6 @@ struct ActiveSetSolver::SparseWorkspace {
 };
 
 namespace {
-
-constexpr double kMinimumDenseRegularization = 1e-6;
 
 // Preserve the existing runtime_error contract while distinguishing exhausted
 // auxiliary projection solves from numerical failure in computeFeasibleStep.
@@ -239,30 +230,40 @@ void CompleteMissingKeys(VectorValues* values, const VectorValues& fallback,
 }
 
 /* ************************************************************************* */
-void AddRegularization(GaussianFactorGraph* graph,
-                       const std::map<Key, size_t>& keyDims,
-                       double regularization) {
-  const double sigma = std::sqrt(regularization);
-  for (const auto& [key, dim] : keyDims) {
-    graph->push_back(JacobianFactor(key, sigma * Matrix::Identity(dim, dim),
-                                    Vector::Zero(dim)));
+// Scatter only Hessian-native costs; original Jacobians retain their square
+// roots. This helper does not add curvature or change the original linear term.
+void accumulateDenseHessian(const HessianFactor& factor,
+                            const std::map<Key, size_t>& offsets,
+                            Matrix* hessian, Vector* linear) {
+  const Matrix information = factor.information();
+  size_t localRow = 0;
+  for (auto i = factor.begin(); i != factor.end(); ++i) {
+    const size_t ni = factor.getDim(i), gi = offsets.at(*i);
+    linear->segment(gi, ni) += factor.linearTerm(i);
+    size_t localCol = 0;
+    for (auto j = factor.begin(); j != factor.end(); ++j) {
+      const size_t nj = factor.getDim(j), gj = offsets.at(*j);
+      hessian->block(gi, gj, ni, nj) +=
+          information.block(localRow, localCol, ni, nj);
+      localCol += nj;
+    }
+    localRow += ni;
   }
 }
 
 /* ************************************************************************* */
-bool DenseSchurComplementIsSingular(const Eigen::LDLT<Matrix>& ldlt,
-                                    const Matrix& schurComplement) {
-  if (ldlt.info() != Eigen::Success) {
-    return true;
+// Pack already whitened local blocks without forming objective normal equations.
+void packDenseJacobians(const std::vector<JacobianFactor>& factors,
+                         const std::map<Key, size_t>& offsets,
+                         internal::DenseQpData* data) {
+  size_t row = 0;
+  for (const auto& factor : factors) {
+    for (auto key = factor.begin(); key != factor.end(); ++key)
+      data->jacobian.block(row, offsets.at(*key), factor.rows(),
+                           factor.getDim(key)) = factor.getA(key);
+    data->rhs.segment(row, factor.rows()) = factor.getb();
+    row += factor.rows();
   }
-  const Vector diagonal = ldlt.vectorD();
-  if (diagonal.size() == 0) {
-    return false;
-  }
-  const double tolerance = std::numeric_limits<double>::epsilon() *
-                           static_cast<double>(diagonal.size()) *
-                           std::max(1.0, schurComplement.norm());
-  return diagonal.cwiseAbs().minCoeff() <= tolerance;
 }
 
 /* ************************************************************************* */
@@ -513,6 +514,9 @@ ActiveSetSolver::ActiveSetSolver(const QpProblem& problem,
   validateParameters();
   initializeObjective();
   initializeConstraints();
+  if (problemType_ == ProblemType::QP &&
+      params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense)
+    initializeDenseQpWorkspace();
 }
 
 /* ************************************************************************* */
@@ -525,6 +529,9 @@ ActiveSetSolver::ActiveSetSolver(const LpProblem& problem,
   validateParameters();
   initializeObjective();
   initializeConstraints();
+  if (problemType_ == ProblemType::QP &&
+      params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense)
+    initializeDenseQpWorkspace();
 }
 
 /* ************************************************************************* */
@@ -621,85 +628,84 @@ void ActiveSetSolver::initializeObjective() {
     qpCostGraph_.push_back(cost->gaussianFactor().clone());
   }
   qpGradientAtZero_ = qpCostGraph_.gradientAtZero();
-  if (params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense) {
-    initializeDenseQpWorkspace();
-  }
 }
 
 /* ************************************************************************* */
 void ActiveSetSolver::initializeDenseQpWorkspace() {
   denseQpWorkspace_ = std::make_shared<DenseQpWorkspace>();
-  DenseQpWorkspace& workspace = *denseQpWorkspace_;
-
-  // Reuse the same ordering for the Hessian factorization and for all dense
-  // vectors. This makes each key's offset stable across active-set iterations.
-  workspace.hessianOrdering = params_->ordering
-      ? restrictOrdering(*params_->ordering, qpCostGraph_.keys())
-      : Ordering::Colamd(VariableIndex(qpCostGraph_));
-  size_t offset = 0;
+  auto& workspace = *denseQpWorkspace_;
+  GaussianFactorGraph schema = qpCostGraph_;
+  for (const auto& row : constraints_.equalities) schema.push_back(row.factor);
+  for (const auto& row : constraints_.inequalities) schema.push_back(row.factor);
+  workspace.hessianOrdering = params_->ordering ? *params_->ordering
+                                                : Ordering::Colamd(schema);
   for (Key key : workspace.hessianOrdering) {
-    workspace.keyOffsets[key] = offset;
-    offset += keyDims_.at(key);
+    workspace.keyOffsets[key] = workspace.totalDim;
+    workspace.totalDim += keyDims_.at(key);
   }
-  for (const auto& [key, _] : keyDims_) {
-    if (workspace.keyOffsets.find(key) == workspace.keyOffsets.end()) {
-      throw std::invalid_argument(
-          "ActiveSetSolver: constrained variable is missing from QP cost.");
-    }
-  }
-  workspace.totalDim = offset;
-
-  factorDenseQpCost();
-  // Constrained solves reuse the unconstrained minimizer x0 and apply only
-  // the active constraint correction x = x0 + H^{-1} A^T lambda.
-  workspace.unconstrainedMinimum = Vector::Zero(workspace.totalDim);
-  const VectorValues minimum = workspace.costBayesNet->optimize();
-  for (const auto& [key, vector] : minimum) {
-    const auto offsetIt = workspace.keyOffsets.find(key);
-    if (offsetIt != workspace.keyOffsets.end()) {
-      workspace.unconstrainedMinimum.segment(offsetIt->second, vector.size()) =
-          vector;
-    }
-  }
+  // Constraint-only variables are valid: null-space QR does not assume an
+  // invertible unconstrained Hessian or invent missing curvature.
+  workspace.data.regularization = params_->regularization;
+  packDenseObjective();
+  packDenseConstraints();
 }
 
 /* ************************************************************************* */
-void ActiveSetSolver::factorDenseQpCost() {
-  DenseQpWorkspace& workspace = *denseQpWorkspace_;
-  // The dense subproblem path assumes every constrained variable is present in
-  // the quadratic cost, because H^{-1} is applied through this Bayes net.
-  auto eliminate = [&](const GaussianFactorGraph& graph) {
-    return graph.eliminateSequential(workspace.hessianOrdering);
+void ActiveSetSolver::packDenseObjective() {
+  auto& workspace = *denseQpWorkspace_;
+  auto& data = workspace.data;
+  const size_t n = workspace.totalDim;
+  Matrix hessian = Matrix::Zero(n, n);
+  data.linear = Vector::Zero(n);
+  std::vector<JacobianFactor> jacobians;
+  size_t rowCount = 0;
+  for (const auto& factor : qpCostGraph_) {
+    if (const auto* jacobian = dynamic_cast<const JacobianFactor*>(factor.get())) {
+      jacobians.push_back(jacobian->whiten());
+      rowCount += jacobian->rows();
+    } else {
+      accumulateDenseHessian(dynamic_cast<const HessianFactor&>(*factor),
+                              workspace.keyOffsets, &hessian, &data.linear);
+    }
+  }
+  data.jacobian = Matrix::Zero(rowCount + n, n);
+  data.rhs = Vector::Zero(rowCount + n);
+  packDenseJacobians(jacobians, workspace.keyOffsets, &data);
+  packDenseHessian(hessian, rowCount);
+}
+
+/* ************************************************************************* */
+void ActiveSetSolver::packDenseHessian(const Matrix& hessian, size_t rowStart) {
+  // Convert native PSD curvature once, retaining every positive eigenvalue.
+  // Negative roundoff is clipped only within its computed backward-error scale.
+  if (hessian.isZero(0)) return;
+  Eigen::SelfAdjointEigenSolver<Matrix> eigen(hessian);
+  const double allowance = 64 * std::numeric_limits<double>::epsilon() *
+                           hessian.rows() * hessian.norm();
+  if (eigen.info() != Eigen::Success || eigen.eigenvalues().minCoeff() < -allowance)
+    throw std::runtime_error("ActiveSetSolver: dense QP objective is not convex.");
+  denseQpWorkspace_->data.jacobian.middleRows(rowStart, hessian.rows()) =
+      eigen.eigenvalues().cwiseMax(0).cwiseSqrt().asDiagonal() *
+      eigen.eigenvectors().transpose();
+}
+
+/* ************************************************************************* */
+void ActiveSetSolver::packDenseConstraints() {
+  auto& workspace = *denseQpWorkspace_;
+  auto& data = workspace.data;
+  data.equalities = constraints_.equalities.size();
+  const size_t count = data.equalities + constraints_.inequalities.size();
+  data.normals = Matrix::Zero(count, workspace.totalDim);
+  data.bounds.resize(count);
+  size_t index = 0;
+  auto append = [&](const ConstraintRow& row) {
+    for (auto key = row.factor->begin(); key != row.factor->end(); ++key)
+      data.normals.block(index, workspace.keyOffsets.at(*key), 1,
+                         keyDims_.at(*key)) = row.factor->getA(key);
+    data.bounds(index++) = row.factor->getb()(0);
   };
-
-  GaussianFactorGraph regularizedCostGraph = qpCostGraph_;
-  if (params_->regularization > 0.0) {
-    AddRegularization(&regularizedCostGraph, keyDims_, params_->regularization);
-  }
-
-  try {
-    workspace.costBayesNet = eliminate(regularizedCostGraph);
-  } catch (const IndeterminateSystemException&) {
-    if (params_->regularization <= 0.0 ||
-        params_->regularization >= kMinimumDenseRegularization) {
-      throw std::runtime_error(
-          "ActiveSetSolver: dense QP Hessian factorization failed. Increase "
-          "regularization or use the sparse QP subproblem solver.");
-    }
-    // Very small positive regularization can still be treated as rank-deficient
-    // by elimination; retry with the dense-mode floor before failing.
-    GaussianFactorGraph fallbackCostGraph = qpCostGraph_;
-    AddRegularization(&fallbackCostGraph, keyDims_,
-                      kMinimumDenseRegularization);
-    try {
-      workspace.costBayesNet = eliminate(fallbackCostGraph);
-    } catch (const IndeterminateSystemException&) {
-      throw std::runtime_error(
-          "ActiveSetSolver: dense QP Hessian factorization failed even after "
-          "minimum dense regularization. Increase regularization or use the "
-          "sparse QP subproblem solver.");
-    }
-  }
+  for (const auto& row : constraints_.equalities) append(row);
+  for (const auto& row : constraints_.inequalities) append(row);
 }
 
 /* ************************************************************************* */
@@ -1005,96 +1011,15 @@ VectorValues ActiveSetSolver::denseVectorToVectorValues(
 }
 
 /* ************************************************************************* */
-Vector ActiveSetSolver::applyInverseDenseHessian(const Vector& vector) const {
-  if (!denseQpWorkspace_) {
-    throw std::logic_error(
-        "ActiveSetSolver: dense QP workspace has not been initialized.");
-  }
-  const DenseQpWorkspace& workspace = *denseQpWorkspace_;
-  // The Bayes net represents a square-root Hessian factorization. Applying
-  // H^{-1} is two triangular solves: first with the transpose, then with the
-  // factor itself.
-  const VectorValues vectorValues = denseVectorToVectorValues(vector);
-  const VectorValues result = workspace.costBayesNet->backSubstitute(
-      workspace.costBayesNet->backSubstituteTranspose(vectorValues));
-  return vectorValuesToDenseVector(result);
-}
-
-/* ************************************************************************* */
-ActiveSetSolver::DenseConstraintSystem ActiveSetSolver::denseConstraintSystem(
-    const std::vector<bool>& activeInequalityRows) const {
-  const DenseQpWorkspace& workspace = *denseQpWorkspace_;
-  size_t rowCount = constraints_.equalities.size();
-  for (bool active : activeInequalityRows) rowCount += active ? 1 : 0;
-
-  DenseConstraintSystem system;
-  system.normals = Matrix::Zero(rowCount, workspace.totalDim);
-  system.rhs = Vector::Zero(rowCount);
-  system.multiplierKeys.reserve(rowCount);
-  auto appendRow = [&](const ConstraintRow& row) {
-    const size_t index = system.multiplierKeys.size();
-    const JacobianFactor& factor = *row.factor;
-    for (auto key = factor.begin(); key != factor.end(); ++key)
-      system.normals.block(index, workspace.keyOffsets.at(*key), 1,
-                           keyDims_.at(*key)) = factor.getA(key);
-    system.rhs(index) = factor.getb()(0);
-    system.multiplierKeys.push_back(row.multiplierKey);
-  };
-  for (const ConstraintRow& row : constraints_.equalities) appendRow(row);
-  for (size_t row = 0; row < constraints_.inequalities.size(); ++row)
-    if (activeInequalityRows.at(row)) appendRow(constraints_.inequalities[row]);
-  return system;
-}
-
-/* ************************************************************************* */
-std::pair<VectorValues, VectorValues> ActiveSetSolver::solveDenseQpSubproblem(
-    const std::vector<bool>& activeInequalityRows) const {
-  if (!denseQpWorkspace_)
-    throw std::logic_error(
-        "ActiveSetSolver: dense QP workspace has not been initialized.");
-  const DenseQpWorkspace& workspace = *denseQpWorkspace_;
-  const DenseConstraintSystem active =
-      denseConstraintSystem(activeInequalityRows);
-  const size_t kktDim = active.multiplierKeys.size();
-  VectorValues duals;
-  if (kktDim == 0)
-    return {denseVectorToVectorValues(workspace.unconstrainedMinimum), duals};
-
-  Matrix hessianInverseAT(workspace.totalDim, kktDim);
-  for (size_t column = 0; column < kktDim; ++column)
-    hessianInverseAT.col(column) =
-        applyInverseDenseHessian(active.normals.row(column).transpose());
-
-  // Schur complement: (A H^{-1} A^T) lambda = b - A*x0, followed by
-  // x = x0 + H^{-1} A^T lambda. The Hessian factorization is reused.
-  const Matrix schurComplement = active.normals * hessianInverseAT;
-  Eigen::LDLT<Matrix> ldlt(schurComplement);
-  if (DenseSchurComplementIsSingular(ldlt, schurComplement))
-    throw std::runtime_error(
-        "ActiveSetSolver: dense QP Schur complement is singular or "
-        "ill-conditioned. Active constraints may be linearly dependent; "
-        "remove redundant constraints or use the sparse QP subproblem solver.");
-  const Vector multipliers =
-      ldlt.solve(active.rhs - active.normals * workspace.unconstrainedMinimum);
-  if (!multipliers.allFinite())
-    throw std::runtime_error(
-        "ActiveSetSolver: dense QP Schur complement solve produced non-finite "
-        "multipliers. Active constraints may be ill-conditioned; use the "
-        "sparse QP subproblem solver.");
-
-  const Vector values =
-      workspace.unconstrainedMinimum + hessianInverseAT * multipliers;
-  for (size_t row = 0; row < kktDim; ++row)
-    duals.insert(active.multiplierKeys[row], SingleValue(multipliers(row)));
-  return {denseVectorToVectorValues(values), duals};
-}
-
-/* ************************************************************************* */
-bool ActiveSetSolver::denseQpStepIsSmall(const VectorValues& candidateValues,
-                                         const VectorValues& values) const {
-  const Vector step = vectorValuesToDenseVector(candidateValues) -
-                      vectorValuesToDenseVector(values);
-  return step.norm() <= params_->stepTolerance;
+VectorValues ActiveSetSolver::solveDenseQpSubproblem(
+    const InternalState& state, SparseWorkspace* workspace) const {
+  // One mutable backend instance serves this call's initialization and main
+  // loop. Concurrent optimizations never share its working-set factorization.
+  if (!workspace->dense)
+    workspace->dense = std::make_unique<internal::DenseQpSolver>(
+        denseQpWorkspace_->data);
+  return denseVectorToVectorValues(workspace->dense->solve(
+      state.activeInequalityRows, vectorValuesToDenseVector(state.values)));
 }
 
 /* ************************************************************************* */
@@ -1112,11 +1037,6 @@ Vector ActiveSetSolver::objectiveGradient(Key key,
     if (it != factor->end()) {
       gradient += factor->gradient(key, values);
     }
-  }
-  // Sparse QPs regularize only the working subproblem, not the target cost.
-  if (params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense &&
-      params_->regularization > 0.0) {
-    gradient += params_->regularization * values.at(key);
   }
   return gradient;
 }
@@ -1305,10 +1225,9 @@ ActiveSetSolver::InternalState ActiveSetSolver::iterate(
   const bool useDenseQp =
       problemType_ == ProblemType::QP &&
       params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense;
-  VectorValues candidate, subproblemDuals;
+  VectorValues candidate;
   if (useDenseQp) {
-    std::tie(candidate, subproblemDuals) =
-        solveDenseQpSubproblem(state.activeInequalityRows);
+    candidate = solveDenseQpSubproblem(state, workspace);
   } else {
     candidate = solveSparseSubproblem(state, workspace);
     CompleteMissingKeys(&candidate, state.values, keyDims_);
@@ -1316,15 +1235,14 @@ ActiveSetSolver::InternalState ActiveSetSolver::iterate(
 
   InternalState next = state;
   next.iterations = state.iterations + 1;
-  if (!shouldInspectOptimality(state, candidate, useDenseQp)) {
+  if (!shouldInspectOptimality(state, candidate)) {
     moveTowardCandidate(state, candidate, &next);
     return next;
   }
 
-  if (useDenseQp) {
-    next.duals = subproblemDuals;
-  } else if (!recoverSparseMultipliers(state, candidate, workspace,
-                                       &next.duals)) {
+  // Both backends recover multipliers for the original objective and use the
+  // same proximal fallback, release rule, and original-QP certificates.
+  if (!recoverMultipliers(state, candidate, workspace, &next.duals)) {
     next.values = candidate;
     return next;
   }
@@ -1335,8 +1253,8 @@ ActiveSetSolver::InternalState ActiveSetSolver::iterate(
   if (leavingRow >= 0) {
     next.activeInequalityRows[leavingRow] = false;
   } else {
-    next.converged = useDenseQp || problemType_ == ProblemType::LP ||
-                     originalSparseKktSatisfied(
+    next.converged = problemType_ == ProblemType::LP ||
+                     originalQpKktSatisfied(
                          candidate, state.activeInequalityRows, next.duals);
   }
   return next;
@@ -1344,9 +1262,8 @@ ActiveSetSolver::InternalState ActiveSetSolver::iterate(
 
 /* ************************************************************************* */
 bool ActiveSetSolver::shouldInspectOptimality(const InternalState& state,
-                                              const VectorValues& candidate,
-                                              bool useDenseQp) const {
-  if (!useDenseQp && problemType_ == ProblemType::QP) {
+                                              const VectorValues& candidate) const {
+  if (problemType_ == ProblemType::QP) {
     // A feasible working-set minimum can be inspected immediately, without
     // repeating the same factorization just to observe a zero step. When
     // regularization is positive, its proximal residual bounds the difference
@@ -1360,12 +1277,11 @@ bool ActiveSetSolver::shouldInspectOptimality(const InternalState& state,
            primalFeasible(constraints_.equalities, constraints_.inequalities,
                           candidate, params_->feasibilityTolerance);
   }
-  return useDenseQp ? denseQpStepIsSmall(candidate, state.values)
-                    : candidate.equals(state.values, params_->stepTolerance);
+  return candidate.equals(state.values, params_->stepTolerance);
 }
 
 /* ************************************************************************* */
-bool ActiveSetSolver::recoverSparseMultipliers(const InternalState& state,
+bool ActiveSetSolver::recoverMultipliers(const InternalState& state,
                                                const VectorValues& candidate,
                                                SparseWorkspace* workspace,
                                                VectorValues* duals) const {
@@ -1410,7 +1326,7 @@ bool ActiveSetSolver::recoverSparseMultipliers(const InternalState& state,
 }
 
 /* ************************************************************************* */
-bool ActiveSetSolver::originalSparseKktSatisfied(
+bool ActiveSetSolver::originalQpKktSatisfied(
     const VectorValues& values, const std::vector<bool>& activeRows,
     const VectorValues& duals) const {
   if (!primalFeasible(constraints_.equalities, constraints_.inequalities,
@@ -1607,7 +1523,7 @@ void ActiveSetSolver::takeFeasibleStep(InternalState* state,
   ++state->iterations;
   VectorValues candidate =
       params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense
-          ? solveDenseQpSubproblem(state->activeInequalityRows).first
+          ? solveDenseQpSubproblem(*state, workspace)
           : solveSparseSubproblem(*state, workspace);
   CompleteMissingKeys(&candidate, state->values, keyDims_);
   (void)maximumStep(candidate, candidate);
@@ -1696,7 +1612,6 @@ Values ActiveSetSolver::findVectorFeasiblePoint() const {
   const Values zeroValues = zeroVectorValues();
   Values feasible;
   if (problemType_ == ProblemType::QP &&
-      params_->qpSubproblemSolver == Params::QpSubproblemSolver::Sparse &&
       tryEqualityProjection(zeroValues, &feasible))
     return feasible;
   return solvePhaseOne(zeroValues);
