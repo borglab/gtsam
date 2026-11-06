@@ -270,6 +270,10 @@ class belongs in the same file as its derived classes or in an earlier file.
 
 ## Documentation and reports
 
+* Always prefer Plotly for charts and data visualizations, including reports,
+  documentation pages, notebooks, and examples, so readers can inspect values
+  and interact with the figures.
+
 * Write for a robotics audience, without assuming expertise in GTSAM internals
   or optimization solvers. Explain library-specific concepts, solver choices,
   and numerical metrics when they are needed to interpret an example or result.
@@ -294,5 +298,5 @@ Notebooks in `*/doc/*.ipynb` and `*/examples/*.ipynb` should use this preamble:
 Use the existing `remove-cell` metadata convention so documentation builds and
 Colab behavior stay consistent.
 
-For graphs and other notebook visualizations, always prefer Plotly when
-possible so figures are interactive.
+Always prefer Plotly for graphs and other notebook visualizations so figures
+are interactive.
