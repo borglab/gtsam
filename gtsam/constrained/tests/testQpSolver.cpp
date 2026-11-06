@@ -713,7 +713,7 @@ TEST(ActiveSetSolver, SparseProximalRejectsPrematureConvergence) {
                   std::runtime_error);
 }
 
-// The original primal-dual gap must be small at a large-magnitude solution.
+// Original stationarity is absolute while the gap scales with objective magnitude.
 TEST(ActiveSetSolver, SparseProximalOriginalGap) {
   QpProblem problem;
   problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(1000), 0));
@@ -723,7 +723,8 @@ TEST(ActiveSetSolver, SparseProximalOriginalGap) {
   const auto solved =
       ActiveSetSolver(problem, Parameters(1e-3)).optimizeWithState(initial);
   const double x = solved.first.at<Vector>(0)(0);
-  CHECK(std::abs(x * (x - 1000)) <= 1e-9);
+  CHECK(std::abs(x - 1000) <= 1e-9);
+  CHECK(std::abs(x * (x - 1000)) <= 1e-9 * (1 + 0.5 * x * x));
 }
 
 }  // namespace sparse_proximal_qp

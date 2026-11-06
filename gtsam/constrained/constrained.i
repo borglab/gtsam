@@ -251,6 +251,7 @@ class ActiveSetFeasibleStepResult {
   size_t iterations;
   double initialObjective;
   double objective;
+  double objectiveDecrease;
   double constraintViolation;
   std::string message;
 };

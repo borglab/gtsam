@@ -90,6 +90,21 @@ const Ordering& cachedOrdering(const GaussianFactorGraph& graph, KeySet* keys,
 }
 
 /* ************************************************************************* */
+// Exclude arbitrary additive constants from relative gap scaling. The error
+// allowance covers cancellation in quadratic/linear terms at a floating-point
+// optimum; primal, dual-sign and stationarity checks remain independent.
+bool scaledGapSatisfied(double gap, double quadratic, double linear,
+                        double dualRhs, double dualRhsMagnitude, double tolerance) {
+  const double primal = 0.5 * quadratic + linear;
+  const double dual = -0.5 * quadratic + dualRhs;
+  const double scale = 1 + std::max(std::abs(primal), std::abs(dual));
+  const double roundoff = 64 * std::numeric_limits<double>::epsilon() *
+      (1 + std::abs(quadratic) + std::abs(linear) + dualRhsMagnitude);
+  return std::isfinite(gap) && std::isfinite(scale) &&
+         std::isfinite(roundoff) && std::abs(gap) <= tolerance * scale + roundoff;
+}
+
+/* ************************************************************************* */
 Vector DirectVectorOrMatrixValue(const Values& values, Key key) {
   const Value& value = values.at(key);
   if (const auto* vectorValue =
@@ -568,6 +583,7 @@ void ActiveSetSolver::initializeObjective() {
     const auto cost = std::dynamic_pointer_cast<QpCost>(factor);
     qpCostGraph_.push_back(cost->gaussianFactor().clone());
   }
+  qpGradientAtZero_ = qpCostGraph_.gradientAtZero();
   if (params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense) {
     initializeDenseQpWorkspace();
   }
@@ -1292,17 +1308,25 @@ bool ActiveSetSolver::originalSparseKktSatisfied(
                       values, params_->feasibilityTolerance))
     return false;
   VectorValues stationarity;
-  double gap = 0.0;
+  double gap = 0.0, quadratic = 0.0, linear = 0.0;
+  double dualRhs = 0.0, dualRhsMagnitude = 0.0;
   for (const auto& [key, _] : keyDims_) {
     const Vector gradient = objectiveGradient(key, values);
     stationarity.insert(key, gradient);
     gap += values.at(key).dot(gradient);
+    const double linearTerm = qpGradientAtZero_.exists(key)
+        ? values.at(key).dot(qpGradientAtZero_.at(key)) : 0.0;
+    linear += linearTerm;
+    quadratic += values.at(key).dot(gradient) - linearTerm;
   }
 
   auto subtractRow = [&](const ConstraintRow& row) {
     if (!duals.exists(row.multiplierKey)) return;
     const double multiplier = duals.at(row.multiplierKey)(0);
-    gap -= row.factor->getb()(0) * multiplier;
+    const double rhsTerm = row.factor->getb()(0) * multiplier;
+    gap -= rhsTerm;
+    dualRhs += rhsTerm;
+    dualRhsMagnitude += std::abs(rhsTerm);
     for (auto key = row.factor->begin(); key != row.factor->end(); ++key)
       stationarity.at(*key) -=
           row.factor->getA(key).transpose() * Vector::Constant(1, multiplier);
@@ -1315,7 +1339,8 @@ bool ActiveSetSolver::originalSparseKktSatisfied(
     if (!residual.allFinite() ||
         residual.lpNorm<Eigen::Infinity>() > params_->multiplierTolerance)
       return false;
-  return std::isfinite(gap) && std::abs(gap) <= params_->multiplierTolerance;
+  return scaledGapSatisfied(gap, quadratic, linear, dualRhs, dualRhsMagnitude,
+                             params_->multiplierTolerance);
 }
 
 /* ************************************************************************* */
@@ -1460,7 +1485,7 @@ void ActiveSetSolver::searchFeasibleStep(
     InternalState next = state;
     moveTowardCandidate(state, candidate, &next);
     result->activeInequalityRows = next.activeInequalityRows;
-    if (inspectFeasibleStep(state, next, prototype, result)) return;
+    if (inspectFeasibleStep(next, prototype, result)) return;
     if (state.activeInequalityRows == next.activeInequalityRows) {
       result->message = "No useful displacement on the selected working face.";
       return;
@@ -1473,19 +1498,24 @@ void ActiveSetSolver::searchFeasibleStep(
 
 /* ************************************************************************* */
 bool ActiveSetSolver::inspectFeasibleStep(
-    const InternalState& previous, const InternalState& next,
+    const InternalState& next,
     const Values& prototype, ActiveSetFeasibleStepResult* result) const {
   if (!primalFeasible(constraints_.equalities, constraints_.inequalities,
                       next.values, params_->feasibilityTolerance))
     throw std::runtime_error("ActiveSetSolver: feasible step failed constraint checks.");
-  if (maximumStep(next.values, previous.values) <= params_->stepTolerance)
+  const VectorValues initial = valuesToVectorValues(prototype);
+  if (maximumStep(next.values, initial) <= params_->stepTolerance)
     return false;
   const double objective = qpCostGraph_.error(next.values);
   if (!std::isfinite(objective) || !std::isfinite(result->initialObjective))
     throw std::runtime_error("ActiveSetSolver: non-finite feasible-step objective.");
-  if (objective < result->initialObjective) {
+  const double decrease = quadraticDecrease(initial, next.values);
+  if (!std::isfinite(decrease))
+    throw std::runtime_error("ActiveSetSolver: non-finite quadratic decrease.");
+  if (decrease > 0) {
     result->values = vectorValuesToValues(next.values, prototype);
     result->objective = objective;
+    result->objectiveDecrease = decrease;
     result->constraintViolation = constraintViolation(
         constraints_.equalities, constraints_.inequalities, next.values);
     result->status = ActiveSetFeasibleStepResult::Status::FeasibleProgress;
@@ -1493,6 +1523,20 @@ bool ActiveSetSolver::inspectFeasibleStep(
     result->message = "The working-face step did not decrease the original objective.";
   }
   return true;
+}
+
+/* ************************************************************************* */
+double ActiveSetSolver::quadraticDecrease(const VectorValues& initial,
+                                         const VectorValues& candidate) const {
+  const VectorValues firstGradient = qpCostGraph_.gradient(initial);
+  const VectorValues lastGradient = qpCostGraph_.gradient(candidate);
+  long double change = 0;
+  for (const auto& [key, gradient] : firstGradient) {
+    const Vector step = candidate.at(key) - initial.at(key);
+    change += 0.5L * step.cast<long double>().dot(
+        gradient.cast<long double>() + lastGradient.at(key).cast<long double>());
+  }
+  return -static_cast<double>(change);
 }
 
 /* ************************************************************************* */

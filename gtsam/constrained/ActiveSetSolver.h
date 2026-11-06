@@ -52,7 +52,9 @@ class GTSAM_EXPORT ActiveSetSolverParams {
   double stepTolerance = 1e-7;
   /// Maximum allowed primal constraint residual.
   double feasibilityTolerance = 1e-7;
-  /// Tolerance for multiplier signs, stationarity, and QP gap checks.
+  /// Absolute tolerance for multiplier signs and stationarity. Also supplies
+  /// the absolute and relative tolerances for the constant-free QP gap, with
+  /// an additional allowance for floating-point evaluation error.
   double multiplierTolerance = 1e-7;
   /// Sparse QPs use this as a recentered proximal weight; dense QPs add it to
   /// the factored Hessian.
@@ -97,6 +99,9 @@ class GTSAM_EXPORT ActiveSetFeasibleStepResult {
   size_t iterations = 0;
   double initialObjective = 0;
   double objective = 0;
+  /// Original-objective decrease evaluated without subtracting constant terms;
+  /// more reliable than initialObjective - objective when offsets are large.
+  double objectiveDecrease = 0;
   double constraintViolation = 0;
   std::string message;
 
@@ -212,6 +217,7 @@ class GTSAM_EXPORT ActiveSetSolver {
   Params::shared_ptr params_;
   std::map<Key, size_t> keyDims_;
   GaussianFactorGraph qpCostGraph_;
+  VectorValues qpGradientAtZero_;
   std::map<Key, Vector> lpGradient_;
   SparseConstraintData constraints_;
   std::shared_ptr<DenseQpWorkspace> denseQpWorkspace_;
@@ -252,9 +258,11 @@ class GTSAM_EXPORT ActiveSetSolver {
   void searchFeasibleStep(InternalState state, const Values& prototype,
                           ActiveSetFeasibleStepResult* result) const;
   /// Check and record a feasible displacement without assigning optimality.
-  bool inspectFeasibleStep(const InternalState& previous,
-                           const InternalState& next, const Values& prototype,
+  bool inspectFeasibleStep(const InternalState& next, const Values& prototype,
                            ActiveSetFeasibleStepResult* result) const;
+  /// Evaluate original quadratic decrease independently of additive constants.
+  double quadraticDecrease(const VectorValues& initial,
+                            const VectorValues& candidate) const;
   /// Assemble the cost, proximal or LP descent term, and active constraints.
   GaussianFactorGraph buildWorkingGraph(
       const VectorValues& values,
