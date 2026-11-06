@@ -458,6 +458,62 @@ TEST(NoiseModel, QRNan )
 }
 
 /* ************************************************************************* */
+namespace scale_aware_constrained_qr {
+
+// A finite direction with weak information must survive next to a hard constraint.
+TEST(NoiseModel, ConstrainedQRRetainsWeakFiniteDirection) {
+  Matrix augmented = Matrix::Zero(2, 3);
+  augmented(0, 0) = 1.0;
+  augmented(1, 1) = 1.0;
+  const auto model = noiseModel::Constrained::MixedSigmas(Vector2{0.0, 1e6});
+
+  const auto result = model->QR(augmented);
+  EXPECT_LONGS_EQUAL(2, result->dim());
+  EXPECT_DOUBLES_EQUAL(1.0, augmented(1, 1), 1e-12);
+}
+
+// Rescaling a finite row and its sigma must preserve its information.
+TEST(NoiseModel, ConstrainedQRRetainsSmallWeightedCoefficients) {
+  Matrix augmented{{1.0, 0.0, 0.0}, {0.0, 1e-10, 2e-10}};
+  const auto model = noiseModel::Constrained::MixedSigmas(Vector2{0.0, 1e-10});
+
+  const auto result = model->QR(augmented);
+  EXPECT_LONGS_EQUAL(2, result->dim());
+  EXPECT(assert_equal(Matrix{{1.0, 0.0, 0.0}, {0.0, 1.0, 2.0}}, augmented));
+  if (result->dim() == 2)
+    EXPECT(assert_equal(Vector2{0.0, 1.0}, result->sigmas()));
+}
+
+// Exact substitution must give newly populated finite columns a rank scale.
+// The two copies of x=1 observe only y+z; roundoff must not add a third pivot.
+TEST(NoiseModel, ConstrainedQRPropagatesFiniteColumnScale) {
+  Matrix augmented{{1.0, -0.008, -0.008, 0.0},
+                   {1.0, 0.0, 0.0, 1.0},
+                   {1.0, 0.0, 0.0, 1.0}};
+  const auto model = noiseModel::Constrained::MixedSigmas(Vector3{0.0, 1.0, 1.0});
+
+  const auto result = model->QR(augmented);
+  EXPECT_LONGS_EQUAL(2, result->dim());
+  EXPECT(assert_equal(Matrix{{1.0, -0.008, -0.008, 0.0},
+                             {0.0, 1.0, 1.0, 125.0},
+                             {0.0, 0.0, 0.0, 0.0}},
+                      augmented, 1e-12));
+}
+
+// A truly absent direction must still be rejected by the local rank test.
+TEST(NoiseModel, ConstrainedQRRejectsNullDirection) {
+  Matrix augmented = Matrix::Zero(2, 3);
+  augmented(0, 0) = 1.0;
+  const auto model = noiseModel::Constrained::MixedSigmas(Vector2{0.0, 1e6});
+
+  const auto result = model->QR(augmented);
+  EXPECT_LONGS_EQUAL(1, result->dim());
+}
+
+}  // namespace scale_aware_constrained_qr
+/* ************************************************************************* */
+
+/* ************************************************************************* */
 TEST(NoiseModel, SmartSqrtInformation )
 {
   bool smart = true;

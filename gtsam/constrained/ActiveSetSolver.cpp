@@ -23,9 +23,12 @@
 #include <gtsam/linear/linearExceptions.h>
 
 #include <Eigen/Cholesky>
+#include <Eigen/QR>
 #include <algorithm>
 #include <cmath>
+#include <iomanip>
 #include <limits>
+#include <sstream>
 #include <stdexcept>
 #include <tuple>
 #include <utility>
@@ -40,6 +43,14 @@ struct ActiveSetSolver::DenseQpWorkspace {
   std::map<Key, size_t> keyOffsets;
   size_t totalDim = 0;
   Vector unconstrainedMinimum;
+};
+
+// Dense rows are assembled only in dense mode, in the same order as their
+// multiplier keys. Sparse mode keeps each row as a factor instead.
+struct ActiveSetSolver::DenseConstraintSystem {
+  Matrix normals;
+  Vector rhs;
+  std::vector<Key> multiplierKeys;
 };
 
 namespace {
@@ -196,6 +207,214 @@ bool DenseSchurComplementIsSingular(const Eigen::LDLT<Matrix>& ldlt,
   return diagonal.cwiseAbs().minCoeff() <= tolerance;
 }
 
+/* ************************************************************************* */
+// Multipliers may be nonunique. A measured residual distinguishes a valid
+// least-squares multiplier set from an inconsistent stationarity equation.
+struct DualSolveResult {
+  VectorValues multipliers;
+  double residual = 0.0;
+  double threshold = 0.0;
+
+  bool consistent() const { return residual <= threshold; }
+};
+
+/* ************************************************************************* */
+std::pair<double, double> DualGraphResidual(const GaussianFactorGraph& graph,
+                                            const VectorValues& multipliers) {
+  for (const auto& [_, value] : multipliers)
+    if (!value.allFinite())
+      throw std::runtime_error("ActiveSetSolver: non-finite multipliers.");
+  double residual = 0.0, rhsNorm = 0.0;
+  for (const auto& factor : graph) {
+    const JacobianFactor whitened = JacobianFactor(*factor).whiten();
+    residual = std::max(
+        residual,
+        whitened.unweighted_error(multipliers).lpNorm<Eigen::Infinity>());
+    rhsNorm = std::max(rhsNorm, whitened.getb().lpNorm<Eigen::Infinity>());
+  }
+  return {residual, rhsNorm};
+}
+
+/* ************************************************************************* */
+// Retain original column scales: a dependent column can reach a later clique
+// as roundoff alone, which must not become its new reference scale.
+std::map<Key, double> dualColumnScales(const GaussianFactorGraph& graph) {
+  std::map<Key, double> scales;
+  for (const auto& factor : graph) {
+    const JacobianFactor whitened = JacobianFactor(*factor).whiten();
+    for (auto key = whitened.begin(); key != whitened.end(); ++key) {
+      const auto block = whitened.getA(key);
+      if (block.cols() != 1)
+        throw std::logic_error("Expected scalar multiplier keys");
+      scales[*key] = std::hypot(scales[*key], block.stableNorm());
+    }
+  }
+  return scales;
+}
+
+/* ************************************************************************* */
+// Pivot only among frontal columns. Separator equations must survive unchanged
+// so that the rest of the Bayes tree still solves the original least squares.
+KeyVector freeDualFrontalKeys(const JacobianFactor& joint,
+                              const Ordering& frontals,
+                              const std::map<Key, double>& scales) {
+  if (joint.rows() == 0) return KeyVector(frontals.begin(), frontals.end());
+  Matrix frontalMatrix(joint.rows(), frontals.size());
+  for (size_t column = 0; column < frontals.size(); ++column) {
+    const Key key = frontals[column];
+    const double scale = scales.at(key);
+    frontalMatrix.col(column) =
+        joint.getA(joint.find(key)) / (scale > 0.0 ? scale : 1.0);
+  }
+  Eigen::ColPivHouseholderQR<Matrix> qr(frontalMatrix);
+  const double threshold = 64.0 * std::numeric_limits<double>::epsilon() *
+                           std::max(frontalMatrix.rows(), frontalMatrix.cols());
+  // Eigen's threshold is relative to the largest pivot; ours is relative to
+  // the original columns after normalization, including at a nearly zero root.
+  qr.setThreshold(qr.maxPivot() > 0.0 ? threshold / qr.maxPivot() : 1.0);
+  KeyVector freeKeys;
+  for (Eigen::Index column = qr.rank(); column < frontalMatrix.cols(); ++column)
+    freeKeys.push_back(frontals[qr.colsPermutation().indices()(column)]);
+  return freeKeys;
+}
+
+/* ************************************************************************* */
+// Dual-only elimination: choose zero for free scalar multipliers, then return
+// an ordinary nonsingular conditional through GTSAM's constrained QR. For
+// exact dependencies this selects one solution without changing the reduced
+// objective on the separator. The caller checks the original graph residual.
+GaussianFactorGraph::EliminationResult eliminateDualWithGauge(
+    const GaussianFactorGraph& factors, const Ordering& frontals,
+    const std::map<Key, double>& scales) {
+  auto joint = std::make_shared<JacobianFactor>(factors, frontals);
+  *joint = joint->whiten();
+  GaussianFactorGraph gauged;
+  gauged.push_back(joint);
+  for (Key key : freeDualFrontalKeys(*joint, frontals, scales))
+    gauged.emplace_shared<JacobianFactor>(key, Matrix::Ones(1, 1),
+                                          Vector::Zero(1),
+                                          noiseModel::Constrained::All(1));
+  return EliminateQR(gauged, frontals);
+}
+
+/* ************************************************************************* */
+DualSolveResult solveRankDeficientDualGraph(const GaussianFactorGraph& graph,
+                                            double tolerance) {
+  const auto scales = dualColumnScales(graph);
+  DualSolveResult result;
+  result.multipliers = graph.optimize(
+      [&](const GaussianFactorGraph& factors, const Ordering& frontals) {
+        return eliminateDualWithGauge(factors, frontals, scales);
+      });
+  double rhsNorm;
+  std::tie(result.residual, rhsNorm) =
+      DualGraphResidual(graph, result.multipliers);
+  result.threshold = std::max(1e-12, tolerance) * (1.0 + rhsNorm);
+  return result;
+}
+
+/* ************************************************************************* */
+DualSolveResult SolveSparseDualGraph(const GaussianFactorGraph& graph,
+                                     double tolerance,
+                                     bool checkStationarity = true) {
+  if (graph.empty()) return {};
+  try {
+    // The usual graph solve is faster, but a successful factorization alone
+    // does not prove that an overdetermined stationarity equation is exact.
+    DualSolveResult result;
+    result.multipliers = graph.optimize();
+    if (!checkStationarity) return result;
+    double rhsNorm;
+    std::tie(result.residual, rhsNorm) =
+        DualGraphResidual(graph, result.multipliers);
+    result.threshold = std::max(1e-12, tolerance) * (1.0 + rhsNorm);
+    if (result.consistent()) return result;
+  } catch (const IndeterminateSystemException&) {
+    // The graph QR fallback fixes free multiplier coordinates clique by clique.
+  }
+  DualSolveResult result = solveRankDeficientDualGraph(graph, tolerance);
+  if (!checkStationarity && !result.consistent())
+    throw std::runtime_error("Multiplier graph QR: inconsistent stationarity");
+  return result;
+}
+
+/* ************************************************************************* */
+// These row helpers need no solver state. Templates keep ConstraintRow private
+// to ActiveSetSolver while accepting its row containers at the call site.
+template <typename Row>
+bool primalFeasible(const std::vector<Row>& equalities,
+                    const std::vector<Row>& inequalities,
+                    const VectorValues& values, double tolerance) {
+  for (const Row& row : equalities) {
+    const double residual = RowResidual(*row.factor, values);
+    if (!std::isfinite(residual) || std::abs(residual) > tolerance)
+      return false;
+  }
+  for (const Row& row : inequalities) {
+    const double residual = RowResidual(*row.factor, values);
+    if (!std::isfinite(residual) || residual > tolerance) return false;
+  }
+  return true;
+}
+
+/* ************************************************************************* */
+template <typename Row>
+int leavingInequality(const std::vector<Row>& inequalities,
+                      const std::vector<bool>& activeRows,
+                      const VectorValues& duals, double tolerance) {
+  int leavingRow = -1;
+  double largestMultiplier = tolerance;
+  for (size_t row = 0; row < inequalities.size(); ++row) {
+    if (!activeRows[row]) continue;
+    const Key key = inequalities[row].multiplierKey;
+    const double multiplier = duals.exists(key) ? duals.at(key)(0) : 0.0;
+    if (multiplier > largestMultiplier) {
+      leavingRow = static_cast<int>(row);
+      largestMultiplier = multiplier;
+    }
+  }
+  return leavingRow;
+}
+
+/* ************************************************************************* */
+template <typename Row>
+LpProblem buildPhaseOneProblem(const std::vector<Row>& equalities,
+                               const std::vector<Row>& inequalities,
+                               Key slackKey, double* initialSlack) {
+  // Minimize a nonnegative scalar slack. Each equality becomes two relaxed
+  // inequalities, and all rows share the same slack variable.
+  LpProblem problem;
+  problem.addCost(
+      JacobianFactor(slackKey, Matrix::Identity(1, 1), Vector::Zero(1)));
+  auto rowTerms = [&](const Row& row, double sign) {
+    std::vector<std::pair<Key, Matrix>> terms;
+    terms.reserve(row.factor->size() + 1);
+    for (auto key = row.factor->begin(); key != row.factor->end(); ++key)
+      terms.emplace_back(*key, sign * row.factor->getA(key));
+    terms.emplace_back(slackKey, -Matrix::Identity(1, 1));
+    return terms;
+  };
+
+  *initialSlack = 1.0;
+  for (const Row& row : equalities) {
+    const double rhs = row.factor->getb()(0);
+    problem.addConstraint(LinearConstraint::LessEqual(
+        JacobianFactor(rowTerms(row, 1.0), SingleValue(rhs))));
+    problem.addConstraint(LinearConstraint::LessEqual(
+        JacobianFactor(rowTerms(row, -1.0), SingleValue(-rhs))));
+    *initialSlack = std::max(*initialSlack, std::abs(rhs) + 1.0);
+  }
+  for (const Row& row : inequalities) {
+    const double rhs = row.factor->getb()(0);
+    problem.addConstraint(LinearConstraint::LessEqual(
+        JacobianFactor(rowTerms(row, 1.0), SingleValue(rhs))));
+    *initialSlack = std::max(*initialSlack, -rhs + 1.0);
+  }
+  problem.addConstraint(LinearConstraint::LessEqual(
+      JacobianFactor(slackKey, -Matrix::Identity(1, 1), Vector::Zero(1))));
+  return problem;
+}
+
 }  // namespace
 
 /* ************************************************************************* */
@@ -287,7 +506,7 @@ void ActiveSetSolver::initializeObjective() {
 
   for (const auto& factor : qpProblem_->costs()) {
     const auto cost = std::dynamic_pointer_cast<QpCost>(factor);
-    qpCostGraph_.push_back(cost->hessianFactor());
+    qpCostGraph_.push_back(cost->gaussianFactor().clone());
   }
   if (params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense) {
     initializeDenseQpWorkspace();
@@ -315,6 +534,23 @@ void ActiveSetSolver::initializeDenseQpWorkspace() {
   }
   workspace.totalDim = offset;
 
+  factorDenseQpCost();
+  // Constrained solves reuse the unconstrained minimizer x0 and apply only
+  // the active constraint correction x = x0 + H^{-1} A^T lambda.
+  workspace.unconstrainedMinimum = Vector::Zero(workspace.totalDim);
+  const VectorValues minimum = workspace.costBayesNet->optimize();
+  for (const auto& [key, vector] : minimum) {
+    const auto offsetIt = workspace.keyOffsets.find(key);
+    if (offsetIt != workspace.keyOffsets.end()) {
+      workspace.unconstrainedMinimum.segment(offsetIt->second, vector.size()) =
+          vector;
+    }
+  }
+}
+
+/* ************************************************************************* */
+void ActiveSetSolver::factorDenseQpCost() {
+  DenseQpWorkspace& workspace = *denseQpWorkspace_;
   // The dense subproblem path assumes every constrained variable is present in
   // the quadratic cost, because H^{-1} is applied through this Bayes net.
   auto eliminate = [&](const GaussianFactorGraph& graph) {
@@ -349,18 +585,6 @@ void ActiveSetSolver::initializeDenseQpWorkspace() {
           "sparse QP subproblem solver.");
     }
   }
-
-  // Store the unconstrained minimizer x0. Constrained solves then only need the
-  // active constraint correction x = x0 + H^{-1} A^T lambda.
-  workspace.unconstrainedMinimum = Vector::Zero(workspace.totalDim);
-  const VectorValues minimum = workspace.costBayesNet->optimize();
-  for (const auto& [key, vector] : minimum) {
-    const auto offsetIt = workspace.keyOffsets.find(key);
-    if (offsetIt != workspace.keyOffsets.end()) {
-      workspace.unconstrainedMinimum.segment(offsetIt->second, vector.size()) =
-          vector;
-    }
-  }
 }
 
 /* ************************************************************************* */
@@ -377,39 +601,26 @@ void ActiveSetSolver::initializeConstraints() {
   // Assign synthetic keys to scalar Lagrange multipliers. Keeping one key per
   // row lets the dual solve use ordinary GaussianFactorGraph machinery and lets
   // the public state rebuild row-ordered multiplier vectors later.
-  constraints_.equalityDims.reserve(eqConstraints.size());
-  for (size_t constraintIndex = 0; constraintIndex < eqConstraints.size();
-       ++constraintIndex) {
-    const auto constraintFactor = eqConstraints.at(constraintIndex);
-    const LinearConstraint& constraint =
-        RequireLinearConstraint(constraintFactor);
-    const JacobianFactor& factor = constraint.factor();
-    const double sign = ConstraintSign(constraint.sense());
-    const size_t rows = static_cast<size_t>(factor.getb().size());
-    constraints_.equalityDims.push_back(rows);
-    for (size_t row = 0; row < rows; ++row) {
-      constraints_.equalities.push_back(
-          {constraintIndex, row, multiplierKey++,
-           OneRowConstraintFactor(factor, row, sign)});
+  auto appendRows = [&](const auto& source, auto* rows, auto* dimensions) {
+    dimensions->reserve(source.size());
+    for (size_t constraintIndex = 0; constraintIndex < source.size();
+         ++constraintIndex) {
+      const auto constraintFactor = source.at(constraintIndex);
+      const LinearConstraint& constraint =
+          RequireLinearConstraint(constraintFactor);
+      const JacobianFactor& factor = constraint.factor();
+      const double sign = ConstraintSign(constraint.sense());
+      const size_t rowCount = static_cast<size_t>(factor.getb().size());
+      dimensions->push_back(rowCount);
+      for (size_t row = 0; row < rowCount; ++row)
+        rows->push_back({constraintIndex, row, multiplierKey++,
+                         OneRowConstraintFactor(factor, row, sign)});
     }
-  }
-
-  constraints_.inequalityDims.reserve(ineqConstraints.size());
-  for (size_t constraintIndex = 0; constraintIndex < ineqConstraints.size();
-       ++constraintIndex) {
-    const auto constraintFactor = ineqConstraints.at(constraintIndex);
-    const LinearConstraint& constraint =
-        RequireLinearConstraint(constraintFactor);
-    const JacobianFactor& factor = constraint.factor();
-    const double sign = ConstraintSign(constraint.sense());
-    const size_t rows = static_cast<size_t>(factor.getb().size());
-    constraints_.inequalityDims.push_back(rows);
-    for (size_t row = 0; row < rows; ++row) {
-      constraints_.inequalities.push_back(
-          {constraintIndex, row, multiplierKey++,
-           OneRowConstraintFactor(factor, row, sign)});
-    }
-  }
+  };
+  appendRows(eqConstraints, &constraints_.equalities,
+             &constraints_.equalityDims);
+  appendRows(ineqConstraints, &constraints_.inequalities,
+             &constraints_.inequalityDims);
 }
 
 /* ************************************************************************* */
@@ -502,7 +713,7 @@ GaussianFactorGraph ActiveSetSolver::buildWorkingGraph(
       for (const auto& [key, dim] : keyDims_) {
         workingGraph.emplace_shared<JacobianFactor>(
             key, sqrtRegularization * Matrix::Identity(dim, dim),
-            Vector::Zero(dim));
+            sqrtRegularization * values.at(key));
       }
     }
   } else {
@@ -530,8 +741,8 @@ GaussianFactorGraph ActiveSetSolver::buildWorkingGraph(
 /* ************************************************************************* */
 GaussianFactorGraph ActiveSetSolver::buildDualGraph(
     const SparseConstraintData& constraints,
-    const std::vector<bool>& activeInequalityRows,
-    const VectorValues& values) const {
+    const std::vector<bool>& activeInequalityRows, const VectorValues& values,
+    const VectorValues* proximalCenter) const {
   GaussianFactorGraph dualGraph;
   // Stationarity for the current working set is A_active^T * lambda = grad.
   // With the normalized A*x-b<=0 convention, a positive active inequality
@@ -554,10 +765,12 @@ GaussianFactorGraph ActiveSetSolver::buildDualGraph(
         terms.emplace_back(row.multiplierKey, row.factor->getA(it).transpose());
       }
     }
-    if (!terms.empty()) {
-      dualGraph.emplace_shared<JacobianFactor>(terms,
-                                               objectiveGradient(key, values));
-    }
+    if (terms.empty()) continue;
+    Vector gradient = objectiveGradient(key, values);
+    if (proximalCenter)
+      gradient +=
+          params_->regularization * (values.at(key) - proximalCenter->at(key));
+    dualGraph.emplace_shared<JacobianFactor>(terms, gradient);
   }
   return dualGraph;
 }
@@ -609,98 +822,71 @@ Vector ActiveSetSolver::applyInverseDenseHessian(const Vector& vector) const {
 }
 
 /* ************************************************************************* */
+ActiveSetSolver::DenseConstraintSystem ActiveSetSolver::denseConstraintSystem(
+    const std::vector<bool>& activeInequalityRows) const {
+  const DenseQpWorkspace& workspace = *denseQpWorkspace_;
+  size_t rowCount = constraints_.equalities.size();
+  for (bool active : activeInequalityRows) rowCount += active ? 1 : 0;
+
+  DenseConstraintSystem system;
+  system.normals = Matrix::Zero(rowCount, workspace.totalDim);
+  system.rhs = Vector::Zero(rowCount);
+  system.multiplierKeys.reserve(rowCount);
+  auto appendRow = [&](const ConstraintRow& row) {
+    const size_t index = system.multiplierKeys.size();
+    const JacobianFactor& factor = *row.factor;
+    for (auto key = factor.begin(); key != factor.end(); ++key)
+      system.normals.block(index, workspace.keyOffsets.at(*key), 1,
+                           keyDims_.at(*key)) = factor.getA(key);
+    system.rhs(index) = factor.getb()(0);
+    system.multiplierKeys.push_back(row.multiplierKey);
+  };
+  for (const ConstraintRow& row : constraints_.equalities) appendRow(row);
+  for (size_t row = 0; row < constraints_.inequalities.size(); ++row)
+    if (activeInequalityRows.at(row)) appendRow(constraints_.inequalities[row]);
+  return system;
+}
+
+/* ************************************************************************* */
 std::pair<VectorValues, VectorValues> ActiveSetSolver::solveDenseQpSubproblem(
     const std::vector<bool>& activeInequalityRows) const {
-  if (!denseQpWorkspace_) {
+  if (!denseQpWorkspace_)
     throw std::logic_error(
         "ActiveSetSolver: dense QP workspace has not been initialized.");
-  }
   const DenseQpWorkspace& workspace = *denseQpWorkspace_;
-
-  size_t activeInequalityDim = 0;
-  for (bool active : activeInequalityRows) {
-    if (active) {
-      ++activeInequalityDim;
-    }
-  }
-  const size_t equalityDim = constraints_.equalities.size();
-  const size_t kktDim = equalityDim + activeInequalityDim;
-
+  const DenseConstraintSystem active =
+      denseConstraintSystem(activeInequalityRows);
+  const size_t kktDim = active.multiplierKeys.size();
   VectorValues duals;
-  if (kktDim == 0) {
+  if (kktDim == 0)
     return {denseVectorToVectorValues(workspace.unconstrainedMinimum), duals};
-  }
-
-  Matrix activeA = Matrix::Zero(kktDim, workspace.totalDim);
-  Vector activeB = Vector::Zero(kktDim);
-  auto addRow = [&](size_t row, const ConstraintRow& constraint) {
-    const JacobianFactor& factor = *constraint.factor;
-    for (auto it = factor.begin(); it != factor.end(); ++it) {
-      const Key key = *it;
-      activeA.block(row, workspace.keyOffsets.at(key), 1, keyDims_.at(key)) =
-          factor.getA(it);
-    }
-    activeB(row) = factor.getb()(0);
-  };
-
-  size_t row = 0;
-  for (const ConstraintRow& equality : constraints_.equalities) {
-    addRow(row++, equality);
-  }
-  for (size_t inequalityIndex = 0;
-       inequalityIndex < constraints_.inequalities.size(); ++inequalityIndex) {
-    if (activeInequalityRows.at(inequalityIndex)) {
-      addRow(row++, constraints_.inequalities[inequalityIndex]);
-    }
-  }
 
   Matrix hessianInverseAT(workspace.totalDim, kktDim);
-  for (size_t column = 0; column < kktDim; ++column) {
+  for (size_t column = 0; column < kktDim; ++column)
     hessianInverseAT.col(column) =
-        applyInverseDenseHessian(activeA.row(column).transpose());
-  }
+        applyInverseDenseHessian(active.normals.row(column).transpose());
 
-  // Solve the equality-constrained QP through the Schur complement:
-  //
-  //     (A H^{-1} A^T) lambda = b - A*x0
-  //     x = x0 + H^{-1} A^T lambda
-  //
-  // where x0 is the unconstrained minimizer of the quadratic cost.
-  const Matrix schurComplement = activeA * hessianInverseAT;
+  // Schur complement: (A H^{-1} A^T) lambda = b - A*x0, followed by
+  // x = x0 + H^{-1} A^T lambda. The Hessian factorization is reused.
+  const Matrix schurComplement = active.normals * hessianInverseAT;
   Eigen::LDLT<Matrix> ldlt(schurComplement);
-  if (DenseSchurComplementIsSingular(ldlt, schurComplement)) {
+  if (DenseSchurComplementIsSingular(ldlt, schurComplement))
     throw std::runtime_error(
         "ActiveSetSolver: dense QP Schur complement is singular or "
         "ill-conditioned. Active constraints may be linearly dependent; "
         "remove redundant constraints or use the sparse QP subproblem solver.");
-  }
   const Vector multipliers =
-      ldlt.solve(activeB - activeA * workspace.unconstrainedMinimum);
-  if (!multipliers.allFinite()) {
+      ldlt.solve(active.rhs - active.normals * workspace.unconstrainedMinimum);
+  if (!multipliers.allFinite())
     throw std::runtime_error(
         "ActiveSetSolver: dense QP Schur complement solve produced non-finite "
         "multipliers. Active constraints may be ill-conditioned; use the "
         "sparse QP subproblem solver.");
-  }
+
   const Vector values =
       workspace.unconstrainedMinimum + hessianInverseAT * multipliers;
-
-  size_t multiplierRow = 0;
-  for (const ConstraintRow& equality : constraints_.equalities) {
-    duals.insert(equality.multiplierKey,
-                 SingleValue(multipliers(multiplierRow++)));
-  }
-  for (size_t inequalityIndex = 0;
-       inequalityIndex < constraints_.inequalities.size(); ++inequalityIndex) {
-    if (!activeInequalityRows.at(inequalityIndex)) {
-      continue;
-    }
-    const ConstraintRow& inequality =
-        constraints_.inequalities[inequalityIndex];
-    duals.insert(inequality.multiplierKey,
-                 SingleValue(multipliers(multiplierRow++)));
-  }
-
+  for (size_t row = 0; row < kktDim; ++row)
+    duals.insert(active.multiplierKeys[row], SingleValue(multipliers(row)));
   return {denseVectorToVectorValues(values), duals};
 }
 
@@ -728,7 +914,9 @@ Vector ActiveSetSolver::objectiveGradient(Key key,
       gradient += factor->gradient(key, values);
     }
   }
-  if (params_->regularization > 0.0) {
+  // Sparse QPs regularize only the working subproblem, not the target cost.
+  if (params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense &&
+      params_->regularization > 0.0) {
     gradient += params_->regularization * values.at(key);
   }
   return gradient;
@@ -771,94 +959,178 @@ ActiveSetSolver::InternalState ActiveSetSolver::iterate(
   const bool useDenseQp =
       problemType_ == ProblemType::QP &&
       params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense;
-
-  VectorValues candidateValues;
-  VectorValues subproblemDuals;
+  VectorValues candidate, subproblemDuals;
   if (useDenseQp) {
-    std::tie(candidateValues, subproblemDuals) =
+    std::tie(candidate, subproblemDuals) =
         solveDenseQpSubproblem(state.activeInequalityRows);
   } else {
-    candidateValues =
-        buildWorkingGraph(state.values, state.activeInequalityRows).optimize();
-    CompleteMissingKeys(&candidateValues, state.values, keyDims_);
+    // Keep least-squares QPs in square-root form throughout elimination.
+    // Forming normal equations can erase weak finite directions, including
+    // after an active row leaves the working set.
+    const bool squareRootQp =
+        problemType_ == ProblemType::QP &&
+        std::all_of(qpCostGraph_.begin(), qpCostGraph_.end(),
+                    [](const GaussianFactor::shared_ptr& factor) {
+                      return dynamic_cast<const JacobianFactor*>(factor.get());
+                    });
+    const GaussianFactorGraph workingGraph =
+        buildWorkingGraph(state.values, state.activeInequalityRows);
+    candidate = squareRootQp ? workingGraph.optimize(EliminateQR)
+                            : workingGraph.optimize();
+    CompleteMissingKeys(&candidate, state.values, keyDims_);
   }
 
   InternalState next = state;
   next.iterations = state.iterations + 1;
-
-  const bool smallStep =
-      useDenseQp ? denseQpStepIsSmall(candidateValues, state.values)
-                 : candidateValues.equals(state.values, params_->stepTolerance);
-  if (smallStep) {
-    // No primal movement is left for this working set. Check KKT multipliers:
-    // if every active inequality multiplier has the correct sign, we are done;
-    // otherwise remove the most offending row and solve the reduced set.
-    if (useDenseQp) {
-      next.duals = subproblemDuals;
-    } else {
-      const GaussianFactorGraph dualGraph = buildDualGraph(
-          constraints_, state.activeInequalityRows, candidateValues);
-      next.duals = dualGraph.empty() ? VectorValues() : dualGraph.optimize();
-    }
-
-    int leavingRow = -1;
-    double largestMultiplier = params_->multiplierTolerance;
-    for (size_t row = 0; row < constraints_.inequalities.size(); ++row) {
-      if (!state.activeInequalityRows[row]) {
-        continue;
-      }
-      const Key multiplierKey = constraints_.inequalities[row].multiplierKey;
-      const double lambda = next.duals.exists(multiplierKey)
-                                ? next.duals.at(multiplierKey)(0)
-                                : 0.0;
-      if (lambda > largestMultiplier) {
-        leavingRow = static_cast<int>(row);
-        largestMultiplier = lambda;
-      }
-    }
-    next.values = candidateValues;
-    if (leavingRow < 0) {
-      next.converged = true;
-    } else {
-      next.activeInequalityRows[leavingRow] = false;
-    }
+  if (!shouldInspectOptimality(state, candidate, useDenseQp)) {
+    moveTowardCandidate(state, candidate, &next);
     return next;
   }
 
-  const VectorValues direction = candidateValues - state.values;
-  // Move toward the working-set solution until an inactive inequality becomes
-  // tight. QPs can take the full step when nothing blocks; LPs use the same
-  // calculation to detect unbounded descent.
+  if (useDenseQp) {
+    next.duals = subproblemDuals;
+  } else if (!recoverSparseMultipliers(state, candidate, &next.duals)) {
+    next.values = candidate;
+    return next;
+  }
+  next.values = candidate;
+  const int leavingRow =
+      leavingInequality(constraints_.inequalities, state.activeInequalityRows,
+                        next.duals, params_->multiplierTolerance);
+  if (leavingRow >= 0) {
+    next.activeInequalityRows[leavingRow] = false;
+  } else {
+    next.converged = useDenseQp || problemType_ == ProblemType::LP ||
+                     originalSparseKktSatisfied(
+                         candidate, state.activeInequalityRows, next.duals);
+  }
+  return next;
+}
+
+/* ************************************************************************* */
+bool ActiveSetSolver::shouldInspectOptimality(const InternalState& state,
+                                              const VectorValues& candidate,
+                                              bool useDenseQp) const {
+  if (!useDenseQp && problemType_ == ProblemType::QP) {
+    // A feasible working-set minimum can be inspected immediately, without
+    // repeating the same factorization just to observe a zero step. When
+    // regularization is positive, its proximal residual bounds the difference
+    // from original stationarity, including movement along flat directions.
+    double bound = 0.0;
+    for (const auto& [key, _] : keyDims_)
+      bound = std::max(bound, params_->regularization *
+                                  (candidate.at(key) - state.values.at(key))
+                                      .lpNorm<Eigen::Infinity>());
+    return bound <= params_->multiplierTolerance &&
+           primalFeasible(constraints_.equalities, constraints_.inequalities,
+                          candidate, params_->feasibilityTolerance);
+  }
+  return useDenseQp ? denseQpStepIsSmall(candidate, state.values)
+                    : candidate.equals(state.values, params_->stepTolerance);
+}
+
+/* ************************************************************************* */
+bool ActiveSetSolver::recoverSparseMultipliers(const InternalState& state,
+                                               const VectorValues& candidate,
+                                               VectorValues* duals) const {
+  // The original gradient is the only one that can certify a solution.
+  const DualSolveResult original = SolveSparseDualGraph(
+      buildDualGraph(constraints_, state.activeInequalityRows, candidate),
+      params_->multiplierTolerance, problemType_ == ProblemType::QP);
+  if (original.consistent()) {
+    *duals = original.multipliers;
+    return true;
+  }
+
+  if (problemType_ == ProblemType::QP && params_->regularization > 0.0) {
+    const DualSolveResult proximal = SolveSparseDualGraph(
+        buildDualGraph(constraints_, state.activeInequalityRows, candidate,
+                       &state.values),
+        params_->multiplierTolerance);
+    if (proximal.consistent()) {
+      // Only the proximal subproblem is stationary. The next iteration must
+      // recenter at candidate; its multipliers cannot certify the original QP.
+      return false;
+    }
+    std::ostringstream message;
+    message << std::setprecision(16)
+            << "ActiveSetSolver: multiplier stationarity is inconsistent "
+               "for both the original and proximal QP (residuals "
+            << original.residual << ", " << proximal.residual << "; thresholds "
+            << original.threshold << ", " << proximal.threshold << ").";
+    throw std::runtime_error(message.str());
+  }
+
+  std::ostringstream message;
+  message << std::setprecision(16)
+          << "ActiveSetSolver: multiplier stationarity is inconsistent "
+             "(residual "
+          << original.residual << "; threshold " << original.threshold << ").";
+  throw std::runtime_error(message.str());
+}
+
+/* ************************************************************************* */
+bool ActiveSetSolver::originalSparseKktSatisfied(
+    const VectorValues& values, const std::vector<bool>& activeRows,
+    const VectorValues& duals) const {
+  if (!primalFeasible(constraints_.equalities, constraints_.inequalities,
+                      values, params_->feasibilityTolerance))
+    return false;
+  VectorValues stationarity;
+  double gap = 0.0;
+  for (const auto& [key, _] : keyDims_) {
+    const Vector gradient = objectiveGradient(key, values);
+    stationarity.insert(key, gradient);
+    gap += values.at(key).dot(gradient);
+  }
+
+  auto subtractRow = [&](const ConstraintRow& row) {
+    if (!duals.exists(row.multiplierKey)) return;
+    const double multiplier = duals.at(row.multiplierKey)(0);
+    gap -= row.factor->getb()(0) * multiplier;
+    for (auto key = row.factor->begin(); key != row.factor->end(); ++key)
+      stationarity.at(*key) -=
+          row.factor->getA(key).transpose() * Vector::Constant(1, multiplier);
+  };
+  for (const ConstraintRow& row : constraints_.equalities) subtractRow(row);
+  for (size_t row = 0; row < constraints_.inequalities.size(); ++row)
+    if (activeRows[row]) subtractRow(constraints_.inequalities[row]);
+
+  for (const auto& [_, residual] : stationarity)
+    if (!residual.allFinite() ||
+        residual.lpNorm<Eigen::Infinity>() > params_->multiplierTolerance)
+      return false;
+  return std::isfinite(gap) && std::abs(gap) <= params_->multiplierTolerance;
+}
+
+/* ************************************************************************* */
+void ActiveSetSolver::moveTowardCandidate(const InternalState& state,
+                                          const VectorValues& candidate,
+                                          InternalState* next) const {
+  const VectorValues direction = candidate - state.values;
+  // Stop at the first inactive inequality reached along the working-set
+  // direction. An unblocked LP direction proves unboundedness.
   double step = problemType_ == ProblemType::QP
                     ? 1.0
                     : std::numeric_limits<double>::infinity();
   int blockingRow = -1;
   for (size_t row = 0; row < constraints_.inequalities.size(); ++row) {
-    if (state.activeInequalityRows[row]) {
-      continue;
-    }
+    if (state.activeInequalityRows[row]) continue;
     const JacobianFactor& factor = *constraints_.inequalities[row].factor;
     const double denominator = RowDotProduct(factor, direction);
-    if (denominator <= 0.0) {
-      continue;
-    }
-    const double residual = RowResidual(factor, state.values);
-    const double candidateStep = -residual / denominator;
+    if (denominator <= 0.0) continue;
+    const double candidateStep =
+        -RowResidual(factor, state.values) / denominator;
     if (candidateStep < step) {
       step = std::max(0.0, candidateStep);
       blockingRow = static_cast<int>(row);
     }
   }
-
-  if (problemType_ == ProblemType::LP && blockingRow < 0) {
+  if (problemType_ == ProblemType::LP && blockingRow < 0)
     throw std::runtime_error("ActiveSetSolver: LP is unbounded.");
-  }
 
-  next.values = state.values + step * direction;
-  if (blockingRow >= 0) {
-    next.activeInequalityRows[blockingRow] = true;
-  }
-  return next;
+  next->values = state.values + step * direction;
+  if (blockingRow >= 0) next->activeInequalityRows[blockingRow] = true;
 }
 
 /* ************************************************************************* */
@@ -951,60 +1223,61 @@ Values ActiveSetSolver::zeroVectorValues() const {
 /* ************************************************************************* */
 Values ActiveSetSolver::findVectorFeasiblePoint() const {
   const Values zeroValues = zeroVectorValues();
-  LpProblem phaseProblem;
+  Values feasible;
+  if (problemType_ == ProblemType::QP &&
+      params_->qpSubproblemSolver == Params::QpSubproblemSolver::Sparse &&
+      tryEqualityProjection(zeroValues, &feasible))
+    return feasible;
+  return solvePhaseOne(zeroValues);
+}
+/* ************************************************************************* */
+bool ActiveSetSolver::tryEqualityProjection(const Values& zeroValues,
+                                            Values* feasible) const {
+  // Unit unary factors select a minimum-norm point on the equality manifold.
+  GaussianFactorGraph graph;
+  for (const auto& [key, dim] : keyDims_)
+    graph.emplace_shared<JacobianFactor>(key, Matrix::Identity(dim, dim),
+                                         Vector::Zero(dim));
+  for (const ConstraintRow& row : constraints_.equalities)
+    graph.push_back(row.factor);
+
+  try {
+    const VectorValues candidate = graph.optimize();
+    for (const auto& [key, _] : keyDims_)
+      if (!candidate.exists(key) || !candidate.at(key).allFinite())
+        return false;
+    if (!primalFeasible(constraints_.equalities, constraints_.inequalities,
+                        candidate, params_->feasibilityTolerance))
+      return false;
+    *feasible = vectorValuesToValues(candidate, zeroValues);
+    return true;
+  } catch (const IndeterminateSystemException&) {
+    // Phase one handles an inconsistent or singular projection.
+    return false;
+  }
+}
+
+/* ************************************************************************* */
+Values ActiveSetSolver::solvePhaseOne(const Values& zeroValues) const {
   const Key slackKey = NextAvailableKey(keyDims_);
-  // Phase one minimizes a non-negative scalar slack s. If the optimum slack is
-  // zero within tolerance, the original variables satisfy all constraints.
-  phaseProblem.addCost(
-      JacobianFactor(slackKey, Matrix::Identity(1, 1), Vector::Zero(1)));
-
-  auto rowTerms = [&](const ConstraintRow& row, double rowSign) {
-    std::vector<std::pair<Key, Matrix>> terms;
-    terms.reserve(row.factor->size() + 1);
-    for (auto it = row.factor->begin(); it != row.factor->end(); ++it) {
-      terms.emplace_back(*it, rowSign * row.factor->getA(it));
-    }
-    terms.emplace_back(slackKey, -Matrix::Identity(1, 1));
-    return terms;
-  };
-
-  double initialSlack = 1.0;
-  for (const ConstraintRow& row : constraints_.equalities) {
-    const double b = row.factor->getb()(0);
-    // Equality A*x=b is relaxed as both A*x-s<=b and -A*x-s<=-b.
-    phaseProblem.addConstraint(LinearConstraint::LessEqual(
-        JacobianFactor(rowTerms(row, 1.0), SingleValue(b))));
-    phaseProblem.addConstraint(LinearConstraint::LessEqual(
-        JacobianFactor(rowTerms(row, -1.0), SingleValue(-b))));
-    initialSlack = std::max(initialSlack, std::abs(b) + 1.0);
-  }
-  for (const ConstraintRow& row : constraints_.inequalities) {
-    const double b = row.factor->getb()(0);
-    phaseProblem.addConstraint(LinearConstraint::LessEqual(
-        JacobianFactor(rowTerms(row, 1.0), SingleValue(b))));
-    initialSlack = std::max(initialSlack, -b + 1.0);
-  }
-  phaseProblem.addConstraint(LinearConstraint::LessEqual(
-      JacobianFactor(slackKey, -Matrix::Identity(1, 1), Vector::Zero(1))));
-
-  Values phaseInitial = zeroValues;
-  const Vector slackInitial = Vector::Constant(1, initialSlack);
-  phaseInitial.insert(slackKey, slackInitial);
-  const Values phaseResult =
-      ActiveSetSolver(phaseProblem, params_).optimize(phaseInitial);
-  const double slack = phaseResult.at<Vector>(slackKey)(0);
-  if (slack > params_->phaseOneFeasibilityTolerance) {
+  double initialSlack;
+  const LpProblem phaseProblem =
+      buildPhaseOneProblem(constraints_.equalities, constraints_.inequalities,
+                           slackKey, &initialSlack);
+  Values initial = zeroValues;
+  initial.insert(slackKey, Vector::Constant(1, initialSlack).eval());
+  const Values result =
+      ActiveSetSolver(phaseProblem, params_).optimize(initial);
+  if (result.at<Vector>(slackKey)(0) > params_->phaseOneFeasibilityTolerance)
     throw std::runtime_error(
         "ActiveSetSolver: could not find a feasible point.");
-  }
 
-  Values feasibleValues;
-  for (const auto& [key, _] : keyDims_) {
-    feasibleValues.insert(key, phaseResult.exists(key)
-                                   ? phaseResult.at<Vector>(key)
-                                   : zeroValues.at<Vector>(key));
-  }
-  return feasibleValues;
+  Values feasible;
+  for (const auto& [key, _] : keyDims_)
+    feasible.insert(key, result.exists(key) ? result.at<Vector>(key)
+                                            : zeroValues.at<Vector>(key));
+  return feasible;
 }
+
 
 }  // namespace gtsam

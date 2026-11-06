@@ -597,6 +597,17 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
   Vector invsigmas = sigmas_.array().inverse();
   Vector weights = invsigmas.array().square();  // calculate weights once
 
+  // Initialize finite-information column scales. Exact substitutions below
+  // propagate norm bounds when information moves into separator columns.
+  // Comparing residual norms to these scales avoids an absolute precision floor.
+  Vector referencePrecisions = Vector::Zero(n);
+  for (size_t i = 0; i < m; ++i) {
+    if (std::isfinite(weights(i)))
+      referencePrecisions.array() += weights(i) * Ab.row(i).head(n).transpose().array().square();
+  }
+  const double relativeTolerance = 64.0 * std::numeric_limits<double>::epsilon() *
+                                   std::max(m, n);
+
   // We loop over all columns, because the columns that can be eliminated
   // are not necessarily contiguous. For each one, estimate the corresponding
   // scalar variable x as d-rS, with S the separator (remaining columns).
@@ -635,6 +646,16 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
       Eigen::Block<Matrix> a_reduced = Ab.block(0, j, m, 1);
       a_reduced *= (1.0/rd(0, j)); // NOTE(frank): this is the 1/a[i] = 1/rd(0,j) factor we need!
 
+      // Substitution changes finite columns as A_k -= A_j * rd_k / rd_j.
+      // Propagate a norm bound by the triangle inequality, including into
+      // columns with zero input scale, so cancellation still has a rank scale.
+      for (size_t k = j + 1; k < n; ++k) {
+        const double normBound =
+            std::sqrt(referencePrecisions(k)) +
+            std::abs(rd(0, k) / rd(0, j)) * std::sqrt(referencePrecisions(j));
+        referencePrecisions(k) = normBound * normBound;
+      }
+
       // Rank-1 down-date of Ab, expensive, using outer product
       Ab.block(0, j + 1, m, n - j).noalias() -= a_reduced * rd.middleCols(j + 1, n - j);
     } else {
@@ -647,14 +668,18 @@ SharedDiagonal Constrained::QR(Matrix& Ab) const {
       Vector pseudo(m);     // allocate storage for pseudo-inverse
       for (size_t i = 0; i < m; i++) {
         double ai = a(i, 0);
-        if (std::abs(ai) > 1e-9) {  // also catches remaining sigma==0 rows
+        // Rank is determined from weighted precision below. A small raw
+        // coefficient may carry substantial information when sigma is small.
+        // Ignore only hard rows, which were handled by check_if_constraint.
+        if (std::isfinite(weights[i])) {
           pseudo[i] = weights[i] * ai;
           precision += pseudo[i] * ai;
         } else
           pseudo[i] = 0;
       }
 
-      if (precision > 1e-8) {
+      if (std::isfinite(precision) && precision > 0.0 &&
+          std::sqrt(precision) > relativeTolerance * std::sqrt(referencePrecisions(j))) {
         pseudo /= precision;
 
         // create solution [r d], rhs is automatically r(n)

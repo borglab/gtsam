@@ -535,6 +535,302 @@ TEST(QpSolver, QPS_QPTEST) {
 
 }  // namespace qps_file_examples
 /* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace redundant_sparse_multipliers {
+
+// Opposing bounds fix a variable although their multipliers are nonunique.
+// Either gradient sign must eventually produce dual-feasible multipliers.
+TEST(ActiveSetSolver, SparseOpposingBounds) {
+  for (double sign : {-1.0, 1.0}) {
+    QpProblem problem;
+    problem.addCost(
+        HessianFactor(0, Matrix::Ones(1, 1), Vector::Constant(1, sign), 0));
+    problem.addConstraint(LinearConstraint::LessEqual(
+        JacobianFactor(0, Matrix::Ones(1, 1), Vector::Zero(1))));
+    problem.addConstraint(LinearConstraint::LessEqual(
+        JacobianFactor(0, -Matrix::Ones(1, 1), Vector::Zero(1))));
+    Values initial;
+    initial.insert(0, Vector::Zero(1).eval());
+
+    const auto solved = ActiveSetSolver(problem).optimizeWithState(initial);
+    CHECK(solved.second.converged);
+    EXPECT_DOUBLES_EQUAL(0, solved.first.at<Vector>(0)(0), 1e-8);
+    const auto& duals = solved.second.inequalityMultipliers;
+    CHECK(duals[0](0) <= 1e-8 && duals[1](0) <= 1e-8);
+    EXPECT_DOUBLES_EQUAL(-sign, duals[0](0) - duals[1](0), 1e-8);
+  }
+}
+
+// Duplicate equality rows need a valid multiplier combination, not uniqueness.
+TEST(ActiveSetSolver, SparseDuplicateEqualities) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Ones(1, 1), Vector::Ones(1), 0));
+  const auto equality = LinearConstraint::Equal(
+      JacobianFactor(0, Matrix::Ones(1, 1), Vector::Zero(1)));
+  problem.addConstraint(equality);
+  problem.addConstraint(equality);
+  Values initial;
+  initial.insert(0, Vector::Zero(1).eval());
+
+  const auto solved = ActiveSetSolver(problem).optimizeWithState(initial);
+  CHECK(solved.second.converged);
+  const auto& duals = solved.second.equalityMultipliers;
+  EXPECT_DOUBLES_EQUAL(-1, duals[0](0) + duals[1](0), 1e-8);
+}
+
+// Cold feasibility search and QP optimization tolerate duplicate normals.
+TEST(ActiveSetSolver, SparseColdSolveDuplicateBounds) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Identity(2, 2), Vector::Ones(2), 0));
+  problem.addConstraint(LinearConstraint::LessEqual(JacobianFactor(
+      0, Matrix{{1, 0}, {2, 0}, {0, 1}}, Vector3{0, 0, 0.5})));
+
+  const auto solved = ActiveSetSolver(problem).optimizeWithState();
+  CHECK(solved.second.converged);
+  CHECK(assert_equal(Vector2{0, 0.5}, solved.first.at<Vector>(0), 1e-7));
+}
+
+// A dependency spanning a cycle must survive elimination of earlier cliques.
+// Changing row units must preserve stationarity in the original equations.
+TEST(ActiveSetSolver, SparseDependentEqualityCycle) {
+  constexpr size_t count = 8;
+  for (double scale : {1e-3, 1.0, 1e3}) {
+    QpProblem problem;
+    Values initial;
+    for (Key key = 0; key < count; ++key) {
+      problem.addCost(HessianFactor(key, Matrix::Ones(1, 1),
+                                    Vector::Constant(1, key + 1), 0));
+      problem.addConstraint(LinearConstraint::Equal(
+          JacobianFactor(key, scale * Matrix::Ones(1, 1), (key + 1) % count,
+                         -scale * Matrix::Ones(1, 1), Vector::Zero(1))));
+      initial.insert(key, Vector::Zero(1).eval());
+    }
+    problem.addConstraint(LinearConstraint::Equal(
+        JacobianFactor(0, Matrix::Ones(1, 1), Vector::Zero(1))));
+
+    const auto [values, state] =
+        ActiveSetSolver(problem).optimizeWithState(initial);
+    CHECK(state.converged);
+    Vector residual = -Vector::LinSpaced(count, 1, count);
+    for (Key key = 0; key < count; ++key) {
+      EXPECT_DOUBLES_EQUAL(0.0, values.at<Vector>(key)(0), 1e-8);
+      const double multiplier = scale * state.equalityMultipliers[key](0);
+      residual(key) -= multiplier;
+      residual((key + 1) % count) += multiplier;
+    }
+    residual(0) -= state.equalityMultipliers.back()(0);
+    CHECK(residual.lpNorm<Eigen::Infinity>() < 1e-7);
+  }
+}
+
+// Gauging a redundant row must retain a weak but independent normal direction.
+TEST(ActiveSetSolver, SparseDependentAndWeakEqualityNormals) {
+  const Matrix normals{{1, 0}, {1, 1e-5}, {2, 0}};
+  const Vector2 gradient{-1, -1e-5};
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Identity(2, 2), -gradient, 0));
+  problem.addConstraint(
+      LinearConstraint::Equal(JacobianFactor(0, normals, Vector3::Zero())));
+  Values initial;
+  initial.insert(0, Vector::Zero(2).eval());
+
+  const auto [values, state] =
+      ActiveSetSolver(problem).optimizeWithState(initial);
+  CHECK(state.converged);
+  CHECK(assert_equal(Vector2::Zero(), values.at<Vector>(0), 1e-8));
+  const Vector2 residual =
+      gradient - normals.transpose() * state.equalityMultipliers[0];
+  CHECK(residual.lpNorm<Eigen::Infinity>() < 1e-8);
+}
+
+}  // namespace redundant_sparse_multipliers
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace sparse_proximal_qp {
+
+ActiveSetSolverParams::shared_ptr Parameters(double regularization) {
+  auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpSubproblemSolver =
+      ActiveSetSolverParams::QpSubproblemSolver::Sparse;
+  params->regularization = regularization;
+  params->stepTolerance = 1e-8;
+  params->multiplierTolerance = 1e-9;
+  return params;
+}
+
+// Proximal regularization must not shrink the unconstrained optimum.
+TEST(ActiveSetSolver, SparseProximalOriginalOptimum) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(10), 0));
+  Values initial;
+  initial.insert(0, Vector(Vector1(0)));
+
+  const auto solved =
+      ActiveSetSolver(problem, Parameters(1)).optimizeWithState(initial);
+  CHECK(solved.second.converged);
+  EXPECT_DOUBLES_EQUAL(10, solved.first.at<Vector>(0)(0), 1e-9);
+  CHECK(solved.second.iterations > 2);
+}
+
+// Active-bound multipliers must describe the original QP gradient.
+TEST(ActiveSetSolver, SparseProximalOriginalBoundMultiplier) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(10), 0));
+  problem.addConstraint(LinearConstraint::LessEqual(
+      JacobianFactor(0, Matrix::Identity(1, 1), Vector1(3))));
+
+  const auto solved =
+      ActiveSetSolver(problem, Parameters(1)).optimizeWithState();
+  EXPECT_DOUBLES_EQUAL(3, solved.first.at<Vector>(0)(0), 1e-9);
+  EXPECT_DOUBLES_EQUAL(-7, solved.second.inequalityMultipliers[0](0), 1e-9);
+}
+
+// A free direction retains its current value under a proximal solve.
+TEST(ActiveSetSolver, SparseProximalPreservesFreeDirection) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix{{1, 0}, {0, 0}}, Vector2{10, 0}, 0));
+  Values initial;
+  initial.insert(0, Vector(Vector2{0, 7}));
+
+  const auto solved =
+      ActiveSetSolver(problem, Parameters(0.1)).optimizeWithState(initial);
+  CHECK(assert_equal(Vector2{10, 7}, solved.first.at<Vector>(0), 1e-9));
+}
+
+// Tiny steps caused by large regularization do not prove original optimality.
+TEST(ActiveSetSolver, SparseProximalRejectsPrematureConvergence) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(1), 0));
+  auto params = Parameters(1e6);
+  params->stepTolerance = 1e-5;
+  params->maxIterations = 3;
+  Values initial;
+  initial.insert(0, Vector(Vector1(0)));
+
+  CHECK_EXCEPTION(ActiveSetSolver(problem, params).optimizeWithState(initial),
+                  std::runtime_error);
+}
+
+// The original primal-dual gap must be small at a large-magnitude solution.
+TEST(ActiveSetSolver, SparseProximalOriginalGap) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(1000), 0));
+  Values initial;
+  initial.insert(0, Vector(Vector1(0)));
+
+  const auto solved =
+      ActiveSetSolver(problem, Parameters(1e-3)).optimizeWithState(initial);
+  const double x = solved.first.at<Vector>(0)(0);
+  CHECK(std::abs(x * (x - 1000)) <= 1e-9);
+}
+
+}  // namespace sparse_proximal_qp
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace sparse_equality_first {
+
+// A feasible equality projection avoids the iterative cold-start LP.
+TEST(ActiveSetSolver, SparseEqualityFirstFeasiblePoint) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(2), 0));
+  problem.addConstraint(LinearConstraint::Equal(
+      JacobianFactor(0, Matrix::Identity(1, 1), Vector1(2))));
+  auto params = std::make_shared<ActiveSetSolverParams>();
+  params->maxIterations = 1;
+
+  const auto solved = ActiveSetSolver(problem, params).optimizeWithState();
+  CHECK(solved.second.converged);
+  EXPECT_DOUBLES_EQUAL(2, solved.first.at<Vector>(0)(0), 1e-9);
+}
+
+// A projected point that violates an inequality still uses phase one.
+TEST(ActiveSetSolver, SparseEqualityFirstFallsBack) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Identity(2, 2), Vector2::Zero(), 0));
+  problem.addConstraint(LinearConstraint::Equal(
+      JacobianFactor(0, Matrix{{1, 1}}, Vector1(1))));
+  problem.addConstraint(LinearConstraint::GreaterEqual(
+      JacobianFactor(0, Matrix{{1, 0}}, Vector1(0.8))));
+
+  const auto solved = ActiveSetSolver(problem).optimizeWithState();
+  CHECK(solved.second.converged);
+  CHECK(assert_equal(Vector2{0.8, 0.2}, solved.first.at<Vector>(0), 1e-7));
+}
+
+// Inconsistent equality and inequality rows still report infeasibility.
+TEST(ActiveSetSolver, SparseEqualityFirstInfeasible) {
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, Matrix::Identity(1, 1), Vector1(0), 0));
+  problem.addConstraint(LinearConstraint::Equal(
+      JacobianFactor(0, Matrix::Identity(1, 1), Vector1(0))));
+  problem.addConstraint(LinearConstraint::GreaterEqual(
+      JacobianFactor(0, Matrix::Identity(1, 1), Vector1(1))));
+
+  CHECK_EXCEPTION(ActiveSetSolver(problem).optimizeWithState(),
+                  std::runtime_error);
+}
+
+}  // namespace sparse_equality_first
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace square_root_qp {
+
+// Releasing a bound must preserve a weak finite least-squares direction.
+TEST(ActiveSetSolver, SquareRootWeakDirection) {
+  QpProblem problem;
+  problem.addCost(JacobianFactor(0, Matrix{{1e8, 1e8}, {1.0, 0.0}},
+                                Vector2{1e8, 1.0}));
+  problem.addConstraint(LinearConstraint::LessEqual(
+      JacobianFactor(0, Matrix{{-1.0, 0.0}}, Vector1(0.0))));
+  auto params = std::make_shared<ActiveSetSolverParams>();
+  params->regularization = 0;
+  params->maxIterations = 10;
+  Values initial;
+  initial.insert(0, Vector(Vector2::Zero()));
+  const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
+  CHECK(result.second.converged);
+  CHECK(assert_equal(Vector2{1.0, 0.0}, result.first.at<Vector>(0), 1e-7));
+}
+
+// A feasible exact subproblem minimum needs no duplicate factorization.
+TEST(ActiveSetSolver, InspectUnregularizedMinimumImmediately) {
+  QpProblem problem;
+  problem.addCost(JacobianFactor(0, Matrix::Identity(1, 1), Vector1(2.0)));
+  auto params = std::make_shared<ActiveSetSolverParams>();
+  params->regularization = 0;
+  params->maxIterations = 1;
+  Values initial;
+  initial.insert(0, Vector(Vector1(0.0)));
+  const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
+  CHECK(result.second.converged);
+  CHECK(assert_equal(Vector1(2.0), result.first.at<Vector>(0), 1e-9));
+  CHECK(result.second.iterations == 1);
+}
+
+// Releasing a bound requires one constrained solve and one free solve.
+TEST(ActiveSetSolver, ReleaseUnregularizedBoundWithoutDuplicateSolve) {
+  QpProblem problem;
+  problem.addCost(JacobianFactor(0, Matrix::Identity(1, 1), Vector1(2.0)));
+  problem.addConstraint(LinearConstraint::GreaterEqual(
+      JacobianFactor(0, Matrix::Identity(1, 1), Vector1(0.0))));
+  auto params = std::make_shared<ActiveSetSolverParams>();
+  params->regularization = 0;
+  params->maxIterations = 2;
+  Values initial;
+  initial.insert(0, Vector(Vector1(0.0)));
+  const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
+  CHECK(result.second.converged);
+  CHECK(assert_equal(Vector1(2.0), result.first.at<Vector>(0), 1e-9));
+  CHECK(result.second.iterations == 2);
+}
+
+}  // namespace square_root_qp
+/* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
