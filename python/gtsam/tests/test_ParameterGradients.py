@@ -237,6 +237,69 @@ class TestParameterGradients(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "parameter callback failed"):
             gtsam.Gradients(graph, values).parameterGradient(cotangents, SCALE)
 
+    def test_noise_gradient_matches_identity(self):
+        sigmas = np.array([0.4, 1.3])
+        noise = gtsam.noiseModel.Diagonal.Sigmas(sigmas, False)
+        self.assertNotIsInstance(noise, gtsam.noiseModel.Isotropic)
+
+        def make_graph(first, second):
+            graph = gtsam.NonlinearFactorGraph()
+            graph.add(gtsam.PriorFactorPoint2(KEY, np.zeros(2), first))
+            graph.add(gtsam.PriorFactorPoint2(KEY, np.array([0.3, 0.4]), second))
+            graph.add(gtsam.PriorFactorPoint2(
+                KEY, np.array([1.0, -0.5]), gtsam.noiseModel.Isotropic.Sigma(2, 0.5)
+            ))
+            return graph
+
+        def solve(graph):
+            initial = gtsam.Values()
+            initial.insert(KEY, np.zeros(2))
+            return gtsam.GaussNewtonOptimizer(graph, initial).optimize()
+
+        target = np.array([0.2, -0.3])
+        graph = make_graph(noise, noise)
+        solution = solve(graph)
+        cotangents = gtsam.VectorValues()
+        cotangents.insert(KEY, solution.atPoint2(KEY) - target)
+        gradients = gtsam.Gradients(graph, solution)
+        gradient = gradients.noiseGradient(cotangents, noise)
+        self.assertEqual(gradient.shape, (2,))
+        # Repeated queries with the same Python object keep matching.
+        np.testing.assert_array_equal(gradients.noiseGradient(cotangents, noise), gradient)
+
+        step = 1e-6
+        for coordinate in range(2):
+            plus, minus = sigmas.copy(), sigmas.copy()
+            plus[coordinate] += step
+            minus[coordinate] -= step
+            perturbed = [gtsam.noiseModel.Diagonal.Sigmas(s, False) for s in (plus, minus)]
+            dx = (solve(make_graph(perturbed[0], perturbed[0])).atPoint2(KEY)
+                  - solve(make_graph(perturbed[1], perturbed[1])).atPoint2(KEY))
+            self.assertAlmostEqual(
+                gradient[coordinate], cotangents.at(KEY).dot(dx) / (2 * step), places=6
+            )
+
+        # An equal-valued but distinct model is not in the graph.
+        self.assertIsNone(gradients.noiseGradient(
+            cotangents, gtsam.noiseModel.Diagonal.Sigmas(sigmas, False)
+        ))
+
+    def test_noise_gradient_isotropic(self):
+        noise = gtsam.noiseModel.Isotropic.Sigma(2, 0.7, False)
+        graph = gtsam.NonlinearFactorGraph()
+        graph.add(gtsam.PriorFactorPoint2(KEY, np.zeros(2), noise))
+        graph.add(gtsam.PriorFactorPoint2(
+            KEY, np.array([1.0, -0.5]), gtsam.noiseModel.Isotropic.Sigma(2, 0.5)
+        ))
+        initial = gtsam.Values()
+        initial.insert(KEY, np.zeros(2))
+        solution = gtsam.GaussNewtonOptimizer(graph, initial).optimize()
+        cotangents = gtsam.VectorValues()
+        cotangents.insert(KEY, solution.atPoint2(KEY))
+        gradient = gtsam.Gradients(graph, solution).noiseGradient(cotangents, noise)
+        self.assertEqual(gradient.shape, (1,))
+        self.assertTrue(np.all(np.isfinite(gradient)))
+
 
 if __name__ == "__main__":
     unittest.main()

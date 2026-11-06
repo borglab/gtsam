@@ -302,6 +302,41 @@ std::optional<Vector> Gradients::parameterGradient(
   return result;
 }
 
+std::optional<Vector> Gradients::noiseGradient(
+    const VectorValues& stateCotangents, const SharedNoiseModel model) const {
+  if (!solution_)
+    throw std::logic_error(
+        "Gradients::noiseGradient requires a nonlinear graph and solution");
+  const auto diagonal = std::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+  if (!diagonal || model->isUnit() || model->isConstrained())
+    throw std::invalid_argument(
+        "Gradients::noiseGradient supports Diagonal and Isotropic models only");
+  const bool isotropic =
+      static_cast<bool>(std::dynamic_pointer_cast<noiseModel::Isotropic>(model));
+
+  const Errors whitenedCotangents = pullback(stateCotangents);
+  const Vector& precisions = diagonal->precisions();
+  std::optional<Vector> result;
+  auto cotangent = whitenedCotangents.begin();
+  for (size_t index = 0; index < nonlinearGraph_.size(); ++index, ++cotangent) {
+    const auto& factor = nonlinearGraph_[index];
+    if (!factor || !factor->active(*solution_)) continue;
+    const auto& noiseFactor = static_cast<const NoiseModelFactor&>(*factor);
+    if (noiseFactor.noiseModel().get() != model.get()) continue;
+    const Vector residual = noiseFactor.unwhitenedError(*solution_);
+    Vector contribution =
+        -2.0 * cotangent->array() * residual.array() * precisions.array();
+    if (isotropic) contribution = Vector1(contribution.sum());
+    if (result)
+      *result += contribution;
+    else
+      result = contribution;
+  }
+  if (result && !result->allFinite())
+    throw std::runtime_error("Gradients: nonfinite noise-model gradient");
+  return result;
+}
+
 VectorValues Gradients::pushforward(
     const Errors& factorResidualDirection) const {
   if (factorResidualDirection.size() != graph_.size())

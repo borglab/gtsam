@@ -219,6 +219,9 @@ class Gradients {
   std::optional<gtsam::Vector> parameterGradient(
       const gtsam::VectorValues& stateCotangents,
       const gtsam::ParameterTag& parameter) const;
+  std::optional<gtsam::Vector> noiseGradient(
+      const gtsam::VectorValues& stateCotangents,
+      const gtsam::noiseModel::Base* model) const;
   gtsam::VectorValues pushforward(const gtsam::Errors& factorResidualDirection) const;
   gtsam::Errors pullback(const gtsam::VectorValues& stateCotangents) const;
   void print(string prefix = "Gradients: ") const;
