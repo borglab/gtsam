@@ -35,8 +35,8 @@ class GTSAM_EXPORT ActiveSetSolverParams {
 
   /// Strategy used to solve equality-constrained QP active-set subproblems.
   enum class QpSubproblemSolver {
-    /// Rebuild and eliminate a sparse working graph, reusing its ordering
-    /// while the variable keys stay unchanged.
+    /// Eliminate a sparse working graph, reusing its ordering and optionally
+    /// its Bayes tree while the variable keys stay unchanged.
     Sparse,
     /// Reuse one Hessian factorization and solve dense active-set Schur
     /// systems.
@@ -59,6 +59,8 @@ class GTSAM_EXPORT ActiveSetSolverParams {
   /// Maximum residual accepted from the cold-start feasibility phase.
   double phaseOneFeasibilityTolerance = 1e-6;
   QpSubproblemSolver qpSubproblemSolver = QpSubproblemSolver::Sparse;
+  /// Reuse sparse QP elimination when additional regularization is zero.
+  bool useIncrementalSparseQp = true;
 };
 
 /** Final active-set state, including row-ordered multipliers. */
@@ -200,6 +202,14 @@ class GTSAM_EXPORT ActiveSetSolver {
   GaussianFactorGraph buildWorkingGraph(
       const VectorValues& values,
       const std::vector<bool>& activeInequalityRows) const;
+  /// Solve a sparse working graph using this call's ordering and tree caches.
+  VectorValues solveSparseSubproblem(const InternalState& state,
+                                     SparseWorkspace* workspace) const;
+  /// Update active inequality factors and solve the unregularized QP tree.
+  VectorValues solveIncrementalSparseQp(
+      const GaussianFactorGraph& graph, const std::vector<bool>& activeRows,
+      const GaussianFactorGraph::Eliminate& eliminate,
+      SparseWorkspace* workspace) const;
   /// Assemble A_active^T lambda = gradient for the original or proximal QP.
   /// A nonnull center adds regularization * (values - center) to the gradient.
   GaussianFactorGraph buildDualGraph(

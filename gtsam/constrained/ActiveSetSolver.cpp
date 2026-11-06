@@ -20,6 +20,7 @@
 #include <gtsam/inference/Ordering.h>
 #include <gtsam/inference/VariableIndex.h>
 #include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianISAM2.h>
 #include <gtsam/linear/linearExceptions.h>
 
 #include <Eigen/Cholesky>
@@ -28,6 +29,7 @@
 #include <cmath>
 #include <iomanip>
 #include <limits>
+#include <optional>
 #include <sstream>
 #include <stdexcept>
 #include <tuple>
@@ -59,6 +61,8 @@ struct ActiveSetSolver::DenseConstraintSystem {
 struct ActiveSetSolver::SparseWorkspace {
   KeySet primalKeys, dualKeys;
   Ordering primalOrdering, dualOrdering;
+  std::unique_ptr<GaussianISAM2> incrementalPrimal;
+  std::vector<std::optional<FactorIndex>> inequalityFactors;
 };
 
 namespace {
@@ -764,6 +768,68 @@ GaussianFactorGraph ActiveSetSolver::buildWorkingGraph(
 }
 
 /* ************************************************************************* */
+VectorValues ActiveSetSolver::solveSparseSubproblem(
+    const InternalState& state, SparseWorkspace* workspace) const {
+  const GaussianFactorGraph graph =
+      buildWorkingGraph(state.values, state.activeInequalityRows);
+  // A constraint-only variable may enter or leave the working graph. A new
+  // tree then uses the same ordering that the batch path would compute.
+  if (graph.keys() != workspace->primalKeys)
+    workspace->incrementalPrimal.reset();
+  const Ordering& ordering = cachedOrdering(
+      graph, &workspace->primalKeys, &workspace->primalOrdering);
+  // Preserve square-root costs through every clique, including separators.
+  const bool squareRootQp =
+      problemType_ == ProblemType::QP &&
+      std::all_of(qpCostGraph_.begin(), qpCostGraph_.end(),
+                  [](const GaussianFactor::shared_ptr& factor) {
+                    return dynamic_cast<const JacobianFactor*>(factor.get());
+                  });
+  GaussianFactorGraph::Eliminate eliminate = EliminatePreferCholesky;
+  if (squareRootQp) eliminate = EliminateQR;
+  if (problemType_ == ProblemType::QP && params_->regularization == 0.0 &&
+      params_->useIncrementalSparseQp)
+    return solveIncrementalSparseQp(graph, state.activeInequalityRows, eliminate,
+                                    workspace);
+  return graph.optimize(ordering, eliminate);
+}
+
+/* ************************************************************************* */
+VectorValues ActiveSetSolver::solveIncrementalSparseQp(
+    const GaussianFactorGraph& graph, const std::vector<bool>& activeRows,
+    const GaussianFactorGraph::Eliminate& eliminate,
+    SparseWorkspace* workspace) const {
+  auto& rowFactors = workspace->inequalityFactors;
+  if (!workspace->incrementalPrimal) {
+    workspace->incrementalPrimal =
+        std::make_unique<GaussianISAM2>(workspace->primalOrdering, eliminate);
+    const FactorIndices indices = workspace->incrementalPrimal->update(graph);
+    rowFactors.assign(activeRows.size(), std::nullopt);
+    size_t position = qpCostGraph_.size() + constraints_.equalities.size();
+    for (size_t row = 0; row < activeRows.size(); ++row)
+      if (activeRows[row]) rowFactors[row] = indices.at(position++);
+  } else {
+    GaussianFactorGraph added;
+    FactorIndices removed;
+    std::vector<size_t> addedRows;
+    for (size_t row = 0; row < activeRows.size(); ++row) {
+      if (activeRows[row] && !rowFactors[row]) {
+        added.push_back(constraints_.inequalities[row].factor);
+        addedRows.push_back(row);
+      } else if (!activeRows[row] && rowFactors[row]) {
+        removed.push_back(*rowFactors[row]);
+        rowFactors[row].reset();
+      }
+    }
+    const FactorIndices indices =
+        workspace->incrementalPrimal->update(added, removed);
+    for (size_t index = 0; index < addedRows.size(); ++index)
+      rowFactors[addedRows[index]] = indices.at(index);
+  }
+  return workspace->incrementalPrimal->optimize();
+}
+
+/* ************************************************************************* */
 GaussianFactorGraph ActiveSetSolver::buildDualGraph(
     const SparseConstraintData& constraints,
     const std::vector<bool>& activeInequalityRows, const VectorValues& values,
@@ -989,21 +1055,7 @@ ActiveSetSolver::InternalState ActiveSetSolver::iterate(
     std::tie(candidate, subproblemDuals) =
         solveDenseQpSubproblem(state.activeInequalityRows);
   } else {
-    // Keep least-squares QPs in square-root form throughout elimination.
-    // Forming normal equations can erase weak finite directions, including
-    // after an active row leaves the working set.
-    const bool squareRootQp =
-        problemType_ == ProblemType::QP &&
-        std::all_of(qpCostGraph_.begin(), qpCostGraph_.end(),
-                    [](const GaussianFactor::shared_ptr& factor) {
-                      return dynamic_cast<const JacobianFactor*>(factor.get());
-                    });
-    const GaussianFactorGraph workingGraph =
-        buildWorkingGraph(state.values, state.activeInequalityRows);
-    const Ordering& ordering = cachedOrdering(
-        workingGraph, &workspace->primalKeys, &workspace->primalOrdering);
-    candidate = squareRootQp ? workingGraph.optimize(ordering, EliminateQR)
-                            : workingGraph.optimize(ordering);
+    candidate = solveSparseSubproblem(state, workspace);
     CompleteMissingKeys(&candidate, state.values, keyDims_);
   }
 
