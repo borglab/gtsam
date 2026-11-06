@@ -232,7 +232,7 @@ class GTSAM_EXPORT ActiveSetSolver {
  private:
   enum class ProblemType { LP, QP };
   struct DenseQpWorkspace;
-  struct SparseWorkspace;
+  struct SolveWorkspace;
 
   struct ValueShape {
     enum class Type { Vector, Matrix };
@@ -280,9 +280,9 @@ class GTSAM_EXPORT ActiveSetSolver {
   /// Run the active-set loop from the supplied initial values and state.
   std::pair<Values, State> optimizeWithState(const Values& initialValues,
                                              const State* warmStart) const;
-  /// Advance the active set, reusing this optimization call's sparse orderings.
+  /// Advance the active set using this optimization call's backend caches.
   InternalState iterate(const InternalState& state,
-                        SparseWorkspace* workspace) const;
+                        SolveWorkspace* workspace) const;
 
  private:
   // Internal helpers: setup and value representation.
@@ -314,38 +314,30 @@ class GTSAM_EXPORT ActiveSetSolver {
   Values vectorValuesToValues(const VectorValues& values,
                               const Values& prototype) const;
 
-  // Internal helpers: sparse working set and optimality.
+  // Internal helpers: working set and optimality.
   /** Search for feasible descent using the shared main-iteration budget and
    * elimination workspace. Failed attempts still update state.iterations.
    */
   void searchFeasibleStep(InternalState* state, const Values& prototype,
-                          SparseWorkspace* workspace,
+                          SolveWorkspace* workspace,
                           ActiveSetFeasibleStepResult* result) const;
   /** Solve the configured QP working face and truncate at the first blocker.
    * Count the attempt before elimination and check every original constraint.
    */
-  void takeFeasibleStep(InternalState* state, SparseWorkspace* workspace) const;
+  void takeFeasibleStep(InternalState* state, SolveWorkspace* workspace) const;
   /// Check and record a feasible displacement without assigning optimality.
   bool inspectFeasibleStep(const InternalState& next, const Values& prototype,
                            ActiveSetFeasibleStepResult* result) const;
   /// Evaluate original quadratic decrease independently of additive constants.
   double quadraticDecrease(const VectorValues& initial,
                             const VectorValues& candidate) const;
-  /// Assemble the cost, proximal or LP descent term, and active constraints.
-  GaussianFactorGraph buildWorkingGraph(
+  /// Assemble the LP gradient projection and its active constraints.
+  GaussianFactorGraph buildLpWorkingGraph(
       const VectorValues& values,
       const std::vector<bool>& activeInequalityRows) const;
   /// Solve a sparse working graph using this call's ordering and tree caches.
   VectorValues solveSparseSubproblem(const InternalState& state,
-                                     SparseWorkspace* workspace) const;
-  /// Update active factors, then apply any proximal-center forcing in the QP tree.
-  VectorValues solveIncrementalSparseQp(
-      const GaussianFactorGraph& graph, const InternalState& state,
-      const GaussianFactorGraph::Eliminate& eliminate,
-      SparseWorkspace* workspace) const;
-  /// Add entering rows and remove released rows, retaining reference objectives.
-  void updateIncrementalWorkingSet(const std::vector<bool>& activeRows,
-                                   SparseWorkspace* workspace) const;
+                                     SolveWorkspace* workspace) const;
   /// Assemble A_active^T lambda = gradient for the original or proximal QP.
   /// A nonnull center adds regularization * (values - center) to the gradient.
   GaussianFactorGraph buildDualGraph(
@@ -358,7 +350,7 @@ class GTSAM_EXPORT ActiveSetSolver {
   /// Recover original-QP multipliers, or return false for a proximal-only step.
   bool recoverMultipliers(const InternalState& state,
                            const VectorValues& candidate,
-                           SparseWorkspace* workspace,
+                           SolveWorkspace* workspace,
                            VectorValues* duals) const;
   /// Certify the original QP's primal residual, stationarity, and gap.
   bool originalQpKktSatisfied(const VectorValues& values,
@@ -378,18 +370,18 @@ class GTSAM_EXPORT ActiveSetSolver {
   VectorValues denseVectorToVectorValues(const Vector& vector) const;
   /// Solve a dense working face with this optimization call's numerical cache.
   VectorValues solveDenseQpSubproblem(const InternalState& state,
-                                      SparseWorkspace* workspace) const;
+                                      SolveWorkspace* workspace) const;
 
   // Internal helpers: state and cold-start feasibility.
   /** Complete cold QP initialization using the main solve's workspace.
    * Callers with explicit working-set warm starts bypass this helper.
    */
-  void initializeQp(InternalState* state, SparseWorkspace* workspace) const;
+  void initializeQp(InternalState* state, SolveWorkspace* workspace) const;
   /** Attempt one face step from a fully feasible point. Accept only useful
    * original-objective descent, then rebuild all tight rows before projection.
    */
   void initializeFeasiblePoint(InternalState* state,
-                               SparseWorkspace* workspace) const;
+                               SolveWorkspace* workspace) const;
   /** Rebuild the working set from all tight rows at the current point. */
   void initializeTightRows(InternalState* state) const;
   /** Select tight rows using the projected gradient without moving the point.
