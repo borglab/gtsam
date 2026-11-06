@@ -19,11 +19,13 @@
 
 #include <gtsam/constrained/LpProblem.h>
 #include <gtsam/constrained/QpProblem.h>
+#include <gtsam/inference/Ordering.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
 
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -71,6 +73,21 @@ class GTSAM_EXPORT ActiveSetSolverParams {
    * default.
    */
   bool useProjectedGradientInitialization = false;
+
+  /** Optional complete permutation of the problem's variable keys. Sparse
+   * working graphs and auxiliary projections restrict it to their current
+   * keys; phase one appends its slack key. Dense QPs use it for the cost
+   * factorization. Multiplier keys are internal and use a separate COLAMD
+   * ordering. Unset means automatic COLAMD.
+   */
+  std::optional<Ordering> ordering;
+
+  /// Set a custom variable-elimination ordering.
+  void setOrdering(const Ordering& ordering) { this->ordering = ordering; }
+  /// Return to automatic COLAMD ordering.
+  void clearOrdering() { ordering.reset(); }
+  /// Return whether a custom ordering was supplied.
+  bool hasOrdering() const { return ordering.has_value(); }
 };
 
 /** Final active-set state, including row-ordered multipliers. */
@@ -130,17 +147,19 @@ class GTSAM_EXPORT ActiveSetSolver {
   using State = ActiveSetSolverState;
   using shared_ptr = std::shared_ptr<ActiveSetSolver>;
 
-  /** Construct a solver for a QpProblem. */
+  /** Construct a solver for a QpProblem, copying and validating its parameters. */
   explicit ActiveSetSolver(
       const QpProblem& problem,
       Params::shared_ptr params = std::make_shared<Params>());
 
-  /** Construct a solver for a LpProblem. */
+  /** Construct a solver for a LpProblem, copying and validating its parameters. */
   explicit ActiveSetSolver(
       const LpProblem& problem,
       Params::shared_ptr params = std::make_shared<Params>());
 
-  /** Optimize from an initial point. */
+  /** Optimize from finite, inequality-feasible values. Equality constraints
+   * are enforced by the working subproblems.
+   */
   Values optimize(const Values& initialValues) const;
 
   /** Optimize from an initial point and return the final state. */
@@ -233,6 +252,8 @@ class GTSAM_EXPORT ActiveSetSolver {
   // Internal helpers: setup and value representation.
   /// Record the dimensions of all keys in the problem.
   void initializeDimensions();
+  /// Validate finite nonnegative tolerances and a complete custom ordering.
+  void validateParameters() const;
   /// Build the stored QP graph or LP gradient.
   void initializeObjective();
   /// Allocate the workspace used only by dense QP mode.

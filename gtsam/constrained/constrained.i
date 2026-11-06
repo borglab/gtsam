@@ -188,6 +188,9 @@ class ActiveSetSolverParams {
   gtsam::ActiveSetSolverParams::QpSubproblemSolver qpSubproblemSolver;
   bool useIncrementalSparseQp;
   bool useProjectedGradientInitialization;
+  void setOrdering(const gtsam::Ordering& ordering);
+  void clearOrdering();
+  bool hasOrdering() const;
 };
 
 #include <gtsam/constrained/LpProblem.h>
