@@ -44,7 +44,8 @@ TEST(ActiveSetSolverOptions, FeasibleStepHonorsInitializer) {
   params->regularization = 0;
   EXPECT(ActiveSetSolver(problem, params).computeFeasibleStep(initial).status ==
          ActiveSetFeasibleStepResult::Status::NoProgress);
-  params->useProjectedGradientInitialization = true;
+  params->qpInitialization =
+      ActiveSetSolverParams::QpInitialization::ProjectedGradient;
   EXPECT(ActiveSetSolver(problem, params).computeFeasibleStep(initial).status ==
          ActiveSetFeasibleStepResult::Status::FeasibleProgress);
 }
@@ -116,7 +117,8 @@ TEST(ActiveSetSolverOptions, CustomOrderingAcrossBackends) {
       params->regularization = 0;
       params->qpSubproblemSolver = backend;
       params->useIncrementalSparseQp = incremental;
-      params->useProjectedGradientInitialization = true;
+      params->qpInitialization =
+          ActiveSetSolverParams::QpInitialization::ProjectedGradient;
       params->setOrdering(Ordering{30, 10});
       EXPECT(params->hasOrdering());
       ActiveSetSolver solver(qp, params);
@@ -159,10 +161,16 @@ TEST(ActiveSetSolverOptions, WorkingGraphKeyChanges) {
   auto params = std::make_shared<ActiveSetSolverParams>();
   params->regularization = 0;
   params->setOrdering(Ordering{30, 10});
-  const auto full = ActiveSetSolver(qp, params).optimizeWithState(zero());
-  EXPECT(full.second.converged);
-  EXPECT_DOUBLES_EQUAL(2, full.first.at<Vector>(10)(0), 1e-9);
-  EXPECT_DOUBLES_EQUAL(-1, full.first.at<Vector>(30)(0), 1e-9);
+  for (auto initialization : {
+           ActiveSetSolverParams::QpInitialization::TightConstraints,
+           ActiveSetSolverParams::QpInitialization::ProjectedGradient,
+           ActiveSetSolverParams::QpInitialization::FeasibleStepThenProjectedGradient}) {
+    params->qpInitialization = initialization;
+    const auto full = ActiveSetSolver(qp, params).optimizeWithState(zero());
+    EXPECT(full.second.converged);
+    EXPECT_DOUBLES_EQUAL(2, full.first.at<Vector>(10)(0), 1e-9);
+    EXPECT_DOUBLES_EQUAL(-1, full.first.at<Vector>(30)(0), 1e-9);
+  }
 }
 
 // Automatic initialization restricts the order in phase one and appends slack.

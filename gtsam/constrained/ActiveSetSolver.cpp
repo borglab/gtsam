@@ -569,6 +569,20 @@ void ActiveSetSolver::initializeDimensions() {
 
 /* ************************************************************************* */
 void ActiveSetSolver::validateParameters() const {
+  // Reject unknown modes and QP-only initialization on an LP explicitly.
+  switch (params_->qpInitialization) {
+    case Params::QpInitialization::TightConstraints:
+    case Params::QpInitialization::ProjectedGradient:
+    case Params::QpInitialization::FeasibleStepThenProjectedGradient:
+      break;
+    default:
+      throw std::invalid_argument(
+          "ActiveSetSolver: unknown QP initialization.");
+  }
+  if (problemType_ == ProblemType::LP &&
+      params_->qpInitialization != Params::QpInitialization::TightConstraints)
+    throw std::invalid_argument(
+        "ActiveSetSolver: LPs require TightConstraints initialization.");
   for (double value : {params_->activeTolerance, params_->stepTolerance,
                        params_->feasibilityTolerance, params_->multiplierTolerance,
                        params_->phaseOneFeasibilityTolerance, params_->regularization})
@@ -1090,6 +1104,7 @@ Vector ActiveSetSolver::objectiveGradient(Key key,
 /* ************************************************************************* */
 ActiveSetSolver::InternalState ActiveSetSolver::initialState(
     const Values& values, const State* warmStart) const {
+  // Preserve caller values; a working-set warm start overrides cold selection.
   InternalState state;
   state.values = valuesToVectorValues(values);
   state.activeInequalityRows.assign(constraints_.inequalities.size(), false);
@@ -1110,16 +1125,57 @@ ActiveSetSolver::InternalState ActiveSetSolver::initialState(
     return state;
   }
 
+  initializeTightRows(&state);
+  return state;
+}
+
+/* ************************************************************************* */
+void ActiveSetSolver::initializeTightRows(InternalState* state) const {
+  // Include every tight row, including coincident blockers at a new point.
   for (size_t row = 0; row < constraints_.inequalities.size(); ++row) {
     const double violation =
-        RowResidual(*constraints_.inequalities[row].factor, state.values);
-    state.activeInequalityRows[row] =
+        RowResidual(*constraints_.inequalities[row].factor, state->values);
+    state->activeInequalityRows[row] =
         std::abs(violation) <= params_->activeTolerance;
   }
-  if (problemType_ == ProblemType::QP &&
-      params_->useProjectedGradientInitialization)
-    initializeProjectedGradient(&state);
-  return state;
+}
+
+/* ************************************************************************* */
+void ActiveSetSolver::initializeQp(InternalState* state,
+                                   SparseWorkspace* workspace) const {
+  // Both public QP entry points share this pipeline without recursive solves.
+  if (problemType_ != ProblemType::QP ||
+      params_->qpInitialization == Params::QpInitialization::TightConstraints)
+    return;
+  if (params_->qpInitialization ==
+      Params::QpInitialization::FeasibleStepThenProjectedGradient)
+    initializeFeasiblePoint(state, workspace);
+  initializeProjectedGradient(state);
+}
+
+/* ************************************************************************* */
+void ActiveSetSolver::initializeFeasiblePoint(
+    InternalState* state, SparseWorkspace* workspace) const {
+  // Truncation preserves affine equalities only from an already feasible point.
+  if (!primalFeasible(constraints_.equalities, constraints_.inequalities,
+                      state->values, params_->feasibilityTolerance))
+    throw std::invalid_argument(
+        "ActiveSetSolver: two-stage initialization needs a feasible point.");
+  if (state->iterations >= params_->maxIterations)
+    throw IterationLimitError(
+        "ActiveSetSolver: initialization iteration limit reached.");
+  const VectorValues initial = state->values;
+  takeFeasibleStep(state, workspace);
+  const double decrease = quadraticDecrease(initial, state->values);
+  if (!std::isfinite(decrease) ||
+      !std::isfinite(qpCostGraph_.error(state->values)))
+    throw std::runtime_error(
+        "ActiveSetSolver: non-finite initialization objective.");
+  // Accept only useful original-objective descent; keep the attempted count.
+  if (maximumStep(state->values, initial) <= params_->stepTolerance ||
+      decrease <= 0)
+    state->values = initial;
+  initializeTightRows(state);
 }
 
 /* ************************************************************************* */
@@ -1170,7 +1226,9 @@ void ActiveSetSolver::initializeProjectedGradient(InternalState* state) const {
 
   const VectorValues gradient = qpCostGraph_.gradient(state->values);
   auto projectionParams = std::make_shared<Params>(*params_);
-  projectionParams->useProjectedGradientInitialization = false;
+  // Auxiliary cone projections must not recursively initialize themselves.
+  projectionParams->qpInitialization =
+      Params::QpInitialization::TightConstraints;
   projectionParams->qpSubproblemSolver = Params::QpSubproblemSolver::Sparse;
   projectionParams->regularization = 0;
   for (const auto& [root, keys] : partition.sets()) {
@@ -1481,12 +1539,17 @@ ActiveSetFeasibleStepResult ActiveSetSolver::computeFeasibleStep(
   result.objective = result.initialObjective = qpCostGraph_.error(initial);
   result.constraintViolation = constraintViolation(
       constraints_.equalities, constraints_.inequalities, initial);
+  InternalState state;
+  SparseWorkspace workspace;
   try {
     if (!std::isfinite(result.initialObjective))
       throw std::runtime_error("ActiveSetSolver: non-finite initial objective.");
-    InternalState state = initialState(initialValues, nullptr);
+    state = initialState(initialValues, nullptr);
+    initializeQp(&state, &workspace);
     result.activeInequalityRows = state.activeInequalityRows;
-    searchFeasibleStep(std::move(state), initialValues, &result);
+    // A successful preliminary step already satisfies this API's contract.
+    if (!inspectFeasibleStep(state, initialValues, &result))
+      searchFeasibleStep(&state, initialValues, &workspace, &result);
   } catch (const IterationLimitError& error) {
     result.status = ActiveSetFeasibleStepResult::Status::IterationLimit;
     result.message = error.what();
@@ -1494,34 +1557,47 @@ ActiveSetFeasibleStepResult ActiveSetSolver::computeFeasibleStep(
     result.status = ActiveSetFeasibleStepResult::Status::NumericalFailure;
     result.message = error.what();
   }
+  result.iterations = state.iterations;
   return result;
 }
 
 /* ************************************************************************* */
 void ActiveSetSolver::searchFeasibleStep(
-    InternalState state, const Values& prototype,
+    InternalState* state, const Values& prototype, SparseWorkspace* workspace,
     ActiveSetFeasibleStepResult* result) const {
-  SparseWorkspace workspace;
-  for (; result->iterations < params_->maxIterations;) {
-    ++result->iterations;
-    VectorValues candidate =
-        params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense
-            ? solveDenseQpSubproblem(state.activeInequalityRows).first
-            : solveSparseSubproblem(state, &workspace);
-    CompleteMissingKeys(&candidate, state.values, keyDims_);
-    (void)maximumStep(candidate, candidate);
-    InternalState next = state;
-    moveTowardCandidate(state, candidate, &next);
-    result->activeInequalityRows = next.activeInequalityRows;
-    if (inspectFeasibleStep(next, prototype, result)) return;
-    if (state.activeInequalityRows == next.activeInequalityRows) {
+  // Retry zero-length blockers within the same budget and elimination cache.
+  while (state->iterations < params_->maxIterations) {
+    const auto previousRows = state->activeInequalityRows;
+    takeFeasibleStep(state, workspace);
+    result->activeInequalityRows = state->activeInequalityRows;
+    if (inspectFeasibleStep(*state, prototype, result)) return;
+    if (previousRows == state->activeInequalityRows) {
       result->message = "No useful displacement on the selected working face.";
       return;
     }
-    state = std::move(next);
   }
   result->status = ActiveSetFeasibleStepResult::Status::IterationLimit;
   result->message = "ActiveSetSolver: feasible-step iteration limit reached.";
+}
+
+/* ************************************************************************* */
+void ActiveSetSolver::takeFeasibleStep(InternalState* state,
+                                       SparseWorkspace* workspace) const {
+  // Count attempted work before elimination so failure reports remain honest.
+  ++state->iterations;
+  VectorValues candidate =
+      params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense
+          ? solveDenseQpSubproblem(state->activeInequalityRows).first
+          : solveSparseSubproblem(*state, workspace);
+  CompleteMissingKeys(&candidate, state->values, keyDims_);
+  (void)maximumStep(candidate, candidate);
+  InternalState next = *state;
+  moveTowardCandidate(*state, candidate, &next);
+  if (!primalFeasible(constraints_.equalities, constraints_.inequalities,
+                      next.values, params_->feasibilityTolerance))
+    throw std::runtime_error(
+        "ActiveSetSolver: feasible step failed constraint checks.");
+  *state = std::move(next);
 }
 
 /* ************************************************************************* */
@@ -1573,6 +1649,8 @@ std::pair<Values, ActiveSetSolver::State> ActiveSetSolver::optimizeWithState(
   validateInitialValues(initialValues);
   InternalState state = initialState(initialValues, warmStart);
   SparseWorkspace workspace;
+  // Explicit row masks take precedence over every cold-initialization mode.
+  if (!warmStart) initializeQp(&state, &workspace);
   while (!state.converged) {
     if (state.iterations >= params_->maxIterations) {
       throw IterationLimitError("ActiveSetSolver: failed to converge.");
@@ -1641,6 +1719,8 @@ Values ActiveSetSolver::solvePhaseOne(const Values& zeroValues) const {
   Values initial = zeroValues;
   initial.insert(slackKey, Vector::Constant(1, initialSlack).eval());
   auto phaseParams = std::make_shared<Params>(*params_);
+  // Phase one is an LP; the outer QP alone owns its initialization strategy.
+  phaseParams->qpInitialization = Params::QpInitialization::TightConstraints;
   if (params_->ordering) {
     KeySet phaseKeys;
     for (const auto& row : constraints_.equalities)

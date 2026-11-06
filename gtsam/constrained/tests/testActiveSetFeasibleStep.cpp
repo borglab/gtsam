@@ -98,8 +98,10 @@ TEST(ActiveSetFeasibleStep, ReleasesInwardBindingRow) {
   upper(&problem, Matrix12{{-1, 0}}, 0);
   upper(&problem, Matrix12{{1, 0}}, 1);
   auto settings = params();
-  EXPECT(!settings->useProjectedGradientInitialization);
-  settings->useProjectedGradientInitialization = true;
+  EXPECT(settings->qpInitialization ==
+         ActiveSetSolverParams::QpInitialization::TightConstraints);
+  settings->qpInitialization =
+      ActiveSetSolverParams::QpInitialization::ProjectedGradient;
   ActiveSetSolver solver(problem, settings);
   const auto before = solver.optimizeWithState(point(0));
   const auto result = solver.computeFeasibleStep(point(0));
@@ -154,7 +156,8 @@ TEST(ActiveSetFeasibleStep, OptimalAndProjectionExhaustion) {
   EXPECT(result.status == Status::IterationLimit);
   EXPECT_LONGS_EQUAL(0, result.iterations);
   upper(&problem, Matrix12{{-1, 0}}, 0);
-  settings->useProjectedGradientInitialization = true;
+  settings->qpInitialization =
+      ActiveSetSolverParams::QpInitialization::ProjectedGradient;
   settings->maxIterations = 1;
   result = ActiveSetSolver(problem, settings).computeFeasibleStep(point(0));
   EXPECT(result.status == Status::IterationLimit);
@@ -213,7 +216,8 @@ TEST(ActiveSetFeasibleStep, ZeroBlocksAndMainExhaustion) {
   const QpProblem qp = problem();
   auto settings = std::make_shared<ActiveSetSolverParams>();
   settings->regularization = 0;
-  settings->useProjectedGradientInitialization = true;
+  settings->qpInitialization =
+      ActiveSetSolverParams::QpInitialization::ProjectedGradient;
   settings->maxIterations = 2;
   const auto exhausted = ActiveSetSolver(qp, settings).computeFeasibleStep(initial);
   EXPECT(exhausted.status == Status::IterationLimit);
