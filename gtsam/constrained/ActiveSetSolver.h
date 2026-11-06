@@ -153,9 +153,9 @@ class GTSAM_EXPORT ActiveSetSolver {
 
   /**
    * Seek a feasible QP descent step from a finite, feasible initial point.
-   * Always select the initial face using projected-gradient initialization,
-   * regardless of useProjectedGradientInitialization. Respect the configured
-   * QP backend, regularization and tolerances. Truncate at the first blocking
+   * Select the initial face using the same initialization options as optimize.
+   * Respect the configured QP backend, regularization and tolerances.
+   * Truncate at the first blocking
    * inequality; zero-length blocks update the working set within maxIterations.
    * A useful step must exceed stepTolerance in infinity norm and strictly
    * decrease the original objective. No multiplier or optimality test is made.

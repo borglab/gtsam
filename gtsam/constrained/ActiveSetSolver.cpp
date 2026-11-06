@@ -1432,8 +1432,6 @@ ActiveSetFeasibleStepResult ActiveSetSolver::computeFeasibleStep(
     if (!std::isfinite(result.initialObjective))
       throw std::runtime_error("ActiveSetSolver: non-finite initial objective.");
     InternalState state = initialState(initialValues, nullptr);
-    if (!params_->useProjectedGradientInitialization)
-      initializeProjectedGradient(&state);
     result.activeInequalityRows = state.activeInequalityRows;
     searchFeasibleStep(std::move(state), initialValues, &result);
   } catch (const IterationLimitError& error) {
