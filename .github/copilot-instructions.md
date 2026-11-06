@@ -268,6 +268,19 @@ class belongs in the same file as its derived classes or in an earlier file.
   /* ************************************************************************* */
   ```
 
+## Documentation and reports
+
+* Write for a robotics audience, without assuming expertise in GTSAM internals
+  or optimization solvers. Explain library-specific concepts, solver choices,
+  and numerical metrics when they are needed to interpret an example or result.
+* Lead each paragraph with a concrete topic sentence stating its main point.
+  Develop that point with the relevant explanation or evidence.
+* Use factual, descriptive headings. Avoid slogans, promotional language, and
+  conversational headings such as "Meet the datasets."
+* State what a comparison measures and how to interpret it before presenting
+  implementation details. Keep detailed numerical settings and provenance
+  available without making them prerequisites for understanding the results.
+
 ## Notebooks
 
 Notebooks in `*/doc/*.ipynb` and `*/examples/*.ipynb` should use this preamble:
