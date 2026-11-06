@@ -242,6 +242,30 @@ class QpProblem : gtsam::ConstrainedOptProblem {
       gtsam::QpSolverType solverType = gtsam::QpSolverType::Sparse) const;
 };
 
+class ActiveSetFeasibleStepResult {
+  enum class Status { FeasibleProgress, NoProgress, NumericalFailure, IterationLimit };
+  ActiveSetFeasibleStepResult();
+  gtsam::Values values;
+  gtsam::Vector activeInequalityMask() const;
+  gtsam::ActiveSetFeasibleStepResult::Status status;
+  size_t iterations;
+  double initialObjective;
+  double objective;
+  double constraintViolation;
+  std::string message;
+};
+
+class ActiveSetSolver {
+  ActiveSetSolver(const gtsam::QpProblem& problem,
+      std::shared_ptr<gtsam::ActiveSetSolverParams> params = nullptr);
+  ActiveSetSolver(const gtsam::LpProblem& problem,
+      std::shared_ptr<gtsam::ActiveSetSolverParams> params = nullptr);
+  gtsam::Values optimize(const gtsam::Values& initialValues) const;
+  gtsam::Values optimize() const;
+  gtsam::ActiveSetFeasibleStepResult computeFeasibleStep(
+      const gtsam::Values& initialValues) const;
+};
+
 #include <gtsam/constrained/QcqpProblem.h>
 class QcqpProblem : gtsam::ConstrainedOptProblem {
   QcqpProblem();

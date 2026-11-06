@@ -70,6 +70,12 @@ namespace {
 
 constexpr double kMinimumDenseRegularization = 1e-6;
 
+// Preserve the existing runtime_error contract while distinguishing exhausted
+// auxiliary projection solves from numerical failure in computeFeasibleStep.
+struct IterationLimitError : std::runtime_error {
+  using std::runtime_error::runtime_error;
+};
+
 /* ************************************************************************* */
 // Any complete ordering remains valid when only factor connectivity changes.
 // Recompute COLAMD only when graph variables enter or leave the working set.
@@ -385,6 +391,30 @@ bool primalFeasible(const std::vector<Row>& equalities,
     if (!std::isfinite(residual) || residual > tolerance) return false;
   }
   return true;
+}
+
+/* ************************************************************************* */
+template <typename Row>
+double constraintViolation(const std::vector<Row>& equalities,
+                           const std::vector<Row>& inequalities,
+                           const VectorValues& values) {
+  double violation = 0;
+  for (const auto& row : equalities)
+    violation = std::max(violation, std::abs(RowResidual(*row.factor, values)));
+  for (const auto& row : inequalities)
+    violation = std::max(violation, RowResidual(*row.factor, values));
+  return violation;
+}
+
+/* ************************************************************************* */
+double maximumStep(const VectorValues& first, const VectorValues& second) {
+  double step = 0;
+  for (const auto& [key, value] : first) {
+    if (!value.allFinite() || !second.at(key).allFinite())
+      throw std::runtime_error("ActiveSetSolver: non-finite feasible step.");
+    step = std::max(step, (value - second.at(key)).lpNorm<Eigen::Infinity>());
+  }
+  return step;
 }
 
 /* ************************************************************************* */
@@ -1121,6 +1151,10 @@ void ActiveSetSolver::initializeProjectedGradient(InternalState* state) const {
     try {
       direction = ActiveSetSolver(component.projection, projectionParams)
                       .optimize(zero);
+    } catch (const IterationLimitError& error) {
+      throw IterationLimitError(
+          std::string("ActiveSetSolver: projected-gradient initialization failed: ") +
+          error.what());
     } catch (const std::runtime_error& error) {
       throw std::runtime_error(
           std::string(
@@ -1377,6 +1411,93 @@ std::pair<Values, ActiveSetSolver::State> ActiveSetSolver::optimizeWithState()
 Values ActiveSetSolver::optimize() const { return optimizeWithState().first; }
 
 /* ************************************************************************* */
+ActiveSetFeasibleStepResult ActiveSetSolver::computeFeasibleStep(
+    const Values& initialValues) const {
+  if (problemType_ != ProblemType::QP)
+    throw std::invalid_argument("ActiveSetSolver: feasible steps require a QP.");
+  validateInitialValues(initialValues);
+  const VectorValues initial = valuesToVectorValues(initialValues);
+  for (const auto& [key, value] : initial)
+    if (!value.allFinite())
+      throw std::invalid_argument("ActiveSetSolver: feasible step needs finite values.");
+  if (!primalFeasible(constraints_.equalities, constraints_.inequalities, initial,
+                      params_->feasibilityTolerance))
+    throw std::invalid_argument("ActiveSetSolver: feasible step needs a feasible point.");
+  ActiveSetFeasibleStepResult result;
+  result.values = initialValues;
+  result.objective = result.initialObjective = qpCostGraph_.error(initial);
+  result.constraintViolation = constraintViolation(
+      constraints_.equalities, constraints_.inequalities, initial);
+  try {
+    if (!std::isfinite(result.initialObjective))
+      throw std::runtime_error("ActiveSetSolver: non-finite initial objective.");
+    InternalState state = initialState(initialValues, nullptr);
+    if (!params_->useProjectedGradientInitialization)
+      initializeProjectedGradient(&state);
+    result.activeInequalityRows = state.activeInequalityRows;
+    searchFeasibleStep(std::move(state), initialValues, &result);
+  } catch (const IterationLimitError& error) {
+    result.status = ActiveSetFeasibleStepResult::Status::IterationLimit;
+    result.message = error.what();
+  } catch (const std::exception& error) {
+    result.status = ActiveSetFeasibleStepResult::Status::NumericalFailure;
+    result.message = error.what();
+  }
+  return result;
+}
+
+/* ************************************************************************* */
+void ActiveSetSolver::searchFeasibleStep(
+    InternalState state, const Values& prototype,
+    ActiveSetFeasibleStepResult* result) const {
+  SparseWorkspace workspace;
+  for (; result->iterations < params_->maxIterations;) {
+    ++result->iterations;
+    VectorValues candidate =
+        params_->qpSubproblemSolver == Params::QpSubproblemSolver::Dense
+            ? solveDenseQpSubproblem(state.activeInequalityRows).first
+            : solveSparseSubproblem(state, &workspace);
+    CompleteMissingKeys(&candidate, state.values, keyDims_);
+    (void)maximumStep(candidate, candidate);
+    InternalState next = state;
+    moveTowardCandidate(state, candidate, &next);
+    result->activeInequalityRows = next.activeInequalityRows;
+    if (inspectFeasibleStep(state, next, prototype, result)) return;
+    if (state.activeInequalityRows == next.activeInequalityRows) {
+      result->message = "No useful displacement on the selected working face.";
+      return;
+    }
+    state = std::move(next);
+  }
+  result->status = ActiveSetFeasibleStepResult::Status::IterationLimit;
+  result->message = "ActiveSetSolver: feasible-step iteration limit reached.";
+}
+
+/* ************************************************************************* */
+bool ActiveSetSolver::inspectFeasibleStep(
+    const InternalState& previous, const InternalState& next,
+    const Values& prototype, ActiveSetFeasibleStepResult* result) const {
+  if (!primalFeasible(constraints_.equalities, constraints_.inequalities,
+                      next.values, params_->feasibilityTolerance))
+    throw std::runtime_error("ActiveSetSolver: feasible step failed constraint checks.");
+  if (maximumStep(next.values, previous.values) <= params_->stepTolerance)
+    return false;
+  const double objective = qpCostGraph_.error(next.values);
+  if (!std::isfinite(objective) || !std::isfinite(result->initialObjective))
+    throw std::runtime_error("ActiveSetSolver: non-finite feasible-step objective.");
+  if (objective < result->initialObjective) {
+    result->values = vectorValuesToValues(next.values, prototype);
+    result->objective = objective;
+    result->constraintViolation = constraintViolation(
+        constraints_.equalities, constraints_.inequalities, next.values);
+    result->status = ActiveSetFeasibleStepResult::Status::FeasibleProgress;
+  } else {
+    result->message = "The working-face step did not decrease the original objective.";
+  }
+  return true;
+}
+
+/* ************************************************************************* */
 std::pair<Values, ActiveSetSolver::State> ActiveSetSolver::optimizeWithState(
     const Values& initialValues, const State* warmStart) const {
   validateInitialValues(initialValues);
@@ -1384,7 +1505,7 @@ std::pair<Values, ActiveSetSolver::State> ActiveSetSolver::optimizeWithState(
   SparseWorkspace workspace;
   while (!state.converged) {
     if (state.iterations >= params_->maxIterations) {
-      throw std::runtime_error("ActiveSetSolver: failed to converge.");
+      throw IterationLimitError("ActiveSetSolver: failed to converge.");
     }
     state = iterate(state, &workspace);
   }

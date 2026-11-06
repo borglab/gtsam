@@ -24,6 +24,7 @@
 
 #include <map>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace gtsam {
@@ -83,6 +84,31 @@ class GTSAM_EXPORT ActiveSetSolverState {
   size_t iterations = 0;
 };
 
+/** A feasible-step outcome, with no claim of QP optimality or dual validity. */
+class GTSAM_EXPORT ActiveSetFeasibleStepResult {
+ public:
+  /// Outcome of the bounded search, including projected-gradient initialization.
+  enum class Status { FeasibleProgress, NoProgress, NumericalFailure, IterationLimit };
+
+  Values values;
+  std::vector<bool> activeInequalityRows;
+  Status status = Status::NoProgress;
+  /// Main working-face solves attempted; excludes auxiliary projection solves.
+  size_t iterations = 0;
+  double initialObjective = 0;
+  double objective = 0;
+  double constraintViolation = 0;
+  std::string message;
+
+  /** Return a 0/1 working-set mask in original row order for array-based callers. */
+  Vector activeInequalityMask() const {
+    Vector mask(activeInequalityRows.size());
+    for (size_t row = 0; row < activeInequalityRows.size(); ++row)
+      mask(row) = activeInequalityRows[row] ? 1.0 : 0.0;
+    return mask;
+  }
+};
+
 /**
  * Active-set solver for LPs and QPs with shared LinearConstraint constraints.
  *
@@ -124,6 +150,23 @@ class GTSAM_EXPORT ActiveSetSolver {
 
   /** Find a vector-valued feasible point, optimize, and return final state. */
   std::pair<Values, State> optimizeWithState() const;
+
+  /**
+   * Seek a feasible QP descent step from a finite, feasible initial point.
+   * Always select the initial face using projected-gradient initialization,
+   * regardless of useProjectedGradientInitialization. Respect the configured
+   * QP backend, regularization and tolerances. Truncate at the first blocking
+   * inequality; zero-length blocks update the working set within maxIterations.
+   * A useful step must exceed stepTolerance in infinity norm and strictly
+   * decrease the original objective. No multiplier or optimality test is made.
+   *
+   * Invalid initial values, infeasible points and LPs throw. Numerical failures
+   * and iteration limits are returned explicitly, including initialization
+   * failures. Non-progress outcomes retain the supplied point. NoProgress does
+   * not establish optimality. Returned flags describe the selected working set
+   * in original inequality-row order; they are not multiplier certificates.
+   */
+  ActiveSetFeasibleStepResult computeFeasibleStep(const Values& initialValues) const;
 
  private:
   enum class ProblemType { LP, QP };
@@ -205,6 +248,13 @@ class GTSAM_EXPORT ActiveSetSolver {
                               const Values& prototype) const;
 
   // Internal helpers: sparse working set and optimality.
+  /// Run bounded working-face solves, stopping at the first feasible descent.
+  void searchFeasibleStep(InternalState state, const Values& prototype,
+                          ActiveSetFeasibleStepResult* result) const;
+  /// Check and record a feasible displacement without assigning optimality.
+  bool inspectFeasibleStep(const InternalState& previous,
+                           const InternalState& next, const Values& prototype,
+                           ActiveSetFeasibleStepResult* result) const;
   /// Assemble the cost, proximal or LP descent term, and active constraints.
   GaussianFactorGraph buildWorkingGraph(
       const VectorValues& values,
