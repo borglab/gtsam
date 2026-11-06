@@ -187,6 +187,7 @@ class ActiveSetSolverParams {
   double phaseOneFeasibilityTolerance;
   gtsam::ActiveSetSolverParams::QpSubproblemSolver qpSubproblemSolver;
   bool useIncrementalSparseQp;
+  bool useProjectedGradientInitialization;
 };
 
 #include <gtsam/constrained/LpProblem.h>

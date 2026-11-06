@@ -15,6 +15,7 @@
  * @author  Frank Dellaert
  */
 
+#include <gtsam/base/DSFMap.h>
 #include <gtsam/base/GenericValue.h>
 #include <gtsam/constrained/ActiveSetSolver.h>
 #include <gtsam/inference/Ordering.h>
@@ -1041,7 +1042,102 @@ ActiveSetSolver::InternalState ActiveSetSolver::initialState(
     state.activeInequalityRows[row] =
         std::abs(violation) <= params_->activeTolerance;
   }
+  if (problemType_ == ProblemType::QP &&
+      params_->useProjectedGradientInitialization)
+    initializeProjectedGradient(&state);
   return state;
+}
+
+/* ************************************************************************* */
+void ActiveSetSolver::initializeProjectedGradient(InternalState* state) const {
+  if (std::none_of(state->activeInequalityRows.begin(),
+                   state->activeInequalityRows.end(),
+                   [](bool row) { return row; }))
+    return;
+
+  // The identity projection objective is separable even when the QP is coupled.
+  DSFMap<Key> partition;
+  auto connect = [&](const ConstraintRow& row) {
+    for (Key key : *row.factor) partition.merge(row.factor->front(), key);
+  };
+  for (const auto& row : constraints_.equalities) connect(row);
+  for (size_t row = 0; row < constraints_.inequalities.size(); ++row)
+    if (state->activeInequalityRows[row])
+      connect(constraints_.inequalities[row]);
+
+  struct Component {
+    QpProblem projection;
+    std::vector<size_t> inequalities;
+  };
+  std::map<Key, Component> components;
+  // Normalize homogeneous rows so projection and classification are insensitive
+  // to a constraint's positive scale. A constant row remains in the working
+  // set.
+  auto tangentRow = [](const JacobianFactor& factor) {
+    JacobianFactor tangent(factor);
+    tangent.getb().setZero();
+    const double norm = tangent.getA().stableNorm();
+    if (norm > 0) tangent.getA() /= norm;
+    return tangent;
+  };
+  for (const auto& row : constraints_.equalities) {
+    if (row.factor->empty()) continue;
+    components[partition.find(row.factor->front())].projection.addConstraint(
+        LinearConstraint::Equal(tangentRow(*row.factor)));
+  }
+  for (size_t row = 0; row < constraints_.inequalities.size(); ++row) {
+    const auto& factor = *constraints_.inequalities[row].factor;
+    if (!state->activeInequalityRows[row] || factor.empty()) continue;
+    auto& component = components[partition.find(factor.front())];
+    component.projection.addConstraint(
+        LinearConstraint::LessEqual(tangentRow(factor)));
+    component.inequalities.push_back(row);
+  }
+
+  const VectorValues gradient = qpCostGraph_.gradient(state->values);
+  auto projectionParams = std::make_shared<Params>(*params_);
+  projectionParams->useProjectedGradientInitialization = false;
+  projectionParams->qpSubproblemSolver = Params::QpSubproblemSolver::Sparse;
+  projectionParams->regularization = 0;
+  for (const auto& [root, keys] : partition.sets()) {
+    auto& component = components.at(root);
+    if (component.inequalities.empty()) continue;
+    // Cone projection is positively homogeneous: scaling the whole component
+    // gradient preserves its binding rows while bounding numerical magnitudes.
+    double scale = 1;
+    for (Key key : keys)
+      if (gradient.exists(key))
+        scale = std::max(scale, gradient.at(key).lpNorm<Eigen::Infinity>());
+    Values zero;
+    for (Key key : keys) {
+      const size_t dim = keyDims_.at(key);
+      Vector target = Vector::Zero(dim);
+      if (gradient.exists(key)) target = -gradient.at(key) / scale;
+      component.projection.addCost(
+          JacobianFactor(key, Matrix::Identity(dim, dim), target));
+      zero.insert(key, Vector::Zero(dim).eval());
+    }
+    Values direction;
+    try {
+      direction = ActiveSetSolver(component.projection, projectionParams)
+                      .optimize(zero);
+    } catch (const std::runtime_error& error) {
+      throw std::runtime_error(
+          std::string(
+              "ActiveSetSolver: projected-gradient initialization failed: ") +
+          error.what());
+    }
+    for (size_t row : component.inequalities) {
+      const auto& factor = *constraints_.inequalities[row].factor;
+      const double norm = factor.getA().stableNorm();
+      if (norm == 0) continue;
+      double derivative = 0;
+      for (auto key = factor.begin(); key != factor.end(); ++key)
+        derivative += ((factor.getA(key) / norm) * direction.at<Vector>(*key))(0);
+      if (derivative < -params_->activeTolerance)
+        state->activeInequalityRows[row] = false;
+    }
+  }
 }
 
 /* ************************************************************************* */
