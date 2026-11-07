@@ -513,6 +513,136 @@ TEST(NoiseModel, ConstrainedQRRejectsNullDirection) {
 }  // namespace scale_aware_constrained_qr
 /* ************************************************************************* */
 
+namespace blocked_constrained_qr {
+
+// Evaluate only finite rows; exact rows describe the feasible manifold.
+Vector finiteGradient(const Matrix& augmented, const Vector& sigmas,
+                      const Vector& point) {
+  Vector gradient = Vector::Zero(point.size());
+  for (Eigen::Index row = 0; row < sigmas.size(); ++row) {
+    if (sigmas(row) == 0.0) continue;
+    const Vector normal =
+        augmented.row(row).head(point.size()).transpose() / sigmas(row);
+    const double residual = normal.dot(point) -
+                            augmented(row, point.size()) / sigmas(row);
+    gradient.noalias() += normal * residual;
+  }
+  return gradient;
+}
+
+// Blocking must not mix an unrelated large RHS into a weak observation.
+TEST(NoiseModel, ConstrainedQRBlockedWeakRightHandSide) {
+  constexpr size_t variables = 192;
+  Matrix augmented = Matrix::Zero(2 * variables, variables + 1);
+  Vector expected = Vector::LinSpaced(variables, 0.0, 19.1);
+  expected(0) = 2.0;
+  expected(1) = 1.0;
+  augmented(0, 1) = 1e10;
+  augmented(1, 0) = 1e-10;
+  for (size_t j = 2; j < variables; ++j) augmented(j, j) = 1.0;
+  augmented.col(variables) = augmented.leftCols(variables) * expected;
+  const auto model = noiseModel::Constrained::MixedSigmas(
+      Vector::Ones(augmented.rows()));
+
+  const auto result = model->QR(augmented);
+  EXPECT_LONGS_EQUAL(variables, result->dim());
+  if (result->dim() == variables) {
+    const Vector actual = augmented.topLeftCorner(variables, variables)
+                              .triangularView<Eigen::Upper>()
+                              .solve(augmented.col(variables).head(variables));
+    EXPECT(assert_equal(expected, actual, 1e-11));
+  }
+}
+
+// A nearly dependent pair must not pick up an unrelated, large RHS via Q.
+TEST(NoiseModel, ConstrainedQRBlockedNearDependentRightHandSide) {
+  constexpr size_t variables = 192;
+  Matrix augmented = Matrix::Zero(256, variables + 1);
+  augmented(0, 2) = 1.0;
+  augmented(0, variables) = 1e10;
+  augmented(1, 0) = augmented(1, 1) = augmented(2, 0) = 1.0;
+  augmented(2, 1) = 1.0 + 1e-10;
+  augmented(2, variables) = 2e-10;
+  for (size_t j = 3; j < variables; ++j) augmented(j, j) = 1.0;
+  const double expected = 2e-10 / (augmented(2, 1) - 1.0);
+  const auto model = noiseModel::Constrained::MixedSigmas(
+      Vector::Ones(augmented.rows()));
+
+  const auto result = model->QR(augmented);
+  EXPECT_LONGS_EQUAL(variables, result->dim());
+  if (result->dim() == variables) {
+    const Vector actual = augmented.topLeftCorner(variables, variables)
+                              .triangularView<Eigen::Upper>()
+                              .solve(augmented.col(variables).head(variables));
+    // This pair's condition number limits attainable accuracy to about 1e-6.
+    EXPECT_DOUBLES_EQUAL(-expected, actual(0), 1e-4);
+    EXPECT_DOUBLES_EQUAL(expected, actual(1), 1e-4);
+    EXPECT_DOUBLES_EQUAL(1e10, actual(2), 1e-5);
+  }
+}
+
+// Skipped and dependent columns must retain their original variable ordering.
+TEST(NoiseModel, ConstrainedQRBlockedStaggeredRank) {
+  constexpr size_t variables = 192, rows = 256;
+  Matrix augmented(rows, variables + 1);
+  for (size_t i = 0; i < rows; ++i)
+    for (size_t j = 0; j <= variables; ++j)
+      augmented(i, j) = std::sin(0.13 * (i + 1) * (j + 3));
+  for (size_t j : {0, 3, 7, 20}) augmented.col(j).setZero();
+  augmented.col(19) = 0.008 * augmented.col(11);
+  const Matrix original = augmented;
+  const Vector sigmas = Vector::Ones(rows);
+  const auto model = noiseModel::Constrained::MixedSigmas(sigmas);
+
+  const auto result = model->QR(augmented);
+  EXPECT_LONGS_EQUAL(variables - 5, result->dim());
+  const Vector point = Vector::LinSpaced(variables, -0.1, 0.2);
+  EXPECT(assert_equal(finiteGradient(original, sigmas, point),
+                      finiteGradient(augmented, result->sigmas(), point),
+                      1e-8));
+}
+
+// Affine, opposing and redundant hard rows must preserve finite information.
+TEST(NoiseModel, ConstrainedQRBlockedAffineWeightedInformation) {
+  constexpr size_t variables = 192, finiteRows = 256;
+  Matrix augmented = Matrix::Zero(finiteRows + 4, variables + 1);
+  Vector sigmas = Vector::Zero(augmented.rows());
+  for (size_t i = 0; i < finiteRows; ++i) {
+    sigmas(i) = std::pow(10.0, static_cast<int>(i % 5) - 2);
+    for (size_t j = 0; j <= variables; ++j)
+      augmented(i, j) = sigmas(i) *
+                        std::sin(0.17 * (i + 2) * (j + 1));
+  }
+  augmented(finiteRows, 0) = 1.0;
+  augmented(finiteRows, variables) = 0.25;
+  augmented.row(finiteRows + 1) = -augmented.row(finiteRows);
+  augmented(finiteRows + 2, 30) = 1.0;
+  augmented(finiteRows + 2, variables) = -0.1;
+  augmented.row(finiteRows + 3) =
+      augmented.row(finiteRows) + 2.0 * augmented.row(finiteRows + 2);
+  const Matrix original = augmented;
+  const auto model = noiseModel::Constrained::MixedSigmas(sigmas);
+
+  const auto result = model->QR(augmented);
+  EXPECT_LONGS_EQUAL(variables, result->dim());
+  Vector point = Vector::LinSpaced(variables, -0.1, 0.2);
+  point(0) = 0.25;
+  point(30) = -0.1;
+  Vector expected = finiteGradient(original, sigmas, point);
+  Vector actual = finiteGradient(augmented, result->sigmas(), point);
+  // Gradients are compared along the hard constraints' free directions.
+  expected(0) = actual(0) = expected(30) = actual(30) = 0.0;
+  EXPECT(assert_equal(expected, actual, 1e-8));
+  for (Eigen::Index row = 0; row < result->sigmas().size(); ++row) {
+    if (result->sigmas()(row) != 0.0) continue;
+    EXPECT_DOUBLES_EQUAL(augmented(row, variables),
+                        augmented.row(row).head(variables).dot(point), 1e-10);
+  }
+}
+
+}  // namespace blocked_constrained_qr
+/* ************************************************************************* */
+
 /* ************************************************************************* */
 TEST(NoiseModel, SmartSqrtInformation )
 {
