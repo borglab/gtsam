@@ -20,6 +20,7 @@
  */
 
 #include <gtsam/constrained/internal/DenseQpSolver.h>
+#include <gtsam/constrained/internal/DenseQpEqualityProjection.h>
 
 #include <Eigen/QR>
 #include <Eigen/Jacobi>
@@ -58,6 +59,8 @@ Vector refineQrMinimum(const Matrix& jacobian, const Vector& rhs,
 }  // namespace
 
 struct DenseQpSolver::Impl {
+  const DenseQpData& original;
+  std::optional<DenseQpEqualityProjection> projection;
   const DenseQpData& data;
   Matrix objective;
   bool objectiveReady = false, invertible = false, workingReady = false;
@@ -78,7 +81,11 @@ struct DenseQpSolver::Impl {
   std::unique_ptr<NullspaceSystem> nullspaceCache;
 
 
-  explicit Impl(const DenseQpData& source) : data(source) {
+  explicit Impl(const DenseQpData& source)
+      : original(source), projection(projectDenseQpEqualities(source)),
+        data(projection ? projection->reduced : source) {
+    if (projection)
+      statistics.numericalFactorizations += projection->numericalFactorizations;
     // Append exactly the requested proximal curvature in square-root form.
     const Eigen::Index n = data.linear.size();
     const Eigen::Index extra = data.regularization > 0 ? n : 0;
@@ -413,6 +420,27 @@ struct DenseQpSolver::Impl {
     return value;
   }
 
+
+  // Project only the center/RHS during working-set exploration. A fully fixed
+  // graph needs no objective or working-system factorization at all.
+  Vector solveOriginal(const std::vector<bool>& active, const Vector& center) {
+    const auto rows = selected(active);
+    if (!projection) return solve(rows, center);
+    Vector value = projection->point;
+    if (data.linear.size() == 0) {
+      ++statistics.solves;
+      if (workingReady && rows == activeRows) ++statistics.rhsOnlySolves;
+      activeRows = rows;
+      workingReady = true;
+    } else {
+      const Vector reducedCenter = projection->nullspace.transpose() *
+                                   (center - projection->point);
+      value += projection->nullspace * solve(rows, reducedCenter);
+    }
+    checkDenseQpOriginalWorkingSet(original, value, active);
+    return value;
+  }
+
 };
 
 DenseQpSolver::DenseQpSolver(const DenseQpData& data)
@@ -423,7 +451,7 @@ const DenseQpSolver::Statistics& DenseQpSolver::statistics() const {
 }
 Vector DenseQpSolver::solve(const std::vector<bool>& active, const Vector& center) {
   // Numerical state belongs to this call, never the owning factor graph.
-  return impl_->solve(impl_->selected(active), center);
+  return impl_->solveOriginal(active, center);
 }
 
 }  // namespace internal

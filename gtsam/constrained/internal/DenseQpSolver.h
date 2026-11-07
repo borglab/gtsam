@@ -13,6 +13,9 @@
  * initialization, working-set decisions, and original-QP convergence checks.
  * This header separates those shared decisions from dense factorization reuse
  * through immutable packed inputs and a workspace owned by each solve call.
+ * Permanent affine equalities are eliminated once; only inequality boundaries
+ * participate in subsequent working-system updates. Original rows remain
+ * authoritative for feasibility checks and multiplier recovery.
  * The declarations stay in gtsam::internal and are excluded from the language
  * wrappers; callers select Dense through the existing public QP options.
  */
@@ -61,8 +64,10 @@ class GTSAM_EXPORT DenseQpSolver {
   };
   /// Read this call's counters without changing the solver state.
   const Statistics& statistics() const;
-  /** Cache curvature and update independent constraint normals, retaining a
-   * cached null-space fallback. The immutable data must outlive this workspace.
+  /** Eliminate permanent equalities, cache curvature, and update independent
+   * inequality normals, retaining a cached null-space fallback. Exact fixed
+   * coordinates and supplied square-root costs are preserved. Cached QR solves
+   * are refined against the original residual to retain weak RHS information. The immutable data must outlive this workspace.
    */
   explicit DenseQpSolver(const DenseQpData& data);
   /// Release this optimization call's numerical workspace.

@@ -381,6 +381,61 @@ TEST(DenseQpSolver, WeakLinearForcingRefinement) {
   EXPECT(assert_equal(Vector{{1.5, 4}}, solver.solve({}, Vector::Zero(2)), 1e-12));
 }
 
+// Fixed coordinates stay exact as dependent affine boundaries enter and leave.
+TEST(DenseQpSolver, FixedAndAffineEqualitiesPreserveWeakDirection) {
+  DenseQpData data;
+  data.jacobian = Vector4(1e10, 2, 3, 1e-10).asDiagonal();
+  data.rhs = Vector{{0, 1, 2, 4e-10}};
+  data.linear = Vector::Zero(4);
+  data.normals = Matrix{{1, 0, 0, 0}, {2, 0, 0, 0}, {0, 1, 1, 0},
+                        {5, 0, 0, 0}, {0, 1, 0, 0}, {0, -1, 0, 0}};
+  data.bounds = Vector{{1, 2, 3, 5, .5, -.5}};
+  data.equalities = 3;
+  DenseQpSolver solver(data);
+  for (const auto& active : std::vector<std::vector<bool>>{
+           {true, false, false}, {true, true, true},
+           {true, false, true}, {true, false, false}}) {
+    const double second = active[1] || active[2] ? .5 : 23.0 / 13;
+    const Vector expected{{1, second, 3 - second, 4}};
+    EXPECT(assert_equal(expected, solver.solve(active, Vector::Zero(4)), 1e-12));
+    const size_t before = solver.statistics().numericalFactorizations;
+    EXPECT(assert_equal(expected, solver.solve(active, Vector::Ones(4)), 1e-12));
+    EXPECT_LONGS_EQUAL(before, solver.statistics().numericalFactorizations);
+  }
+}
+
+// A boundary identical to a permanent affine equality adds no free restriction.
+TEST(DenseQpSolver, InequalityDependentOnAffineEquality) {
+  DenseQpData data;
+  data.jacobian = Matrix{{1, 0}, {0, 2}};
+  data.rhs = data.linear = Vector::Zero(2);
+  data.normals = Matrix{{1, 1}, {2, 2}, {-3, -3}};
+  data.bounds = Vector{{1, 2, -3}};
+  data.equalities = 1;
+  DenseQpSolver solver(data);
+  for (const auto& active : std::vector<std::vector<bool>>{
+           {false, false}, {true, false}, {true, true}, {false, true}})
+    EXPECT(assert_equal(Vector{{.8, .2}}, solver.solve(active, Vector::Zero(2)), 1e-12));
+}
+
+// A fully fixed graph needs no numerical objective or working factorization.
+TEST(DenseQpSolver, FullEqualityRankAndInconsistentFixedRows) {
+  DenseQpData data;
+  data.jacobian = Matrix::Identity(2, 2);
+  data.rhs = data.linear = Vector::Zero(2);
+  data.normals = Matrix{{1, 0}, {0, -2}, {3, 0}, {1, 0}};
+  data.bounds = Vector{{2, 2, 6, 2}};
+  data.equalities = 3;
+  DenseQpSolver solver(data);
+  EXPECT(assert_equal(Vector{{2, -1}}, solver.solve({true}, Vector::Ones(2)), 1e-12));
+  EXPECT_LONGS_EQUAL(0, solver.statistics().objectiveFactorizations);
+  const size_t before = solver.statistics().numericalFactorizations;
+  solver.solve({false}, Vector::Zero(2));
+  EXPECT_LONGS_EQUAL(before, solver.statistics().numericalFactorizations);
+  data.bounds(2) = 9;
+  CHECK_EXCEPTION((void)DenseQpSolver{data}, std::runtime_error);
+}
+
 }  // namespace dense_working_system
 /* ************************************************************************* */
 
