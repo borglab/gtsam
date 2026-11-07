@@ -9,6 +9,7 @@ It includes classes for representing constraints, building constrained problems,
 - [`ConstrainedOptProblem::AuxiliaryKeyGenerator`](doc/ConstrainedOptProblem.ipynb): Generates keys for auxiliary variables used when transforming inequality constraints.
 - [`NonlinearConstraint`](doc/NonlinearConstraint.ipynb): Base class for nonlinear constraints represented as constrained `NoiseModelFactor` objects.
 - [`QpProblem`](doc/QpProblem.ipynb): Quadratic programs with affine quadratic costs and linear constraints over direct `Vector` and `Matrix` values, including guidance on sparse versus dense active-set subproblems.
+- [QP solver benchmarks](doc/QpBenchmark.md): MPC and captured G1 comparisons against Clarabel, OSQP, and ProxQP, with a downloadable HTML report, graphics, and numerical checks.
 - [`LpProblem`](doc/LpProblem.ipynb): Linear programs with linear costs and linear constraints over direct `Vector` and `Matrix` values.
 
 ## Equality Constraints

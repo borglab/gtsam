@@ -11,6 +11,7 @@ on:
       - '**.ipynb'
       - '**.css'
       - 'doc/images/gtsam-manifold-optimization-*.png'
+      - 'gtsam/constrained/doc/_static/qp-benchmark/**'
       - 'myst.yml'
 env:
   # `BASE_URL` determines the website is served from, including CSS & JS assets
