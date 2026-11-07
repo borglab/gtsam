@@ -27,6 +27,7 @@
 #include <gtsam/dllexport.h>
 #include <map>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -66,8 +67,10 @@ class GTSAM_EXPORT DenseQpSolver {
   const Statistics& statistics() const;
   /** Eliminate permanent equalities, cache curvature, and update independent
    * inequality normals, retaining a cached null-space fallback. Exact fixed
-   * coordinates and supplied square-root costs are preserved. Cached QR solves
-   * are refined against the original residual to retain weak RHS information. The immutable data must outlive this workspace.
+   * coordinates and supplied square-root costs are preserved. Working LDLT
+   * factors support bordering, deletion and RHS-only solves; the objective
+   * remains in square-root form. Original residuals refine cached solves.
+   * The immutable data must outlive this workspace.
    */
   explicit DenseQpSolver(const DenseQpData& data);
   /// Release this optimization call's numerical workspace.
@@ -76,6 +79,21 @@ class GTSAM_EXPORT DenseQpSolver {
    * The returned point is checked against every selected original row.
    */
   Vector solve(const std::vector<bool>& active, const Vector& center);
+
+  /** Whether the last working solve has reusable primal/equality factors.
+   * Singular objectives retain graph recovery. For dependent inequalities,
+   * only a gauge with valid signs may be reused; other gauges retain graph
+   * recovery and its existing row-release decisions.
+   */
+  bool canRecoverMultipliers() const;
+  /** Reuse the primal LDLT multipliers and the cached equality QR, in original
+   * row order, with zeros for inactive rows. The caller supplies the candidate
+   * and original, unregularized gradient in packed variable order. No numerical
+   * factorization is added. Return nullopt when caches are unsuitable or the
+   * original stationarity or conservative absolute-gap reuse guard fails.
+   */
+  std::optional<Vector> multipliers(const Vector& value, const Vector& gradient,
+                                    double tolerance) const;
 
  private:
   struct Impl;

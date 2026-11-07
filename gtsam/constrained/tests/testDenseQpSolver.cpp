@@ -436,6 +436,197 @@ TEST(DenseQpSolver, FullEqualityRankAndInconsistentFixedRows) {
   CHECK_EXCEPTION((void)DenseQpSolver{data}, std::runtime_error);
 }
 
+// Row scaling, signs, and updates reuse the working LDLT without factorization.
+TEST(DenseQpSolver, CachedMultipliersFollowIndependentRows) {
+  DenseQpData data;
+  data.jacobian = Matrix{{2, 0}, {0, 3}};
+  data.rhs = Vector{{4, -3}};
+  data.linear = Vector::Zero(2);
+  data.normals = Matrix{{2, 0}, {0, -3}, {2, 2}};
+  data.bounds = Vector{{2, 0, 2}};
+  DenseQpSolver solver(data);
+  EXPECT(!solver.canRecoverMultipliers());
+  const std::vector<std::vector<bool>> masks{
+      {true, true, false}, {true, false, false},
+      {false, false, true}};
+  const std::vector<Vector> expected{Vector{{-2, -3, 0}}, Vector{{-2, 0, 0}},
+                                     Vector::Zero(3)};
+  for (size_t i = 0; i < masks.size(); ++i) {
+    const Vector value = solver.solve(masks[i], Vector::Zero(2));
+    const Vector gradient = data.jacobian.transpose() *
+                            (data.jacobian * value - data.rhs);
+    const size_t before = solver.statistics().numericalFactorizations;
+    EXPECT(solver.canRecoverMultipliers());
+    const auto multipliers = solver.multipliers(value, gradient, 1e-9);
+    EXPECT(multipliers.has_value());
+    if (multipliers) {
+      EXPECT(assert_equal(expected[i], *multipliers, 1e-12));
+      EXPECT(assert_equal(gradient, Vector(data.normals.transpose() * *multipliers),
+                          1e-12));
+    }
+    EXPECT_LONGS_EQUAL(before, solver.statistics().numericalFactorizations);
+  }
+  // No active rows means the existing empty dual graph needs no gradient work.
+  solver.solve({false, false, false}, Vector::Zero(2));
+  EXPECT(!solver.canRecoverMultipliers());
+  CHECK_EXCEPTION(solver.multipliers(Vector::Zero(2), Vector::Zero(3), 1e-9),
+                  std::invalid_argument);
+  EXPECT(!solver.multipliers(Vector::Zero(2), Vector::Constant(2,
+      std::numeric_limits<double>::quiet_NaN()), 1e-9));
+}
+
+// Original stationarity must hold even when the proximal subproblem is solved.
+TEST(DenseQpSolver, CachedMultipliersRejectProximalOnlyStationarity) {
+  DenseQpData data;
+  data.jacobian = Matrix::Identity(2, 2);
+  data.rhs = Vector{{2, 3}};
+  data.linear = Vector::Zero(2);
+  data.normals = Matrix{{1, 0}};
+  data.bounds = Vector::Ones(1);
+  data.regularization = .1;
+  DenseQpSolver solver(data);
+  const Vector value = solver.solve({true}, Vector::Zero(2));
+  const Vector original = value - data.rhs;
+  const size_t before = solver.statistics().numericalFactorizations;
+  EXPECT(solver.canRecoverMultipliers());
+  EXPECT(!solver.multipliers(value, original, 1e-9));
+  const auto proximal = solver.multipliers(value, original + .1 * value, 1e-9);
+  EXPECT(proximal.has_value());
+  if (proximal) EXPECT(assert_equal(Vector{{-.9}}, *proximal, 1e-12));
+  EXPECT_LONGS_EQUAL(before, solver.statistics().numericalFactorizations);
+}
+
+// Small proximal stationarity error can still spoil an absolute original gap.
+TEST(DenseQpSolver, CachedMultipliersRejectProximalGap) {
+  DenseQpData data;
+  data.jacobian = Matrix::Identity(1, 1);
+  data.rhs = Vector{{9999}};
+  data.linear = Vector::Zero(1);
+  data.normals = Matrix::Identity(1, 1);
+  data.bounds = Vector{{10000}};
+  data.regularization = 5e-14;
+  DenseQpSolver solver(data);
+  const Vector value = solver.solve({true}, Vector::Zero(1));
+  const size_t before = solver.statistics().numericalFactorizations;
+  EXPECT(solver.canRecoverMultipliers());
+  EXPECT(!solver.multipliers(value, value - data.rhs, 1e-9));
+  EXPECT_LONGS_EQUAL(before, solver.statistics().numericalFactorizations);
+}
+
+// A rounded Gram pivot must not erase a real independent weak constraint.
+TEST(DenseQpSolver, WeakIndependentSchurPivot) {
+  DenseQpData data;
+  data.jacobian = Matrix::Identity(2, 2);
+  data.rhs = data.linear = Vector::Zero(2);
+  data.normals = Matrix{{1, 0}, {1, 1e-10}};
+  data.bounds = Vector{{0, 2e-10}};
+  DenseQpSolver solver(data);
+  const BatchReference reference(data);
+  for (const auto& active : std::vector<std::vector<bool>>{
+           {true, true}, {false, true}, {true, true}, {true, false}}) {
+    EXPECT(assert_equal(reference.solve(active, Vector::Zero(2)),
+                        solver.solve(active, Vector::Zero(2)), 1e-10));
+    const size_t before = solver.statistics().numericalFactorizations;
+    solver.solve(active, Vector::Ones(2));
+    EXPECT_LONGS_EQUAL(before, solver.statistics().numericalFactorizations);
+  }
+  EXPECT_LONGS_EQUAL(0, solver.statistics().rebuildReasons.count("ambiguous_ldlt_pivot"));
+}
+
+// Many interior deletions and dependent-row exchanges retain the batch minimum.
+TEST(DenseQpSolver, RepeatedLdltUpdates) {
+  DenseQpData data;
+  data.jacobian = Matrix::Identity(8, 8);
+  for (size_t i = 0; i < 7; ++i) data.jacobian(i, i + 1) = .3;
+  data.rhs = Vector::LinSpaced(8, -1, 1);
+  data.linear = Vector::Zero(8);
+  data.normals = Matrix::Zero(11, 8);
+  data.normals.topRows(8).setIdentity();
+  data.normals.row(8) = 2 * data.normals.row(3);
+  data.normals.row(9) = -data.normals.row(4);
+  data.normals.row(10) = data.normals.row(1) + data.normals.row(7);
+  data.bounds = data.normals * Vector::LinSpaced(8, -.2, .3);
+  data.regularization = .1;
+  DenseQpSolver solver(data);
+  const BatchReference reference(data);
+  for (size_t i = 0; i < 40; ++i) {
+    std::vector<bool> active(11);
+    for (size_t j = 0; j < 11; ++j) active[j] = (i * 3 + j * 5) % 7 < 4;
+    const Vector center = Vector::Constant(8, .01 * i);
+    EXPECT(assert_equal(reference.solve(active, center),
+                        solver.solve(active, center), 1e-10));
+  }
+}
+
+// Equality elimination supplies its existing QR to recover original row duals.
+TEST(DenseQpSolver, CachedEqualityMultipliers) {
+  auto data = problem(0);
+  DenseQpSolver solver(data);
+  const Vector value = solver.solve({false, false, false}, Vector::Zero(2));
+  const Vector gradient = data.jacobian.transpose() *
+                          (data.jacobian * value - data.rhs);
+  const size_t before = solver.statistics().numericalFactorizations;
+  EXPECT(solver.canRecoverMultipliers());
+  const auto duals = solver.multipliers(value, gradient, 1e-9);
+  EXPECT(duals.has_value());
+  if (duals) EXPECT(assert_equal(Vector{{30.0 / 13, 0, 0, 0}}, *duals, 1e-10));
+  EXPECT_LONGS_EQUAL(before, solver.statistics().numericalFactorizations);
+}
+
+// Fixed coordinates and equality-redundant inequalities retain original signs.
+TEST(DenseQpSolver, CachedFixedCoordinateMultipliers) {
+  DenseQpData data;
+  data.jacobian = Matrix{{2, 0}, {0, 3}};
+  data.rhs = Vector{{1, -1}};
+  data.linear = Vector::Zero(2);
+  data.normals = Matrix{{1, 0}, {1, 1}, {2, 0}, {-1, 0}};
+  data.bounds = Vector{{1, 3, 2, -1}};
+  data.equalities = 2;
+  DenseQpSolver solver(data);
+  const Vector value = solver.solve({true, true}, Vector::Zero(2));
+  const Vector gradient = data.jacobian.transpose() *
+                          (data.jacobian * value - data.rhs);
+  EXPECT(solver.canRecoverMultipliers());
+  const auto duals = solver.multipliers(value, gradient, 1e-9);
+  EXPECT(duals.has_value());
+  if (duals) EXPECT(assert_equal(Vector{{-19, 21, 0, 0}}, *duals, 1e-10));
+}
+
+// Dependent inequalities may reuse a valid gauge; invalid signs retain recovery.
+TEST(DenseQpSolver, CachedMultipliersRetainDifficultSystemFallbacks) {
+  DenseQpData data;
+  data.jacobian = Matrix::Identity(1, 1);
+  data.rhs = Vector{{2}};
+  data.linear = Vector::Zero(1);
+  data.normals = Matrix{{1}, {2}, {-1}};
+  data.bounds = Vector{{1, 2, -1}};
+  DenseQpSolver dependent(data);
+  dependent.solve({true, true, true}, Vector::Zero(1));
+  EXPECT(dependent.canRecoverMultipliers());
+  const auto duals = dependent.multipliers(Vector{{1}}, Vector{{-1}}, 1e-9);
+  EXPECT(duals.has_value());
+  if (duals) EXPECT(assert_equal(Vector{{-1, 0, 0}}, *duals, 1e-10));
+  data.rhs = Vector::Zero(1);
+  DenseQpSolver alternativeGauge(data);
+  alternativeGauge.solve({true, true, true}, Vector::Zero(1));
+  EXPECT(!alternativeGauge.multipliers(Vector{{1}}, Vector{{1}}, 1e-9));
+}
+
+// A weak weighted objective still yields its small, correctly signed multiplier.
+TEST(DenseQpSolver, CachedMultipliersPreserveWeakGradient) {
+  DenseQpData data;
+  data.jacobian = Matrix{{1, 0}, {0, 1e-10}};
+  data.rhs = data.linear = Vector::Zero(2);
+  data.normals = Matrix{{0, 1}};
+  data.bounds = Vector{{2}};
+  DenseQpSolver solver(data);
+  const Vector value = solver.solve({true}, Vector::Zero(2));
+  const Vector gradient = data.jacobian.transpose() * data.jacobian * value;
+  const auto multipliers = solver.multipliers(value, gradient, 1e-9);
+  EXPECT(multipliers.has_value());
+  if (multipliers) EXPECT(assert_equal(Vector{{2e-20}}, *multipliers, 1e-29));
+}
+
 }  // namespace dense_working_system
 /* ************************************************************************* */
 

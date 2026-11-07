@@ -9,7 +9,7 @@
  * @file DenseQpSolver.cpp
  * Production dense working-system algebra used by ActiveSetSolver.
  *
- * This file isolates packed dense QR factorizations, constraint-row updates,
+ * This file isolates square-root objective factors, working LDLT updates,
  * and cached RHS solves from the shared active-set iteration. Its cached
  * null-space solver handles singular objective curvature and difficult working
  * constraints while retaining checks on every selected original row.
@@ -23,7 +23,6 @@
 #include <gtsam/constrained/internal/DenseQpEqualityProjection.h>
 
 #include <Eigen/QR>
-#include <Eigen/Jacobi>
 #include <algorithm>
 #include <iterator>
 #include <cmath>
@@ -65,7 +64,8 @@ struct DenseQpSolver::Impl {
   Matrix objective;
   bool objectiveReady = false, invertible = false, workingReady = false;
   Eigen::ColPivHouseholderQR<Matrix> objectiveQr;
-  Matrix objectiveR, directions, workingR;
+  Matrix objectiveR, workingNormals, workingL;
+  Vector workingD, workingMultipliers;
   Vector unconstrainedTarget;
   std::vector<size_t> activeRows, basis;
   std::vector<Vector> transformed;
@@ -206,68 +206,93 @@ struct DenseQpSolver::Impl {
     return transformed[row];
   }
 
-  // A pivoted rebuild chooses a numerical basis while retaining every active
-  // row identity for subsequent consistency checks and multiplier recovery.
+  // Solve the PSD Schur system from its unit triangular factors and pivots.
+  Vector solveWorking(const Vector& rhs) const {
+    Vector result = workingL.triangularView<Eigen::UnitLower>().solve(rhs);
+    result.array() /= workingD.array();
+    return workingL.transpose().triangularView<Eigen::UnitUpper>().solve(result);
+  }
+
+  // Border LDLT as in Arnstrom et al., IEEE TAC 2022, equations (14)-(15).
+  // Square-root residuals distinguish dependent rows from weak D pivots.
+  bool add(size_t row, bool countUpdate = true) {
+    const Vector& column = normal(row);
+    Vector lower = workingL.triangularView<Eigen::UnitLower>().solve(
+        Vector(workingNormals.transpose() * column));
+    lower.array() /= workingD.array();
+    Vector remainder = column - workingNormals * workingL.transpose()
+        .triangularView<Eigen::UnitUpper>().solve(lower);
+    // Compute D from the square-root residual rather than subtract nearly
+    // equal Gram terms. A second projection preserves weak independent rows.
+    Vector correction = workingL.triangularView<Eigen::UnitLower>().solve(
+        Vector(workingNormals.transpose() * remainder));
+    correction.array() /= workingD.array();
+    lower += correction;
+    remainder -= workingNormals * workingL.transpose()
+        .triangularView<Eigen::UnitUpper>().solve(correction);
+    const double length = remainder.stableNorm();
+    const double tolerance = 2 * std::numeric_limits<double>::epsilon() *
+                             data.linear.size();
+    if (length <= tolerance) { ++statistics.dependentRows; return true; }
+    const double pivot = length * length;
+    if (!std::isfinite(pivot) || basis.size() >= size_t(data.linear.size()))
+      return false;
+    const Eigen::Index rank = basis.size();
+    workingL.conservativeResize(rank + 1, rank + 1);
+    workingL.col(rank).head(rank).setZero();
+    workingL.row(rank).head(rank) = lower.transpose();
+    workingL(rank, rank) = 1;
+    workingD.conservativeResize(rank + 1);
+    workingD(rank) = pivot;
+    workingNormals.conservativeResize(Eigen::NoChange, rank + 1);
+    workingNormals.col(rank) = column;
+    basis.push_back(row);
+    if (countUpdate) ++statistics.rowAdditions;
+    return true;
+  }
+
+  // Build a row-ordered independent basis. Every original selected row remains
+  // in activeRows and is checked even when its multiplier gauge is redundant.
   void rebuild(const std::vector<size_t>& rows, const std::string& reason) {
     ++statistics.rebuildReasons[reason];
     ++statistics.workingRebuilds;
     basis.clear();
-    const Eigen::Index n = data.linear.size();
-    if (rows.empty()) {
-      directions.resize(n, 0); workingR.resize(0, 0); return;
+    workingNormals.resize(data.linear.size(), 0);
+    workingL.resize(0, 0); workingD.resize(0);
+    if (!rows.empty()) ++statistics.numericalFactorizations;
+    for (size_t row : rows) {
+      if (add(row, false)) continue;
+      buildNullspaceSystem(rows, "ambiguous_ldlt_pivot");
+      break;
     }
-    Matrix columns(n, rows.size());
-    for (size_t i = 0; i < rows.size(); ++i) columns.col(i) = normal(rows[i]);
-    Eigen::ColPivHouseholderQR<Matrix> qr(columns);
-    ++statistics.numericalFactorizations;
-    const Eigen::Index rank = qr.rank();
-    directions = qr.householderQ() * Matrix::Identity(n, rank);
-    workingR = qr.matrixR().topLeftCorner(rank, rank)
-                   .triangularView<Eigen::Upper>();
-    for (Eigen::Index i = 0; i < rank; ++i)
-      basis.push_back(rows[qr.colsPermutation().indices()(i)]);
-    statistics.dependentRows += rows.size() - rank;
   }
 
-  // Two orthogonal projections guard independent-row insertions against loss
-  // of orthogonality. Dependent rows remain selected; they add no basis column.
-  void add(size_t row) {
-    const Vector& column = normal(row);
-    Vector coefficients = directions.transpose() * column;
-    Vector remainder = column - directions * coefficients;
-    const Vector correction = directions.transpose() * remainder;
-    coefficients += correction;
-    remainder -= directions * correction;
-    const double length = remainder.stableNorm();
-    const double threshold = std::numeric_limits<double>::epsilon() *
-                             data.linear.size() * 2;
-    if (length <= threshold) { ++statistics.dependentRows; return; }
-    const Eigen::Index rank = basis.size();
-    workingR.conservativeResize(rank + 1, rank + 1);
-    workingR.col(rank).head(rank) = coefficients;
-    workingR.row(rank).head(rank).setZero();
-    workingR(rank, rank) = length;
-    directions.conservativeResize(Eigen::NoChange, rank + 1);
-    directions.col(rank) = remainder / length;
-    basis.push_back(row);
-    ++statistics.rowAdditions;
-  }
-
-  // Deleting a basis column creates one subdiagonal. Givens rotations restore
-  // triangular form and rotate the associated orthogonal directions in place.
+  // Deletion is a positive rank-one update of the trailing LDLT factors:
+  // Arnstrom et al., equations (16)-(17). No matrix inverse or rebuild occurs.
   void remove(size_t position) {
-    const Eigen::Index rank = basis.size();
-    Matrix shifted(rank, rank - 1);
-    shifted.leftCols(position) = workingR.leftCols(position);
-    shifted.rightCols(rank - position - 1) = workingR.rightCols(rank - position - 1);
-    for (Eigen::Index i = position; i + 1 < rank; ++i) {
-      Eigen::JacobiRotation<double> rotation;
-      rotation.makeGivens(shifted(i, i), shifted(i + 1, i));
-      shifted.applyOnTheLeft(i, i + 1, rotation.adjoint());
-      directions.applyOnTheRight(i, i + 1, rotation);
+    const Eigen::Index rank = basis.size(), remaining = rank - position - 1;
+    Vector update = workingL.col(position).tail(remaining);
+    double weight = workingD(position);
+    Matrix lower = Matrix::Identity(rank - 1, rank - 1);
+    lower.topLeftCorner(position, position) = workingL.topLeftCorner(position, position);
+    lower.bottomLeftCorner(remaining, position) = workingL.bottomLeftCorner(remaining, position);
+    lower.bottomRightCorner(remaining, remaining) = workingL.bottomRightCorner(remaining, remaining);
+    Vector diagonal(rank - 1);
+    diagonal.head(position) = workingD.head(position);
+    diagonal.tail(remaining) = workingD.tail(remaining);
+    for (Eigen::Index i = 0; i < remaining; ++i) {
+      const Eigen::Index index = position + i, trailing = remaining - i - 1;
+      const double previous = diagonal(index), component = update(i);
+      diagonal(index) += weight * component * component;
+      const double coefficient = weight * component / diagonal(index);
+      weight *= previous / diagonal(index);
+      update.tail(trailing) -= component * lower.col(index).tail(trailing);
+      lower.col(index).tail(trailing) += coefficient * update.tail(trailing);
     }
-    workingR = shifted.topRows(rank - 1);
-    directions.conservativeResize(Eigen::NoChange, rank - 1);
+    workingL = std::move(lower); workingD = std::move(diagonal);
+    workingNormals.middleCols(position, remaining) =
+        workingNormals.rightCols(remaining).eval();
+    workingNormals.conservativeResize(Eigen::NoChange, rank - 1);
     basis.erase(basis.begin() + position);
     ++statistics.rowRemovals;
   }
@@ -292,7 +317,11 @@ struct DenseQpSolver::Impl {
         remove(found - basis.begin());
       }
       if (exchange) rebuild(rows, "basis_release_with_redundant_rows");
-      else for (size_t row : added) add(row);
+      else for (size_t row : added) {
+        if (add(row)) continue;
+        buildNullspaceSystem(rows, "ambiguous_ldlt_pivot");
+        break;
+      }
     }
     activeRows = rows;
     workingReady = true;
@@ -309,8 +338,8 @@ struct DenseQpSolver::Impl {
     Vector rhs(basis.size());
     for (size_t i = 0; i < basis.size(); ++i)
       rhs(i) = data.bounds(basis[i]) / scales[basis[i]] - normal(basis[i]).dot(target);
-    Vector value = target + directions *
-        workingR.transpose().triangularView<Eigen::Lower>().solve(rhs);
+    Vector multipliers = solveWorking(rhs);
+    Vector value = target + workingNormals * multipliers;
     Vector result;
     for (size_t attempt = 0; attempt < 3; ++attempt) {
       result = objectiveQr.colsPermutation() *
@@ -319,8 +348,13 @@ struct DenseQpSolver::Impl {
       for (size_t i = 0; i < basis.size(); ++i)
         rhs(i) = (data.bounds(basis[i]) - data.normals.row(basis[i]).dot(result)) /
                  scales[basis[i]];
-      value += directions * workingR.transpose().triangularView<Eigen::Lower>().solve(rhs);
+      const Vector correction = solveWorking(rhs);
+      multipliers += correction;
+      value += workingNormals * correction;
     }
+    workingMultipliers = Vector::Zero(data.bounds.size());
+    for (size_t i = 0; i < basis.size(); ++i)
+      workingMultipliers(basis[i]) = multipliers(i) / scales[basis[i]];
     return result;
   }
 
@@ -395,8 +429,10 @@ struct DenseQpSolver::Impl {
     ++statistics.solves;
     if (!objectiveReady) prepareObjective();
     const bool changed = !workingReady || rows != activeRows;
-    if (changed) nullspaceCache.reset();
-    else ++statistics.rhsOnlySolves;
+    if (changed) {
+      if (nullspaceCache) workingReady = false;
+      nullspaceCache.reset();
+    } else ++statistics.rhsOnlySolves;
     if (!invertible) {
       if (changed) buildNullspaceSystem(rows, "singular_objective");
       activeRows = rows; workingReady = true;
@@ -421,6 +457,54 @@ struct DenseQpSolver::Impl {
   }
 
 
+  // Working factors can propose a multiplier gauge. Original stationarity,
+  // gap, and (for dependent inequalities) signs decide whether it is usable.
+  bool canRecoverMultipliers() const {
+    if (!workingReady || nullspaceCache || (!invertible && data.linear.size()))
+      return false;
+    if (!projection && (original.equalities || basis.empty())) return false;
+    return true;
+  }
+
+  // The primal LDLT supplied inequality multipliers; the retained equality QR
+  // supplies the rest. Original-gradient checks require no new factorization.
+  std::optional<Vector> multipliers(const Vector& value, const Vector& gradient,
+                                    double tolerance) const {
+    if (value.size() != original.linear.size() ||
+        gradient.size() != original.linear.size())
+      throw std::invalid_argument("Dense QP: invalid multiplier gradient size.");
+    if (!canRecoverMultipliers() || !gradient.allFinite()) return std::nullopt;
+    Vector result = Vector::Zero(original.bounds.size());
+    result.tail(workingMultipliers.size()) = workingMultipliers;
+    if (projection) {
+      const Vector remaining = gradient -
+          original.normals.bottomRows(workingMultipliers.size()).transpose() *
+              workingMultipliers;
+      result.head(original.equalities) = projection->multipliers(original, remaining);
+    }
+    // A nonunique gauge may certify optimality only with valid inequality
+    // signs. Otherwise preserve graph recovery and its constraint-release rule.
+    const size_t nonzero = std::count_if(activeRows.begin(), activeRows.end(),
+        [&](size_t row) { return !data.normals.row(row).isZero(0); });
+    if (nonzero > basis.size() &&
+        (result.tail(data.bounds.size()).array() > tolerance).any())
+      return std::nullopt;
+    // Match the graph recovery's threshold; the original-QP KKT certificate
+    // still makes the final decision using the original factors and values.
+    const double residual = (original.normals.transpose() * result - gradient)
+                                .lpNorm<Eigen::Infinity>();
+    const double threshold = std::max(1e-12, tolerance) *
+                             (1 + gradient.lpNorm<Eigen::Infinity>());
+    if (!result.allFinite() || !std::isfinite(residual) || residual > threshold)
+      return std::nullopt;
+    // Proximal multipliers need not certify the original QP. Retain graph
+    // recovery when their residual could spoil an acceptable absolute gap.
+    const double gap = value.dot(gradient) - original.bounds.dot(result);
+    if (!std::isfinite(gap) || std::abs(gap) > tolerance) return std::nullopt;
+    return result;
+  }
+
+
   // Project only the center/RHS during working-set exploration. A fully fixed
   // graph needs no objective or working-system factorization at all.
   Vector solveOriginal(const std::vector<bool>& active, const Vector& center) {
@@ -432,6 +516,7 @@ struct DenseQpSolver::Impl {
       if (workingReady && rows == activeRows) ++statistics.rhsOnlySolves;
       activeRows = rows;
       workingReady = true;
+      workingMultipliers = Vector::Zero(data.bounds.size());
     } else {
       const Vector reducedCenter = projection->nullspace.transpose() *
                                    (center - projection->point);
@@ -452,6 +537,15 @@ const DenseQpSolver::Statistics& DenseQpSolver::statistics() const {
 Vector DenseQpSolver::solve(const std::vector<bool>& active, const Vector& center) {
   // Numerical state belongs to this call, never the owning factor graph.
   return impl_->solveOriginal(active, center);
+}
+
+bool DenseQpSolver::canRecoverMultipliers() const {
+  return impl_->canRecoverMultipliers();
+}
+std::optional<Vector> DenseQpSolver::multipliers(const Vector& value,
+                                               const Vector& gradient,
+                                               double tolerance) const {
+  return impl_->multipliers(value, gradient, tolerance);
 }
 
 }  // namespace internal

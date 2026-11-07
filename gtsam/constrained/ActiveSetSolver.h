@@ -340,22 +340,35 @@ class GTSAM_EXPORT ActiveSetSolver {
                                      SolveWorkspace* workspace) const;
   /// Assemble A_active^T lambda = gradient for the original or proximal QP.
   /// A nonnull center adds regularization * (values - center) to the gradient.
+  /// An optional original gradient reuses this same candidate evaluation.
   GaussianFactorGraph buildDualGraph(
       const SparseConstraintData& constraints,
       const std::vector<bool>& activeInequalityRows, const VectorValues& values,
-      const VectorValues* proximalCenter = nullptr) const;
+      const VectorValues* proximalCenter = nullptr,
+      const VectorValues* originalGradient = nullptr) const;
   /// Decide when a working-set point is ready for a multiplier check.
   bool shouldInspectOptimality(const InternalState& state,
                                const VectorValues& candidate) const;
+  /** Reuse the dense primal LDLT and permanent equality factors for multipliers.
+   * Return false when dependent rows or proximal-only stationarity require
+   * graph recovery. Share the exact original gradient with the final checks.
+   */
+  bool recoverDenseMultipliers(const VectorValues& candidate,
+                               const SolveWorkspace& workspace,
+                               VectorValues* originalGradient,
+                               VectorValues* duals) const;
   /// Recover original-QP multipliers, or return false for a proximal-only step.
   bool recoverMultipliers(const InternalState& state,
                            const VectorValues& candidate,
                            SolveWorkspace* workspace,
-                           VectorValues* duals) const;
+                           VectorValues* duals,
+                           VectorValues* originalGradient) const;
   /// Certify the original QP's primal residual, stationarity, and gap.
+  /// A supplied gradient belongs to these exact values, within this iteration.
   bool originalQpKktSatisfied(const VectorValues& values,
                                const std::vector<bool>& activeRows,
-                               const VectorValues& duals) const;
+                               const VectorValues& duals,
+                               const VectorValues* originalGradient = nullptr) const;
   /// Line-search toward a working-set point and add the first blocking row.
   void moveTowardCandidate(const InternalState& state,
                            const VectorValues& candidate,

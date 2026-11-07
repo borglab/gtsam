@@ -180,7 +180,8 @@ VectorValues ActiveSetSolver::solveSparseSubproblem(
 GaussianFactorGraph ActiveSetSolver::buildDualGraph(
     const SparseConstraintData& constraints,
     const std::vector<bool>& activeInequalityRows, const VectorValues& values,
-    const VectorValues* proximalCenter) const {
+    const VectorValues* proximalCenter,
+    const VectorValues* originalGradient) const {
   GaussianFactorGraph dualGraph;
   // Stationarity for the current working set is A_active^T * lambda = grad.
   // With the normalized A*x-b<=0 convention, a positive active inequality
@@ -204,7 +205,8 @@ GaussianFactorGraph ActiveSetSolver::buildDualGraph(
       }
     }
     if (terms.empty()) continue;
-    Vector gradient = objectiveGradient(key, values);
+    Vector gradient = originalGradient ? originalGradient->at(key)
+                                       : objectiveGradient(key, values);
     if (proximalCenter)
       gradient +=
           params_->regularization * (values.at(key) - proximalCenter->at(key));
@@ -267,7 +269,10 @@ ActiveSetSolver::InternalState ActiveSetSolver::iterate(
 
   // Both backends recover multipliers for the original objective and use the
   // same proximal fallback, release rule, and original-QP certificates.
-  if (!recoverMultipliers(state, candidate, workspace, &next.duals)) {
+  // One candidate owns its original gradient; reuse never crosses iterations.
+  VectorValues originalGradient;
+  if (!recoverMultipliers(state, candidate, workspace, &next.duals,
+                          &originalGradient)) {
     next.values = candidate;
     return next;
   }
@@ -280,7 +285,8 @@ ActiveSetSolver::InternalState ActiveSetSolver::iterate(
   } else {
     next.converged = problemType_ == ProblemType::LP ||
                      originalQpKktSatisfied(
-                         candidate, state.activeInequalityRows, next.duals);
+                         candidate, state.activeInequalityRows, next.duals,
+                         originalGradient.size() == 0 ? nullptr : &originalGradient);
   }
   return next;
 }
@@ -306,13 +312,48 @@ bool ActiveSetSolver::shouldInspectOptimality(const InternalState& state,
 }
 
 /* ************************************************************************* */
+bool ActiveSetSolver::recoverDenseMultipliers(const VectorValues& candidate,
+                                             const SolveWorkspace& workspace,
+                                             VectorValues* originalGradient,
+                                             VectorValues* duals) const {
+  if (!workspace.dense || !workspace.dense->canRecoverMultipliers()) return false;
+  Vector gradient(denseQpWorkspace_->totalDim);
+  // Read the original factors, including Hessian-native costs, without a
+  // Hessian-to-Jacobian conversion or any proximal forcing in this certificate.
+  for (Key key : denseQpWorkspace_->hessianOrdering) {
+    const Vector block = objectiveGradient(key, candidate);
+    gradient.segment(denseQpWorkspace_->keyOffsets.at(key), keyDims_.at(key)) = block;
+    originalGradient->insert(key, block);
+  }
+  const auto multipliers = workspace.dense->multipliers(
+      vectorValuesToDenseVector(candidate), gradient, params_->multiplierTolerance);
+  if (!multipliers) return false;
+  *duals = VectorValues();
+  size_t index = 0;
+  for (const auto* rows : {&constraints_.equalities, &constraints_.inequalities})
+    for (const auto& row : *rows) {
+      const double multiplier = (*multipliers)(index++);
+      if (multiplier != 0)
+        duals->insert(row.multiplierKey, Vector::Constant(1, multiplier));
+    }
+  return true;
+}
+
+/* ************************************************************************* */
 bool ActiveSetSolver::recoverMultipliers(const InternalState& state,
                                                const VectorValues& candidate,
                                                SolveWorkspace* workspace,
-                                               VectorValues* duals) const {
+                                               VectorValues* duals,
+                                               VectorValues* originalGradient) const {
+  // Reuse multipliers produced alongside the Dense primal candidate when the
+  // original-gradient checks agree. Difficult systems retain graph recovery.
+  if (recoverDenseMultipliers(candidate, *workspace, originalGradient, duals))
+    return true;
+  const VectorValues* gradient = originalGradient->size() == 0 ? nullptr : originalGradient;
   // The original gradient is the only one that can certify a solution.
   const GaussianFactorGraph dualGraph =
-      buildDualGraph(constraints_, state.activeInequalityRows, candidate);
+      buildDualGraph(constraints_, state.activeInequalityRows, candidate, nullptr,
+                     gradient);
   const Ordering& ordering = cachedOrdering(
       dualGraph, &workspace->dualKeys, &workspace->dualOrdering);
   const DualSolveResult original = solveSparseDualGraph(
@@ -326,7 +367,7 @@ bool ActiveSetSolver::recoverMultipliers(const InternalState& state,
   if (problemType_ == ProblemType::QP && params_->regularization > 0.0) {
     const DualSolveResult proximal = solveSparseDualGraph(
         buildDualGraph(constraints_, state.activeInequalityRows, candidate,
-                       &state.values),
+                       &state.values, gradient),
         ordering, params_->multiplierTolerance);
     if (proximal.consistent()) {
       // Only the proximal subproblem is stationary. The next iteration must
@@ -353,7 +394,7 @@ bool ActiveSetSolver::recoverMultipliers(const InternalState& state,
 /* ************************************************************************* */
 bool ActiveSetSolver::originalQpKktSatisfied(
     const VectorValues& values, const std::vector<bool>& activeRows,
-    const VectorValues& duals) const {
+    const VectorValues& duals, const VectorValues* originalGradient) const {
   if (!primalFeasible(constraints_.equalities, constraints_.inequalities,
                       values, params_->feasibilityTolerance))
     return false;
@@ -361,7 +402,8 @@ bool ActiveSetSolver::originalQpKktSatisfied(
   double gap = 0.0, quadratic = 0.0, linear = 0.0;
   double dualRhs = 0.0, dualRhsMagnitude = 0.0;
   for (const auto& [key, _] : keyDims_) {
-    const Vector gradient = objectiveGradient(key, values);
+    const Vector gradient = originalGradient ? originalGradient->at(key)
+                                             : objectiveGradient(key, values);
     stationarity.insert(key, gradient);
     gap += values.at(key).dot(gradient);
     const double linearTerm = qpGradientAtZero_.exists(key)

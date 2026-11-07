@@ -33,14 +33,17 @@ Eigen::Index singletonColumn(const Matrix& normals, Eigen::Index row) {
 
 // Fixed coordinates are represented exactly, including homogeneous bounds.
 std::vector<Eigen::Index> substituteFixedCoordinates(
-    const DenseQpData& source, Vector* point) {
+    const DenseQpData& source, Vector* point,
+    std::vector<Eigen::Index>* fixedRows) {
   const Eigen::Index n = source.linear.size();
   *point = Vector::Zero(n);
+  fixedRows->assign(n, -1);
   std::vector<bool> fixed(n, false);
   for (size_t row = 0; row < source.equalities; ++row) {
     const Eigen::Index col = singletonColumn(source.normals, row);
     if (col < 0) continue;
     fixed[col] = true;
+    (*fixedRows)[col] = row;
     (*point)(col) = source.bounds(row) / source.normals(row, col);
   }
   std::vector<Eigen::Index> free;
@@ -52,14 +55,16 @@ std::vector<Eigen::Index> substituteFixedCoordinates(
 // Rank decisions apply to normalized affine rows after exact substitution.
 std::pair<Matrix, Vector> remainingEqualities(
     const DenseQpData& source, const Vector& point,
-    const std::vector<Eigen::Index>& free) {
+    const std::vector<Eigen::Index>& free, Vector* scales) {
   Matrix normals(source.equalities, free.size());
   for (size_t col = 0; col < free.size(); ++col)
     normals.col(col) = source.normals.col(free[col]).head(source.equalities);
   Vector bounds = source.bounds.head(source.equalities) -
                   source.normals.topRows(source.equalities) * point;
+  scales->resize(normals.rows());
   for (Eigen::Index row = 0; row < normals.rows(); ++row) {
     const double norm = normals.row(row).stableNorm();
+    (*scales)(row) = norm > 0 ? norm : 1;
     if (norm > 0) { normals.row(row) /= norm; bounds(row) /= norm; }
   }
   return {std::move(normals), std::move(bounds)};
@@ -73,11 +78,17 @@ void factorRemainingEqualities(const DenseQpData& source,
     projection->nullspace.resize(source.linear.size(), 0);
     return;
   }
-  const auto system = remainingEqualities(source, projection->point, free);
+  const auto system = remainingEqualities(source, projection->point, free,
+                                          &projection->equalityScales);
   Eigen::ColPivHouseholderQR<Matrix> qr(system.first.transpose());
   ++projection->numericalFactorizations;
   const Eigen::Index rank = qr.rank(), dimension = free.size();
   const Matrix orthogonal = qr.householderQ() * Matrix::Identity(dimension, dimension);
+  projection->equalityQ = orthogonal.leftCols(rank);
+  projection->equalityR = qr.matrixR().topLeftCorner(rank, rank)
+                             .triangularView<Eigen::Upper>();
+  for (Eigen::Index i = 0; i < rank; ++i)
+    projection->equalityBasis.push_back(qr.colsPermutation().indices()(i));
   const Vector ordered = qr.colsPermutation().transpose() * system.second;
   const Vector coordinates = qr.matrixR().topLeftCorner(rank, rank).transpose()
       .triangularView<Eigen::Lower>().solve(ordered.head(rank));
@@ -125,6 +136,29 @@ void projectObjective(const DenseQpData& source,
 
 }  // namespace
 
+Vector DenseQpEqualityProjection::multipliers(
+    const DenseQpData& source, const Vector& gradient) const {
+  Vector freeGradient(freeColumns.size());
+  for (size_t i = 0; i < freeColumns.size(); ++i)
+    freeGradient(i) = gradient(freeColumns[i]);
+  const Vector basis = equalityR.triangularView<Eigen::Upper>().solve(
+      Vector(equalityQ.transpose() * freeGradient));
+  Vector result = Vector::Zero(source.equalities);
+  for (size_t i = 0; i < equalityBasis.size(); ++i) {
+    const auto row = equalityBasis[i];
+    result(row) = basis(i) / equalityScales(row);
+  }
+  // Singleton rows absorb forcing at substituted coordinates, after the
+  // remaining equations have accounted for their coupled contributions.
+  const Vector residual = gradient -
+      source.normals.topRows(source.equalities).transpose() * result;
+  for (size_t col = 0; col < fixedRows.size(); ++col) {
+    const auto row = fixedRows[col];
+    if (row >= 0) result(row) += residual(col) / source.normals(row, col);
+  }
+  return result;
+}
+
 void checkDenseQpOriginalWorkingSet(const DenseQpData& source,
                                   const Vector& value,
                                   const std::vector<bool>& active) {
@@ -147,8 +181,9 @@ std::optional<DenseQpEqualityProjection> projectDenseQpEqualities(
     const DenseQpData& source) {
   if (source.equalities == 0) return std::nullopt;
   DenseQpEqualityProjection projection;
-  const auto free = substituteFixedCoordinates(source, &projection.point);
-  factorRemainingEqualities(source, free, &projection);
+  projection.freeColumns = substituteFixedCoordinates(
+      source, &projection.point, &projection.fixedRows);
+  factorRemainingEqualities(source, projection.freeColumns, &projection);
   checkDenseQpOriginalWorkingSet(source, projection.point,
       std::vector<bool>(source.bounds.size() - source.equalities, false));
   const Eigen::Index count = source.bounds.size() - source.equalities;

@@ -26,7 +26,16 @@ struct DenseQpEqualityProjection {
   DenseQpData reduced;
   Vector point;
   Matrix nullspace;
+  // Retain the equality QR already computed during projection for multipliers.
+  Matrix equalityQ, equalityR;
+  Vector equalityScales;
+  std::vector<Eigen::Index> freeColumns, fixedRows, equalityBasis;
   size_t numericalFactorizations = 0;
+  /** Recover original equality multipliers from this elimination, including
+   * exact fixed coordinates. The gradient has inequality forcing subtracted.
+   * No new factorization is needed; the caller checks original stationarity.
+   */
+  Vector multipliers(const DenseQpData& source, const Vector& gradient) const;
 };
 
 /** Eliminate permanent equalities once, or return nullopt when there are none.
