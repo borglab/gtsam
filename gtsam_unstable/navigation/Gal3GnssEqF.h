@@ -29,7 +29,7 @@ namespace galilean {
  * @brief Runtime parameters for the Galilean filter.
  *
  * Noise densities are continuous-time (per √Hz); variances are per-axis
- * scalars applied to identity blocks, as in EqVIOFilterParams.
+ * scalars applied to identity blocks, as in VioEqFParams.
  */
 struct GTSAM_UNSTABLE_EXPORT GalileanFilterParams {
   /// @name Physical model

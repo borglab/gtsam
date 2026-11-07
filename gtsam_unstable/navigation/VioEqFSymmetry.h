@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file EqVIOSymmetry.h
+ * @file VioEqFSymmetry.h
  * @brief EqVIO symmetry actions and lift helpers.
  * @author Rohan Bansal
  */
@@ -21,8 +21,8 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam_unstable/dllexport.h>
-#include <gtsam_unstable/navigation/EqVIOCommon.h>
-#include <gtsam_unstable/navigation/EqVIOState.h>
+#include <gtsam_unstable/navigation/VioEqFCommon.h>
+#include <gtsam_unstable/navigation/VioEqFState.h>
 
 namespace gtsam {
 namespace eqvio {
@@ -40,7 +40,7 @@ GTSAM_UNSTABLE_EXPORT State stateGroupAction(const VioGroup& X,
  * @brief Discrete lift map from IMU input to a `VioGroup` increment.
  *
  * This is the discrete propagation primitive used by
- * `EqVIOFilter::propagateState`.
+ * `VioEqF::propagateState`.
  */
 GTSAM_UNSTABLE_EXPORT VioGroup liftVelocityDiscrete(const State& state,
                                                     const IMUInput& velocity,

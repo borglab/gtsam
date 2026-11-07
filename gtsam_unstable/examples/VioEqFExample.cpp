@@ -10,14 +10,14 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file EqVIOFilterExample.cpp
- * @brief Run the EqVIOFilter on 10 seconds of the EuRoC MAV Vicon Room 1
+ * @file VioEqFExample.cpp
+ * @brief Run the VioEqF on 10 seconds of the EuRoC MAV Vicon Room 1
  * dataset.
  * @author Rohan Bansal
  */
 
 #include <gtsam/slam/dataset.h>
-#include <gtsam_unstable/examples/EqVIOReplayHelper.h>
+#include <gtsam_unstable/examples/VioEqFReplayHelper.h>
 
 #include <iomanip>
 #include <iostream>
@@ -42,8 +42,8 @@ struct HardcodedGroundTruth {
 };
 
 /// Build runtime filter params from replay metadata with fallback defaults.
-EqVIOFilterParams paramsFromMetadata(const replay::MetadataMap& metadata) {
-  EqVIOFilterParams params;
+VioEqFParams paramsFromMetadata(const replay::MetadataMap& metadata) {
+  VioEqFParams params;
   const auto setParam = [&metadata](double& field,
                                     std::initializer_list<const char*> keys) {
     for (const char* key : keys) {
@@ -155,13 +155,13 @@ int main() {
 
   try {
     const replay::MetadataMap metadata = replay::readReplayMetadata(csvPath);
-    const EqVIOFilterParams params = paramsFromMetadata(metadata);
+    const VioEqFParams params = paramsFromMetadata(metadata);
     const double measurementNoiseVariance =
         measurementNoiseVarianceFromMetadata(metadata);
     const State xi0 = initialReferenceState(metadata);
     const Matrix Sigma0 = initialCovarianceFromMetadata(metadata, xi0);
 
-    std::optional<EqVIOFilter> filter;
+    std::optional<VioEqF> filter;
     auto camera = std::make_shared<CameraModel>(
         Pose3::Identity(), Cal3_S2(1.0, 1.0, 0.0, 0.0, 0.0));
 
@@ -223,7 +223,7 @@ int main() {
     printSummary(measurementNoiseVariance, currentTime, imuCount,
                  visionFrameCount, visionFeatureCount, finalEstimate);
   } catch (const std::exception& e) {
-    std::cerr << "EqVIOFilterExample failed: " << e.what() << "\n";
+    std::cerr << "VioEqFExample failed: " << e.what() << "\n";
     return 2;
   }
 

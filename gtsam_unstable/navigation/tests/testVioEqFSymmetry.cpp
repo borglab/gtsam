@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   testEqVIOSymmetry.cpp
+ * @file   testVioEqFSymmetry.cpp
  * @brief  Unit tests for VIO symmetry actions and lift helpers
  * @author Rohan Bansal
  */
@@ -22,9 +22,9 @@
 #include <gtsam/base/Vector.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/SO3.h>
-#include <gtsam_unstable/navigation/EqVIOCommon.h>
-#include <gtsam_unstable/navigation/EqVIOState.h>
-#include <gtsam_unstable/navigation/EqVIOSymmetry.h>
+#include <gtsam_unstable/navigation/VioEqFCommon.h>
+#include <gtsam_unstable/navigation/VioEqFState.h>
+#include <gtsam_unstable/navigation/VioEqFSymmetry.h>
 
 #include <algorithm>
 #include <cmath>

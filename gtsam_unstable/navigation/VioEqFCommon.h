@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file EqVIOCommon.h
+ * @file VioEqFCommon.h
  * @brief Common EqVIO math/data types for unstable navigation.
  * @author Rohan Bansal
  */

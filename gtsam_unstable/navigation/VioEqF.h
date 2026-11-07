@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file EqVIOFilter.h
+ * @file VioEqF.h
  * @brief Standalone equivariant VIO filter.
  * @author Rohan Bansal
  */
@@ -19,7 +19,7 @@
 
 #include <gtsam/navigation/EquivariantFilter.h>
 #include <gtsam_unstable/dllexport.h>
-#include <gtsam_unstable/navigation/EqVIOSymmetry.h>
+#include <gtsam_unstable/navigation/VioEqFSymmetry.h>
 
 #include <memory>
 #include <vector>
@@ -34,7 +34,7 @@ namespace eqvio {
  * EqVIO runtime implementation. All variances are per-axis scalar multipliers
  * applied to identity blocks in the corresponding covariance matrices.
  */
-struct EqVIOFilterParams {
+struct VioEqFParams {
   /// Initial landmark depth used when a new feature is first triangulated from
   /// bearing.
   double initialPointDepth = 10.0;
@@ -65,15 +65,14 @@ struct EqVIOFilterParams {
  * hold, while dynamic landmark add/remove bookkeeping stays in this runtime
  * filter.
  */
-class GTSAM_UNSTABLE_EXPORT EqVIOFilter
-    : public EquivariantFilter<State, Symmetry> {
+class GTSAM_UNSTABLE_EXPORT VioEqF : public EquivariantFilter<State, Symmetry> {
  public:
   using Base = EquivariantFilter<State, Symmetry>;
 
  private:
   static constexpr size_t kMaxMissedFrames = 1;
 
-  EqVIOFilterParams params_;
+  VioEqFParams params_;
   bool initialized_ = false;
   // Runtime key ordering aligned with `cameraLandmarks` and covariance blocks.
   KeyVector landmarkKeys_;
@@ -83,11 +82,11 @@ class GTSAM_UNSTABLE_EXPORT EqVIOFilter
  public:
   /// Construct with explicit parameter bundle and default identity initial
   /// state.
-  explicit EqVIOFilter(const EqVIOFilterParams& params);
+  explicit VioEqF(const VioEqFParams& params);
   /// Construct with explicit initial reference state, covariance, landmark
   /// keys, and parameters.
-  EqVIOFilter(const State& xi_ref, const Matrix& Sigma,
-              const KeyVector& landmarkKeys, const EqVIOFilterParams& params);
+  VioEqF(const State& xi_ref, const Matrix& Sigma,
+         const KeyVector& landmarkKeys, const VioEqFParams& params);
 
   /**
    * @brief Initialize filter attitude from gravity direction in an IMU sample.

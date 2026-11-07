@@ -10,13 +10,13 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file EqVIOState.cpp
+ * @file VioEqFState.cpp
  * @brief Dynamic EqVIO manifold state implementation.
  * @author Rohan Bansal
  */
 
 #include <gtsam/base/MatrixConstants.h>
-#include <gtsam_unstable/navigation/EqVIOState.h>
+#include <gtsam_unstable/navigation/VioEqFState.h>
 
 namespace gtsam {
 namespace eqvio {
