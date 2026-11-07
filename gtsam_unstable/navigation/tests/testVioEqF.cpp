@@ -10,14 +10,14 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testEqVIOFilter.cpp
- * @brief Unit tests for the EqVIOFilter.
+ * @file testVioEqF.cpp
+ * @brief Unit tests for the VioEqF.
  * @author Rohan Bansal
  */
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam_unstable/navigation/EqVIOFilter.h>
+#include <gtsam_unstable/navigation/VioEqF.h>
 
 #include <memory>
 #include <stdexcept>
@@ -40,9 +40,9 @@ State MakeState1() {
 KeyVector Keys1() { return {42}; }
 KeyVector Keys2() { return {10, 20}; }
 
-class TestableEqVIOFilter : public EqVIOFilter {
+class TestableVioEqF : public VioEqF {
  public:
-  using EqVIOFilter::EqVIOFilter;
+  using VioEqF::VioEqF;
   const State& reference() const { return referenceState(); }
 };
 
@@ -103,7 +103,7 @@ IMUInput ImuFixture() {
 
 bool IsFinite(const Matrix& M) { return M.array().isFinite().all(); }
 
-void PropagateSingle(EqVIOFilter& filter, const IMUInput& imu, double dt) {
+void PropagateSingle(VioEqF& filter, const IMUInput& imu, double dt) {
   filter.predict(imu, dt);
 }
 
@@ -156,11 +156,11 @@ State integrateSystemFunction(const State& state, const IMUInput& velocity,
 
 // Verifies landmark insertion/removal logic respects the stale-track grace
 // period.
-TEST(EqVIOFilter, DynamicLandmarksAddRemove) {
-  EqVIOFilterParams params;
+TEST(VioEqF, DynamicLandmarksAddRemove) {
+  VioEqFParams params;
   params.initialPointDepth = 5.0;
 
-  EqVIOFilter filter(params);
+  VioEqF filter(params);
   auto camera =
       std::make_shared<CameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
 
@@ -196,10 +196,10 @@ TEST(EqVIOFilter, DynamicLandmarksAddRemove) {
 
 // Verifies IMU-based initialization and basic propagation produce finite
 // covariance.
-TEST(EqVIOFilter, InitAndPropagation) {
-  EqVIOFilterParams params;
+TEST(VioEqF, InitAndPropagation) {
+  VioEqFParams params;
 
-  EqVIOFilter filter(params);
+  VioEqF filter(params);
   EXPECT(!filter.isInitialized());
 
   IMUInput imu0;
@@ -222,7 +222,7 @@ TEST(EqVIOFilter, InitAndPropagation) {
 // Verifies IMU-based initialization matches Eigen's setFromTwoVectors attitude
 // construction used by testing/gen_init_attitude.cpp.
 // Regression
-TEST(EqVIOFilter, InitializeFromIMUAttitudeRegression) {
+TEST(VioEqF, InitializeFromIMUAttitudeRegression) {
   const std::vector<std::pair<Vector3, Matrix3>> cases = {
       {Vector3(0.0, 0.0, 9.81),
        Matrix3{{1.0, 0.0, 0.0}, {0.0, 1.0, 0.0}, {0.0, 0.0, 1.0}}},
@@ -238,7 +238,7 @@ TEST(EqVIOFilter, InitializeFromIMUAttitudeRegression) {
             0.99790781876528512}}}};
 
   for (const auto& testCase : cases) {
-    TestableEqVIOFilter filter{EqVIOFilterParams()};
+    TestableVioEqF filter{VioEqFParams()};
     const Vector3 zero = Vector3::Zero();
 
     IMUInput imu;
@@ -259,10 +259,10 @@ TEST(EqVIOFilter, InitializeFromIMUAttitudeRegression) {
 
 // Verifies short propagation sequence matches direct system-function
 // integration.
-TEST(EqVIOFilter, ParityShortSequence) {
-  EqVIOFilterParams params;
+TEST(VioEqF, ParityShortSequence) {
+  VioEqFParams params;
 
-  EqVIOFilter filter(params);
+  VioEqF filter(params);
   auto camera =
       std::make_shared<CameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
 
@@ -294,12 +294,12 @@ TEST(EqVIOFilter, ParityShortSequence) {
 }
 
 // Verifies vision update keeps landmark count and covariance numerically valid.
-TEST(EqVIOFilter, VisionUpdate) {
-  EqVIOFilterParams params;
+TEST(VioEqF, VisionUpdate) {
+  VioEqFParams params;
 
   const State xi0 = MakeState1();
   const Matrix Sigma0 = Matrix::Identity(xi0.dim(), xi0.dim()) * 1e-3;
-  EqVIOFilter filter(xi0, Sigma0, Keys1(), params);
+  VioEqF filter(xi0, Sigma0, Keys1(), params);
 
   IMUInput imu;
   imu.stamp = 0.0;
@@ -318,14 +318,14 @@ TEST(EqVIOFilter, VisionUpdate) {
 }
 
 // End-to-end smoke test for repeated propagate/correct cycles.
-TEST(EqVIOFilter, Smoke) {
-  EqVIOFilterParams params;
+TEST(VioEqF, Smoke) {
+  VioEqFParams params;
 
   State xi0(Se23::Identity(), Bias::Identity(), Pose3::Identity(),
             {{Point3(0.8, -0.2, 4.5)}, {Point3(-0.6, 0.3, 3.8)}});
   Matrix Sigma0 = Matrix::Identity(xi0.dim(), xi0.dim()) * 1e-3;
 
-  EqVIOFilter filter(xi0, Sigma0, Keys2(), params);
+  VioEqF filter(xi0, Sigma0, Keys2(), params);
   auto camera =
       std::make_shared<CameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
 
@@ -353,12 +353,12 @@ TEST(EqVIOFilter, Smoke) {
 }
 
 // Verifies seeded landmark states use the explicit keyed constructor.
-TEST(EqVIOFilter, SeededLandmarkKeys) {
-  EqVIOFilterParams params;
+TEST(VioEqF, SeededLandmarkKeys) {
+  VioEqFParams params;
   const State xi0 = MakeState1();
   const Matrix Sigma0 = Matrix::Identity(xi0.dim(), xi0.dim()) * 1e-3;
 
-  EqVIOFilter filter(xi0, Sigma0, Keys1(), params);
+  VioEqF filter(xi0, Sigma0, Keys1(), params);
   auto camera =
       std::make_shared<CameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
   const VisionMeasurement meas =
@@ -370,11 +370,11 @@ TEST(EqVIOFilter, SeededLandmarkKeys) {
 }
 
 // Verifies multiple landmark additions/removals are reconciled cleanly.
-TEST(EqVIOFilter, BatchLandmarkStructureChange) {
-  EqVIOFilterParams params;
+TEST(VioEqF, BatchLandmarkStructureChange) {
+  VioEqFParams params;
   params.initialPointDepth = 5.0;
 
-  EqVIOFilter filter(params);
+  VioEqF filter(params);
   auto camera =
       std::make_shared<CameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
 
@@ -404,12 +404,12 @@ TEST(EqVIOFilter, BatchLandmarkStructureChange) {
 }
 
 // Verifies the new-landmark covariance knob is exercised, not dead optionality.
-TEST(EqVIOFilter, InitialPointVarianceSeedsNewLandmarkCovariance) {
-  EqVIOFilterParams params;
+TEST(VioEqF, InitialPointVarianceSeedsNewLandmarkCovariance) {
+  VioEqFParams params;
   params.initialPointDepth = 5.0;
   params.initialPointVariance = 123.0;
 
-  EqVIOFilter filter(params);
+  VioEqF filter(params);
   auto camera =
       std::make_shared<CameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
 
@@ -430,14 +430,14 @@ TEST(EqVIOFilter, InitialPointVarianceSeedsNewLandmarkCovariance) {
 }
 
 // Verifies supplied R does not override the absolute-residual outlier gate.
-TEST(EqVIOFilter, AbsoluteOutlierGateWithSuppliedR) {
-  EqVIOFilterParams params;
+TEST(VioEqF, AbsoluteOutlierGateWithSuppliedR) {
+  VioEqFParams params;
   params.outlierThresholdAbs = 1e-3;
   params.featureRetention = 0.0;
 
   const State xi0 = MakeState1();
   const Matrix Sigma0 = Matrix::Identity(xi0.dim(), xi0.dim()) * 1e-3;
-  EqVIOFilter filter(xi0, Sigma0, Keys1(), params);
+  VioEqF filter(xi0, Sigma0, Keys1(), params);
   auto camera =
       std::make_shared<CameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
 
@@ -452,12 +452,12 @@ TEST(EqVIOFilter, AbsoluteOutlierGateWithSuppliedR) {
 }
 
 // Verifies explicit measurement covariance must match the input measurement.
-TEST(EqVIOFilter, RejectsWrongSizedMeasurementCovariance) {
-  EqVIOFilterParams params;
+TEST(VioEqF, RejectsWrongSizedMeasurementCovariance) {
+  VioEqFParams params;
 
   const State xi0 = MakeState1();
   const Matrix Sigma0 = Matrix::Identity(xi0.dim(), xi0.dim()) * 1e-3;
-  EqVIOFilter filter(xi0, Sigma0, Keys1(), params);
+  VioEqF filter(xi0, Sigma0, Keys1(), params);
   auto camera =
       std::make_shared<CameraModel>(Pose3::Identity(), Cal3_S2(1, 1, 0, 0, 0));
 

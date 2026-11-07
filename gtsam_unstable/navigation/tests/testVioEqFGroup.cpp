@@ -10,15 +10,15 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file testEqVIOGroup.cpp
- * @brief Unit tests for EqVIOGroup.
+ * @file testVioEqFGroup.cpp
+ * @brief Unit tests for VioGroup.
  * @author Rohan Bansal
  */
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam_unstable/navigation/EqVIOCommon.h>
+#include <gtsam_unstable/navigation/VioEqFCommon.h>
 
 #include <cmath>
 #include <vector>
