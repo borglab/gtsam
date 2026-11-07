@@ -273,6 +273,9 @@ class belongs in the same file as its derived classes or in an earlier file.
 * Always prefer Plotly for charts and data visualizations, including reports,
   documentation pages, notebooks, and examples, so readers can inspect values
   and interact with the figures.
+* Always load Plotly JavaScript from its version-pinned CDN in HTML reports,
+  documentation pages, and standalone downloads. Do not embed or vendor the
+  Plotly runtime. State that interactive charts require an internet connection.
 
 * Write for a robotics audience, without assuming expertise in GTSAM internals
   or optimization solvers. Explain library-specific concepts, solver choices,
