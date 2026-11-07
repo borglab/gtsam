@@ -348,6 +348,39 @@ TEST(DenseQpSolver, InconsistentBoundaries) {
   CHECK_EXCEPTION(solver.solve({true, true, false}, Vector::Zero(2)), std::runtime_error);
 }
 
+// Strong irreducible residuals must not contaminate an independent weak RHS.
+TEST(DenseQpSolver, WeakRhsRefinement) {
+  for (size_t dimension : {size_t(2), size_t(3)}) {
+    DenseQpData data;
+    data.jacobian = Matrix::Zero(3, dimension);
+    data.jacobian(0, 0) = data.jacobian(1, 0) = 1;
+    data.jacobian(2, 1) = 1e-10;
+    data.rhs = Vector{{1, 2, 4e-10}};
+    data.linear = Vector::Zero(dimension);
+    data.normals.resize(0, dimension);
+    data.bounds.resize(0);
+    DenseQpSolver solver(data);
+    Vector expected = Vector::Zero(dimension);
+    expected.head(2) = Vector{{1.5, 4}};
+    EXPECT(assert_equal(expected, solver.solve({}, Vector::Zero(dimension)), 1e-12));
+    const size_t before = solver.statistics().numericalFactorizations;
+    EXPECT(assert_equal(expected, solver.solve({}, Vector::Ones(dimension)), 1e-12));
+    EXPECT_LONGS_EQUAL(before, solver.statistics().numericalFactorizations);
+  }
+}
+
+// Refinement also preserves weak information supplied as a native linear term.
+TEST(DenseQpSolver, WeakLinearForcingRefinement) {
+  DenseQpData data;
+  data.jacobian = Matrix{{1, 0}, {1, 0}, {0, 1e-10}};
+  data.rhs = Vector{{1, 2, 0}};
+  data.linear = Vector{{0, 4e-20}};
+  data.normals.resize(0, 2);
+  data.bounds.resize(0);
+  DenseQpSolver solver(data);
+  EXPECT(assert_equal(Vector{{1.5, 4}}, solver.solve({}, Vector::Zero(2)), 1e-12));
+}
+
 }  // namespace dense_working_system
 /* ************************************************************************* */
 

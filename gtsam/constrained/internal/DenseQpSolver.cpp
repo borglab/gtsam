@@ -32,6 +32,31 @@
 namespace gtsam {
 namespace internal {
 
+namespace {
+
+// Q^T*rhs can mix an irreducible residual into a weak RHS. Correct the original
+// square-root gradient using the cached QR basis, never a normal matrix. Static
+// linear forcing has already been checked for consistency before refinement.
+Vector refineQrMinimum(const Matrix& jacobian, const Vector& rhs,
+                       const Vector& linear,
+                       const Eigen::ColPivHouseholderQR<Matrix>& qr,
+                       Vector value) {
+  const Eigen::Index rank = qr.rank();
+  for (size_t refinement = 0; refinement < 2; ++refinement) {
+    const Vector gradient = jacobian.transpose() * (rhs - jacobian * value) + linear;
+    const Vector ordered = qr.colsPermutation().transpose() * gradient;
+    const Vector forward = qr.matrixR().topLeftCorner(rank, rank).transpose()
+        .triangularView<Eigen::Lower>().solve(ordered.head(rank));
+    Vector correction = Vector::Zero(qr.cols());
+    correction.head(rank) = qr.matrixR().topLeftCorner(rank, rank)
+        .triangularView<Eigen::Upper>().solve(forward);
+    value += Vector(qr.colsPermutation() * correction);
+  }
+  return value;
+}
+
+}  // namespace
+
 struct DenseQpSolver::Impl {
   const DenseQpData& data;
   Matrix objective;
@@ -46,7 +71,7 @@ struct DenseQpSolver::Impl {
 
   struct NullspaceSystem {
     Vector point, correction;
-    Matrix nullspace;
+    Matrix nullspace, jacobian;
     std::vector<Eigen::Index> varying;
     std::unique_ptr<Eigen::ColPivHouseholderQR<Matrix>> qr;
   };
@@ -150,6 +175,13 @@ struct DenseQpSolver::Impl {
                            target(Vector::Zero(n))).head(n);
     unconstrainedTarget += objectiveR.transpose().triangularView<Eigen::Lower>()
         .solve(Vector(objectiveQr.colsPermutation().transpose() * data.linear));
+    // Preserve weak RHS information before working constraints are imposed.
+    const Vector value = objectiveQr.colsPermutation() *
+        objectiveR.triangularView<Eigen::Upper>().solve(unconstrainedTarget);
+    const Vector refined = refineQrMinimum(objective, target(Vector::Zero(n)),
+                                           data.linear, objectiveQr, value);
+    unconstrainedTarget = objectiveR *
+        (objectiveQr.colsPermutation().transpose() * refined);
   }
 
   // In whitened coordinates curvature is the identity. No inverse matrix is
@@ -309,7 +341,8 @@ struct DenseQpSolver::Impl {
     Matrix reduced(cache.varying.size(), full.cols());
     for (size_t i = 0; i < cache.varying.size(); ++i)
       reduced.row(i) = full.row(cache.varying[i]);
-    cache.qr = std::make_unique<Eigen::ColPivHouseholderQR<Matrix>>(reduced);
+    cache.jacobian = std::move(reduced);
+    cache.qr = std::make_unique<Eigen::ColPivHouseholderQR<Matrix>>(cache.jacobian);
     ++statistics.numericalFactorizations;
     cache.correction = linearCorrection(*cache.qr,
                                         cache.nullspace.transpose() * data.linear);
@@ -343,8 +376,10 @@ struct DenseQpSolver::Impl {
     const Vector full = target(center) - objective * cache.point;
     Vector rhs(cache.varying.size());
     for (size_t i = 0; i < cache.varying.size(); ++i) rhs(i) = full(cache.varying[i]);
-    return cache.point + cache.nullspace *
-        (cache.qr->solve(rhs) + cache.correction);
+    const Vector minimum = refineQrMinimum(cache.jacobian, rhs,
+        Vector(cache.nullspace.transpose() * data.linear), *cache.qr,
+        Vector(cache.qr->solve(rhs) + cache.correction));
+    return cache.point + cache.nullspace * minimum;
   }
 
   // An unchanged working set uses cached factors, including the null-space
