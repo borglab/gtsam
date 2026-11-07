@@ -11,8 +11,7 @@
 
 /**
  * @file    GaussianBayesTree.cpp
- * @brief   Gaussian Bayes Tree, the result of eliminating a GaussianJunctionTree
- * @brief   GaussianBayesTree
+ * Gaussian Bayes-tree queries and exact substitution through cached conditionals.
  * @author  Frank Dellaert
  * @author  Richard Roberts
  */
@@ -71,6 +70,8 @@ namespace gtsam {
       throw std::invalid_argument(
           "GaussianBayesTree substitution requires square frontal blocks.");
     }
+
+    // Arbitrary RHS substitution requires finite, strictly positive noise scales.
     const auto& model = conditional.get_model();
     if (model &&
         (model->isConstrained() || model->dim() != conditional.rows() ||
@@ -79,6 +80,8 @@ namespace gtsam {
       throw std::invalid_argument(
           "GaussianBayesTree substitution requires finite positive diagonal noise.");
     }
+
+    // Reject singular frontal pivots before starting the parallel traversal.
     const auto frontalMatrix = conditional.R();
     const auto diagonal = frontalMatrix.diagonal();
     if (!diagonal.allFinite() || (diagonal.array() == 0.0).any()) {
@@ -89,6 +92,7 @@ namespace gtsam {
   // Validate inputs for traversal and fill omitted frontal blocks with zeros.
   VectorValues substitutionRhs(const GaussianBayesTree& tree,
                                const VectorValues& rhs) {
+    // Allocate zero blocks for omitted keys after validating each conditional.
     VectorValues complete;
     for (const auto& [key, clique] : tree.nodes()) {
       if (!clique || !clique->conditional())
@@ -106,6 +110,8 @@ namespace gtsam {
         }
       }
     }
+
+    // Validate supplied blocks before copying them into the traversal workspace.
     for (const auto& [key, value] : rhs) {
       auto destination = complete.find(key);
       if (destination == complete.end() ||
@@ -115,6 +121,7 @@ namespace gtsam {
       }
       destination->second = value;
     }
+
     return complete;
   }
 
@@ -141,6 +148,7 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValues GaussianBayesTree::backSubstituteTranspose(
       const VectorValues& rhs) const {
+    // Share the post-order transpose traversal with incremental Gaussian trees.
     return internal::linearAlgorithms::transposeBayesTree(
         *this, substitutionRhs(*this, rhs));
   }

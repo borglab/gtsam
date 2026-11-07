@@ -9,6 +9,13 @@
 
  * -------------------------------------------------------------------------- */
 
+/**
+ * @file testGaussianISAM2Incremental.cpp
+ * Regression coverage for fixed-order updates, subtree reuse, exact constraints,
+ * and cached objective-forcing queries without numerical elimination.
+ * @author Frank Dellaert
+ */
+
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/linear/GaussianISAM2.h>
@@ -26,6 +33,7 @@ const Ordering ordering{0, 1, 2, 3};
 const Matrix11 unit{{1.0}};
 
 GaussianFactorGraph graph() {
+  // Couple three leaves to one anchored root so one branch can remain untouched.
   GaussianFactorGraph result;
   for (Key leaf = 0; leaf < 3; ++leaf)
     result.emplace_shared<JacobianFactor>(leaf, unit, 3, -unit,
@@ -42,6 +50,7 @@ TEST(GaussianISAM2Incremental, BatchAgreement) {
   EXPECT(assert_equal(factors.optimize(ordering, EliminateQR), solver.optimize()));
 
   for (size_t repeat = 0; repeat < 3; ++repeat) {
+    // Add a factor, replace it using a new index, then remove the replacement.
     GaussianFactorGraph additions;
     additions.emplace_shared<JacobianFactor>(0, unit, Vector1{4.0});
     FactorIndices indices = solver.update(additions);
@@ -72,6 +81,7 @@ TEST(GaussianISAM2Incremental, ReusesUntouchedSubtree) {
   });
   GaussianFactorGraph factors = graph();
   solver.update(factors);
+  // Record clique identity as well as numerical results before changing factors.
   const auto untouched = solver[1], affected = solver[0], root = solver[3];
   const size_t initialEliminations = eliminations.load();
   EXPECT(untouched != root);
@@ -96,6 +106,7 @@ TEST(GaussianISAM2Incremental, ReusesUntouchedSubtree) {
 
 // Hessian-native objective factors support mixed hard-row updates as well.
 TEST(GaussianISAM2Incremental, HessianNative) {
+  // Preserve Hessian-native costs while toggling an exact Jacobian constraint.
   GaussianFactorGraph factors;
   for (const auto& factor : graph())
     factors.emplace_shared<HessianFactor>(*factor);
@@ -158,6 +169,8 @@ TEST(GaussianISAM2Incremental, InvalidUpdatesAreAtomic) {
   solver.update(factors);
   const auto first = solver[0], second = solver[1];
   const VectorValues expected = solver.optimize();
+
+  // Invalid removals and incompatible factor replacements must preserve state.
   CHECK_EXCEPTION(solver.update({}, {9}), std::invalid_argument);
   CHECK_EXCEPTION(solver.update({}, {0, 0}), std::invalid_argument);
   CHECK_EXCEPTION(solver.update({}, {0}), std::invalid_argument);
@@ -179,6 +192,7 @@ TEST(GaussianISAM2Incremental, InvalidUpdatesAreAtomic) {
 
 // Empty graphs are valid, while an initial nonempty graph must cover ordering.
 TEST(GaussianISAM2Incremental, Initialization) {
+  // An empty ordering needs no factorization; nonempty orderings need all keys.
   GaussianISAM2 empty(Ordering{});
   EXPECT(empty.update({}).empty());
   EXPECT_LONGS_EQUAL(0, empty.optimize().size());
@@ -204,6 +218,7 @@ const Matrix11 unit{{1.0}};
 
 // Change only finite objective RHSs; the graph's coupling keeps three branches.
 GaussianFactorGraph graph(const VectorValues& forcing, bool hessian) {
+  // Express information-vector changes as weighted finite-factor RHS changes.
   GaussianFactorGraph result = branching::graph();
   for (Key key : ordering) {
     const double sigma = key == 1 ? 0.25 : 2.0;
@@ -218,6 +233,7 @@ GaussianFactorGraph graph(const VectorValues& forcing, bool hessian) {
 
 // Arbitrary RHS queries do no elimination or mutation, before/after row toggles.
 TEST(GaussianISAM2Incremental, ForcingAndWorkingSetReferenceConsistency) {
+  // Compare cached solves to fresh graphs for both objective representations.
   for (bool hessian : {false, true}) {
     std::atomic<size_t> eliminations{0};
     auto eliminate = [hessian, &eliminations](const GaussianFactorGraph& factors,
@@ -262,6 +278,7 @@ TEST(GaussianISAM2Incremental, ForcingAndWorkingSetReferenceConsistency) {
 
 // Non-unit weighted rows and a weak direction obey an affine exact equation.
 TEST(GaussianISAM2Incremental, ForcingWeightedWeakAndAffineRows) {
+  // Combine weighted weak observations with an unchanged exact affine equation.
   const Matrix22 coefficients{{1e-10, 0.0}, {0.0, 1e-15}};
   const Vector2 sigmas{1e-10, 1e-10};
   const auto noise = noiseModel::Diagonal::Sigmas(sigmas);
@@ -299,6 +316,8 @@ TEST(GaussianISAM2Incremental, InvalidForcingAndEmptyGraph) {
   solver.update(graph({}, false));
   const auto root = solver[3];
   const VectorValues reference = solver.optimize();
+
+  // Rejected forcing blocks must leave the cached tree and reference RHS intact.
   for (const VectorValues& invalid : std::vector<VectorValues>{
       {{99, Vector1{0.0}}}, {{0, Vector2{0.0, 1.0}}},
       {{0, Vector1{std::numeric_limits<double>::quiet_NaN()}}},
@@ -317,6 +336,7 @@ TEST(GaussianISAM2Incremental, InvalidForcingAndEmptyGraph) {
 /* ************************************************************************* */
 
 int main() {
+  // Run all incremental-update and cached-forcing regression cases.
   TestResult result;
   return TestRegistry::runAllTests(result);
 }
