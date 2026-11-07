@@ -72,6 +72,46 @@ TEST(SparseQpSolver, CentersAndDependentToggles) {
   }
 }
 
+// A cached residual correction preserves accuracy along nearly flat affine faces.
+TEST(SparseQpSolver, WeakAffineFaceResidualAccuracy) {
+  const Vector direction{{1, -2, 4}}, target{{10, -30, 20}};
+  const Vector normal = Vector::Constant(3, .008);
+  const Matrix coupling = direction * normal.transpose();
+  const double weight = 1e-9;
+  for (bool squareRoot : {false, true}) {
+    for (double offset : {0.0, .5}) {
+      for (bool incremental : {false, true}) {
+        SparseQpData data;
+        data.keyDimensions = {{0, 3}, {1, 3}};
+        data.ordering = Ordering{0, 1};
+        data.regularization = weight;
+        data.useIncremental = incremental;
+        if (squareRoot)
+          data.objective.emplace_shared<JacobianFactor>(
+              0, Matrix::Identity(3, 3), target);
+        else
+          data.objective.emplace_shared<HessianFactor>(
+              0, Matrix::Identity(3, 3), target, 0.0);
+        const Vector rhs = offset * direction;
+        data.equalities.emplace_shared<JacobianFactor>(
+            0, Matrix::Identity(3, 3), 1, -coupling, rhs,
+            noiseModel::Constrained::All(3));
+        VectorValues center;
+        center.insert(0, Vector::Zero(3));
+        center.insert(1, Vector::Zero(3));
+        const auto result = SparseQpSolver(data).solve({}, center);
+        // Eliminating state analytically leaves one observable force direction;
+        // the supplied proximal weight selects zero in its two null directions.
+        const double scale = direction.dot(target - (1 + weight) * rhs) /
+            (weight + (1 + weight) * direction.squaredNorm() * normal.squaredNorm());
+        const Vector error = result.at(1) - normal * scale;
+        CHECK(error.lpNorm<Eigen::Infinity>() < 5e-9);
+        EXPECT(assert_equal(rhs, Vector(result.at(0) - coupling * result.at(1)), 1e-12));
+      }
+    }
+  }
+}
+
 // Constraint-only variables entering and leaving force a fresh restricted tree.
 TEST(SparseQpSolver, VariableSetChanges) {
   SparseQpData data;

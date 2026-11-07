@@ -49,7 +49,10 @@ struct SparseQpData {
 /** Per-call sparse QP workspace, used by ActiveSetSolver in Sparse mode.
  * Jacobian-native objectives retain square-root elimination. Active row changes
  * update the cached tree; proximal-center changes use its cached RHS solve.
- * The batch option uses the same working graph and elimination policy.
+ * Both paths apply one original-gradient residual correction through cached
+ * triangular solves to improve weak-direction accuracy without another
+ * numerical elimination. The batch option rebuilds the same working graph
+ * and factorization for each call, using the same elimination policy.
  */
 class GTSAM_EXPORT SparseQpSolver {
  public:

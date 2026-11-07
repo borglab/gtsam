@@ -80,7 +80,11 @@ struct SparseQpSolver::Impl {
       keys = graphKeys;
     }
     if (data.useIncremental) return solveIncremental(graph, active, center);
-    return graph.optimize(ordering, eliminate);
+    // The batch comparison rebuilds once per face, then reuses that tree for
+    // the same residual correction as the incremental path.
+    GaussianISAM2 batch(ordering, eliminate);
+    batch.update(graph);
+    return solveRefined(batch, center, {});
   }
 
   // Register the complete graph once and remember the center encoded in its
@@ -117,6 +121,40 @@ struct SparseQpSolver::Impl {
       inequalityFactors[addedRows[index]] = indices.at(index);
   }
 
+  // Form the original working objective gradient without converting native
+  // Hessians to Jacobians or assembling a global normal matrix. Hard rows are
+  // excluded: the cached constrained inverse projects onto their tangent space.
+  VectorValues workingGradient(const VectorValues& candidate,
+                               const VectorValues& center) const {
+    VectorValues gradient;
+    for (const auto& [key, value] : candidate) {
+      Vector block = Vector::Zero(value.size());
+      if (data.regularization > 0.0)
+        block = data.regularization * (value - center.at(key));
+      gradient.insert(key, std::move(block));
+    }
+    for (const auto& factor : data.objective)
+      for (Key key : factor->keys())
+        gradient.at(key) += factor->gradient(key, candidate);
+    return gradient;
+  }
+
+  // One iterative-refinement step removes roundoff amplified by weak working
+  // directions. For the constrained inverse K, x(delta - grad f(x)) equals
+  // x(delta) - K grad f(x); every solve retains the same affine hard rows.
+  // Only RHSs change: neither the factors nor their elimination are repeated.
+  VectorValues solveRefined(const GaussianISAM2& factorization,
+                            const VectorValues& center,
+                            VectorValues forcing) const {
+    const VectorValues candidate = forcing.size() == 0
+        ? factorization.optimize() : factorization.optimize(forcing);
+    for (const auto& [key, gradient] : workingGradient(candidate, center)) {
+      if (forcing.exists(key)) forcing.at(key) -= gradient;
+      else forcing.insert(key, -gradient);
+    }
+    return factorization.optimize(forcing);
+  }
+
   // A new center changes objective forcing only. Registered factors and orphan
   // messages stay at the reference center, so RHS-only solves never eliminate.
   VectorValues solveIncremental(const GaussianFactorGraph& graph,
@@ -131,7 +169,7 @@ struct SparseQpSolver::Impl {
         if (!change.isZero(0.0)) forcing.insert(key, std::move(change));
       }
     }
-    return forcing.size() == 0 ? tree->optimize() : tree->optimize(forcing);
+    return solveRefined(*tree, center, std::move(forcing));
   }
 };
 
