@@ -17,6 +17,7 @@
  */
 
 #include <gtsam/constrained/internal/DenseQpSolver.h>
+#include <gtsam/constrained/internal/DenseQpEqualityProjection.h>
 #include <gtsam/base/Testable.h>
 #include <CppUnitLite/TestHarness.h>
 
@@ -434,6 +435,30 @@ TEST(DenseQpSolver, FullEqualityRankAndInconsistentFixedRows) {
   EXPECT_LONGS_EQUAL(before, solver.statistics().numericalFactorizations);
   data.bounds(2) = 9;
   CHECK_EXCEPTION((void)DenseQpSolver{data}, std::runtime_error);
+}
+
+// Feasibility and tangent users retain the same equality preparation across solves.
+TEST(DenseQpSolver, EqualityPreparationIsStableAcrossWorkingChanges) {
+  DenseQpData data;
+  data.jacobian = Matrix::Identity(3, 3);
+  data.rhs = Vector{{2, 3, 4}};
+  data.linear = Vector::Zero(3);
+  data.normals = Matrix{{1, 1, 0}, {0, 0, 1}, {1, 0, 0}};
+  data.bounds = Vector{{1, .25, 0}};
+  data.equalities = 2;
+  DenseQpSolver solver(data);
+  const auto* prepared = solver.equalityProjection();
+  EXPECT(prepared != nullptr);
+  if (!prepared) return;
+  EXPECT(assert_equal(Vector{{.5, .5, .25}}, prepared->point, 1e-12));
+  const Matrix nullspace = prepared->nullspace;
+  for (bool active : {false, true, false}) {
+    solver.solve({active}, Vector::Zero(3));
+    EXPECT(solver.equalityProjection() == prepared);
+    EXPECT(assert_equal(nullspace, prepared->nullspace, 0));
+    EXPECT(assert_equal(Vector::Zero(2),
+        Vector(data.normals.topRows(2) * prepared->nullspace.col(0)), 1e-12));
+  }
 }
 
 // Empty equality rows need no QR, but inconsistent original rows still fail.

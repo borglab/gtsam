@@ -26,6 +26,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -277,9 +278,10 @@ class GTSAM_EXPORT ActiveSetSolver {
   SparseConstraintData constraints_;
   std::shared_ptr<DenseQpWorkspace> denseQpWorkspace_;
 
-  /// Run the active-set loop from the supplied initial values and state.
+  /// Run the active-set loop with this call's feasibility/initialization cache.
   std::pair<Values, State> optimizeWithState(const Values& initialValues,
-                                             const State* warmStart) const;
+                                             const State* warmStart,
+                                             SolveWorkspace* workspace) const;
   /// Advance the active set using this optimization call's backend caches.
   InternalState iterate(const InternalState& state,
                         SolveWorkspace* workspace) const;
@@ -377,6 +379,8 @@ class GTSAM_EXPORT ActiveSetSolver {
   Vector objectiveGradient(Key key, const VectorValues& values) const;
 
   // Internal helpers: dense QP subproblems.
+  /// Prepare one per-call Dense backend, shared from feasibility through solving.
+  void prepareDenseWorkspace(SolveWorkspace* workspace) const;
   /// Flatten vector values using the dense workspace ordering.
   Vector vectorValuesToDenseVector(const VectorValues& values) const;
   /// Recover vector values from the dense workspace ordering.
@@ -402,7 +406,16 @@ class GTSAM_EXPORT ActiveSetSolver {
    * of objective coupling. Strict inward derivatives release rows; all original
    * constraints remain in the main solve.
    */
-  void initializeProjectedGradient(InternalState* state) const;
+  void initializeProjectedGradient(InternalState* state,
+                                    SolveWorkspace* workspace) const;
+  /** Project one component through the existing Dense active-set solver in
+   * cached equality-free tangent coordinates. Preserve its gradient scale and
+   * iteration budget, then check the lifted direction against original rows.
+   */
+  Values projectDenseGradient(
+      const VectorValues& gradient, const std::set<Key>& keys,
+      const std::vector<size_t>& rows, double scale,
+      SolveWorkspace* workspace) const;
   /** Preserve supplied values and select warm-start rows or all tight rows.
    * The QP initialization strategy is applied separately by initializeQp().
    */
@@ -412,9 +425,10 @@ class GTSAM_EXPORT ActiveSetSolver {
   State buildPublicState(const InternalState& state,
                          const Values& prototype) const;
   /// Find a feasible starting point for a vector-valued problem.
-  Values findVectorFeasiblePoint() const;
-  /// Try the sparse QP's minimum-norm projection onto its equalities.
-  bool tryEqualityProjection(const Values& zeroValues, Values* feasible) const;
+  Values findVectorFeasiblePoint(SolveWorkspace* workspace) const;
+  /// Reuse Dense equality preparation, or solve the sparse minimum-norm graph.
+  bool tryEqualityProjection(const Values& zeroValues, Values* feasible,
+                              SolveWorkspace* workspace) const;
   /// Solve phase one and discard its synthetic slack variable.
   Values solvePhaseOne(const Values& zeroValues) const;
 };

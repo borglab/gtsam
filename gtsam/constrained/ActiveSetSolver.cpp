@@ -216,13 +216,20 @@ GaussianFactorGraph ActiveSetSolver::buildDualGraph(
 }
 
 /* ************************************************************************* */
+void ActiveSetSolver::prepareDenseWorkspace(SolveWorkspace* workspace) const {
+  // Equality preparation belongs to one optimization call and is read-only
+  // once built; working-set factors remain mutable in that same backend.
+  if (!workspace->dense)
+    workspace->dense = std::make_unique<internal::DenseQpSolver>(
+        denseQpWorkspace_->data);
+}
+
+/* ************************************************************************* */
 VectorValues ActiveSetSolver::solveDenseQpSubproblem(
     const InternalState& state, SolveWorkspace* workspace) const {
   // One mutable backend instance serves this call's initialization and main
   // loop. Concurrent optimizations never share its working-set factorization.
-  if (!workspace->dense)
-    workspace->dense = std::make_unique<internal::DenseQpSolver>(
-        denseQpWorkspace_->data);
+  prepareDenseWorkspace(workspace);
   return denseVectorToVectorValues(workspace->dense->solve(
       state.activeInequalityRows, vectorValuesToDenseVector(state.values)));
 }
@@ -504,13 +511,15 @@ ActiveSetSolver::State ActiveSetSolver::buildPublicState(
 /* ************************************************************************* */
 std::pair<Values, ActiveSetSolver::State> ActiveSetSolver::optimizeWithState(
     const Values& initialValues) const {
-  return optimizeWithState(initialValues, nullptr);
+  SolveWorkspace workspace;
+  return optimizeWithState(initialValues, nullptr, &workspace);
 }
 
 /* ************************************************************************* */
 std::pair<Values, ActiveSetSolver::State> ActiveSetSolver::optimizeWithState(
     const Values& initialValues, const State& warmStart) const {
-  return optimizeWithState(initialValues, &warmStart);
+  SolveWorkspace workspace;
+  return optimizeWithState(initialValues, &warmStart, &workspace);
 }
 
 /* ************************************************************************* */
@@ -521,7 +530,9 @@ Values ActiveSetSolver::optimize(const Values& initialValues) const {
 /* ************************************************************************* */
 std::pair<Values, ActiveSetSolver::State> ActiveSetSolver::optimizeWithState()
     const {
-  return optimizeWithState(findVectorFeasiblePoint());
+  SolveWorkspace workspace;
+  const Values feasible = findVectorFeasiblePoint(&workspace);
+  return optimizeWithState(feasible, nullptr, &workspace);
 }
 
 /* ************************************************************************* */
@@ -648,17 +659,17 @@ double ActiveSetSolver::quadraticDecrease(const VectorValues& initial,
 
 /* ************************************************************************* */
 std::pair<Values, ActiveSetSolver::State> ActiveSetSolver::optimizeWithState(
-    const Values& initialValues, const State* warmStart) const {
+    const Values& initialValues, const State* warmStart,
+    SolveWorkspace* workspace) const {
   validateInitialValues(initialValues);
   InternalState state = initialState(initialValues, warmStart);
-  SolveWorkspace workspace;
   // Explicit row masks take precedence over every cold-initialization mode.
-  if (!warmStart) initializeQp(&state, &workspace);
+  if (!warmStart) initializeQp(&state, workspace);
   while (!state.converged) {
     if (state.iterations >= params_->maxIterations) {
       throw IterationLimitError("ActiveSetSolver: failed to converge.");
     }
-    state = iterate(state, &workspace);
+    state = iterate(state, workspace);
   }
   State publicState = buildPublicState(state, initialValues);
   return {publicState.values, publicState};

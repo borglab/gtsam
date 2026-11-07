@@ -548,6 +548,10 @@ Vector DenseQpSolver::solve(const std::vector<bool>& active, const Vector& cente
   return impl_->solveOriginal(active, center);
 }
 
+const DenseQpEqualityProjection* DenseQpSolver::equalityProjection() const {
+  return impl_->projection ? &*impl_->projection : nullptr;
+}
+
 bool DenseQpSolver::canRecoverMultipliers() const {
   return impl_->canRecoverMultipliers();
 }

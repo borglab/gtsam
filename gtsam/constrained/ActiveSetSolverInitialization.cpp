@@ -80,6 +80,54 @@ LpProblem buildPhaseOneProblem(const std::vector<Row>& equalities,
   return problem;
 }
 
+// Tangent equations have zero RHS. Only the objective forcing and tight
+// inequality rows change; the permanent equality basis is already prepared.
+QpProblem denseTangentProblem(
+    const internal::DenseQpEqualityProjection& projection,
+    const internal::DenseQpData& original, const Vector& gradient,
+    const std::vector<bool>& active) {
+  QpProblem result;
+  const Eigen::Index dimension = projection.nullspace.cols();
+  result.addCost(JacobianFactor(0, Matrix::Identity(dimension, dimension),
+      Vector(-projection.nullspace.transpose() * gradient)));
+  for (size_t row = 0; row < active.size(); ++row) {
+    if (!active[row]) continue;
+    const double norm = original.normals.row(original.equalities + row).stableNorm();
+    result.addConstraint(LinearConstraint::LessEqual(JacobianFactor(
+        0, Matrix(projection.reduced.normals.row(row) / (norm > 0 ? norm : 1)),
+        Vector1::Zero())));
+  }
+  return result;
+}
+
+// Check lifted directions against normalized original tangent rows before the
+// caller classifies strictly inward constraints. No affine offset belongs in d.
+template <typename Row>
+void checkTangentDirection(
+    const std::vector<Row>& equalities, const std::vector<Row>& inequalities,
+    const VectorValues& direction, double feasibilityTolerance,
+    const std::vector<bool>& active) {
+  auto derivative = [&](const Row& row) {
+    const double norm = row.factor->getA().stableNorm();
+    double value = 0;
+    for (auto key = row.factor->begin(); key != row.factor->end(); ++key)
+      value += ((row.factor->getA(key) / (norm > 0 ? norm : 1)) *
+                direction.at(*key))(0);
+    return value;
+  };
+  for (const auto& row : equalities) {
+    const double value = derivative(row);
+    if (!std::isfinite(value) || std::abs(value) > feasibilityTolerance)
+      throw std::runtime_error("Projected direction violates an original tangent equality.");
+  }
+  for (size_t row = 0; row < inequalities.size(); ++row) {
+    if (!active[row]) continue;
+    const double value = derivative(inequalities[row]);
+    if (!std::isfinite(value) || value > feasibilityTolerance)
+      throw std::runtime_error("Projected direction violates an original tangent inequality.");
+  }
+}
+
 }  // namespace
 
 /* ************************************************************************* */
@@ -131,7 +179,7 @@ void ActiveSetSolver::initializeQp(InternalState* state,
   if (params_->qpInitialization ==
       Params::QpInitialization::FeasibleStepThenProjectedGradient)
     initializeFeasiblePoint(state, workspace);
-  initializeProjectedGradient(state);
+  initializeProjectedGradient(state, workspace);
 }
 
 /* ************************************************************************* */
@@ -160,11 +208,18 @@ void ActiveSetSolver::initializeFeasiblePoint(
 }
 
 /* ************************************************************************* */
-void ActiveSetSolver::initializeProjectedGradient(InternalState* state) const {
+void ActiveSetSolver::initializeProjectedGradient(
+    InternalState* state, SolveWorkspace* workspace) const {
   if (std::none_of(state->activeInequalityRows.begin(),
                    state->activeInequalityRows.end(),
                    [](bool row) { return row; }))
     return;
+
+  // Prepare equalities once even when projection is the first numerical stage.
+  if (denseQpWorkspace_ && !constraints_.equalities.empty())
+    prepareDenseWorkspace(workspace);
+  const bool reuseDense = workspace->dense &&
+                         workspace->dense->equalityProjection();
 
   // The identity projection objective is separable even when the QP is coupled.
   DSFMap<Key> partition;
@@ -235,8 +290,10 @@ void ActiveSetSolver::initializeProjectedGradient(InternalState* state) const {
       projectionParams->ordering = restrictOrdering(
           *params_->ordering, KeySet(keys.begin(), keys.end()));
     try {
-      direction = ActiveSetSolver(component.projection, projectionParams)
-                      .optimize(zero);
+      direction = reuseDense
+          ? projectDenseGradient(gradient, keys, component.inequalities, scale,
+                                 workspace)
+          : ActiveSetSolver(component.projection, projectionParams).optimize(zero);
     } catch (const IterationLimitError& error) {
       throw IterationLimitError(
           std::string("ActiveSetSolver: projected-gradient initialization failed: ") +
@@ -261,6 +318,42 @@ void ActiveSetSolver::initializeProjectedGradient(InternalState* state) const {
 }
 
 /* ************************************************************************* */
+Values ActiveSetSolver::projectDenseGradient(
+    const VectorValues& gradient, const std::set<Key>& keys,
+    const std::vector<size_t>& rows, double scale,
+    SolveWorkspace* workspace) const {
+  const auto& equality = *workspace->dense->equalityProjection();
+  VectorValues direction = VectorValues::Zero(gradient);
+  if (equality.nullspace.cols() > 0) {
+    Vector forcing = Vector::Zero(denseQpWorkspace_->totalDim);
+    for (Key key : keys)
+      if (gradient.exists(key))
+        forcing.segment(denseQpWorkspace_->keyOffsets.at(key), keyDims_.at(key)) =
+            gradient.at(key) / scale;
+    std::vector<bool> active(constraints_.inequalities.size(), false);
+    for (size_t row : rows) active[row] = true;
+    const QpProblem projection = denseTangentProblem(
+        equality, denseQpWorkspace_->data, forcing, active);
+    auto parameters = std::make_shared<Params>(*params_);
+    parameters->qpInitialization = Params::QpInitialization::TightConstraints;
+    parameters->regularization = 0;
+    // This auxiliary key represents reduced coordinates, not original keys.
+    parameters->ordering = Ordering{0};
+    Values zero;
+    zero.insert(0, Vector::Zero(equality.nullspace.cols()).eval());
+    const Values reduced = ActiveSetSolver(projection, parameters).optimize(zero);
+    direction = denseVectorToVectorValues(
+        equality.nullspace * reduced.at<Vector>(0));
+    checkTangentDirection(constraints_.equalities, constraints_.inequalities,
+                          direction, params_->feasibilityTolerance, active);
+  }
+  // The caller classifies only this original component, with its own budget.
+  Values result;
+  for (Key key : keys) result.insert(key, direction.at(key));
+  return result;
+}
+
+/* ************************************************************************* */
 Values ActiveSetSolver::zeroVectorValues() const {
   Values values;
   for (const auto& [key, dim] : keyDims_) {
@@ -271,18 +364,38 @@ Values ActiveSetSolver::zeroVectorValues() const {
 }
 
 /* ************************************************************************* */
-Values ActiveSetSolver::findVectorFeasiblePoint() const {
+Values ActiveSetSolver::findVectorFeasiblePoint(SolveWorkspace* workspace) const {
   const Values zeroValues = zeroVectorValues();
   Values feasible;
   if (problemType_ == ProblemType::QP &&
-      tryEqualityProjection(zeroValues, &feasible))
+      tryEqualityProjection(zeroValues, &feasible, workspace))
     return feasible;
   return solvePhaseOne(zeroValues);
 }
 
 /* ************************************************************************* */
 bool ActiveSetSolver::tryEqualityProjection(const Values& zeroValues,
-                                            Values* feasible) const {
+                                            Values* feasible,
+                                            SolveWorkspace* workspace) const {
+  if (denseQpWorkspace_) {
+    try {
+      prepareDenseWorkspace(workspace);
+      const auto* projection = workspace->dense->equalityProjection();
+      if (projection || constraints_.equalities.empty()) {
+        const VectorValues candidate = projection
+            ? denseVectorToVectorValues(projection->point)
+            : valuesToVectorValues(zeroValues);
+        if (!primalFeasible(constraints_.equalities, constraints_.inequalities,
+                            candidate, params_->feasibilityTolerance))
+          return false;
+        *feasible = vectorValuesToValues(candidate, zeroValues);
+        return true;
+      }
+    } catch (const std::runtime_error&) {
+      // Preserve phase one when original equalities cannot supply a point.
+      return false;
+    }
+  }
   // Unit unary factors select a minimum-norm point on the equality manifold.
   GaussianFactorGraph graph;
   for (const auto& [key, dim] : keyDims_)

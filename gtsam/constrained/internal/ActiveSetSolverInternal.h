@@ -23,6 +23,7 @@
 
 #include <gtsam/constrained/ActiveSetSolver.h>
 #include <gtsam/constrained/internal/DenseQpSolver.h>
+#include <gtsam/constrained/internal/DenseQpEqualityProjection.h>
 #include <gtsam/constrained/internal/SparseQpSolver.h>
 
 #include <algorithm>

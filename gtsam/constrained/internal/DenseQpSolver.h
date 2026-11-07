@@ -34,6 +34,8 @@
 namespace gtsam {
 namespace internal {
 
+struct DenseQpEqualityProjection;
+
 /** Packed dense working-system inputs, internal to ActiveSetSolver. The
  * objective is 0.5*||jacobian*x-rhs||^2-linear.dot(x); all original constraint
  * rows remain in normals/bounds. Equalities precede inequality rows.
@@ -79,6 +81,14 @@ class GTSAM_EXPORT DenseQpSolver {
    * The returned point is checked against every selected original row.
    */
   Vector solve(const std::vector<bool>& active, const Vector& center);
+
+  /** Read this call's permanent equality preparation without recomputing it.
+   * Feasibility and tangent-cone initialization may share its affine point and
+   * orthonormal nullspace with the main working solves. Return nullptr when
+   * there are no equalities or their projection is numerically ambiguous.
+   * The returned pointer remains valid for this workspace's lifetime.
+   */
+  const DenseQpEqualityProjection* equalityProjection() const;
 
   /** Whether the last working solve has reusable primal/equality factors.
    * Singular objectives retain graph recovery. For dependent inequalities,
