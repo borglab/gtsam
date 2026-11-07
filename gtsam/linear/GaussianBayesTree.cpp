@@ -11,8 +11,7 @@
 
 /**
  * @file    GaussianBayesTree.cpp
- * @brief   Gaussian Bayes Tree, the result of eliminating a GaussianJunctionTree
- * @brief   GaussianBayesTree
+ * Gaussian Bayes-tree queries and exact substitution through cached conditionals.
  * @author  Frank Dellaert
  * @author  Richard Roberts
  */
@@ -26,7 +25,6 @@
 #include <gtsam/linear/GaussianBayesTreeQueries.h>
 #include <gtsam/linear/VectorValues.h>
 
-#include <map>
 #include <stdexcept>
 
 namespace gtsam {
@@ -72,6 +70,8 @@ namespace gtsam {
       throw std::invalid_argument(
           "GaussianBayesTree substitution requires square frontal blocks.");
     }
+
+    // Arbitrary RHS substitution requires finite, strictly positive noise scales.
     const auto& model = conditional.get_model();
     if (model &&
         (model->isConstrained() || model->dim() != conditional.rows() ||
@@ -80,6 +80,8 @@ namespace gtsam {
       throw std::invalid_argument(
           "GaussianBayesTree substitution requires finite positive diagonal noise.");
     }
+
+    // Reject singular frontal pivots before starting the parallel traversal.
     const auto frontalMatrix = conditional.R();
     const auto diagonal = frontalMatrix.diagonal();
     if (!diagonal.allFinite() || (diagonal.array() == 0.0).any()) {
@@ -90,6 +92,7 @@ namespace gtsam {
   // Validate inputs for traversal and fill omitted frontal blocks with zeros.
   VectorValues substitutionRhs(const GaussianBayesTree& tree,
                                const VectorValues& rhs) {
+    // Allocate zero blocks for omitted keys after validating each conditional.
     VectorValues complete;
     for (const auto& [key, clique] : tree.nodes()) {
       if (!clique || !clique->conditional())
@@ -107,6 +110,8 @@ namespace gtsam {
         }
       }
     }
+
+    // Validate supplied blocks before copying them into the traversal workspace.
     for (const auto& [key, value] : rhs) {
       auto destination = complete.find(key);
       if (destination == complete.end() ||
@@ -116,27 +121,8 @@ namespace gtsam {
       }
       destination->second = value;
     }
+
     return complete;
-  }
-
-  using CliqueVectors = std::map<const GaussianBayesTreeClique*, VectorValues>;
-
-  // Each clique owns a private frontal RHS and outgoing separator message. All
-  // entries are allocated before traversal; parallel tasks never insert into it.
-  CliqueVectors transposeWorkspace(const GaussianBayesTree& tree,
-                                   const VectorValues& rhs) {
-    CliqueVectors workspace;
-    for (const auto& [key, clique] : tree.nodes()) {
-      const auto& conditional = *clique->conditional();
-      if (key != conditional.firstFrontalKey()) continue;
-      auto& local = workspace[clique.get()];
-      for (Key frontal : conditional.frontals())
-        local.emplace(frontal, rhs.at(frontal));
-      for (auto parent = conditional.beginParents();
-           parent != conditional.endParents(); ++parent)
-        local.emplace(*parent, Vector::Zero(conditional.getDim(parent)));
-    }
-    return workspace;
   }
 
   }  // namespace
@@ -162,31 +148,9 @@ namespace gtsam {
   /* ************************************************************************* */
   VectorValues GaussianBayesTree::backSubstituteTranspose(
       const VectorValues& rhs) const {
-    VectorValues result = substitutionRhs(*this, rhs);
-    CliqueVectors workspace = transposeWorkspace(*this, result);
-    auto solveClique = [&workspace, &result](
-                           const GaussianBayesTreeClique::shared_ptr& clique) {
-      auto& local = workspace.at(clique.get());
-      // A child's separator can include higher ancestors as well as this
-      // clique's frontals. Retain both kinds of contribution in the local map.
-      for (const auto& child : clique->children) {
-        const auto& message = workspace.at(child.get());
-        for (Key separator : child->conditional()->parents())
-          local.at(separator) += message.at(separator);
-      }
-      const auto& conditional = *clique->conditional();
-      conditional.solveTransposeInPlace(local);
-      for (const auto& [key, value] : local) {
-        if (!value.allFinite())
-          throw IndeterminateSystemException(conditional.keys().front());
-      }
-      // Only this clique writes these frontals; ancestors read its separators.
-      for (Key frontal : conditional.frontals())
-        result.at(frontal).swap(local.at(frontal));
-    };
-    TbbOpenMPMixedScope threadLimiter;
-    treeTraversal::PostOrderForestParallel(*this, solveClique);
-    return result;
+    // Share the post-order transpose traversal with incremental Gaussian trees.
+    return internal::linearAlgorithms::transposeBayesTree(
+        *this, substitutionRhs(*this, rhs));
   }
 
   /* ************************************************************************* */
