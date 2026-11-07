@@ -16,6 +16,7 @@
  * @date    Sep 2, 2010
  */
 
+#include <algorithm>
 #include <vector>
 #include <limits>
 #include <cassert>
@@ -69,6 +70,22 @@ int ccolamdOrder(int rows, int columns, int arrayLength, int rowIndices[],
   return ::gtsam_ccolamd(rows, columns, arrayLength, rowIndices, columnPointers,
                          knobs, stats, constraintSet);
 #endif
+}
+
+// CCOLAMD requires every constraint group in [0, columns), but it only rejects
+// groups above that range and writes out of bounds for a group equal to it.
+// Groups only order the variables, so their ranks give the same constraints.
+std::vector<int> groupRanks(const std::vector<int>& groups) {
+  std::vector<int> labels(groups);
+  std::sort(labels.begin(), labels.end());
+  labels.erase(std::unique(labels.begin(), labels.end()), labels.end());
+  std::vector<int> ranks(groups.size());
+  for (size_t j = 0; j < groups.size(); ++j) {
+    ranks[j] = static_cast<int>(
+        std::lower_bound(labels.begin(), labels.end(), groups[j]) -
+        labels.begin());
+  }
+  return ranks;
 }
 
 }  // namespace
@@ -144,13 +161,24 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
 
   gttoc(Prepare);
 
+  // Groups may be any increasing labels, e.g. after ISAM2 keeps only the
+  // affected keys of the caller's constraints.
+  const auto [minGroup, maxGroup] =
+      std::minmax_element(cmember.begin(), cmember.end());
+  std::vector<int> ranks;
+  int* constraintSet = cmember.data();
+  if (*minGroup < 0 || *maxGroup >= static_cast<int>(nVars)) {
+    ranks = groupRanks(cmember);
+    constraintSet = ranks.data();
+  }
+
   // call colamd, result will be in p
   /* returns (1) if successful, (0) otherwise*/
   if (nVars > 0) {
     gttic(ccolamd);
     int rv = ccolamdOrder(
         static_cast<int>(nFactors), static_cast<int>(nVars),
-        static_cast<int>(Alen), &A[0], &p[0], knobs, stats, &cmember[0]);
+        static_cast<int>(Alen), &A[0], &p[0], knobs, stats, constraintSet);
     if (rv != 1) {
       throw runtime_error("ccolamd failed with return value " + to_string(rv));
     }
@@ -245,7 +273,6 @@ Ordering Ordering::ColamdConstrained(const VariableIndex& variableIndex,
   // Assign groups
   typedef FastMap<Key, int>::value_type key_group;
   for(const key_group& p: groups) {
-    // FIXME: check that no groups are skipped
     cmember[keyIndices.at(p.first)] = p.second;
   }
 

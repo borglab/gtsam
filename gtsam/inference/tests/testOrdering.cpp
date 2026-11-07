@@ -109,6 +109,50 @@ TEST(Ordering, grouped_constrained_ordering) {
 }
 
 /* ************************************************************************* */
+TEST(Ordering, grouped_constrained_ordering_any_labels) {
+  // Same groups as above, with labels that are neither consecutive nor from 0
+  SymbolicFactorGraph symbolicGraph = example::symbolicChain();
+  FastMap<Key, int> constraints;
+  constraints[0] = -5;
+  constraints[1] = -5;
+  constraints[2] = 10;
+  constraints[3] = -5;
+  constraints[4] = 10;
+  constraints[5] = 20;
+
+  Ordering actual = Ordering::ColamdConstrained(symbolicGraph, constraints);
+  Ordering expected{ 0, 1, 3, 2, 4, 5 };
+  EXPECT(assert_equal(expected, actual));
+}
+
+/* ************************************************************************* */
+TEST(Ordering, grouped_constrained_ordering_labels_not_below_size) {
+  // CCOLAMD accepts groups in [0, n) only, n being the number of variables.
+  SymbolicFactorGraph graph;
+  graph.push_factor(0, 1);
+
+  // A group equal to n used to overflow CCOLAMD's arrays.
+  {
+    FastMap<Key, int> constraints;
+    constraints[0] = 2;
+    constraints[1] = 2;
+    Ordering actual = Ordering::ColamdConstrained(graph, constraints);
+    Ordering expected{ 0, 1 };
+    EXPECT(assert_equal(expected, actual));
+  }
+
+  // A group above n used to make CCOLAMD fail.
+  {
+    FastMap<Key, int> constraints;
+    constraints[0] = 3;
+    constraints[1] = 2;
+    Ordering actual = Ordering::ColamdConstrained(graph, constraints);
+    Ordering expected{ 1, 0 };
+    EXPECT(assert_equal(expected, actual));
+  }
+}
+
+/* ************************************************************************* */
 TEST(Ordering, csr_format) {
   // Example in METIS manual
   SymbolicFactorGraph symbolicGraph;
