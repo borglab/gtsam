@@ -175,6 +175,11 @@ class QuadraticConstraint {
 #include <gtsam/constrained/ActiveSetSolver.h>
 class ActiveSetSolverParams {
   enum class QpSubproblemSolver { Sparse, Dense };
+  enum class QpInitialization {
+    TightConstraints,
+    ProjectedGradient,
+    FeasibleStepThenProjectedGradient
+  };
 
   ActiveSetSolverParams();
 
@@ -186,6 +191,11 @@ class ActiveSetSolverParams {
   double regularization;
   double phaseOneFeasibilityTolerance;
   gtsam::ActiveSetSolverParams::QpSubproblemSolver qpSubproblemSolver;
+  bool useIncrementalSparseQp;
+  gtsam::ActiveSetSolverParams::QpInitialization qpInitialization;
+  void setOrdering(const gtsam::Ordering& ordering);
+  void clearOrdering();
+  bool hasOrdering() const;
 };
 
 #include <gtsam/constrained/LpProblem.h>
@@ -238,6 +248,31 @@ class QpProblem : gtsam::ConstrainedOptProblem {
       gtsam::QpSolverType solverType = gtsam::QpSolverType::Sparse) const;
   gtsam::Values optimize(
       gtsam::QpSolverType solverType = gtsam::QpSolverType::Sparse) const;
+};
+
+class ActiveSetFeasibleStepResult {
+  enum class Status { FeasibleProgress, NoProgress, NumericalFailure, IterationLimit };
+  ActiveSetFeasibleStepResult();
+  gtsam::Values values;
+  gtsam::Vector activeInequalityMask() const;
+  gtsam::ActiveSetFeasibleStepResult::Status status;
+  size_t iterations;
+  double initialObjective;
+  double objective;
+  double objectiveDecrease;
+  double constraintViolation;
+  std::string message;
+};
+
+class ActiveSetSolver {
+  ActiveSetSolver(const gtsam::QpProblem& problem,
+      std::shared_ptr<gtsam::ActiveSetSolverParams> params = nullptr);
+  ActiveSetSolver(const gtsam::LpProblem& problem,
+      std::shared_ptr<gtsam::ActiveSetSolverParams> params = nullptr);
+  gtsam::Values optimize(const gtsam::Values& initialValues) const;
+  gtsam::Values optimize() const;
+  gtsam::ActiveSetFeasibleStepResult computeFeasibleStep(
+      const gtsam::Values& initialValues) const;
 };
 
 #include <gtsam/constrained/QcqpProblem.h>

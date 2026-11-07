@@ -1,0 +1,48 @@
+name: QP documentation
+
+on:
+  pull_request:
+    paths:
+      - 'gtsam/constrained/doc/Qp*'
+      - 'gtsam/constrained/doc/qp-benchmark-*'
+      - 'gtsam/constrained/doc/qp-plots/**'
+      - 'gtsam/constrained/constrained.md'
+      - 'myst.yml'
+      - '.github/workflows/qp-docs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.x
+      - name: Validate notebook structure
+        run: |
+          python -m pip install nbformat
+          python - <<'PY'
+          from pathlib import Path
+          import nbformat
+          nbformat.validate(nbformat.read(Path('gtsam/constrained/doc/QpProblem.ipynb'), as_version=4))
+          PY
+      - name: Install MyST
+        run: npm install -g mystmd
+      - name: Build documentation
+        run: myst build --html
+      - name: Check standalone report is bundled
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          candidates = [path for path in Path('_build/html').rglob('*.html')
+                        if path.name.startswith('qp-benchmark-report')]
+          assert any('id="measurements"' in path.read_text() for path in candidates), \
+              'The standalone HTML report was not copied into the MyST site.'
+          for name in ['mpc-success', 'mpc-profile', 'quad-profile', 'quad-times', 'g1-times', 'dense-stages']:
+              chart = Path('_build/html/qp-plots') / f'{name}.html'
+              assert chart.exists() and 'Plotly.newPlot' in chart.read_text(), chart
+          PY

@@ -5,6 +5,8 @@ project:
   title: GTSAM Docs
   description: GTSAM is a library of C++ classes that implement smoothing and mapping (SAM) in robotics and vision, using factor graphs and Bayes networks as the underlying computing paradigm rather than sparse matrices.
   github: https://github.com/borglab/gtsam
+  static_files:
+    - gtsam/constrained/doc/qp-plots
   toc:
     - file: README.md
     - file: INSTALL.md
@@ -34,7 +36,7 @@ project:
         - pattern: ./gtsam/nonlinear/doc/*
       - file: ./gtsam/constrained/constrained.md
         children:
-        - pattern: ./gtsam/constrained/doc/*
+        - pattern: ./gtsam/constrained/doc/*.{md,ipynb}
       - file: ./gtsam/symbolic/symbolic.md
         children:
         - pattern: ./gtsam/symbolic/doc/*

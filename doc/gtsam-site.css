@@ -35,3 +35,23 @@ html.dark
 .sfm-guide-grid .myst-card {
   height: 100%;
 }
+
+/* QP benchmark Plotly embeds ---------------------------------------------- */
+/* MyST supplies an inline aspect-ratio wrapper. Plotly's multi-panel charts
+ * need their full configured height, so override those inline dimensions. */
+div:has(> iframe[src*="/qp-plots/"]) {
+  display: block;
+  padding-bottom: 0 !important;
+}
+iframe[src*="/qp-plots/"] {
+  display: block;
+  position: relative !important;
+  width: 100%;
+  height: 620px !important;
+  border: 0;
+}
+iframe[src*="/qp-plots/mpc-success"] { height: 520px !important; }
+iframe[src*="/qp-plots/mpc-profile"],
+iframe[src*="/qp-plots/quad-profile"] { height: 820px !important; }
+iframe[src*="/qp-plots/quad-times"] { height: 580px !important; }
+iframe[src*="/qp-plots/g1-times"] { height: 630px !important; }
