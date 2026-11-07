@@ -7,6 +7,7 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/constrained/ActiveSetSolver.h>
 #include <gtsam/constrained/internal/DualQpSolver.h>
+#include <limits>
 #include <random>
 
 using namespace gtsam;
@@ -65,16 +66,55 @@ TEST(DualQp, InfeasibleStartAndMultipliers) {
   }
 }
 
-// Automatic counts scalar inequality rows and independent equality pivots.
-TEST(DualQp, AutomaticDimensionThreshold) {
+// Cold Automatic chooses Dual even at or above the old dimension threshold.
+TEST(DualQp, AutomaticColdStarts) {
   for (auto backend : {Backend::Dense, Backend::Sparse}) {
-    for (int count : {0, 1, 2, 3}) {
+    for (int count : {0, 1, 2, 3, 5}) {
       QpProblem problem = objective(Vector4{2, 2, 2, 2});
       equal(&problem, Matrix{{0, 0, 1, 0}, {0, 0, 2, 0}, {0, 0, 0, 1}}, Vector3{0, 0, 0});
       if (count) less(&problem, Matrix::Ones(count, 4), Vector::Constant(count, 1));
       const auto result = ActiveSetSolver(problem, parameters(backend, Formulation::Automatic)).optimizeWithState();
-      CHECK(result.second.qpFormulation == (count == 1 ? Formulation::Dual : Formulation::Primal));
+      CHECK(result.second.qpFormulation == (count ? Formulation::Dual : Formulation::Primal));
+      CHECK(result.second.converged);
     }
+  }
+}
+
+// Automatic retains converged formulations, but infeasible/stale starts use Dual.
+TEST(DualQp, AutomaticWarmStartPolicy) {
+  for (auto backend : {Backend::Dense, Backend::Sparse}) {
+    QpProblem problem = objective(Vector2{3, 2});
+    less(&problem, Matrix::Identity(2, 2), Vector2{1, 1});
+    const auto automatic = parameters(backend, Formulation::Automatic);
+    for (auto mode : {Formulation::Primal, Formulation::Dual}) {
+      const auto previous = ActiveSetSolver(problem, parameters(backend, mode)).optimizeWithState();
+      const auto resumed = ActiveSetSolver(problem, automatic).optimizeWithState(previous.first, previous.second);
+      CHECK(resumed.second.qpFormulation == mode);
+      EXPECT(assert_equal(previous.first, resumed.first, 1e-8));
+      auto stale = previous.second;
+      stale.converged = false;
+      CHECK(ActiveSetSolver(problem, automatic).optimizeWithState(previous.first, stale)
+                .second.qpFormulation == Formulation::Dual);
+      const auto infeasible = ActiveSetSolver(problem, automatic).optimizeWithState(
+          initial(Vector2{5, 5}), previous.second);
+      CHECK(infeasible.second.qpFormulation == Formulation::Dual);
+      EXPECT(assert_equal(previous.first, infeasible.first, 1e-8));
+      auto malformed = previous.second;
+      malformed.inequalityMultipliers = {Vector1{-1}};
+      CHECK_EXCEPTION(ActiveSetSolver(problem, automatic).optimizeWithState(previous.first, malformed),
+                      std::invalid_argument);
+      malformed = previous.second;
+      malformed.inequalityMultipliers[0](0) = std::numeric_limits<double>::quiet_NaN();
+      CHECK_EXCEPTION(ActiveSetSolver(problem, automatic).optimizeWithState(previous.first, malformed),
+                      std::invalid_argument);
+      malformed = previous.second;
+      malformed.qpFormulation = Formulation::Automatic;
+      CHECK_EXCEPTION(ActiveSetSolver(problem, automatic).optimizeWithState(previous.first, malformed),
+                      std::invalid_argument);
+    }
+    // Values alone provide a cold proximal center, even when already feasible.
+    CHECK(ActiveSetSolver(problem, automatic).optimizeWithState(initial(Vector2{0, 0}))
+              .second.qpFormulation == Formulation::Dual);
   }
 }
 
@@ -96,6 +136,26 @@ TEST(DualQp, SingularCurvaturePolicy) {
     const auto fallback = ActiveSetSolver(problem, params).optimizeWithState(initial(Vector2{0, 1}));
     CHECK(fallback.second.qpFormulation == Formulation::Primal);
     EXPECT(assert_equal(Vector2(2, 1), fallback.first.at<Vector>(0), 1e-6));
+    const auto warmFallback = ActiveSetSolver(problem, params).optimizeWithState(result.first, result.second);
+    CHECK(warmFallback.second.qpFormulation == Formulation::Primal);
+  }
+}
+
+// Fully fixed Automatic problems check inequalities without entering Dual.
+TEST(DualQp, AutomaticFixedVariables) {
+  for (auto backend : {Backend::Dense, Backend::Sparse}) {
+    QpProblem problem = objective(Vector2{3, 2});
+    equal(&problem, Matrix{{1, 0}, {2, 0}, {0, 1}}, Vector3{1, 2, 1});
+    less(&problem, Matrix{{1, 1}}, Vector1{2});
+    const auto params = parameters(backend, Formulation::Automatic);
+    const auto solved = ActiveSetSolver(problem, params).optimizeWithState();
+    CHECK(solved.second.qpFormulation == Formulation::Primal);
+    EXPECT(assert_equal(Vector2(1, 1), solved.first.at<Vector>(0), 1e-8));
+    // A supplied center cannot change the unique equality-feasible point.
+    EXPECT(assert_equal(Vector2(1, 1), ActiveSetSolver(problem, params)
+        .optimize(initial(Vector2{9, 9})).at<Vector>(0), 1e-8));
+    less(&problem, Matrix{{1, 1}}, Vector1{1});
+    CHECK_EXCEPTION(ActiveSetSolver(problem, params).optimize(), std::runtime_error);
   }
 }
 
@@ -256,11 +316,22 @@ TEST(DualQp, WeakCurvatureAffineBoundary) {
   }
 }
 
-// LPs reject QP formulations and default construction preserves Primal.
+// Defaults select Sparse/Automatic QPs; LPs resolve Automatic and reject Dual.
 TEST(DualQp, ParameterValidation) {
-  CHECK(Params().qpFormulation == Formulation::Primal);
+  CHECK(Params().qpFormulation == Formulation::Automatic);
+  CHECK(Params().qpSubproblemSolver == Backend::Sparse);
+  QpProblem qp = objective(Vector2{3, 2});
+  less(&qp, Matrix::Identity(2, 2), Vector2{1, 1});
+  const auto cold = ActiveSetSolver(qp).optimizeWithState(initial(Vector2{10, 10}));
+  CHECK(cold.second.qpFormulation == Formulation::Dual);
+  EXPECT(assert_equal(Vector2(1, 1), cold.first.at<Vector>(0), 1e-7));
   LpProblem lp;
   lp.addCost(LpCost(JacobianFactor(0, Matrix{{1}}, Vector1{0})));
+  lp.addConstraint(LinearConstraint::GreaterEqual(JacobianFactor(0, Matrix{{1}}, Vector1{0})));
+  CHECK(ActiveSetSolver(lp).optimizeWithState().second.qpFormulation == Formulation::Primal);
+  auto automatic = std::make_shared<Params>();
+  CHECK(ActiveSetSolver(lp, automatic).optimizeWithState().second.qpFormulation == Formulation::Primal);
+  CHECK(automatic->qpFormulation == Formulation::Automatic);
   CHECK_EXCEPTION(ActiveSetSolver(lp, parameters(Backend::Sparse)), std::invalid_argument);
   auto params = parameters(Backend::Sparse);
   params->qpFormulation = static_cast<Formulation>(99);

@@ -191,6 +191,8 @@ ActiveSetSolver::ActiveSetSolver(const LpProblem& problem,
     : problemType_(ProblemType::LP),
       lpProblem_(&problem),
       params_(params ? std::make_shared<Params>(*params) : std::make_shared<Params>()) {
+  if (params_->qpFormulation == Params::QpFormulation::Automatic)
+    params_->qpFormulation = Params::QpFormulation::Primal;
   initializeDimensions();
   validateParameters();
   initializeObjective();

@@ -554,5 +554,45 @@
       "fresh_repeat_certified": []
     }
   ],
-  "report_bytes": 253728
+  "report_bytes": 257436,
+  "automatic_selection": {
+    "default_backend": "Sparse",
+    "default_formulation": "Automatic",
+    "cold_start": "Dual with inequalities, regardless of counts",
+    "warm_start": "Retain a converged resolved formulation when supplied values are feasible",
+    "direct_primal": "No inequalities or zero reduced dimension",
+    "curvature_fallback": "Primal when reduced curvature is singular with zero regularization; no added floor",
+    "lp": "Automatic resolves to Primal; Dual rejected",
+    "switches_after_setup": false
+  },
+  "automatic_policy_validation": {
+    "date": "2026-11-07",
+    "revision": "9ce301b49cb948d7bc6eaae135e025e0a0424428",
+    "uncommitted_changes": true,
+    "library_sha256": "437c000298546d17d744b912c732767100f4ecb39446486bd079f05280bbda47",
+    "source_sha256": {
+      "gtsam/constrained/ActiveSetSolver.h": "44ee8a33270a6edae75b8aeb3566cbe9eb0addadf49d4cb5ba7aa567357b11b3",
+      "gtsam/constrained/ActiveSetSolver.cpp": "e8117fc382619e590364e284ae4ff1fcaf34600ac8b60bab865746d18cda744a",
+      "gtsam/constrained/ActiveSetSolverDual.cpp": "6e1d94891f453ba18a6d92ae9c1a1c5d84e0c7b6ac7925168f196d2ea23746fe",
+      "gtsam/constrained/ActiveSetSolverSetup.cpp": "c863b897224438bb4714616452445572ec7c1e234d700ec12634ffd700bd11d5",
+      "gtsam/constrained/QpProblem.h": "4c5da13db1b6a36f1ca8700c937485997e68c7ca677f875f1d699cebfaa6d22b",
+      "gtsam/constrained/internal/ActiveSetSolverInternal.h": "6a57b1ec46375ae714bdd299508b214bfe5a28e80a903f5bfee682ef268bc18a"
+    },
+    "mpc": {
+      "calls": 512,
+      "passed": 512,
+      "choices": "Dual for all cold cases",
+      "measurement_sha256": "acc362debd85e10e0437745eba03d5fc3f616f5feb5bbf6a062002feda3440e7"
+    },
+    "controlled_dimensions": {
+      "cases": 108,
+      "calls": 648,
+      "passed": 648,
+      "measurement_sha256": "28c103a192b1a4460398b1e85d9cda23b72b431cf35fc990eda3f0a2dad79c62"
+    },
+    "native_suites": 9,
+    "python_tests_passed": 581,
+    "python_tests_skipped": 6,
+    "matlab": "Runtime unavailable; smoke test updated"
+  }
 }

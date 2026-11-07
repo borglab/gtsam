@@ -11,13 +11,14 @@
 
 namespace gtsam {
 
-bool ActiveSetSolver::prepareDualQp(SolveWorkspace* workspace) const {
+bool ActiveSetSolver::prepareDualQp(SolveWorkspace* workspace,
+                                   bool preferPrimal) const {
   if (workspace->formulationPrepared) return bool(workspace->dual);
   workspace->formulationPrepared = true;
   if (problemType_ != ProblemType::QP ||
       params_->qpFormulation == Params::QpFormulation::Primal) return false;
   const bool automatic = params_->qpFormulation == Params::QpFormulation::Automatic;
-  if (automatic && constraints_.inequalities.empty()) return false;
+  if (automatic && (preferPrimal || constraints_.inequalities.empty())) return false;
   internal::SparseQpData data;
   data.objective = qpCostGraph_;
   data.keyDimensions = keyDims_;
@@ -30,8 +31,13 @@ bool ActiveSetSolver::prepareDualQp(SolveWorkspace* workspace) const {
   auto dual = std::make_unique<internal::DualQpSolver>(std::move(data),
       dense ? workspace->dense.get() : nullptr,
       dense ? denseQpWorkspace_->hessianOrdering : Ordering{});
-  if (automatic && constraints_.inequalities.size() >= dual->reducedDimension())
+  if (automatic && dual->reducedDimension() == 0) {
+    Values point;
+    if (!tryEqualityProjection(zeroVectorValues(), &point, workspace))
+      throw std::runtime_error("ActiveSetSolver: fully fixed point violates the constraints.");
+    workspace->fixedPoint = valuesToVectorValues(point);
     return false;
+  }
   if (!dual->prepare()) {
     if (automatic) return false;
     throw std::runtime_error("ActiveSetSolver: Dual requires invertible reduced curvature; "
@@ -39,6 +45,24 @@ bool ActiveSetSolver::prepareDualQp(SolveWorkspace* workspace) const {
   }
   workspace->dual = std::move(dual);
   return true;
+}
+
+void ActiveSetSolver::validateWarmStart(const State& warmStart) const {
+  if (warmStart.activeInequalityRows.size() != constraints_.inequalities.size())
+    throw std::invalid_argument("ActiveSetSolver: warm-start row count does not match the problem.");
+  if (warmStart.qpFormulation != Params::QpFormulation::Primal &&
+      warmStart.qpFormulation != Params::QpFormulation::Dual)
+    throw std::invalid_argument("ActiveSetSolver: warm-start formulation must be resolved.");
+  auto validate = [](const std::vector<Vector>& values, const std::vector<size_t>& dimensions) {
+    if (values.empty()) return;
+    if (values.size() != dimensions.size())
+      throw std::invalid_argument("ActiveSetSolver: invalid warm-start multiplier count.");
+    for (size_t i = 0; i < values.size(); ++i)
+      if (size_t(values[i].size()) != dimensions[i] || !values[i].allFinite())
+        throw std::invalid_argument("ActiveSetSolver: invalid warm-start multipliers.");
+  };
+  validate(warmStart.equalityMultipliers, constraints_.equalityDims);
+  validate(warmStart.inequalityMultipliers, constraints_.inequalityDims);
 }
 
 std::pair<Values, ActiveSetSolver::State> ActiveSetSolver::optimizeDualQp(
@@ -50,19 +74,7 @@ std::pair<Values, ActiveSetSolver::State> ActiveSetSolver::optimizeDualQp(
   state.activeInequalityRows.assign(constraints_.inequalities.size(), false);
   Vector multipliers = Vector::Zero(constraints_.inequalities.size());
   if (warmStart) {
-    if (warmStart->activeInequalityRows.size() != constraints_.inequalities.size())
-      throw std::invalid_argument("ActiveSetSolver: warm-start row count does not match the problem.");
     state.activeInequalityRows = warmStart->activeInequalityRows;
-    auto validate = [](const std::vector<Vector>& values, const std::vector<size_t>& dimensions) {
-      if (values.empty()) return;
-      if (values.size() != dimensions.size())
-        throw std::invalid_argument("ActiveSetSolver: invalid warm-start multiplier count.");
-      for (size_t i = 0; i < values.size(); ++i)
-        if (size_t(values[i].size()) != dimensions[i] || !values[i].allFinite())
-          throw std::invalid_argument("ActiveSetSolver: invalid warm-start multipliers.");
-    };
-    validate(warmStart->equalityMultipliers, constraints_.equalityDims);
-    validate(warmStart->inequalityMultipliers, constraints_.inequalityDims);
     if (!warmStart->inequalityMultipliers.empty())
       for (size_t i = 0; i < constraints_.inequalities.size(); ++i) {
         const auto& row = constraints_.inequalities[i];

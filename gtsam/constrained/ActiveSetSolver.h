@@ -42,12 +42,15 @@ class GTSAM_EXPORT ActiveSetSolverParams {
 
   /** Primal preserves feasible active-set descent. Dual starts with nonnegative
    * multipliers and permits primal-infeasible initial values. Automatic chooses
-   * Dual once when 0 < inequality rows < variables - equality rank and reduced
-   * proximal curvature is invertible; otherwise it chooses Primal. Explicit
+   * Dual for cold starts and retains the formulation of a converged warm start
+   * whose supplied point is feasible. Equality-only and fully fixed problems
+   * use Primal. Singular reduced proximal curvature falls back to Primal during
+   * setup only. Explicit
    * Dual requires invertible reduced curvature (positive regularization permits
-   * semidefinite objectives). computeFeasibleStep() always uses Primal.
+   * semidefinite objectives). LPs resolve Automatic to Primal and reject Dual.
+   * computeFeasibleStep() always uses Primal.
    */
-  QpFormulation qpFormulation = QpFormulation::Primal;
+  QpFormulation qpFormulation = QpFormulation::Automatic;
 
   /// Strategy used to solve equality-constrained QP active-set subproblems.
   enum class QpSubproblemSolver {
@@ -59,7 +62,7 @@ class GTSAM_EXPORT ActiveSetSolverParams {
     Dense
   };
 
-  /** How a cold QP selects its initial point and working set. All modes keep
+  /** How a cold Primal QP selects its initial point and working set. All modes keep
    * the original objective and constraints; only the last mode may move the
    * supplied point. An explicit working-set warm start bypasses these modes.
    */
@@ -93,6 +96,7 @@ class GTSAM_EXPORT ActiveSetSolverParams {
   double regularization = 1e-9;
   /// Maximum residual accepted from the cold-start feasibility phase.
   double phaseOneFeasibilityTolerance = 1e-6;
+  /// Numerical backend, defaulting to Sparse independently of formulation.
   QpSubproblemSolver qpSubproblemSolver = QpSubproblemSolver::Sparse;
   /// Reuse primal sparse elimination across working-set and objective RHS changes.
   /// Dual uses its own fixed-factorization cache regardless of this option.
@@ -221,10 +225,12 @@ class GTSAM_EXPORT ActiveSetSolver {
   std::pair<Values, State> optimizeWithState(const Values& initialValues,
                                              const State& warmStart) const;
 
-  /** Find a vector-valued feasible point and optimize. */
+  /** Optimize from a zero proximal center with Dual, or find a vector-valued
+   * feasible point before Primal optimization. */
   Values optimize() const;
 
-  /** Find a vector-valued feasible point, optimize, and return final state. */
+  /** Optimize with the selected formulation and return the final state. Dual
+   * starts from a zero proximal center; Primal first finds a feasible point. */
   std::pair<Values, State> optimizeWithState() const;
 
   /**
@@ -297,7 +303,10 @@ class GTSAM_EXPORT ActiveSetSolver {
   std::shared_ptr<DenseQpWorkspace> denseQpWorkspace_;
 
   /// Resolve formulation and prepare equality-constrained dual algebra once.
-  bool prepareDualQp(SolveWorkspace* workspace) const;
+  bool prepareDualQp(SolveWorkspace* workspace, bool preferPrimal = false) const;
+
+  /// Reject malformed row masks, multiplier blocks, or unresolved formulations.
+  void validateWarmStart(const State& warmStart) const;
   /// Optimize dual multipliers, recentering until the original QP is certified.
   std::pair<Values, State> optimizeDualQp(const Values& initialValues,
       const State* warmStart, SolveWorkspace* workspace) const;

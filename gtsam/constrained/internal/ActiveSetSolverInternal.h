@@ -48,6 +48,7 @@ struct ActiveSetSolver::SolveWorkspace {
   std::unique_ptr<internal::DenseQpSolver> dense;
   std::unique_ptr<internal::SparseQpSolver> sparse;
   std::unique_ptr<internal::DualQpSolver> dual;
+  std::optional<VectorValues> fixedPoint;
   bool formulationPrepared = false;
   KeySet lpKeys, dualKeys;
   Ordering lpOrdering, dualOrdering;

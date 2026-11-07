@@ -533,7 +533,9 @@ std::pair<Values, ActiveSetSolver::State> ActiveSetSolver::optimizeWithState()
   SolveWorkspace workspace;
   if (prepareDualQp(&workspace))
     return optimizeDualQp(zeroVectorValues(), nullptr, &workspace);
-  const Values feasible = findVectorFeasiblePoint(&workspace);
+  const Values feasible = workspace.fixedPoint
+      ? vectorValuesToValues(*workspace.fixedPoint, zeroVectorValues())
+      : findVectorFeasiblePoint(&workspace);
   return optimizeWithState(feasible, nullptr, &workspace);
 }
 
@@ -664,11 +666,18 @@ std::pair<Values, ActiveSetSolver::State> ActiveSetSolver::optimizeWithState(
     const Values& initialValues, const State* warmStart,
     SolveWorkspace* workspace) const {
   validateInitialValues(initialValues);
-  if (prepareDualQp(workspace))
+  if (warmStart) validateWarmStart(*warmStart);
+  const bool preferPrimal = warmStart && warmStart->converged &&
+      warmStart->qpFormulation == Params::QpFormulation::Primal &&
+      primalFeasible(constraints_.equalities, constraints_.inequalities,
+                     valuesToVectorValues(initialValues), params_->feasibilityTolerance);
+  if (prepareDualQp(workspace, preferPrimal))
     return optimizeDualQp(initialValues, warmStart, workspace);
-  InternalState state = initialState(initialValues, warmStart);
+  InternalState state = workspace->fixedPoint
+      ? initialState(vectorValuesToValues(*workspace->fixedPoint, initialValues), nullptr)
+      : initialState(initialValues, warmStart);
   // Explicit row masks take precedence over every cold-initialization mode.
-  if (!warmStart) initializeQp(&state, workspace);
+  if (!warmStart && !workspace->fixedPoint) initializeQp(&state, workspace);
   while (!state.converged) {
     if (state.iterations >= params_->maxIterations) {
       throw IterationLimitError("ActiveSetSolver: failed to converge.");

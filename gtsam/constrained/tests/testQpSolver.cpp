@@ -34,6 +34,7 @@ namespace dense_native_curvature {
 // Exact diagonal packing preserves weak curvature and rejects negative costs.
 TEST(ActiveSetSolver, DenseDiagonalNativeCurvature) {
   auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   params->qpSubproblemSolver = ActiveSetSolverParams::QpSubproblemSolver::Dense;
   params->regularization = 0;
   const Matrix curvature{{1e-20, 0}, {0, 2}};
@@ -51,6 +52,7 @@ TEST(ActiveSetSolver, DenseDiagonalNativeCurvature) {
 // Small off-diagonal curvature must use the full square root, even in mixed costs.
 TEST(ActiveSetSolver, DenseRetainsOffDiagonalAndJacobianCurvature) {
   auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   params->qpSubproblemSolver = ActiveSetSolverParams::QpSubproblemSolver::Dense;
   params->regularization = 0;
   const Vector expected{{2, -1}};
@@ -87,6 +89,7 @@ Values Values2(double first, double second) {
 
 ActiveSetSolverParams::shared_ptr DenseQpParams() {
   auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   params->qpSubproblemSolver = ActiveSetSolverParams::QpSubproblemSolver::Dense;
   return params;
 }
@@ -260,7 +263,7 @@ TEST(ActiveSetSolver, DenseInfeasibleInitialValues) {
   Values initial;
   initial.insert(x, Vector{{-10.0, 100.0}});
 
-  CHECK_EXCEPTION(problem.optimize(initial, QpSolverType::Dense),
+  CHECK_EXCEPTION(ActiveSetSolver(problem, DenseQpParams()).optimize(initial),
                   std::invalid_argument);
 }
 
@@ -321,6 +324,7 @@ Matrix Matrix1D(double value) { return Matrix{{value}}; }
 
 ActiveSetSolverParams::shared_ptr DenseQpParams() {
   auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   params->qpSubproblemSolver = ActiveSetSolverParams::QpSubproblemSolver::Dense;
   return params;
 }
@@ -694,6 +698,7 @@ namespace sparse_proximal_qp {
 
 ActiveSetSolverParams::shared_ptr Parameters(double regularization) {
   auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   params->qpSubproblemSolver =
       ActiveSetSolverParams::QpSubproblemSolver::Sparse;
   params->regularization = regularization;
@@ -782,6 +787,7 @@ TEST(ActiveSetSolver, SparseEqualityFirstFeasiblePoint) {
   problem.addConstraint(LinearConstraint::Equal(
       JacobianFactor(0, Matrix::Identity(1, 1), Vector1(2))));
   auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   params->maxIterations = 1;
 
   const auto solved = ActiveSetSolver(problem, params).optimizeWithState();
@@ -830,6 +836,7 @@ TEST(ActiveSetSolver, SquareRootWeakDirection) {
   problem.addConstraint(LinearConstraint::LessEqual(
       JacobianFactor(0, Matrix{{-1.0, 0.0}}, Vector1(0.0))));
   auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   params->regularization = 0;
   params->maxIterations = 10;
   Values initial;
@@ -844,6 +851,7 @@ TEST(ActiveSetSolver, InspectUnregularizedMinimumImmediately) {
   QpProblem problem;
   problem.addCost(JacobianFactor(0, Matrix::Identity(1, 1), Vector1(2.0)));
   auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   params->regularization = 0;
   params->maxIterations = 1;
   Values initial;
@@ -861,6 +869,7 @@ TEST(ActiveSetSolver, ReleaseUnregularizedBoundWithoutDuplicateSolve) {
   problem.addConstraint(LinearConstraint::GreaterEqual(
       JacobianFactor(0, Matrix::Identity(1, 1), Vector1(0.0))));
   auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   params->regularization = 0;
   params->maxIterations = 2;
   Values initial;
@@ -884,6 +893,7 @@ TEST(ActiveSetSolver, OrderingIncludesNewConstraintVariable) {
   problem.addConstraint(LinearConstraint::LessEqual(JacobianFactor(
       10, Matrix::Identity(1, 1), 30, Matrix::Identity(1, 1), Vector1(1.0))));
   auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   params->regularization = 0;
   params->maxIterations = 2;
   Values initial;
@@ -909,6 +919,7 @@ TEST(ActiveSetSolver, OrderingAcrossBoundSwap) {
   problem.addConstraint(LinearConstraint::LessEqual(
       JacobianFactor(10, Matrix::Identity(1, 1), Vector1(1.0))));
   auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   params->regularization = 0;
   params->maxIterations = 3;
   const ActiveSetSolver solver(problem, params);
@@ -951,6 +962,7 @@ TEST(ActiveSetSolver, IncrementalWorkingSetMatchesBatch) {
     if (constraintOnlyKey) initial.insert(30, Vector(Vector1(0.0)));
     for (bool incremental : {false, true}) {
       auto params = std::make_shared<ActiveSetSolverParams>();
+      params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
       params->regularization = 0;
       params->useIncrementalSparseQp = incremental;
       params->maxIterations = 3;
@@ -983,6 +995,7 @@ TEST(ActiveSetSolver, IncrementalOpposingAndDuplicateBounds) {
     initial.insert(0, Vector(Vector1(0.0)));
     for (bool incremental : {false, true}) {
       auto params = std::make_shared<ActiveSetSolverParams>();
+      params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
       params->regularization = 0;
       params->useIncrementalSparseQp = incremental;
       const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
@@ -1095,6 +1108,7 @@ namespace projected_gradient_initialization {
 
 ActiveSetSolverParams::shared_ptr Parameters(bool projected = true) {
   auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   params->regularization = 0;
   params->qpInitialization =
       projected ? ActiveSetSolverParams::QpInitialization::ProjectedGradient

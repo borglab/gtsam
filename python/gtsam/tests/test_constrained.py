@@ -32,7 +32,12 @@ class TestConstrainedWrappers(unittest.TestCase):
         modes = gtsam.ActiveSetSolverParams.QpFormulation
         backends = gtsam.ActiveSetSolverParams.QpSubproblemSolver
         params = gtsam.ActiveSetSolverParams()
-        self.assertEqual(params.qpFormulation, modes.Primal)
+        self.assertEqual(params.qpFormulation, modes.Automatic)
+        self.assertEqual(params.qpSubproblemSolver, backends.Sparse)
+        initial = gtsam.Values()
+        initial.insert(key, np.array([20., -10.]))
+        result = gtsam.ActiveSetSolver(problem, params).optimize(initial)
+        np.testing.assert_allclose(result.atVector(key), [1., 3.], atol=1e-7)
         for backend in (backends.Dense, backends.Sparse):
             params.qpSubproblemSolver = backend
             for mode in (modes.Primal, modes.Dual, modes.Automatic):
@@ -68,6 +73,7 @@ class TestConstrainedWrappers(unittest.TestCase):
         modes = gtsam.ActiveSetSolverParams.QpInitialization
         params = gtsam.ActiveSetSolverParams()
         self.assertEqual(params.qpInitialization, modes.TightConstraints)
+        params.qpFormulation = gtsam.ActiveSetSolverParams.QpFormulation.Primal
         params.regularization = 0.0
         ordering = gtsam.Ordering()
         ordering.push_back(key)
@@ -104,6 +110,7 @@ class TestConstrainedWrappers(unittest.TestCase):
                 params.qpSubproblemSolver = (
                     gtsam.ActiveSetSolverParams.QpSubproblemSolver.Dense)
                 params.qpInitialization = mode
+                params.qpFormulation = gtsam.ActiveSetSolverParams.QpFormulation.Primal
                 params.regularization = weight
                 result = gtsam.ActiveSetSolver(problem, params).optimize(initial)
                 np.testing.assert_allclose(result.atVector(key), [1.0, 3.0], atol=1e-7)

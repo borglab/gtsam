@@ -7,7 +7,13 @@ problem.addCost(JacobianFactor(key, eye(2), [2; 3], noiseModel.Unit.Create(2)));
 problem.addConstraint(LinearConstraint.LessEqual( ...
     JacobianFactor(key, [1, 0], 1, noiseModel.Unit.Create(1))));
 params = ActiveSetSolverParams();
-CHECK('Default primal', params.qpFormulation == ActiveSetSolverParams.QpFormulation.Primal);
+CHECK('Default Automatic', params.qpFormulation == ActiveSetSolverParams.QpFormulation.Automatic);
+CHECK('Default Sparse', params.qpSubproblemSolver == ActiveSetSolverParams.QpSubproblemSolver.Sparse);
+initial = Values();
+initial.insert(key, [20; -10]);
+solver = ActiveSetSolver(problem, params);
+values = solver.optimize(initial);
+CHECK('Default infeasible start', norm(values.atVector(key) - [1; 3]) < 1e-7);
 for backend = {ActiveSetSolverParams.QpSubproblemSolver.Dense, ...
                ActiveSetSolverParams.QpSubproblemSolver.Sparse}
     params.qpSubproblemSolver = backend{1};
