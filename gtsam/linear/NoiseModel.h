@@ -277,9 +277,14 @@ namespace gtsam {
       /**
        * Apply appropriately weighted QR factorization to the system [A b]
        *               Q'  *   [A b]  =  [R d]
-       * Dimensions: (r*m) * m*(n+1) = r*(n+1), where r = min(m,n).
+       * Dimensions: (r*m) * m*(n+1) = r*(n+1), where r <= min(m,n).
        * This routine performs an in-place factorization on Ab.
        * Below-diagonal elements are set to zero by this routine.
+       * Exact rows take priority in the original variable order. Finite pivots
+       * use a weighted, scale-aware rank test, including weak observations.
+       * All front sizes use Eigen QR with a row-pivoted, one-column
+       * Householder fallback. Elimination preserves square-root form without
+       * forming normal equations.
        * @param Ab is the m*(n+1) augmented system matrix [A b]
        * @return Empty SharedDiagonal() noise model: R,d are whitened
        */
