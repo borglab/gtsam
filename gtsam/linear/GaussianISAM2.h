@@ -83,6 +83,23 @@ class GTSAM_EXPORT GaussianISAM2 : public BayesTree<GaussianISAM2Clique> {
    */
   VectorValues optimize() const;
 
+  /**
+   * Minimize the registered objective minus linearTermDelta.dot(x), subject to
+   * the same exact constraints, using only cached triangular solves.
+   *
+   * linearTermDelta is an additive change to the objective's information
+   * vector, in the original variable coordinates. It is relative to the
+   * registered factors, not the preceding call. Missing keys mean zero;
+   * unknown keys, wrong dimensions, or nonfinite entries throw invalid_argument.
+   * Exact affine constraint right-hand sides remain unchanged.
+   *
+   * This query performs no numerical elimination and modifies neither original
+   * factors nor cached conditionals/separator factors. Subsequent factor updates
+   * therefore still reconstruct the registered reference graph. The caller can
+   * apply any desired forcing again after arbitrary additions/removals.
+   */
+  VectorValues optimize(const VectorValues& linearTermDelta) const;
+
  private:
   Ordering ordering_;
   GaussianFactorGraph::Eliminate eliminate_;

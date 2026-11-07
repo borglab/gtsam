@@ -14,6 +14,7 @@
 #include <gtsam/linear/GaussianISAM2.h>
 
 #include <atomic>
+#include <limits>
 #include <stdexcept>
 
 using namespace gtsam;
@@ -193,6 +194,126 @@ TEST(GaussianISAM2Incremental, Initialization) {
 }
 
 }  // namespace validation
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace objective_forcing {
+
+const Ordering ordering{0, 1, 2, 3};
+const Matrix11 unit{{1.0}};
+
+// Change only finite objective RHSs; the graph's coupling keeps three branches.
+GaussianFactorGraph graph(const VectorValues& forcing, bool hessian) {
+  GaussianFactorGraph result = branching::graph();
+  for (Key key : ordering) {
+    const double sigma = key == 1 ? 0.25 : 2.0;
+    const double rhs = forcing.exists(key) ? sigma * sigma * forcing.at(key)(0) : 0.0;
+    auto factor = std::make_shared<JacobianFactor>(
+        key, unit, Vector1{rhs}, noiseModel::Isotropic::Sigma(1, sigma));
+    if (hessian) result.emplace_shared<HessianFactor>(*factor);
+    else result.push_back(factor);
+  }
+  return result;
+}
+
+// Arbitrary RHS queries do no elimination or mutation, before/after row toggles.
+TEST(GaussianISAM2Incremental, ForcingAndWorkingSetReferenceConsistency) {
+  for (bool hessian : {false, true}) {
+    std::atomic<size_t> eliminations{0};
+    auto eliminate = [hessian, &eliminations](const GaussianFactorGraph& factors,
+                                             const Ordering& frontals) {
+      ++eliminations;
+      return hessian ? EliminatePreferCholesky(factors, frontals)
+                     : EliminateQR(factors, frontals);
+    };
+    GaussianISAM2 solver(ordering, eliminate);
+    const GaussianFactorGraph reference = graph({}, hessian);
+    solver.update(reference);
+    GaussianFactorGraph hardRows;
+    const auto hard = noiseModel::Constrained::All(1);
+    hardRows.emplace_shared<JacobianFactor>(0, unit, 3, unit, Vector1{0.75}, hard);
+    hardRows.emplace_shared<JacobianFactor>(0, -unit, 3, -unit, Vector1{-0.75}, hard);
+    FactorIndices active;
+    for (size_t toggle = 0; toggle < 6; ++toggle) {
+      if (toggle % 2 == 0) active = solver.update(hardRows);
+      else solver.update({}, active);
+      const auto untouched = solver[1];
+      const auto separator = untouched->cachedFactor();
+      const size_t count = eliminations.load();
+      for (double offset : {2.0, -3.0, 0.0, 0.01}) {
+        const VectorValues forcing{{0, Vector1{offset}}, {3, Vector1{-0.7 * offset}}};
+        GaussianFactorGraph expected = graph(forcing, hessian);
+        if (toggle % 2 == 0) expected.push_back(hardRows);
+        EXPECT(assert_equal(expected.optimize(ordering, eliminate),
+                            solver.optimize(forcing), 1e-9));
+        // The batch comparison uses its own elimination; the query uses none.
+        const size_t beforeQuery = eliminations.load();
+        solver.optimize(forcing);
+        EXPECT_LONGS_EQUAL(beforeQuery, eliminations.load());
+        EXPECT(solver[1] == untouched && untouched->cachedFactor() == separator);
+      }
+      EXPECT(eliminations.load() > count);  // Only the independent batch calls.
+      GaussianFactorGraph original = reference;
+      if (toggle % 2 == 0) original.push_back(hardRows);
+      EXPECT(assert_equal(original.optimize(ordering, eliminate), solver.optimize(), 1e-9));
+    }
+  }
+}
+
+// Non-unit weighted rows and a weak direction obey an affine exact equation.
+TEST(GaussianISAM2Incremental, ForcingWeightedWeakAndAffineRows) {
+  const Matrix22 coefficients{{1e-10, 0.0}, {0.0, 1e-15}};
+  const Vector2 sigmas{1e-10, 1e-10};
+  const auto noise = noiseModel::Diagonal::Sigmas(sigmas);
+  const Matrix12 normal{{1.0, 1.0}};
+  GaussianFactorGraph reference;
+  reference.emplace_shared<JacobianFactor>(0, coefficients, Vector2{2e-10, -3e-15}, noise);
+  reference.emplace_shared<JacobianFactor>(0, normal, Vector1{0.5},
+                                          noiseModel::Constrained::All(1));
+  size_t eliminations = 0;
+  GaussianISAM2 solver(Ordering{0}, [&](const GaussianFactorGraph& factors,
+                                      const Ordering& frontals) {
+    ++eliminations;
+    return EliminateQR(factors, frontals);
+  });
+  solver.update(reference);
+  for (double shift : {-0.3, 0.1, 0.0}) {
+    // A^T W^2 delta_b is the forcing in the original variable coordinates.
+    const Vector2 delta{shift * 1e-10, shift * 1e-15};
+    const Vector2 forcing = coefficients.transpose() *
+                           delta.cwiseQuotient(sigmas.cwiseProduct(sigmas));
+    GaussianFactorGraph changed;
+    changed.emplace_shared<JacobianFactor>(0, coefficients,
+        Vector2(Vector2{2e-10, -3e-15} + delta), noise);
+    changed.push_back(reference[1]);
+    EXPECT(assert_equal(changed.optimize(Ordering{0}, EliminateQR),
+                        solver.optimize(VectorValues{{0, forcing}}), 1e-9));
+    EXPECT_LONGS_EQUAL(1, eliminations);
+  }
+}
+
+// Bad forcing is rejected without changing the reference tree or RHS.
+TEST(GaussianISAM2Incremental, InvalidForcingAndEmptyGraph) {
+  GaussianISAM2 solver(ordering, EliminateQR);
+  CHECK_EXCEPTION(solver.optimize(VectorValues{}), std::logic_error);
+  solver.update(graph({}, false));
+  const auto root = solver[3];
+  const VectorValues reference = solver.optimize();
+  for (const VectorValues& invalid : std::vector<VectorValues>{
+      {{99, Vector1{0.0}}}, {{0, Vector2{0.0, 1.0}}},
+      {{0, Vector1{std::numeric_limits<double>::quiet_NaN()}}},
+      {{3, Vector1{std::numeric_limits<double>::infinity()}}}}) {
+    CHECK_EXCEPTION(solver.optimize(invalid), std::invalid_argument);
+    EXPECT(solver[3] == root);
+    EXPECT(assert_equal(reference, solver.optimize()));
+  }
+  EXPECT(assert_equal(reference, solver.optimize(VectorValues{})));
+  GaussianISAM2 empty(Ordering{});
+  EXPECT_LONGS_EQUAL(0, empty.optimize(VectorValues{}).size());
+  CHECK_EXCEPTION(empty.optimize(VectorValues{{0, Vector1{1.0}}}), std::invalid_argument);
+}
+
+}  // namespace objective_forcing
 /* ************************************************************************* */
 
 int main() {

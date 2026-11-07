@@ -184,4 +184,26 @@ VectorValues GaussianISAM2::optimize() const {
   return internal::linearAlgorithms::optimizeBayesTree(*this);
 }
 
+VectorValues GaussianISAM2::optimize(
+    const VectorValues& linearTermDelta) const {
+  if (!initialized_ && !ordering_.empty())
+    throw std::logic_error("GaussianISAM2: an initial update is required.");
+  VectorValues complete;
+  for (const auto& [key, dimension] : dimensions_)
+    complete.insert(key, Vector::Zero(dimension));
+  for (const auto& [key, value] : linearTermDelta) {
+    auto destination = complete.find(key);
+    if (destination == complete.end() ||
+        destination->second.size() != value.size() || !value.allFinite())
+      throw std::invalid_argument("GaussianISAM2: invalid objective forcing.");
+    destination->second = value;
+  }
+  // With raw conditional operator R and diagonal conditional sigmas D, the
+  // constrained inverse is R^-1 D^2 R^-T. Hard rows have D=0: their affine
+  // equations retain stored d while the objective forcing changes soft rows.
+  const VectorValues rhs =
+      internal::linearAlgorithms::transposeBayesTree(*this, std::move(complete));
+  return internal::linearAlgorithms::optimizeBayesTree(*this, &rhs, true);
+}
+
 }  // namespace gtsam

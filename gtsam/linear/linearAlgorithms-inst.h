@@ -22,6 +22,7 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/linearExceptions.h>
 
+#include <map>
 #include <memory>
 #include <optional>
 
@@ -49,9 +50,12 @@ namespace gtsam
       {
         VectorValues collectedResult;
         const VectorValues* rhs = nullptr;
+        bool addStoredRhs = false;
 
         /** Optimize with stored d, or solve against a complete whitened rhs. */
-        explicit OptimizeClique(const VectorValues* rhs = nullptr) : rhs(rhs) {}
+        explicit OptimizeClique(const VectorValues* rhs = nullptr,
+                                bool addStoredRhs = false)
+            : rhs(rhs), addStoredRhs(addStoredRhs) {}
 
         /** Solve this clique after its separator solution is available. */
         OptimizeData operator()(
@@ -98,6 +102,9 @@ namespace gtsam
               rhs->fillVector(c.frontals(), frontalRhs);
               if (c.get_model())
                 frontalRhs.array() *= c.get_model()->sigmasRef().array();
+              // A forcing increment preserves the reference affine equations:
+              // zero-sigma (hard) rows receive no RHS increment.
+              if (addStoredRhs) frontalRhs += c.getb();
               internal::solveUpperConditional(c.R(), c.S(), frontalRhs, xS,
                                               &solution);
             } else {
@@ -127,15 +134,63 @@ namespace gtsam
         }
       };
 
+      /** Solve the transpose conditional operator with a complete, validated RHS.
+       * Each child owns its outgoing separator message. Conditional sigma
+       * scaling occurs after that message is formed, including zero sigmas.
+       */
+      template<class BAYESTREE>
+      VectorValues transposeBayesTree(const BAYESTREE& bayesTree,
+                                     VectorValues result)
+      {
+        using Clique = typename BAYESTREE::Clique;
+        std::map<const Clique*, VectorValues> workspace;
+        for (const auto& [key, clique] : bayesTree.nodes()) {
+          const auto& conditional = *clique->conditional();
+          if (key != conditional.firstFrontalKey()) continue;
+          auto& local = workspace[clique.get()];
+          for (Key frontal : conditional.frontals())
+            local.emplace(frontal, result.at(frontal));
+          for (auto parent = conditional.beginParents();
+               parent != conditional.endParents(); ++parent)
+            local.emplace(*parent, Vector::Zero(conditional.getDim(parent)));
+        }
+        auto solveClique = [&workspace, &result](
+                               const std::shared_ptr<Clique>& clique) {
+          auto& local = workspace.at(clique.get());
+          // A child's separator can include higher ancestors as well as this
+          // clique's frontals. Retain both kinds of contribution in the local map.
+          for (const auto& child : clique->children) {
+            const auto& message = workspace.at(child.get());
+            for (Key separator : child->conditional()->parents())
+              local.at(separator) += message.at(separator);
+          }
+          const auto& conditional = *clique->conditional();
+          conditional.solveTransposeInPlace(local);
+          for (const auto& [key, value] : local) {
+            if (!value.allFinite())
+              throw IndeterminateSystemException(conditional.keys().front());
+          }
+          // Only this clique writes these frontals; ancestors read its separators.
+          for (Key frontal : conditional.frontals())
+            result.at(frontal).swap(local.at(frontal));
+        };
+        TbbOpenMPMixedScope threadLimiter;
+        treeTraversal::PostOrderForestParallel(bayesTree, solveClique);
+        return result;
+      }
+
       /* ************************************************************************* */
-      /** Back-substitute stored d, or a complete whitened rhs, through a tree. */
+      /** Back-substitute stored d or a complete whitened rhs through a tree.
+       * With addStoredRhs, add the supplied RHS to the stored affine equations.
+       */
       template<class BAYESTREE>
       VectorValues optimizeBayesTree(const BAYESTREE& bayesTree,
-                                    const VectorValues* rhs = nullptr)
+                                    const VectorValues* rhs = nullptr,
+                                    bool addStoredRhs = false)
       {
         gttic(linear_optimizeBayesTree);
         OptimizeData rootData;
-        OptimizeClique<typename BAYESTREE::Clique> preVisitor(rhs);
+        OptimizeClique<typename BAYESTREE::Clique> preVisitor(rhs, addStoredRhs);
         treeTraversal::no_op postVisitor;
         TbbOpenMPMixedScope threadLimiter; // Limits OpenMP threads since we're mixing TBB and OpenMP
         treeTraversal::DepthFirstForestParallel(bayesTree, rootData, preVisitor, postVisitor);
