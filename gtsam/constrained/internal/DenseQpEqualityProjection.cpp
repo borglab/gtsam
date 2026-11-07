@@ -55,7 +55,8 @@ std::vector<Eigen::Index> substituteFixedCoordinates(
 // Rank decisions apply to normalized affine rows after exact substitution.
 std::pair<Matrix, Vector> remainingEqualities(
     const DenseQpData& source, const Vector& point,
-    const std::vector<Eigen::Index>& free, Vector* scales) {
+    const std::vector<Eigen::Index>& free, Vector* scales,
+    std::vector<Eigen::Index>* originalRows) {
   Matrix normals(source.equalities, free.size());
   for (size_t col = 0; col < free.size(); ++col)
     normals.col(col) = source.normals.col(free[col]).head(source.equalities);
@@ -65,9 +66,21 @@ std::pair<Matrix, Vector> remainingEqualities(
   for (Eigen::Index row = 0; row < normals.rows(); ++row) {
     const double norm = normals.row(row).stableNorm();
     (*scales)(row) = norm > 0 ? norm : 1;
-    if (norm > 0) { normals.row(row) /= norm; bounds(row) /= norm; }
+    if (norm > 0) {
+      normals.row(row) /= norm;
+      bounds(row) /= norm;
+      originalRows->push_back(row);
+    }
   }
-  return {std::move(normals), std::move(bounds)};
+  // Fixed-coordinate substitution creates literal zero rows. Compact only
+  // those rows; every original boundary is checked after finding the point.
+  Matrix compact(originalRows->size(), free.size());
+  Vector compactBounds(originalRows->size());
+  for (size_t i = 0; i < originalRows->size(); ++i) {
+    compact.row(i) = normals.row((*originalRows)[i]);
+    compactBounds(i) = bounds((*originalRows)[i]);
+  }
+  return {std::move(compact), std::move(compactBounds)};
 }
 
 // Lift the orthogonal free-coordinate basis with exact zeros at fixed keys.
@@ -78,8 +91,17 @@ void factorRemainingEqualities(const DenseQpData& source,
     projection->nullspace.resize(source.linear.size(), 0);
     return;
   }
+  std::vector<Eigen::Index> originalRows;
   const auto system = remainingEqualities(source, projection->point, free,
-                                          &projection->equalityScales);
+                                          &projection->equalityScales, &originalRows);
+  // With only fixed-coordinate rows, the remaining coordinates are free.
+  if (originalRows.empty()) {
+    projection->equalityQ.resize(free.size(), 0);
+    projection->equalityR.resize(0, 0);
+    projection->nullspace = Matrix::Zero(source.linear.size(), free.size());
+    for (size_t i = 0; i < free.size(); ++i) projection->nullspace(free[i], i) = 1;
+    return;
+  }
   Eigen::ColPivHouseholderQR<Matrix> qr(system.first.transpose());
   ++projection->numericalFactorizations;
   const Eigen::Index rank = qr.rank(), dimension = free.size();
@@ -88,7 +110,7 @@ void factorRemainingEqualities(const DenseQpData& source,
   projection->equalityR = qr.matrixR().topLeftCorner(rank, rank)
                              .triangularView<Eigen::Upper>();
   for (Eigen::Index i = 0; i < rank; ++i)
-    projection->equalityBasis.push_back(qr.colsPermutation().indices()(i));
+    projection->equalityBasis.push_back(originalRows[qr.colsPermutation().indices()(i)]);
   const Vector ordered = qr.colsPermutation().transpose() * system.second;
   const Vector coordinates = qr.matrixR().topLeftCorner(rank, rank).transpose()
       .triangularView<Eigen::Lower>().solve(ordered.head(rank));

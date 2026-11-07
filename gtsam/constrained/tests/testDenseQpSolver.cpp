@@ -288,7 +288,7 @@ TEST(DenseQpSolver, EightHundredThirtyTwoRows) {
   EXPECT(assert_equal(data.bounds, Vector(data.normals * result), 1e-10));
 }
 
-// Removing an interior basis column rotates all trailing directions correctly.
+// Removing an interior basis column updates all trailing LDLT factors correctly.
 TEST(DenseQpSolver, InteriorBasisRemoval) {
   DenseQpData data;
   data.jacobian = Matrix{{2, 1, 0, 0}, {0, 3, 1, 0},
@@ -434,6 +434,52 @@ TEST(DenseQpSolver, FullEqualityRankAndInconsistentFixedRows) {
   EXPECT_LONGS_EQUAL(before, solver.statistics().numericalFactorizations);
   data.bounds(2) = 9;
   CHECK_EXCEPTION((void)DenseQpSolver{data}, std::runtime_error);
+}
+
+// Empty equality rows need no QR, but inconsistent original rows still fail.
+TEST(DenseQpSolver, ZeroEqualitiesKeepFreeCoordinatesAndOriginalChecks) {
+  DenseQpData data;
+  data.jacobian = Matrix::Identity(2, 2);
+  data.rhs = Vector{{2, 3}};
+  data.linear = Vector::Zero(2);
+  data.normals = Matrix::Zero(2, 2);
+  data.bounds = Vector::Zero(2);
+  data.equalities = 2;
+  DenseQpSolver solver(data);
+  EXPECT(assert_equal(data.rhs, solver.solve({}, Vector::Zero(2)), 1e-12));
+  const auto multipliers = solver.multipliers(data.rhs, Vector::Zero(2), 1e-9);
+  EXPECT(multipliers.has_value());
+  if (multipliers) EXPECT(assert_equal(Vector::Zero(2), *multipliers, 1e-12));
+  EXPECT_LONGS_EQUAL(1, solver.statistics().numericalFactorizations);
+  data.bounds(1) = 1;
+  CHECK_EXCEPTION((void)DenseQpSolver{data}, std::runtime_error);
+}
+
+// Compacted equalities keep original multiplier indices and tiny nonzero rows.
+TEST(DenseQpSolver, CompactedEqualitiesPreserveRowOriginsAndWeakRows) {
+  DenseQpData data;
+  data.jacobian = Matrix::Identity(4, 4);
+  data.rhs = Vector{{1, 2, 3, 4}};
+  data.linear = Vector::Zero(4);
+  data.normals = Matrix{{1, 0, 0, 0}, {0, 0, 0, 0}, {0, 2, 2, 0},
+                        {3, 0, 0, 0}, {0, 0, 1e-10, 1e-10}};
+  data.bounds = Vector{{2, 0, 6, 6, 5e-10}};
+  data.equalities = 5;
+  DenseQpSolver solver(data);
+  const BatchReference reference(data);
+  const Vector value = solver.solve({}, Vector::Zero(4));
+  EXPECT(assert_equal(reference.solve({}, Vector::Zero(4)), value, 1e-10));
+  const Vector gradient = value - data.rhs;
+  const size_t before = solver.statistics().numericalFactorizations;
+  const auto multipliers = solver.multipliers(value, gradient, 1e-9);
+  EXPECT(multipliers.has_value());
+  if (multipliers) {
+    EXPECT_DOUBLES_EQUAL(0, (*multipliers)(1), 0);
+    EXPECT(assert_equal(gradient, Vector(data.normals.transpose() * *multipliers),
+                        1e-12));
+  }
+  solver.solve({}, Vector::Ones(4));
+  EXPECT_LONGS_EQUAL(before, solver.statistics().numericalFactorizations);
 }
 
 // Row scaling, signs, and updates reuse the working LDLT without factorization.

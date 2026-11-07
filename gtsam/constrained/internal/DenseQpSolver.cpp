@@ -344,13 +344,19 @@ struct DenseQpSolver::Impl {
     for (size_t attempt = 0; attempt < 3; ++attempt) {
       result = objectiveQr.colsPermutation() *
           objectiveR.triangularView<Eigen::Upper>().solve(value);
-      if (attempt == 2) break;
+      if (attempt == 2 || basis.empty()) break;
       for (size_t i = 0; i < basis.size(); ++i)
         rhs(i) = (data.bounds(basis[i]) - data.normals.row(basis[i]).dot(result)) /
                  scales[basis[i]];
+      // Exact residuals need no correction. An absolute cutoff would hide
+      // weak independent boundaries whose small residual still matters.
+      if (rhs.isZero(0)) break;
       const Vector correction = solveWorking(rhs);
+      const Vector updated = value + workingNormals * correction;
+      // Avoid another back-substitution if rounding leaves the point unchanged.
+      if ((updated.array() == value.array()).all()) break;
       multipliers += correction;
-      value += workingNormals * correction;
+      value = updated;
     }
     workingMultipliers = Vector::Zero(data.bounds.size());
     for (size_t i = 0; i < basis.size(); ++i)
@@ -443,7 +449,10 @@ struct DenseQpSolver::Impl {
     if (nullspaceCache) value = solveNullspace(center);
     else {
       value = whitenedSolve(center);
-      try { check(value, rows); }
+      try {
+        check(value, rows);
+        return value;
+      }
       catch (const std::runtime_error&) {
         // A row change may trigger a controlled reference rebuild. An RHS-only
         // query must either solve with its caches or report numerical failure.

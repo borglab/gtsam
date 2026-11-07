@@ -345,9 +345,18 @@ void ActiveSetSolver::packDenseHessian(const Matrix& hessian, size_t rowStart) {
   // Convert native PSD curvature once, retaining every positive eigenvalue.
   // Negative roundoff is clipped only within its computed backward-error scale.
   if (hessian.isZero(0)) return;
-  Eigen::SelfAdjointEigenSolver<Matrix> eigen(hessian);
   const double allowance = 64 * std::numeric_limits<double>::epsilon() *
                            hessian.rows() * hessian.norm();
+  // Diagonal native curvature already supplies its eigenvalues. Keep every
+  // nonzero off-diagonal coefficient on the general square-root path.
+  if (hessian.isDiagonal(0)) {
+    if (!hessian.diagonal().allFinite() || hessian.diagonal().minCoeff() < -allowance)
+      throw std::runtime_error("ActiveSetSolver: dense QP objective is not convex.");
+    denseQpWorkspace_->data.jacobian.middleRows(rowStart, hessian.rows())
+        .diagonal() = hessian.diagonal().cwiseMax(0).cwiseSqrt();
+    return;
+  }
+  Eigen::SelfAdjointEigenSolver<Matrix> eigen(hessian);
   if (eigen.info() != Eigen::Success || eigen.eigenvalues().minCoeff() < -allowance)
     throw std::runtime_error("ActiveSetSolver: dense QP objective is not convex.");
   denseQpWorkspace_->data.jacobian.middleRows(rowStart, hessian.rows()) =

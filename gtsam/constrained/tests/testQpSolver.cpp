@@ -29,6 +29,46 @@
 using namespace gtsam;
 
 /* ************************************************************************* */
+namespace dense_native_curvature {
+
+// Exact diagonal packing preserves weak curvature and rejects negative costs.
+TEST(ActiveSetSolver, DenseDiagonalNativeCurvature) {
+  auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpSubproblemSolver = ActiveSetSolverParams::QpSubproblemSolver::Dense;
+  params->regularization = 0;
+  const Matrix curvature{{1e-20, 0}, {0, 2}};
+  const Vector expected{{4, -1}};
+  QpProblem problem;
+  problem.addCost(HessianFactor(0, curvature, Vector(curvature * expected), 0));
+  const auto result = ActiveSetSolver(problem, params).optimizeWithState();
+  CHECK(result.second.converged);
+  EXPECT(assert_equal(expected, result.first.at<Vector>(0), 1e-10));
+  QpProblem indefinite;
+  indefinite.addCost(HessianFactor(0, Matrix{{1, 0}, {0, -.25}}, Vector::Zero(2), 0));
+  CHECK_EXCEPTION((void)ActiveSetSolver(indefinite, params), std::runtime_error);
+}
+
+// Small off-diagonal curvature must use the full square root, even in mixed costs.
+TEST(ActiveSetSolver, DenseRetainsOffDiagonalAndJacobianCurvature) {
+  auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpSubproblemSolver = ActiveSetSolverParams::QpSubproblemSolver::Dense;
+  params->regularization = 0;
+  const Vector expected{{2, -1}};
+  for (double coupling : {0.0, 1e-8}) {
+    const Matrix curvature{{1, coupling}, {coupling, 2}};
+    QpProblem problem;
+    problem.addCost(HessianFactor(0, curvature, Vector(curvature * expected), 0));
+    problem.addCost(JacobianFactor(0, Matrix::Identity(2, 2), expected));
+    const auto result = ActiveSetSolver(problem, params).optimizeWithState();
+    CHECK(result.second.converged);
+    EXPECT(assert_equal(expected, result.first.at<Vector>(0), 1e-10));
+  }
+}
+
+}  // namespace dense_native_curvature
+/* ************************************************************************* */
+
+/* ************************************************************************* */
 namespace scalar_qp_examples {
 
 const Key x1 = Symbol('x', 1);
