@@ -236,8 +236,8 @@ public:
     Base::whitenJacobians(Fs, E, b);
 
     // build augmented hessian
-    SymmetricBlockMatrix augmentedHessian = //
-        Cameras::SchurComplement(Fs, E, b, lambda, diagonalDamping);
+    SymmetricBlockMatrix augmentedHessian = Base::activeBlocks(
+        Cameras::SchurComplement(Fs, E, b, lambda, diagonalDamping));
 
     return std::make_shared<RegularHessianFactor<Base::Dim> >(this->keys_,
         augmentedHessian);

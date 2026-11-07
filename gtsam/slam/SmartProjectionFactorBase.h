@@ -148,6 +148,19 @@ class SmartProjectionFactorBase : public SmartFactorBase<CAMERA> {
       }
     }
 
+#ifdef GTSAM_THROW_CHEIRALITY_EXCEPTION
+    // Poses within the threshold may still have moved the cached point behind
+    // a camera, where projecting it throws.
+    if (!retriangulate && result_) {
+      for (const CAMERA& camera : cameras) {
+        if (camera.pose().transformTo(*result_).z() <= 0) {
+          retriangulate = true;
+          break;
+        }
+      }
+    }
+#endif
+
     // Store the current poses used for triangulation if we will re-triangulate.
     if (retriangulate) {
       cameraPosesTriangulation_.clear();
@@ -225,8 +238,8 @@ class SmartProjectionFactorBase : public SmartFactorBase<CAMERA> {
     Base::whitenJacobians(Fs, E, b);
 
     // build augmented hessian
-    SymmetricBlockMatrix augmentedHessian =  //
-        Cameras::SchurComplement(Fs, E, b, _lambda, diagonalDamping);
+    SymmetricBlockMatrix augmentedHessian = Base::activeBlocks(
+        Cameras::SchurComplement(Fs, E, b, _lambda, diagonalDamping));
 
     return std::make_shared<RegularHessianFactor<Base::Dim>>(this->keys_,
                                                              augmentedHessian);
@@ -435,6 +448,36 @@ class SmartProjectionFactorBase : public SmartFactorBase<CAMERA> {
       return 0.0;
     }
   }
+
+  /// @name Fixed cameras
+  /// @{
+
+  /**
+   * Return a copy of this factor in which the camera of key is held constant
+   * at its value in values: the key is removed, its measurement kept.
+   */
+  std::shared_ptr<This> fixCamera(Key key, const Values& values) const {
+    if (params_.linearizationMode == IMPLICIT_SCHUR)
+      throw std::invalid_argument(
+          "SmartProjectionFactorBase::fixCamera: IMPLICIT_SCHUR does not "
+          "support fixed cameras");
+    if (this->keys_.size() == 1)
+      throw std::invalid_argument(
+          "SmartProjectionFactorBase::fixCamera: cannot fix the last camera");
+    auto fixed = std::static_pointer_cast<This>(this->clone());
+    fixed->fixKeyInPlace(key, values);
+    return fixed;
+  }
+
+  /// Fix the cameras of the keys in fixedValues, keeping at most
+  /// params_.maxFixedCameras fixed cameras, the newest.
+  NonlinearFactor::shared_ptr conditionOn(
+      const Values& fixedValues) const override {
+    if (params_.linearizationMode == IMPLICIT_SCHUR) return nullptr;
+    return Base::conditionOnKeys(fixedValues, params_.maxFixedCameras);
+  }
+
+  /// @}
 
   /** return the landmark */
   TriangulationResult point() const { return result_; }

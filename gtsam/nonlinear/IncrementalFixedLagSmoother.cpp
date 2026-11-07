@@ -23,6 +23,7 @@
 #include <gtsam/nonlinear/BayesTreeMarginalizationHelper.h>
 #include <gtsam/base/debug.h>
 
+#include <set>
 #include <stdexcept>
 
 namespace gtsam {
@@ -85,8 +86,6 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::updateImpl(
   FastVector<size_t> removedFactors;
   std::optional<FastMap<Key, int> > constrainedKeys = {};
 
-  const KeySet newFactorKeys = newFactors.keys();
-
   // Every supplied timestamp must name a value the smoother already holds or
   // one arriving in this update. A timestamp for any other key describes
   // nothing the smoother estimates, yet it would enter the map that
@@ -132,6 +131,17 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::updateImpl(
   // inside findKeysBefore, so recently released keys are now eligible here)
   KeyVector marginalizableKeys = findKeysBefore(
       current_timestamp - smootherLag_);
+
+  // With CONDITION, factors on the marginalizable keys are first replaced by
+  // their conditioned copies, so the keys they no longer reference count as
+  // unused below.
+  NonlinearFactorGraph factorsToAdd = newFactors;
+  FactorIndices slotsToRemove = factorsToRemove;
+  FactorIndices conditionedFactorIndices;
+  if (marginalizationMode_ == CONDITION && !marginalizableKeys.empty())
+    conditionedFactorIndices = conditionFactorsOnKeys(
+        marginalizableKeys, &factorsToAdd, &slotsToRemove);
+  const KeySet newFactorKeys = factorsToAdd.keys();
 
   // Values may arrive before the factors that reference them. Reap pending
   // values when they age out, without passing them to Bayes-tree
@@ -207,7 +217,7 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::updateImpl(
   KeyList additionalMarkedKeys(additionalKeys.begin(), additionalKeys.end());
 
   // Update iSAM2
-  isamResult_ = isam_.update(newFactors, newTheta, factorsToRemove,
+  isamResult_ = isam_.update(factorsToAdd, newTheta, slotsToRemove,
                              constrainedKeys, {}, additionalMarkedKeys);
 
   if (debug) {
@@ -279,11 +289,59 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::updateImpl(
   result.deletedFactorIndices = deletedFactorIndices;
   result.keysOfDeletedNodes = KeySet(marginalizableKeys);
   result.expiredPendingKeys = KeySet(expiredPendingKeys);
+  result.newFactorsIndices = isamResult_.newFactorsIndices;
+  result.conditionedFactorIndices = conditionedFactorIndices;
 
   if (debug)
     std::cout << "IncrementalFixedLagSmoother::update() Finish" << std::endl;
 
   return result;
+}
+
+/* ************************************************************************* */
+FactorIndices IncrementalFixedLagSmoother::conditionFactorsOnKeys(
+    const KeyVector& marginalizableKeys, NonlinearFactorGraph* factorsToAdd,
+    FactorIndices* slotsToRemove) const {
+  // Keys new in this update have no estimate yet and are marginalized.
+  KeyVector keys;
+  std::copy_if(marginalizableKeys.begin(), marginalizableKeys.end(),
+               std::back_inserter(keys),
+               [&](Key key) { return isam_.valueExists(key); });
+  if (keys.empty()) return {};
+  const Values fixedValues = calculateEstimate(keys);
+
+  // Factors arriving in this update are replaced in place.
+  for (size_t i = 0; i < factorsToAdd->size(); ++i) {
+    const NonlinearFactor::shared_ptr& factor = (*factorsToAdd)[i];
+    if (!factor) continue;
+    if (const auto replacement = factor->conditionOn(fixedValues))
+      factorsToAdd->replace(i, replacement);
+  }
+
+  // Existing factors, except those the caller removes, are removed and their
+  // replacements added.
+  const VariableIndex& variableIndex = isam_.getVariableIndex();
+  const std::set<size_t> removedByCaller(slotsToRemove->begin(),
+                                         slotsToRemove->end());
+  std::set<size_t> slots;
+  for (Key key : keys) {
+    const auto entry = variableIndex.find(key);
+    if (entry == variableIndex.end()) continue;
+    for (const size_t slot : entry->second)
+      if (!removedByCaller.count(slot)) slots.insert(slot);
+  }
+  FactorIndices conditioned;
+  for (const size_t slot : slots) {
+    const auto& factor = isam_.getFactorsUnsafe()[slot];
+    if (!factor) continue;
+    if (const auto replacement = factor->conditionOn(fixedValues)) {
+      conditioned.push_back(slot);
+      factorsToAdd->push_back(replacement);
+    }
+  }
+  slotsToRemove->insert(slotsToRemove->end(), conditioned.begin(),
+                        conditioned.end());
+  return conditioned;
 }
 
 /* ************************************************************************* */

@@ -544,7 +544,7 @@ NonlinearFactorGraph scalarGraph(Curvature kind, double parameter) {
           auto& matrix = jacobians->get()[0];
           if (kind == Curvature::State) matrix = Matrix21{{1.}, {2 * x}};
           else if (kind == Curvature::Mixed) matrix = Matrix21{{parameter}, {1.}};
-          else matrix = Matrix11{{2 * x}};
+          else matrix = Matrix::Constant(1, 1, 2 * x);
         }
         if (kind == Curvature::State) return Vector2{x - parameter, x * x};
         if (kind == Curvature::Mixed) return Vector2{parameter * x - 1., x - 3.};

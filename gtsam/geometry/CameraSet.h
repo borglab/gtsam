@@ -27,6 +27,11 @@
 
 #include <vector>
 #include <cassert>
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/serialization/base_object.hpp>
+#include <boost/serialization/nvp.hpp>
+#include <boost/serialization/vector.hpp>
+#endif
 
 namespace gtsam {
 
@@ -91,12 +96,9 @@ class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA>> {
   /// equals
   bool equals(const CameraSet& p, double tol = 1e-9) const {
     if (this->size() != p.size()) return false;
-    bool camerasAreEqual = true;
-    for (size_t i = 0; i < this->size(); i++) {
-      if (this->at(i).equals(p.at(i), tol) == false) camerasAreEqual = false;
-      break;
-    }
-    return camerasAreEqual;
+    for (size_t i = 0; i < this->size(); i++)
+      if (!this->at(i).equals(p.at(i), tol)) return false;
+    return true;
   }
 
   /**
@@ -476,7 +478,7 @@ class CameraSet : public std::vector<CAMERA, Eigen::aligned_allocator<CAMERA>> {
   friend class boost::serialization::access;
   template <class ARCHIVE>
   void serialize(ARCHIVE& ar, const unsigned int /*version*/) {
-    ar&(*this);
+    ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
   }
 #endif
 };

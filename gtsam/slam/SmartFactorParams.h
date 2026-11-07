@@ -21,6 +21,10 @@
 
 #include <gtsam/geometry/triangulation.h>
 
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+#include <boost/serialization/version.hpp>
+#endif
+
 namespace gtsam {
 
 /**
@@ -50,6 +54,12 @@ struct SmartProjectionParams {
   double retriangulationThreshold; ///< threshold to decide whether to re-triangulate
   /// @}
 
+  /// @name Parameters governing fixed cameras
+  /// @{
+  /// Fixed cameras conditionOn keeps at most, zero for no limit.
+  size_t maxFixedCameras = 10;
+  /// @}
+
   /// @name Parameters governing how triangulation result is treated
   /// @{
   bool throwCheirality; ///< If true, re-throws Cheirality exceptions (default: false)
@@ -71,6 +81,7 @@ struct SmartProjectionParams {
   void print(const std::string& str = "") const {
     std::cout << "linearizationMode: " << linearizationMode << "\n";
     std::cout << "   degeneracyMode: " << degeneracyMode << "\n";
+    std::cout << "  maxFixedCameras: " << maxFixedCameras << "\n";
     std::cout << triangulation << std::endl;
   }
 
@@ -93,6 +104,9 @@ struct SmartProjectionParams {
   double getRetriangulationThreshold() const {
     return retriangulationThreshold;
   }
+  size_t getMaxFixedCameras() const {
+    return maxFixedCameras;
+  }
   // set class variables
   void setLinearizationMode(LinearizationMode linMode) {
     linearizationMode = linMode;
@@ -102,6 +116,9 @@ struct SmartProjectionParams {
   }
   void setRetriangulationThreshold(double retriangulationTh) {
     retriangulationThreshold = retriangulationTh;
+  }
+  void setMaxFixedCameras(size_t maximum) {
+    maxFixedCameras = maximum;
   }
   void setRankTolerance(double rankTol) {
     triangulation.rankTolerance = rankTol;
@@ -129,8 +146,13 @@ private:
     ar & BOOST_SERIALIZATION_NVP(retriangulationThreshold);
     ar & BOOST_SERIALIZATION_NVP(throwCheirality);
     ar & BOOST_SERIALIZATION_NVP(verboseCheirality);
+    if (version > 0) ar & BOOST_SERIALIZATION_NVP(maxFixedCameras);
   }
 #endif
 };
 
 } // \ namespace gtsam
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+BOOST_CLASS_VERSION(gtsam::SmartProjectionParams, 1)
+#endif

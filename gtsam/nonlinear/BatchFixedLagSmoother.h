@@ -64,6 +64,9 @@ public:
    * value is not supported; a retry must supply the timestamp again along with
    * its value.
    *
+   * A factor already in the smoother may have gained keys since it was added,
+   * for example through SmartFactorBase::add; it is found by its current keys.
+   *
    * Removal indices must be within the factor graph at update entry, including
    * empty slots; adding factors cannot make an invalid index valid. Removal
    * indices are checked before timestamp keys. Either validation failure leaves
@@ -184,9 +187,6 @@ public:
 
 protected:
 
-  /** A typedef defining an Key-Factor mapping **/
-  typedef std::map<Key, KeySet > FactorIndex;
-
   /** The L-M optimization parameters **/
   LevenbergMarquardtParams parameters_;
 
@@ -213,9 +213,6 @@ protected:
   /** The set of available factor graph slots. These occur because we are constantly deleting factors, leaving holes. **/
   std::queue<size_t> availableSlots_;
 
-  /** A cross-reference structure to allow efficient factor lookups by key **/
-  FactorIndex factorIndex_;
-
   /** Shared body of both update() overloads. */
   Result updateImpl(const NonlinearFactorGraph& newFactors,
                     const Values& newTheta,
@@ -224,8 +221,17 @@ protected:
                     const KeySet& keysToRetain,
                     const KeySet& keysToRelease);
 
-  /** Augment the list of factors with a set of new factors */
-  void insertFactors(const NonlinearFactorGraph& newFactors);
+  /** Add new factors to the graph, empty slots first; returns their slots */
+  FactorIndices insertFactors(const NonlinearFactorGraph& newFactors);
+
+  /**
+   * Replace in place every factor on marginalizableKeys that supports
+   * NonlinearFactor::conditionOn by its copy conditioned on the current
+   * estimate, and erase the keys left without factors. Returns the replaced
+   * slots that are not in newFactorsIndices.
+   */
+  FactorIndices conditionFactorsOnKeys(KeyVector* marginalizableKeys,
+                                       const FactorIndices& newFactorsIndices);
 
   /** Remove factors from the list of factors by slot index */
   void removeFactors(const std::set<size_t>& deleteFactors);

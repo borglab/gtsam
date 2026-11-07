@@ -187,6 +187,17 @@ public:
   virtual shared_ptr rekey(const KeyVector& new_keys) const;
 
   /**
+   * Copy of this factor conditioned on fixedValues: every variable with a
+   * value there is held constant at that value and dropped from the keys.
+   * Returns nullptr when the factor does not support conditioning, or when
+   * none or all of its keys would be dropped. The fixed-lag smoothers call
+   * this in their CONDITION mode.
+   */
+  virtual shared_ptr conditionOn(const Values& fixedValues) const {
+    return nullptr;
+  }
+
+  /**
    * Should the factor be evaluated in the same thread as the caller
    * This is to enable factors that has shared states (like the Python GIL lock)
    */

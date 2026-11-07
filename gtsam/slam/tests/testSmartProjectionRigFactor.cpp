@@ -25,6 +25,7 @@
 #include <gtsam/base/serializationTestHelpers.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/slam/PoseTranslationPrior.h>
+#include <gtsam/slam/TriangulationFactor.h>
 
 #include <iostream>
 
@@ -1600,6 +1601,155 @@ TEST(SmartProjectionFactorP, 2poses_sphericalCamera_rankTol) {
 }
 
 /* ************************************************************************* */
+namespace fixed_cameras {
+using namespace vanillaRig;
+
+// A rig of two cameras (offset along the body y axis) observing landmark1
+// from three body poses, with pixel offsets so residuals do not vanish.
+std::shared_ptr<Cameras> twoCameraRig() {
+  auto rig = std::make_shared<Cameras>();
+  rig->push_back(Camera(Pose3(Rot3(), Point3(0.0, 0.3, 0.0)), sharedK));
+  rig->push_back(Camera(
+      Pose3(Rot3::Ypr(0.05, 0.0, 0.0), Point3(0.0, -0.3, 0.1)), sharedK));
+  return rig;
+}
+
+Values bodyPoses() {
+  Values values;
+  values.insert(
+      x1, level_pose.retract(Vector6{0.01, -0.02, 0.015, 0.05, -0.03, 0.02}));
+  values.insert(
+      x2, pose_right.retract(Vector6{-0.015, 0.01, 0.02, -0.04, 0.02, 0.03}));
+  values.insert(
+      x3, pose_above.retract(Vector6{0.02, 0.015, -0.01, 0.03, 0.04, -0.02}));
+  return values;
+}
+
+// Measurements in the order (x1,cam0), (x1,cam1), (x2,cam0), ..., (x3,cam1).
+SmartRigFactor::shared_ptr sixMeasurementFactor(
+    const std::shared_ptr<Cameras>& rig,
+    const SmartProjectionParams& p = params) {
+  auto factor = std::make_shared<SmartRigFactor>(model, rig, p);
+  const std::vector<Pose3> truth = {level_pose, pose_right, pose_above};
+  const std::vector<Key> keys = {x1, x2, x3};
+  for (size_t i = 0; i < 3; ++i)
+    for (size_t c = 0; c < 2; ++c) {
+      const Camera camera(truth[i] * (*rig)[c].pose(), sharedK);
+      const Point2 offset(0.3 * i - 0.2 * c, 0.1 * c - 0.2 * i);
+      factor->add(camera.project(landmark1) + offset, keys[i], c);
+    }
+  return factor;
+}
+
+std::pair<Matrix, Vector> hessianOf(const GaussianFactor::shared_ptr& factor,
+                                    const Ordering& ordering) {
+  GaussianFactorGraph graph;
+  graph.push_back(factor);
+  return graph.hessian(ordering);
+}
+
+// Fixing a body pose fixes both of its measurements, keeps the error, and
+// linearizes to the Schur complement of the explicit graph in which the
+// fixed measurements are TriangulationFactors.
+TEST(SmartProjectionRigFactor, conditionOn) {
+  const auto rig = twoCameraRig();
+  const Values values = bodyPoses();
+  auto factor = sixMeasurementFactor(rig);
+  Values fixedValues;
+  fixedValues.insert(x1, values.at<Pose3>(x1));
+  auto conditioned = std::dynamic_pointer_cast<SmartRigFactor>(
+      factor->conditionOn(fixedValues));
+  EXPECT(conditioned != nullptr);
+  EXPECT(conditioned->keys() == KeyVector({x2, x3}));
+  EXPECT_LONGS_EQUAL(6, conditioned->measured().size());
+  EXPECT_LONGS_EQUAL(2, conditioned->fixedCameras().size());
+  EXPECT(conditioned->isFixedMeasurement(0) &&
+         conditioned->isFixedMeasurement(1));
+  EXPECT_LONGS_EQUAL(12, conditioned->dim());
+
+  Values liveValues = values;
+  liveValues.erase(x1);
+  EXPECT_DOUBLES_EQUAL(factor->error(values), conditioned->error(liveValues),
+                       1e-9);
+  const Point3 point = *conditioned->point(liveValues);
+  EXPECT(assert_equal(*factor->point(values), point, 1e-9));
+
+  NonlinearFactorGraph explicitGraph;
+  const Point2Vector& z = factor->measured();
+  for (size_t c = 0; c < 2; ++c)
+    explicitGraph.emplace_shared<TriangulationFactor<Camera>>(
+        Camera(values.at<Pose3>(x1) * (*rig)[c].pose(), sharedK), z[c], model,
+        L(1));
+  for (size_t i = 1; i < 3; ++i)
+    for (size_t c = 0; c < 2; ++c)
+      explicitGraph.emplace_shared<GenericProjectionFactor<Pose3, Point3>>(
+          z[2 * i + c], model, factor->keys()[i], L(1), sharedK,
+          (*rig)[c].pose());
+  Values explicitValues = liveValues;
+  explicitValues.insert(L(1), point);
+  const auto marginal =
+      EliminateCholesky(*explicitGraph.linearize(explicitValues),
+                        Ordering{L(1)})
+          .second;
+  const Ordering ordering{x2, x3};
+  const auto [expectedHessian, expectedInformation] =
+      hessianOf(marginal, ordering);
+  const auto [actualHessian, actualInformation] =
+      hessianOf(conditioned->linearize(liveValues), ordering);
+  EXPECT(assert_equal(expectedHessian, actualHessian, 1e-6));
+  EXPECT(assert_equal(expectedInformation, actualInformation, 1e-6));
+}
+
+// The cap drops the oldest fixed measurements together with their
+// per-measurement key and camera id.
+TEST(SmartProjectionRigFactor, conditionOnMaxFixedCameras) {
+  const auto rig = twoCameraRig();
+  const Values values = bodyPoses();
+  SmartProjectionParams capped = params;
+  capped.setMaxFixedCameras(1);
+  auto factor = sixMeasurementFactor(rig, capped);
+  Values fixedValues;
+  fixedValues.insert(x1, values.at<Pose3>(x1));
+  auto conditioned = std::dynamic_pointer_cast<SmartRigFactor>(
+      factor->conditionOn(fixedValues));
+  EXPECT_LONGS_EQUAL(5, conditioned->measured().size());
+  EXPECT_LONGS_EQUAL(5, conditioned->nonUniqueKeys().size());
+  EXPECT_LONGS_EQUAL(5, conditioned->cameraIds().size());
+  EXPECT_LONGS_EQUAL(1, conditioned->fixedCameras().size());
+  // The newer fixed measurement, (x1, cam1), survives.
+  EXPECT_LONGS_EQUAL(1, conditioned->cameraIds()[0]);
+  EXPECT(conditioned->keys() == KeyVector({x2, x3}));
+  Values liveValues = values;
+  liveValues.erase(x1);
+  EXPECT(conditioned->point(liveValues).valid());
+  // Everything must be fixed to be refused.
+  EXPECT(!factor->conditionOn(values));
+}
+
+// Rekeying renames the key of every measurement, too.
+TEST(SmartProjectionRigFactor, rekey) {
+  const Key x4 = Symbol('X', 4);
+  const Values values = bodyPoses();
+  auto factor = sixMeasurementFactor(twoCameraRig());
+  auto rekeyed = std::dynamic_pointer_cast<SmartRigFactor>(
+      factor->rekey(std::map<Key, Key>{{x1, x4}}));
+  CHECK(rekeyed);
+  EXPECT(rekeyed->keys() == KeyVector({x4, x2, x3}));
+  EXPECT(rekeyed->nonUniqueKeys() == KeyVector({x4, x4, x2, x2, x3, x3}));
+  Values rekeyedValues = values;
+  rekeyedValues.insert(x4, values.at<Pose3>(x1));
+  rekeyedValues.erase(x1);
+  EXPECT_DOUBLES_EQUAL(factor->error(values), rekeyed->error(rekeyedValues),
+                       1e-9);
+  auto renamed = std::dynamic_pointer_cast<SmartRigFactor>(
+      factor->rekey(KeyVector({x4, x2, x3})));
+  CHECK(renamed);
+  EXPECT(renamed->equals(*rekeyed));
+}
+
+}  // namespace fixed_cameras
+/* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

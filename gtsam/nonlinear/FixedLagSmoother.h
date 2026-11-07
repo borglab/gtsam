@@ -42,6 +42,15 @@ public:
   typedef std::multimap<double, Key> TimestampKeyMap;
 
   /**
+   * How update() treats the factors on a variable that leaves the window.
+   * MARGINALIZE marginalizes the variable out of all of them. CONDITION first
+   * replaces each factor that supports NonlinearFactor::conditionOn by its copy
+   * with the variable held at its estimate, then marginalizes the others.
+   * See gtsam/slam/doc/SmartFactorsFixedLag.md.
+   */
+  enum MarginalizationMode { MARGINALIZE, CONDITION };
+
+  /**
    * Meta information returned about the update
    */
   // TODO: Think of some more things to put here
@@ -57,6 +66,12 @@ public:
     KeySet expiredPendingKeys;  ///< Keys of values that left the lag window
                                 ///< before any factor referenced them, and were
                                 ///< removed without marginalization
+    FactorIndices newFactorsIndices;  ///< Slots of the new factors, or of their
+                                      ///< conditioned copies, followed by the
+                                      ///< slots of the replacements of
+                                      ///< conditionedFactorIndices
+    FactorIndices conditionedFactorIndices;  ///< Slots of the existing factors
+                                             ///< replaced by conditioned copies
     Result() : iterations(0), intermediateSteps(0), nonlinearVariables(0), linearVariables(0), error(0) {}
 
     /// Getter methods
@@ -69,6 +84,10 @@ public:
     FactorIndices getDeletedFactorIndices() const { return deletedFactorIndices; }
     KeySet getKeysOfDeletedNodes() const { return keysOfDeletedNodes; }
     KeySet getExpiredPendingKeys() const { return expiredPendingKeys; }
+    FactorIndices getNewFactorsIndices() const { return newFactorsIndices; }
+    FactorIndices getConditionedFactorIndices() const {
+      return conditionedFactorIndices;
+    }
     GTSAM_EXPORT void print() const;
   };
 
@@ -111,6 +130,16 @@ public:
     return retainedKeys_;
   }
 
+  /// How update() treats the factors on a variable that leaves the window.
+  MarginalizationMode marginalizationMode() const {
+    return marginalizationMode_;
+  }
+
+  /// Set how update() treats the factors on a variable that leaves the window.
+  void setMarginalizationMode(MarginalizationMode marginalizationMode) {
+    marginalizationMode_ = marginalizationMode;
+  }
+
   /** Add new factors, updating the solution and relinearizing as needed. */
   virtual Result update(const NonlinearFactorGraph& newFactors = NonlinearFactorGraph(),
                         const Values& newTheta = Values(),
@@ -138,6 +167,9 @@ protected:
 
   /** The length of the smoother lag. Any variable older than this amount will be marginalized out. */
   double smootherLag_;
+
+  /// How update() treats the factors on a variable that leaves the window.
+  MarginalizationMode marginalizationMode_ = MARGINALIZE;
 
   /** The current timestamp associated with each tracked key */
   TimestampKeyMap timestampKeyMap_;
