@@ -25,6 +25,7 @@
 #include <gtsam/constrained/internal/DenseQpSolver.h>
 #include <gtsam/constrained/internal/DenseQpEqualityProjection.h>
 #include <gtsam/constrained/internal/SparseQpSolver.h>
+#include <gtsam/constrained/internal/DualQpSolver.h>
 
 #include <algorithm>
 #include <cmath>
@@ -46,6 +47,8 @@ struct ActiveSetSolver::DenseQpWorkspace {
 struct ActiveSetSolver::SolveWorkspace {
   std::unique_ptr<internal::DenseQpSolver> dense;
   std::unique_ptr<internal::SparseQpSolver> sparse;
+  std::unique_ptr<internal::DualQpSolver> dual;
+  bool formulationPrepared = false;
   KeySet lpKeys, dualKeys;
   Ordering lpOrdering, dualOrdering;
 };

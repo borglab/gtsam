@@ -105,6 +105,19 @@ class GTSAM_EXPORT DenseQpSolver {
   std::optional<Vector> multipliers(const Vector& value, const Vector& gradient,
                                     double tolerance) const;
 
+  /// Remaining dimension after permanent equality elimination.
+  size_t reducedDimension() const;
+  /// Prepare square-root curvature; return false if it is not invertible.
+  bool prepareDual();
+  /** Minimize the equality-constrained objective minus forcing.dot(x).
+   * Reuse the fixed curvature and equality projection, ignoring inequalities.
+   */
+  Vector solveDual(const Vector& center, const Vector& forcing);
+  /// Apply the equality-constrained inverse to a homogeneous linear forcing.
+  Vector dualResponse(const Vector& forcing) const;
+  /// Recover equality multipliers from a gradient with inequality forcing removed.
+  Vector equalityMultipliers(const Vector& gradient) const;
+
  private:
   struct Impl;
   std::unique_ptr<Impl> impl_;

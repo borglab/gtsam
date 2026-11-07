@@ -19,6 +19,18 @@
       "QUAD, all settings": "16/16"
     },
     {
+      "Solver": "GTSAM Sparse Dual",
+      "Published checks": "256/256",
+      "Also dual feasibility": "256/256",
+      "QUAD, all settings": "16/16"
+    },
+    {
+      "Solver": "GTSAM Dense Dual",
+      "Published checks": "256/256",
+      "Also dual feasibility": "256/256",
+      "QUAD, all settings": "16/16"
+    },
+    {
       "Solver": "ProxQP",
       "Published checks": "253/256",
       "Also dual feasibility": "235/256",
@@ -58,7 +70,12 @@
     "GTSAM_representation": "WALK/BAL: one control-sequence vector key and one objective factor. QUAD: 12D state and four 3D force keys per step, with 12-row dynamics factors; original scalar row identities preserved.",
     "baseline_start": "Existing upstream qpsolvers matrix-input boundaries, unchanged",
     "active_set_initialization": "FeasibleStepThenProjectedGradient",
-    "active_set_regularization": 1e-09
+    "active_set_regularization": 1e-09,
+    "dual_initialization": "Zero multipliers; no primal feasibility phase",
+    "formulations": [
+      "Primal",
+      "Dual"
+    ]
   },
-  "report_bytes": 201930
+  "report_bytes": 241948
 }

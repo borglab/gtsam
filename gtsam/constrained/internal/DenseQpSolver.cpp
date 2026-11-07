@@ -561,5 +561,55 @@ std::optional<Vector> DenseQpSolver::multipliers(const Vector& value,
   return impl_->multipliers(value, gradient, tolerance);
 }
 
+size_t DenseQpSolver::reducedDimension() const {
+  if (impl_->data.equalities != 0)
+    throw std::runtime_error("Dual QP: numerically ambiguous equality projection.");
+  return impl_->data.linear.size();
+}
+
+bool DenseQpSolver::prepareDual() {
+  (void)reducedDimension();
+  if (impl_->data.linear.size() == 0) return true;
+  if (!impl_->objectiveReady) impl_->prepareObjective();
+  return impl_->invertible;
+}
+
+Vector DenseQpSolver::dualResponse(const Vector& forcing) const {
+  const auto& impl = *impl_;
+  const auto* projection = impl.projection ? &*impl.projection : nullptr;
+  const Vector reduced = projection
+      ? Vector(projection->nullspace.transpose() * forcing) : forcing;
+  if (reduced.size() == 0) return Vector::Zero(forcing.size());
+  const Vector forward = impl.objectiveR.transpose()
+      .triangularView<Eigen::Lower>().solve(
+          Vector(impl.objectiveQr.colsPermutation().transpose() * reduced));
+  const Vector response = impl.objectiveQr.colsPermutation() *
+      impl.objectiveR.triangularView<Eigen::Upper>().solve(forward);
+  return projection ? Vector(projection->nullspace * response) : response;
+}
+
+Vector DenseQpSolver::solveDual(const Vector& center, const Vector& forcing) {
+  auto& impl = *impl_;
+  const auto* projection = impl.projection ? &*impl.projection : nullptr;
+  if (impl.data.linear.size() == 0) return projection->point;
+  const Vector reducedCenter = projection
+      ? Vector(projection->nullspace.transpose() * (center - projection->point))
+      : center;
+  const Vector reducedForcing = projection
+      ? Vector(projection->nullspace.transpose() * forcing) : forcing;
+  const Vector rhs = impl.target(reducedCenter);
+  Vector value = impl.objectiveQr.solve(rhs);
+  const Vector linear = impl.data.linear + reducedForcing;
+  value = refineQrMinimum(impl.objective, rhs, linear, impl.objectiveQr, value);
+  ++impl.statistics.rhsOnlySolves;
+  return projection ? Vector(projection->point + projection->nullspace * value)
+                    : value;
+}
+
+Vector DenseQpSolver::equalityMultipliers(const Vector& gradient) const {
+  return impl_->projection ? impl_->projection->multipliers(impl_->original, gradient)
+                           : Vector();
+}
+
 }  // namespace internal
 }  // namespace gtsam

@@ -531,6 +531,8 @@ Values ActiveSetSolver::optimize(const Values& initialValues) const {
 std::pair<Values, ActiveSetSolver::State> ActiveSetSolver::optimizeWithState()
     const {
   SolveWorkspace workspace;
+  if (prepareDualQp(&workspace))
+    return optimizeDualQp(zeroVectorValues(), nullptr, &workspace);
   const Values feasible = findVectorFeasiblePoint(&workspace);
   return optimizeWithState(feasible, nullptr, &workspace);
 }
@@ -662,6 +664,8 @@ std::pair<Values, ActiveSetSolver::State> ActiveSetSolver::optimizeWithState(
     const Values& initialValues, const State* warmStart,
     SolveWorkspace* workspace) const {
   validateInitialValues(initialValues);
+  if (prepareDualQp(workspace))
+    return optimizeDualQp(initialValues, warmStart, workspace);
   InternalState state = initialState(initialValues, warmStart);
   // Explicit row masks take precedence over every cold-initialization mode.
   if (!warmStart) initializeQp(&state, workspace);
