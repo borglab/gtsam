@@ -3,6 +3,13 @@
 //*************************************************************************
 namespace gtsam {
 
+#include <gtsam/linear/MultifrontalParameters.h>
+class MultifrontalParameters {
+  enum class QRMode { Off, Allow, Force };
+  MultifrontalParameters();
+  gtsam::MultifrontalParameters::QRMode qrMode;
+};
+
 #include <gtsam/linear/Errors.h>
 // MATLAB proxy; Python uses native lists of vectors.
 class Errors {

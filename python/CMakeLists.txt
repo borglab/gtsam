@@ -63,6 +63,9 @@ add_custom_target(gtsam_unstable_header DEPENDS "${PROJECT_SOURCE_DIR}/gtsam_uns
 # ignoring the non-concrete types (type aliases)
 set(ignore
     gtsam::Errors
+    "std::vector<double>"
+    "std::vector<gtsam::Vector>"
+    "std::vector<gtsam::AugmentedLagrangianSolverState>"
     gtsam::Point2
     gtsam::Point3
     gtsam::ISAM2ThresholdMapValue
@@ -138,7 +141,6 @@ if(GTSAM_USE_MOSEK)
     )
     # Use pybind11's native STL conversions instead of container proxy classes.
     list(APPEND ignore
-        "std::vector<double>"
         "std::map<std::string, double>"
         "std::map<gtsam::Key, gtsam::DenseIndex>")
 endif()
