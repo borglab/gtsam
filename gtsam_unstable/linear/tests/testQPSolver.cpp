@@ -244,6 +244,7 @@ TEST(QPSolver, failedSubproblem) {
 }
 
 /* ************************************************************************* */
+// Both legacy supplied-point overloads reject infeasible initial values.
 TEST(QPSolver, infeasibleInitial) {
   QP qp;
   qp.cost.add(X(1), I_2x2, Vector::Zero(2));
@@ -259,6 +260,8 @@ TEST(QPSolver, infeasibleInitial) {
   QPSolver solver(qp);
   VectorValues solution;
   CHECK_EXCEPTION(solver.optimize(initialValues), InfeasibleInitialValues);
+  CHECK_EXCEPTION(solver.optimize(initialValues, VectorValues(), true),
+                  InfeasibleInitialValues);
 }
 
 #endif  // GTSAM_ALLOW_DEPRECATED_SINCE_V43

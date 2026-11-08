@@ -49,7 +49,7 @@ namespace {
 /* ************************************************************************* */
 const Ordering& cachedOrdering(const GaussianFactorGraph& graph, KeySet* keys,
                                Ordering* ordering,
-                               const std::optional<Ordering>& requested = {}) {
+                               const Ordering* requested = nullptr) {
   const KeySet graphKeys = graph.keys();
   if (graphKeys != *keys) {
     *ordering = requested ? restrictOrdering(*requested, graphKeys)
@@ -154,7 +154,8 @@ VectorValues ActiveSetSolver::solveSparseSubproblem(
     const GaussianFactorGraph graph =
         buildLpWorkingGraph(state.values, state.activeInequalityRows);
     const Ordering& ordering = cachedOrdering(
-        graph, &workspace->lpKeys, &workspace->lpOrdering, params_->ordering);
+        graph, &workspace->lpKeys, &workspace->lpOrdering,
+        params_->ordering ? &*params_->ordering : nullptr);
     return graph.optimize(ordering, EliminatePreferCholesky);
   }
   // Retain factor pointers and per-call options; the numerical backend

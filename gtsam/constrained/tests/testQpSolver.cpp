@@ -846,6 +846,24 @@ TEST(ActiveSetSolver, SquareRootWeakDirection) {
   CHECK(assert_equal(Vector2{1.0, 0.0}, result.first.at<Vector>(0), 1e-7));
 }
 
+// Homogeneous residual corrections must not reintroduce the rounded affine RHS.
+TEST(ActiveSetSolver, SquareRootAffineRhsRefinement) {
+  const Matrix jacobian{{100000030, 30000009}, {1.0, 0.2}};
+  QpProblem problem;
+  problem.addCost(JacobianFactor(0, jacobian, Vector(jacobian.col(0))));
+  problem.addConstraint(LinearConstraint::LessEqual(
+      JacobianFactor(0, Matrix{{-1.0, 0.0}}, Vector1(0.0))));
+  auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
+  params->regularization = 0;
+  params->maxIterations = 10;
+  Values initial;
+  initial.insert(0, Vector(Vector2{0.5, 0.0}));
+  const auto result = ActiveSetSolver(problem, params).optimizeWithState(initial);
+  CHECK(result.second.converged);
+  CHECK(assert_equal(Vector2{1.0, 0.0}, result.first.at<Vector>(0), 1e-7));
+}
+
 // A feasible exact subproblem minimum needs no duplicate factorization.
 TEST(ActiveSetSolver, InspectUnregularizedMinimumImmediately) {
   QpProblem problem;

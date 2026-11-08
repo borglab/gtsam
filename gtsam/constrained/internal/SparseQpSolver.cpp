@@ -18,6 +18,7 @@
 #include <gtsam/constrained/internal/SparseQpSolver.h>
 #include <gtsam/linear/GaussianISAM2.h>
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/linearAlgorithms-inst.h>
 
 #include <algorithm>
 #include <cmath>
@@ -139,20 +140,25 @@ struct SparseQpSolver::Impl {
     return gradient;
   }
 
-  // One iterative-refinement step removes roundoff amplified by weak working
-  // directions. For the constrained inverse K, x(delta - grad f(x)) equals
-  // x(delta) - K grad f(x); every solve retains the same affine hard rows.
-  // Only RHSs change: neither the factors nor their elimination are repeated.
+  // Refine with homogeneous tangent corrections, not another affine solve.
+  // Adding corrections to stored d before back-substitution can round them away
+  // or reintroduce its original error along weak directions. Hard rows have
+  // zero sigmas, so the cached inverse gives corrections tangent to their face.
   VectorValues solveRefined(const GaussianISAM2& factorization,
                             const VectorValues& center,
-                            VectorValues forcing) const {
-    const VectorValues candidate = forcing.size() == 0
+                            const VectorValues& forcing) const {
+    VectorValues candidate = forcing.size() == 0
         ? factorization.optimize() : factorization.optimize(forcing);
-    for (const auto& [key, gradient] : workingGradient(candidate, center)) {
-      if (forcing.exists(key)) forcing.at(key) -= gradient;
-      else forcing.insert(key, -gradient);
+    for (size_t iteration = 0; iteration < 4; ++iteration) {
+      const VectorValues rhs = linearAlgorithms::transposeBayesTree(
+          factorization, workingGradient(candidate, center));
+      const VectorValues correction =
+          linearAlgorithms::optimizeBayesTree(factorization, &rhs);
+      VectorValues refined = candidate - correction;
+      if (refined.equals(candidate, 0.0)) break;
+      candidate = std::move(refined);
     }
-    return factorization.optimize(forcing);
+    return candidate;
   }
 
   // A new center changes objective forcing only. Registered factors and orphan
@@ -169,7 +175,7 @@ struct SparseQpSolver::Impl {
         if (!change.isZero(0.0)) forcing.insert(key, std::move(change));
       }
     }
-    return solveRefined(*tree, center, std::move(forcing));
+    return solveRefined(*tree, center, forcing);
   }
 };
 
