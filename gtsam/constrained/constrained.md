@@ -77,6 +77,7 @@ factors throw from `NonlinearFactor::qcqpFactors`.
 
 - [`ConstrainedOptimizerParams`](doc/ConstrainedOptimizer.ipynb), [`ConstrainedOptimizerState`](doc/ConstrainedOptimizer.ipynb), [`ConstrainedOptimizer`](doc/ConstrainedOptimizer.ipynb): Shared base interfaces and iteration state for constrained solvers.
 - [`PenaltyOptimizerParams`](doc/PenaltyOptimizer.ipynb), [`PenaltyOptimizerState`](doc/PenaltyOptimizer.ipynb), [`PenaltyOptimizer`](doc/PenaltyOptimizer.ipynb): Penalty method solver and its parameters/state.
+- [`AugmentedLagrangianSolver`](doc/AugmentedLagrangianSolver.md): Direct Gaussian QP solver sharing the nonlinear optimizer’s ALM engine.
 - [`AugmentedLagrangianParams`](doc/AugmentedLagrangianOptimizer.ipynb), [`AugmentedLagrangianState`](doc/AugmentedLagrangianOptimizer.ipynb), [`AugmentedLagrangianOptimizer`](doc/AugmentedLagrangianOptimizer.ipynb): Augmented Lagrangian solver and its parameters/state.
 - [`ActiveSetSolver`](doc/QpProblem.ipynb): Active-set solver for [`QpProblem`](doc/QpProblem.ipynb) and [`LpProblem`](doc/LpProblem.ipynb), with sparse and dense QP subproblem modes.
 
@@ -94,35 +95,29 @@ which controls behavior near the active constraint boundary in
 inequality terms and rejects custom smooth penalties so its projected
 multiplier update remains mathematically consistent.
 
-ALM keeps one augmented graph and one `NonlinearMultifrontalSolver` workspace
-throughout each `optimize()` call. Multipliers and penalties update the graph's
-numerical parameters in place; the ordering, symbolic structure, and solve
-storage persist across outer iterations. Costs may produce Jacobian, batch
-Jacobian, or Hessian factors, with fixed factor slots, keys, and dimensions.
-`lmParams` supplies damping, ordering, multifrontal settings, and iteration
-limits; ALM always uses the imperative solver and does not use the optimizer's
-backend selection, logging, verbosity, or iteration hook. A standalone
-`iterate()` call creates its own workspace.
+Both ALM frontends share one internal engine for penalty and multiplier updates,
+LM damping, diagnostics and stopping. `AugmentedLagrangianSolver` accepts native
+Gaussian graphs and `VectorValues`; `AugmentedLagrangianOptimizer` supplies
+nonlinear function evaluations, Jacobians and manifold retraction. Each call
+retains one Gaussian step graph and damped multifrontal workspace, with an
+ordering and symbolic structure reused across outer iterations. A standalone
+nonlinear `iterate()` call creates its own workspace.
 
-The workspace also reuses keyed gradient storage, accumulates ordinary
-Jacobian gradients without per-factor gradient maps, and moves intermediate
-`Values` instead of copying them. When progress recording is enabled, its
-snapshot vector is reserved up front. Symbolic clique merging caches external
-separators, which remain invariant when children are absorbed; this avoids
-quadratic subtree traversal on long chains.
+The Gaussian adapter copies objective coefficient storage once, shifts only
+RHS/linear terms, and updates augmented constraint coefficients when penalties
+or PHR activity change. The nonlinear adapter reuses each original
+linearization for its step and stationarity tests. Inactive PHR rows retain
+zero Jacobians and their factor slots. Original whitened residuals supply
+outer diagnostics and projected multipliers directly. On terminal BCL
+convergence, those multipliers agree with the reported stationarity.
 
-BCL uses each linearization both to test stationarity and to compute the next
-step. For a model `A delta - b`, the gradient at the current point is
-`-A.transpose() * b`. The terminal constraint rows also give the candidate
-multipliers directly: `lambdaEqPlus = -sqrt(rhoEq) * bEq` and
-`lambdaIneqPlus = -sqrt(rhoIneq) * bIneq`. Thus the whitened equality residual
-and generalized inequality residual are `(lambdaPlus - lambda) / rho`, with
-no further constraint evaluation. Inactive PHR rows have zero residual and
-Jacobian, so their factor slots remain intact. On an accepted multiplier
-update, the terminal augmented gradient is also the ordinary Lagrangian
-gradient at the updated multipliers; it is **not** the gradient of the next
-augmented subproblem. That next subproblem must be relinearized after its
-parameters change.
+`lmParams` supplies damping, ordering, multifrontal settings and iteration
+limits. Numerical elimination is repeated for attempted inner solves; numerical
+factor reuse is not implemented. Stable model reduction uses gradient/Hessian
+products; a trial-gradient check handles roundoff-sized merit differences.
+Native ALM convergence does not include an absolute QP gap test. See the
+[Gaussian solver guide](doc/AugmentedLagrangianSolver.md) for a small driver,
+multiplier units, counters and profiling.
 
 The BCL inner stationarity schedule is bounded below by
 `absoluteStationarityTolerance`. This lets feasibility updates continue
