@@ -11,23 +11,30 @@
 
 namespace gtsam::internal {
 
-/** Per-call dual active-set workspace. Both backends eliminate permanent
- * equalities before exploring inequalities. Sparse applies cached constrained
- * inverse solves and stores responses only for working rows.
- * Mathematical multipliers here are nonnegative for A*x <= b.
+/** Per-call dual active-set workspace. Dense uses DAQP square-root coordinates
+ * when suitable, optionally keeping permanent equalities as immutable rows.
+ * Sparse applies cached constrained inverse solves and stores responses only
+ * for working inequalities. Mathematical inequality multipliers are
+ * nonnegative for A*x <= b.
  */
 class GTSAM_EXPORT DualQpSolver {
  public:
   /** Diagnostic counters for native tests and benchmarks, not public wrappers. */
   struct Statistics {
     size_t objectiveFactorizations = 0, responseSolves = 0, rhsSolves = 0;
+    size_t whitenedWorkingSolves = 0, transformedPointUpdates = 0;
+    size_t conditionalRefinements = 0, whiteningFallbacks = 0;
+    double setupSeconds = 0, equalitySeconds = 0, iterationSeconds = 0;
+    double recoverySeconds = 0;
     size_t rowAdditions = 0, rowRemovals = 0, workingRebuilds = 0;
   };
   /** Construct sparse algebra, or use the supplied Dense workspace and its
-   * packing order. The Dense workspace must outlive this object.
+   * packing order. The Dense workspace must outlive this object. Native
+   * comparisons may disable whitening to exercise the retained Dense path.
    */
   explicit DualQpSolver(SparseQpData data, DenseQpSolver* dense = nullptr,
-                        const Ordering& denseOrdering = {});
+                        const Ordering& denseOrdering = {},
+                        bool useWhitening = true);
   /// Release all per-call caches.
   ~DualQpSolver();
   /// Rank-aware dimension of the permanent equality tangent space.
@@ -46,6 +53,11 @@ class GTSAM_EXPORT DualQpSolver {
   Vector equalityMultipliers(const VectorValues& gradient, double tolerance) const;
   /// Inspect numerical reuse without changing this workspace.
   const Statistics& statistics() const;
+
+  /** Retry an uncertified transformed optimum with the original-coordinate
+   * path, retaining the caller's iteration budget. Return false if unused.
+   */
+  bool retryWithoutWhitening();
 
  private:
   struct Impl;

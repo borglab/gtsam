@@ -67,6 +67,10 @@ class GTSAM_EXPORT DenseQpSolver {
     size_t choleskyFactorizations = 0;
     size_t workingRebuilds = 0, rowAdditions = 0, rowRemovals = 0;
     size_t transformedNormals = 0, dependentRows = 0, rhsOnlySolves = 0, solves = 0;
+    size_t whiteningSetups = 0, whiteningRecoveries = 0;
+    size_t whiteningGradientChecks = 0;
+    double whiteningSetupSeconds = 0, constraintTransformSeconds = 0;
+    double equalitySetupSeconds = 0;
     std::map<std::string, size_t> rebuildReasons;
   };
   /// Read this call's counters without changing the solver state.
@@ -124,6 +128,35 @@ class GTSAM_EXPORT DenseQpSolver {
   Vector dualResponse(const Vector& forcing) const;
   /// Recover equality multipliers from a gradient with inequality forcing removed.
   Vector equalityMultipliers(const Vector& gradient) const;
+
+  /** Immutable DAQP coordinates, with normalized rows M = A*P*R^{-1}.
+   * Bounds and row scales retain the original constraint units. Permanent
+   * equalities precede inequalities when affine projection is disabled.
+   */
+  struct Whitening {
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor> normals;
+    Vector bounds, scales;
+    size_t equalities = 0;
+    std::vector<size_t> equalityBasis;
+  };
+  /** Prepare transformed constraints once, or return nullptr when objective
+   * curvature or its transformation is numerically unsuitable. This does not
+   * change the existing constrained-inverse fallback or add regularization.
+   */
+  const Whitening* prepareWhitening();
+  /// Update only the transformed objective target for a new proximal center.
+  Vector whiteningTarget(const Vector& center) const;
+  /// Recover original variables for certification or proximal recentering.
+  Vector recoverWhitening(const Vector& value);
+  /** Compute a transformed stationarity correction from original objective
+   * residuals. Called only during conditional numerical refinement.
+   */
+  Vector whiteningCorrection(const Vector& value, const Vector& center,
+                             const Vector& multipliers);
+  /// Original constraint rows, including permanent equalities, for certificates.
+  const DenseQpData& originalData() const;
+  /// Packed constraint residuals in the coordinates used by the whitening.
+  Vector whiteningResidual(const Vector& value) const;
 
  private:
   struct Impl;

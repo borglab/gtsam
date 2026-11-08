@@ -13,6 +13,124 @@ The public [MPC benchmark](https://qpsolvers.github.io/qpbenchmark/mpc_qpbenchma
 
 Download the report: {download}`qp-benchmark-report.html`. Interactive charts use the Plotly CDN and require an internet connection. Full per-call measurements and the sortable table remain in the local benchmark workspace and are not published.
 
+## Dense Dual whitening: selected before/after comparison
+
+Whitening eliminates repeated original-variable solves and improves several small QPs. Its cold-call benefit depends on how much working-set work repays the upfront constraint transformation; one-iteration and large unprojected cases can regress. The tables and charts include those regressions and failed original-input checks.
+
+This selected campaign compares the exact pre-whitening library at 3ea2fe19f with the working-tree implementation on seven MPC cases. WALK0/WALK20 and BAL0/BAL10 cover small problems with different active-set work; QUAD2/3/4 cover larger equality-constrained problems. Both Dense equality settings are measured. Sparse Dual is measured in both libraries as a control; DAQP uses the installed, unmodified 0.8.7 wheel. These are fresh cold solves, with no caches shared between calls.
+
+Times below are medians of eleven fresh calls at explicit 1e-6 accuracy, independently checked against the original input. Interactive controls also show 1e-9 and native Default stopping with a 1e-6 external check.
+
+### Complete cold calls at 1e-6
+
+| Problem | Before / project (ms) | Whitened / project (ms) | Before / keep E (ms) | Whitened / keep E (ms) | Sparse Dual (ms) | DAQP (ms) |
+| --- | --- | --- | --- | --- | --- | --- |
+| LIPMWALK0 | 0.0945 | 0.0780 | 0.1022 | 0.0758 | 0.1393 | 0.0322 |
+| LIPMWALK20 | 0.0957 | 0.0833 | 0.0979 | 0.0829 | 0.1466 | 0.0332 |
+| WHLIPBAL0 | 0.2466 | 0.2239 | 0.2512 | 0.2287 | 0.2723 | 0.1319 |
+| WHLIPBAL10 | 0.2078 | 0.2274 | 0.1919 | 0.2215 | 0.2158 | 0.0560 |
+| QUADCMPC2 | 22.9379 | 24.4217 | 70.6264 | 104.2768 | 11.4075 | 12.2807 FAILED |
+| QUADCMPC3 | 13.4886 | 14.9301 | 14.8807 | 23.8977 | 4.4703 | 2.2657 FAILED |
+| QUADCMPC4 | 7.5324 | 7.8144 | 18.7764 | 29.6107 | 5.2019 | 3.5506 FAILED |
+
+```{iframe} /qp-plots/dense-whitening-times.html
+:width: 100%
+:class: qp-chart
+:title: Selected cold-call times with accuracy controls; crosses show failed DAQP checks.
+
+Selected cold-call times with accuracy controls; crosses show failed DAQP checks.
+```
+
+The transformed loop approaches DAQP’s kernel cost, while complete solves still have substantial surrounding work. At 1e-6 with projection enabled, WALK20’s four working solves take 5.85 µs and its final recovery/check takes 2.94 µs; DAQP reports 2.09 µs for its native solve. BAL0 takes 8.13 µs for four working solves and 4.34 µs for recovery/check, versus DAQP’s 5.18 µs native solve. BAL0 additionally spends about 86.5 µs constructing the GTSAM solver and 31.4 µs transforming constraints. DAQP’s native solve timer also includes its final recovery; it does not expose that cost separately. These phase boundaries and GTSAM’s additional original-QP certification prevent treating the kernel figures as identical operations.
+
+Transformation cost can outweigh the saved iterations. WHLIPBAL10 (project) 0.208 → 0.227 ms (1.09× time); QUADCMPC3 (project) 13.489 → 14.930 ms (1.11× time); QUADCMPC2 (keep E) 70.626 → 104.277 ms (1.48× time); QUADCMPC3 (keep E) 14.881 → 23.898 ms (1.61× time); QUADCMPC4 (keep E) 18.776 → 29.611 ms (1.58× time). BAL10 needs only one working solve, so transforming every row has little work to amortize. Unprojected QUAD must whiten the larger original dimension and factor its permanent equality working basis. Projection remains the safer performance choice in this selection, and Sparse Dual remains faster on the larger cases. Equality settings have the same numerical path on equality-free WALK/BAL; their timing differences include run-to-run variation and do not imply an equality-projection effect.
+
+### Setup, iterations and recovery
+
+Phase timings come from additional instrumented calls. Setup excludes solver construction and includes Dense workspace preparation, equality reduction/rank handling, curvature factors, row transformation and the permanent equality basis. The stacked chart separates equality handling and transformation. Whitened iteration time includes center-dependent RHS updates and warm-row changes. Recovery includes original-variable back-substitution, row checks and any conditional refinement; the original objective/KKT certificate and equality multiplier recovery are shown separately. The preserved binary cannot expose its old inner-loop recovery separately, so its table reports optimization and certificate together. Timer overhead and output conversion mean diagnostic phase sums should not be substituted for the paired complete-call timings. Cached-factor counters start after objective packing; construction can also validate or form a square root of native Hessians, and that work is included in the construction stage.
+
+| Problem / equality setting | Before setup (µs) | Before optimization + certificate (µs) | Whitened setup (µs) | Whitened iterations (µs) | Whitened recovery (µs) |
+| --- | --- | --- | --- | --- | --- |
+| LIPMWALK0 / project | 10.5 | 40.4 | 11.9 | 5.2 | 2.1 |
+| LIPMWALK0 / keep E | 11.1 | 41.6 | 11.6 | 4.7 | 2.1 |
+| LIPMWALK20 / project | 14.5 | 48.4 | 13.6 | 5.9 | 2.9 |
+| LIPMWALK20 / keep E | 10.7 | 40.4 | 12.5 | 5.1 | 2.2 |
+| WHLIPBAL0 / project | 42.3 | 101.2 | 69.6 | 8.1 | 4.3 |
+| WHLIPBAL0 / keep E | 42.4 | 95.3 | 71.1 | 8.1 | 4.6 |
+| WHLIPBAL10 / project | 40.8 | 41.7 | 72.3 | 2.8 | 4.3 |
+| WHLIPBAL10 / keep E | 43.7 | 42.9 | 65.9 | 2.6 | 4.0 |
+| QUADCMPC2 / project | 18753.5 | 2947.7 | 19625.8 | 86.9 | 209.6 |
+| QUADCMPC2 / keep E | 56184.0 | 13112.6 | 97393.1 | 1599.9 | 598.9 |
+| QUADCMPC3 / project | 11932.8 | 952.0 | 13434.5 | 56.6 | 138.2 |
+| QUADCMPC3 / keep E | 13015.9 | 1476.7 | 21740.9 | 141.4 | 222.9 |
+| QUADCMPC4 / project | 6113.1 | 775.1 | 6339.0 | 26.5 | 97.1 |
+| QUADCMPC4 / keep E | 17318.1 | 1724.7 | 27356.8 | 170.2 | 232.8 |
+
+```{iframe} /qp-plots/dense-whitening-phases.html
+:width: 100%
+:class: qp-chart
+:title: Dense whitening stage costs, including equality handling and row transformation.
+
+Dense whitening stage costs, including equality handling and row transformation.
+```
+
+### Internal work counters
+
+Whitening removes full primal solves from the ordinary Dense Dual inner loop. All 252 instrumented whitened calls use zero full primal solves, zero cached inverse responses, one cached Dense-workspace curvature factorization and one constraint transformation per optimization. WALK20 and BAL0 use four transformed working solves and one final original-variable recovery; QUAD uses two recoveries because its original-QP certificate requires proximal recentering. 12 conditional refinement steps occur across the diagnostic calls, with no legacy fallbacks in this selected set. Separate native tests exercise unavailable whitening and numerical refinement/fallback.
+
+| Problem / equality setting | Working solves | Before full primal solves | Whitened full primal solves | Final recoveries | Cached curvature factors / transformations |
+| --- | --- | --- | --- | --- | --- |
+| LIPMWALK0 / project | 4 | 11 | 0 | 1 | 1 / 1 |
+| LIPMWALK0 / keep E | 4 | 11 | 0 | 1 | 1 / 1 |
+| LIPMWALK20 / project | 4 | 11 | 0 | 1 | 1 / 1 |
+| LIPMWALK20 / keep E | 4 | 11 | 0 | 1 | 1 / 1 |
+| WHLIPBAL0 / project | 4 | 11 | 0 | 1 | 1 / 1 |
+| WHLIPBAL0 / keep E | 4 | 11 | 0 | 1 | 1 / 1 |
+| WHLIPBAL10 / project | 1 | 2 | 0 | 1 | 1 / 1 |
+| WHLIPBAL10 / keep E | 1 | 2 | 0 | 1 | 1 / 1 |
+| QUADCMPC2 / project | 7 | 20 | 0 | 2 | 1 / 1 |
+| QUADCMPC2 / keep E | 7 | 20 | 0 | 2 | 1 / 1 |
+| QUADCMPC3 / project | 2 | 4 | 0 | 2 | 1 / 1 |
+| QUADCMPC3 / keep E | 2 | 4 | 0 | 2 | 1 / 1 |
+| QUADCMPC4 / project | 2 | 4 | 0 | 2 | 1 / 1 |
+| QUADCMPC4 / keep E | 2 | 4 | 0 | 2 | 1 / 1 |
+
+```{iframe} /qp-plots/dense-whitening-counts.html
+:width: 100%
+:class: qp-chart
+:title: Working solves and original-variable recoveries before and after whitening.
+
+Working solves and original-variable recoveries before and after whitening.
+```
+
+### Original-input failures
+
+Every returned solution is rescored against the original matrices for primal feasibility, stationarity, nonnegative mathematical inequality multipliers and absolute duality gap. The selected campaign uses explicit 1e-6 and 1e-9 tolerances; Default keeps native stopping settings but is rescored at 1e-6. This stricter Default check differs from the historical full-suite profile below, whose published Default threshold is 1.0. No DAQP proximal settings are retuned. All 1,512 GTSAM calls and all 756 diagnostic calls pass. DAQP passes the four small cases and fails the original gap checks on all three larger cases at all three settings; its returned success flag is recorded but does not override those failures.
+
+| DAQP case | Setting | Passing fresh calls | Worst primal residual | Worst stationarity residual | Worst absolute gap | Returned flags |
+| --- | --- | --- | --- | --- | --- | --- |
+| QUADCMPC2 | 1e-06 | 0/11 | 2.07e-12 | 7.04e-07 | 2e-05 | 1 |
+| QUADCMPC3 | 1e-06 | 0/11 | 2.78e-17 | 1.11e-07 | 2.83e-06 | 1 |
+| QUADCMPC4 | 1e-06 | 0/11 | 2.78e-17 | 4.14e-07 | 1.09e-05 | 1 |
+| QUADCMPC2 | 1e-09 | 0/11 | 2.07e-12 | 7.04e-07 | 2e-05 | 1 |
+| QUADCMPC3 | 1e-09 | 0/11 | 2.78e-17 | 1.11e-07 | 2.83e-06 | 1 |
+| QUADCMPC4 | 1e-09 | 0/11 | 2.78e-17 | 4.14e-07 | 1.09e-05 | 1 |
+| QUADCMPC2 | Default (check 1e-6) | 0/11 | 2.07e-12 | 7.04e-07 | 2e-05 | 1 |
+| QUADCMPC3 | Default (check 1e-6) | 0/11 | 2.78e-17 | 1.11e-07 | 2.83e-06 | 1 |
+| QUADCMPC4 | Default (check 1e-6) | 0/11 | 2.78e-17 | 4.14e-07 | 1.09e-05 | 1 |
+
+### Numerical method and measurement protocol
+
+Dense Dual now caches whitened constraint rows and performs working-set solves and feasibility scans in those coordinates. It uses M = A P R⁻¹ for the cached square-root factor and its variable permutation, normalizes rows, updates a working LDLᵀ factorization, and recovers original variables only for certification, proximal recentering or return. With equality projection enabled it works in the reduced affine space. With projection disabled, independent equality rows remain permanently active with unrestricted multipliers. Redundant equalities retain their original row identities for checks and multiplier recovery.
+
+The numerical path follows Algorithm 1 in the DAQP paper and the transformed-point, violation-scan, immutable-row and LDLᵀ update structure in DAQP 0.8.7. It preserves GTSAM’s original-QP KKT certificate, value shapes, ordering, multiplier signs, warm starts, iteration budget and requested proximal weight. Numerical rank/conditioning guards, uncertain rays, or failed refinement retain the previous Dense Dual numerical path without changing formulation or adding a regularization floor. Sparse is unchanged.
+
+The paired campaign contains 1,512 GTSAM calls: 21 problem/accuracy combinations, both libraries, two Dense equality settings plus Sparse, and one initial call plus eleven fresh repetitions. A separate 756-call diagnostic campaign uses one initial call plus five repetitions. DAQP has 252 calls, with the same twelve-call schedule per problem/accuracy. Runs are serial on CPU 0 with one numerical-library thread and one TBB thread; both GTSAM libraries and DAQP are interleaved in a randomized order with seed 749. GTSAM timing starts with assembled native factors and includes solver construction, packing, equality handling, transformation, optimization, certification, multiplier recovery and output conversion. DAQP starts with prepacked native arrays and includes its fresh setup and solve. Independent scoring is outside both clocks.
+
+Algorithm and implementation references: [DAQP paper](https://cse.lab.imtlucca.it/~bemporad/publications/papers/ieeetac_daqp.pdf), [DAQP 0.8.7 source release](https://pypi.org/project/daqp/0.8.7/).
+
+The existing 64-case MPC profiles, Cholesky before/after section and G1 results are retained historical measurements. Their Dense Dual series predates whitening. Only this selected section measures the new implementation; no G1 or unselected MPC results are presented as newly rerun.
+
 ## Benchmark datasets
 
 Model predictive control (MPC) plans a short future horizon, applies the first action, and replans. Each snapshot here is solved cold; the timings do not measure controller warm starts.

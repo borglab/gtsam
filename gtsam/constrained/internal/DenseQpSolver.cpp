@@ -26,6 +26,7 @@
 #include <Eigen/QR>
 #include <Eigen/Cholesky>
 #include <algorithm>
+#include <chrono>
 #include <iterator>
 #include <cmath>
 #include <limits>
@@ -61,13 +62,14 @@ Vector refineQrMinimum(const Matrix& jacobian, const Vector& rhs,
 
 struct DenseQpSolver::Impl {
   const DenseQpData& original;
+  double projectionSeconds = 0;
   std::optional<DenseQpEqualityProjection> projection;
   const DenseQpData& data;
   Matrix objective;
   bool objectiveReady = false, invertible = false, workingReady = false;
   Eigen::ColPivHouseholderQR<Matrix> objectiveQr;
   Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> objectivePermutation;
-  bool nativeCholesky = false;
+  bool nativeCholesky = false, objectiveTargetRefined = false;
   Matrix objectiveR, workingNormals, workingL;
   Vector workingD, workingMultipliers;
   Vector unconstrainedTarget;
@@ -75,6 +77,8 @@ struct DenseQpSolver::Impl {
   std::vector<Vector> transformed;
   std::vector<double> scales;
   Statistics statistics;
+  std::optional<Whitening> whitening;
+  bool whiteningPrepared = false;
 
   struct NullspaceSystem {
     Vector point, correction;
@@ -93,9 +97,16 @@ struct DenseQpSolver::Impl {
 
 
   explicit Impl(const DenseQpData& source, bool projectEqualities)
-      : original(source), projection(projectEqualities
-            ? projectDenseQpEqualities(source) : std::nullopt),
+      : original(source), projection([&]() -> std::optional<DenseQpEqualityProjection> {
+          if (!projectEqualities) return std::nullopt;
+          const auto began = std::chrono::steady_clock::now();
+          auto result = projectDenseQpEqualities(source);
+          projectionSeconds = std::chrono::duration<double>(
+              std::chrono::steady_clock::now() - began).count();
+          return result;
+        }()),
         data(projection ? projection->reduced : source) {
+    statistics.equalitySetupSeconds = projectionSeconds;
     if (projection)
       statistics.numericalFactorizations += projection->numericalFactorizations;
     // Append exactly the requested proximal curvature in square-root form.
@@ -111,6 +122,7 @@ struct DenseQpSolver::Impl {
   // multiplier recovery. Only its range is used, never its nullspace.
   void prepareEqualities() {
     if (equalitiesReady) return;
+    const auto began = std::chrono::steady_clock::now();
     Matrix normals = data.normals.topRows(data.equalities);
     equalityScales.resize(data.equalities);
     for (size_t row = 0; row < data.equalities; ++row) {
@@ -130,6 +142,8 @@ struct DenseQpSolver::Impl {
     checkDenseQpOriginalWorkingSet(original, equalityPoint,
         std::vector<bool>(original.bounds.size() - original.equalities, false));
     equalitiesReady = true;
+    statistics.equalitySetupSeconds += std::chrono::duration<double>(
+        std::chrono::steady_clock::now() - began).count();
   }
 
   bool prepareConstrainedDual() {
@@ -241,7 +255,7 @@ struct DenseQpSolver::Impl {
 
   // Curvature is fixed for the entire optimization call. QR preserves supplied
   // square roots; transformed normals are computed only when first needed.
-  void prepareObjective() {
+  void prepareObjective(bool refineTarget = true) {
     if (data.nativeHessian.size()) {
       Matrix hessian = data.nativeHessian;
       hessian.diagonal().array() += data.regularization;
@@ -255,8 +269,9 @@ struct DenseQpSolver::Impl {
         ++statistics.choleskyFactorizations;
         transformed.resize(data.bounds.size());
         scales.resize(data.bounds.size());
-        unconstrainedTarget = objectiveR * nativeMinimum(Vector::Zero(hessian.rows()),
-                                                         Vector::Zero(hessian.rows()));
+        if (refineTarget) refineObjectiveTarget();
+        else unconstrainedTarget = objectiveR.transpose().triangularView<Eigen::Lower>()
+            .solve(data.linear);
         return;
       }
       // A failed native factorization retains the supplied square-root root.
@@ -277,13 +292,26 @@ struct DenseQpSolver::Impl {
                            target(Vector::Zero(n))).head(n);
     unconstrainedTarget += objectiveR.transpose().triangularView<Eigen::Lower>()
         .solve(Vector(objectivePermutation.transpose() * data.linear));
-    // Preserve weak RHS information before working constraints are imposed.
-    const Vector value = objectivePermutation *
-        objectiveR.triangularView<Eigen::Upper>().solve(unconstrainedTarget);
-    const Vector refined = refineQrMinimum(objective, target(Vector::Zero(n)),
-                                           data.linear, objectiveQr, value);
-    unconstrainedTarget = objectiveR *
-        (objectivePermutation.transpose() * refined);
+    if (refineTarget) refineObjectiveTarget();
+  }
+
+  // Primal preparation retains its original-gradient corrections. DAQP setup
+  // needs only R^{-T}f (and Q^T*b for supplied square roots), so defer any
+  // original-coordinate minimum/recovery until transformed certification.
+  void refineObjectiveTarget() {
+    if (objectiveTargetRefined || !invertible) return;
+    const Eigen::Index n = objective.cols();
+    if (nativeCholesky) {
+      unconstrainedTarget = objectiveR * nativeMinimum(Vector::Zero(n), Vector::Zero(n));
+    } else {
+      const Vector value = objectivePermutation *
+          objectiveR.triangularView<Eigen::Upper>().solve(unconstrainedTarget);
+      const Vector refined = refineQrMinimum(objective, target(Vector::Zero(n)),
+                                             data.linear, objectiveQr, value);
+      unconstrainedTarget = objectiveR *
+          (objectivePermutation.transpose() * refined);
+    }
+    objectiveTargetRefined = true;
   }
 
   // Apply cached curvature without materializing an inverse. Native Hessians
@@ -551,6 +579,7 @@ struct DenseQpSolver::Impl {
   Vector solve(const std::vector<size_t>& rows, const Vector& center) {
     ++statistics.solves;
     if (!objectiveReady) prepareObjective();
+    else refineObjectiveTarget();
     const bool changed = !workingReady || rows != activeRows;
     if (changed) {
       if (nullspaceCache) workingReady = false;
@@ -739,6 +768,105 @@ Vector DenseQpSolver::solveDual(const Vector& center, const Vector& forcing) {
   ++impl.statistics.rhsOnlySolves;
   return projection ? Vector(projection->point + projection->nullspace * value)
                     : value;
+}
+
+const DenseQpData& DenseQpSolver::originalData() const { return impl_->original; }
+
+const DenseQpSolver::Whitening* DenseQpSolver::prepareWhitening() {
+  auto& impl = *impl_;
+  if (impl.whiteningPrepared) return impl.whitening ? &*impl.whitening : nullptr;
+  impl.whiteningPrepared = true;
+  const auto began = std::chrono::steady_clock::now();
+  const Eigen::Index n = impl.data.linear.size();
+  if (n == 0) return nullptr;
+  if (!impl.objectiveReady) impl.prepareObjective(false);
+  // A globally singular objective can still have invertible equality-reduced
+  // curvature. Retain constrained elimination in that case. Extreme scaling
+  // also retains the established square-root/refinement path.
+  if (!impl.invertible || !impl.objectiveR.allFinite()) return nullptr;
+  const Vector diagonal = impl.objectiveR.diagonal().cwiseAbs();
+  if (diagonal.minCoeff() <= std::sqrt(std::numeric_limits<double>::epsilon()) *
+                               diagonal.maxCoeff()) return nullptr;
+  const auto transforming = std::chrono::steady_clock::now();
+  Whitening result;
+  result.equalities = impl.data.equalities;
+  if (result.equalities) {
+    impl.prepareEqualities();
+    for (Eigen::Index i = 0; i < impl.equalityQr.rank(); ++i)
+      result.equalityBasis.push_back(impl.equalityQr.colsPermutation().indices()(i));
+    std::sort(result.equalityBasis.begin(), result.equalityBasis.end());
+  }
+  result.bounds = impl.data.bounds;
+  // Solve all RHSs together without constructing R^{-1} or H^{-1}.
+  result.normals = impl.objectiveR.transpose().triangularView<Eigen::Lower>()
+      .solve(Matrix(impl.objectivePermutation.transpose() * impl.data.normals.transpose()))
+      .transpose();
+  if (!result.normals.allFinite()) return nullptr;
+  result.scales.resize(result.normals.rows());
+  for (Eigen::Index row = 0; row < result.normals.rows(); ++row) {
+    const double norm = result.normals.row(row).stableNorm();
+    result.scales(row) = norm > 0 ? norm : 1;
+    result.normals.row(row) /= result.scales(row);
+  }
+  impl.statistics.transformedNormals += result.normals.rows();
+  ++impl.statistics.whiteningSetups;
+  const auto finished = std::chrono::steady_clock::now();
+  impl.statistics.constraintTransformSeconds +=
+      std::chrono::duration<double>(finished - transforming).count();
+  impl.statistics.whiteningSetupSeconds +=
+      std::chrono::duration<double>(finished - began).count();
+  impl.whitening = std::move(result);
+  return &*impl.whitening;
+}
+
+Vector DenseQpSolver::whiteningTarget(const Vector& center) const {
+  const auto& impl = *impl_;
+  Vector target = impl.unconstrainedTarget;
+  if (impl.data.regularization > 0) {
+    const Vector reduced = impl.projection
+        ? Vector(impl.projection->nullspace.transpose() * (center - impl.projection->point))
+        : center;
+    target += impl.objectiveR.transpose().triangularView<Eigen::Lower>().solve(
+        Vector(impl.objectivePermutation.transpose() * (impl.data.regularization * reduced)));
+  }
+  return target;
+}
+
+Vector DenseQpSolver::recoverWhitening(const Vector& value) {
+  auto& impl = *impl_;
+  ++impl.statistics.whiteningRecoveries;
+  const Vector reduced = impl.objectivePermutation *
+      impl.objectiveR.triangularView<Eigen::Upper>().solve(value);
+  return impl.projection
+      ? Vector(impl.projection->point + impl.projection->nullspace * reduced) : reduced;
+}
+
+Vector DenseQpSolver::whiteningResidual(const Vector& value) const {
+  const auto& impl = *impl_;
+  const Vector reduced = impl.projection
+      ? Vector(impl.projection->nullspace.transpose() * (value - impl.projection->point))
+      : value;
+  return impl.data.normals * reduced - impl.data.bounds;
+}
+
+Vector DenseQpSolver::whiteningCorrection(const Vector& value, const Vector& center,
+                                         const Vector& multipliers) {
+  auto& impl = *impl_;
+  ++impl.statistics.whiteningGradientChecks;
+  const Vector reduced = impl.projection
+      ? Vector(impl.projection->nullspace.transpose() * (value - impl.projection->point))
+      : value;
+  const Vector reducedCenter = impl.projection
+      ? Vector(impl.projection->nullspace.transpose() * (center - impl.projection->point))
+      : center;
+  Vector gradient = impl.data.nativeHessian.size()
+      ? Vector(impl.data.nativeHessian * reduced - impl.data.linear)
+      : Vector(impl.data.jacobian.transpose() *
+          (impl.data.jacobian * reduced - impl.data.rhs) - impl.data.linear);
+  gradient += impl.data.regularization * (reduced - reducedCenter) +
+      impl.data.normals.transpose() * multipliers;
+  return impl.objectiveR.transpose().triangularView<Eigen::Lower>().solve(
+      Vector(impl.objectivePermutation.transpose() * -gradient));
 }
 
 Vector DenseQpSolver::equalityMultipliers(const Vector& gradient) const {

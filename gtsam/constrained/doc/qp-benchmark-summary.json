@@ -554,7 +554,7 @@
       "fresh_repeat_certified": []
     }
   ],
-  "report_bytes": 283687,
+  "report_bytes": 475853,
   "dense_cholesky": {
     "scope": "Positive-definite Hessian-only Dense objectives with no equalities; both formulations. Native H is checked before adding regularization. LLT success and rcond(H)>sqrt(machine epsilon) select Cholesky; all other cases keep the existing square-root path.",
     "no_added_regularization_floor": true,
@@ -668,5 +668,3657 @@
     "python_tests_passed": 581,
     "python_tests_skipped": 6,
     "matlab": "Runtime unavailable; smoke test updated"
+  },
+  "dense_dual_whitening": {
+    "date": "2026-11-07",
+    "baseline_revision": "3ea2fe19f3b776c8de2716a658b06b4113a0e187",
+    "uncommitted_changes": true,
+    "baseline_library_sha256": "ff70e15acb74229fee728251defa1b4bc5ce90a79e54f26794a1b70b1fbb9ef1",
+    "working_library_sha256": "c7f8e20e3815e5cbb2c2a14220fe3c2f58aee66b08bb006f126eae840dc6b427",
+    "source_sha256": {
+      "ActiveSetSolverDual.cpp": "4533c93803b6fbc44629f4a7e705f16aa6c523a5d9d312ac9d4acb30ff16dd7b",
+      "internal/DenseQpSolver.cpp": "144bdf72921a5924738c784009258e561a598910f9c7da93722c0805ecc7efa7",
+      "internal/DenseQpSolver.h": "3ee146edc05174ce0cc7a983cb6a0a49dc7993523670356b11e1a9824571468e",
+      "internal/DenseDualQpSolver.cpp": "f7935dca45db45a13f660340c033c9f71b054416183484fbf65b08e139f18d19",
+      "internal/DenseDualQpSolver.h": "5da478e0d23dc349e2fe65ada8d7805e48a1acf25ac5bfc5e59d3e3b1b3cff76",
+      "internal/DualQpSolver.cpp": "e82b4e0144dbe00d4f8cbf16013f4f563bc4fc8f85fb45177175c06cdf528c2a",
+      "internal/DualQpSolver.h": "c9b0a9c6e0f97e50da833dcc13f7a1b250e3ba0de4b594eb73b1da8b9a89b6f2"
+    },
+    "private_measurement_sha256": {
+      "measurements.jsonl": "48aa691752b8dd73d4d62d05fc415be69191f27d1bb06a8b4c1a16f91c49cc2a",
+      "profile/measurements.jsonl": "05d7175ed96ddf90b2d0940f44b50483e351683ac2162efeb6cb4d6d57fa4932",
+      "daqp.jsonl": "aaa123611c1ef510c9657b3c5c745e097deee17248b25e94014444f42b7a77c3"
+    },
+    "benchmark_sources_sha256": {
+      "run.py": "a0aecc0e1ad3ef868b4fe3f63bfe45d37dccde579457743000f355062658d5e8",
+      "worker.py": "4e4cd729d4600aea5db03b2a62b33399ddce2b1d2772296dd88af2865e780343",
+      "campaign.py": "690d9bc06db3c3ba9801fa325527ffe8e573a99acca995da7b370944c168ea23",
+      "profile/mpc.cpp": "80b8fe1cb43d0fcbb68cd3eda265d6c2956a4e276d3ef50602a4129ab00a4df3",
+      "profile/run.py": "54e2b64ea61c57b0e6e0218451d0020487c3929832b19d80fc48644ea21e5bfd",
+      "profile/campaign.py": "21647737134c6977349d1d074cabbe7aec625a0c9c101370a6ab5655e736d6ce",
+      "daqp_run.py": "121f9393c9d265198d3e76eb21765b29184e23ed094c354403982a824581b475",
+      "daqp_worker.py": "61cb64bba602d9621a54de669ffe9748a585b6fa0191c978515b9014afea0e19"
+    },
+    "scope": "Selected seven MPC cases only; historical 64-case and G1 measurements retained",
+    "formulation": "Dual",
+    "dense_equality_settings": [
+      true,
+      false
+    ],
+    "sparse_unchanged": true,
+    "no_regularization_floor": true,
+    "regularization": 1e-09,
+    "timing": "The paired campaign contains 1,512 GTSAM calls: 21 problem/accuracy combinations, both libraries, two Dense equality settings plus Sparse, and one initial call plus eleven fresh repetitions. A separate 756-call diagnostic campaign uses one initial call plus five repetitions. DAQP has 252 calls, with the same twelve-call schedule per problem/accuracy. Runs are serial on CPU 0 with one numerical-library thread and one TBB thread; both GTSAM libraries and DAQP are interleaved in a randomized order with seed 749. GTSAM timing starts with assembled native factors and includes solver construction, packing, equality handling, transformation, optimization, certification, multiplier recovery and output conversion. DAQP starts with prepacked native arrays and includes its fresh setup and solve. Independent scoring is outside both clocks.",
+    "scoring": "Every returned solution is rescored against the original matrices for primal feasibility, stationarity, nonnegative mathematical inequality multipliers and absolute duality gap. The selected campaign uses explicit 1e-6 and 1e-9 tolerances; Default keeps native stopping settings but is rescored at 1e-6. This stricter Default check differs from the historical full-suite profile below, whose published Default threshold is 1.0. No DAQP proximal settings are retuned. All 1,512 GTSAM calls and all 756 diagnostic calls pass. DAQP passes the four small cases and fails the original gap checks on all three larger cases at all three settings; its returned success flag is recorded but does not override those failures.",
+    "paired_gtsam_calls": 1512,
+    "paired_gtsam_passed": 1512,
+    "diagnostic_calls": 756,
+    "diagnostic_passed": 756,
+    "daqp_calls": 252,
+    "daqp_passed": 144,
+    "whitened_instrumented_calls": 252,
+    "whitened_full_primal_solves": 0,
+    "whitened_inverse_responses": 0,
+    "whitened_fallbacks": 0,
+    "conditional_refinement_steps": 12,
+    "native_suites": 9,
+    "python_tests_passed": 582,
+    "python_subtests_passed": 89,
+    "python_tests_skipped": 6,
+    "summary": [
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-06,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.09448698256164789,
+        "worst_original_residuals": {
+          "primal_residual": 1.1102230246251565e-16,
+          "dual_residual": 8.110392406279754e-09,
+          "gap": 1.625082340084294e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-06,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.07803697371855378,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 8.110392406279754e-09,
+          "gap": 1.6250823853258822e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-06,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.10217697126790881,
+        "worst_original_residuals": {
+          "primal_residual": 1.1102230246251565e-16,
+          "dual_residual": 8.110392406279754e-09,
+          "gap": 1.625082340084294e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-06,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.0758059904910624,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 8.110392406279754e-09,
+          "gap": 1.6250823853258822e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-06,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.13929198030382395,
+        "worst_original_residuals": {
+          "primal_residual": 1.2212453270876722e-15,
+          "dual_residual": 8.110392147805956e-09,
+          "gap": 1.6250823509089685e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-06,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.03217096673324704,
+        "worst_original_residuals": {
+          "primal_residual": 1.3877787807814457e-16,
+          "dual_residual": 1.5959455978986625e-16,
+          "gap": 5.828670879282072e-16,
+          "sign": 0.0
+        },
+        "native_setup_us": 8.766,
+        "native_solve_us": 2.492,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-06,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.09566196240484715,
+        "worst_original_residuals": {
+          "primal_residual": 1.0824674490095276e-15,
+          "dual_residual": 4.635642127971684e-09,
+          "gap": 4.700932505763422e-08,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-06,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.08334300946444273,
+        "worst_original_residuals": {
+          "primal_residual": 2.7755575615628914e-17,
+          "dual_residual": 4.6356420902414486e-09,
+          "gap": 4.7009324016800136e-08,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-06,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.09787303861230612,
+        "worst_original_residuals": {
+          "primal_residual": 1.0824674490095276e-15,
+          "dual_residual": 4.635642127971684e-09,
+          "gap": 4.700932505763422e-08,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-06,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.08292699931189418,
+        "worst_original_residuals": {
+          "primal_residual": 2.7755575615628914e-17,
+          "dual_residual": 4.6356420902414486e-09,
+          "gap": 4.7009324016800136e-08,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-06,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.14659797307103872,
+        "worst_original_residuals": {
+          "primal_residual": 9.43689570931383e-16,
+          "dual_residual": 4.635642200396389e-09,
+          "gap": 4.700932550172343e-08,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-06,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.033179996535182,
+        "worst_original_residuals": {
+          "primal_residual": 4.163336342344337e-17,
+          "dual_residual": 4.85722573273506e-17,
+          "gap": 1.8041124150158794e-16,
+          "sign": 0.0
+        },
+        "native_setup_us": 8.766,
+        "native_solve_us": 2.0940000000000003,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-06,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.24661998031660914,
+        "worst_original_residuals": {
+          "primal_residual": 2.76560996326225e-11,
+          "dual_residual": 1.0000113535857391e-08,
+          "gap": 6.842461308664838e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-06,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.22388703655451536,
+        "worst_original_residuals": {
+          "primal_residual": 2.1316282072803006e-14,
+          "dual_residual": 1.0000083455752318e-08,
+          "gap": 6.842428907916087e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-06,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.25121099315583706,
+        "worst_original_residuals": {
+          "primal_residual": 2.76560996326225e-11,
+          "dual_residual": 1.0000113535857391e-08,
+          "gap": 6.842461308664838e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-06,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.22869196254760027,
+        "worst_original_residuals": {
+          "primal_residual": 2.1316282072803006e-14,
+          "dual_residual": 1.0000083455752318e-08,
+          "gap": 6.842428907916087e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-06,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.2722910139709711,
+        "worst_original_residuals": {
+          "primal_residual": 6.072475855489756e-11,
+          "dual_residual": 9.999958555662047e-09,
+          "gap": 6.84242793980161e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-06,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.13188901357352734,
+        "worst_original_residuals": {
+          "primal_residual": 1.7763568394002505e-14,
+          "dual_residual": 6.972200594645983e-14,
+          "gap": 6.039613253960852e-14,
+          "sign": 0.0
+        },
+        "native_setup_us": 105.94099999999999,
+        "native_solve_us": 5.176,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-06,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.20776002202183008,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 4.642629392037634e-09,
+          "gap": 2.3017855710349977e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-06,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.22738100960850716,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 4.6427430788753554e-09,
+          "gap": 2.3017491912469268e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-06,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.1918780035339296,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 4.642629392037634e-09,
+          "gap": 2.3017855710349977e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-06,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.2215169952251017,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 4.6427430788753554e-09,
+          "gap": 2.3017491912469268e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-06,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.21578004816547036,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 4.6427430788753554e-09,
+          "gap": 2.3017855710349977e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-06,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.055983022321015596,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 2.2737367544323206e-13,
+          "gap": 7.275957614183426e-12,
+          "sign": 0.0
+        },
+        "native_setup_us": 32.785,
+        "native_solve_us": 0.029,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-06,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 22.937887988518924,
+        "worst_original_residuals": {
+          "primal_residual": 4.9920345635001695e-11,
+          "dual_residual": 9.751704550472768e-12,
+          "gap": 2.4337347935554643e-10,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-06,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 24.421714013442397,
+        "worst_original_residuals": {
+          "primal_residual": 5.850875339774575e-14,
+          "dual_residual": 9.75169593784176e-12,
+          "gap": 2.4336968551530447e-10,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-06,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 70.62638102797791,
+        "worst_original_residuals": {
+          "primal_residual": 6.3773986092030555e-12,
+          "dual_residual": 9.751704299751016e-12,
+          "gap": 2.4337172208066526e-10,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-06,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 104.27680797874928,
+        "worst_original_residuals": {
+          "primal_residual": 2.5435833439502176e-09,
+          "dual_residual": 9.75170423198838e-12,
+          "gap": 2.5292990445124897e-10,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-06,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 11.407525045797229,
+        "worst_original_residuals": {
+          "primal_residual": 2.3449298058864088e-12,
+          "dual_residual": 9.751339242103276e-12,
+          "gap": 2.433784146438356e-10,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-06,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 0,
+        "median_ms": 12.2806629515253,
+        "worst_original_residuals": {
+          "primal_residual": 2.0655699373151037e-12,
+          "dual_residual": 7.038039973434701e-07,
+          "gap": 2.0032474097479713e-05,
+          "sign": 0.0
+        },
+        "native_setup_us": 10804.37,
+        "native_solve_us": 1453.431,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-06,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 13.488611963111907,
+        "worst_original_residuals": {
+          "primal_residual": 3.3306690738754696e-15,
+          "dual_residual": 1.1974166563906437e-13,
+          "gap": 2.9372845523785304e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-06,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 14.930054021533579,
+        "worst_original_residuals": {
+          "primal_residual": 3.1242369802342296e-15,
+          "dual_residual": 1.1973956934192023e-13,
+          "gap": 2.932335117920956e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-06,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 14.880715985782444,
+        "worst_original_residuals": {
+          "primal_residual": 2.7755575615628914e-16,
+          "dual_residual": 1.1974170204976997e-13,
+          "gap": 2.9367779529021433e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-06,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 23.897723003756255,
+        "worst_original_residuals": {
+          "primal_residual": 2.7755575615628914e-17,
+          "dual_residual": 1.1974170205189512e-13,
+          "gap": 2.936777953142218e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-06,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 4.470339976251125,
+        "worst_original_residuals": {
+          "primal_residual": 2.220446049250313e-16,
+          "dual_residual": 1.1974170469062955e-13,
+          "gap": 2.9367775720265173e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-06,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 0,
+        "median_ms": 2.265675982926041,
+        "worst_original_residuals": {
+          "primal_residual": 2.7755575615628914e-17,
+          "dual_residual": 1.1110645665355334e-07,
+          "gap": 2.826587550721148e-06,
+          "sign": 0.0
+        },
+        "native_setup_us": 2032.4029999999998,
+        "native_solve_us": 212.862,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-06,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 7.5324439676478505,
+        "worst_original_residuals": {
+          "primal_residual": 7.220197278231294e-15,
+          "dual_residual": 4.789297730723978e-13,
+          "gap": 1.1747443575826961e-11,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-06,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 7.814420037902892,
+        "worst_original_residuals": {
+          "primal_residual": 7.270157314339426e-15,
+          "dual_residual": 4.789292590345415e-13,
+          "gap": 1.1745856125692862e-11,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-06,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 18.77640199381858,
+        "worst_original_residuals": {
+          "primal_residual": 2.220446049250313e-16,
+          "dual_residual": 4.78929720342707e-13,
+          "gap": 1.1746652975393661e-11,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-06,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 29.610671976115555,
+        "worst_original_residuals": {
+          "primal_residual": 1.2555769983916431e-15,
+          "dual_residual": 4.789297203449244e-13,
+          "gap": 1.1746652976200587e-11,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-06,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 5.201930005569011,
+        "worst_original_residuals": {
+          "primal_residual": 2.220446049250313e-16,
+          "dual_residual": 4.789297210094218e-13,
+          "gap": 1.1746665199948496e-11,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-06,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 0,
+        "median_ms": 3.5506399581208825,
+        "worst_original_residuals": {
+          "primal_residual": 2.7755575615628914e-17,
+          "dual_residual": 4.142461482518236e-07,
+          "gap": 1.0899481911636392e-05,
+          "sign": 0.0
+        },
+        "native_setup_us": 3279.008,
+        "native_solve_us": 244.622,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-09,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.12900197179988027,
+        "worst_original_residuals": {
+          "primal_residual": 5.551115123125783e-17,
+          "dual_residual": 5.134781488891349e-16,
+          "gap": 1.609823385706477e-15,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-09,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.09543297346681356,
+        "worst_original_residuals": {
+          "primal_residual": 2.220446049250313e-16,
+          "dual_residual": 5.689893001203927e-16,
+          "gap": 5.495603971894525e-15,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-09,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.10735198156908154,
+        "worst_original_residuals": {
+          "primal_residual": 5.551115123125783e-17,
+          "dual_residual": 5.134781488891349e-16,
+          "gap": 1.609823385706477e-15,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-09,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.10117801139131188,
+        "worst_original_residuals": {
+          "primal_residual": 2.220446049250313e-16,
+          "dual_residual": 5.689893001203927e-16,
+          "gap": 5.495603971894525e-15,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-09,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.16855797730386257,
+        "worst_original_residuals": {
+          "primal_residual": 2.4424906541753444e-15,
+          "dual_residual": 5.134781488891349e-16,
+          "gap": 4.08006961549745e-15,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-09,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.03294897032901645,
+        "worst_original_residuals": {
+          "primal_residual": 1.3877787807814457e-16,
+          "dual_residual": 1.5959455978986625e-16,
+          "gap": 5.828670879282072e-16,
+          "sign": 0.0
+        },
+        "native_setup_us": 8.594,
+        "native_solve_us": 2.315,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-09,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.11129101039841771,
+        "worst_original_residuals": {
+          "primal_residual": 5.655198531684391e-16,
+          "dual_residual": 3.122502256758253e-16,
+          "gap": 1.8041124150158794e-16,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-09,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.08661503670737147,
+        "worst_original_residuals": {
+          "primal_residual": 8.326672684688674e-17,
+          "dual_residual": 3.122502256758253e-16,
+          "gap": 3.608224830031759e-16,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-09,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.11009100126102567,
+        "worst_original_residuals": {
+          "primal_residual": 5.655198531684391e-16,
+          "dual_residual": 3.122502256758253e-16,
+          "gap": 1.8041124150158794e-16,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-09,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.089003995526582,
+        "worst_original_residuals": {
+          "primal_residual": 8.326672684688674e-17,
+          "dual_residual": 3.122502256758253e-16,
+          "gap": 3.608224830031759e-16,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-09,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.184472999535501,
+        "worst_original_residuals": {
+          "primal_residual": 4.996003610813204e-16,
+          "dual_residual": 3.2612801348363973e-16,
+          "gap": 1.3877787807814457e-17,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-09,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.031298957765102386,
+        "worst_original_residuals": {
+          "primal_residual": 4.163336342344337e-17,
+          "dual_residual": 4.85722573273506e-17,
+          "gap": 1.8041124150158794e-16,
+          "sign": 0.0
+        },
+        "native_setup_us": 9.009,
+        "native_solve_us": 2.285,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-09,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.2940809936262667,
+        "worst_original_residuals": {
+          "primal_residual": 4.332889602665091e-11,
+          "dual_residual": 5.551115123125783e-14,
+          "gap": 3.483435762063891e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-09,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.25802297750487924,
+        "worst_original_residuals": {
+          "primal_residual": 1.7763568394002505e-14,
+          "dual_residual": 1.0941247907680918e-13,
+          "gap": 1.9340085088970227e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-09,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.30319596407935023,
+        "worst_original_residuals": {
+          "primal_residual": 4.332889602665091e-11,
+          "dual_residual": 5.551115123125783e-14,
+          "gap": 3.483435762063891e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-09,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.25365903275087476,
+        "worst_original_residuals": {
+          "primal_residual": 1.7763568394002505e-14,
+          "dual_residual": 1.0941247907680918e-13,
+          "gap": 1.9340085088970227e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-09,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.33041799906641245,
+        "worst_original_residuals": {
+          "primal_residual": 4.9821480274658825e-11,
+          "dual_residual": 9.184666915906803e-14,
+          "gap": 3.353761712787673e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-09,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.13114698231220245,
+        "worst_original_residuals": {
+          "primal_residual": 1.7763568394002505e-14,
+          "dual_residual": 6.972200594645983e-14,
+          "gap": 6.039613253960852e-14,
+          "sign": 0.0
+        },
+        "native_setup_us": 104.438,
+        "native_solve_us": 5.209,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-09,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.2314089797437191,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 3.410605131648481e-13,
+          "gap": 3.637978807091713e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-09,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.25104201631620526,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 1.1368683772161603e-13,
+          "gap": 3.637978807091713e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-09,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.23578800028190017,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 3.410605131648481e-13,
+          "gap": 3.637978807091713e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-09,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.23728201631456614,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 1.1368683772161603e-13,
+          "gap": 3.637978807091713e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-09,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.2403800026513636,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 3.410605131648481e-13,
+          "gap": 3.637978807091713e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-09,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.05486002191901207,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 2.2737367544323206e-13,
+          "gap": 7.275957614183426e-12,
+          "sign": 0.0
+        },
+        "native_setup_us": 33.728,
+        "native_solve_us": 0.03,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-09,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 23.50906195351854,
+        "worst_original_residuals": {
+          "primal_residual": 4.9920345635001695e-11,
+          "dual_residual": 9.751704550472768e-12,
+          "gap": 2.4337347935554643e-10,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-09,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 24.140249006450176,
+        "worst_original_residuals": {
+          "primal_residual": 5.850875339774575e-14,
+          "dual_residual": 9.75169593784176e-12,
+          "gap": 2.4336968551530447e-10,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-09,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 70.69115899503231,
+        "worst_original_residuals": {
+          "primal_residual": 6.3773986092030555e-12,
+          "dual_residual": 9.751704299751016e-12,
+          "gap": 2.4337172208066526e-10,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-09,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 104.80388801079243,
+        "worst_original_residuals": {
+          "primal_residual": 8.881784197001252e-16,
+          "dual_residual": 9.751704360737388e-12,
+          "gap": 2.4337169259036617e-10,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-09,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 12.962804001290351,
+        "worst_original_residuals": {
+          "primal_residual": 2.3449298058864088e-12,
+          "dual_residual": 9.751339242103276e-12,
+          "gap": 2.433784146438356e-10,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-09,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 0,
+        "median_ms": 12.236666982062161,
+        "worst_original_residuals": {
+          "primal_residual": 2.0655699373151037e-12,
+          "dual_residual": 7.038039973434701e-07,
+          "gap": 2.0032474097479713e-05,
+          "sign": 0.0
+        },
+        "native_setup_us": 10772.810000000001,
+        "native_solve_us": 1450.671,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-09,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 13.493400998413563,
+        "worst_original_residuals": {
+          "primal_residual": 3.3306690738754696e-15,
+          "dual_residual": 1.1974166563906437e-13,
+          "gap": 2.9372845523785304e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-09,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 14.83798399567604,
+        "worst_original_residuals": {
+          "primal_residual": 3.1242369802342296e-15,
+          "dual_residual": 1.1973956934192023e-13,
+          "gap": 2.932335117920956e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-09,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 13.660930970218033,
+        "worst_original_residuals": {
+          "primal_residual": 2.7755575615628914e-16,
+          "dual_residual": 1.1974170204976997e-13,
+          "gap": 2.9367779529021433e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-09,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 23.547189019154757,
+        "worst_original_residuals": {
+          "primal_residual": 2.7755575615628914e-17,
+          "dual_residual": 1.1974170205189512e-13,
+          "gap": 2.936777953142218e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-09,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 5.222352978307754,
+        "worst_original_residuals": {
+          "primal_residual": 2.220446049250313e-16,
+          "dual_residual": 1.1974170469062955e-13,
+          "gap": 2.9367775720265173e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-09,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 0,
+        "median_ms": 2.26252997526899,
+        "worst_original_residuals": {
+          "primal_residual": 2.7755575615628914e-17,
+          "dual_residual": 1.1110645665355334e-07,
+          "gap": 2.826587550721148e-06,
+          "sign": 0.0
+        },
+        "native_setup_us": 2023.604,
+        "native_solve_us": 212.476,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-09,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 7.455815968569368,
+        "worst_original_residuals": {
+          "primal_residual": 7.220197278231294e-15,
+          "dual_residual": 4.789297730723978e-13,
+          "gap": 1.1747443575826961e-11,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-09,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 7.709267956670374,
+        "worst_original_residuals": {
+          "primal_residual": 7.270157314339426e-15,
+          "dual_residual": 4.789292590345415e-13,
+          "gap": 1.1745856125692862e-11,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-09,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 18.67446000687778,
+        "worst_original_residuals": {
+          "primal_residual": 2.220446049250313e-16,
+          "dual_residual": 4.78929720342707e-13,
+          "gap": 1.1746652975393661e-11,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-09,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 29.52524699503556,
+        "worst_original_residuals": {
+          "primal_residual": 1.2555769983916431e-15,
+          "dual_residual": 4.789297203449244e-13,
+          "gap": 1.1746652976200587e-11,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-09,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 6.309618998784572,
+        "worst_original_residuals": {
+          "primal_residual": 2.220446049250313e-16,
+          "dual_residual": 4.789297210094218e-13,
+          "gap": 1.1746665199948496e-11,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-09,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 0,
+        "median_ms": 3.5572400083765388,
+        "worst_original_residuals": {
+          "primal_residual": 2.7755575615628914e-17,
+          "dual_residual": 4.142461482518236e-07,
+          "gap": 1.0899481911636392e-05,
+          "sign": 0.0
+        },
+        "native_setup_us": 3284.972,
+        "native_solve_us": 245.50199999999998,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": -1.0,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.09137997403740883,
+        "worst_original_residuals": {
+          "primal_residual": 1.1102230246251565e-16,
+          "dual_residual": 8.110392406279754e-09,
+          "gap": 1.625082340084294e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": -1.0,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.0873460085131228,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 8.110392406279754e-09,
+          "gap": 1.6250823853258822e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": -1.0,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.09801500709727407,
+        "worst_original_residuals": {
+          "primal_residual": 1.1102230246251565e-16,
+          "dual_residual": 8.110392406279754e-09,
+          "gap": 1.625082340084294e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": -1.0,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.0812190119177103,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 8.110392406279754e-09,
+          "gap": 1.6250823853258822e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": -1.0,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.1383910421282053,
+        "worst_original_residuals": {
+          "primal_residual": 1.2212453270876722e-15,
+          "dual_residual": 8.110392147805956e-09,
+          "gap": 1.6250823509089685e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": -1.0,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.029176997486501932,
+        "worst_original_residuals": {
+          "primal_residual": 1.3877787807814457e-16,
+          "dual_residual": 1.5959455978986625e-16,
+          "gap": 5.828670879282072e-16,
+          "sign": 0.0
+        },
+        "native_setup_us": 8.338000000000001,
+        "native_solve_us": 2.1310000000000002,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": -1.0,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.0914999982342124,
+        "worst_original_residuals": {
+          "primal_residual": 1.0824674490095276e-15,
+          "dual_residual": 4.635642127971684e-09,
+          "gap": 4.700932505763422e-08,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": -1.0,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.08133199298754334,
+        "worst_original_residuals": {
+          "primal_residual": 2.7755575615628914e-17,
+          "dual_residual": 4.6356420902414486e-09,
+          "gap": 4.7009324016800136e-08,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": -1.0,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.0984719954431057,
+        "worst_original_residuals": {
+          "primal_residual": 1.0824674490095276e-15,
+          "dual_residual": 4.635642127971684e-09,
+          "gap": 4.700932505763422e-08,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": -1.0,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.07544102845713496,
+        "worst_original_residuals": {
+          "primal_residual": 2.7755575615628914e-17,
+          "dual_residual": 4.6356420902414486e-09,
+          "gap": 4.7009324016800136e-08,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": -1.0,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.14442496467381716,
+        "worst_original_residuals": {
+          "primal_residual": 9.43689570931383e-16,
+          "dual_residual": 4.635642200396389e-09,
+          "gap": 4.700932550172343e-08,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": -1.0,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.03034301334992051,
+        "worst_original_residuals": {
+          "primal_residual": 4.163336342344337e-17,
+          "dual_residual": 4.85722573273506e-17,
+          "gap": 1.8041124150158794e-16,
+          "sign": 0.0
+        },
+        "native_setup_us": 8.312,
+        "native_solve_us": 2.1950000000000003,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": -1.0,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.25888701202347875,
+        "worst_original_residuals": {
+          "primal_residual": 2.76560996326225e-11,
+          "dual_residual": 1.0000113535857391e-08,
+          "gap": 6.842461308664838e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": -1.0,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.23180601419880986,
+        "worst_original_residuals": {
+          "primal_residual": 2.1316282072803006e-14,
+          "dual_residual": 1.0000083455752318e-08,
+          "gap": 6.842428907916087e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": -1.0,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.24442898575216532,
+        "worst_original_residuals": {
+          "primal_residual": 2.76560996326225e-11,
+          "dual_residual": 1.0000113535857391e-08,
+          "gap": 6.842461308664838e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": -1.0,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.23541098926216364,
+        "worst_original_residuals": {
+          "primal_residual": 2.1316282072803006e-14,
+          "dual_residual": 1.0000083455752318e-08,
+          "gap": 6.842428907916087e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": -1.0,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.2914410433731973,
+        "worst_original_residuals": {
+          "primal_residual": 6.072475855489756e-11,
+          "dual_residual": 9.999958555662047e-09,
+          "gap": 6.84242793980161e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": -1.0,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.12985797366127372,
+        "worst_original_residuals": {
+          "primal_residual": 1.7763568394002505e-14,
+          "dual_residual": 6.972200594645983e-14,
+          "gap": 6.039613253960852e-14,
+          "sign": 0.0
+        },
+        "native_setup_us": 105.571,
+        "native_solve_us": 5.158,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": -1.0,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.21416397066786885,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 4.642629392037634e-09,
+          "gap": 2.3017855710349977e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": -1.0,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.23161404533311725,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 4.6427430788753554e-09,
+          "gap": 2.3017491912469268e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": -1.0,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.1999910455197096,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 4.642629392037634e-09,
+          "gap": 2.3017855710349977e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": -1.0,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.21651596762239933,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 4.6427430788753554e-09,
+          "gap": 2.3017491912469268e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": -1.0,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.2074640360660851,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 4.6427430788753554e-09,
+          "gap": 2.3017855710349977e-07,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": -1.0,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 0.054980977438390255,
+        "worst_original_residuals": {
+          "primal_residual": 0.0,
+          "dual_residual": 2.2737367544323206e-13,
+          "gap": 7.275957614183426e-12,
+          "sign": 0.0
+        },
+        "native_setup_us": 33.344,
+        "native_solve_us": 0.028,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": -1.0,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 23.062910011503845,
+        "worst_original_residuals": {
+          "primal_residual": 4.9920345635001695e-11,
+          "dual_residual": 9.751704550472768e-12,
+          "gap": 2.4337347935554643e-10,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": -1.0,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 24.22325301449746,
+        "worst_original_residuals": {
+          "primal_residual": 5.850875339774575e-14,
+          "dual_residual": 9.75169593784176e-12,
+          "gap": 2.4336968551530447e-10,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": -1.0,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 70.69286302430555,
+        "worst_original_residuals": {
+          "primal_residual": 6.3773986092030555e-12,
+          "dual_residual": 9.751704299751016e-12,
+          "gap": 2.4337172208066526e-10,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": -1.0,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 103.71403902536258,
+        "worst_original_residuals": {
+          "primal_residual": 2.5435833439502176e-09,
+          "dual_residual": 9.75170423198838e-12,
+          "gap": 2.5292990445124897e-10,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": -1.0,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 11.392721033189446,
+        "worst_original_residuals": {
+          "primal_residual": 2.3449298058864088e-12,
+          "dual_residual": 9.751339242103276e-12,
+          "gap": 2.433784146438356e-10,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": -1.0,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 0,
+        "median_ms": 12.258644972462207,
+        "worst_original_residuals": {
+          "primal_residual": 2.0655699373151037e-12,
+          "dual_residual": 7.038039973434701e-07,
+          "gap": 2.0032474097479713e-05,
+          "sign": 0.0
+        },
+        "native_setup_us": 10774.293000000001,
+        "native_solve_us": 1451.483,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": -1.0,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 13.587702007498592,
+        "worst_original_residuals": {
+          "primal_residual": 3.3306690738754696e-15,
+          "dual_residual": 1.1974166563906437e-13,
+          "gap": 2.9372845523785304e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": -1.0,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 14.772462018299848,
+        "worst_original_residuals": {
+          "primal_residual": 3.1242369802342296e-15,
+          "dual_residual": 1.1973956934192023e-13,
+          "gap": 2.932335117920956e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": -1.0,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 13.776918000075966,
+        "worst_original_residuals": {
+          "primal_residual": 2.7755575615628914e-16,
+          "dual_residual": 1.1974170204976997e-13,
+          "gap": 2.9367779529021433e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": -1.0,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 23.423472011927515,
+        "worst_original_residuals": {
+          "primal_residual": 2.7755575615628914e-17,
+          "dual_residual": 1.1974170205189512e-13,
+          "gap": 2.936777953142218e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": -1.0,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 4.473923007026315,
+        "worst_original_residuals": {
+          "primal_residual": 2.220446049250313e-16,
+          "dual_residual": 1.1974170469062955e-13,
+          "gap": 2.9367775720265173e-12,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": -1.0,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 0,
+        "median_ms": 2.241317997686565,
+        "worst_original_residuals": {
+          "primal_residual": 2.7755575615628914e-17,
+          "dual_residual": 1.1110645665355334e-07,
+          "gap": 2.826587550721148e-06,
+          "sign": 0.0
+        },
+        "native_setup_us": 2007.805,
+        "native_solve_us": 213.255,
+        "exit_flags": [
+          1
+        ]
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": -1.0,
+        "method": "Dense before \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 7.458064006641507,
+        "worst_original_residuals": {
+          "primal_residual": 7.220197278231294e-15,
+          "dual_residual": 4.789297730723978e-13,
+          "gap": 1.1747443575826961e-11,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": -1.0,
+        "method": "Dense whitened \u00b7 project",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 7.873420021496713,
+        "worst_original_residuals": {
+          "primal_residual": 7.270157314339426e-15,
+          "dual_residual": 4.789292590345415e-13,
+          "gap": 1.1745856125692862e-11,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": -1.0,
+        "method": "Dense before \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 18.58190499478951,
+        "worst_original_residuals": {
+          "primal_residual": 2.220446049250313e-16,
+          "dual_residual": 4.78929720342707e-13,
+          "gap": 1.1746652975393661e-11,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": -1.0,
+        "method": "Dense whitened \u00b7 keep E",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 29.79842701461166,
+        "worst_original_residuals": {
+          "primal_residual": 1.2555769983916431e-15,
+          "dual_residual": 4.789297203449244e-13,
+          "gap": 1.1746652976200587e-11,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": -1.0,
+        "method": "Sparse Dual",
+        "repetitions": 11,
+        "passed": 11,
+        "median_ms": 5.1862020045518875,
+        "worst_original_residuals": {
+          "primal_residual": 2.220446049250313e-16,
+          "dual_residual": 4.789297210094218e-13,
+          "gap": 1.1746665199948496e-11,
+          "sign": 0.0
+        }
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": -1.0,
+        "method": "DAQP",
+        "repetitions": 11,
+        "passed": 0,
+        "median_ms": 3.5771759576164186,
+        "worst_original_residuals": {
+          "primal_residual": 2.7755575615628914e-17,
+          "dual_residual": 4.142461482518236e-07,
+          "gap": 1.0899481911636392e-05,
+          "sign": 0.0
+        },
+        "native_setup_us": 3305.892,
+        "native_solve_us": 245.548,
+        "exit_flags": [
+          1
+        ]
+      }
+    ],
+    "diagnostics": [
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-06,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 30.916,
+        "workspace_us": 0.6719999999999999,
+        "dual_setup_us": 9.846,
+        "optimize_us": 40.387,
+        "full_primal_solves": 11,
+        "inverse_responses": 3
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-06,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 29.921,
+        "workspace_us": 0.5549999999999999,
+        "dual_setup_us": 10.555,
+        "optimize_us": 41.559,
+        "full_primal_solves": 11,
+        "inverse_responses": 3
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-06,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 24.773000000000003,
+        "workspace_us": 0.6940000000000001,
+        "dual_setup_us": 11.254,
+        "optimize_us": 21.762,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 4,
+        "transformed_points": 4,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 5.209,
+        "recovery_us": 2.129,
+        "transform_us": 3.578,
+        "dense_equality_setup_us": 0.14700000000000002,
+        "recoveries": 1,
+        "transformations": 1,
+        "transformed_rows": 30,
+        "objective_factors": 1
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-06,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 24.698,
+        "workspace_us": 0.432,
+        "dual_setup_us": 11.196,
+        "optimize_us": 21.055,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 4,
+        "transformed_points": 4,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 4.743,
+        "recovery_us": 2.057,
+        "transform_us": 3.521,
+        "dense_equality_setup_us": 0.0,
+        "recoveries": 1,
+        "transformations": 1,
+        "transformed_rows": 30,
+        "objective_factors": 1
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-06,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 39.987,
+        "workspace_us": 0.838,
+        "dual_setup_us": 13.62,
+        "optimize_us": 48.368,
+        "full_primal_solves": 11,
+        "inverse_responses": 3
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-06,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 27.404,
+        "workspace_us": 0.472,
+        "dual_setup_us": 10.237,
+        "optimize_us": 40.381,
+        "full_primal_solves": 11,
+        "inverse_responses": 3
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-06,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 27.001,
+        "workspace_us": 0.9620000000000001,
+        "dual_setup_us": 12.613,
+        "optimize_us": 23.968,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 4,
+        "transformed_points": 4,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.019000000000000003,
+        "iterations_us": 5.8549999999999995,
+        "recovery_us": 2.943,
+        "transform_us": 4.279999999999999,
+        "dense_equality_setup_us": 0.17700000000000002,
+        "recoveries": 1,
+        "transformations": 1,
+        "transformed_rows": 30,
+        "objective_factors": 1
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-06,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 28.848,
+        "workspace_us": 0.441,
+        "dual_setup_us": 12.042,
+        "optimize_us": 22.784000000000002,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 4,
+        "transformed_points": 4,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.019000000000000003,
+        "iterations_us": 5.06,
+        "recovery_us": 2.219,
+        "transform_us": 3.738,
+        "dense_equality_setup_us": 0.0,
+        "recoveries": 1,
+        "transformations": 1,
+        "transformed_rows": 30,
+        "objective_factors": 1
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-06,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 79.494,
+        "workspace_us": 1.852,
+        "dual_setup_us": 40.412,
+        "optimize_us": 101.229,
+        "full_primal_solves": 11,
+        "inverse_responses": 3
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-06,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 84.164,
+        "workspace_us": 1.835,
+        "dual_setup_us": 40.519999999999996,
+        "optimize_us": 95.28,
+        "full_primal_solves": 11,
+        "inverse_responses": 3
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-06,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 86.537,
+        "workspace_us": 1.922,
+        "dual_setup_us": 67.711,
+        "optimize_us": 44.5,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 4,
+        "transformed_points": 4,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 8.134,
+        "recovery_us": 4.345,
+        "transform_us": 31.386,
+        "dense_equality_setup_us": 0.08399999999999999,
+        "recoveries": 1,
+        "transformations": 1,
+        "transformed_rows": 100,
+        "objective_factors": 1
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-06,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 88.384,
+        "workspace_us": 1.742,
+        "dual_setup_us": 69.396,
+        "optimize_us": 42.988,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 4,
+        "transformed_points": 4,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 8.061,
+        "recovery_us": 4.638,
+        "transform_us": 32.453,
+        "dense_equality_setup_us": 0.0,
+        "recoveries": 1,
+        "transformations": 1,
+        "transformed_rows": 100,
+        "objective_factors": 1
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-06,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 1,
+        "constructor_us": 78.14,
+        "workspace_us": 1.802,
+        "dual_setup_us": 38.964,
+        "optimize_us": 41.659,
+        "full_primal_solves": 2,
+        "inverse_responses": 0
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-06,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 1,
+        "constructor_us": 83.774,
+        "workspace_us": 2.555,
+        "dual_setup_us": 41.181,
+        "optimize_us": 42.942,
+        "full_primal_solves": 2,
+        "inverse_responses": 0
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-06,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 1,
+        "constructor_us": 86.36099999999999,
+        "workspace_us": 2.713,
+        "dual_setup_us": 69.596,
+        "optimize_us": 36.138,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 1,
+        "transformed_points": 1,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 2.802,
+        "recovery_us": 4.3309999999999995,
+        "transform_us": 32.273,
+        "dense_equality_setup_us": 0.157,
+        "recoveries": 1,
+        "transformations": 1,
+        "transformed_rows": 100,
+        "objective_factors": 1
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-06,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 1,
+        "constructor_us": 79.1,
+        "workspace_us": 1.277,
+        "dual_setup_us": 64.60300000000001,
+        "optimize_us": 35.527,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 1,
+        "transformed_points": 1,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 2.58,
+        "recovery_us": 4.0,
+        "transform_us": 29.856,
+        "dense_equality_setup_us": 0.0,
+        "recoveries": 1,
+        "transformations": 1,
+        "transformed_rows": 100,
+        "objective_factors": 1
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-06,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 7,
+        "constructor_us": 2497.484,
+        "workspace_us": 17780.14,
+        "dual_setup_us": 973.332,
+        "optimize_us": 2947.7079999999996,
+        "full_primal_solves": 20,
+        "inverse_responses": 4
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-06,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 7,
+        "constructor_us": 1712.827,
+        "workspace_us": 1060.12,
+        "dual_setup_us": 55123.863000000005,
+        "optimize_us": 13112.631,
+        "full_primal_solves": 20,
+        "inverse_responses": 4
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-06,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 7,
+        "constructor_us": 2904.704,
+        "workspace_us": 17855.780000000002,
+        "dual_setup_us": 1770.007,
+        "optimize_us": 1196.2150000000001,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 7,
+        "transformed_points": 6,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 86.869,
+        "recovery_us": 209.62199999999999,
+        "transform_us": 742.396,
+        "dense_equality_setup_us": 17841.463,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 480,
+        "objective_factors": 1
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-06,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 7,
+        "constructor_us": 2830.292,
+        "workspace_us": 1063.43,
+        "dual_setup_us": 96329.62700000001,
+        "optimize_us": 3280.167,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 7,
+        "transformed_points": 6,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 20378.344,
+        "iterations_us": 1599.922,
+        "recovery_us": 598.939,
+        "transform_us": 18072.321,
+        "dense_equality_setup_us": 11158.142,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 912,
+        "objective_factors": 1
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-06,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 485.574,
+        "workspace_us": 10523.261,
+        "dual_setup_us": 1409.539,
+        "optimize_us": 951.996,
+        "full_primal_solves": 4,
+        "inverse_responses": 0
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-06,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 560.105,
+        "workspace_us": 418.71500000000003,
+        "dual_setup_us": 12597.165,
+        "optimize_us": 1476.6580000000001,
+        "full_primal_solves": 4,
+        "inverse_responses": 0
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-06,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 677.85,
+        "workspace_us": 10824.627999999999,
+        "dual_setup_us": 2609.826,
+        "optimize_us": 750.478,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 2,
+        "transformed_points": 2,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 56.622,
+        "recovery_us": 138.163,
+        "transform_us": 1170.505,
+        "dense_equality_setup_us": 10811.455,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 384,
+        "objective_factors": 1
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-06,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 526.176,
+        "workspace_us": 303.027,
+        "dual_setup_us": 21437.896,
+        "optimize_us": 954.4599999999999,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 2,
+        "transformed_points": 2,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 1685.527,
+        "iterations_us": 141.35500000000002,
+        "recovery_us": 222.88199999999998,
+        "transform_us": 5944.128,
+        "dense_equality_setup_us": 1835.942,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 576,
+        "objective_factors": 1
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-06,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 654.2959999999999,
+        "workspace_us": 5748.08,
+        "dual_setup_us": 364.992,
+        "optimize_us": 775.056,
+        "full_primal_solves": 4,
+        "inverse_responses": 0
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-06,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 463.668,
+        "workspace_us": 143.149,
+        "dual_setup_us": 17174.998,
+        "optimize_us": 1724.749,
+        "full_primal_solves": 4,
+        "inverse_responses": 0
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-06,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 608.3660000000001,
+        "workspace_us": 5714.927,
+        "dual_setup_us": 624.108,
+        "optimize_us": 692.191,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 2,
+        "transformed_points": 2,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 26.470999999999997,
+        "recovery_us": 97.059,
+        "transform_us": 266.263,
+        "dense_equality_setup_us": 5709.486,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 320,
+        "objective_factors": 1
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-06,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 609.635,
+        "workspace_us": 240.202,
+        "dual_setup_us": 27116.563,
+        "optimize_us": 1056.616,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 2,
+        "transformed_points": 2,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 5267.034000000001,
+        "iterations_us": 170.192,
+        "recovery_us": 232.806,
+        "transform_us": 6283.735000000001,
+        "dense_equality_setup_us": 3614.027,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 608,
+        "objective_factors": 1
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-09,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 5,
+        "constructor_us": 27.488,
+        "workspace_us": 0.5619999999999999,
+        "dual_setup_us": 9.769,
+        "optimize_us": 53.211999999999996,
+        "full_primal_solves": 15,
+        "inverse_responses": 3
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-09,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 5,
+        "constructor_us": 26.571,
+        "workspace_us": 0.48100000000000004,
+        "dual_setup_us": 9.414,
+        "optimize_us": 52.885,
+        "full_primal_solves": 15,
+        "inverse_responses": 3
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-09,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 5,
+        "constructor_us": 26.741999999999997,
+        "workspace_us": 0.723,
+        "dual_setup_us": 11.518,
+        "optimize_us": 30.694999999999997,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 5,
+        "transformed_points": 5,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 6.048,
+        "recovery_us": 3.2840000000000003,
+        "transform_us": 3.731,
+        "dense_equality_setup_us": 0.149,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 30,
+        "objective_factors": 1
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": 1e-09,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 5,
+        "constructor_us": 32.937,
+        "workspace_us": 0.47700000000000004,
+        "dual_setup_us": 12.052999999999999,
+        "optimize_us": 30.23,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 5,
+        "transformed_points": 5,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 5.997000000000001,
+        "recovery_us": 3.054,
+        "transform_us": 3.8909999999999996,
+        "dense_equality_setup_us": 0.0,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 30,
+        "objective_factors": 1
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-09,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 5,
+        "constructor_us": 28.628,
+        "workspace_us": 0.639,
+        "dual_setup_us": 10.499,
+        "optimize_us": 55.067,
+        "full_primal_solves": 15,
+        "inverse_responses": 3
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-09,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 5,
+        "constructor_us": 26.926,
+        "workspace_us": 0.44,
+        "dual_setup_us": 9.588000000000001,
+        "optimize_us": 52.043000000000006,
+        "full_primal_solves": 15,
+        "inverse_responses": 3
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-09,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 5,
+        "constructor_us": 26.394,
+        "workspace_us": 0.592,
+        "dual_setup_us": 11.232,
+        "optimize_us": 29.965,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 5,
+        "transformed_points": 5,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 5.961,
+        "recovery_us": 3.052,
+        "transform_us": 3.662,
+        "dense_equality_setup_us": 0.13899999999999998,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 30,
+        "objective_factors": 1
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": 1e-09,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 5,
+        "constructor_us": 25.735,
+        "workspace_us": 0.522,
+        "dual_setup_us": 11.817,
+        "optimize_us": 29.709,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 5,
+        "transformed_points": 5,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.019000000000000003,
+        "iterations_us": 5.825,
+        "recovery_us": 3.228,
+        "transform_us": 3.811,
+        "dense_equality_setup_us": 0.0,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 30,
+        "objective_factors": 1
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-09,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 5,
+        "constructor_us": 81.001,
+        "workspace_us": 1.4729999999999999,
+        "dual_setup_us": 39.517,
+        "optimize_us": 131.499,
+        "full_primal_solves": 15,
+        "inverse_responses": 3
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-09,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 5,
+        "constructor_us": 77.39800000000001,
+        "workspace_us": 1.5090000000000001,
+        "dual_setup_us": 39.449999999999996,
+        "optimize_us": 135.026,
+        "full_primal_solves": 15,
+        "inverse_responses": 3
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-09,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 5,
+        "constructor_us": 79.733,
+        "workspace_us": 1.889,
+        "dual_setup_us": 67.454,
+        "optimize_us": 68.618,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 5,
+        "transformed_points": 5,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 9.556,
+        "recovery_us": 6.895,
+        "transform_us": 31.767999999999997,
+        "dense_equality_setup_us": 0.15,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 100,
+        "objective_factors": 1
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": 1e-09,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 5,
+        "constructor_us": 77.65299999999999,
+        "workspace_us": 1.377,
+        "dual_setup_us": 67.466,
+        "optimize_us": 65.818,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 5,
+        "transformed_points": 5,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 10.413,
+        "recovery_us": 7.002,
+        "transform_us": 31.555,
+        "dense_equality_setup_us": 0.0,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 100,
+        "objective_factors": 1
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-09,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 90.468,
+        "workspace_us": 2.4219999999999997,
+        "dual_setup_us": 41.647000000000006,
+        "optimize_us": 75.245,
+        "full_primal_solves": 4,
+        "inverse_responses": 0
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-09,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 81.895,
+        "workspace_us": 1.496,
+        "dual_setup_us": 38.85,
+        "optimize_us": 73.095,
+        "full_primal_solves": 4,
+        "inverse_responses": 0
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-09,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 77.896,
+        "workspace_us": 1.7799999999999998,
+        "dual_setup_us": 67.99799999999999,
+        "optimize_us": 57.797000000000004,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 2,
+        "transformed_points": 2,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 4.4639999999999995,
+        "recovery_us": 6.822,
+        "transform_us": 30.466,
+        "dense_equality_setup_us": 0.185,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 100,
+        "objective_factors": 1
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": 1e-09,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 76.762,
+        "workspace_us": 1.4240000000000002,
+        "dual_setup_us": 64.827,
+        "optimize_us": 61.772000000000006,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 2,
+        "transformed_points": 2,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 4.420999999999999,
+        "recovery_us": 6.527,
+        "transform_us": 30.868000000000002,
+        "dense_equality_setup_us": 0.0,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 100,
+        "objective_factors": 1
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-09,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 7,
+        "constructor_us": 1826.933,
+        "workspace_us": 17829.189,
+        "dual_setup_us": 977.0160000000001,
+        "optimize_us": 2960.3810000000003,
+        "full_primal_solves": 20,
+        "inverse_responses": 4
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-09,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 7,
+        "constructor_us": 2746.265,
+        "workspace_us": 1038.178,
+        "dual_setup_us": 54912.003000000004,
+        "optimize_us": 13083.02,
+        "full_primal_solves": 20,
+        "inverse_responses": 4
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-09,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 7,
+        "constructor_us": 2307.6310000000003,
+        "workspace_us": 17916.99,
+        "dual_setup_us": 1727.1770000000001,
+        "optimize_us": 1201.8129999999999,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 7,
+        "transformed_points": 6,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 87.586,
+        "recovery_us": 213.119,
+        "transform_us": 743.713,
+        "dense_equality_setup_us": 17904.804,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 480,
+        "objective_factors": 1
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": 1e-09,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 7,
+        "constructor_us": 2924.855,
+        "workspace_us": 1058.675,
+        "dual_setup_us": 96000.848,
+        "optimize_us": 4025.196,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 7,
+        "transformed_points": 6,
+        "fallbacks": 0,
+        "refinements": 2,
+        "equality_us": 20399.322,
+        "iterations_us": 1575.85,
+        "recovery_us": 1372.564,
+        "transform_us": 18213.739999999998,
+        "dense_equality_setup_us": 10991.206999999999,
+        "recoveries": 6,
+        "transformations": 1,
+        "transformed_rows": 912,
+        "objective_factors": 1
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-09,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 1242.189,
+        "workspace_us": 10845.216,
+        "dual_setup_us": 1415.269,
+        "optimize_us": 950.852,
+        "full_primal_solves": 4,
+        "inverse_responses": 0
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-09,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 471.58,
+        "workspace_us": 107.677,
+        "dual_setup_us": 11411.713,
+        "optimize_us": 1466.1699999999998,
+        "full_primal_solves": 4,
+        "inverse_responses": 0
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-09,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 478.668,
+        "workspace_us": 10557.356,
+        "dual_setup_us": 2598.497,
+        "optimize_us": 748.1519999999999,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 2,
+        "transformed_points": 2,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 57.583999999999996,
+        "recovery_us": 137.412,
+        "transform_us": 1175.286,
+        "dense_equality_setup_us": 10543.885,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 384,
+        "objective_factors": 1
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": 1e-09,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 753.862,
+        "workspace_us": 405.661,
+        "dual_setup_us": 21422.064000000002,
+        "optimize_us": 951.6999999999999,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 2,
+        "transformed_points": 2,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 1658.663,
+        "iterations_us": 137.964,
+        "recovery_us": 223.29500000000002,
+        "transform_us": 5923.66,
+        "dense_equality_setup_us": 1815.562,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 576,
+        "objective_factors": 1
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-09,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 593.739,
+        "workspace_us": 5658.352,
+        "dual_setup_us": 361.512,
+        "optimize_us": 775.08,
+        "full_primal_solves": 4,
+        "inverse_responses": 0
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-09,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 580.572,
+        "workspace_us": 390.664,
+        "dual_setup_us": 16940.401,
+        "optimize_us": 1712.27,
+        "full_primal_solves": 4,
+        "inverse_responses": 0
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-09,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 809.031,
+        "workspace_us": 5664.496,
+        "dual_setup_us": 633.32,
+        "optimize_us": 691.982,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 2,
+        "transformed_points": 2,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.020999999999999998,
+        "iterations_us": 26.322,
+        "recovery_us": 98.13,
+        "transform_us": 266.60200000000003,
+        "dense_equality_setup_us": 5657.604,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 320,
+        "objective_factors": 1
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": 1e-09,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 580.68,
+        "workspace_us": 321.098,
+        "dual_setup_us": 27044.146,
+        "optimize_us": 1046.845,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 2,
+        "transformed_points": 2,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 5233.611,
+        "iterations_us": 164.787,
+        "recovery_us": 237.95100000000002,
+        "transform_us": 6330.877,
+        "dense_equality_setup_us": 3625.569,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 608,
+        "objective_factors": 1
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": -1.0,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 27.447,
+        "workspace_us": 0.523,
+        "dual_setup_us": 10.015,
+        "optimize_us": 40.409,
+        "full_primal_solves": 11,
+        "inverse_responses": 3
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": -1.0,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 26.113,
+        "workspace_us": 0.47700000000000004,
+        "dual_setup_us": 9.324,
+        "optimize_us": 40.425,
+        "full_primal_solves": 11,
+        "inverse_responses": 3
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": -1.0,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 32.359,
+        "workspace_us": 1.031,
+        "dual_setup_us": 13.167,
+        "optimize_us": 29.122,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 4,
+        "transformed_points": 4,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 6.181,
+        "recovery_us": 3.185,
+        "transform_us": 4.2010000000000005,
+        "dense_equality_setup_us": 0.181,
+        "recoveries": 1,
+        "transformations": 1,
+        "transformed_rows": 30,
+        "objective_factors": 1
+      },
+      {
+        "problem": "LIPMWALK0",
+        "epsilon": -1.0,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 30.855999999999998,
+        "workspace_us": 0.553,
+        "dual_setup_us": 11.953000000000001,
+        "optimize_us": 23.465,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 4,
+        "transformed_points": 4,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 5.3580000000000005,
+        "recovery_us": 2.198,
+        "transform_us": 3.762,
+        "dense_equality_setup_us": 0.0,
+        "recoveries": 1,
+        "transformations": 1,
+        "transformed_rows": 30,
+        "objective_factors": 1
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": -1.0,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 27.574,
+        "workspace_us": 0.617,
+        "dual_setup_us": 9.979999999999999,
+        "optimize_us": 41.498000000000005,
+        "full_primal_solves": 11,
+        "inverse_responses": 3
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": -1.0,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 28.36,
+        "workspace_us": 0.48400000000000004,
+        "dual_setup_us": 9.536,
+        "optimize_us": 40.751000000000005,
+        "full_primal_solves": 11,
+        "inverse_responses": 3
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": -1.0,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 35.126999999999995,
+        "workspace_us": 0.9760000000000001,
+        "dual_setup_us": 14.501999999999999,
+        "optimize_us": 27.948,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 4,
+        "transformed_points": 4,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 6.234,
+        "recovery_us": 3.19,
+        "transform_us": 4.380000000000001,
+        "dense_equality_setup_us": 0.19999999999999998,
+        "recoveries": 1,
+        "transformations": 1,
+        "transformed_rows": 30,
+        "objective_factors": 1
+      },
+      {
+        "problem": "LIPMWALK20",
+        "epsilon": -1.0,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 25.515,
+        "workspace_us": 0.43,
+        "dual_setup_us": 11.213,
+        "optimize_us": 22.186,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 4,
+        "transformed_points": 4,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 4.987,
+        "recovery_us": 2.216,
+        "transform_us": 3.532,
+        "dense_equality_setup_us": 0.0,
+        "recoveries": 1,
+        "transformations": 1,
+        "transformed_rows": 30,
+        "objective_factors": 1
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": -1.0,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 82.603,
+        "workspace_us": 1.568,
+        "dual_setup_us": 39.897,
+        "optimize_us": 96.828,
+        "full_primal_solves": 11,
+        "inverse_responses": 3
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": -1.0,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 81.345,
+        "workspace_us": 2.2239999999999998,
+        "dual_setup_us": 40.275999999999996,
+        "optimize_us": 95.973,
+        "full_primal_solves": 11,
+        "inverse_responses": 3
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": -1.0,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 78.905,
+        "workspace_us": 1.3719999999999999,
+        "dual_setup_us": 68.08,
+        "optimize_us": 41.937000000000005,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 4,
+        "transformed_points": 4,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.019000000000000003,
+        "iterations_us": 7.595,
+        "recovery_us": 4.125,
+        "transform_us": 32.21,
+        "dense_equality_setup_us": 0.091,
+        "recoveries": 1,
+        "transformations": 1,
+        "transformed_rows": 100,
+        "objective_factors": 1
+      },
+      {
+        "problem": "WHLIPBAL0",
+        "epsilon": -1.0,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 4,
+        "constructor_us": 92.073,
+        "workspace_us": 1.5,
+        "dual_setup_us": 70.0,
+        "optimize_us": 46.173,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 4,
+        "transformed_points": 4,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.019000000000000003,
+        "iterations_us": 8.696,
+        "recovery_us": 4.646999999999999,
+        "transform_us": 31.776999999999997,
+        "dense_equality_setup_us": 0.0,
+        "recoveries": 1,
+        "transformations": 1,
+        "transformed_rows": 100,
+        "objective_factors": 1
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": -1.0,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 1,
+        "constructor_us": 77.285,
+        "workspace_us": 1.32,
+        "dual_setup_us": 36.908,
+        "optimize_us": 42.007,
+        "full_primal_solves": 2,
+        "inverse_responses": 0
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": -1.0,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 1,
+        "constructor_us": 78.00999999999999,
+        "workspace_us": 2.197,
+        "dual_setup_us": 39.07299999999999,
+        "optimize_us": 42.466,
+        "full_primal_solves": 2,
+        "inverse_responses": 0
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": -1.0,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 1,
+        "constructor_us": 80.108,
+        "workspace_us": 1.792,
+        "dual_setup_us": 68.00399999999999,
+        "optimize_us": 36.229,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 1,
+        "transformed_points": 1,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 2.631,
+        "recovery_us": 3.9899999999999998,
+        "transform_us": 31.932,
+        "dense_equality_setup_us": 0.082,
+        "recoveries": 1,
+        "transformations": 1,
+        "transformed_rows": 100,
+        "objective_factors": 1
+      },
+      {
+        "problem": "WHLIPBAL10",
+        "epsilon": -1.0,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 1,
+        "constructor_us": 83.11500000000001,
+        "workspace_us": 1.7650000000000001,
+        "dual_setup_us": 66.972,
+        "optimize_us": 35.376999999999995,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 1,
+        "transformed_points": 1,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.019000000000000003,
+        "iterations_us": 2.599,
+        "recovery_us": 4.04,
+        "transform_us": 30.287,
+        "dense_equality_setup_us": 0.0,
+        "recoveries": 1,
+        "transformations": 1,
+        "transformed_rows": 100,
+        "objective_factors": 1
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": -1.0,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 7,
+        "constructor_us": 2336.6,
+        "workspace_us": 17894.015,
+        "dual_setup_us": 974.124,
+        "optimize_us": 2964.843,
+        "full_primal_solves": 20,
+        "inverse_responses": 4
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": -1.0,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 7,
+        "constructor_us": 2367.199,
+        "workspace_us": 1043.6950000000002,
+        "dual_setup_us": 55130.649,
+        "optimize_us": 13127.841,
+        "full_primal_solves": 20,
+        "inverse_responses": 4
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": -1.0,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 7,
+        "constructor_us": 2951.513,
+        "workspace_us": 17879.336,
+        "dual_setup_us": 1725.862,
+        "optimize_us": 1193.9850000000001,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 7,
+        "transformed_points": 6,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.020999999999999998,
+        "iterations_us": 86.02,
+        "recovery_us": 213.069,
+        "transform_us": 742.337,
+        "dense_equality_setup_us": 17866.769,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 480,
+        "objective_factors": 1
+      },
+      {
+        "problem": "QUADCMPC2",
+        "epsilon": -1.0,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 7,
+        "constructor_us": 2748.5640000000003,
+        "workspace_us": 1048.069,
+        "dual_setup_us": 96297.584,
+        "optimize_us": 3271.805,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 7,
+        "transformed_points": 6,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 20401.759,
+        "iterations_us": 1593.686,
+        "recovery_us": 602.661,
+        "transform_us": 18016.581000000002,
+        "dense_equality_setup_us": 11378.198,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 912,
+        "objective_factors": 1
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": -1.0,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 1228.679,
+        "workspace_us": 10779.360999999999,
+        "dual_setup_us": 1412.473,
+        "optimize_us": 957.675,
+        "full_primal_solves": 4,
+        "inverse_responses": 0
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": -1.0,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 565.937,
+        "workspace_us": 167.126,
+        "dual_setup_us": 12538.498,
+        "optimize_us": 1501.863,
+        "full_primal_solves": 4,
+        "inverse_responses": 0
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": -1.0,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 656.356,
+        "workspace_us": 10734.979000000001,
+        "dual_setup_us": 2609.598,
+        "optimize_us": 752.319,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 2,
+        "transformed_points": 2,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 57.206,
+        "recovery_us": 139.046,
+        "transform_us": 1173.516,
+        "dense_equality_setup_us": 10722.245,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 384,
+        "objective_factors": 1
+      },
+      {
+        "problem": "QUADCMPC3",
+        "epsilon": -1.0,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 444.982,
+        "workspace_us": 314.672,
+        "dual_setup_us": 21521.068,
+        "optimize_us": 958.7909999999999,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 2,
+        "transformed_points": 2,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 1680.6760000000002,
+        "iterations_us": 141.59099999999998,
+        "recovery_us": 222.763,
+        "transform_us": 5959.543000000001,
+        "dense_equality_setup_us": 1805.5639999999999,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 576,
+        "objective_factors": 1
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": -1.0,
+        "version": "before",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 571.565,
+        "workspace_us": 5691.691,
+        "dual_setup_us": 360.375,
+        "optimize_us": 774.554,
+        "full_primal_solves": 4,
+        "inverse_responses": 0
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": -1.0,
+        "version": "before",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 566.524,
+        "workspace_us": 397.483,
+        "dual_setup_us": 17010.409,
+        "optimize_us": 1691.077,
+        "full_primal_solves": 4,
+        "inverse_responses": 0
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": -1.0,
+        "version": "after",
+        "project_equalities": true,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 480.556,
+        "workspace_us": 5622.916,
+        "dual_setup_us": 625.048,
+        "optimize_us": 692.478,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 2,
+        "transformed_points": 2,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 0.02,
+        "iterations_us": 26.365,
+        "recovery_us": 98.002,
+        "transform_us": 265.96299999999997,
+        "dense_equality_setup_us": 5617.121,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 320,
+        "objective_factors": 1
+      },
+      {
+        "problem": "QUADCMPC4",
+        "epsilon": -1.0,
+        "version": "after",
+        "project_equalities": false,
+        "repetitions": 5,
+        "iterations": 2,
+        "constructor_us": 676.818,
+        "workspace_us": 401.14799999999997,
+        "dual_setup_us": 26797.158000000003,
+        "optimize_us": 1042.07,
+        "full_primal_solves": 0,
+        "inverse_responses": 0,
+        "whitened_working_solves": 2,
+        "transformed_points": 2,
+        "fallbacks": 0,
+        "refinements": 0,
+        "equality_us": 5238.486,
+        "iterations_us": 165.615,
+        "recovery_us": 230.81300000000002,
+        "transform_us": 6295.894,
+        "dense_equality_setup_us": 3584.468,
+        "recoveries": 2,
+        "transformations": 1,
+        "transformed_rows": 608,
+        "objective_factors": 1
+      }
+    ]
   }
 }

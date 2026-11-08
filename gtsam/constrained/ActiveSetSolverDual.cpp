@@ -104,8 +104,10 @@ std::pair<Values, ActiveSetSolver::State> ActiveSetSolver::optimizeDualQp(
       state.duals.insert(constraints_.equalities[i].multiplierKey, Vector1{equalities(i)});
     state.converged = originalQpKktSatisfied(state.values,
         state.activeInequalityRows, state.duals, &gradient);
-    if (!state.converged && params_->regularization == 0)
+    if (!state.converged && params_->regularization == 0) {
+      if (workspace->dual->retryWithoutWhitening()) continue;
       throw std::runtime_error("ActiveSetSolver: Dual failed the original QP certificate.");
+    }
   }
   State result = buildPublicState(state, initialValues);
   result.qpFormulation = Params::QpFormulation::Dual;

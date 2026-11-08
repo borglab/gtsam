@@ -334,6 +334,200 @@ TEST(DualQp, SeededKktSolutions) {
   }
 }
 
+// Transformed rows and curvature survive recentering and working-row releases.
+// Neither equality setting performs full primal solves inside the dual loop.
+TEST(DualQp, WhiteningReuseAndPermanentEqualities) {
+  for (bool project : {false, true}) {
+    internal::DenseQpData denseData;
+    denseData.jacobian = Matrix{{2, 1, 0}, {0, 2, 0}, {0, 0, 1}};
+    denseData.rhs = denseData.jacobian * Vector3{3, 2, 0};
+    denseData.linear = Vector3::Zero();
+    denseData.normals = Matrix{{0, 0, 1}, {0, 0, 2}, {1, 0, 0},
+                               {0, 1, 0}, {1, 1, 0}};
+    denseData.bounds = Vector5{2, 4, 1, 1, 1.5};
+    denseData.equalities = 2;
+    denseData.regularization = 0.1;
+    internal::SparseQpData data;
+    data.keyDimensions = {{0, 3}};
+    data.regularization = denseData.regularization;
+    data.objective.emplace_shared<JacobianFactor>(0, denseData.jacobian, denseData.rhs);
+    for (int row = 0; row < 5; ++row) {
+      auto factor = std::make_shared<JacobianFactor>(0, Matrix(denseData.normals.row(row)),
+          Vector1{denseData.bounds(row)}, noiseModel::Constrained::All(1));
+      (row < 2 ? data.equalities : data.inequalities).push_back(factor);
+    }
+    internal::DenseQpSolver workspace(denseData, project), reference(denseData, project);
+    internal::DualQpSolver solver(data, &workspace, Ordering{0});
+    internal::DualQpSolver old(data, &reference, Ordering{0}, false);
+    CHECK(solver.prepare());
+    CHECK(old.prepare());
+    Vector multipliers = Vector::Zero(3), referenceMultipliers = multipliers;
+    std::vector<bool> active(3, false), referenceActive = active;
+    // A stale warm row must be released, even with unrestricted equalities.
+    active[1] = referenceActive[1] = true;
+    multipliers(1) = referenceMultipliers(1) = 5;
+    size_t iterations = 0, referenceIterations = 0;
+    for (const Vector& point : {Vector(Vector3::Zero()), Vector(Vector3{5, -40, 10})}) {
+      VectorValues center; center.insert(0, point);
+      const auto actual = solver.solve(center, &multipliers, &active, &iterations,
+                                        100, 1e-9, 1e-9);
+      const auto expected = old.solve(center, &referenceMultipliers, &referenceActive,
+                                     &referenceIterations, 100, 1e-9, 1e-9);
+      EXPECT(assert_equal(expected, actual, 1e-8));
+      EXPECT(assert_equal(referenceMultipliers, multipliers, 1e-8));
+      EXPECT(assert_equal(Vector2{2, 4}, Vector(denseData.normals.topRows(2) * actual.at(0)), 1e-9));
+    }
+    CHECK(iterations > 2);
+    CHECK(solver.statistics().whitenedWorkingSolves == iterations);
+    CHECK(solver.statistics().whiteningFallbacks == 0);
+    CHECK(solver.statistics().rhsSolves == 0);
+    CHECK(solver.statistics().responseSolves == 0);
+    CHECK(workspace.statistics().rhsOnlySolves == 0);
+    CHECK(workspace.statistics().whiteningRecoveries == 2);
+    CHECK(workspace.statistics().whiteningSetups == 1);
+    CHECK(workspace.statistics().transformedNormals == (project ? 3 : 5));
+    CHECK(workspace.statistics().objectiveFactorizations == 1);
+    CHECK(solver.statistics().rowRemovals > 0);
+  }
+}
+
+// A globally singular objective uses the established constrained inverse when
+// equalities remove its null direction; no regularization floor is introduced.
+TEST(DualQp, WhiteningSingularGlobalCurvatureFallback) {
+  internal::DenseQpData denseData;
+  denseData.jacobian = Matrix{{0, 1}};
+  denseData.rhs = Vector1{3};
+  denseData.linear = Vector2::Zero();
+  denseData.normals = Matrix{{1, 0}, {0, 1}};
+  denseData.bounds = Vector2{2, 1};
+  denseData.equalities = 1;
+  internal::SparseQpData data;
+  data.keyDimensions = {{0, 2}};
+  data.objective.emplace_shared<JacobianFactor>(0, denseData.jacobian, denseData.rhs);
+  data.equalities.emplace_shared<JacobianFactor>(0, Matrix{{1, 0}}, Vector1{2},
+                                                 noiseModel::Constrained::All(1));
+  data.inequalities.emplace_shared<JacobianFactor>(0, Matrix{{0, 1}}, Vector1{1},
+                                                   noiseModel::Constrained::All(1));
+  internal::DenseQpSolver workspace(denseData, false);
+  internal::DualQpSolver solver(data, &workspace, Ordering{0});
+  CHECK(solver.prepare());
+  VectorValues center; center.insert(0, Vector2::Zero());
+  Vector multipliers = Vector1::Zero();
+  std::vector<bool> active(1, false);
+  size_t iterations = 0;
+  const auto result = solver.solve(center, &multipliers, &active, &iterations, 10, 1e-9, 1e-9);
+  EXPECT(assert_equal(Vector2{2, 1}, result.at(0), 1e-9));
+  CHECK(solver.statistics().whitenedWorkingSolves == 0);
+  CHECK(solver.statistics().rhsSolves > 0);
+  CHECK(workspace.statistics().whiteningSetups == 0);
+}
+
+// Planted KKT points exercise coupled equalities, both signs of unrestricted
+// multipliers, dependent rows and Primal-to-Dual warm starts in either setting.
+TEST(DualQp, WhitenedEqualityKktAndWarmStarts) {
+  std::mt19937 generator(2718);
+  std::normal_distribution<double> random;
+  for (int sample = 0; sample < 12; ++sample) {
+    const int n = 5, m = 8;
+    Matrix root(n, n), normals(m, n), equalities(2, n);
+    for (int i = 0; i < root.size(); ++i) root.data()[i] = random(generator);
+    root += 4 * Matrix::Identity(n, n);
+    for (int i = 0; i < normals.size(); ++i) normals.data()[i] = random(generator);
+    for (int j = 0; j < n; ++j) equalities(0, j) = random(generator);
+    equalities.row(1) = 2 * equalities.row(0);
+    normals.row(2) = normals.row(0) + normals.row(1);
+    const Vector expected = Vector::Constant(n, 0.25);
+    Vector multipliers = Vector::Zero(m), bounds = normals * expected;
+    multipliers.head(2) = Vector2{1, 2};
+    for (int row = 3; row < m; ++row) bounds(row) += 0.5;
+    const Matrix hessian = root.transpose() * root;
+    const Vector forcing = hessian * expected + normals.transpose() * multipliers +
+        equalities.row(0).transpose() * (sample % 2 ? -3 : 3);
+    QpProblem problem;
+    problem.addCost(HessianFactor(0, hessian, forcing, 0));
+    equal(&problem, equalities, equalities * expected);
+    less(&problem, normals, bounds);
+    auto primal = parameters(Backend::Dense, Formulation::Primal);
+    const auto previous = ActiveSetSolver(problem, primal).optimizeWithState(initial(expected));
+    for (bool project : {false, true}) {
+      auto params = parameters(Backend::Dense);
+      params->projectDenseQpEqualities = project;
+      params->feasibilityTolerance = params->multiplierTolerance = 1e-9;
+      for (bool warm : {false, true}) {
+        const auto result = warm
+            ? ActiveSetSolver(problem, params).optimizeWithState(previous.first, previous.second)
+            : ActiveSetSolver(problem, params).optimizeWithState();
+        const Vector point = result.first.at<Vector>(0);
+        EXPECT(assert_equal(expected, point, 1e-8));
+        const Vector lambda = -result.second.inequalityMultipliers[0];
+        const Vector residual = hessian * point - forcing + normals.transpose() * lambda -
+            equalities.transpose() * result.second.equalityMultipliers[0];
+        CHECK(lambda.minCoeff() >= -1e-9);
+        EXPECT(assert_equal(Vector::Zero(n), residual, 1e-8));
+        CHECK(result.second.converged);
+      }
+    }
+  }
+}
+
+// Cancellation at a weak-curvature boundary needs conditional correction or
+// the retained numerical path, while sharing the original iteration budget.
+TEST(DualQp, WhiteningBoundaryRefinement) {
+  internal::DenseQpData packed;
+  packed.nativeHessian = Matrix{{1e-8, 0}, {0, 1}};
+  packed.jacobian = Matrix{{1e-4, 0}, {0, 1}};
+  packed.rhs = Vector2::Zero();
+  packed.linear = Vector2{2, 5};
+  packed.normals = Matrix{{1, 1}};
+  packed.bounds = Vector1{1};
+  internal::SparseQpData data;
+  data.keyDimensions = {{0, 2}};
+  data.objective.emplace_shared<HessianFactor>(0, packed.nativeHessian, packed.linear, 0);
+  data.inequalities.emplace_shared<JacobianFactor>(0, packed.normals, packed.bounds,
+                                                   noiseModel::Constrained::All(1));
+  internal::DenseQpSolver dense(packed);
+  internal::DualQpSolver solver(data, &dense, Ordering{0});
+  CHECK(solver.prepare());
+  VectorValues center; center.insert(0, Vector2::Zero());
+  Vector multipliers = Vector1::Zero();
+  std::vector<bool> active(1, false);
+  size_t iterations = 0;
+  const auto result = solver.solve(center, &multipliers, &active, &iterations, 20, 1e-10, 1e-10);
+  const double second = (3 + 1e-8) / (1 + 1e-8);
+  EXPECT(assert_equal(Vector2{1 - second, second}, result.at(0), 1e-8));
+  CHECK(solver.statistics().conditionalRefinements > 0 ||
+        solver.statistics().whiteningFallbacks > 0);
+  CHECK(iterations >= solver.statistics().whitenedWorkingSolves);
+  CHECK(iterations <= 20);
+}
+
+// Equality multipliers in a Farkas ray may be negative. Both coordinate
+// settings must verify that ray in the original QP before calling it infeasible.
+TEST(DualQp, WhitenedPermanentEqualityInfeasibility) {
+  for (bool project : {false, true}) {
+    QpProblem problem = objective(Vector2{3, 2});
+    equal(&problem, Matrix{{1, 1}, {2, 2}}, Vector2{1, 2});
+    less(&problem, Matrix::Identity(2, 2), Vector2::Zero());
+    auto params = parameters(Backend::Dense);
+    params->projectDenseQpEqualities = project;
+    bool verified = false;
+    try {
+      ActiveSetSolver(problem, params).optimize();
+    } catch (const std::runtime_error& error) {
+      verified = std::string(error.what()).find("verified dual ray") != std::string::npos;
+    }
+    CHECK(verified);
+    params->maxIterations = 1;
+    bool exhausted = false;
+    try {
+      ActiveSetSolver(problem, params).optimize();
+    } catch (const std::runtime_error& error) {
+      exhausted = std::string(error.what()).find("failed to converge") != std::string::npos;
+    }
+    CHECK(exhausted);
+  }
+}
+
 // RHS changes and working-row changes retain the fixed sparse factorization.
 TEST(DualQp, SparseFactorReuse) {
   internal::SparseQpData data;

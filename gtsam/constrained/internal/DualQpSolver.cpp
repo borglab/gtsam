@@ -4,6 +4,8 @@
  * See LICENSE for the license information.
  * -------------------------------------------------------------------------- */
 #include <gtsam/constrained/internal/DualQpSolver.h>
+#include <gtsam/constrained/internal/DenseDualQpSolver.h>
+#include <chrono>
 #include <gtsam/constrained/internal/ActiveSetSolverInternal.h>
 #include <gtsam/constrained/internal/SparseDualSolver.h>
 #include <gtsam/linear/GaussianISAM2.h>
@@ -44,6 +46,8 @@ struct DualQpSolver::Impl {
   SparseQpData data;
   DenseQpSolver* dense;
   Ordering ordering;
+  bool useWhitening;
+  std::unique_ptr<DenseDualQpSolver> whitened;
   std::unique_ptr<GaussianISAM2> tree;
   VectorValues zero, reference;
   size_t dimension = 0;
@@ -56,8 +60,9 @@ struct DualQpSolver::Impl {
   bool nonsingular = true;
 
   Impl(SparseQpData inputs, DenseQpSolver* denseWorkspace,
-       const Ordering& denseOrdering)
-      : data(std::move(inputs)), dense(denseWorkspace), ordering(denseOrdering) {
+       const Ordering& denseOrdering, bool whiteningEnabled)
+      : data(std::move(inputs)), dense(denseWorkspace), ordering(denseOrdering),
+        useWhitening(whiteningEnabled) {
     for (const auto& [key, count] : data.keyDimensions) {
       zero.insert(key, Vector::Zero(count));
       dimension += count;
@@ -129,8 +134,22 @@ struct DualQpSolver::Impl {
 
   bool prepare() {
     if (dense) {
+      const auto began = std::chrono::steady_clock::now();
+      if (useWhitening && dense->prepareWhitening()) {
+        try {
+          whitened = std::make_unique<DenseDualQpSolver>(*dense, statistics);
+          ++statistics.objectiveFactorizations;
+          statistics.setupSeconds += std::chrono::duration<double>(
+              std::chrono::steady_clock::now() - began).count();
+          return true;
+        } catch (const WhiteningFailure&) {
+          ++statistics.whiteningFallbacks;
+        }
+      }
       const bool valid = dense->prepareDual();
       if (valid) ++statistics.objectiveFactorizations;
+      statistics.setupSeconds += std::chrono::duration<double>(
+          std::chrono::steady_clock::now() - began).count();
       return valid;
     }
     GaussianFactorGraph graph = data.objective;
@@ -384,6 +403,19 @@ struct DualQpSolver::Impl {
   VectorValues solve(const VectorValues& center, Vector* multipliers,
       std::vector<bool>* active, size_t* iterations, size_t maxIterations,
       double feasibilityTolerance, double multiplierTolerance) {
+    if (whitened) {
+      try {
+        return unpack(whitened->solve(pack(center), multipliers, active, iterations,
+            maxIterations, feasibilityTolerance, multiplierTolerance));
+      } catch (const WhiteningFailure&) {
+        whitened.reset();
+        ++statistics.whiteningFallbacks;
+        // Setup-only formulation selection is unchanged: this remains Dual,
+        // with the same multipliers, row mask and shared iteration budget.
+        if (!dense->prepareDual())
+          throw std::runtime_error("Dense Dual: original-coordinate fallback is singular.");
+      }
+    }
     // The working set persists across proximal centers; initial warm starts
     // are incorporated on the first invocation only.
     if (rows.empty())
@@ -460,12 +492,20 @@ struct DualQpSolver::Impl {
 };
 
 DualQpSolver::DualQpSolver(SparseQpData data, DenseQpSolver* dense,
-                         const Ordering& denseOrdering)
-    : impl_(std::make_unique<Impl>(std::move(data), dense, denseOrdering)) {}
+                         const Ordering& denseOrdering, bool useWhitening)
+    : impl_(std::make_unique<Impl>(std::move(data), dense, denseOrdering, useWhitening)) {}
 DualQpSolver::~DualQpSolver() = default;
 size_t DualQpSolver::reducedDimension() const { return impl_->dimension; }
 bool DualQpSolver::prepare() { return impl_->prepare(); }
 const DualQpSolver::Statistics& DualQpSolver::statistics() const { return impl_->statistics; }
+bool DualQpSolver::retryWithoutWhitening() {
+  if (!impl_->whitened) return false;
+  impl_->whitened.reset();
+  ++impl_->statistics.whiteningFallbacks;
+  if (!impl_->dense->prepareDual())
+    throw std::runtime_error("Dense Dual: original-coordinate fallback is singular.");
+  return true;
+}
 VectorValues DualQpSolver::solve(const VectorValues& center, Vector* multipliers,
     std::vector<bool>* active, size_t* iterations, size_t maxIterations,
     double feasibilityTolerance, double multiplierTolerance) {
