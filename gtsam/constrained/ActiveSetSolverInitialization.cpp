@@ -262,6 +262,7 @@ void ActiveSetSolver::initializeProjectedGradient(
 
   const VectorValues gradient = qpCostGraph_.gradient(state->values);
   auto projectionParams = std::make_shared<Params>(*params_);
+  projectionParams->qpFormulation = Params::QpFormulation::Primal;
   // Auxiliary cone projections must not recursively initialize themselves.
   projectionParams->qpInitialization =
       Params::QpInitialization::TightConstraints;
@@ -335,6 +336,7 @@ Values ActiveSetSolver::projectDenseGradient(
     const QpProblem projection = denseTangentProblem(
         equality, denseQpWorkspace_->data, forcing, active);
     auto parameters = std::make_shared<Params>(*params_);
+    parameters->qpFormulation = Params::QpFormulation::Primal;
     parameters->qpInitialization = Params::QpInitialization::TightConstraints;
     parameters->regularization = 0;
     // This auxiliary key represents reduced coordinates, not original keys.
@@ -431,6 +433,7 @@ Values ActiveSetSolver::solvePhaseOne(const Values& zeroValues) const {
   Values initial = zeroValues;
   initial.insert(slackKey, Vector::Constant(1, initialSlack).eval());
   auto phaseParams = std::make_shared<Params>(*params_);
+  phaseParams->qpFormulation = Params::QpFormulation::Primal;
   // Phase one is an LP; the outer QP alone owns its initialization strategy.
   phaseParams->qpInitialization = Params::QpInitialization::TightConstraints;
   if (params_->ordering) {

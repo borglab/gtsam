@@ -37,6 +37,21 @@ class GTSAM_EXPORT ActiveSetSolverParams {
  public:
   using shared_ptr = std::shared_ptr<ActiveSetSolverParams>;
 
+  /// Formulation used by optimize(); independent of the numerical backend.
+  enum class QpFormulation { Primal, Dual, Automatic };
+
+  /** Primal preserves feasible active-set descent. Dual starts with nonnegative
+   * multipliers and permits primal-infeasible initial values. Automatic chooses
+   * Dual for cold starts and retains the formulation of a converged warm start
+   * whose supplied point is feasible. Equality-only and fully fixed problems
+   * use Primal. Singular reduced proximal curvature falls back to Primal during
+   * setup only. Explicit
+   * Dual requires invertible reduced curvature (positive regularization permits
+   * semidefinite objectives). LPs resolve Automatic to Primal and reject Dual.
+   * computeFeasibleStep() always uses Primal.
+   */
+  QpFormulation qpFormulation = QpFormulation::Automatic;
+
   /// Strategy used to solve equality-constrained QP active-set subproblems.
   enum class QpSubproblemSolver {
     /// Eliminate a sparse working graph, reusing its ordering and optionally
@@ -47,7 +62,7 @@ class GTSAM_EXPORT ActiveSetSolverParams {
     Dense
   };
 
-  /** How a cold QP selects its initial point and working set. All modes keep
+  /** How a cold Primal QP selects its initial point and working set. All modes keep
    * the original objective and constraints; only the last mode may move the
    * supplied point. An explicit working-set warm start bypasses these modes.
    */
@@ -63,8 +78,8 @@ class GTSAM_EXPORT ActiveSetSolverParams {
     FeasibleStepThenProjectedGradient
   };
 
-  /// Maximum number of main active-set or proximal iterations, including the
-  /// preliminary face solve in FeasibleStepThenProjectedGradient.
+  /// Maximum number of main working solves across active-set/proximal iterations,
+  /// including the preliminary face solve in FeasibleStepThenProjectedGradient.
   size_t maxIterations = 1000;
   /// Distance at which an inequality is initially considered active.
   double activeTolerance = 1e-7;
@@ -81,11 +96,14 @@ class GTSAM_EXPORT ActiveSetSolverParams {
   double regularization = 1e-9;
   /// Maximum residual accepted from the cold-start feasibility phase.
   double phaseOneFeasibilityTolerance = 1e-6;
+  /// Numerical backend, defaulting to Sparse independently of formulation.
   QpSubproblemSolver qpSubproblemSolver = QpSubproblemSolver::Sparse;
-  /// Reuse sparse QP elimination across working-set and objective RHS changes.
+  /// Reuse primal sparse elimination across working-set and objective RHS changes.
+  /// Dual uses its own fixed-factorization cache regardless of this option.
   /// A proximal-center change uses cached triangular solves without elimination.
   bool useIncrementalSparseQp = true;
-  /** Cold QP initialization, shared by optimize() and computeFeasibleStep().
+  /** Primal initialization for optimize() and computeFeasibleStep(). Ignored
+   * by dual optimization; computeFeasibleStep() always honors this option.
    * FeasibleStepThenProjectedGradient requires a fully feasible starting point
    * and counts its single face-solve attempt against maxIterations. Both
    * projection modes solve independent tangent-cone components; each auxiliary
@@ -123,6 +141,9 @@ class GTSAM_EXPORT ActiveSetSolverState {
  public:
   using shared_ptr = std::shared_ptr<ActiveSetSolverState>;
 
+  /// Actual optimization formulation, resolved once during setup.
+  ActiveSetSolverParams::QpFormulation qpFormulation =
+      ActiveSetSolverParams::QpFormulation::Primal;
   Values values;
   std::vector<Vector> equalityMultipliers;
   std::vector<Vector> inequalityMultipliers;
@@ -188,9 +209,10 @@ class GTSAM_EXPORT ActiveSetSolver {
       const LpProblem& problem,
       Params::shared_ptr params = std::make_shared<Params>());
 
-  /** Optimize from finite, inequality-feasible values. Equality constraints
-   * are enforced by the working subproblems. The two-stage initialization mode
-   * additionally requires the supplied point to satisfy the equalities.
+  /** Optimize from finite values, inequality-feasible when using Primal.
+   * Equality constraints are enforced by the working subproblems. Primal
+   * two-stage initialization additionally requires equality-feasible values.
+   * Dual accepts infeasible values as a proximal center and skips initialization.
    */
   Values optimize(const Values& initialValues) const;
 
@@ -203,10 +225,12 @@ class GTSAM_EXPORT ActiveSetSolver {
   std::pair<Values, State> optimizeWithState(const Values& initialValues,
                                              const State& warmStart) const;
 
-  /** Find a vector-valued feasible point and optimize. */
+  /** Optimize from a zero proximal center with Dual, or find a vector-valued
+   * feasible point before Primal optimization. */
   Values optimize() const;
 
-  /** Find a vector-valued feasible point, optimize, and return final state. */
+  /** Optimize with the selected formulation and return the final state. Dual
+   * starts from a zero proximal center; Primal first finds a feasible point. */
   std::pair<Values, State> optimizeWithState() const;
 
   /**
@@ -277,6 +301,15 @@ class GTSAM_EXPORT ActiveSetSolver {
   std::map<Key, Vector> lpGradient_;
   SparseConstraintData constraints_;
   std::shared_ptr<DenseQpWorkspace> denseQpWorkspace_;
+
+  /// Resolve formulation and prepare equality-constrained dual algebra once.
+  bool prepareDualQp(SolveWorkspace* workspace, bool preferPrimal = false) const;
+
+  /// Reject malformed row masks, multiplier blocks, or unresolved formulations.
+  void validateWarmStart(const State& warmStart) const;
+  /// Optimize dual multipliers, recentering until the original QP is certified.
+  std::pair<Values, State> optimizeDualQp(const Values& initialValues,
+      const State* warmStart, SolveWorkspace* workspace) const;
 
   /// Run the active-set loop with this call's feasibility/initialization cache.
   std::pair<Values, State> optimizeWithState(const Values& initialValues,

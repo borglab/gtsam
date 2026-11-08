@@ -60,12 +60,14 @@ class GTSAM_EXPORT QpProblem : public ConstrainedOptProblem {
   /** Add a linear constraint. */
   void addConstraint(const LinearConstraint& constraint);
 
-  /** Optimize from a feasible initial point using the selected QP solver. */
+  /** Optimize from finite initial values using the selected numerical backend
+   * and Automatic formulation. Dual permits an infeasible proximal center;
+   * a Primal fallback requires an inequality-feasible point. */
   Values optimize(const Values& initialValues,
                   QpSolverType solverType = QpSolverType::Sparse) const;
 
-  /** Find a vector-valued feasible point and optimize using the selected
-   * solver. */
+  /** Optimize using the selected numerical backend and Automatic formulation.
+   * Dual uses a zero proximal center; Primal first finds a feasible point. */
   Values optimize(QpSolverType solverType = QpSolverType::Sparse) const;
 };
 

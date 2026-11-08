@@ -35,6 +35,7 @@ Values point(double x = 0, double y = 0) {
 
 ActiveSetSolverParams::shared_ptr params() {
   auto result = std::make_shared<ActiveSetSolverParams>();
+  result->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   result->regularization = 0;
   result->qpInitialization = Initialization::FeasibleStepThenProjectedGradient;
   result->setOrdering(Ordering{0});
@@ -230,6 +231,7 @@ using Initialization = ActiveSetSolverParams::QpInitialization;
 
 ActiveSetSolverParams::shared_ptr parameters(Initialization initialization) {
   auto result = std::make_shared<ActiveSetSolverParams>();
+  result->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   result->qpSubproblemSolver = ActiveSetSolverParams::QpSubproblemSolver::Dense;
   result->qpInitialization = initialization;
   result->regularization = 0;

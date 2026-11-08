@@ -28,6 +28,7 @@ Values point(double x, double y = 0) {
 
 ActiveSetSolverParams::shared_ptr params(bool incremental = true) {
   auto result = std::make_shared<ActiveSetSolverParams>();
+  result->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   result->regularization = 0;
   result->useIncrementalSparseQp = incremental;
   return result;
@@ -215,6 +216,7 @@ TEST(ActiveSetFeasibleStep, ZeroBlocksAndMainExhaustion) {
   for (Key key : {0, 1, 2, 3}) initial.insert(key, Vector(Vector1{0}));
   const QpProblem qp = problem();
   auto settings = std::make_shared<ActiveSetSolverParams>();
+  settings->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   settings->regularization = 0;
   settings->qpInitialization =
       ActiveSetSolverParams::QpInitialization::ProjectedGradient;

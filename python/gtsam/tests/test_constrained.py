@@ -20,6 +20,37 @@ from gtsam.symbol_shorthand import X
 class TestConstrainedWrappers(unittest.TestCase):
     """Smoke tests for the LP, QP, and QCQP Python bindings."""
 
+    def test_qp_formulations(self):
+        """The shared formulation enum works with both numerical backends."""
+        key = X(42)
+        problem = gtsam.QpProblem()
+        problem.addCost(gtsam.JacobianFactor(
+            key, np.eye(2), np.array([2., 3.]), gtsam.noiseModel.Unit.Create(2)))
+        problem.addConstraint(gtsam.LinearConstraint.LessEqual(
+            gtsam.JacobianFactor(key, np.array([[1., 0.]]), np.array([1.]),
+                                 gtsam.noiseModel.Unit.Create(1))))
+        modes = gtsam.ActiveSetSolverParams.QpFormulation
+        backends = gtsam.ActiveSetSolverParams.QpSubproblemSolver
+        params = gtsam.ActiveSetSolverParams()
+        self.assertEqual(params.qpFormulation, modes.Automatic)
+        self.assertEqual(params.qpSubproblemSolver, backends.Sparse)
+        initial = gtsam.Values()
+        initial.insert(key, np.array([20., -10.]))
+        result = gtsam.ActiveSetSolver(problem, params).optimize(initial)
+        np.testing.assert_allclose(result.atVector(key), [1., 3.], atol=1e-7)
+        for backend in (backends.Dense, backends.Sparse):
+            params.qpSubproblemSolver = backend
+            for mode in (modes.Primal, modes.Dual, modes.Automatic):
+                params.qpFormulation = mode
+                result = gtsam.ActiveSetSolver(problem, params).optimize()
+                np.testing.assert_allclose(result.atVector(key), [1., 3.], atol=1e-7)
+            initial = gtsam.Values()
+            initial.insert(key, np.array([20., -10.]))
+            params.qpFormulation = modes.Dual
+            for _ in range(2):
+                result = gtsam.ActiveSetSolver(problem, params).optimize(initial)
+                np.testing.assert_allclose(result.atVector(key), [1., 3.], atol=1e-7)
+
     def test_qp_initialization_modes(self):
         """All public initialization choices retain the same QP optimum."""
         key = X(0)
@@ -42,6 +73,7 @@ class TestConstrainedWrappers(unittest.TestCase):
         modes = gtsam.ActiveSetSolverParams.QpInitialization
         params = gtsam.ActiveSetSolverParams()
         self.assertEqual(params.qpInitialization, modes.TightConstraints)
+        params.qpFormulation = gtsam.ActiveSetSolverParams.QpFormulation.Primal
         params.regularization = 0.0
         ordering = gtsam.Ordering()
         ordering.push_back(key)
@@ -78,6 +110,7 @@ class TestConstrainedWrappers(unittest.TestCase):
                 params.qpSubproblemSolver = (
                     gtsam.ActiveSetSolverParams.QpSubproblemSolver.Dense)
                 params.qpInitialization = mode
+                params.qpFormulation = gtsam.ActiveSetSolverParams.QpFormulation.Primal
                 params.regularization = weight
                 result = gtsam.ActiveSetSolver(problem, params).optimize(initial)
                 np.testing.assert_allclose(result.atVector(key), [1.0, 3.0], atol=1e-7)

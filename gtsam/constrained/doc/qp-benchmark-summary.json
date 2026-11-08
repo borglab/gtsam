@@ -19,6 +19,18 @@
       "QUAD, all settings": "16/16"
     },
     {
+      "Solver": "GTSAM Sparse Dual",
+      "Published checks": "256/256",
+      "Also dual feasibility": "256/256",
+      "QUAD, all settings": "16/16"
+    },
+    {
+      "Solver": "GTSAM Dense Dual",
+      "Published checks": "256/256",
+      "Also dual feasibility": "256/256",
+      "QUAD, all settings": "16/16"
+    },
+    {
       "Solver": "ProxQP",
       "Published checks": "253/256",
       "Also dual feasibility": "235/256",
@@ -58,7 +70,529 @@
     "GTSAM_representation": "WALK/BAL: one control-sequence vector key and one objective factor. QUAD: 12D state and four 3D force keys per step, with 12-row dynamics factors; original scalar row identities preserved.",
     "baseline_start": "Existing upstream qpsolvers matrix-input boundaries, unchanged",
     "active_set_initialization": "FeasibleStepThenProjectedGradient",
-    "active_set_regularization": 1e-09
+    "active_set_regularization": 1e-09,
+    "dual_initialization": "Zero multipliers; no primal feasibility phase",
+    "formulations": [
+      "Primal",
+      "Dual"
+    ]
   },
-  "report_bytes": 201930
+  "g1_summary": [
+    {
+      "dataset": "G1SP20",
+      "solver": "GTSAM Sparse",
+      "status_class": "certified",
+      "certificate_passed": true,
+      "call_seconds": 7.122521988000848,
+      "call_seconds_lower_bound": null,
+      "original_metrics": {
+        "objective": 12086.741687566948,
+        "primal_feasibility": 2.0750928238092228e-14,
+        "stationarity": 2.673914423212409e-10,
+        "dual_feasibility": 0.0,
+        "complementarity": 4.5383352397910524e-15,
+        "gradient_inf": 75.18516945122508,
+        "absolute_gap": 1.5956535196935156e-12
+      },
+      "fresh_repeat_median": 7.072024307018541,
+      "fresh_repeat_certified": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "dataset": "G1SP20",
+      "solver": "GTSAM Chronological",
+      "status_class": "certified",
+      "certificate_passed": true,
+      "call_seconds": 8.82624591399758,
+      "call_seconds_lower_bound": null,
+      "original_metrics": {
+        "objective": 12086.741687566951,
+        "primal_feasibility": 1.9400034354031918e-14,
+        "stationarity": 3.3435298973927274e-10,
+        "dual_feasibility": 0.0,
+        "complementarity": 3.3605357400540495e-15,
+        "gradient_inf": 75.18516945118631,
+        "absolute_gap": 1.828795441902864e-12
+      },
+      "fresh_repeat_median": 8.848172688012221,
+      "fresh_repeat_certified": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "dataset": "G1SP20",
+      "solver": "GTSAM Slice COLAMD",
+      "status_class": "certified",
+      "certificate_passed": true,
+      "call_seconds": 8.719803668015325,
+      "call_seconds_lower_bound": null,
+      "original_metrics": {
+        "objective": 12086.741687566951,
+        "primal_feasibility": 2.4634145702581885e-14,
+        "stationarity": 2.5778668089060375e-10,
+        "dual_feasibility": 0.0,
+        "complementarity": 3.2286808776287193e-15,
+        "gradient_inf": 75.18516945119447,
+        "absolute_gap": 4.039014076656112e-13
+      },
+      "fresh_repeat_median": 8.764458951988559,
+      "fresh_repeat_certified": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "dataset": "G1SP20",
+      "solver": "Clarabel",
+      "status_class": "certified",
+      "certificate_passed": true,
+      "call_seconds": 2.554732036005589,
+      "call_seconds_lower_bound": null,
+      "original_metrics": {
+        "objective": 12086.741687576694,
+        "primal_feasibility": 0.0,
+        "stationarity": 3.764057510124985e-09,
+        "dual_feasibility": 0.0,
+        "complementarity": 1.1209013982336535e-08,
+        "gradient_inf": 75.18516971159676,
+        "absolute_gap": 2.8340539461197748e-08
+      },
+      "fresh_repeat_median": 2.5484902930038515,
+      "fresh_repeat_certified": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "dataset": "G1SP20",
+      "solver": "OSQP",
+      "status_class": "certified",
+      "certificate_passed": true,
+      "call_seconds": 5.583659383992199,
+      "call_seconds_lower_bound": null,
+      "original_metrics": {
+        "objective": 12086.741687566178,
+        "primal_feasibility": 1.8200891110494648e-09,
+        "stationarity": 1.3220642358646728e-09,
+        "dual_feasibility": 1.4528478712799452e-18,
+        "complementarity": 6.240104449665146e-10,
+        "gradient_inf": 75.18516937977492,
+        "absolute_gap": 7.41028628280795e-08
+      },
+      "fresh_repeat_median": 5.406993090000469,
+      "fresh_repeat_certified": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "dataset": "G1SP20",
+      "solver": "ProxQP",
+      "status_class": "certified",
+      "certificate_passed": true,
+      "call_seconds": 1.0016868360107765,
+      "call_seconds_lower_bound": null,
+      "original_metrics": {
+        "objective": 12086.74168755165,
+        "primal_feasibility": 4.953853680829743e-08,
+        "stationarity": 3.0407637837884624e-09,
+        "dual_feasibility": 9.665378182838288e-13,
+        "complementarity": 1.123171226804658e-08,
+        "gradient_inf": 75.18516944583942,
+        "absolute_gap": 1.5660159190240437e-08
+      },
+      "fresh_repeat_median": 1.0018091519887093,
+      "fresh_repeat_certified": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "dataset": "G1SP20",
+      "solver": "GTSAM ALM",
+      "status_class": "uncertified_solution",
+      "certificate_passed": false,
+      "call_seconds": 42.09904860198471,
+      "call_seconds_lower_bound": null,
+      "original_metrics": {
+        "objective": 12086.741687568348,
+        "primal_feasibility": 3.763409583967814e-10,
+        "stationarity": 3.4101748205238845e-09,
+        "dual_feasibility": 0.0,
+        "complementarity": 6.866952568136974e-10,
+        "gradient_inf": 75.18516943494166,
+        "absolute_gap": 2.0001994646919752e-07
+      },
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1CMCTWO",
+      "solver": "GTSAM Sparse",
+      "status_class": "certified",
+      "certificate_passed": true,
+      "call_seconds": 164.49752000899795,
+      "call_seconds_lower_bound": null,
+      "original_metrics": {
+        "objective": 28222.736448717995,
+        "primal_feasibility": 3.734131873069785e-14,
+        "stationarity": 3.0722731025889516e-09,
+        "dual_feasibility": 0.0,
+        "complementarity": 3.8598383139693354e-15,
+        "gradient_inf": 37.939671932125194,
+        "absolute_gap": 8.253639792836693e-12
+      },
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1CMCTWO",
+      "solver": "GTSAM Chronological",
+      "status_class": "certified",
+      "certificate_passed": true,
+      "call_seconds": 121.61582611000289,
+      "call_seconds_lower_bound": null,
+      "original_metrics": {
+        "objective": 28222.73644871799,
+        "primal_feasibility": 1.0395804768241479e-14,
+        "stationarity": 4.013600118923932e-09,
+        "dual_feasibility": 0.0,
+        "complementarity": 1.4075387371150434e-15,
+        "gradient_inf": 37.93967193212893,
+        "absolute_gap": 1.611503385386298e-11
+      },
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1CMCTWO",
+      "solver": "GTSAM Slice COLAMD",
+      "status_class": "certified",
+      "certificate_passed": true,
+      "call_seconds": 120.9425902419843,
+      "call_seconds_lower_bound": null,
+      "original_metrics": {
+        "objective": 28222.73644871799,
+        "primal_feasibility": 8.942594386350533e-15,
+        "stationarity": 3.0063347367104143e-09,
+        "dual_feasibility": 0.0,
+        "complementarity": 1.581623477500342e-15,
+        "gradient_inf": 37.939671932136136,
+        "absolute_gap": 9.66257668203045e-12
+      },
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1CMCTWO",
+      "solver": "Clarabel",
+      "status_class": "certified",
+      "certificate_passed": true,
+      "call_seconds": 14.489090667993878,
+      "call_seconds_lower_bound": null,
+      "original_metrics": {
+        "objective": 28222.736448720927,
+        "primal_feasibility": 0.0,
+        "stationarity": 7.076323522793221e-09,
+        "dual_feasibility": 0.0,
+        "complementarity": 9.964124407559727e-09,
+        "gradient_inf": 37.93967191779743,
+        "absolute_gap": 2.1074649910466926e-08
+      },
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1CMCTWO",
+      "solver": "OSQP",
+      "status_class": "certified",
+      "certificate_passed": true,
+      "call_seconds": 22.50390212899947,
+      "call_seconds_lower_bound": null,
+      "original_metrics": {
+        "objective": 28222.736448718148,
+        "primal_feasibility": 3.0067464467424613e-09,
+        "stationarity": 4.029463064516431e-08,
+        "dual_feasibility": 4.4047146232195796e-18,
+        "complementarity": 3.0576988465819044e-10,
+        "gradient_inf": 37.93967192585821,
+        "absolute_gap": 9.436245179308189e-08
+      },
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1CMCTWO",
+      "solver": "ProxQP",
+      "status_class": "watchdog_timeout",
+      "certificate_passed": false,
+      "call_seconds": null,
+      "call_seconds_lower_bound": 300.0011562280124,
+      "original_metrics": null,
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1CMCTWO",
+      "solver": "GTSAM ALM",
+      "status_class": "certified",
+      "certificate_passed": true,
+      "call_seconds": 11.286809259999742,
+      "call_seconds_lower_bound": null,
+      "original_metrics": {
+        "objective": 28222.736448690517,
+        "primal_feasibility": 8.948037149075967e-08,
+        "stationarity": 1.6043486539274454e-09,
+        "dual_feasibility": 0.0,
+        "complementarity": 1.5271787575319407e-08,
+        "gradient_inf": 37.939666642761026,
+        "absolute_gap": 1.8805534399064545e-08
+      },
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1SPFULL",
+      "solver": "GTSAM Sparse",
+      "status_class": "watchdog_timeout",
+      "certificate_passed": false,
+      "call_seconds": null,
+      "call_seconds_lower_bound": 297.8224359940157,
+      "original_metrics": null,
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1SPFULL",
+      "solver": "GTSAM Chronological",
+      "status_class": "watchdog_timeout",
+      "certificate_passed": false,
+      "call_seconds": null,
+      "call_seconds_lower_bound": 297.78721101000815,
+      "original_metrics": null,
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1SPFULL",
+      "solver": "GTSAM Slice COLAMD",
+      "status_class": "watchdog_timeout",
+      "certificate_passed": false,
+      "call_seconds": null,
+      "call_seconds_lower_bound": 297.79722588799183,
+      "original_metrics": null,
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1SPFULL",
+      "solver": "Clarabel",
+      "status_class": "certified",
+      "certificate_passed": true,
+      "call_seconds": 42.29332716901263,
+      "call_seconds_lower_bound": null,
+      "original_metrics": {
+        "objective": 115148.52463447639,
+        "primal_feasibility": 0.0,
+        "stationarity": 2.863123953435745e-09,
+        "dual_feasibility": 0.0,
+        "complementarity": 6.327396994627178e-10,
+        "gradient_inf": 436.7858589957204,
+        "absolute_gap": 3.853158892519884e-09
+      },
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1SPFULL",
+      "solver": "OSQP",
+      "status_class": "certified",
+      "certificate_passed": true,
+      "call_seconds": 101.75491857399174,
+      "call_seconds_lower_bound": null,
+      "original_metrics": {
+        "objective": 115148.5246344733,
+        "primal_feasibility": 6.961045257941156e-10,
+        "stationarity": 2.4686279687102797e-09,
+        "dual_feasibility": 3.2152436542909852e-18,
+        "complementarity": 2.35426599688485e-10,
+        "gradient_inf": 436.785858992145,
+        "absolute_gap": 9.774188835037712e-08
+      },
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1SPFULL",
+      "solver": "ProxQP",
+      "status_class": "watchdog_timeout",
+      "certificate_passed": false,
+      "call_seconds": null,
+      "call_seconds_lower_bound": 300.0008894920029,
+      "original_metrics": null,
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1SPFULL",
+      "solver": "GTSAM ALM",
+      "status_class": "watchdog_timeout",
+      "certificate_passed": false,
+      "call_seconds": null,
+      "call_seconds_lower_bound": 297.84699754699704,
+      "original_metrics": null,
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1CMCTWO",
+      "solver": "GTSAM Dense Dual",
+      "status_class": "memory_limit",
+      "certificate_passed": false,
+      "call_seconds": null,
+      "call_seconds_lower_bound": null,
+      "original_metrics": null,
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1CMCTWO",
+      "solver": "GTSAM Sparse Dual",
+      "status_class": "certified",
+      "certificate_passed": true,
+      "call_seconds": 25.504065040004207,
+      "call_seconds_lower_bound": null,
+      "original_metrics": {
+        "objective": 28222.736448717988,
+        "primal_feasibility": 2.4893151437193305e-14,
+        "stationarity": 1.8521859601605684e-09,
+        "dual_feasibility": 0.0,
+        "complementarity": 6.428484859378108e-15,
+        "gradient_inf": 37.93967193212477,
+        "absolute_gap": 8.544868228831128e-13
+      },
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1SP20",
+      "solver": "GTSAM Dense Dual",
+      "status_class": "memory_limit",
+      "certificate_passed": false,
+      "call_seconds": null,
+      "call_seconds_lower_bound": null,
+      "original_metrics": null,
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1SP20",
+      "solver": "GTSAM Sparse Dual",
+      "status_class": "certified",
+      "certificate_passed": true,
+      "call_seconds": 3.6970613849989604,
+      "call_seconds_lower_bound": null,
+      "original_metrics": {
+        "objective": 12086.74168756695,
+        "primal_feasibility": 8.876100605925176e-14,
+        "stationarity": 1.3782696726277666e-10,
+        "dual_feasibility": 0.0,
+        "complementarity": 1.1633484936014969e-14,
+        "gradient_inf": 75.18516945120919,
+        "absolute_gap": 1.676164697939283e-13
+      },
+      "fresh_repeat_median": 3.6944613219820894,
+      "fresh_repeat_certified": [
+        true,
+        true,
+        true,
+        true,
+        true
+      ]
+    },
+    {
+      "dataset": "G1SPFULL",
+      "solver": "GTSAM Dense Dual",
+      "status_class": "memory_limit",
+      "certificate_passed": false,
+      "call_seconds": null,
+      "call_seconds_lower_bound": null,
+      "original_metrics": null,
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    },
+    {
+      "dataset": "G1SPFULL",
+      "solver": "GTSAM Sparse Dual",
+      "status_class": "watchdog_timeout",
+      "certificate_passed": false,
+      "call_seconds": null,
+      "call_seconds_lower_bound": 300.0007479560154,
+      "original_metrics": null,
+      "fresh_repeat_median": null,
+      "fresh_repeat_certified": []
+    }
+  ],
+  "report_bytes": 257436,
+  "automatic_selection": {
+    "default_backend": "Sparse",
+    "default_formulation": "Automatic",
+    "cold_start": "Dual with inequalities, regardless of counts",
+    "warm_start": "Retain a converged resolved formulation when supplied values are feasible",
+    "direct_primal": "No inequalities or zero reduced dimension",
+    "curvature_fallback": "Primal when reduced curvature is singular with zero regularization; no added floor",
+    "lp": "Automatic resolves to Primal; Dual rejected",
+    "switches_after_setup": false
+  },
+  "automatic_policy_validation": {
+    "date": "2026-11-07",
+    "revision": "9ce301b49cb948d7bc6eaae135e025e0a0424428",
+    "uncommitted_changes": true,
+    "library_sha256": "437c000298546d17d744b912c732767100f4ecb39446486bd079f05280bbda47",
+    "source_sha256": {
+      "gtsam/constrained/ActiveSetSolver.h": "44ee8a33270a6edae75b8aeb3566cbe9eb0addadf49d4cb5ba7aa567357b11b3",
+      "gtsam/constrained/ActiveSetSolver.cpp": "e8117fc382619e590364e284ae4ff1fcaf34600ac8b60bab865746d18cda744a",
+      "gtsam/constrained/ActiveSetSolverDual.cpp": "6e1d94891f453ba18a6d92ae9c1a1c5d84e0c7b6ac7925168f196d2ea23746fe",
+      "gtsam/constrained/ActiveSetSolverSetup.cpp": "c863b897224438bb4714616452445572ec7c1e234d700ec12634ffd700bd11d5",
+      "gtsam/constrained/QpProblem.h": "4c5da13db1b6a36f1ca8700c937485997e68c7ca677f875f1d699cebfaa6d22b",
+      "gtsam/constrained/internal/ActiveSetSolverInternal.h": "6a57b1ec46375ae714bdd299508b214bfe5a28e80a903f5bfee682ef268bc18a"
+    },
+    "mpc": {
+      "calls": 512,
+      "passed": 512,
+      "choices": "Dual for all cold cases",
+      "measurement_sha256": "acc362debd85e10e0437745eba03d5fc3f616f5feb5bbf6a062002feda3440e7"
+    },
+    "controlled_dimensions": {
+      "cases": 108,
+      "calls": 648,
+      "passed": 648,
+      "measurement_sha256": "28c103a192b1a4460398b1e85d9cda23b72b431cf35fc990eda3f0a2dad79c62"
+    },
+    "native_suites": 9,
+    "python_tests_passed": 581,
+    "python_tests_skipped": 6,
+    "matlab": "Runtime unavailable; smoke test updated"
+  }
 }

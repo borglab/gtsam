@@ -22,6 +22,7 @@ TEST(ActiveSetSolverOptions, LargeRoundedOptimum) {
   initial.insert(0, Vector(Vector1{0}));
   for (bool incremental : {false, true}) {
     auto params = std::make_shared<ActiveSetSolverParams>();
+    params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
     params->regularization = 0;
     params->maxIterations = 3;
     params->useIncrementalSparseQp = incremental;
@@ -41,6 +42,7 @@ TEST(ActiveSetSolverOptions, FeasibleStepHonorsInitializer) {
   Values initial;
   initial.insert(0, Vector(Vector1{0}));
   auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   params->regularization = 0;
   EXPECT(ActiveSetSolver(problem, params).computeFeasibleStep(initial).status ==
          ActiveSetFeasibleStepResult::Status::NoProgress);
@@ -57,6 +59,7 @@ TEST(ActiveSetSolverOptions, FeasibleDecreaseIgnoresConstantOffset) {
   Values initial;
   initial.insert(0, Vector(Vector1{0}));
   auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   params->regularization = 0;
   const auto result = ActiveSetSolver(problem, params).computeFeasibleStep(initial);
   EXPECT(result.status == ActiveSetFeasibleStepResult::Status::FeasibleProgress);
@@ -69,6 +72,7 @@ TEST(ActiveSetSolverOptions, RejectInvalidOptionsAndWarmStart) {
   QpProblem problem;
   problem.addCost(JacobianFactor(0, Matrix11{{1}}, Vector1{1}));
   auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   params->multiplierTolerance = std::numeric_limits<double>::quiet_NaN();
   CHECK_EXCEPTION(ActiveSetSolver(problem, params), std::invalid_argument);
   params->multiplierTolerance = 1e-7;
@@ -114,6 +118,7 @@ TEST(ActiveSetSolverOptions, CustomOrderingAcrossBackends) {
                        ActiveSetSolverParams::QpSubproblemSolver::Dense}) {
     for (bool incremental : {false, true}) {
       auto params = std::make_shared<ActiveSetSolverParams>();
+      params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
       params->regularization = 0;
       params->qpSubproblemSolver = backend;
       params->useIncrementalSparseQp = incremental;
@@ -140,6 +145,7 @@ TEST(ActiveSetSolverOptions, CustomOrderingAcrossBackends) {
 TEST(ActiveSetSolverOptions, InvalidOrdering) {
   const QpProblem qp = problem();
   auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   for (const Ordering& order : {Ordering{10}, Ordering{10, 10},
                                 Ordering{10, 99}, Ordering{}}) {
     params->setOrdering(order);
@@ -159,6 +165,7 @@ TEST(ActiveSetSolverOptions, WorkingGraphKeyChanges) {
   qp.addConstraint(LinearConstraint::LessEqual(
       JacobianFactor(10, Matrix11{{1}}, 30, Matrix11{{1}}, Vector1{1})));
   auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   params->regularization = 0;
   params->setOrdering(Ordering{30, 10});
   for (auto initialization : {
@@ -183,6 +190,7 @@ TEST(ActiveSetSolverOptions, PhaseOneOrdering) {
   qp.addConstraint(LinearConstraint::GreaterEqual(
       JacobianFactor(30, Matrix11{{1}}, Vector1{1})));
   auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
   params->regularization = 0;
   params->setOrdering(Ordering{30, 10});
   const auto full = ActiveSetSolver(qp, params).optimizeWithState();

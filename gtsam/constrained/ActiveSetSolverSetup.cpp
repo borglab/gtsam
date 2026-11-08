@@ -191,6 +191,8 @@ ActiveSetSolver::ActiveSetSolver(const LpProblem& problem,
     : problemType_(ProblemType::LP),
       lpProblem_(&problem),
       params_(params ? std::make_shared<Params>(*params) : std::make_shared<Params>()) {
+  if (params_->qpFormulation == Params::QpFormulation::Automatic)
+    params_->qpFormulation = Params::QpFormulation::Primal;
   initializeDimensions();
   validateParameters();
   initializeObjective();
@@ -243,6 +245,17 @@ void ActiveSetSolver::initializeDimensions() {
 
 /* ************************************************************************* */
 void ActiveSetSolver::validateParameters() const {
+  switch (params_->qpFormulation) {
+    case Params::QpFormulation::Primal:
+    case Params::QpFormulation::Dual:
+    case Params::QpFormulation::Automatic:
+      break;
+    default:
+      throw std::invalid_argument("ActiveSetSolver: unknown QP formulation.");
+  }
+  if (problemType_ == ProblemType::LP &&
+      params_->qpFormulation != Params::QpFormulation::Primal)
+    throw std::invalid_argument("ActiveSetSolver: LPs require Primal formulation.");
   // Reject unknown modes and QP-only initialization on an LP explicitly.
   switch (params_->qpInitialization) {
     case Params::QpInitialization::TightConstraints:
