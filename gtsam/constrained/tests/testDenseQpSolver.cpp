@@ -698,6 +698,61 @@ TEST(DenseQpSolver, CachedMultipliersPreserveWeakGradient) {
   if (multipliers) EXPECT(assert_equal(Vector{{2e-20}}, *multipliers, 1e-29));
 }
 
+// Equality multipliers are unrestricted even when dependent working rows
+// trigger the conservative gauge check in original coordinates.
+TEST(DenseQpSolver, UnprojectedMultiplierGauge) {
+  DenseQpData data;
+  data.jacobian = Matrix::Identity(3, 3);
+  data.rhs = Vector3{-1, -1, 2};
+  data.linear = Vector::Zero(3);
+  data.normals = Matrix{{1, 1, 0}, {2, 2, 0}, {0, 0, 1}};
+  data.bounds = Vector3{1, 2, 0};
+  data.equalities = 2;
+  DenseQpSolver solver(data, false);
+  const Vector value = solver.solve({true}, Vector::Zero(3));
+  EXPECT(assert_equal(Vector3(.5, .5, 0), value, 1e-10));
+  const auto multipliers = solver.multipliers(value, value - data.rhs, 1e-9);
+  CHECK(multipliers.has_value());
+  if (multipliers) {
+    EXPECT(assert_equal(Vector(value - data.rhs),
+                        Vector(data.normals.transpose() * *multipliers), 1e-10));
+    DOUBLES_EQUAL(-2, (*multipliers)(2), 1e-10);
+  }
+}
+
+// Unprojected dual responses preserve exact equalities and reuse factors for
+// arbitrary forcing and proximal centers, including a globally singular cost.
+TEST(DenseQpSolver, ConstrainedDualWithoutProjection) {
+  for (double regularization : {0.0, 0.1}) {
+    DenseQpData data;
+    data.jacobian = Matrix{{1, 0, 0}, {0, 1, 0}};
+    data.rhs = Vector2{3, 2};
+    data.linear = Vector3{0, 0, 0};
+    data.normals = Matrix{{1, 1, 1}, {2, 2, 2}, {1, 0, 0}};
+    data.bounds = Vector3{1, 2, 0};
+    data.equalities = 2;
+    data.regularization = regularization;
+    DenseQpSolver direct(data, false), projected(data, true);
+    CHECK(direct.equalityProjection() == nullptr);
+    CHECK(direct.reducedDimension() == 2);
+    CHECK(direct.prepareDual());
+    CHECK(projected.prepareDual());
+    const auto factorizations = direct.statistics().numericalFactorizations;
+    for (const Vector3& center : {Vector3{0, 0, 0}, Vector3{1, -2, 9}}) {
+      const Vector3 forcing{2, -3, 4};
+      EXPECT(assert_equal(projected.solveDual(center, forcing),
+                          direct.solveDual(center, forcing), 1e-9));
+      const Vector response = direct.dualResponse(forcing);
+      EXPECT(assert_equal(projected.dualResponse(forcing), response, 1e-9));
+      EXPECT(assert_equal(Vector::Zero(2),
+                          Vector(data.normals.topRows(2) * response), 1e-10));
+    }
+    CHECK(direct.statistics().numericalFactorizations == factorizations);
+    CHECK(direct.statistics().objectiveFactorizations == 1);
+    CHECK(direct.statistics().rhsOnlySolves == 2);
+  }
+}
+
 }  // namespace dense_working_system
 /* ************************************************************************* */
 

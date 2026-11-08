@@ -170,6 +170,67 @@ TEST(DualQp, EqualityRemovesSingularDirection) {
   }
 }
 
+// Dense formulations agree with and without permanent coordinate reduction,
+// including redundant equalities and curvature singular only outside the face.
+TEST(DualQp, OptionalDenseEqualityProjection) {
+  for (bool project : {false, true}) {
+    for (auto mode : {Formulation::Primal, Formulation::Dual, Formulation::Automatic}) {
+      auto params = parameters(Backend::Dense, mode);
+      params->projectDenseQpEqualities = project;
+      QpProblem problem;
+      problem.addCost(JacobianFactor(0, Matrix{{1, 0, 0}, {0, 1, 0}}, Vector2{3, -2}));
+      equal(&problem, Matrix{{0, 0, 1}, {0, 0, 2}}, Vector2{4, 8});
+      less(&problem, Matrix{{1, 0, 0}, {2, 0, 0}, {0, -1, 0}}, Vector3{1, 2, 0});
+      const auto solved = ActiveSetSolver(problem, params).optimizeWithState();
+      EXPECT(assert_equal(Vector3(1, 0, 4), solved.first.at<Vector>(0), 1e-8));
+      CHECK(solved.second.converged);
+      const auto warm = ActiveSetSolver(problem, params).optimizeWithState(solved.first, solved.second);
+      EXPECT(assert_equal(solved.first, warm.first, 1e-8));
+      equal(&problem, Matrix{{0, 0, 1}}, Vector1{5});
+      CHECK_EXCEPTION(ActiveSetSolver(problem, params).optimize(), std::runtime_error);
+
+      QpProblem coupled = objective(Vector3{3, 2, 4});
+      equal(&coupled, Matrix{{1, 1, 0}, {2, 2, 0}}, Vector2{1, 2});
+      less(&coupled, Matrix{{0, 1, 0}, {0, 0, 1}}, Vector2{0, 2});
+      const auto result = ActiveSetSolver(coupled, params).optimizeWithState();
+      EXPECT(assert_equal(Vector3(1, 0, 2), result.first.at<Vector>(0), 1e-8));
+      const Vector eq = result.second.equalityMultipliers[0];
+      EXPECT(assert_equal(Vector3(-2, -2, 0),
+          Vector(Matrix{{1, 2}, {1, 2}, {0, 0}} * eq), 1e-8));
+
+      QpProblem fixed = objective(Vector2{3, 2});
+      equal(&fixed, Matrix{{1, 0}, {2, 0}, {0, 1}}, Vector3{1, 2, 1});
+      less(&fixed, Matrix{{1, 1}}, Vector1{2});
+      EXPECT(assert_equal(Vector2(1, 1), ActiveSetSolver(fixed, params).optimize().at<Vector>(0), 1e-8));
+      // The equality-only route uses the same selected backend option.
+      QpProblem equalityOnly = objective(Vector3{3, 3, 4});
+      equal(&equalityOnly, Matrix{{1, 1, 0}}, Vector1{2});
+      EXPECT(assert_equal(Vector3(1, 1, 4), ActiveSetSolver(equalityOnly, params)
+          .optimize().at<Vector>(0), 1e-8));
+    }
+  }
+}
+
+// Disabling coordinate reduction does not create curvature or add a floor;
+// Automatic still falls back at setup, and requested proximal terms suffice.
+TEST(DualQp, UnprojectedSingularCurvaturePolicy) {
+  QpProblem problem;
+  problem.addCost(JacobianFactor(0, Matrix{{1, 0, 0}}, Vector1{2}));
+  equal(&problem, Matrix{{0, 0, 1}}, Vector1{3});
+  less(&problem, Matrix{{0, -1, 0}}, Vector1{-1});
+  auto params = parameters(Backend::Dense);
+  params->projectDenseQpEqualities = false;
+  CHECK_EXCEPTION(ActiveSetSolver(problem, params).optimize(), std::runtime_error);
+  params->qpFormulation = Formulation::Automatic;
+  const auto fallback = ActiveSetSolver(problem, params).optimizeWithState(initial(Vector3{0, 1, 3}));
+  CHECK(fallback.second.qpFormulation == Formulation::Primal);
+  EXPECT(assert_equal(Vector3(2, 1, 3), fallback.first.at<Vector>(0), 1e-8));
+  params->regularization = 0.1;
+  const auto proximal = ActiveSetSolver(problem, params).optimizeWithState();
+  CHECK(proximal.second.qpFormulation == Formulation::Dual);
+  EXPECT(assert_equal(Vector3(2, 1, 3), proximal.first.at<Vector>(0), 1e-7));
+}
+
 // Opposing/dependent working rows require singular steps and row removal.
 TEST(DualQp, DependentWarmStartAndInfeasibility) {
   for (auto backend : {Backend::Dense, Backend::Sparse}) {

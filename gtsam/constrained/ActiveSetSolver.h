@@ -98,6 +98,11 @@ class GTSAM_EXPORT ActiveSetSolverParams {
   double phaseOneFeasibilityTolerance = 1e-6;
   /// Numerical backend, defaulting to Sparse independently of formulation.
   QpSubproblemSolver qpSubproblemSolver = QpSubproblemSolver::Sparse;
+  /** Reduce Dense QPs to permanent equality-feasible coordinates before solving.
+   * When false, keep the original coordinates and enforce equalities in the
+   * working factorization. Applies to both Primal and Dual; ignored by Sparse.
+   */
+  bool projectDenseQpEqualities = true;
   /// Reuse primal sparse elimination across working-set and objective RHS changes.
   /// Dual uses its own fixed-factorization cache regardless of this option.
   /// A proximal-center change uses cached triangular solves without elimination.
