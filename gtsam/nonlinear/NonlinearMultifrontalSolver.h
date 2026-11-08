@@ -53,6 +53,14 @@ class GTSAM_EXPORT NonlinearMultifrontalSolver : public MultifrontalSolver {
                               MultifrontalSolver::Parameters params = {},
                               DampingParams dampingParams = DampingParams());
 
+  /** Construct the same damped numerical workspace from Gaussian inputs.
+   * Dimensions and row counts come directly from the Gaussian factors.
+   */
+  NonlinearMultifrontalSolver(const GaussianFactorGraph& graph,
+                              const Ordering& ordering,
+                              MultifrontalSolver::Parameters params = {},
+                              DampingParams dampingParams = DampingParams());
+
   /**
    * Precompute symbolic structure from a nonlinear factor graph and values.
    * This avoids linearization; call load() with a linearized graph before

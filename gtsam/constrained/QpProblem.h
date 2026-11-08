@@ -26,10 +26,13 @@
 
 namespace gtsam {
 
+class AugmentedLagrangianParams;
+
 /// Solver choice for QpProblem::optimize convenience methods.
 enum class QpSolverType {
-  Sparse,  ///< Sparse working-factor-graph active-set QP mode.
-  Dense    ///< Dense active-set Schur-complement QP mode.
+  Sparse,              ///< Sparse working-factor-graph active-set QP mode.
+  Dense,               ///< Dense active-set Schur-complement QP mode.
+  AugmentedLagrangian  ///< Gaussian-factor ALM with native policy defaults.
 };
 
 /**
@@ -62,13 +65,29 @@ class GTSAM_EXPORT QpProblem : public ConstrainedOptProblem {
 
   /** Optimize from finite initial values using the selected numerical backend
    * and Automatic formulation. Dual permits an infeasible proximal center;
-   * a Primal fallback requires an inequality-feasible point. */
+   * a Primal fallback requires an inequality-feasible point. ALM uses native
+   * defaults and accepts infeasible starts, preserving supplied value shapes.
+   */
   Values optimize(const Values& initialValues,
                   QpSolverType solverType = QpSolverType::Sparse) const;
 
   /** Optimize using the selected numerical backend and Automatic formulation.
-   * Dual uses a zero proximal center; Primal first finds a feasible point. */
+   * Dual uses a zero proximal center; Primal first finds a feasible point. ALM
+   * uses zero vectors and its native defaults; inspect the direct solver state
+   * when an explicit convergence certificate is needed. */
   Values optimize(QpSolverType solverType = QpSolverType::Sparse) const;
+
+  /** Optimize with explicitly supplied Gaussian ALM options. The parameter
+   * object is copied. In particular, lmParams.multifrontalParams.qrMode can
+   * disable leaf QR without changing the ALM policy or objective.
+   */
+  Values optimize(const Values& initialValues,
+                  const AugmentedLagrangianParams& params) const;
+
+  /** Optimize from zero vectors using explicitly supplied Gaussian ALM options.
+   * Use the direct solver when convergence state or multipliers are needed.
+   */
+  Values optimize(const AugmentedLagrangianParams& params) const;
 };
 
 }  // namespace gtsam

@@ -62,6 +62,12 @@ NonlinearMultifrontalSolver::NonlinearMultifrontalSolver(
       dampingParams_(dampingParams) {}
 
 /* ************************************************************************* */
+NonlinearMultifrontalSolver::NonlinearMultifrontalSolver(
+    const GaussianFactorGraph& graph, const Ordering& ordering,
+    MultifrontalSolver::Parameters params, DampingParams dampingParams)
+    : MultifrontalSolver(graph, ordering, params), dampingParams_(dampingParams) {}
+
+/* ************************************************************************* */
 MultifrontalSolver::PrecomputedData NonlinearMultifrontalSolver::Precompute(
     const NonlinearFactorGraph& graph, const Values& values,
     const Ordering& ordering) {
