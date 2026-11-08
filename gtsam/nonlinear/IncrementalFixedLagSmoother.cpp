@@ -181,8 +181,10 @@ FixedLagSmoother::Result IncrementalFixedLagSmoother::updateImpl(
     std::cout << std::endl;
   }
 
-  // Force iSAM2 to put the marginalizable variables at the beginning
-  createOrderingConstraints(marginalizableKeys, isActive, constrainedKeys);
+  // Force iSAM2 to put the marginalizable variables at the beginning, and
+  // optionally the newest ones at the end
+  createOrderingConstraints(marginalizableKeys, newFactorKeys,
+                            current_timestamp, isActive, constrainedKeys);
 
   if (debug) {
     std::cout << "Constrained Keys: ";
@@ -298,16 +300,41 @@ void IncrementalFixedLagSmoother::eraseKeysBefore(double timestamp) {
 
 /* ************************************************************************* */
 void IncrementalFixedLagSmoother::createOrderingConstraints(
-    const KeyVector& marginalizableKeys,
-    const std::function<bool(Key)>& isActive,
+    const KeyVector& marginalizableKeys, const KeySet& newFactorKeys,
+    double currentTimestamp, const std::function<bool(Key)>& isActive,
     std::optional<FastMap<Key, int> >& constrainedKeys) const {
-  if (marginalizableKeys.size() > 0) {
+  // Without constraints, iSAM2 already orders the keys of the new factors last.
+  // Constraining only the marginalizable keys loses that, so the newest keys
+  // get their own last group, unless disabled.
+  if (marginalizableKeys.empty()) {
+    if (params_.newestKeysLast) {
+      // Nothing to marginalize: only the newest keys need a group, the others
+      // stay in the default group 0.
+      constrainedKeys = FastMap<Key, int>();
+      for (auto it = timestampKeyMap_.lower_bound(currentTimestamp);
+           it != timestampKeyMap_.end(); ++it) {
+        if (isActive(it->second)) {
+          (*constrainedKeys)[it->second] = 1;
+        }
+      }
+      for (Key key : newFactorKeys) {
+        (*constrainedKeys)[key] = 1;
+      }
+    }
+  } else {
     constrainedKeys = FastMap<Key, int>();
     // Generate ordering constraints so that the marginalizable variables will be eliminated first
-    // Set all variables to Group1
+    // Set all variables to Group1, or the newest ones to Group2 if enabled
     for(const TimestampKeyMap::value_type& timestamp_key: timestampKeyMap_) {
       if (isActive(timestamp_key.second)) {
-        constrainedKeys->operator[](timestamp_key.second) = 1;
+        const bool newest =
+            params_.newestKeysLast && timestamp_key.first >= currentTimestamp;
+        constrainedKeys->operator[](timestamp_key.second) = newest ? 2 : 1;
+      }
+    }
+    if (params_.newestKeysLast) {
+      for (Key key : newFactorKeys) {
+        constrainedKeys->operator[](key) = 2;
       }
     }
     // Set marginalizable variables to Group0

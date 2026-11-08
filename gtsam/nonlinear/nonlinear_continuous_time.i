@@ -389,14 +389,25 @@ virtual class BatchFixedLagSmoother : gtsam::FixedLagSmoother {
 };
 
 #include <gtsam/nonlinear/IncrementalFixedLagSmoother.h>
+class IncrementalFixedLagSmootherParams {
+  IncrementalFixedLagSmootherParams();
+  IncrementalFixedLagSmootherParams(const gtsam::ISAM2Params& isam2Params);
+
+  gtsam::ISAM2Params isam2;
+  bool newestKeysLast;
+};
+
 virtual class IncrementalFixedLagSmoother : gtsam::FixedLagSmoother {
   IncrementalFixedLagSmoother();
   IncrementalFixedLagSmoother(double smootherLag);
   IncrementalFixedLagSmoother(double smootherLag,
                               const gtsam::ISAM2Params& parameters);
+  IncrementalFixedLagSmoother(
+      double smootherLag, const gtsam::IncrementalFixedLagSmootherParams& params);
 
   gtsam::Matrix marginalCovariance(gtsam::Key key) const;
   const gtsam::ISAM2Params& params() const;
+  const gtsam::IncrementalFixedLagSmootherParams& smootherParams() const;
 
   const gtsam::NonlinearFactorGraph& getFactors() const;
   const gtsam::Values& getLinearizationPoint() const;
