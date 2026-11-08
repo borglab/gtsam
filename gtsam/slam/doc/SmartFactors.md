@@ -155,6 +155,10 @@ The factor stores the projected Jacobian $A = E_{null}^T \Sigma^{-1} F$, the pro
 
 Source: [https://github.com/borglab/gtsam/blob/develop/gtsam/slam/JacobianFactorSVD.h].
 
+## Fixed-Lag Smoothing
+
+In a fixed-lag smoother, a pose that leaves the window can either be marginalized out of the smart factors that observe it, or, with `FixedLagSmoother::CONDITION`, become a fixed camera of those factors, so that their landmark tracks continue. See [Smart Factors in Fixed-Lag Smoothers](SmartFactorsFixedLag.md).
+
 ## Conclusion
 
 Smart factors provide a powerful mechanism for efficiently handling landmark-based constraints in SLAM and SfM. By implicitly marginalizing landmarks, they reduce the size of the state space and enable the use of specialized linear factor representations like `gtsam.RegularImplicitSchurFactor`, which are highly effective when combined with iterative solvers like Conjugate Gradient. Understanding the underlying mathematical connection to the Schur complement and the different linearization options allows users to choose the most appropriate configuration for their specific problem and solver.

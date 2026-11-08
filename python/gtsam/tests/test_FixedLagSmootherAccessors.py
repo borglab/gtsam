@@ -136,5 +136,35 @@ class TestFixedLagSmootherResult(GtsamTestCase):
                                 result.getIterations())
 
 
+class TestFixedLagSmootherMarginalizationMode(GtsamTestCase):
+    """Both smoothers expose the marginalization mode and report new and
+    conditioned factor slots in the update result."""
+
+    def check_mode_and_slots(self, smoother):
+        mode = gtsam.FixedLagSmoother.MarginalizationMode
+        self.assertEqual(smoother.marginalizationMode(), mode.MARGINALIZE)
+        smoother.setMarginalizationMode(mode.CONDITION)
+        self.assertEqual(smoother.marginalizationMode(), mode.CONDITION)
+
+        prior_noise = gtsam.noiseModel.Diagonal.Sigmas(
+            np.array([0.3, 0.3, 0.1]))
+        new_factors = gtsam.NonlinearFactorGraph()
+        new_factors.push_back(
+            gtsam.PriorFactorPose2(X1, gtsam.Pose2(0, 0, 0), prior_noise))
+        new_values = gtsam.Values()
+        new_values.insert(X1, gtsam.Pose2(0.01, 0.01, 0.01))
+        result = smoother.update(new_factors, new_values, {X1: 0.0})
+
+        self.assertEqual(list(result.getNewFactorsIndices()), [0])
+        self.assertEqual(list(result.getConditionedFactorIndices()), [])
+        self.assertEqual(smoother.getFactors().size(), 1)
+
+    def test_batch(self):
+        self.check_mode_and_slots(gtsam.BatchFixedLagSmoother(10.0))
+
+    def test_incremental(self):
+        self.check_mode_and_slots(gtsam.IncrementalFixedLagSmoother(10.0))
+
+
 if __name__ == "__main__":
     unittest.main()

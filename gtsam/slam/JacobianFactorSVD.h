@@ -60,12 +60,14 @@ public:
    * @param Enull a reduced point derivative
    * @param b right-hand side
    * @param model noise model
+   * @param rowBlocks row block of Enull and b of each F block, when not k
    */
   JacobianFactorSVD(
       const KeyVector& keys,
       const std::vector<MatrixZD, Eigen::aligned_allocator<MatrixZD> >& Fblocks,
       const Matrix& Enull, const Vector& b,
-      const SharedDiagonal& model = SharedDiagonal())
+      const SharedDiagonal& model = SharedDiagonal(),
+      const FastVector<size_t>& rowBlocks = FastVector<size_t>())
       : Base() {
     size_t numKeys = Enull.rows() / ZDim;
     size_t m2 = ZDim * numKeys - 3; // TODO: is this not just Enull.rows()?
@@ -78,8 +80,9 @@ public:
     QF.reserve(numKeys);
     for (size_t k = 0; k < Fblocks.size(); ++k) {
       Key key = keys[k];
+      const size_t j = rowBlocks.empty() ? k : rowBlocks[k];
       QF.emplace_back(
-          key, (Enull.transpose()).block(0, ZDim * k, m2, ZDim) * Fblocks[k]);
+          key, (Enull.transpose()).block(0, ZDim * j, m2, ZDim) * Fblocks[k]);
     }
     JacobianFactor::fillTerms(QF, Enull.transpose() * b, model);
   }

@@ -21,6 +21,7 @@
 
 #include <gtsam_unstable/slam/SmartStereoProjectionPoseFactor.h>
 
+#include <algorithm>
 #include <cassert>
 
 namespace gtsam {
@@ -82,18 +83,33 @@ double SmartStereoProjectionPoseFactor::error(const Values& values) const {
   }
 }
 
+StereoCamera SmartStereoProjectionPoseFactor::cameraForMeasurement(
+    size_t i, const Pose3& world_P_body) const {
+  const Pose3 pose = Base::body_P_sensor_
+                         ? world_P_body.compose(*(Base::body_P_sensor_))
+                         : world_P_body;
+  return StereoCamera(pose, K_all_[i]);
+}
+
 SmartStereoProjectionPoseFactor::Base::Cameras
 SmartStereoProjectionPoseFactor::cameras(const Values& values) const {
-  assert(keys_.size() == K_all_.size());
-  Base::Cameras cameras;
-  for (size_t i = 0; i < keys_.size(); i++) {
-    Pose3 pose = values.at<Pose3>(keys_[i]);
-    if (Base::body_P_sensor_) {
-      pose = pose.compose(*(Base::body_P_sensor_));
-    }
-    cameras.push_back(StereoCamera(pose, K_all_[i]));
-  }
-  return cameras;
+  assert(measured_.size() == K_all_.size());
+  return assembleCameras([&](size_t i, size_t keyIndex) {
+    return cameraForMeasurement(i, values.at<Pose3>(keys_[keyIndex]));
+  });
+}
+
+StereoCamera SmartStereoProjectionPoseFactor::camera(
+    Key key, const Values& values) const {
+  const size_t keyIndex =
+      std::find(keys_.begin(), keys_.end(), key) - keys_.begin();
+  return cameraForMeasurement(activeMeasurements().at(keyIndex),
+                              values.at<Pose3>(key));
+}
+
+void SmartStereoProjectionPoseFactor::eraseMeasurementAt(size_t i) {
+  K_all_.erase(K_all_.begin() + i);
+  Base::eraseMeasurementAt(i);
 }
 
 }  // \ namespace gtsam

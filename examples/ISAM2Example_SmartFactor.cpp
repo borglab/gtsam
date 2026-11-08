@@ -60,10 +60,14 @@ int main(int argc, char* argv[]) {
   graph.addPrior(X(0), poses[0], noise);
   initialEstimate.insert(X(0), poses[0].compose(delta));
 
-  // Create smart factor with measurement from first pose only
+  // Create smart factor with measurement from first pose only. A factor in
+  // iSAM2 must not be modified, so later measurements go into a copy that
+  // replaces it.
   SmartFactor::shared_ptr smartFactor(new SmartFactor(measurementNoise, K));
   smartFactor->add(PinholePose<Cal3_S2>(poses[0], K).project(point), X(0));
+  size_t smartFactorPosition = graph.size();  // index in the new factors
   graph.push_back(smartFactor);
+  FactorIndices smartFactorSlot;  // its slot in iSAM2, once added
 
   // loop over remaining poses
   for (size_t i = 1; i < 5; i++) {
@@ -79,12 +83,18 @@ int main(int argc, char* argv[]) {
     Point2 measurement = camera.project(point);
     cout << "Measurement " << i << "" << measurement << endl;
 
-    // Add measurement to smart factor
+    // Replace the smart factor by one that also has this measurement
+    if (i > 1) {
+      smartFactor = std::make_shared<SmartFactor>(*smartFactor);
+      smartFactorPosition = graph.size();
+      graph.push_back(smartFactor);
+    }
     smartFactor->add(measurement, X(i));
 
-    // Update iSAM2
-    ISAM2Result result = isam.update(graph, initialEstimate);
+    // Update iSAM2, removing the previous version of the smart factor
+    ISAM2Result result = isam.update(graph, initialEstimate, smartFactorSlot);
     result.print();
+    smartFactorSlot = {result.newFactorsIndices[smartFactorPosition]};
 
     cout << "Detailed results:" << endl;
     for (auto& [key, status] : result.detail->variableStatus) {

@@ -28,10 +28,13 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/linear/RegularHessianFactor.h>
 #include <gtsam/geometry/CameraSet.h>
+#include <gtsam/base/SymmetricBlockMatrix.h>
 
+#include <algorithm>
 #include <optional>
 #if GTSAM_ENABLE_BOOST_SERIALIZATION
 #include <boost/serialization/optional.hpp>
+#include <boost/serialization/version.hpp>
 #endif
 #include <vector>
 
@@ -75,7 +78,8 @@ protected:
   /**
    * Measurements for each of the m views.
    * We keep a copy of the measurements for I/O and computing the error.
-   * The order is kept the same as the keys that we use to create the factor.
+   * The order is kept the same as the keys that we use to create the factor;
+   * a measurement whose camera is fixed keeps its place but has no key.
    */
   ZVector measured_;
 
@@ -84,6 +88,12 @@ protected:
 
   // Cache for Fblocks, to avoid a malloc ever time we re-linearize
   mutable FBlocks Fs;
+
+  /// Cameras held constant, see conditionOn; parallel to fixedMeasurements_.
+  CameraSet<CAMERA> fixedCameras_;
+
+  /// Increasing indices into measured_ of the measurements with a fixed camera.
+  FastVector<size_t> fixedMeasurements_;
 
  public:
   /// shorthand for a smart pointer to a factor.
@@ -161,14 +171,39 @@ protected:
   /// Return the 2D measurements (ZDim, in general).
   const ZVector& measured() const { return measured_; }
 
-  /// Collect all cameras: important that in key order.
+  /// Collect all cameras in measurement order, fixed cameras included.
   virtual Cameras cameras(const Values& values) const {
-    Cameras cameras;
-    for(const Key& k: this->keys_) {
-      cameras.push_back(values.at<CAMERA>(k));
-    }
-    return cameras;
+    return assembleCameras([&](size_t, size_t keyIndex) {
+      return camera(this->keys_[keyIndex], values);
+    });
   }
+
+  /// @name Fixed cameras
+  /// @{
+
+  /// Cameras held constant, in measurement order.
+  const Cameras& fixedCameras() const { return fixedCameras_; }
+
+  /// Indices of the measurements whose camera is fixed.
+  const FastVector<size_t>& fixedMeasurements() const {
+    return fixedMeasurements_;
+  }
+
+  /// Whether the camera of measurement i is fixed.
+  bool isFixedMeasurement(size_t i) const {
+    return std::binary_search(fixedMeasurements_.begin(),
+                              fixedMeasurements_.end(), i);
+  }
+
+  /// Indices of the measurements whose camera is not fixed.
+  FastVector<size_t> activeMeasurements() const {
+    FastVector<size_t> active;
+    for (size_t i = 0; i < measured_.size(); ++i)
+      if (!isFixedMeasurement(i)) active.push_back(i);
+    return active;
+  }
+
+  /// @}
 
   /**
    * print
@@ -184,6 +219,11 @@ protected:
     }
     if(body_P_sensor_)
       body_P_sensor_->print("body_P_sensor_:\n");
+    for (size_t k = 0; k < fixedCameras_.size(); ++k) {
+      std::cout << "fixed camera for measurement " << fixedMeasurements_[k]
+                << ":\n";
+      fixedCameras_[k].print();
+    }
     Base::print("", keyFormatter);
   }
 
@@ -191,10 +231,15 @@ protected:
   bool equals(const NonlinearFactor& p, double tol = 1e-9) const override {
     if (const This* e = dynamic_cast<const This*>(&p)) {
       // Check that all measurements are the same.
+      if (measured_.size() != e->measured_.size()) return false;
       for (size_t i = 0; i < measured_.size(); i++) {
         if (!traits<Z>::Equals(this->measured_.at(i), e->measured_.at(i), tol))
           return false;
       }
+      // Check that the same measurements are fixed at the same cameras.
+      if (fixedMeasurements_ != e->fixedMeasurements_ ||
+          !fixedCameras_.equals(e->fixedCameras_, tol))
+        return false;
       // If so, check base class.
       return Base::equals(p, tol);
     } else {
@@ -322,6 +367,8 @@ protected:
     // Indeed, nonlinear error |h(x_bar+dx)-z| ~ |h(x_bar) + A*dx - z|
     //                                         = |A*dx - (z-h(x_bar))|
     b = -unwhitenedError(cameras, point, &Fs, &E);
+    // Fixed cameras are constants: their rows only constrain the landmark.
+    for (size_t i : fixedMeasurements_) Fs.at(i).setZero();
   }
 
   /**
@@ -340,7 +387,7 @@ protected:
 
     // Do SVD on A.
     Eigen::JacobiSVD<Matrix> svd(E, Eigen::ComputeFullU);
-    size_t m = this->keys_.size();
+    size_t m = this->measured_.size();
     Enull = svd.matrixU().block(0, N, ZDim * m, ZDim * m - N); // last ZDim*m-N columns
   }
 
@@ -355,7 +402,8 @@ protected:
     computeJacobians(Fs, E, b, cameras, point);
 
     // build augmented hessian
-    SymmetricBlockMatrix augmentedHessian = Cameras::SchurComplement(Fs, E, b);
+    SymmetricBlockMatrix augmentedHessian =
+        activeBlocks(Cameras::SchurComplement(Fs, E, b));
 
     return std::make_shared<RegularHessianFactor<Dim> >(keys_,
         augmentedHessian);
@@ -370,6 +418,10 @@ protected:
       const double lambda, bool diagonalDamping,
       SymmetricBlockMatrix& augmentedHessian,
       const KeyVector allKeys) const {
+    if (!fixedMeasurements_.empty())
+      throw std::invalid_argument(
+          "SmartFactorBase::updateAugmentedHessian does not support fixed "
+          "cameras");
     Matrix E;
     Vector b;
     computeJacobians(Fs, E, b, cameras, point);
@@ -388,6 +440,10 @@ protected:
   std::shared_ptr<RegularImplicitSchurFactor<CAMERA> > //
   createRegularImplicitSchurFactor(const Cameras& cameras, const Point3& point,
       double lambda = 0.0, bool diagonalDamping = false) const {
+    if (!fixedMeasurements_.empty())
+      throw std::invalid_argument(
+          "SmartFactorBase::createRegularImplicitSchurFactor does not support "
+          "fixed cameras");
     Matrix E;
     Vector b;
     FBlocks F;
@@ -409,7 +465,8 @@ protected:
     const size_t M = b.size();
     Matrix P = Cameras::PointCov(E, lambda, diagonalDamping);
     SharedIsotropic n = noiseModel::Isotropic::Sigma(M, noiseModel_->sigma());
-    return std::make_shared<JacobianFactorQ<Dim, ZDim> >(keys_, F, E, P, b, n);
+    return std::make_shared<JacobianFactorQ<Dim, ZDim> >(
+        keys_, activeFBlocks(std::move(F)), E, P, b, n, activeMeasurements());
   }
 
   /**
@@ -418,7 +475,7 @@ protected:
    */
   std::shared_ptr<JacobianFactor> createJacobianSVDFactor(
       const Cameras& cameras, const Point3& point, double lambda = 0.0) const {
-    size_t m = this->keys_.size();
+    size_t m = this->measured_.size();
     FBlocks F;
     Vector b;
     const size_t M = ZDim * m;
@@ -426,7 +483,8 @@ protected:
     computeJacobiansSVD(F, E0, b, cameras, point);
     SharedIsotropic n = noiseModel::Isotropic::Sigma(M - 3,
         noiseModel_->sigma());
-    return std::make_shared<JacobianFactorSVD<Dim, ZDim> >(keys_, F, E0, b, n);
+    return std::make_shared<JacobianFactorSVD<Dim, ZDim> >(
+        keys_, activeFBlocks(std::move(F)), E0, b, n, activeMeasurements());
   }
 
   /// Create BIG block-diagonal matrix F from Fblocks
@@ -446,17 +504,144 @@ protected:
       return Pose3(); // if unspecified, the transformation is the identity
   }
 
+ protected:
+  /// Camera of a key; the default reads it from values.
+  virtual CAMERA camera(Key key, const Values& values) const {
+    return values.at<CAMERA>(key);
+  }
+
+  /**
+   * Cameras in measurement order: the fixed ones, and liveCamera(i, k) for
+   * measurement i whose camera is the k-th that is not fixed.
+   */
+  template <class LIVE_CAMERA>
+  Cameras assembleCameras(const LIVE_CAMERA& liveCamera) const {
+    Cameras cameras;
+    cameras.reserve(measured_.size());
+    size_t keyIndex = 0, fixedIndex = 0;
+    for (size_t i = 0; i < measured_.size(); ++i) {
+      if (isFixedMeasurement(i))
+        cameras.push_back(fixedCameras_[fixedIndex++]);
+      else
+        cameras.push_back(liveCamera(i, keyIndex++));
+    }
+    return cameras;
+  }
+
+  /// The F blocks of the cameras that are not fixed.
+  FBlocks activeFBlocks(FBlocks F) const {
+    if (fixedMeasurements_.empty()) return F;
+    FBlocks active;
+    for (size_t i : activeMeasurements()) active.push_back(F[i]);
+    return active;
+  }
+
+  /**
+   * Restrict an augmented Hessian over all measurements, with zero F blocks
+   * for the fixed cameras, to the cameras that are not fixed.
+   */
+  SymmetricBlockMatrix activeBlocks(SymmetricBlockMatrix full) const {
+    if (fixedMeasurements_.empty()) return full;
+    const FastVector<size_t> active = activeMeasurements();
+    const size_t n = active.size(), m = measured_.size();
+    std::vector<DenseIndex> dims(n + 1, Dim);
+    dims.back() = 1;
+    SymmetricBlockMatrix result(dims, Matrix::Zero(Dim * n + 1, Dim * n + 1));
+    for (size_t i = 0; i < n; ++i) {
+      const Matrix diagonal = full.diagonalBlock(active[i]);
+      result.setDiagonalBlock(i, diagonal);
+      for (size_t j = i + 1; j < n; ++j)
+        result.setOffDiagonalBlock(
+            i, j, full.aboveDiagonalBlock(active[i], active[j]));
+      result.setOffDiagonalBlock(i, n, full.aboveDiagonalBlock(active[i], m));
+    }
+    const Matrix constant = full.diagonalBlock(m);
+    result.setDiagonalBlock(n, constant);
+    return result;
+  }
+
+  /// Hold the camera of measurement measurementIndex constant at camera.
+  void fixMeasurementInPlace(size_t measurementIndex, const CAMERA& camera) {
+    const auto position = std::lower_bound(
+        fixedMeasurements_.begin(), fixedMeasurements_.end(), measurementIndex);
+    fixedCameras_.insert(
+        fixedCameras_.begin() + (position - fixedMeasurements_.begin()),
+        camera);
+    fixedMeasurements_.insert(position, measurementIndex);
+  }
+
+  /// Position of key in keys(); throws if the factor does not have it.
+  KeyVector::iterator findKey(Key key) {
+    const auto keyIterator =
+        std::find(this->keys_.begin(), this->keys_.end(), key);
+    if (keyIterator == this->keys_.end())
+      throw std::invalid_argument("SmartFactorBase: key " +
+                                  DefaultKeyFormatter(key) +
+                                  " is not a key of this factor");
+    return keyIterator;
+  }
+
+  /**
+   * Hold the camera of key constant at camera(key, values), removing the key
+   * and keeping its measurement. Only for fresh copies: a factor in a graph
+   * must not change. Factors whose cameras() does not use camera() override
+   * this.
+   */
+  virtual void fixKeyInPlace(Key key, const Values& values) {
+    const auto keyIterator = findKey(key);
+    const size_t keyIndex = keyIterator - this->keys_.begin();
+    fixMeasurementInPlace(activeMeasurements().at(keyIndex),
+                          camera(key, values));
+    this->keys_.erase(keyIterator);
+  }
+
+  /// Erase measurement i; derived classes also erase their data for it.
+  virtual void eraseMeasurementAt(size_t i) {
+    measured_.erase(measured_.begin() + i);
+  }
+
+  /// Drop the oldest fixed camera together with its measurement.
+  void eraseOldestFixedMeasurement() {
+    eraseMeasurementAt(fixedMeasurements_.front());
+    fixedCameras_.erase(fixedCameras_.begin());
+    fixedMeasurements_.erase(fixedMeasurements_.begin());
+    for (size_t& index : fixedMeasurements_) --index;
+  }
+
+  /**
+   * Implements NonlinearFactor::conditionOn: fix every key with a value in
+   * fixedValues on a copy, then keep at most maxFixedCameras fixed cameras,
+   * the newest (zero keeps all).
+   */
+  NonlinearFactor::shared_ptr conditionOnKeys(const Values& fixedValues,
+                                              size_t maxFixedCameras) const {
+    KeyVector keysToFix;
+    for (Key key : this->keys_)
+      if (fixedValues.exists(key)) keysToFix.push_back(key);
+    if (keysToFix.empty() || keysToFix.size() == this->keys_.size())
+      return nullptr;
+    auto fixed = std::static_pointer_cast<This>(this->clone());
+    for (Key key : keysToFix) fixed->fixKeyInPlace(key, fixedValues);
+    while (maxFixedCameras > 0 && fixed->fixedCameras_.size() > maxFixedCameras)
+      fixed->eraseOldestFixedMeasurement();
+    return fixed;
+  }
+
 private:
 
 #if GTSAM_ENABLE_BOOST_SERIALIZATION///
 /// Serialization function
   friend class boost::serialization::access;
   template<class ARCHIVE>
-  void serialize(ARCHIVE & ar, const unsigned int /*version*/) {
+  void serialize(ARCHIVE & ar, const unsigned int version) {
     ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar & BOOST_SERIALIZATION_NVP(noiseModel_);
     ar & BOOST_SERIALIZATION_NVP(measured_);
     ar & BOOST_SERIALIZATION_NVP(body_P_sensor_);
+    if (version > 0) {
+      ar & BOOST_SERIALIZATION_NVP(fixedCameras_);
+      ar & BOOST_SERIALIZATION_NVP(fixedMeasurements_);
+    }
   }
 #endif
 };
@@ -467,3 +652,19 @@ template<class CAMERA> const int SmartFactorBase<CAMERA>::Dim;
 template<class CAMERA> const int SmartFactorBase<CAMERA>::ZDim;
 
 } // \ namespace gtsam
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+namespace boost {
+namespace serialization {
+
+/** Version 1 adds the fixed cameras. */
+template <class CAMERA>
+struct version<gtsam::SmartFactorBase<CAMERA>> {
+  typedef mpl::int_<1> type;
+  typedef mpl::integral_c_tag tag;
+  BOOST_STATIC_CONSTANT(int, value = type::value);
+};
+
+}  // namespace serialization
+}  // namespace boost
+#endif

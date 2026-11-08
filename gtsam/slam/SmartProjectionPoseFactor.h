@@ -118,21 +118,23 @@ public:
     return K_;
   }
 
-  /**
-   * Collect all cameras involved in this factor
-   * @param values Values structure which must contain camera poses corresponding
-   * to keys involved in this factor
-   * @return vector of Values
-   */
-  typename Base::Cameras cameras(const Values& values) const override {
-    typename Base::Cameras cameras;
-    for (const Key& k : this->keys_) {
-      const Pose3 world_P_sensor_k =
-          Base::body_P_sensor_ ? values.at<Pose3>(k) * *Base::body_P_sensor_
-                               : values.at<Pose3>(k);
-      cameras.emplace_back(world_P_sensor_k, K_);
-    }
-    return cameras;
+  /// Copy of this factor, as a NonlinearFactor.
+  NonlinearFactor::shared_ptr clone() const override {
+    return std::make_shared<This>(*this);
+  }
+
+  /// SmartProjectionFactorBase::fixCamera, returning the concrete type.
+  shared_ptr fixCamera(Key key, const Values& values) const {
+    return std::static_pointer_cast<This>(Base::fixCamera(key, values));
+  }
+
+ protected:
+  /// Camera of a pose key, with body_P_sensor and the shared calibration.
+  Camera camera(Key key, const Values& values) const override {
+    const Pose3 world_P_sensor =
+        Base::body_P_sensor_ ? values.at<Pose3>(key) * *Base::body_P_sensor_
+                             : values.at<Pose3>(key);
+    return Camera(world_P_sensor, K_);
   }
 
  private:

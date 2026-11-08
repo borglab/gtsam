@@ -29,7 +29,9 @@ void FixedLagSmoother::Result::print() const {
             << "Nr linear variables: " << linearVariables << '\n'
             << "error: " << error << '\n'
             << "Nr keys of deleted nodes: " << keysOfDeletedNodes.size() << '\n'
-            << "Nr expired pending keys: " << expiredPendingKeys.size()
+            << "Nr expired pending keys: " << expiredPendingKeys.size() << '\n'
+            << "Nr new factors: " << newFactorsIndices.size() << '\n'
+            << "Nr conditioned factors: " << conditionedFactorIndices.size()
             << std::endl;
 }
 
@@ -37,11 +39,15 @@ void FixedLagSmoother::Result::print() const {
 void FixedLagSmoother::print(const std::string& s, const KeyFormatter& keyFormatter) const {
   std::cout << s;
   std::cout << "  smoother lag: " << smootherLag_ << std::endl;
+  std::cout << "  marginalization mode: "
+            << (marginalizationMode_ == CONDITION ? "CONDITION" : "MARGINALIZE")
+            << std::endl;
 }
 
 /* ************************************************************************* */
 bool FixedLagSmoother::equals(const FixedLagSmoother& rhs, double tol) const {
   return std::abs(smootherLag_ - rhs.smootherLag_) < tol
+      && marginalizationMode_ == rhs.marginalizationMode_
       && std::equal(timestampKeyMap_.begin(), timestampKeyMap_.end(), rhs.timestampKeyMap_.begin())
       && retainedKeys_ == rhs.retainedKeys_;
 }

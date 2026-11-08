@@ -1485,6 +1485,22 @@ TEST(SmartProjectionPoseFactorRollingShutter,
 }
 
 /* ************************************************************************* */
+// A measurement interpolates two poses, so the factor does not support
+// conditioning, and it still cannot be cloned.
+TEST(SmartProjectionPoseFactorRollingShutter, conditionOn) {
+  using namespace vanillaPoseRS;
+  std::shared_ptr<Cameras> cameraRig(new Cameras());
+  cameraRig->push_back(Camera(Pose3::Identity(), sharedK));
+  SmartFactorRS factor(model, cameraRig, params);
+  factor.add(measurement1, x1, x2, interp_factor);
+  factor.add(measurement2, x2, x3, interp_factor);
+  Values fixedValues;
+  fixedValues.insert(x1, Pose3());
+  EXPECT(!factor.conditionOn(fixedValues));
+  CHECK_EXCEPTION(factor.clone(), std::runtime_error);
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

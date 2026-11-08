@@ -97,6 +97,26 @@ TEST(SerializationSlam, SmartProjectionPoseFactor2) {
   EXPECT(equalsBinary(factor));
 }
 
+// A factor with a fixed camera round-trips with that camera.
+TEST(SerializationSlam, SmartProjectionPoseFactorFixedCamera) {
+  using namespace vanillaPose;
+  using namespace serializationTestHelpers;
+  const Symbol x1('x', 1), x2('x', 2), x3('x', 3);
+  SmartFactor factor(model, sharedK);
+  factor.add(Camera(level_pose, sharedK).project(landmark1), x1);
+  factor.add(Camera(pose_right, sharedK).project(landmark1), x2);
+  factor.add(Camera(pose_above, sharedK).project(landmark1), x3);
+  Values values;
+  values.insert(x1, level_pose);
+  values.insert(x2, pose_right);
+  values.insert(x3, pose_above);
+  const SmartFactor fixed = *factor.fixCamera(x1, values);
+
+  EXPECT(equalsObj(fixed));
+  EXPECT(equalsXML(fixed));
+  EXPECT(equalsBinary(fixed));
+}
+
 /* ************************************************************************* */
 int main() {
   TestResult tr;

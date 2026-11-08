@@ -306,6 +306,19 @@ TEST(CameraSet, Stereo) {
 }
 
 /* ************************************************************************* */
+// Cameras are compared one by one, not only the first.
+TEST(CameraSet, equals) {
+  typedef PinholeCamera<Cal3Bundler> Camera;
+  CameraSet<Camera> set1, set2;
+  set1.push_back(Camera());
+  set1.push_back(Camera());
+  set2.push_back(Camera());
+  set2.push_back(Camera(Pose3(Rot3(), Point3(1, 0, 0))));
+  EXPECT(set1.equals(set1));
+  EXPECT(!set1.equals(set2));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
