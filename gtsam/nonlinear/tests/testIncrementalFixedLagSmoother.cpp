@@ -472,6 +472,71 @@ TEST(IncrementalFixedLagSmoother, ConnectsPendingValueBeforeItAgesOut) {
   EXPECT(!smoother.getISAM2().getVariableIndex().empty(X(1)));
 }
 
+/* ************************************************************************* */
+// Both constructors keep the default of reusing the slots of removed factors,
+// unless given other iSAM2 parameters, and use the default options.
+TEST(IncrementalFixedLagSmoother, Params) {
+  EXPECT(IncrementalFixedLagSmoother().params().findUnusedFactorSlots);
+  EXPECT(IncrementalFixedLagSmoother(1.0, ISAM2Params())
+             .smootherParams()
+             .newestKeysLast);
+  IncrementalFixedLagSmootherParams params;
+  EXPECT(params.isam2.findUnusedFactorSlots);
+  EXPECT(params.newestKeysLast);
+  params.newestKeysLast = false;
+  EXPECT(!IncrementalFixedLagSmoother(1.0, params)
+              .smootherParams()
+              .newestKeysLast);
+  EXPECT(
+      IncrementalFixedLagSmoother(1.0, params).params().findUnusedFactorSlots);
+  EXPECT(!IncrementalFixedLagSmoother(1.0, ISAM2Params())
+              .params()
+              .findUnusedFactorSlots);
+}
+
+/* ************************************************************************* */
+// By default, the newest variables stay at the root of the Bayes tree, also
+// in updates that marginalize and in updates without new factors.
+TEST(IncrementalFixedLagSmoother, NewestKeysLast) {
+  using symbol_shorthand::V;
+  const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));
+  IncrementalFixedLagSmoother smoother(5.0);
+  const auto depth = [&](Key key) {
+    size_t levels = 0;
+    for (auto clique = smoother.getISAM2()[key]; clique->parent();
+         clique = clique->parent()) {
+      ++levels;
+    }
+    return levels;
+  };
+
+  // Two variables per step, linked to each other and to the previous step.
+  for (size_t i = 0; i < 20; ++i) {
+    NonlinearFactorGraph factors;
+    Values values;
+    FixedLagSmoother::KeyTimestampMap timestamps;
+    values.insert(X(i), Point2(0.0, 0.0));
+    values.insert(V(i), Point2(0.0, 0.0));
+    timestamps[X(i)] = static_cast<double>(i);
+    timestamps[V(i)] = static_cast<double>(i);
+    factors.emplace_shared<BetweenPoint2>(X(i), V(i), Point2(0.0, 0.0), noise);
+    if (i == 0) {
+      factors.addPrior(X(0), Point2(0.0, 0.0), noise);
+    } else {
+      factors.emplace_shared<BetweenPoint2>(X(i - 1), X(i), Point2(0.0, 0.0),
+                                            noise);
+      factors.emplace_shared<BetweenPoint2>(V(i - 1), V(i), Point2(0.0, 0.0),
+                                            noise);
+      factors.emplace_shared<BetweenPoint2>(X(i - 1), V(i), Point2(0.0, 0.0),
+                                            noise);
+    }
+    smoother.update(factors, values, timestamps);
+    EXPECT_LONGS_EQUAL(0, depth(X(i)));
+    smoother.update();
+    EXPECT_LONGS_EQUAL(0, depth(X(i)));
+  }
+}
+
 // A pending value with no factor is removed once it leaves the lag window.
 TEST(IncrementalFixedLagSmoother, ReapsPendingValueAfterLag) {
   const SharedDiagonal noise = noiseModel::Diagonal::Sigmas(Vector2(0.1, 0.1));

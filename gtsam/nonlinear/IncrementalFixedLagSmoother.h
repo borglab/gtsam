@@ -28,6 +28,32 @@
 
 namespace gtsam {
 
+/** Parameters of IncrementalFixedLagSmoother */
+struct IncrementalFixedLagSmootherParams {
+  /** The iSAM2 parameters. By default it reuses the slots of removed factors,
+   * since the smoother keeps removing factors as they leave the window. */
+  ISAM2Params isam2;
+
+  /**
+   * In every update, eliminate the keys of the new factors and those at the
+   * current timestamp last, so the newest states stay at the root of the Bayes
+   * tree. Then an update or a marginal of the current state only touches a
+   * short path of the tree. It pays off with several variables per time step
+   * or several sensors, which otherwise leave the newest states deep in the
+   * tree when marginalizing. Set it to false for the previous ordering, which
+   * only constrains the marginalizable keys.
+   */
+  bool newestKeysLast = true;
+
+  IncrementalFixedLagSmootherParams() {
+    isam2.findUnusedFactorSlots = true;
+  }
+
+  /** The default options with the given iSAM2 parameters */
+  explicit IncrementalFixedLagSmootherParams(const ISAM2Params& isam2Params)
+      : isam2(isam2Params) {}
+};
+
 /**
  * This is a base class for the various HMF2 implementations. The HMF2 eliminates the factor graph
  * such that the active states are placed in/near the root. This base class implements a function
@@ -40,11 +66,21 @@ public:
   /// Typedef for a shared pointer to an Incremental Fixed-Lag Smoother
   typedef std::shared_ptr<IncrementalFixedLagSmoother> shared_ptr;
 
-  /** default constructor */
-  IncrementalFixedLagSmoother(double smootherLag = 0.0,
-      const ISAM2Params& parameters = DefaultISAM2Params()) :
-      FixedLagSmoother(smootherLag), isam_(parameters) {
-  }
+  /**
+   * Constructor with the given iSAM2 parameters and the default options. For
+   * the previous ordering, use the constructor with
+   * IncrementalFixedLagSmootherParams and set newestKeysLast to false.
+   */
+  IncrementalFixedLagSmoother(
+      double smootherLag = 0.0,
+      const ISAM2Params& parameters = DefaultISAM2Params())
+      : IncrementalFixedLagSmoother(
+            smootherLag, IncrementalFixedLagSmootherParams(parameters)) {}
+
+  /** Constructor */
+  IncrementalFixedLagSmoother(double smootherLag,
+                              const IncrementalFixedLagSmootherParams& params)
+      : FixedLagSmoother(smootherLag), isam_(params.isam2), params_(params) {}
 
   /** destructor */
   ~IncrementalFixedLagSmoother() override {
@@ -154,6 +190,11 @@ public:
     return isam_.params();
   }
 
+  /** return the smoother parameters */
+  const IncrementalFixedLagSmootherParams& smootherParams() const {
+    return params_;
+  }
+
   /** Access the current set of factors */
   const NonlinearFactorGraph& getFactors() const {
     return isam_.getFactorsUnsafe();
@@ -184,9 +225,7 @@ protected:
 
   /** Create default parameters */
   static ISAM2Params DefaultISAM2Params() {
-    ISAM2Params params;
-    params.findUnusedFactorSlots = true;
-    return params;
+    return IncrementalFixedLagSmootherParams().isam2;
   }
 
   /** An iSAM2 object used to perform inference. The smoother lag is controlled
@@ -195,6 +234,9 @@ protected:
 
   /** Store results of latest isam2 update */
   ISAM2Result isamResult_;
+
+  /** The smoother parameters */
+  IncrementalFixedLagSmootherParams params_;
 
   /// Shared body of both update() overloads.
   Result updateImpl(const NonlinearFactorGraph& newFactors,
@@ -207,10 +249,15 @@ protected:
   /** Erase any keys associated with timestamps before the provided time */
   void eraseKeysBefore(double timestamp);
 
-  /** Fill in an iSAM2 ConstrainedKeys structure such that the provided keys are eliminated before all others */
+  /**
+   * Fill in an iSAM2 ConstrainedKeys structure such that the marginalizable
+   * keys are eliminated before all others and, if newestKeysLast is set, the
+   * keys of the new factors and those at the current timestamp after all
+   * others.
+   */
   void createOrderingConstraints(
-      const KeyVector& marginalizableKeys,
-      const std::function<bool(Key)>& isActive,
+      const KeyVector& marginalizableKeys, const KeySet& newFactorKeys,
+      double currentTimestamp, const std::function<bool(Key)>& isActive,
       std::optional<FastMap<Key, int> >& constrainedKeys) const;
 
 private:
