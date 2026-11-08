@@ -6,6 +6,8 @@ problem = QpProblem();
 problem.addCost(JacobianFactor(key, eye(2), [2; 3], noiseModel.Unit.Create(2)));
 problem.addConstraint(LinearConstraint.LessEqual( ...
     JacobianFactor(key, [1, 0], 1, noiseModel.Unit.Create(1))));
+defaultSolver = ActiveSetSolver(problem);
+CHECK('Default constructor', norm(defaultSolver.optimize().atVector(key) - [1; 3]) < 1e-7);
 params = ActiveSetSolverParams();
 CHECK('Default Automatic', params.qpFormulation == ActiveSetSolverParams.QpFormulation.Automatic);
 CHECK('Default Sparse', params.qpSubproblemSolver == ActiveSetSolverParams.QpSubproblemSolver.Sparse);

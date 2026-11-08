@@ -219,9 +219,9 @@ class LpProblem : gtsam::ConstrainedOptProblem {
   double objective(const gtsam::Values& values) const;
   gtsam::Values optimize(
       const gtsam::Values& initialValues,
-      std::shared_ptr<gtsam::ActiveSetSolverParams> params = nullptr) const;
+      gtsam::ActiveSetSolverParams* params = nullptr) const;
   gtsam::Values optimize(
-      std::shared_ptr<gtsam::ActiveSetSolverParams> params = nullptr) const;
+      gtsam::ActiveSetSolverParams* params = nullptr) const;
 };
 
 #include <gtsam/constrained/QpCost.h>
@@ -273,9 +273,9 @@ class ActiveSetFeasibleStepResult {
 
 class ActiveSetSolver {
   ActiveSetSolver(const gtsam::QpProblem& problem,
-      std::shared_ptr<gtsam::ActiveSetSolverParams> params = nullptr);
+      gtsam::ActiveSetSolverParams* params = nullptr);
   ActiveSetSolver(const gtsam::LpProblem& problem,
-      std::shared_ptr<gtsam::ActiveSetSolverParams> params = nullptr);
+      gtsam::ActiveSetSolverParams* params = nullptr);
   gtsam::Values optimize(const gtsam::Values& initialValues) const;
   gtsam::Values optimize() const;
   gtsam::ActiveSetFeasibleStepResult computeFeasibleStep(
