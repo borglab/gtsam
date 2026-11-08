@@ -221,7 +221,7 @@ void ActiveSetSolver::prepareDenseWorkspace(SolveWorkspace* workspace) const {
   // once built; working-set factors remain mutable in that same backend.
   if (!workspace->dense)
     workspace->dense = std::make_unique<internal::DenseQpSolver>(
-        denseQpWorkspace_->data);
+        denseQpWorkspace_->data, params_->projectDenseQpEqualities);
 }
 
 /* ************************************************************************* */

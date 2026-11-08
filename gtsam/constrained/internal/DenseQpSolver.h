@@ -13,7 +13,7 @@
  * initialization, working-set decisions, and original-QP convergence checks.
  * This header separates those shared decisions from dense factorization reuse
  * through immutable packed inputs and a workspace owned by each solve call.
- * Permanent affine equalities are eliminated once; only inequality boundaries
+ * Permanent affine equalities can be eliminated once; only inequality boundaries
  * participate in subsequent working-system updates. Original rows remain
  * authoritative for feasibility checks and multiplier recovery.
  * The declarations stay in gtsam::internal and are excluded from the language
@@ -42,6 +42,9 @@ struct DenseQpEqualityProjection;
  */
 struct DenseQpData {
   Matrix jacobian;
+  /// Optional well-conditioned, positive-definite native Hessian. Present only
+  /// for Hessian-only objectives without equalities; jacobian retains its root.
+  Matrix nativeHessian;
   Vector rhs, linear;
   Matrix normals;
   Vector bounds;
@@ -61,20 +64,23 @@ class GTSAM_EXPORT DenseQpSolver {
    */
   struct Statistics {
     size_t numericalFactorizations = 0, objectiveFactorizations = 0;
+    size_t choleskyFactorizations = 0;
     size_t workingRebuilds = 0, rowAdditions = 0, rowRemovals = 0;
     size_t transformedNormals = 0, dependentRows = 0, rhsOnlySolves = 0, solves = 0;
     std::map<std::string, size_t> rebuildReasons;
   };
   /// Read this call's counters without changing the solver state.
   const Statistics& statistics() const;
-  /** Eliminate permanent equalities, cache curvature, and update independent
-   * inequality normals, retaining a cached null-space fallback. Exact fixed
+  /** Optionally eliminate permanent equalities, cache curvature, and update
+   * independent inequality normals, retaining a cached null-space fallback. Exact fixed
    * coordinates and supplied square-root costs are preserved. Working LDLT
    * factors support bordering, deletion and RHS-only solves; the objective
    * remains in square-root form. Original residuals refine cached solves.
-   * The immutable data must outlive this workspace.
+   * With projectEqualities=false, retain original coordinates and exact
+   * equality pivots. The immutable data must outlive this workspace.
    */
-  explicit DenseQpSolver(const DenseQpData& data);
+  explicit DenseQpSolver(const DenseQpData& data,
+                          bool projectEqualities = true);
   /// Release this optimization call's numerical workspace.
   ~DenseQpSolver();
   /** Solve the specified working face, recentering only the objective RHS.
@@ -85,7 +91,8 @@ class GTSAM_EXPORT DenseQpSolver {
   /** Read this call's permanent equality preparation without recomputing it.
    * Feasibility and tangent-cone initialization may share its affine point and
    * orthonormal nullspace with the main working solves. Return nullptr when
-   * there are no equalities or their projection is numerically ambiguous.
+   * projection is disabled, there are no equalities, or their projection is
+   * numerically ambiguous.
    * The returned pointer remains valid for this workspace's lifetime.
    */
   const DenseQpEqualityProjection* equalityProjection() const;
@@ -110,7 +117,7 @@ class GTSAM_EXPORT DenseQpSolver {
   /// Prepare square-root curvature; return false if it is not invertible.
   bool prepareDual();
   /** Minimize the equality-constrained objective minus forcing.dot(x).
-   * Reuse the fixed curvature and equality projection, ignoring inequalities.
+   * Reuse fixed curvature and equality factors, ignoring inequalities.
    */
   Vector solveDual(const Vector& center, const Vector& forcing);
   /// Apply the equality-constrained inverse to a homogeneous linear forcing.

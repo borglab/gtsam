@@ -9,6 +9,7 @@ problem.addConstraint(LinearConstraint.LessEqual( ...
 params = ActiveSetSolverParams();
 CHECK('Default Automatic', params.qpFormulation == ActiveSetSolverParams.QpFormulation.Automatic);
 CHECK('Default Sparse', params.qpSubproblemSolver == ActiveSetSolverParams.QpSubproblemSolver.Sparse);
+CHECK('Default equality projection', params.projectDenseQpEqualities);
 initial = Values();
 initial.insert(key, [20; -10]);
 solver = ActiveSetSolver(problem, params);
@@ -31,5 +32,19 @@ for backend = {ActiveSetSolverParams.QpSubproblemSolver.Dense, ...
     solver = ActiveSetSolver(problem, params);
     values = solver.optimize(initial);
     CHECK('Infeasible dual start', norm(values.atVector(key) - [1; 3]) < 1e-7);
+end
+problem.addConstraint(LinearConstraint.Equal( ...
+    JacobianFactor(key, [1, 1], 1, noiseModel.Unit.Create(1))));
+params.qpSubproblemSolver = ActiveSetSolverParams.QpSubproblemSolver.Dense;
+for project = [false, true]
+    params.projectDenseQpEqualities = project;
+    CHECK('Projection option round trip', params.projectDenseQpEqualities == project);
+    for mode = {ActiveSetSolverParams.QpFormulation.Primal, ...
+                ActiveSetSolverParams.QpFormulation.Dual}
+        params.qpFormulation = mode{1};
+        solver = ActiveSetSolver(problem, params);
+        values = solver.optimize();
+        CHECK('Equality optimum', norm(values.atVector(key) - [0; 1]) < 1e-7);
+    end
 end
 end

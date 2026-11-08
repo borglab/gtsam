@@ -20,6 +20,27 @@ from gtsam.symbol_shorthand import X
 class TestConstrainedWrappers(unittest.TestCase):
     """Smoke tests for the LP, QP, and QCQP Python bindings."""
 
+    def test_dense_equality_projection_option(self):
+        """Both dense formulations accept either equality representation."""
+        key = X(42)
+        problem = gtsam.QpProblem()
+        problem.addCost(gtsam.JacobianFactor(
+            key, np.eye(2), np.array([3., 2.]), gtsam.noiseModel.Unit.Create(2)))
+        problem.addConstraint(gtsam.LinearConstraint.Equal(gtsam.JacobianFactor(
+            key, np.array([[1., 1.]]), np.array([1.]), gtsam.noiseModel.Unit.Create(1))))
+        problem.addConstraint(gtsam.LinearConstraint.LessEqual(gtsam.JacobianFactor(
+            key, np.array([[0., 1.]]), np.array([0.]), gtsam.noiseModel.Unit.Create(1))))
+        params = gtsam.ActiveSetSolverParams()
+        self.assertTrue(params.projectDenseQpEqualities)
+        params.qpSubproblemSolver = params.QpSubproblemSolver.Dense
+        for project in (False, True):
+            params.projectDenseQpEqualities = project
+            self.assertEqual(params.projectDenseQpEqualities, project)
+            for mode in (params.QpFormulation.Primal, params.QpFormulation.Dual):
+                params.qpFormulation = mode
+                values = gtsam.ActiveSetSolver(problem, params).optimize()
+                np.testing.assert_allclose(values.atVector(key), [1., 0.], atol=1e-8)
+
     def test_qp_formulations(self):
         """The shared formulation enum works with both numerical backends."""
         key = X(42)

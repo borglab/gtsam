@@ -23,6 +23,7 @@
 #include <gtsam/base/GenericValue.h>
 
 #include <Eigen/Eigenvalues>
+#include <Eigen/Cholesky>
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -349,6 +350,19 @@ void ActiveSetSolver::packDenseObjective() {
   }
   data.jacobian = Matrix::Zero(rowCount + n, n);
   data.rhs = Vector::Zero(rowCount + n);
+  // Native positive-definite curvature needs neither an eigensquare root nor
+  // a subsequent QR. Test H before adding any proximal term, so regularization
+  // cannot hide nonconvexity. Weak pivots retain the rank-aware square-root path.
+  if (jacobians.empty() && constraints_.equalities.empty() && n > 0 &&
+      hessian.allFinite()) {
+    Eigen::LLT<Matrix> cholesky(hessian);
+    if (cholesky.info() == Eigen::Success &&
+        cholesky.rcond() > std::sqrt(std::numeric_limits<double>::epsilon())) {
+      data.jacobian = cholesky.matrixU();
+      data.nativeHessian = std::move(hessian);
+      return;
+    }
+  }
   packDenseJacobians(jacobians, workspace.keyOffsets, &data);
   packDenseHessian(hessian, rowCount);
 }

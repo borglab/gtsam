@@ -192,6 +192,7 @@ class ActiveSetSolverParams {
   double regularization;
   double phaseOneFeasibilityTolerance;
   gtsam::ActiveSetSolverParams::QpSubproblemSolver qpSubproblemSolver;
+  bool projectDenseQpEqualities;
   bool useIncrementalSparseQp;
   gtsam::ActiveSetSolverParams::QpFormulation qpFormulation;
   gtsam::ActiveSetSolverParams::QpInitialization qpInitialization;

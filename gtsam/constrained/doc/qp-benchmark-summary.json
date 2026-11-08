@@ -554,7 +554,81 @@
       "fresh_repeat_certified": []
     }
   ],
-  "report_bytes": 257436,
+  "report_bytes": 283687,
+  "dense_cholesky": {
+    "scope": "Positive-definite Hessian-only Dense objectives with no equalities; both formulations. Native H is checked before adding regularization. LLT success and rcond(H)>sqrt(machine epsilon) select Cholesky; all other cases keep the existing square-root path.",
+    "no_added_regularization_floor": true,
+    "original_qp_certificate_unchanged": true,
+    "timing": "Two persistent fresh-solver workers load the preserved baseline and new library. Every repeat interleaves cases, settings, formulations and versions in a seeded random order; one core/TBB/numerical thread. Factor construction and independent scoring excluded. First call plus five fresh repetitions per combination.",
+    "baseline_revision": "827b528616293d5ef87c0a7d74d0b951ba4b32ab",
+    "baseline_library_sha256": "73a25482df34d7a37028c9ed89b8b45d303de2002908ff6a68f8ad507c9cacc9",
+    "current_library_sha256": "ff70e15acb74229fee728251defa1b4bc5ce90a79e54f26794a1b70b1fbb9ef1",
+    "calls": 12800,
+    "before_calls": 6144,
+    "after_calls": 6656,
+    "automatic_checks": 512,
+    "automatic_passed": 512,
+    "native_suites": 9,
+    "python_tests_passed": 582,
+    "python_tests_skipped": 6,
+    "python_subtests_passed": 89,
+    "paired_default_results": [
+      {
+        "family": "LIPMWALK",
+        "formulation": "Primal",
+        "cases": 30,
+        "before_median_ms": 0.6087719812057912,
+        "after_median_ms": 0.5844244733452797,
+        "paired_geomean_speedup": 1.0385759974658428,
+        "hessian_fast_path": true
+      },
+      {
+        "family": "LIPMWALK",
+        "formulation": "Dual",
+        "cases": 30,
+        "before_median_ms": 0.1257499970961362,
+        "after_median_ms": 0.09987398516386747,
+        "paired_geomean_speedup": 1.2479453948994963,
+        "hessian_fast_path": true
+      },
+      {
+        "family": "WHLIPBAL",
+        "formulation": "Primal",
+        "cases": 30,
+        "before_median_ms": 0.3641494840849191,
+        "after_median_ms": 0.24825401487760246,
+        "paired_geomean_speedup": 1.4358541389590553,
+        "hessian_fast_path": true
+      },
+      {
+        "family": "WHLIPBAL",
+        "formulation": "Dual",
+        "cases": 30,
+        "before_median_ms": 0.3214839962311089,
+        "after_median_ms": 0.19155751215294003,
+        "paired_geomean_speedup": 1.6632549518477584,
+        "hessian_fast_path": true
+      },
+      {
+        "family": "QUADCMPC",
+        "formulation": "Primal",
+        "cases": 4,
+        "before_median_ms": 24.305814993567765,
+        "after_median_ms": 23.456480004824698,
+        "paired_geomean_speedup": 1.0160483354814056,
+        "hessian_fast_path": false
+      },
+      {
+        "family": "QUADCMPC",
+        "formulation": "Dual",
+        "cases": 4,
+        "before_median_ms": 18.940055975690484,
+        "after_median_ms": 18.35426499019377,
+        "paired_geomean_speedup": 1.0267808123794726,
+        "hessian_fast_path": false
+      }
+    ]
+  },
   "automatic_selection": {
     "default_backend": "Sparse",
     "default_formulation": "Automatic",

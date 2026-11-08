@@ -22,6 +22,7 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <Eigen/QR>
+#include <Eigen/Cholesky>
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -192,6 +193,46 @@ DenseQpData problem(double regularization) {
   data.equalities = 1;
   data.regularization = regularization;
   return data;
+}
+
+// Native-Hessian Cholesky shares working-set updates and RHS caches with QR,
+// and agrees with an independently refactored square-root working-face solve.
+TEST(DenseQpSolver, NativeHessianCholeskyReuse) {
+  for (double weight : {0.0, 0.1}) {
+    DenseQpData data;
+    data.nativeHessian = Matrix{{4, 1}, {1, 3}};
+    data.jacobian = Eigen::LLT<Matrix>(data.nativeHessian).matrixU();
+    data.rhs = Vector::Zero(2);
+    data.linear = Vector2{8, 7};
+    data.normals = Matrix{{1, 0}, {2, 0}, {0, 1}};
+    data.bounds = Vector3{1, 2, 3};
+    data.regularization = weight;
+    DenseQpSolver solver(data), dual(data);
+    BatchReference reference(data);
+    CHECK(dual.prepareDual());
+    const std::vector<std::vector<bool>> masks{
+        {false, false, false}, {true, false, false}, {true, true, false},
+        {false, true, false}, {false, false, false}};
+    for (size_t i = 0; i < masks.size(); ++i) {
+      const Vector2 center{double(i), -double(i)};
+      EXPECT(assert_equal(reference.solve(masks[i], center),
+                          solver.solve(masks[i], center), 1e-9));
+      EXPECT(assert_equal(reference.solve(masks[i], center * .5),
+                          solver.solve(masks[i], center * .5), 1e-9));
+      Matrix hessian = data.nativeHessian;
+      hessian.diagonal().array() += weight;
+      const Vector2 forcing{2, -1};
+      EXPECT(assert_equal(Vector(hessian.ldlt().solve(data.linear + forcing + weight * center)),
+                          dual.solveDual(center, forcing), 1e-10));
+      EXPECT(assert_equal(Vector(hessian.ldlt().solve(forcing)),
+                          dual.dualResponse(forcing), 1e-10));
+    }
+    CHECK(solver.statistics().choleskyFactorizations == 1);
+    CHECK(solver.statistics().objectiveFactorizations == 1);
+    CHECK(dual.statistics().choleskyFactorizations == 1);
+    CHECK(dual.statistics().numericalFactorizations == 1);
+    CHECK(dual.statistics().rhsOnlySolves == masks.size());
+  }
 }
 
 // Changed centers and repeated toggles match the rank-aware batch reference.
@@ -696,6 +737,61 @@ TEST(DenseQpSolver, CachedMultipliersPreserveWeakGradient) {
   const auto multipliers = solver.multipliers(value, gradient, 1e-9);
   EXPECT(multipliers.has_value());
   if (multipliers) EXPECT(assert_equal(Vector{{2e-20}}, *multipliers, 1e-29));
+}
+
+// Equality multipliers are unrestricted even when dependent working rows
+// trigger the conservative gauge check in original coordinates.
+TEST(DenseQpSolver, UnprojectedMultiplierGauge) {
+  DenseQpData data;
+  data.jacobian = Matrix::Identity(3, 3);
+  data.rhs = Vector3{-1, -1, 2};
+  data.linear = Vector::Zero(3);
+  data.normals = Matrix{{1, 1, 0}, {2, 2, 0}, {0, 0, 1}};
+  data.bounds = Vector3{1, 2, 0};
+  data.equalities = 2;
+  DenseQpSolver solver(data, false);
+  const Vector value = solver.solve({true}, Vector::Zero(3));
+  EXPECT(assert_equal(Vector3(.5, .5, 0), value, 1e-10));
+  const auto multipliers = solver.multipliers(value, value - data.rhs, 1e-9);
+  CHECK(multipliers.has_value());
+  if (multipliers) {
+    EXPECT(assert_equal(Vector(value - data.rhs),
+                        Vector(data.normals.transpose() * *multipliers), 1e-10));
+    DOUBLES_EQUAL(-2, (*multipliers)(2), 1e-10);
+  }
+}
+
+// Unprojected dual responses preserve exact equalities and reuse factors for
+// arbitrary forcing and proximal centers, including a globally singular cost.
+TEST(DenseQpSolver, ConstrainedDualWithoutProjection) {
+  for (double regularization : {0.0, 0.1}) {
+    DenseQpData data;
+    data.jacobian = Matrix{{1, 0, 0}, {0, 1, 0}};
+    data.rhs = Vector2{3, 2};
+    data.linear = Vector3{0, 0, 0};
+    data.normals = Matrix{{1, 1, 1}, {2, 2, 2}, {1, 0, 0}};
+    data.bounds = Vector3{1, 2, 0};
+    data.equalities = 2;
+    data.regularization = regularization;
+    DenseQpSolver direct(data, false), projected(data, true);
+    CHECK(direct.equalityProjection() == nullptr);
+    CHECK(direct.reducedDimension() == 2);
+    CHECK(direct.prepareDual());
+    CHECK(projected.prepareDual());
+    const auto factorizations = direct.statistics().numericalFactorizations;
+    for (const Vector3& center : {Vector3{0, 0, 0}, Vector3{1, -2, 9}}) {
+      const Vector3 forcing{2, -3, 4};
+      EXPECT(assert_equal(projected.solveDual(center, forcing),
+                          direct.solveDual(center, forcing), 1e-9));
+      const Vector response = direct.dualResponse(forcing);
+      EXPECT(assert_equal(projected.dualResponse(forcing), response, 1e-9));
+      EXPECT(assert_equal(Vector::Zero(2),
+                          Vector(data.normals.topRows(2) * response), 1e-10));
+    }
+    CHECK(direct.statistics().numericalFactorizations == factorizations);
+    CHECK(direct.statistics().objectiveFactorizations == 1);
+    CHECK(direct.statistics().rhsOnlySolves == 2);
+  }
 }
 
 }  // namespace dense_working_system
