@@ -19,6 +19,8 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <CppUnitLite/TestHarness.h>
 
+#include <limits>
+
 using namespace gtsam;
 using internal::SparseQpData;
 using internal::SparseQpSolver;
@@ -105,7 +107,17 @@ TEST(SparseQpSolver, WeakAffineFaceResidualAccuracy) {
         const double scale = direction.dot(target - (1 + weight) * rhs) /
             (weight + (1 + weight) * direction.squaredNorm() * normal.squaredNorm());
         const Vector error = result.at(1) - normal * scale;
-        CHECK(error.lpNorm<Eigen::Infinity>() < 5e-9);
+        // The two null directions have curvature weight, so absolute solution
+        // error is amplified by the reduced system's condition number. Check
+        // forward error at that scale, and stationarity independently below.
+        const double condition = 1 + (1 + weight) *
+            direction.squaredNorm() * normal.squaredNorm() / weight;
+        const double tolerance = std::numeric_limits<double>::epsilon() *
+            condition * (normal * scale).lpNorm<Eigen::Infinity>();
+        CHECK(error.lpNorm<Eigen::Infinity>() < tolerance);
+        const Vector gradient = weight * result.at(1) +
+            coupling.transpose() * ((1 + weight) * result.at(0) - target);
+        CHECK(gradient.lpNorm<Eigen::Infinity>() < 1e-12);
         EXPECT(assert_equal(rhs, Vector(result.at(0) - coupling * result.at(1)), 1e-12));
       }
     }

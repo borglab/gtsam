@@ -43,7 +43,11 @@ std::pair<VectorValues, VectorValues> QPSolver::optimize(
   const QpProblem problem = ToConstrainedProblem(qp_);
   const auto keyDims = CollectKeyDims(qp_);
   const Values initial = ToValues(initialValues);
-  ActiveSetSolver solver(problem);
+  // The legacy overload requires a feasible initial point. Automatic may select
+  // Dual, which deliberately accepts infeasible starts, so retain Primal here.
+  auto params = std::make_shared<ActiveSetSolverParams>();
+  params->qpFormulation = ActiveSetSolverParams::QpFormulation::Primal;
+  ActiveSetSolver solver(problem, params);
 
   try {
     Values values;
