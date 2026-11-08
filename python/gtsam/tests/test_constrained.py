@@ -20,6 +20,103 @@ from gtsam.symbol_shorthand import X
 class TestConstrainedWrappers(unittest.TestCase):
     """Smoke tests for the LP, QP, and QCQP Python bindings."""
 
+    def test_qp_initialization_modes(self):
+        """All public initialization choices retain the same QP optimum."""
+        key = X(0)
+        problem = gtsam.QpProblem()
+        problem.addCost(
+            gtsam.JacobianFactor(
+                key, np.eye(2), np.array([2.0, 3.0]), gtsam.noiseModel.Unit.Create(2)
+            )
+        )
+        problem.addConstraint(
+            gtsam.LinearConstraint.GreaterEqual(
+                gtsam.JacobianFactor(
+                    key, np.array([[1.0, 0.0]]), np.zeros(1),
+                    gtsam.noiseModel.Unit.Create(1)
+                )
+            )
+        )
+        initial = gtsam.Values()
+        initial.insert(key, np.zeros(2))
+        modes = gtsam.ActiveSetSolverParams.QpInitialization
+        params = gtsam.ActiveSetSolverParams()
+        self.assertEqual(params.qpInitialization, modes.TightConstraints)
+        params.regularization = 0.0
+        ordering = gtsam.Ordering()
+        ordering.push_back(key)
+        params.setOrdering(ordering)
+        for mode in (
+            modes.TightConstraints,
+            modes.ProjectedGradient,
+            modes.FeasibleStepThenProjectedGradient,
+        ):
+            params.qpInitialization = mode
+            result = gtsam.ActiveSetSolver(problem, params).optimize(initial)
+            np.testing.assert_allclose(result.atVector(key), [2.0, 3.0], atol=1e-9)
+
+    def test_dense_qp_semantics(self):
+        """Dense keeps the original optimum and honors every initialization mode."""
+        key = X(0)
+        problem = gtsam.QpProblem()
+        problem.addCost(gtsam.JacobianFactor(
+            key, np.eye(2), np.array([2.0, 3.0]),
+            gtsam.noiseModel.Unit.Create(2)))
+        # Redundant affine equalities retain their original row identities.
+        for scale in (1.0, 2.0):
+            problem.addConstraint(gtsam.LinearConstraint.Equal(
+                gtsam.JacobianFactor(key, np.array([[scale, 0.0]]),
+                                     np.array([scale]),
+                                     gtsam.noiseModel.Unit.Create(1))))
+        initial = gtsam.Values()
+        initial.insert(key, np.array([1.0, 0.0]))
+        modes = gtsam.ActiveSetSolverParams.QpInitialization
+        for weight in (0.0, 0.1):
+            for mode in (modes.TightConstraints, modes.ProjectedGradient,
+                         modes.FeasibleStepThenProjectedGradient):
+                params = gtsam.ActiveSetSolverParams()
+                params.qpSubproblemSolver = (
+                    gtsam.ActiveSetSolverParams.QpSubproblemSolver.Dense)
+                params.qpInitialization = mode
+                params.regularization = weight
+                result = gtsam.ActiveSetSolver(problem, params).optimize(initial)
+                np.testing.assert_allclose(result.atVector(key), [1.0, 3.0], atol=1e-7)
+
+    def test_qp_two_stage_feasible_step(self):
+        """Feasible descent keeps its distinct status and projected row mask."""
+        key = X(0)
+        problem = gtsam.QpProblem()
+        problem.addCost(
+            gtsam.JacobianFactor(
+                key, np.eye(2), np.array([2.0, 3.0]), gtsam.noiseModel.Unit.Create(2)
+            )
+        )
+        problem.addConstraint(
+            gtsam.LinearConstraint.GreaterEqual(
+                gtsam.JacobianFactor(
+                    key, np.array([[1.0, 0.0]]), np.zeros(1),
+                    gtsam.noiseModel.Unit.Create(1)
+                )
+            )
+        )
+        initial = gtsam.Values()
+        initial.insert(key, np.zeros(2))
+        params = gtsam.ActiveSetSolverParams()
+        params.regularization = 0.0
+        params.qpInitialization = (
+            gtsam.ActiveSetSolverParams.QpInitialization.FeasibleStepThenProjectedGradient
+        )
+        step = gtsam.ActiveSetSolver(problem, params).computeFeasibleStep(initial)
+        self.assertEqual(
+            step.status, gtsam.ActiveSetFeasibleStepResult.Status.FeasibleProgress
+        )
+        self.assertEqual(step.iterations, 1)
+        self.assertGreater(step.objectiveDecrease, 0)
+        self.assertLessEqual(step.constraintViolation, params.feasibilityTolerance)
+        np.testing.assert_allclose(step.values.atVector(key), [0.0, 3.0], atol=1e-9)
+        np.testing.assert_array_equal(step.activeInequalityMask(), [0.0])
+        self.assertFalse(hasattr(step, "converged"))
+
     def test_lp_problem_wrapper(self):
         """Construct and solve a tiny LP."""
         x = X(0)

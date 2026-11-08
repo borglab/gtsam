@@ -1,0 +1,64 @@
+{
+  "mpc_summary": [
+    {
+      "Solver": "GTSAM ALM",
+      "Published checks": "178/256",
+      "Also dual feasibility": "178/256",
+      "QUAD, all settings": "7/16"
+    },
+    {
+      "Solver": "GTSAM Sparse",
+      "Published checks": "253/256",
+      "Also dual feasibility": "253/256",
+      "QUAD, all settings": "16/16"
+    },
+    {
+      "Solver": "GTSAM Dense",
+      "Published checks": "253/256",
+      "Also dual feasibility": "253/256",
+      "QUAD, all settings": "16/16"
+    },
+    {
+      "Solver": "ProxQP",
+      "Published checks": "253/256",
+      "Also dual feasibility": "235/256",
+      "QUAD, all settings": "13/16"
+    },
+    {
+      "Solver": "DAQP",
+      "Published checks": "248/256",
+      "Also dual feasibility": "248/256",
+      "QUAD, all settings": "8/16"
+    },
+    {
+      "Solver": "Clarabel",
+      "Published checks": "256/256",
+      "Also dual feasibility": "256/256",
+      "QUAD, all settings": "16/16"
+    },
+    {
+      "Solver": "OSQP",
+      "Published checks": "247/256",
+      "Also dual feasibility": "247/256",
+      "QUAD, all settings": "9/16"
+    }
+  ],
+  "timing_boundary": {
+    "cold_starts": true,
+    "affinity": [
+      0
+    ],
+    "numerical_threads": 1,
+    "TBB_threads": 1,
+    "watchdog_seconds": 10,
+    "additional_timings": 5,
+    "GTSAM_start": "Assembled factors, before solver construction; the worker watchdog starts at the same boundary",
+    "GTSAM_excluded": "Matrix-to-factor translation and input-only row-origin bookkeeping; recorded separately",
+    "GTSAM_included": "Solver construction, Dense packing, ordering, feasibility, initialization, optimization, multiplier recovery, output conversion and return cleanup",
+    "GTSAM_representation": "WALK/BAL: one control-sequence vector key and one objective factor. QUAD: 12D state and four 3D force keys per step, with 12-row dynamics factors; original scalar row identities preserved.",
+    "baseline_start": "Existing upstream qpsolvers matrix-input boundaries, unchanged",
+    "active_set_initialization": "FeasibleStepThenProjectedGradient",
+    "active_set_regularization": 1e-09
+  },
+  "report_bytes": 201930
+}
