@@ -24,6 +24,7 @@
 #include <gtsam/linear/internal/ConstrainedQR.h>
 
 #include <Eigen/QR>
+#include <Eigen/Cholesky>
 #include <algorithm>
 #include <iterator>
 #include <cmath>
@@ -65,6 +66,8 @@ struct DenseQpSolver::Impl {
   Matrix objective;
   bool objectiveReady = false, invertible = false, workingReady = false;
   Eigen::ColPivHouseholderQR<Matrix> objectiveQr;
+  Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> objectivePermutation;
+  bool nativeCholesky = false;
   Matrix objectiveR, workingNormals, workingL;
   Vector workingD, workingMultipliers;
   Vector unconstrainedTarget;
@@ -239,11 +242,31 @@ struct DenseQpSolver::Impl {
   // Curvature is fixed for the entire optimization call. QR preserves supplied
   // square roots; transformed normals are computed only when first needed.
   void prepareObjective() {
+    if (data.nativeHessian.size()) {
+      Matrix hessian = data.nativeHessian;
+      hessian.diagonal().array() += data.regularization;
+      Eigen::LLT<Matrix> cholesky(hessian);
+      ++statistics.numericalFactorizations;
+      if (cholesky.info() == Eigen::Success) {
+        objectiveR = cholesky.matrixU();
+        objectivePermutation.setIdentity(hessian.rows());
+        nativeCholesky = invertible = objectiveReady = true;
+        ++statistics.objectiveFactorizations;
+        ++statistics.choleskyFactorizations;
+        transformed.resize(data.bounds.size());
+        scales.resize(data.bounds.size());
+        unconstrainedTarget = objectiveR * nativeMinimum(Vector::Zero(hessian.rows()),
+                                                         Vector::Zero(hessian.rows()));
+        return;
+      }
+      // A failed native factorization retains the supplied square-root root.
+    }
     objectiveQr.compute(objective);
     ++statistics.numericalFactorizations;
     ++statistics.objectiveFactorizations;
     invertible = objectiveQr.rank() == objective.cols();
     objectiveReady = true;
+    objectivePermutation = objectiveQr.colsPermutation();
     transformed.resize(data.bounds.size());
     scales.resize(data.bounds.size());
     if (!invertible) return;
@@ -253,14 +276,36 @@ struct DenseQpSolver::Impl {
     unconstrainedTarget = (objectiveQr.householderQ().adjoint() *
                            target(Vector::Zero(n))).head(n);
     unconstrainedTarget += objectiveR.transpose().triangularView<Eigen::Lower>()
-        .solve(Vector(objectiveQr.colsPermutation().transpose() * data.linear));
+        .solve(Vector(objectivePermutation.transpose() * data.linear));
     // Preserve weak RHS information before working constraints are imposed.
-    const Vector value = objectiveQr.colsPermutation() *
+    const Vector value = objectivePermutation *
         objectiveR.triangularView<Eigen::Upper>().solve(unconstrainedTarget);
     const Vector refined = refineQrMinimum(objective, target(Vector::Zero(n)),
                                            data.linear, objectiveQr, value);
     unconstrainedTarget = objectiveR *
-        (objectiveQr.colsPermutation().transpose() * refined);
+        (objectivePermutation.transpose() * refined);
+  }
+
+  // Apply cached curvature without materializing an inverse. Native Hessians
+  // use the identity permutation; QR keeps its rank-revealing column order.
+  Vector inverseResponse(const Vector& forcing) const {
+    const Vector forward = objectiveR.transpose().triangularView<Eigen::Lower>()
+        .solve(Vector(objectivePermutation.transpose() * forcing));
+    return objectivePermutation * objectiveR.triangularView<Eigen::Upper>().solve(forward);
+  }
+
+  // Certify/refine against the original native Hessian rather than reconstruct
+  // normal equations from a square root. Only the requested proximal term is
+  // added, and center changes reuse both triangular factors.
+  Vector nativeMinimum(const Vector& center, const Vector& forcing) const {
+    const Vector linear = data.linear + forcing + data.regularization * center;
+    Vector value = inverseResponse(linear);
+    for (size_t refinement = 0; refinement < 2; ++refinement) {
+      const Vector residual = linear - data.nativeHessian * value -
+                              data.regularization * value;
+      value += inverseResponse(residual);
+    }
+    return value;
   }
 
   // In whitened coordinates curvature is the identity. No inverse matrix is
@@ -268,7 +313,7 @@ struct DenseQpSolver::Impl {
   const Vector& normal(size_t row) {
     if (transformed[row].size() == 0) {
       Vector value = objectiveR.transpose().triangularView<Eigen::Lower>().solve(
-          Vector(objectiveQr.colsPermutation().transpose() *
+          Vector(objectivePermutation.transpose() *
                  data.normals.row(row).transpose()));
       scales[row] = value.stableNorm();
       if (scales[row] == 0) scales[row] = 1;
@@ -405,7 +450,7 @@ struct DenseQpSolver::Impl {
     Vector target = unconstrainedTarget;
     if (data.regularization > 0)
       target += objectiveR.transpose().triangularView<Eigen::Lower>().solve(
-          Vector(objectiveQr.colsPermutation().transpose() *
+          Vector(objectivePermutation.transpose() *
                  (data.regularization * center)));
     Vector rhs(basis.size());
     for (size_t i = 0; i < basis.size(); ++i)
@@ -414,7 +459,7 @@ struct DenseQpSolver::Impl {
     Vector value = target + workingNormals * multipliers;
     Vector result;
     for (size_t attempt = 0; attempt < 3; ++attempt) {
-      result = objectiveQr.colsPermutation() *
+      result = objectivePermutation *
           objectiveR.triangularView<Eigen::Upper>().solve(value);
       if (attempt == 2 || basis.empty()) break;
       for (size_t i = 0; i < basis.size(); ++i)
@@ -656,16 +701,16 @@ Vector DenseQpSolver::dualResponse(const Vector& forcing) const {
   const Vector reduced = projection
       ? Vector(projection->nullspace.transpose() * forcing) : forcing;
   if (reduced.size() == 0) return Vector::Zero(forcing.size());
-  const Vector forward = impl.objectiveR.transpose()
-      .triangularView<Eigen::Lower>().solve(
-          Vector(impl.objectiveQr.colsPermutation().transpose() * reduced));
-  const Vector response = impl.objectiveQr.colsPermutation() *
-      impl.objectiveR.triangularView<Eigen::Upper>().solve(forward);
+  const Vector response = impl.inverseResponse(reduced);
   return projection ? Vector(projection->nullspace * response) : response;
 }
 
 Vector DenseQpSolver::solveDual(const Vector& center, const Vector& forcing) {
   auto& impl = *impl_;
+  if (impl.nativeCholesky) {
+    ++impl.statistics.rhsOnlySolves;
+    return impl.nativeMinimum(center, forcing);
+  }
   if (impl.data.equalities) {
     Vector value = impl.dualPoint;
     const Vector linear = impl.data.linear + forcing;

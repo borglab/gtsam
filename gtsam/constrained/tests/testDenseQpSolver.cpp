@@ -22,6 +22,7 @@
 #include <CppUnitLite/TestHarness.h>
 
 #include <Eigen/QR>
+#include <Eigen/Cholesky>
 #include <algorithm>
 #include <cmath>
 #include <limits>
@@ -192,6 +193,46 @@ DenseQpData problem(double regularization) {
   data.equalities = 1;
   data.regularization = regularization;
   return data;
+}
+
+// Native-Hessian Cholesky shares working-set updates and RHS caches with QR,
+// and agrees with an independently refactored square-root working-face solve.
+TEST(DenseQpSolver, NativeHessianCholeskyReuse) {
+  for (double weight : {0.0, 0.1}) {
+    DenseQpData data;
+    data.nativeHessian = Matrix{{4, 1}, {1, 3}};
+    data.jacobian = Eigen::LLT<Matrix>(data.nativeHessian).matrixU();
+    data.rhs = Vector::Zero(2);
+    data.linear = Vector2{8, 7};
+    data.normals = Matrix{{1, 0}, {2, 0}, {0, 1}};
+    data.bounds = Vector3{1, 2, 3};
+    data.regularization = weight;
+    DenseQpSolver solver(data), dual(data);
+    BatchReference reference(data);
+    CHECK(dual.prepareDual());
+    const std::vector<std::vector<bool>> masks{
+        {false, false, false}, {true, false, false}, {true, true, false},
+        {false, true, false}, {false, false, false}};
+    for (size_t i = 0; i < masks.size(); ++i) {
+      const Vector2 center{double(i), -double(i)};
+      EXPECT(assert_equal(reference.solve(masks[i], center),
+                          solver.solve(masks[i], center), 1e-9));
+      EXPECT(assert_equal(reference.solve(masks[i], center * .5),
+                          solver.solve(masks[i], center * .5), 1e-9));
+      Matrix hessian = data.nativeHessian;
+      hessian.diagonal().array() += weight;
+      const Vector2 forcing{2, -1};
+      EXPECT(assert_equal(Vector(hessian.ldlt().solve(data.linear + forcing + weight * center)),
+                          dual.solveDual(center, forcing), 1e-10));
+      EXPECT(assert_equal(Vector(hessian.ldlt().solve(forcing)),
+                          dual.dualResponse(forcing), 1e-10));
+    }
+    CHECK(solver.statistics().choleskyFactorizations == 1);
+    CHECK(solver.statistics().objectiveFactorizations == 1);
+    CHECK(dual.statistics().choleskyFactorizations == 1);
+    CHECK(dual.statistics().numericalFactorizations == 1);
+    CHECK(dual.statistics().rhsOnlySolves == masks.size());
+  }
 }
 
 // Changed centers and repeated toggles match the rank-aware batch reference.

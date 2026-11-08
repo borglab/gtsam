@@ -42,6 +42,9 @@ struct DenseQpEqualityProjection;
  */
 struct DenseQpData {
   Matrix jacobian;
+  /// Optional well-conditioned, positive-definite native Hessian. Present only
+  /// for Hessian-only objectives without equalities; jacobian retains its root.
+  Matrix nativeHessian;
   Vector rhs, linear;
   Matrix normals;
   Vector bounds;
@@ -61,6 +64,7 @@ class GTSAM_EXPORT DenseQpSolver {
    */
   struct Statistics {
     size_t numericalFactorizations = 0, objectiveFactorizations = 0;
+    size_t choleskyFactorizations = 0;
     size_t workingRebuilds = 0, rowAdditions = 0, rowRemovals = 0;
     size_t transformedNormals = 0, dependentRows = 0, rhsOnlySolves = 0, solves = 0;
     std::map<std::string, size_t> rebuildReasons;

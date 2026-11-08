@@ -377,6 +377,30 @@ TEST(DualQp, WeakCurvatureAffineBoundary) {
   }
 }
 
+// Native SPD Hessians preserve original KKT signs in either formulation. Weak
+// or indefinite curvature must retain the previous rank and convexity policy.
+TEST(DualQp, NativeHessianCurvaturePolicy) {
+  for (auto mode : {Formulation::Primal, Formulation::Dual, Formulation::Automatic}) {
+    auto params = parameters(Backend::Dense, mode);
+    for (const Matrix& hessian : {Matrix{{4, 1}, {1, 3}}, Matrix{{1e-20, 0}, {0, 1}}}) {
+      QpProblem problem;
+      const Vector2 expected{1, 2};
+      problem.addCost(HessianFactor(0, hessian,
+          Vector(hessian * expected + Vector2{2 * hessian(0, 0), 0}), 0));
+      less(&problem, Matrix{{1, 0}}, Vector1{1});
+      const auto result = ActiveSetSolver(problem, params).optimizeWithState();
+      EXPECT(assert_equal(expected, result.first.at<Vector>(0), 1e-8));
+      CHECK(result.second.converged);
+      EXPECT(assert_equal(Vector1(-2 * hessian(0, 0)),
+                          result.second.inequalityMultipliers[0], 1e-8));
+    }
+    QpProblem nonconvex;
+    nonconvex.addCost(HessianFactor(0, Matrix{{-0.01, 0}, {0, 1}}, Vector2{0, 0}, 0));
+    params->regularization = 1;
+    CHECK_EXCEPTION(ActiveSetSolver(nonconvex, params), std::runtime_error);
+  }
+}
+
 // Defaults select Sparse/Automatic QPs; LPs resolve Automatic and reject Dual.
 TEST(DualQp, ParameterValidation) {
   CHECK(Params().qpFormulation == Formulation::Automatic);

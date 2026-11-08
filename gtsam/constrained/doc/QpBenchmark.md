@@ -44,7 +44,7 @@ GTSAM Sparse and Dense are the primal entries and use an active-set algorithm: t
 
 Dense packs square-root costs and constraints once, eliminates permanent equalities, and explores inequality working sets in the remaining coordinates. Fixed coordinates are substituted exactly. One per-call Dense workspace shares its equality preparation across cold feasibility, projected-gradient initialization and the main solve. Dense caches an objective QR factorization and updates LDLᵀ factors for the changing working constraints. The primal solve and retained equality factors also supply multipliers when they pass the original-objective checks. A rank-aware null-space fallback handles singular curvature. Original rows remain authoritative for feasibility and multipliers; no extra damping or dropped constraints are introduced.
 
-GTSAM Sparse Dual and GTSAM Dense Dual select the new Dual formulation. They start with zero multipliers, bypass primal feasibility search and primal initialization, and use proximal weight 1e-9 on MPC and zero additional regularization on G1. Both eliminate permanent equalities and update an inequality working LDLᵀ system. Dense uses reduced square-root objective factors; Sparse applies a cached equality-constrained inverse without a global dense inverse or nullspace. Original-coordinate refinement preserves weak-direction accuracy, and all convergence certificates use the original QP. These additional entries are measured on both MPC and G1.
+GTSAM Sparse Dual and GTSAM Dense Dual select the new Dual formulation. They start with zero multipliers, bypass primal feasibility search and primal initialization, and use proximal weight 1e-9 on MPC and zero additional regularization on G1. Both enforce permanent equalities and update an inequality working LDLᵀ system. Dense uses native-Hessian Cholesky when eligible, otherwise equality-reduced square-root factors; Sparse applies a cached equality-constrained inverse without a global dense inverse or nullspace. Original-coordinate refinement preserves weak-direction accuracy, and all convergence certificates use the original QP. These additional entries are measured on both MPC and G1.
 
 ProxQP uses a proximal primal-dual augmented Lagrangian method with semismooth Newton inner iterations. DAQP uses a dual active-set method with recursive LDLᵀ updates. Clarabel uses a primal-dual interior-point method. OSQP uses operator splitting, alternating linear-system solves with projections onto constraint bounds.
 
@@ -54,9 +54,9 @@ ProxQP uses a proximal primal-dual augmented Lagrangian method with semismooth N
 | GTSAM Sparse | Active set | Multivariate factor inputs; incremental Gaussian Bayes-tree working solves, cached RHS changes and one original-gradient residual correction; FeasibleStepThenProjectedGradient initialization and full original-QP optimality checks |
 | GTSAM Chronological | Active set | The same sparse solver with chronological state blocks and shared-variable retirement; G1 only |
 | GTSAM Slice COLAMD | Active set | Chronological slice groups, constrained COLAMD within each group of original key blocks; G1 only |
-| GTSAM Dense | Active set | Permanent equality preparation shared across feasibility, componentwise initialization and the main solve; packed square-root costs, cached objective QR, working LDLᵀ updates and reused primal/equality factors for multipliers; rank-aware null-space fallback; MPC only |
+| GTSAM Dense | Active set | Permanent equality preparation shared across feasibility, componentwise initialization and the main solve; native-Hessian Cholesky for eligible positive-definite equality-free objectives, square-root/QR fallback, working LDLᵀ updates and reused primal/equality factors for multipliers; rank-aware null-space fallback; MPC only |
 | GTSAM Sparse Dual | Dual active set | Zero-multiplier cold start; equality elimination through cached sparse constrained solves; working LDLᵀ updates and original-coordinate refinement; proximal weight 1e-9 on MPC, zero additional regularization on G1; MPC and G1 |
-| GTSAM Dense Dual | Dual active set | Zero-multiplier cold start; permanent equality reduction and square-root objective factors; working LDLᵀ updates and original-coordinate refinement; proximal weight 1e-9 on MPC, zero additional regularization on G1; MPC and G1 |
+| GTSAM Dense Dual | Dual active set | Native positive-definite Hessian Cholesky when eligible; equality reduction and square-root fallback otherwise; LDLᵀ working updates, original-coordinate refinement and KKT checks; MPC and G1, with retained G1 timings |
 | ProxQP | Proximal primal-dual augmented Lagrangian | Solves regularized subproblems with semismooth Newton inner iterations |
 | DAQP | Dual active set | Recursive LDLᵀ updates; dense MPC only; version 0.8.7 uses selective proximal regularization for weak curvature |
 | Clarabel | Interior point | Primal-dual interior-point steps toward the constrained optimum |
@@ -68,9 +68,32 @@ GTSAM timings begin with assembled factors, its native input. Translation from b
 
 GTSAM's MPC factor graphs group related scalar unknowns into vector variables, each identified by one key. This representation preserves the QP dimension. WALK and BAL keep their condensed control sequence in one vector key with one objective factor. QUAD uses one 12-dimensional state key and four 3-dimensional contact-force keys per time step, with 12-row dynamics factors. All matrix coefficients, original constraint rows and dual mappings are preserved; no state variables are reintroduced. G1 already retains its original variable blocks and Jacobian factors.
 
-MPC runs serially on CPU 0 with one numerical-library thread and one TBB thread. All inputs use cold starts. Five additional fresh-solver timings follow each initially passing combination; they reuse no optimizer state. Default preserves native stopping rules and uses the upstream external threshold of 1.0. Low, mid, and high accuracy use absolute thresholds of 1e-3, 1e-6, and 1e-9. Default is therefore not an equal-accuracy comparison.
+MPC runs serially on CPU 0 with one numerical-library thread and one TBB thread. All inputs use cold starts. Five additional fresh-solver timings accompany each combination; they reuse no optimizer state. Default preserves native stopping rules and uses the upstream external threshold of 1.0. Low, mid, and high accuracy use absolute thresholds of 1e-3, 1e-6, and 1e-9. Default is therefore not an equal-accuracy comparison.
 
 Independent checks evaluate primal feasibility, stationarity, and the primal–dual gap on the original unregularized QP. A supplemental dual-feasibility check verifies multiplier signs. A native success flag or a merely feasible step does not establish optimality. Numerical failures, iteration limits, failed certificates, and watchdog stops remain distinct. Failed calls remain in profile denominators and receive no speed reward.
+
+## Dense Cholesky before and after
+
+Dense now uses direct Cholesky for well-conditioned, positive-definite Hessian-native objectives without permanent equalities. It checks the original Hessian before adding the requested proximal term and preserves the original-QP feasibility, multiplier, stationarity and gap checks. Singular, poorly conditioned, mixed Jacobian/Hessian, and equality-constrained objectives retain the existing square-root/QR path. This is an internal selection; no new flag or regularization floor is introduced.
+
+The before/after campaign contains 12,800 native calls: 6,144 per library version across both backends, both explicit formulations, all 64 MPC cases and four accuracy settings, plus 512 new Automatic checks. Each explicit combination has one initial call and five fresh repetitions. The two versions run in interleaved order on CPU 0 with one numerical and TBB thread. The table takes each case’s five-repeat median and then the family median; paired speedup is the geometric mean of per-case before/after ratios. No optimizer state or numerical factors carry between calls.
+
+| Default · family median | Formulation | Before (ms) | After (ms) | Paired speedup |
+| --- | --- | --- | --- | --- |
+| LIPMWALK | Primal | 0.6088 | 0.5844 | 1.04× |
+| LIPMWALK | Dual | 0.1257 | 0.0999 | 1.25× |
+| WHLIPBAL | Primal | 0.3641 | 0.2483 | 1.44× |
+| WHLIPBAL | Dual | 0.3215 | 0.1916 | 1.66× |
+
+```{iframe} /qp-plots/dense-cholesky.html
+:width: 100%
+:class: qp-chart
+:title: Complete Dense solve times before and after native-Hessian Cholesky.
+
+Complete Dense solve times before and after native-Hessian Cholesky.
+```
+
+Both versions retain 253/256 certified primary cases per Primal backend and 256/256 per Dual backend. The same three low-accuracy WALK Primal initialization failures remain, with no new failing combinations. All 512 Automatic checks pass and select Dual. Sparse is a control, and QUAD is ineligible for this fast path; small timing changes there are not attributed to Cholesky. G1 and external solvers were not rerun.
 
 ## MPC results
 
@@ -94,11 +117,11 @@ Independent checks evaluate primal feasibility, stationarity, and the primal–d
 Counts passing published metrics and supplemental dual feasibility.
 ```
 
-A separate controlled sweep covers 108 seeded strictly convex QPs with 16, 64, or 128 variables, zero or half as many independent equalities, and inequality counts below, at, and above the reduced dimension. Each backend/formulation combination has three cold calls: all 1,944 calls pass the absolute 1e-7 original-input checks with zero proximal weight. That campaign used the earlier dimension-based Automatic rule. A fresh validation of the new policy passes all 648 Automatic calls (three calls per backend per problem), selecting Dual whenever inequalities are present and Primal otherwise. These synthetic objectives have at most two positive inequality multipliers, so their speed results favor small dual working sets and do not establish a universal crossover.
+A separate controlled sweep covers 108 seeded strictly convex QPs with 16, 64, or 128 variables, zero or half as many independent equalities, and inequality counts below, at, and above the reduced dimension. Each backend/formulation combination has three cold calls: all 1,944 calls pass the absolute 1e-7 original-input checks with zero proximal weight. That campaign used the earlier dimension-based Automatic rule. The earlier validation of the new policy passes all 648 Automatic calls (three calls per backend per problem), selecting Dual whenever inequalities are present and Primal otherwise. These synthetic objectives have at most two positive inequality multipliers, so their speed results favor small dual working sets and do not establish a universal crossover.
 
 Automatic is now the default formulation, with Sparse as the default numerical backend. It selects Dual for cold starts with inequalities, independently of their count. A converged C++ warm start retains its previous formulation when the supplied point is feasible; nonconverged states or infeasible points select Dual. Values alone provide a cold proximal center. Equality-only and fully fixed problems use Primal, and singular reduced curvature without regularization falls back to Primal during setup. LPs resolve Automatic to Primal and reject explicit Dual. Selection remains fixed for the optimization call; both formulations can still be requested explicitly.
 
-The earlier dimension rule selected Primal on all 64 MPC cases and missed measured Dual speedups. The new policy passes all 512 MPC validation calls (64 problems, four accuracies, both backends), selecting Dual in every cold case. The plotted Primal and Dual timing series retain their original measurements and fingerprints; these new Automatic calls are validation, not replacement timing measurements. Sparse Dual already combines sparse objective factorization with a dense inequality working system. Choosing Dual does not remove the Dense backend's primal objective storage, as the G1 memory-limit results demonstrate.
+The dimension-only Automatic rule previously selected Primal on every MPC case. The present Dual-first policy passes all 512 new Automatic MPC checks, selecting Dual for both backends in all cold cases. The four plotted GTSAM timing series were refreshed for the Cholesky change; G1, ALM and external-solver measurements retain their earlier fingerprints. Sparse Dual already combines sparse objective factorization with a dense inequality working system. A small dual working set does not eliminate the Dense primal setup or the G1 memory limits.
 
 A performance profile compares each passing time with the fastest passing solver on that same problem. At a horizontal value of 2, the vertical value is the fraction of all problems solved within twice that fastest time. Higher and further left is better. Curves ending below 1 indicate failures. Profiles use first-call times; the QUAD timing table gives medians of the five additional calls.
 
@@ -132,10 +155,10 @@ Default-setting first-call times for QUADCMPC.
 
 | Default repeat median (s) | GTSAM ALM | GTSAM Sparse | GTSAM Dense | GTSAM Sparse Dual | GTSAM Dense Dual | ProxQP | DAQP | Clarabel | OSQP |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| QUADCMPC1 | 0.1465 | 0.03687 | 0.08361 | 0.02583 | 0.0551 | 0.1142 | 0.03363 | 0.005422 | 0.00369 |
-| QUADCMPC2 | 0.1408 | 0.0223 | 0.03282 | 0.01152 | 0.02262 | 0.04279 | 0.01277 | 0.003868 | 0.003888 |
-| QUADCMPC3 | 0.01988 | 0.003092 | 0.0132 | 0.004455 | 0.01331 | 0.01279 | 0.002231 | 0.002113 | 0.00166 |
-| QUADCMPC4 | 0.02171 | 0.00809 | 0.01025 | 0.005249 | 0.007308 | 0.01182 | 0.003719 | 0.002202 | 0.002219 |
+| QUADCMPC1 | 0.1465 | 0.03705 | 0.08735 | 0.02571 | 0.05885 | 0.1142 | 0.03363 | 0.005422 | 0.00369 |
+| QUADCMPC2 | 0.1408 | 0.02239 | 0.0335 | 0.01148 | 0.02312 | 0.04279 | 0.01277 | 0.003868 | 0.003888 |
+| QUADCMPC3 | 0.01988 | 0.003134 | 0.01341 | 0.004534 | 0.01359 | 0.01279 | 0.002231 | 0.002113 | 0.00166 |
+| QUADCMPC4 | 0.02171 | 0.008102 | 0.01049 | 0.005254 | 0.007369 | 0.01182 | 0.003719 | 0.002202 | 0.002219 |
 
 ## GTSAM augmented Lagrangian results
 
