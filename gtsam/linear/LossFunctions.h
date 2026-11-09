@@ -381,6 +381,8 @@ class GTSAM_EXPORT Tukey : public Base {
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(c_);
+    // csquared_ is not archived, so restore it from the loaded c_.
+    if (ARCHIVE::is_loading::value) csquared_ = c_ * c_;
   }
 #endif
 };
@@ -759,6 +761,8 @@ class GTSAM_EXPORT AsymmetricTukey : public Base {
   void serialize(ARCHIVE &ar, const unsigned int /*version*/) {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(Base);
     ar &BOOST_SERIALIZATION_NVP(c_);
+    // csquared_ is not archived, so restore it from the loaded c_.
+    if (ARCHIVE::is_loading::value) csquared_ = c_ * c_;
   }
 #endif
 };
