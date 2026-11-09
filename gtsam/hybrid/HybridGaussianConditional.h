@@ -262,9 +262,14 @@ class GTSAM_EXPORT HybridGaussianConditional
   /** Serialization function */
   friend class boost::serialization::access;
   template <class Archive>
-  void serialize(Archive &ar, const unsigned int /*version*/) {
+  void serialize(Archive &ar, const unsigned int version) {
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseFactor);
     ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
+    // Version 0 archives did not store these members.
+    if (version > 0) {
+      ar &BOOST_SERIALIZATION_NVP(negLogConstant_);
+      ar &BOOST_SERIALIZATION_NVP(pruned_);
+    }
   }
 #endif
 };
@@ -278,3 +283,7 @@ struct traits<HybridGaussianConditional>
     : public Testable<HybridGaussianConditional> {};
 
 }  // namespace gtsam
+
+#if GTSAM_ENABLE_BOOST_SERIALIZATION
+BOOST_CLASS_VERSION(gtsam::HybridGaussianConditional, 1)
+#endif
