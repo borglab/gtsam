@@ -120,16 +120,15 @@ if(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)
     list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
   endif()
 
-  # Wrap
-  matlab_wrap(${GTSAM_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i "gtsam_unstable"
-              "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}" "${ignore}" "${GTSAM_ENABLE_BOOST_SERIALIZATION}")
-  set_target_properties(
-    gtsam_unstable_matlab_wrapper
-    PROPERTIES BUILD_RPATH
-               "${PROJECT_BINARY_DIR}/gtsam_unstable;${PROJECT_BINARY_DIR}/gtsam;${CMAKE_INSTALL_PREFIX}/lib"
-               INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib"
-               INSTALL_RPATH_USE_LINK_PATH TRUE)
-endif(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)
+  # Include the MATLAB-only WNOA adapter in the unstable wrapper.
+  set(unstable_matlab_interface_files
+      ${GTSAM_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i
+      ${GTSAM_SOURCE_DIR}/matlab/wnoa_unstable.i)
+
+  matlab_wrap("${unstable_matlab_interface_files}" "gtsam_unstable"
+              "${GTSAM_ADDITIONAL_LIBRARIES}" "${GTSAM_SOURCE_DIR}/matlab"
+              "${mexFlags}" "${ignore}" "${GTSAM_ENABLE_BOOST_SERIALIZATION}")
+endif()
 
 # Record the root dir for gtsam - needed during external builds, e.g., ROS
 set(GTSAM_SOURCE_ROOT_DIR ${GTSAM_SOURCE_DIR})

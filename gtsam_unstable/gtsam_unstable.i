@@ -36,6 +36,7 @@ class gtsam::GaussianFactorGraph;
 class gtsam::NonlinearFactorGraph;
 class gtsam::Ordering;
 class gtsam::Values;
+class gtsam::StateData;
 class gtsam::Key;
 class gtsam::VectorValues;
 class gtsam::KeyList;
@@ -465,6 +466,38 @@ virtual class ConcurrentBatchSmoother : gtsam::ConcurrentSmoother {
           std::nullopt);
   gtsam::Values calculateEstimate() const;
 };
+
+
+#include <gtsam/nonlinear/WnoaFactor.h>
+template <POSE>
+virtual class WnoaMotionFactor : gtsam::NoiseModelFactor {
+  WnoaMotionFactor(const gtsam::StateData& state_k,
+                   const gtsam::StateData& state_kp1,
+                   const gtsam::Vector& q_psd_diag);
+};
+
+typedef gtsam::WnoaMotionFactor<gtsam::AugmentedPoint<2>>
+    WnoaMotionFactorAugmentedPoint2;
+typedef gtsam::WnoaMotionFactor<gtsam::AugmentedPoint<3>>
+    WnoaMotionFactorAugmentedPoint3;
+
+#include <gtsam/nonlinear/WnoaInterpFactor.h>
+template <POSE>
+virtual class WnoaInterpFactor : gtsam::NoiseModelFactor {
+  WnoaInterpFactor(
+      const gtsam::NoiseModelFactor::shared_ptr inner_factor,
+      const std::set<gtsam::StateData> estimated_states,
+      const std::set<gtsam::StateData> interp_states,
+      const gtsam::Vector q_psd_diag,
+      const bool fixed_noise_model = false,
+      const bool precomp_interp_mats = true);
+};
+
+typedef gtsam::WnoaInterpFactor<gtsam::AugmentedPoint<2>>
+    WnoaInterpFactorAugmentedPoint2;
+typedef gtsam::WnoaInterpFactor<gtsam::AugmentedPoint<3>>
+    WnoaInterpFactorAugmentedPoint3;
+
 
 //*************************************************************************
 // slam
