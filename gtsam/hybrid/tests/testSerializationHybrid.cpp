@@ -129,6 +129,75 @@ TEST(HybridSerialization, HybridGaussianConditional) {
 }
 
 /* ****************************************************************************/
+// A deserialized HybridGaussianConditional keeps its negative log normalization
+// constant and its pruned flag, which equals() does not compare.
+TEST(HybridSerialization, HybridGaussianConditionalConstantAndPruned) {
+  const DiscreteKey mode(M(0), 2);
+  Matrix1 I = Matrix1::Identity();
+  const auto conditional0 = std::make_shared<GaussianConditional>(
+      GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 0.5));
+  const auto conditional1 = std::make_shared<GaussianConditional>(
+      GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 3));
+  const HybridGaussianConditional::FactorValuePairs pairs(
+      {mode}, std::vector<GaussianFactorValuePair>{
+                  {conditional0, conditional0->negLogConstant()},
+                  {conditional1, conditional1->negLogConstant()}});
+  const HybridGaussianConditional gm({mode}, pairs, true);
+
+  HybridGaussianConditional fromText, fromXML, fromBinary;
+  roundtrip(gm, fromText);
+  roundtripXML(gm, fromXML);
+  roundtripBinary(gm, fromBinary);
+  for (const HybridGaussianConditional* deserialized :
+       {&fromText, &fromXML, &fromBinary}) {
+    EXPECT_DOUBLES_EQUAL(gm.negLogConstant(), deserialized->negLogConstant(),
+                         1e-9);
+    EXPECT(deserialized->pruned());
+  }
+}
+
+/* ****************************************************************************/
+namespace legacy_conditional {
+
+// Writes the version 0 format, which stored only the two base classes.
+struct LegacyHybridGaussianConditional : HybridGaussianConditional {
+  using HybridGaussianConditional::HybridGaussianConditional;
+
+  template <class Archive>
+  void serialize(Archive &ar, const unsigned int /*version*/) {
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseFactor);
+    ar &BOOST_SERIALIZATION_BASE_OBJECT_NVP(BaseConditional);
+  }
+};
+
+// Archives written before negLogConstant_ and pruned_ were stored still load.
+TEST(HybridSerialization, HybridGaussianConditionalVersionZero) {
+  const DiscreteKey mode(M(0), 2);
+  Matrix1 I = Matrix1::Identity();
+  const auto conditional0 = std::make_shared<GaussianConditional>(
+      GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 0.5));
+  const auto conditional1 = std::make_shared<GaussianConditional>(
+      GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 3));
+  const LegacyHybridGaussianConditional legacy(
+      mode,
+      std::vector<GaussianConditional::shared_ptr>{conditional0, conditional1});
+
+  std::stringstream stream;
+  {
+    boost::archive::text_oarchive archive(stream);
+    archive << legacy;
+  }
+  HybridGaussianConditional actual;
+  {
+    boost::archive::text_iarchive archive(stream);
+    archive >> actual;
+  }
+  EXPECT(assert_equal<HybridGaussianConditional>(legacy, actual));
+}
+
+}  // namespace legacy_conditional
+
+/* ****************************************************************************/
 // Test HybridBayesNet serialization.
 TEST(HybridSerialization, HybridBayesNet) {
   Switching s(2);
