@@ -692,7 +692,8 @@ void MultifrontalSolver::prepareLoad(const GaussianFactorGraph& graph) {
       const Key key = fixedKeyForConstraint(*jacobian);
       const auto dimension = dims_.find(key);
       if (dimension == dims_.end() ||
-          dimension->second != jacobian->getDim(jacobian->begin())) {
+          dimension->second !=
+              static_cast<size_t>(jacobian->getDim(jacobian->begin()))) {
         throw MultifrontalSolverNotSupported(
             "hard constraint variable dimensions changed; rebuild the solver");
       }
