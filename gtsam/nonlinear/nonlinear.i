@@ -295,6 +295,9 @@ virtual class NonlinearOptimizerParams {
   bool isCholmod() const;
   bool isIterative() const;
 
+  // Imperative multifrontal settings, also used by Gaussian/nonlinear ALM.
+  gtsam::MultifrontalParameters multifrontalParams;
+
   // This only applies to python since matlab does not have lambda machinery.
   gtsam::NonlinearOptimizerParams::IterationHook iterationHook;
 };

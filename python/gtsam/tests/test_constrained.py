@@ -401,5 +401,109 @@ class TestConstrainedWrappers(unittest.TestCase):
         self.assertLess(inequality_violation, 1e-6)
 
 
+class TestGaussianAlmWrappers(unittest.TestCase):
+    """Direct Gaussian QPs exercise result ownership and shared parameters."""
+
+    def test_gaussian_alm_state_and_large_keys(self):
+        key = X(2**40 + 17)
+        costs = gtsam.GaussianFactorGraph()
+        costs.add(gtsam.HessianFactor(key, np.eye(2), np.array([2., -1.]), 0.))
+        equalities = gtsam.GaussianFactorGraph()
+        equalities.add(gtsam.JacobianFactor(
+            key, np.array([[1., 1.]]), np.array([1.]),
+            gtsam.noiseModel.Isotropic.Sigma(1, 2.)))
+        inequalities = gtsam.GaussianFactorGraph()
+        inequalities.add(gtsam.JacobianFactor(
+            key, np.array([[1., 0.]]), np.array([.5]),
+            gtsam.noiseModel.Isotropic.Sigma(1, 3.)))
+        params = gtsam.AugmentedLagrangianParams()
+        params.absoluteStationarityTolerance = 1e-8
+        params.absoluteViolationTolerance = 1e-8
+        params.storeOptProgress = True
+        params.enableProfiling = True
+        lm = params.lmParams
+        lm.setMaxIterations(80)
+        ordering = gtsam.Ordering()
+        ordering.push_back(key)
+        lm.setOrdering(ordering)
+        params.lmParams = lm
+        self.assertEqual(params.lmParams.getMaxIterations(), 80)
+        solver = gtsam.AugmentedLagrangianSolver(costs, equalities, inequalities, params)
+        initial = gtsam.VectorValues()
+        initial.insert(key, np.array([10., -20.]))
+        result = solver.optimizeWithState(initial)
+        self.assertTrue(result.converged)
+        self.assertEqual(result.status, gtsam.AugmentedLagrangianStatus.Converged)
+        np.testing.assert_allclose(result.values.at(key), [.5, .5], atol=1e-6)
+        np.testing.assert_allclose(result.lambdaEq[0], [-3.], atol=1e-5)
+        np.testing.assert_allclose(result.lambdaIneq, [9.], atol=1e-5)
+        self.assertEqual(result.statistics.modelLinearizations, 0)
+        self.assertEqual(result.statistics.objectiveFactorCopies, 1)
+        self.assertEqual(result.statistics.symbolicFactorizations, 1)
+        self.assertGreater(result.statistics.eliminationSeconds, 0.)
+        self.assertEqual(len(solver.progress()), result.iteration + 1)
+        saved_values = result.values
+        del result
+        for _ in range(3):
+            fresh = solver.optimizeWithState()
+            np.testing.assert_allclose(fresh.values.at(key), saved_values.at(key), atol=1e-6)
+            self.assertEqual(fresh.statistics.objectiveFactorCopies, 1)
+        np.testing.assert_allclose(solver.optimize().at(key), [.5, .5], atol=1e-6)
+
+    def test_gaussian_alm_defaults_and_qp_convenience(self):
+        key = X(51)
+        costs = gtsam.GaussianFactorGraph()
+        cost = gtsam.HessianFactor(key, np.eye(2), np.array([1., -2.]), 0.)
+        costs.add(cost)
+        empty = gtsam.GaussianFactorGraph()
+        solver = gtsam.AugmentedLagrangianSolver(costs, empty, empty)
+        np.testing.assert_allclose(solver.optimize().at(key), [1., -2.], atol=1e-6)
+        problem = gtsam.QpProblem()
+        problem.addCost(gtsam.HessianFactor(key, np.eye(4), np.array([1., 3., -2., 4.]), 0.))
+        initial = gtsam.Values()
+        initial.insert(key, np.zeros((2, 2)))
+        result = problem.optimize(initial, gtsam.QpSolverType.AugmentedLagrangian)
+        np.testing.assert_allclose(result.atMatrix(key), [[1., -2.], [3., 4.]], atol=1e-6)
+
+    def test_qp_alm_qr_options(self):
+        params = gtsam.AugmentedLagrangianParams()
+        modes = gtsam.MultifrontalParameters.QRMode
+        self.assertEqual(params.lmParams.multifrontalParams.qrMode, modes.Allow)
+        problem = gtsam.QpProblem()
+        problem.addCost(gtsam.HessianFactor(0, np.eye(2), np.array([2., -1.]), 0.))
+        initial = gtsam.Values()
+        initial.insert(0, np.zeros((1, 2)))
+        for mode in (modes.Off, modes.Allow, modes.Force):
+            # Nested writes must reach the actual options, not temporary copies.
+            params.lmParams.multifrontalParams.qrMode = mode
+            self.assertEqual(params.lmParams.multifrontalParams.qrMode, mode)
+            np.testing.assert_allclose(problem.optimize(params).atVector(0),
+                                       [2., -1.], atol=1e-6)
+            np.testing.assert_allclose(problem.optimize(initial, params).atMatrix(0),
+                                       [[2., -1.]], atol=1e-6)
+        params.lmParams.setMaxIterations(0)
+        np.testing.assert_allclose(problem.optimize(params).atVector(0), [0., 0.])
+        np.testing.assert_allclose(problem.optimize(initial, params).atMatrix(0),
+                                   initial.atMatrix(0))
+
+    def test_gaussian_alm_limit_and_validation(self):
+        key = X(52)
+        costs = gtsam.GaussianFactorGraph()
+        costs.add(gtsam.HessianFactor(key, np.eye(2), np.ones(2), 0.))
+        params = gtsam.AugmentedLagrangianParams()
+        lm = params.lmParams
+        lm.setMaxIterations(0)
+        params.lmParams = lm
+        empty = gtsam.GaussianFactorGraph()
+        solver = gtsam.AugmentedLagrangianSolver(costs, empty, empty, params)
+        result = solver.optimizeWithState()
+        self.assertFalse(result.converged)
+        self.assertEqual(result.status, gtsam.AugmentedLagrangianStatus.InnerIterationLimit)
+        wrong = gtsam.VectorValues()
+        wrong.insert(key, np.ones(1))
+        with self.assertRaises(ValueError):
+            solver.optimize(wrong)
+
+
 if __name__ == "__main__":
     unittest.main()

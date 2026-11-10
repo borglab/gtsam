@@ -71,6 +71,15 @@ class GTSAM_EXPORT MultifrontalSolverNotSupported : public std::runtime_error {
  * supported. Cliques containing Hessian factors use ordinary Cholesky storage
  * and assemble those contributions directly, without taking a square root.
  *
+ * @note Hard constraints support only unary, fully constrained Jacobian
+ * factors with a homogeneous RHS (within the existing feasibility tolerance)
+ * and numerically full column rank. Each such factor must independently fix
+ * its entire variable block to zero. Multiple factors on one key must each
+ * satisfy this contract; partial constraints are not combined across factors.
+ * Other hard constraints throw MultifrontalSolverNotSupported; use legacy
+ * constrained QR for those graphs. Every numerical load rechecks this contract
+ * and must preserve the precomputed fixed keys and their dimensions.
+ *
  * @note Clique merging has two symbolic phases. First, leafMergeDimCap merges
  * compatible multi-factor leaf siblings with identical separators into
  * bounded algebraic cliques; one-factor leaves remain separate so direct batch
@@ -114,6 +123,9 @@ class GTSAM_EXPORT MultifrontalSolver
   double lastOldError_ = 0.0;          ///< Cached old linearized error.
   double lastNewError_ = 0.0;          ///< Cached new linearized error.
   bool hasDeltaError_ = false;         ///< Whether updateSolution computed it.
+
+  /** Invalidate cached results and validate hard constraints before loading. */
+  void prepareLoad(const GaussianFactorGraph& graph);
 
  public:
   /**
@@ -175,6 +187,9 @@ class GTSAM_EXPORT MultifrontalSolver
    * The first load builds cached factor load plans and allocates only the
    * Jacobian rows needed by the selected numerical path. Later compatible
    * loads overwrite and reuse that packed storage.
+   * Hard constraints are revalidated, including their rank and fixed-key set.
+   * An incompatible load throws MultifrontalSolverNotSupported and invalidates
+   * the previous numerical solve; reconstruct the solver if fixed keys change.
    *
    * @param graph The factor graph with updated values (structure must match
    *              the graph used to construct/precompute this solver, apart

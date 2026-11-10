@@ -19,122 +19,24 @@
 
 #pragma once
 
+#include <gtsam/constrained/AugmentedLagrangianSolver.h>
 #include <gtsam/constrained/ConstrainedOptimizer.h>
-#include <gtsam/constrained/PenaltyOptimizer.h>
 
 #include <limits>
 
 namespace gtsam {
 
-/** Outer update policy used by AugmentedLagrangianOptimizer. */
-enum class AugmentedLagrangianUpdatePolicy { Aggressive, BCL };
-
-/** Update performed after an augmented-Lagrangian subproblem. */
-enum class AugmentedLagrangianUpdateType {
-  None,
-  Multiplier,
-  Penalty,
-  MultiplierAndPenalty
-};
-
-/** Parameters for the augmented Lagrangian method. */
-class GTSAM_EXPORT AugmentedLagrangianParams : public PenaltyOptimizerParams {
- public:
-  using Base = PenaltyOptimizerParams;
-  using This = AugmentedLagrangianParams;
-  using shared_ptr = std::shared_ptr<AugmentedLagrangianParams>;
-
-  /// Outer update policy. BCL is the default; Aggressive remains available.
-  AugmentedLagrangianUpdatePolicy updatePolicy =
-      AugmentedLagrangianUpdatePolicy::BCL;
-
-  /// Maximum equality-multiplier step for the Aggressive policy.
-  double maxDualStepSizeEq = 10.0;
-  /// Maximum inequality-multiplier step for the Aggressive policy.
-  double maxDualStepSizeIneq = 10.0;
-  /// Equality dual-step factor for the Aggressive policy.
-  double dualStepSizeFactorEq = 1.0;
-  /// Inequality dual-step factor for the Aggressive policy.
-  double dualStepSizeFactorIneq = 1.0;
-  /// Required violation reduction before Aggressive keeps its penalty fixed.
-  double muIncreaseThreshold = 0.25;
-
-  /**
-   * Absolute full augmented-Lagrangian gradient tolerance for BCL convergence.
-   * Also bounds the inner stationarity target from below, so feasibility
-   * updates do not require solving subproblems beyond the final accuracy.
-   */
-  double absoluteStationarityTolerance = 1e-5;
-
-  /**
-   * Initial common direct penalty rho for BCL (paper default: 1 / mu_0).
-   * Algorithm 1 has one penalty for the complete constraint vector, so BCL
-   * applies this rho to both equality and inequality blocks. Constraint sigmas
-   * provide fixed relative scaling. Aggressive may use separate penalties.
-   */
-  double bclInitialPenalty = 10.0;
-  /// BCL direct-penalty growth factor (paper default: 1 / tau).
-  double bclPenaltyIncreaseRate = 100.0;
-  /// BCL omega_0 stationarity scale.
-  double bclOmega0 = 1.0;
-  /// BCL eta_0 feasibility scale.
-  double bclEta0 = 1.0;
-  /// BCL gamma_1 cap used to define alpha.
-  double bclGamma1 = 0.1;
-  /// BCL alpha_omega exponent used when resetting omega.
-  double bclAlphaOmega = 1.0;
-  /// BCL beta_omega exponent used when tightening omega.
-  double bclBetaOmega = 1.0;
-  /// BCL alpha_eta exponent used when resetting eta.
-  double bclAlphaEta = 0.1;
-  /// BCL beta_eta exponent used when tightening eta.
-  double bclBetaEta = 0.9;
-
-  using Base::Base;
-};
-
 /** Diagnostics and algorithm state for one outer ALM iteration. */
-class GTSAM_EXPORT AugmentedLagrangianState : public PenaltyOptimizerState {
+class AugmentedLagrangianState : public PenaltyOptimizerState,
+                                 public AugmentedLagrangianDiagnostics {
  public:
   using Base = PenaltyOptimizerState;
   using This = AugmentedLagrangianState;
   using shared_ptr = std::shared_ptr<This>;
 
-  /// Equality Lagrange multipliers, in whitened constraint coordinates.
-  std::vector<Vector> lambdaEq;
-  /// Nonnegative inequality Lagrange multipliers, one per scalar constraint.
-  std::vector<double> lambdaIneq;
-
-  /// Infinity norm of the full augmented-Lagrangian gradient.
-  double augmentedLagrangianStationarity =
-      std::numeric_limits<double>::infinity();
-  /// max(||h||_inf, ||q||_inf), including inequality complementarity.
-  double generalizedConstraintViolation =
-      std::numeric_limits<double>::infinity();
-  /// Infinity norm of max(g, 0) for whitened inequalities.
-  double primalInequalityViolation = 0.0;
-  /// Infinity norm of lambda^+ times g for whitened inequalities.
-  double complementarity = 0.0;
-
-  /// Total LM iterations accumulated across all outer iterations.
-  size_t totalUnconstrainedIterations = 0;
-  /// Whether LM met the requested BCL stationarity target.
-  bool innerConverged = true;
-  /// Whether the constrained convergence test was met.
-  bool converged = false;
-  /// Outer update performed after solving this subproblem.
-  AugmentedLagrangianUpdateType updateType =
-      AugmentedLagrangianUpdateType::None;
-
-  /// BCL alpha for the next subproblem.
-  double bclAlpha = 0.0;
-  /// BCL stationarity tolerance for the next subproblem.
-  double bclOmega = 0.0;
-  /// BCL generalized-feasibility tolerance for the next subproblem.
-  double bclEta = 0.0;
-
   /** Initialize Lagrange multipliers as zeros. */
-  void initializeLagrangeMultipliers(const ConstrainedOptProblem& problem);
+  GTSAM_EXPORT void initializeLagrangeMultipliers(
+      const ConstrainedOptProblem& problem);
 
   using Base::Base;
 };
@@ -159,13 +61,15 @@ class GTSAM_EXPORT AugmentedLagrangianState : public PenaltyOptimizerState {
  * Custom smoothed inequality penalties are intentionally unsupported because
  * they invalidate the projected PHR multiplier identity.
  *
- * Each optimize() call owns a persistent NonlinearMultifrontalSolver and merit
- * graph. Inner solves share their linearization with the BCL stationarity test
- * and terminal multiplier update. Costs must linearize to Gaussian factors
- * supported by that solver, with fixed factor slots, keys, and dimensions.
- * lmParams controls damping, ordering, multifrontal storage, iteration limits,
- * and Aggressive convergence tolerances; its linearSolverType, iterationHook,
- * verbosity, and logFile settings are not used.
+ * Both ALM frontends delegate penalty updates, damping, inner solves, and
+ * convergence tests to one internal engine. Each optimize() call owns a
+ * persistent Gaussian step graph and NonlinearMultifrontalSolver. Original
+ * nonlinear linearizations supply both the step and stationarity tests. Costs
+ * must linearize to Gaussian factors supported by that solver, with fixed
+ * factor slots, keys, and dimensions. lmParams controls damping, ordering,
+ * multifrontal storage, iteration limits, and Aggressive convergence
+ * tolerances; its linearSolverType, iterationHook, verbosity, and logFile
+ * settings are not used.
  */
 class GTSAM_EXPORT AugmentedLagrangianOptimizer : public ConstrainedOptimizer {
  public:
@@ -201,6 +105,9 @@ class GTSAM_EXPORT AugmentedLagrangianOptimizer : public ConstrainedOptimizer {
    * Each call starts from initialValues_ with fresh multipliers and retains one
    * workspace across its outer iterations. The returned state describes either
    * convergence or the stopping condition; callers must check converged.
+   * On BCL convergence, its projected multipliers correspond to the reported
+   * augmented-Lagrangian stationarity, even if the intermediate feasibility
+   * target would otherwise request a penalty increase.
    * No iteration history is stored unless storeOptProgress is enabled.
    */
   State optimizeWithState() const;

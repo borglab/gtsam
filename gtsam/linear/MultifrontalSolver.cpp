@@ -23,14 +23,15 @@
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/GaussianConditional.h>
 #include <gtsam/linear/GaussianFactor.h>
-#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
 #include <gtsam/linear/MultifrontalSolver.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/symbolic/IndexedJunctionTree.h>
 #include <gtsam/symbolic/SymbolicJunctionTree.h>
 
+#include <Eigen/QR>
 #include <algorithm>
 #include <cassert>
 #include <functional>
@@ -89,6 +90,44 @@ struct StructureStats {
 constexpr double kConstraintSigmaTol = 1e-12;
 constexpr double kConstraintFeasibleTol = 1e-9;
 
+// A unary factor may constrain only part of a vector variable. The fixed-key
+// shortcut is valid only when this factor alone fixes the complete block.
+Key fixedKeyForConstraint(const JacobianFactor& factor) {
+  if (factor.size() != 1) {
+    throw MultifrontalSolverNotSupported(
+        "only unary constrained factors are supported");
+  }
+  const auto& model =
+      static_cast<const noiseModel::Constrained&>(*factor.get_model());
+  const Vector& sigmas = model.sigmasRef();
+  bool fullyConstrained = (sigmas.array().abs() <= kConstraintSigmaTol).all();
+  // A small soft sigma is not a hard equation that can fix a variable.
+  for (size_t row = 0; row < model.dim(); ++row) {
+    fullyConstrained = fullyConstrained && model.constrained(row);
+  }
+  if (!fullyConstrained) {
+    throw MultifrontalSolverNotSupported(
+        "only fully constrained factors are supported");
+  }
+  const auto matrix = factor.getA(factor.begin());
+  const Vector& rhs = factor.getb();
+  if (!matrix.allFinite() || !rhs.allFinite()) {
+    throw MultifrontalSolverNotSupported(
+        "constrained factor coefficients must be finite");
+  }
+  if (rhs.size() && rhs.cwiseAbs().maxCoeff() > kConstraintFeasibleTol) {
+    throw MultifrontalSolverNotSupported("constrained factor is not feasible");
+  }
+  if (matrix.cols() == 0 || matrix.rows() < matrix.cols() ||
+      Eigen::ColPivHouseholderQR<Matrix>(matrix).rank() != matrix.cols()) {
+    throw MultifrontalSolverNotSupported(
+        "unary hard factor for key " + DefaultKeyFormatter(*factor.begin()) +
+        " must have full column rank to fix the entire variable block; "
+        "partial-block and rank-deficient constraints are unsupported");
+  }
+  return *factor.begin();
+}
+
 struct PrecomputeScratch {
   std::map<Key, size_t> dims;
   std::unordered_set<Key> fixedKeys;
@@ -137,22 +176,7 @@ PrecomputeScratch precomputeFromGraph(const GaussianFactorGraph& graph) {
     }
     auto model = jacobianFactor->get_model();
     if (!model || !model->isConstrained()) continue;
-    // Only accept fully constrained unary factors with zero residuals.
-    if (jacobianFactor->size() != 1) {
-      throw MultifrontalSolverNotSupported(
-          "only unary constrained factors are supported");
-    }
-    const Vector& sigmas = model->sigmasRef();
-    if (!(sigmas.array().abs() <= kConstraintSigmaTol).all()) {
-      throw MultifrontalSolverNotSupported(
-          "only fully constrained factors are supported");
-    }
-    if (jacobianFactor->getb().array().abs().maxCoeff() >
-        kConstraintFeasibleTol) {
-      throw MultifrontalSolverNotSupported(
-          "constrained factor is not feasible");
-    }
-    out.fixedKeys.insert(*jacobianFactor->begin());
+    out.fixedKeys.insert(fixedKeyForConstraint(*jacobianFactor));
   }
   return out;
 }
@@ -651,7 +675,47 @@ MultifrontalSolver::PrecomputedData MultifrontalSolver::Precompute(
 }
 
 /* ************************************************************************* */
+void MultifrontalSolver::prepareLoad(const GaussianFactorGraph& graph) {
+  // A failed load must not leave an earlier numerical factorization usable.
+  loaded_ = false;
+  eliminated_ = false;
+  partiallyEliminated_ = false;
+  hasDeltaError_ = false;
+
+  std::unordered_set<Key> fixedKeys;
+  for (const auto& factor : graph) {
+    if (!factor) continue;
+    if (const auto* jacobian =
+            dynamic_cast<const JacobianFactor*>(factor.get())) {
+      const auto& model = jacobian->get_model();
+      if (!model || !model->isConstrained()) continue;
+      const Key key = fixedKeyForConstraint(*jacobian);
+      const auto dimension = dims_.find(key);
+      if (dimension == dims_.end() ||
+          dimension->second !=
+              static_cast<size_t>(jacobian->getDim(jacobian->begin()))) {
+        throw MultifrontalSolverNotSupported(
+            "hard constraint variable dimensions changed; rebuild the solver");
+      }
+      fixedKeys.insert(key);
+    } else if (const auto* batch =
+                   dynamic_cast<const BatchJacobianFactorBase*>(factor.get())) {
+      if (batch->get_model() && batch->get_model()->isConstrained()) {
+        throw MultifrontalSolverNotSupported(
+            "constrained BatchJacobianFactor inputs are not supported");
+      }
+    }
+  }
+  if (fixedKeys != fixedKeys_) {
+    throw MultifrontalSolverNotSupported(
+        "hard constraints no longer match the precomputed fixed keys; "
+        "rebuild the solver");
+  }
+}
+
+/* ************************************************************************* */
 void MultifrontalSolver::load(const GaussianFactorGraph& graph) {
+  prepareLoad(graph);
   for (auto& clique : cliques_) {
     clique->fillAb(graph);
   }
@@ -689,6 +753,7 @@ void MultifrontalSolver::eliminateInPlace(const GaussianFactorGraph& graph) {
         "partial elimination.");
   }
   // Combine load + eliminate in one post-order traversal to improve locality.
+  prepareLoad(graph);
   runBottomUp(
       [&graph](MultifrontalClique& node) {
         node.fillAb(graph);
@@ -733,6 +798,7 @@ void MultifrontalSolver::eliminatePartialInPlace(
         "MultifrontalSolver::eliminatePartialInPlace: solver is not "
         "configured with a partial ordering.");
   }
+  prepareLoad(graph);
   runBottomUp(
       [&graph](MultifrontalClique& node) {
         node.fillAb(graph);

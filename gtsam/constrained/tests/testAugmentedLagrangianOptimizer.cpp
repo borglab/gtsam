@@ -295,6 +295,31 @@ TEST(AugmentedLagrangianBCL, PenaltyUpdateSchedule) {
   EXPECT_DOUBLES_EQUAL(std::pow(0.001, 0.1), result.bclEta, 1e-12);
 }
 
+// A terminal point must return the multipliers used by its stationarity
+// certificate, even when a tighter intermediate eta would increase rho.
+TEST(AugmentedLagrangianBCL, TerminalMultipliersOverridePenaltyUpdate) {
+  using namespace scalar_problem;
+  for (bool equality : {false, true}) {
+    const auto problem = equality ? Problem(CostTo(1.0), EqualityTo(0.0), {})
+                                  : Problem(CostTo(1.0), {}, LessEqual(0.0));
+    auto params = BclParams();
+    params->absoluteStationarityTolerance = 0.1;
+    params->absoluteViolationTolerance = 0.1;
+    params->bclEta0 = 1e-12;
+    const AugmentedLagrangianOptimizer optimizer(problem, ValuesAt(0.0), params);
+    const auto result = optimizer.optimizeWithState();
+    EXPECT(result.converged);
+    EXPECT_LONGS_EQUAL(1, result.iteration);
+    EXPECT(result.updateType == AugmentedLagrangianUpdateType::Multiplier);
+    const double multiplier = equality ? result.lambdaEq.at(0)(0)
+                                       : result.lambdaIneq.at(0);
+    const double x = result.values.at<double>(kX);
+    EXPECT_DOUBLES_EQUAL(10.0 * x, multiplier, 1e-10);
+    EXPECT_DOUBLES_EQUAL(std::abs(x - 1.0 + multiplier),
+                         result.augmentedLagrangianStationarity, 1e-10);
+  }
+}
+
 // Verifies an unmet inner stationarity target performs no outer update.
 TEST(AugmentedLagrangianBCL, InnerFailurePerformsNoUpdate) {
   using namespace scalar_problem;

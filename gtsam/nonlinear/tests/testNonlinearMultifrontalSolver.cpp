@@ -167,6 +167,49 @@ TEST(NonlinearMultifrontalSolver, PrecomputeSoftConstraintThrows) {
 }
 
 /* ************************************************************************* */
+// Numerical loads must verify fixed keys inferred without linearizing factors,
+// including the separate fused loading path used with positive LM damping.
+TEST(NonlinearMultifrontalSolver, RevalidateHardConstraintNumericalLoads) {
+  const Key key = X(1);
+  const Ordering ordering{key};
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<PriorFactor<Point2>>(key, Point2(1, 2),
+                                            noiseModel::Unit::Create(2));
+  graph.emplace_shared<NonlinearEquality<Point2>>(key, Point2(0, 0));
+  Values values;
+  values.insert(key, Point2(0, 0));
+  const auto linear = graph.linearize(values);
+  const auto expected = linear->optimize(ordering, EliminateQR);
+  auto invalid = *linear;
+  invalid[1] = std::make_shared<JacobianFactor>(
+      key, Matrix{{1., 1.}, {2., 2.}}, Vector2::Zero(),
+      noiseModel::Constrained::All(2));
+
+  const auto data =
+      NonlinearMultifrontalSolver::Precompute(graph, values, ordering);
+  MultifrontalSolver precomputed(data, ordering);
+  CHECK_EXCEPTION(precomputed.load(invalid), MultifrontalSolverNotSupported);
+  precomputed.eliminateInPlace(*linear);
+  EXPECT(assert_equal(expected, precomputed.updateSolution(), 1e-9));
+
+  for (double damping : {0., 1.}) {
+    NonlinearMultifrontalSolver solver(graph, values, ordering);
+    CHECK_EXCEPTION(solver.eliminateInPlace(invalid, damping),
+                    MultifrontalSolverNotSupported);
+    CHECK_EXCEPTION(solver.eliminateInPlace(damping), std::runtime_error);
+    solver.load(*linear);
+    solver.eliminateInPlace(damping);
+    EXPECT(assert_equal(expected, solver.updateSolution(), 1e-9));
+    CHECK_EXCEPTION(solver.load(invalid), MultifrontalSolverNotSupported);
+    CHECK_EXCEPTION(solver.eliminateInPlace(damping), std::runtime_error);
+    solver.eliminateInPlace(*linear, damping);
+    CHECK_EXCEPTION(solver.eliminateInPlace(invalid, damping),
+                    MultifrontalSolverNotSupported);
+    CHECK_EXCEPTION(solver.eliminateInPlace(damping), std::runtime_error);
+  }
+}
+
+/* ************************************************************************* */
 // Run a first elimination to get an updated estimate, then deliberately
 // perturb the estimate, re-linearize, reload, and eliminate again.
 // Tests that load() correctly overwrites numeric data for subsequent solves.
