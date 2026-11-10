@@ -24,6 +24,7 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/SubgraphSolver.h>
 #include <gtsam/linear/PCGSolver.h>
+#include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/GaussianBayesTree.h>
 #include <gtsam/linear/internal/CholmodSolver.h>
@@ -189,14 +190,20 @@ VectorValues NonlinearOptimizer::solve(const GaussianFactorGraph& gfg,
       delta = gfg.optimize(params.getEliminationFunction());
   } else if (params.isSequential()) {
     // Sequential QR or Cholesky (decided by params.getEliminationFunction())
-    if (params.ordering)
-      delta = gfg.eliminateSequential(*params.ordering,
+    const GaussianBayesNet::shared_ptr bayesNet =
+        params.ordering
+            ? gfg.eliminateSequential(*params.ordering,
                                       params.getEliminationFunction())
-                  ->optimize();
-    else
-      delta = gfg.eliminateSequential(params.orderingType,
-                                      params.getEliminationFunction())
-                  ->optimize();
+            : gfg.eliminateSequential(params.orderingType,
+                                      params.getEliminationFunction());
+    // Each sequential step only sees what earlier steps left behind, so check
+    // the pivots against the original system as well.
+    bayesNet->checkPivots(
+        gfg,
+        params.linearSolverType == NonlinearOptimizerParams::SEQUENTIAL_QR
+            ? GaussianBayesNet::qrPivotTolerance
+            : GaussianBayesNet::choleskyPivotTolerance);
+    delta = bayesNet->optimize();
   } else if (params.isIterative()) {
     // Conjugate Gradient -> needs params.iterativeParams
     if (!params.iterativeParams)
