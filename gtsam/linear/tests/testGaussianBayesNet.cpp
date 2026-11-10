@@ -24,6 +24,7 @@
 #include <gtsam/linear/GaussianDensity.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/linearExceptions.h>
 
 // STL/C++
 #include <iostream>
@@ -385,6 +386,71 @@ TEST(GaussianBayesNet, Dot) {
     "}");
 }
 
+/* ************************************************************************* */
+namespace pivot_check_fixture {
+
+// Unit priors on x0 and x1, so the reference diagonal is one.
+GaussianFactorGraph unitPriors() {
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(X(0), I_1x1, Vector1(0.0));
+  graph.emplace_shared<JacobianFactor>(X(1), I_1x1, Vector1(0.0));
+  return graph;
+}
+
+// p(x0 | x1) p(x1), with the given pivot for x1.
+GaussianBayesNet withLastPivot(double pivot) {
+  GaussianBayesNet bayesNet;
+  bayesNet.emplace_shared<GaussianConditional>(X(0), Vector1(0.0), I_1x1, X(1),
+                                               I_1x1);
+  bayesNet.emplace_shared<GaussianConditional>(X(1), Vector1(0.0),
+                                               Matrix11{{pivot}});
+  return bayesNet;
+}
+
+// Pivots are compared with the diagonal of the graph that was eliminated,
+// with a tolerance that depends on how the conditionals were computed.
+TEST(GaussianBayesNet, CheckPivots) {
+  const GaussianFactorGraph eliminated = unitPriors();
+  withLastPivot(1e-5).checkPivots(eliminated,
+                                  GaussianBayesNet::choleskyPivotTolerance);
+
+  const GaussianBayesNet beyondCholesky = withLastPivot(1e-10);
+  beyondCholesky.checkPivots(eliminated, GaussianBayesNet::qrPivotTolerance);
+  try {
+    beyondCholesky.checkPivots(eliminated,
+                               GaussianBayesNet::choleskyPivotTolerance);
+    FAIL("expected IndeterminateSystemException");
+  } catch (const IndeterminateSystemException& exception) {
+    EXPECT(exception.nearbyVariable() == X(1));
+  }
+
+  for (double pivot : {0.0, std::numeric_limits<double>::quiet_NaN()}) {
+    CHECK_EXCEPTION(withLastPivot(pivot).checkPivots(
+                        eliminated, GaussianBayesNet::qrPivotTolerance),
+                    IndeterminateSystemException);
+  }
+}
+
+// Hard constraints are not checked and do not inflate the reference diagonal.
+TEST(GaussianBayesNet, CheckPivotsIgnoresConstraints) {
+  GaussianBayesNet constrained;
+  constrained.emplace_shared<GaussianConditional>(
+      X(0), Vector1(0.0), Matrix11{{0.0}}, noiseModel::Constrained::All(1));
+  constrained.checkPivots(unitPriors(), GaussianBayesNet::qrPivotTolerance);
+
+  // A weak prior is the only information scale on x1, so its pivot is fine.
+  GaussianFactorGraph eliminated;
+  eliminated.emplace_shared<JacobianFactor>(X(1), I_1x1, Vector1(0.0),
+                                            noiseModel::Constrained::All(1));
+  eliminated.emplace_shared<JacobianFactor>(
+      X(1), I_1x1, Vector1(0.0), noiseModel::Isotropic::Sigma(1, 1e8));
+  GaussianBayesNet weak;
+  weak.emplace_shared<GaussianConditional>(X(1), Vector1(0.0),
+                                           Matrix11{{1e-8}});
+  weak.checkPivots(eliminated, GaussianBayesNet::choleskyPivotTolerance);
+}
+
+}  // namespace pivot_check_fixture
 /* ************************************************************************* */
 int main() {
   TestResult tr;

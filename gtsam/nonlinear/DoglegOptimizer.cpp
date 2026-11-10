@@ -101,6 +101,11 @@ GaussianFactorGraph::shared_ptr DoglegOptimizer::iterate(void) {
   }
   else if ( params_.isSequential() ) {
     GaussianBayesNet bn = *linear->eliminateSequential(*params_.ordering, params_.getEliminationFunction());
+    // Each sequential step only sees what earlier steps left behind.
+    bn.checkPivots(*linear,
+                   params_.linearSolverType == DoglegParams::SEQUENTIAL_QR
+                       ? GaussianBayesNet::qrPivotTolerance
+                       : GaussianBayesNet::choleskyPivotTolerance);
     VectorValues dx_u = bn.optimizeGradientSearch();
     VectorValues dx_n = bn.optimize();
     result = DoglegOptimizerImpl::Iterate(getDelta(), DoglegOptimizerImpl::ONE_STEP_PER_ITERATION,

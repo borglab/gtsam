@@ -25,8 +25,11 @@
 #include <gtsam/inference/FactorGraph.h>
 #include <gtsam/global_includes.h>
 
+#include <limits>
 #include <utility>
 namespace gtsam {
+
+  class GaussianFactorGraph;
 
   /** 
    * GaussianBayesNet is a Bayes net made from linear-Gaussian conditionals.
@@ -124,6 +127,29 @@ namespace gtsam {
 
     /// Version of optimize for incomplete BayesNet, given missing variables
     VectorValues optimize(const VectorValues& given) const;
+
+    /// checkPivots tolerance for QR conditionals: the QR safeguard, squared.
+    static constexpr double qrPivotTolerance =
+        (64.0 * std::numeric_limits<double>::epsilon()) *
+        (64.0 * std::numeric_limits<double>::epsilon());
+
+    /**
+     * checkPivots tolerance for Cholesky conditionals, above the round-off
+     * level of exactly dependent columns (below 1e-13 in dense tests with up to
+     * 6000 unknowns).
+     */
+    static constexpr double choleskyPivotTolerance = 0x1p-40;
+
+    /**
+     * Throw IndeterminateSystemException if a pivot is negligible relative to
+     * the factor graph that was eliminated, i.e., if R(i,i)^2 < tolerance *
+     * D(i) for a frontal scalar of an unconstrained conditional, where D is
+     * the Hessian diagonal of the graph's unconstrained factors. Elimination
+     * compares each pivot with the diagonal that reaches its own step, which
+     * misses a dependency revealed while eliminating an earlier variable.
+     */
+    void checkPivots(const GaussianFactorGraph& eliminated,
+                     double tolerance) const;
 
     /**
      * Sample using ancestral sampling
