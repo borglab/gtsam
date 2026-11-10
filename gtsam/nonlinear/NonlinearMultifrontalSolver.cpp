@@ -138,6 +138,8 @@ void NonlinearMultifrontalSolver::eliminateInPlace(
     return;
   }
 
+  prepareLoad(graph);
+
   // Calculate the exact Hessian diagonal if needed.
   if (dampingParams_.diagonalDamping && dampingParams_.exactHessianDiagonal) {
     exactHessianDiagonal_ = graph.hessianDiagonal();
