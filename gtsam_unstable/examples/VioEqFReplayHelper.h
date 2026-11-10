@@ -10,14 +10,14 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file EqVIOReplayHelper.h
+ * @file VioEqFReplayHelper.h
  * @brief Streaming CSV replay helpers for EqVIO examples.
  * @author OpenAI Codex
  */
 
 #pragma once
 
-#include <gtsam_unstable/navigation/EqVIOFilter.h>
+#include <gtsam_unstable/navigation/VioEqF.h>
 
 #include <algorithm>
 #include <array>
@@ -65,7 +65,7 @@ struct BufferedImuPropagation {
 
 /// Format a consistent exception prefix for EqVIO replay helpers.
 inline std::string formatReplayError(const std::string& detail) {
-  return "EqVIOReplay: " + detail;
+  return "VioEqFReplay: " + detail;
 }
 
 /// Trim leading/trailing ASCII whitespace.

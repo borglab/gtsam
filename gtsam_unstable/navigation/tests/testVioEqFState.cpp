@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file   testEqVIOState.cpp
+ * @file   testVioEqFState.cpp
  * @brief  Unit tests for VIOState manifold
  * @author Rohan Bansal
  */
@@ -18,7 +18,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam_unstable/navigation/EqVIOState.h>
+#include <gtsam_unstable/navigation/VioEqFState.h>
 
 #include <stdexcept>
 #include <vector>
