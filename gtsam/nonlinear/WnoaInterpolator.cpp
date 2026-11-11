@@ -1,4 +1,4 @@
-git add gtsam/nonlinear/WnoaInterpolator-inl.h/* ----------------------------------------------------------------------------
+/* ----------------------------------------------------------------------------
  * @file WnoaInterpolator.cpp
  *
  * Note: References to (Barfoot 2024) refer to the following textbook:

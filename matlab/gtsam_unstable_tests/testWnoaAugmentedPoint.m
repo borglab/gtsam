@@ -1,3 +1,14 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% GTSAM Copyright 2010-2026, Georgia Tech Research Corporation,
+% Atlanta, Georgia 30332-0415
+% All Rights Reserved
+% Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+%
+% See LICENSE for the license information
+%
+% @brief Tests WNOA factors with unstable AugmentedPoint3 states and their QCQP conversion.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 function testWnoaAugmentedPoint()
 % Regression tests for unstable AugmentedPoint3 WNOA MATLAB bindings.
 % Run with the stable and unstable MATLAB wrapper directories on the path.
@@ -10,7 +21,9 @@ assert(exist('gtsam_unstable_wrapper', 'file') == 3, ...
 testMotion();
 testInterpolatedRange();
 testRangeOnlyOptimization();
-fprintf('WNOA AugmentedPoint3 MATLAB tests passed (3 tests).\n');
+testQcqpConversion();
+testQcqpLiftedValues();
+fprintf('WNOA AugmentedPoint3 MATLAB tests passed (5 tests).\n');
 end
 
 function testMotion()
@@ -130,6 +143,67 @@ for i = 1:3
         'Recovered knot velocity is inaccurate.');
 end
 fprintf('  Range-only optimization: passed (final error %.3g)\n', finalError);
+end
+
+function testQcqpConversion()
+% Motion and interpolated range factors convert to QCQPs; unsupported
+% configurations are rejected with catchable errors.
+left = gtsam.StateData(uint64(1), uint64(2), 0.0);
+mid = gtsam.StateData(uint64(5), uint64(6), 0.5);
+right = gtsam.StateData(uint64(3), uint64(4), 1.0);
+q = 0.2 * ones(3, 1);
+noise = gtsam.noiseModel.Isotropic.Sigma(1, 0.1);
+
+motionGraph = gtsam.NonlinearFactorGraph();
+motionGraph.add(gtsam.WnoaMotionFactorAugmentedPoint3(left, right, q));
+assert(isa(gtsam.QcqpProblem(motionGraph), 'gtsam.QcqpProblem'));
+assertThrows(@() gtsam.QcqpProblem(motionGraph, 2), 'only supports D=1');
+
+inner = gtsam.KnownLandmarkSquaredRangeFactorAugmentedPoint3( ...
+    uint64(5), [2; 0; 0], 1.5, noise);
+interpolated = gtsam.NonlinearFactorGraph();
+interpolated.add(gtsam.MatlabWnoaInterpFactorAugmentedPoint3( ...
+    inner, left, mid, right, q, true, true));
+assert(isa(gtsam.QcqpProblem(interpolated), 'gtsam.QcqpProblem'));
+assertThrows(@() gtsam.QcqpProblem(interpolated, 2), 'only supports D=1');
+
+% Interpolation noise that depends on the linearization point has no exact QCQP.
+adaptive = gtsam.NonlinearFactorGraph();
+adaptive.add(gtsam.MatlabWnoaInterpFactorAugmentedPoint3( ...
+    inner, left, mid, right, q, false, true));
+assertThrows(@() gtsam.QcqpProblem(adaptive), 'fixed_noise_model = true');
+fprintf('  QCQP conversion and rejected configurations: passed\n');
+end
+
+function testQcqpLiftedValues()
+% The lifted position [h; x; u] used by the interpolated-range QCQP round-trips.
+point = gtsam.AugmentedPoint3([1; -2; 3]);
+lifted = gtsam.qcqpValue3(point);
+assert(isequal(size(lifted), [5, 1]), 'Lifted position must have 5 rows.');
+assert(norm(lifted - [1; 1; -2; 3; 14]) < 1e-12, 'Unexpected lifted position.');
+recovered = gtsam.fromQcqpValue3(lifted);
+assert(norm(recovered.vector() - [1; -2; 3]) < 1e-12, 'Lift round trip failed.');
+% A negative homogeneous coordinate flips the whole column; recovery divides by h.
+flipped = gtsam.fromQcqpValue3(-lifted);
+assert(norm(flipped.vector() - [1; -2; 3]) < 1e-12, 'Sign-flipped lift not recovered.');
+
+values = gtsam.Values();
+gtsam.insertQcqpValue3(uint64(7), point, values);
+assert(norm(values.atMatrix(uint64(7)) - lifted) < 1e-12, 'Inserted lift mismatch.');
+fprintf('  Lifted position values: passed\n');
+end
+
+function assertThrows(action, expectedMessage)
+% Ensure C++ validation failures become catchable MATLAB errors.
+try
+    action();
+catch ME
+    assert(contains(ME.message, expectedMessage), ...
+        'Expected an error containing "%s"; received: %s', ...
+        expectedMessage, ME.message);
+    return;
+end
+error('Expected an error containing "%s", but none was thrown.', expectedMessage);
 end
 
 function insertState(values, positionKey, velocityKey, position, velocity)

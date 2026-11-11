@@ -22,6 +22,7 @@
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/VectorSpace.h>
+#include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/geometry/Point1.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
@@ -31,8 +32,33 @@
 #include <gtsam/nonlinear/WnoaStateData.h>
 
 #include <cassert>
+#include <stdexcept>
+#include <type_traits>
 
 namespace gtsam {
+
+namespace internal {
+
+/// Row of a type's D=1 QCQP vector where its Euclidean coordinates start.
+/// Defaults to 0; types with extra lifted rows define QcqpCoordinateOffset.
+template <typename T, typename = void>
+struct QcqpCoordinateOffset : std::integral_constant<int, 0> {};
+
+template <typename T>
+struct QcqpCoordinateOffset<
+    T, std::void_t<decltype(traits<T>::QcqpCoordinateOffset)>>
+    : std::integral_constant<int, traits<T>::QcqpCoordinateOffset> {};
+
+/// True for vector-space poses whose D=1 QCQP vector holds their coordinates.
+template <typename Pose>
+inline constexpr bool kWnoaQcqpSupported =
+    std::is_same_v<typename traits<Pose>::structure_category,
+                   vector_space_tag> &&
+    HasQcqpVariableTraits<Pose, 1>::value &&
+    HasQcqpVectorDim<Pose>::value &&
+    HasQcqpVariableTraits<typename traits<Pose>::TangentVector, 1>::value;
+
+}  // namespace internal
 
 /**
  * @brief WNOA (White Noise on Acceleration) motion prior factor.
@@ -198,6 +224,67 @@ class WnoaMotionFactor
     return e != nullptr && Base::equals(*e, tol);
   }
   /// @}
+
+  /**
+   * Append this factor's exact D=1 QCQP cost.
+   *
+   * For vector-space poses the residual is linear in the state:
+   * [p2 - p1 - dt*v1; v2 - v1]. With lifted pose vectors X1 and X2 whose
+   * Euclidean coordinates start at row s, it equals B*[X1; v1; X2; v2] with
+   * B = [[-S, -dt*I, S, 0], [0, -I, 0, I]] and S = [0 I 0] selecting rows
+   * s..s+N-1. The whitened cost is 0.5*||W*B*X||^2 and needs no constraints
+   * beyond those of the keys' own lifts. The Hessian's final constant slot
+   * has zero coefficient.
+   *
+   * Only vector-space poses with QCQP traits (for example AugmentedPoint)
+   * are supported.
+   *
+   * @throws std::invalid_argument for columnDimension other than 1.
+   * @throws std::runtime_error for unsupported pose types.
+   */
+  void qcqpFactors(NonlinearFactorGraph& costs,
+                   NonlinearEqualityConstraints& constraints,
+                   QcqpVariableConstraints& variableConstraints,
+                   size_t columnDimension = 1) const override {
+    if constexpr (!internal::kWnoaQcqpSupported<Pose>) {
+      throw std::runtime_error(
+          "WnoaMotionFactor::qcqpFactors requires a vector-space pose with "
+          "QCQP traits, such as AugmentedPoint.");
+    } else {
+      if (columnDimension != 1) {
+        throw std::invalid_argument(
+            "WnoaMotionFactor::qcqpFactors only supports D=1.");
+      }
+      constexpr int poseDim = traits<Pose>::QcqpVectorDim;
+      constexpr int offset = internal::QcqpCoordinateOffset<Pose>::value;
+      constexpr int liftedDim = 2 * (poseDim + dim);
+      // Columns: [X1 (poseDim) | v1 | X2 (poseDim) | v2 | constant slot].
+      constexpr int pose1 = 0, vel1 = poseDim, pose2 = poseDim + dim,
+                    vel2 = 2 * poseDim + dim;
+      Matrix B = Matrix::Zero(2 * dim, liftedDim + 1);
+      B.block<dim, dim>(0, pose1 + offset) = -kIdentity;
+      B.block<dim, dim>(0, vel1) = -deltaT_ * kIdentity;
+      B.block<dim, dim>(0, pose2 + offset) = kIdentity;
+      B.block<dim, dim>(dim, vel1) = -kIdentity;
+      B.block<dim, dim>(dim, vel2) = kIdentity;
+
+      const Matrix whitenedB = this->noiseModel_->Whiten(B);
+      const KeyVector keys{this->key1(), this->key2(), this->key3(),
+                           this->key4()};
+      costs.push_back(std::make_shared<QpCost>(HessianFactor(
+          keys, SymmetricBlockMatrix(
+                    std::vector<DenseIndex>{poseDim, dim, poseDim, dim, 1},
+                    whitenedB.transpose() * whitenedB))));
+      variableConstraints.add(this->key1(),
+                              traits<Pose>::template QcqpConstraints<1>);
+      variableConstraints.add(this->key2(),
+                              traits<Velocity>::template QcqpConstraints<1>);
+      variableConstraints.add(this->key3(),
+                              traits<Pose>::template QcqpConstraints<1>);
+      variableConstraints.add(this->key4(),
+                              traits<Velocity>::template QcqpConstraints<1>);
+    }
+  }
 
   /**
    * @brief Evaluate the WNOA factor residual and optional Jacobians.
