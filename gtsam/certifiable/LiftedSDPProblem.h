@@ -79,8 +79,14 @@ class GTSAM_EXPORT LiftedSDPProblem<MonolithicSDP, MosekSDPSolver> {
    * Fixed variables are substituted out before lifting: a unary linear
    * equality I x = v, which a hard FrobeniusPrior emits, fixes x to v. The
    * costs that involve it are rewritten on the remaining variables, the
-   * constraints that involve it are dropped, and it gets no SDP block, so no
-   * singular rank-one block is pinned. The QCQP itself is unchanged.
+   * quadratic constraints that involve it are dropped, linear equalities that
+   * couple it to free variables keep their free terms, and it gets no SDP
+   * block, so no singular rank-one block is pinned. The QCQP itself is
+   * unchanged.
+   *
+   * Linear equalities over several keys, A_1 x_1 + ... + A_n x_n = b, are
+   * relaxed with the products A x_j' - b y_j' = 0 for every key j, in addition
+   * to the lifted constant row, and join the chordal sparsity graph.
    *
    * @param problem QCQP to relax.
    */
@@ -147,8 +153,14 @@ class GTSAM_EXPORT LiftedSDPProblem<ChordalSDP, MosekSDPSolver> {
    * Fixed variables are substituted out before lifting: a unary linear
    * equality I x = v, which a hard FrobeniusPrior emits, fixes x to v. The
    * costs that involve it are rewritten on the remaining variables, the
-   * constraints that involve it are dropped, and it gets no SDP block, so no
-   * singular rank-one block is pinned. The QCQP itself is unchanged.
+   * quadratic constraints that involve it are dropped, linear equalities that
+   * couple it to free variables keep their free terms, and it gets no SDP
+   * block, so no singular rank-one block is pinned. The QCQP itself is
+   * unchanged.
+   *
+   * Linear equalities over several keys, A_1 x_1 + ... + A_n x_n = b, are
+   * relaxed with the products A x_j' - b y_j' = 0 for every key j, in addition
+   * to the lifted constant row, and join the chordal sparsity graph.
    *
    * @param problem QCQP to relax.
    * @param orderingType Ordering used for symbolic elimination.

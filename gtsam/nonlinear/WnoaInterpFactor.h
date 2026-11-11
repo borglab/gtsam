@@ -24,6 +24,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/timing.h>
+#include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/geometry/Point1.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
@@ -35,6 +36,7 @@
 #include <gtsam/nonlinear/WnoaInterpolator.h>
 #include <gtsam/nonlinear/WnoaStateData.h>
 
+#include <algorithm>
 #include <array>
 #include <stdexcept>
 #include <unordered_set>
@@ -464,6 +466,113 @@ class WnoaInterpFactor : public NoiseModelFactor {
         -computeInterpolatedError(x, nullptr, &JacInner, &InterpCondCovs);
     // get interpolated noise model
     return getInterpolatedNoiseModel(JacInner, InterpCondCovs);
+  }
+
+  /**
+   * Append this factor's exact D=1 QCQP cost and interpolation constraints.
+   *
+   * The inner factor's squared residual is quartic in the border states, so
+   * each interpolated key of the inner factor stays a QCQP variable of its
+   * own, lifted like any other state. The inner factor adds its cost on that
+   * variable, and this factor adds the linear equalities that tie it to the
+   * borders. For vector-space poses, with x = [p; v] and Lambda, Psi the WNOA
+   * interpolation matrices,
+   *
+   *   x(tau) = Lambda*x_k + Psi*x_(k+1),
+   *
+   * so, with S selecting the coordinate rows of a lifted pose, the pose key
+   * satisfies S*X(tau) - Lambda_pp*S*X_k - Lambda_pv*v_k - Psi_pp*S*X_(k+1)
+   * - Psi_pv*v_(k+1) = 0 and an interpolated velocity key satisfies the
+   * analogous equation with the velocity rows of Lambda and Psi. The squared
+   * norm of the interpolated position is lifted by the pose type's own unary
+   * constraints. Several factors that share an interpolated key add its
+   * coupling once. Exactness of the relaxation needs a consistent sign of the
+   * lifts, for example h = 1 on every AugmentedPoint key.
+   *
+   * @throws std::invalid_argument for columnDimension other than 1.
+   * @throws std::runtime_error for unsupported pose types and for
+   *         fixed_noise_model = false, because the interpolation-augmented
+   *         noise depends on the linearization point.
+   */
+  void qcqpFactors(NonlinearFactorGraph& costs,
+                   NonlinearEqualityConstraints& constraints,
+                   QcqpVariableConstraints& variableConstraints,
+                   size_t columnDimension = 1) const override {
+    if constexpr (!internal::kWnoaQcqpSupported<PoseType>) {
+      throw std::runtime_error(
+          "WnoaInterpFactor::qcqpFactors requires a vector-space pose with "
+          "QCQP traits, such as AugmentedPoint.");
+    } else {
+      if (columnDimension != 1) {
+        throw std::invalid_argument(
+            "WnoaInterpFactor::qcqpFactors only supports D=1.");
+      }
+      if (!fixed_noise_model_) {
+        throw std::runtime_error(
+            "WnoaInterpFactor::qcqpFactors requires fixed_noise_model = true: "
+            "interpolation-augmented noise depends on the linearization "
+            "point, so it has no exact QCQP.");
+      }
+      inner_factor_->qcqpFactors(costs, constraints, variableConstraints,
+                                 columnDimension);
+
+      constexpr int offset = internal::QcqpCoordinateOffset<PoseType>::value;
+      Matrix select = Matrix::Zero(dim, traits<PoseType>::QcqpVectorDim);
+      select.block<dim, dim>(0, offset).setIdentity();
+      const Matrix identity = Matrix::Identity(dim, dim);
+      for (Key innerKey : inner_factor_->keys()) {
+        const auto found = key_to_interp_.find(innerKey);
+        if (found == key_to_interp_.end()) continue;
+        const StateData& state = found->second;
+        const auto& [left, right] = interp_to_borders_.at(state);
+        const auto& precomputed = lambda_psi_pre_comp_.at(state);
+        const std::pair<Matrix, Matrix> lambdaPsi =
+            precomputed ? std::pair<Matrix, Matrix>(*precomputed)
+                        : interpolator_.getLambdaPsi(left.time, right.time,
+                                                     state.time);
+        const Matrix& Lambda = lambdaPsi.first;
+        const Matrix& Psi = lambdaPsi.second;
+
+        // Rows of Lambda and Psi producing the pose or the velocity.
+        const bool isPose = innerKey == state.pose;
+        const int row = isPose ? 0 : dim;
+        auto couple = [&](const Matrix& block, const Matrix& liftedSelect) {
+          return Matrix(-block * liftedSelect);
+        };
+        std::vector<std::pair<Key, Matrix>> terms{
+            {innerKey, isPose ? select : identity},
+            {left.pose, couple(Lambda.block(row, 0, dim, dim), select)},
+            {left.velocity, couple(Lambda.block(row, dim, dim, dim), identity)},
+            {right.pose, couple(Psi.block(row, 0, dim, dim), select)},
+            {right.velocity, couple(Psi.block(row, dim, dim, dim), identity)}};
+        const LinearConstraint coupling = LinearConstraint::Equal(
+            JacobianFactor(terms, Vector::Zero(dim),
+                           noiseModel::Unit::Create(dim)));
+
+        variableConstraints.add(left.pose,
+                                traits<PoseType>::template QcqpConstraints<1>);
+        variableConstraints.add(
+            left.velocity, traits<VelocityType>::template QcqpConstraints<1>);
+        variableConstraints.add(right.pose,
+                                traits<PoseType>::template QcqpConstraints<1>);
+        variableConstraints.add(
+            right.velocity, traits<VelocityType>::template QcqpConstraints<1>);
+        if (!isPose) {
+          variableConstraints.add(
+              innerKey, traits<VelocityType>::template QcqpConstraints<1>);
+        }
+        // Factors sharing an interpolated key must not repeat its coupling.
+        const bool duplicate = std::any_of(
+            constraints.begin(), constraints.end(), [&](const auto& existing) {
+              const auto* linear =
+                  dynamic_cast<const LinearEqualityConstraintFactor*>(
+                      existing.get());
+              return linear && linear->linearConstraint().factor().equals(
+                                   coupling.factor(), 1e-12);
+            });
+        if (!duplicate) constraints.push_back(coupling.createEqualityFactor());
+      }
+    }
   }
 
   /**

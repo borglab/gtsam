@@ -219,6 +219,14 @@ SymbolicFactorGraph BuildQpCostSymbolicFactorGraph(const QcqpProblem& problem) {
     sfg.push_back(SymbolicFactor(*cost));
   }
 
+  // A multi-key linear equality couples its keys like a cost does, so they
+  // must share a clique for its lifted rows to exist.
+  for (const auto& factor : problem.eConstraints()) {
+    if (factor && factor->size() > 1) {
+      sfg.push_back(SymbolicFactor(*factor));
+    }
+  }
+
   if (sfg.empty()) {
     throw std::runtime_error(
         "BuildQpCostSymbolicFactorGraph: QCQP has no objective costs.");
@@ -479,30 +487,43 @@ void AddQuadraticConstraint(
   }
 }
 
-// Lower Ax = b on one key to both rows of [-b A] [1 y'; y X] = 0.
+// Lower sum_i A_i x_i = b over the keys of one linear equality to the rows of
+// [-b A_1 ... A_m] [1 y'; y X] = 0, one block of rows per key.
 void AddLinearEqualityConstraint(
     const mf::Model::t& M, const LinearConstraint& equality,
     const KeyiToLiftedVectorxiViewInSDPVariableMap& xiMap,
     const KeysijToLiftedVariableXijViewInSDPVariableMap& xijMap) {
   const JacobianFactor& J = equality.factor();
-  if (J.size() != 1) {
-    throw std::runtime_error(
-        "LiftedSDPProblem: only unary linear equality QCQP constraints are "
-        "supported.");
-  }
-  const Key key = *J.begin();
-  const auto y = xiMap.at(key)->asExpr();
-  const auto X = xijMap.at({key, key})->asExpr();
-  const auto A = convertToMosekDenseMatrix(Matrix(J.getA(J.begin())));
   const auto b = convertToMosekDenseMatrix(Vector(J.getb()));
+  auto sumOverKeys = [&](auto&& term) {
+    auto it = J.begin();
+    mf::Expression::t sum =
+        term(convertToMosekDenseMatrix(Matrix(J.getA(it))), *it);
+    for (++it; it != J.end(); ++it) {
+      sum = mf::Expr::add(
+          sum, term(convertToMosekDenseMatrix(Matrix(J.getA(it))), *it));
+    }
+    return sum;
+  };
 
-  // Ax=b implies A*x*x'=b*x', hence A*X=b*y' after lifting. Enforcing only
-  // Ay=b on the lifted vector x_i (row-0 slice) would leave unconstrained PSD
-  // slack in X.
-  M->constraint(mf::Expr::mul(A, mf::Expr::transpose(y)),
+  // Sum_i A_i y_i = b on the lifted vectors x_i (row-0 slices).
+  M->constraint(sumOverKeys([&](const auto& A, Key key) {
+                  return mf::Expr::mul(
+                      A, mf::Expr::transpose(xiMap.at(key)->asExpr()));
+                }),
                 mf::Domain::equalsTo(b));
-  M->constraint(mf::Expr::sub(mf::Expr::mul(A, X), mf::Expr::mul(b, y)),
-                mf::Domain::equalsTo(0.0));
+
+  // The equality times x_j' gives sum_i A_i X_ij = b*y_j' after lifting.
+  // Enforcing only the row-0 equality would leave unconstrained PSD slack in X.
+  for (auto jt = J.begin(); jt != J.end(); ++jt) {
+    const Key keyJ = *jt;
+    const auto sumOverI = sumOverKeys([&](const auto& A, Key keyI) {
+      return mf::Expr::mul(A, xijMap.at({keyI, keyJ})->asExpr());
+    });
+    M->constraint(
+        mf::Expr::sub(sumOverI, mf::Expr::mul(b, xiMap.at(keyJ)->asExpr())),
+        mf::Domain::equalsTo(0.0));
+  }
 }
 
 // Add all QCQP equality and inequality constraints to a Fusion model.
@@ -636,6 +657,31 @@ QpCost::shared_ptr SubstituteFixedVariables(const QpCost& cost,
       HessianFactor(freeKeys, SymmetricBlockMatrix(freeDims, Q)));
 }
 
+// A multi-key linear equality that involves a fixed variable keeps its free
+// terms and moves the fixed terms A_K v to the right-hand side, so the
+// coupling survives the substitution. Returns null for other constraints,
+// which are dropped, and for equalities with no free variable left.
+NonlinearEqualityConstraint::shared_ptr SubstituteFixedLinearEquality(
+    const NonlinearEqualityConstraint& factor, const Values& fixedVariables) {
+  const auto* linear = dynamic_cast<const LinearEqualityConstraintFactor*>(&factor);
+  if (!linear || linear->size() < 2) return nullptr;
+  const JacobianFactor& J = linear->linearConstraint().factor();
+  std::vector<std::pair<Key, Matrix>> freeTerms;
+  Vector b = J.getb();
+  for (auto it = J.begin(); it != J.end(); ++it) {
+    if (fixedVariables.exists(*it)) {
+      const Matrix& value = fixedVariables.at<Matrix>(*it);
+      b -= J.getA(it) * Eigen::Map<const Vector>(value.data(), value.size());
+    } else {
+      freeTerms.emplace_back(*it, Matrix(J.getA(it)));
+    }
+  }
+  if (freeTerms.empty()) return nullptr;
+  return LinearConstraint::Equal(JacobianFactor(freeTerms, b, J.get_model()),
+                                 linear->linearConstraint().sigmas())
+      .createEqualityFactor();
+}
+
 // Substitute the fixed variables out of a QCQP before it is lifted. Costs are
 // rewritten on the free variables. The constraints that involve a fixed
 // variable are dropped: from a factor graph these are its unary manifold
@@ -671,6 +717,9 @@ QcqpProblem SubstituteFixedVariables(const QcqpProblem& problem,
   for (const auto& factor : problem.eConstraints()) {
     if (!InvolvesFixedVariable(factor->keys(), *fixedVariables)) {
       eqConstraints.push_back(factor);
+    } else if (auto substituted =
+                   SubstituteFixedLinearEquality(*factor, *fixedVariables)) {
+      eqConstraints.push_back(substituted);
     }
   }
   NonlinearInequalityConstraints ineqConstraints;

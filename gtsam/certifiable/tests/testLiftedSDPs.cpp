@@ -702,6 +702,104 @@ TEST(LiftedSDPs, QuadraticBoundaryEquality) {
 
 }  // namespace natural_form_fixture
 /* ************************************************************************* */
+namespace multi_key_equality_fixture {
+
+const Vector2 p(1.0, 0.0), q(0.0, 1.0), c(2.0, 3.0);
+
+// Two unary costs 1/2||x0-p||^2 + 1/2||x1-q||^2 whose keys are coupled only by
+// the linear equality x0 + x1 = c, so the equality alone connects the keys.
+QcqpProblem CoupledProblem() {
+  NonlinearFactorGraph costs;
+  costs.emplace_shared<QpCost>(HessianFactor(
+      0, Matrix(Matrix2::Identity()), Vector(p), p.squaredNorm()));
+  costs.emplace_shared<QpCost>(HessianFactor(
+      1, Matrix(Matrix2::Identity()), Vector(q), q.squaredNorm()));
+  QcqpProblem problem(costs, NonlinearEqualityConstraints());
+  problem.addConstraint(LinearConstraint::Equal(
+      JacobianFactor(0, Matrix2::Identity(), 1, Matrix2::Identity(), c)));
+  return problem;
+}
+
+// Runs the monolithic and both chordal formulations on a problem.
+template <typename Check>
+void CheckAllFormulations(const QcqpProblem& problem, const Check& check) {
+  MosekMonolithicSDP monolithic(problem);
+  check(&monolithic);
+  for (const auto ordering :
+       {ChordalOrderingType::Colamd, ChordalOrderingType::Metis}) {
+    MosekChordalSDP chordal(problem, ordering);
+    check(&chordal);
+  }
+}
+
+// A linear equality over two keys is lowered to sum_i A_i X_ij = b y_j' for
+// each key j, and its keys share a chordal clique. The optimum shifts both
+// points by (c - p - q) / 2, so the objective is |c - p - q|^2 / 4.
+TEST(LiftedSDPs, MultiKeyLinearEquality) {
+  const QcqpProblem problem = CoupledProblem();
+  const Vector2 shift = (c - p - q) / 2.0;
+  const double expected = 0.25 * (c - p - q).squaredNorm();
+  CheckAllFormulations(problem, [&](auto* solver) {
+    EXPECT(solver->solve());
+    EXPECT_DOUBLES_EQUAL(expected, solver->objectiveValue(), 1e-6);
+    const Values values = solver->qcqpValues();
+    EXPECT(assert_equal(Vector2(p + shift), Vector(values.at<Matrix>(0).col(0)),
+                        1e-5));
+    EXPECT(assert_equal(Vector2(q + shift), Vector(values.at<Matrix>(1).col(0)),
+                        1e-5));
+    EXPECT_DOUBLES_EQUAL(expected, problem.costs().error(values), 1e-5);
+    EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(values),
+                         1e-5);
+    for (double ratio : solver->variableEVRs()) EXPECT(ratio > 1e4);
+  });
+}
+
+// A multi-key equality with a fixed variable keeps its free terms and moves the
+// fixed term to the right-hand side: x0 = v gives x1 = c - v.
+TEST(LiftedSDPs, MultiKeyLinearEqualityWithFixedVariable) {
+  const Vector2 v(0.5, -1.0);
+  QcqpProblem problem = CoupledProblem();
+  problem.addConstraint(
+      LinearConstraint::Equal(JacobianFactor(0, Matrix2::Identity(), v)));
+  const double expected =
+      0.5 * (v - p).squaredNorm() + 0.5 * (c - v - q).squaredNorm();
+  CheckAllFormulations(problem, [&](auto* solver) {
+    EXPECT(solver->solve());
+    EXPECT_DOUBLES_EQUAL(expected, solver->objectiveValue(), 1e-6);
+    const Values values = solver->qcqpValues();
+    EXPECT(assert_equal(v, Vector(values.at<Matrix>(0).col(0)), 1e-5));
+    EXPECT(assert_equal(Vector2(c - v), Vector(values.at<Matrix>(1).col(0)),
+                        1e-5));
+  });
+}
+
+// Keys of different sizes read rectangular off-diagonal blocks: with
+// [1 0] x0 - [0 1 0] x1 = 0, the first key's leading entry is tied to the
+// second key's middle entry.
+TEST(LiftedSDPs, MultiKeyLinearEqualityRectangularBlocks) {
+  const Vector2 target0(1.0, 0.0);
+  const Vector3 target1(0.0, 3.0, 0.0);
+  NonlinearFactorGraph costs;
+  costs.emplace_shared<QpCost>(HessianFactor(
+      0, Matrix(Matrix2::Identity()), Vector(target0), target0.squaredNorm()));
+  costs.emplace_shared<QpCost>(HessianFactor(
+      1, Matrix(Matrix3::Identity()), Vector(target1), target1.squaredNorm()));
+  QcqpProblem problem(costs, NonlinearEqualityConstraints());
+  problem.addConstraint(LinearConstraint::Equal(JacobianFactor(
+      0, Matrix(Vector2(1.0, 0.0).transpose()), 1,
+      Matrix(-Vector3(0.0, 1.0, 0.0).transpose()), Vector1::Zero())));
+  // The tied entries meet halfway: t = (1 + 3) / 2 = 2, costing 1/2 + 1/2.
+  CheckAllFormulations(problem, [&](auto* solver) {
+    EXPECT(solver->solve());
+    EXPECT_DOUBLES_EQUAL(1.0, solver->objectiveValue(), 1e-6);
+    const Values values = solver->qcqpValues();
+    EXPECT_DOUBLES_EQUAL(2.0, values.at<Matrix>(0)(0), 1e-5);
+    EXPECT_DOUBLES_EQUAL(2.0, values.at<Matrix>(1)(1), 1e-5);
+  });
+}
+
+}  // namespace multi_key_equality_fixture
+/* ************************************************************************* */
 namespace fixed_variable_fixture {
 
 constexpr size_t kCount = 4;
