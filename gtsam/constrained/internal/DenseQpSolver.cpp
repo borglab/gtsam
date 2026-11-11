@@ -66,7 +66,8 @@ struct DenseQpSolver::Impl {
   Matrix objective;
   bool objectiveReady = false, invertible = false, workingReady = false;
   Eigen::ColPivHouseholderQR<Matrix> objectiveQr;
-  Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> objectivePermutation;
+  // Match the QR index type: Eigen 5 uses lapack_int, 64-bit with MKL ILP64.
+  Eigen::ColPivHouseholderQR<Matrix>::PermutationType objectivePermutation;
   bool nativeCholesky = false;
   Matrix objectiveR, workingNormals, workingL;
   Vector workingD, workingMultipliers;
