@@ -1353,4 +1353,39 @@ class ScenarioRunner {
           gtsam::imuBias::ConstantBias()) const;
   gtsam::Matrix6 estimateNoiseCovariance(size_t N = 1000) const;
 };
+
+#include <gtsam/navigation/NhcFactor.h>
+virtual class NhcFactor : gtsam::NoiseModelFactor {
+  NhcFactor(gtsam::Key poseKey, gtsam::Key velocityKey,
+            const gtsam::Vector3& angularVelocity,
+            const gtsam::Vector3& leverArm,
+            const gtsam::noiseModel::Base* model);
+  NhcFactor(gtsam::Key poseKey, gtsam::Key velocityKey,
+            const gtsam::Vector3& angularVelocity,
+            const gtsam::Vector3& leverArm,
+            const gtsam::noiseModel::Base* model,
+            const gtsam::Rot3& mountRotation);
+
+  // Standard Interface
+  gtsam::Vector evaluateError(const gtsam::Pose3& pose,
+                              const gtsam::Vector3& velocity) const;
+  const gtsam::Vector3& angularVelocity() const;
+  const gtsam::Vector3& leverArm() const;
+  const gtsam::Rot3& mountRotation() const;
+};
+
+virtual class NhcFactorCalib : gtsam::NoiseModelFactor {
+  NhcFactorCalib(gtsam::Key poseKey, gtsam::Key velocityKey,
+                 gtsam::Key mountRotationKey,
+                 const gtsam::Vector3& angularVelocity,
+                 const gtsam::Vector3& leverArm,
+                 const gtsam::noiseModel::Base* model);
+
+  // Standard Interface
+  gtsam::Vector evaluateError(const gtsam::Pose3& pose,
+                              const gtsam::Vector3& velocity,
+                              const gtsam::Rot3& mountRotation) const;
+  const gtsam::Vector3& angularVelocity() const;
+  const gtsam::Vector3& leverArm() const;
+};
 }
