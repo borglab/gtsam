@@ -10,6 +10,7 @@ Unit tests for the non-holonomic constraint (NHC) factors.
 
 # pylint: disable=invalid-name, no-name-in-module, no-member
 
+import pickle
 import unittest
 
 import numpy as np
@@ -64,6 +65,39 @@ class TestNhcFactor(GtsamTestCase):
         values.insert(V(0), velocity)
         values.insert(M(0), self.mount_rotation)
         self.assertAlmostEqual(fixed.error(values), calib.error(values))
+
+    def test_calib_forward_backward_ambiguity(self):
+        """Flipping a pitched and yawed mount front to back keeps the error."""
+        mount_rotation = gtsam.Rot3.Ypr(0.08, -0.05, 0.0)
+        flipped_mount_rotation = mount_rotation.compose(gtsam.Rot3.Yaw(np.pi))
+        np.testing.assert_allclose(
+            flipped_mount_rotation.rotate(np.array([1.0, 0.0, 0.0])),
+            -mount_rotation.rotate(np.array([1.0, 0.0, 0.0])), atol=1e-12)
+
+        calib = gtsam.NhcFactorCalib(X(0), V(0), M(0), self.angular_velocity,
+                                     self.lever_arm, self.model)
+        velocity = np.array([2.0, 0.3, -0.1])
+        values = gtsam.Values()
+        values.insert(X(0), self.pose)
+        values.insert(V(0), velocity)
+        values.insert(M(0), mount_rotation)
+        flipped_values = gtsam.Values(values)
+        flipped_values.update(M(0), flipped_mount_rotation)
+        self.assertAlmostEqual(calib.error(values), calib.error(flipped_values))
+
+    @unittest.skipUnless(hasattr(gtsam.Pose3, "serialize"),
+                         "Serialization not enabled")
+    def test_serialization(self):
+        """Both factors round-trip through serialize() and pickle."""
+        factors = [
+            gtsam.NhcFactor(X(0), V(0), self.angular_velocity, self.lever_arm,
+                            self.model, self.mount_rotation),
+            gtsam.NhcFactorCalib(X(0), V(0), M(0), self.angular_velocity,
+                                 self.lever_arm, self.model),
+        ]
+        for factor in factors:
+            self.assertIsInstance(factor.serialize(), str)
+            self.gtsamAssertEquals(pickle.loads(pickle.dumps(factor)), factor)
 
 
 if __name__ == "__main__":

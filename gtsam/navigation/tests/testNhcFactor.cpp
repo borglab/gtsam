@@ -131,6 +131,36 @@ TEST(NhcFactor, LeverArmCompensatesTurn) {
   }
 }
 
+// A roof-mounted IMU sits well above the reference point, so rolling the body
+// moves it sideways. Only the vertical lever arm compensates that motion.
+TEST(NhcFactor, VerticalLeverArmCompensatesRoll) {
+  const double rollRate = 0.3;
+  const ConstantTwistScenario rollingScenario(Vector3(rollRate, 0.0, 0.15),
+                                              Vector3(kSpeed, 0.0, 0.0));
+  const Vector3 roofImuOffset(1.3, 0.4, 1.2);
+  const Vector3 horizontalImuOffset(1.3, 0.4, 0.0);
+  const SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.05);
+  for (double t = 0.0; t < 4.0; t += 0.5) {
+    const Vector3 omega = rollingScenario.omega_b(t);
+    const Pose3 vehiclePose = rollingScenario.pose(t);
+    const Pose3 imuPose = vehiclePose * Pose3(Rot3(), roofImuOffset);
+    const Vector3 imuVelocity = vehiclePose.rotation().rotate(
+        Vector3(kSpeed, 0.0, 0.0) + omega.cross(roofImuOffset));
+
+    const NhcFactor factor(X(0), V(0), omega, -roofImuOffset, model);
+    EXPECT(assert_equal(Vector(Vector2::Zero()),
+                        factor.evaluateError(imuPose, imuVelocity), 1e-9));
+
+    // Dropping the vertical lever arm leaves the roll-induced lateral velocity
+    // omega_x * height of the IMU above the reference point.
+    const NhcFactor horizontalOnly(X(0), V(0), omega, -horizontalImuOffset,
+                                   model);
+    EXPECT(assert_equal(Vector(Vector2(-rollRate * roofImuOffset.z(), 0.0)),
+                        horizontalOnly.evaluateError(imuPose, imuVelocity),
+                        1e-9));
+  }
+}
+
 }  // namespace turning_vehicle
 /* ************************************************************************* */
 namespace optimization {
@@ -186,6 +216,48 @@ TEST(NhcFactorCalib, RecoverMountRotation) {
   const Values result = LevenbergMarquardtOptimizer(graph, initial).optimize();
   EXPECT_DOUBLES_EQUAL(trueMountRotation.yaw(), result.at<Rot3>(M(0)).yaw(),
                        1e-3);
+}
+
+// A mounting that differs in both pitch and yaw has its forward axis recovered.
+// Rotating the initial estimate by pi in yaw converges to the flipped forward
+// axis instead, since the NHC cannot tell forward from backward.
+TEST(NhcFactorCalib, RecoverPitchAndYawMountingUpToForwardSign) {
+  const double speed = 4.0;
+  const Rot3 trueMountRotation = Rot3::Ypr(0.08, -0.05, 0.0);
+  const Unit3 trueForwardAxis(trueMountRotation.rotate(Vector3::UnitX()));
+
+  NonlinearFactorGraph graph;
+  Values initial;
+  const double headings[] = {0.0, 0.5, 1.0, -0.7, 2.0};
+  for (size_t i = 0; i < 5; ++i) {
+    const Pose3 pose(Rot3::Yaw(headings[i]), Point3::Zero());
+    const Vector3 worldVelocity =
+        pose.rotation().rotate(trueMountRotation.rotate(Vector3(speed, 0, 0)));
+    graph.addPrior(X(i), pose, noiseModel::Isotropic::Sigma(6, 1e-6));
+    graph.addPrior(V(i), worldVelocity, noiseModel::Isotropic::Sigma(3, 1e-6));
+    graph.emplace_shared<NhcFactorCalib>(
+        X(i), V(i), M(0), Vector3::Zero(), Vector3::Zero(),
+        noiseModel::Isotropic::Sigma(2, 1e-2));
+    initial.insert(X(i), pose);
+    initial.insert(V(i), worldVelocity);
+  }
+
+  // Returns the estimated forward axis bRv * e_x from an initial mounting,
+  // anchored by a loose prior that keeps the unobservable roll finite.
+  const auto estimatedForwardAxis = [&](const Rot3& initialMountRotation) {
+    NonlinearFactorGraph anchoredGraph = graph;
+    anchoredGraph.addPrior(M(0), initialMountRotation,
+                           noiseModel::Isotropic::Sigma(3, 1.0));
+    Values values = initial;
+    values.insert(M(0), initialMountRotation);
+    const Values result =
+        LevenbergMarquardtOptimizer(anchoredGraph, values).optimize();
+    return Unit3(result.at<Rot3>(M(0)).rotate(Vector3::UnitX()));
+  };
+
+  EXPECT(assert_equal(trueForwardAxis, estimatedForwardAxis(Rot3()), 1e-3));
+  EXPECT(assert_equal(Unit3(-trueForwardAxis.unitVector()),
+                      estimatedForwardAxis(Rot3::Yaw(M_PI)), 1e-3));
 }
 
 }  // namespace optimization

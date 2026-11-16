@@ -153,6 +153,14 @@ struct traits<NhcFactor> : public Testable<NhcFactor> {};
  * correlated with errors in the body attitude, so the attitude must be
  * observable from other measurements.
  *
+ * The NHC also cannot tell the vehicle's forward axis from its backward axis:
+ * a mounting rotated by pi about the vehicle's vertical or lateral axis, which
+ * flips the forward axis, gives exactly the same error. Besides the roll
+ * ambiguity, the cost therefore has two minima, and the optimizer converges to
+ * the one nearest the initial estimate. Initialize bRv within 90 degrees of the
+ * true forward axis, or add a measurement of the signed forward speed, such as
+ * wheel odometry.
+ *
  * @ingroup navigation
  */
 class GTSAM_EXPORT NhcFactorCalib

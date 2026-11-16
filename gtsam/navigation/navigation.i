@@ -1372,6 +1372,9 @@ virtual class NhcFactor : gtsam::NoiseModelFactor {
   const gtsam::Vector3& angularVelocity() const;
   const gtsam::Vector3& leverArm() const;
   const gtsam::Rot3& mountRotation() const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 
 virtual class NhcFactorCalib : gtsam::NoiseModelFactor {
@@ -1387,5 +1390,8 @@ virtual class NhcFactorCalib : gtsam::NoiseModelFactor {
                               const gtsam::Rot3& mountRotation) const;
   const gtsam::Vector3& angularVelocity() const;
   const gtsam::Vector3& leverArm() const;
+
+  // enabling serialization functionality
+  void serialize() const;
 };
 }
