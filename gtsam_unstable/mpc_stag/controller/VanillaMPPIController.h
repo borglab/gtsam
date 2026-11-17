@@ -45,6 +45,27 @@ struct VanillaMPPIParams : public GenericMPPIParams {
  * GaussianNoiseSampler built from the parameters' controlCovariance,
  * numSamples and seed.
  *
+ * Each iteration of optimize() is the information-theoretic MPPI update of
+ * [1, 2]. K control sequences v_i = ubar + eps_i are sampled, with eps_i
+ * drawn from N(0, controlCovariance) at every step, and each is rolled out
+ * and scored with S_i, the error of the future graph. The nominal controls
+ * become the weighted mean ubar = sum_i w_i v_i, with
+ * w_i = exp(-(S_i - min S) / lambda) normalized and
+ * lambda = 1 / inverseTemperature. The weights have no importance-sampling
+ * control-cost term: this is the case alpha = 1, so
+ * gamma = lambda (1 - alpha) = 0, of [2], where the base distribution is that
+ * of the current plan. Control costs are factors of the future graph on the
+ * sampled controls.
+ *
+ * REFERENCES:
+ * [1] G. Williams, N. Wagener, B. Goldfain, P. Drews, J. M. Rehg, B. Boots
+ *     and E. A. Theodorou, "Information Theoretic MPC for Model-Based
+ *     Reinforcement Learning", ICRA, pp. 1714-1721, 2017.
+ * [2] G. Williams, P. Drews, B. Goldfain, J. M. Rehg and E. A. Theodorou,
+ *     "Information-Theoretic Model Predictive Control: Theory and
+ *     Applications to Autonomous Driving", IEEE Transactions on Robotics,
+ *     34(6):1603-1622, 2018.
+ *
  * @tparam STATE    State type of the future graph's dynamics factors.
  * @tparam CONTROL  Control type, a fixed-size Eigen vector such as Vector2.
  */
