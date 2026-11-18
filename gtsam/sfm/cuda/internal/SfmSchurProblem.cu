@@ -296,7 +296,7 @@ __global__ void initializeDenseCameraSystemKernel(
     int numCameras, int cameraDim, const double* cameraNormalBlocks,
     const double* cameraGradient, double lambda,
     const double* dampingDiagonal, double* denseCameraSystem,
-    double* cameraRhs) {
+    double* cameraRhs, double* referenceDiagonal) {
   const int camera = blockIdx.x * blockDim.x + threadIdx.x;
   if (camera >= numCameras) return;
   const int base = 9 * camera;
@@ -312,6 +312,8 @@ __global__ void initializeDenseCameraSystemKernel(
                                              cameraDim)] +=
         lambda *
         (dampingDiagonal ? dampingDiagonal[base + row] : 1.0);
+    referenceDiagonal[base + row] = denseCameraSystem[denseColumnMajorIndex(
+        base + row, base + row, cameraDim)];
   }
 }
 
@@ -402,6 +404,7 @@ void checkSchurInputs(const DeviceValues& values,
 
 struct SfmSchurProblem::Impl {
   DeviceArray<double> denseCameraSystem;
+  DeviceArray<double> cameraReferenceDiagonal;
   DeviceArray<double> cameraRhs;
   SfmProjectionLinearization linearization;
   SfmSchurBlocks blocks;
@@ -537,6 +540,7 @@ struct SfmSchurProblem::Impl {
     denseCameraSystem.resize(static_cast<size_t>(cameraDim) *
                              static_cast<size_t>(cameraDim));
     cameraRhs.resize(static_cast<size_t>(cameraDim));
+    cameraReferenceDiagonal.resize(static_cast<size_t>(cameraDim));
     singularPointBlocks.resize(1);
     denseCameraSystem.zero(stream);
     cameraRhs.zero(stream);
@@ -551,7 +555,8 @@ struct SfmSchurProblem::Impl {
           numCameras, cameraDim, blocks.cameraNormalBlocks.data(),
           blocks.cameraGradient.data(), lambda,
           dampingDiagonal ? dampingDiagonal->data() : nullptr,
-          denseCameraSystem.data(), cameraRhs.data());
+          denseCameraSystem.data(), cameraRhs.data(),
+          cameraReferenceDiagonal.data());
       GTSAM_CUDA_CHECK(cudaGetLastError());
     }
 
@@ -588,7 +593,8 @@ struct SfmSchurProblem::Impl {
     }
 
     ++denseAssemblyCount;
-    return {cameraDim, cameraDim, denseCameraSystem.data(), cameraRhs.data()};
+    return {cameraDim, cameraDim, denseCameraSystem.data(), cameraRhs.data(),
+            cameraReferenceDiagonal.data()};
   }
 
   DeviceSparseSpdSystem& prepareSparse(
