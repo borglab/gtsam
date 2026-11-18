@@ -22,6 +22,8 @@
 
 #include <gtsam/constrained/internal/ActiveSetSolverInternal.h>
 #include <gtsam/constrained/internal/SparseDualSolver.h>
+#include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/JacobianFactor.h>
 
 #include <algorithm>
 #include <cmath>
@@ -72,6 +74,36 @@ bool scaledGapSatisfied(double gap, double quadratic, double linear,
       (1 + std::abs(quadratic) + std::abs(linear) + dualRhsMagnitude);
   return std::isfinite(gap) && std::isfinite(scale) &&
          std::isfinite(roundoff) && std::abs(gap) <= tolerance * scale + roundoff;
+}
+
+/* ************************************************************************* */
+// Add the magnitudes of the products summed into each objective-gradient block,
+// |A_k|^T (|A| |x| + |b|) or |G_k| |x| + |g_k|. They bound the roundoff in
+// evaluating that gradient. Other factor types add no allowance.
+void addGradientMagnitudes(const GaussianFactor& factor,
+                           const VectorValues& values,
+                           VectorValues* magnitudes) {
+  if (const auto* jacobian = dynamic_cast<const JacobianFactor*>(&factor)) {
+    const JacobianFactor whitened = jacobian->whiten();
+    Vector residual = whitened.getb().cwiseAbs();
+    for (auto key = whitened.begin(); key != whitened.end(); ++key)
+      residual.noalias() +=
+          whitened.getA(key).cwiseAbs() * values.at(*key).cwiseAbs();
+    for (auto key = whitened.begin(); key != whitened.end(); ++key)
+      magnitudes->at(*key).noalias() +=
+          whitened.getA(key).cwiseAbs().transpose() * residual;
+  } else if (const auto* hessian =
+                 dynamic_cast<const HessianFactor*>(&factor)) {
+    for (auto row = hessian->begin(); row != hessian->end(); ++row) {
+      Vector& magnitude = magnitudes->at(*row);
+      magnitude += hessian->linearTerm(row).cwiseAbs();
+      for (auto column = hessian->begin(); column != hessian->end(); ++column) {
+        const Matrix block = hessian->info().block(row - hessian->begin(),
+                                                   column - hessian->begin());
+        magnitude.noalias() += block.cwiseAbs() * values.at(*column).cwiseAbs();
+      }
+    }
+  }
 }
 
 /* ************************************************************************* */
@@ -406,19 +438,22 @@ bool ActiveSetSolver::originalQpKktSatisfied(
   if (!primalFeasible(constraints_.equalities, constraints_.inequalities,
                       values, params_->feasibilityTolerance))
     return false;
-  VectorValues stationarity;
+  VectorValues stationarity, magnitudes;
   double gap = 0.0, quadratic = 0.0, linear = 0.0;
   double dualRhs = 0.0, dualRhsMagnitude = 0.0;
   for (const auto& [key, _] : keyDims_) {
     const Vector gradient = originalGradient ? originalGradient->at(key)
                                              : objectiveGradient(key, values);
     stationarity.insert(key, gradient);
+    magnitudes.insert(key, Vector::Zero(gradient.size()));
     gap += values.at(key).dot(gradient);
     const double linearTerm = qpGradientAtZero_.exists(key)
         ? values.at(key).dot(qpGradientAtZero_.at(key)) : 0.0;
     linear += linearTerm;
     quadratic += values.at(key).dot(gradient) - linearTerm;
   }
+  for (const auto& factor : qpCostGraph_)
+    addGradientMagnitudes(*factor, values, &magnitudes);
 
   auto subtractRow = [&](const ConstraintRow& row) {
     if (!duals.exists(row.multiplierKey)) return;
@@ -427,17 +462,23 @@ bool ActiveSetSolver::originalQpKktSatisfied(
     gap -= rhsTerm;
     dualRhs += rhsTerm;
     dualRhsMagnitude += std::abs(rhsTerm);
-    for (auto key = row.factor->begin(); key != row.factor->end(); ++key)
+    for (auto key = row.factor->begin(); key != row.factor->end(); ++key) {
       stationarity.at(*key) -=
           row.factor->getA(key).transpose() * Vector::Constant(1, multiplier);
+      magnitudes.at(*key) += row.factor->getA(key).transpose().cwiseAbs() *
+                             Vector::Constant(1, std::abs(multiplier));
+    }
   };
   for (const ConstraintRow& row : constraints_.equalities) subtractRow(row);
   for (size_t row = 0; row < constraints_.inequalities.size(); ++row)
     if (activeRows[row]) subtractRow(constraints_.inequalities[row]);
 
-  for (const auto& [_, residual] : stationarity)
+  // Like the gap check, allow the roundoff in summing the gradient's products.
+  const double roundoff = 64 * std::numeric_limits<double>::epsilon();
+  for (const auto& [key, residual] : stationarity)
     if (!residual.allFinite() ||
-        residual.lpNorm<Eigen::Infinity>() > params_->multiplierTolerance)
+        (residual.cwiseAbs() - roundoff * magnitudes.at(key)).maxCoeff() >
+            params_->multiplierTolerance)
       return false;
   return scaledGapSatisfied(gap, quadratic, linear, dualRhs, dualRhsMagnitude,
                              params_->multiplierTolerance);
