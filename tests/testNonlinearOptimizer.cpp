@@ -1288,6 +1288,36 @@ TEST(NonlinearOptimizer, SingularGraphReportsIndeterminateSystem) {
   }
 }
 
+// Sequential elimination reports a missing gauge that only an earlier pose's
+// elimination reveals, as multifrontal elimination already does.
+TEST(NonlinearOptimizer, SquareLoopWithoutPriorReportsIndeterminateSystem) {
+  const auto model = noiseModel::Diagonal::Sigmas(Vector3(0.1, 0.1, 0.05));
+  NonlinearFactorGraph graph;
+  for (size_t i = 0; i < 4; ++i) {
+    const Pose2 measured(2.0, i < 3 ? 0.0 : 0.1, M_PI_2);
+    graph.emplace_shared<BetweenFactor<Pose2>>(i, (i + 1) % 4, measured,
+                                               model);
+  }
+  Values initial;
+  initial.insert(0, Pose2(0.1, -0.1, 0.1));
+  initial.insert(1, Pose2(2.1, 0.1, 1.5));
+  initial.insert(2, Pose2(1.9, 2.1, 3.1));
+  initial.insert(3, Pose2(-0.1, 1.9, -1.6));
+  for (const std::string solver : {"SEQUENTIAL_QR", "SEQUENTIAL_CHOLESKY",
+                                  "MULTIFRONTAL_QR", "MULTIFRONTAL_CHOLESKY"}) {
+    GaussNewtonParams gnParams;
+    gnParams.setOrdering(Ordering{0, 1, 2, 3});
+    gnParams.setLinearSolverType(solver);
+    CHECK_EXCEPTION(GaussNewtonOptimizer(graph, initial, gnParams).iterate(),
+                    IndeterminateSystemException);
+    DoglegParams dlParams;
+    dlParams.setOrdering(Ordering{0, 1, 2, 3});
+    dlParams.setLinearSolverType(solver);
+    CHECK_EXCEPTION(DoglegOptimizer(graph, initial, dlParams).iterate(),
+                    IndeterminateSystemException);
+  }
+}
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
