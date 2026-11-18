@@ -193,5 +193,135 @@ class TestWnoaQcqp(unittest.TestCase):
             gtsam.QcqpProblem(motion, 2)
 
 
+def fix_homogeneous_coordinate(problem, keys):
+    """Pin h = 1 on every lifted position, removing the per-point sign gauge."""
+    h = np.array([[1.0, 0.0, 0.0, 0.0, 0.0]])
+    for key in keys:
+        problem.addConstraint(gtsam.LinearConstraint.Equal(
+            gtsam.JacobianFactor(key, h, np.ones(1), gtsam.noiseModel.Unit.Create(1))))
+
+
+class TestWnoaFullGp(unittest.TestCase):
+    """Interpolated and full Gaussian process graphs from one measurement graph."""
+
+    Q = np.array([0.2, 0.3, 0.25])
+    LANDMARKS = [np.array(p, dtype=float) for p in ((0, 0, 0), (3, 0, 0), (0, 3, 0), (0, 0, 3))]
+    KNOTS = {gtsam.StateData(pose_key(i), velocity_key(i), float(i)) for i in range(3)}
+    MEASUREMENT_STATES = {gtsam.StateData(pose_key(10 + i), velocity_key(10 + i), t)
+                          for i, t in enumerate((0.25, 0.5, 0.75, 1.4))}
+    ALL_STATES = KNOTS | MEASUREMENT_STATES
+
+    @staticmethod
+    def true_position(t):
+        return np.array([0.6 + 0.35 * t, -0.2 + 0.1 * t * t, 0.7 - 0.15 * t])
+
+    def measurement_graph(self):
+        """Squared ranges from the first knot and each measurement-time state, on their own keys."""
+        graph = gtsam.NonlinearFactorGraph()
+        first_knot = min(self.KNOTS, key=lambda state: state.time)
+        for state in [first_knot] + sorted(self.MEASUREMENT_STATES, key=lambda s: s.time):
+            for i, landmark in enumerate(self.LANDMARKS):
+                measured = np.linalg.norm(self.true_position(state.time) - landmark) + (0.01 if i % 2 else -0.01)
+                graph.add(gu.KnownLandmarkSquaredRangeFactorAugmentedPoint3(
+                    state.pose, landmark, float(measured), gtsam.noiseModel.Isotropic.Sigma(1, 0.05)))
+        return graph
+
+    def knot_values(self):
+        values = gtsam.Values()
+        for state in self.KNOTS:
+            gu.insertAugmentedPoint3(state.pose, gu.AugmentedPoint3(
+                self.true_position(state.time) + np.array([0.1, -0.05, 0.08])), values)
+            values.insert(state.velocity, np.array([0.3, 0.2, -0.1]))
+        return values
+
+    def graphs(self):
+        measurements = self.measurement_graph()
+        interpolated = gu.interpolateFactorGraph3(
+            measurements, self.KNOTS, self.MEASUREMENT_STATES, self.Q, True)
+        full_gp = gu.interpolateFactorGraph3(measurements, self.ALL_STATES, set(), self.Q)
+        return interpolated, full_gp
+
+    def lift(self, values):
+        lifted = gtsam.Values()
+        for state in self.ALL_STATES:
+            gu.insertQcqpValue3(state.pose, gu.atAugmentedPoint3(state.pose, values), lifted)
+            # atPoint3 reads both Python-inserted and C++-inserted (Vector3) velocities.
+            lifted.insert(state.velocity, values.atPoint3(state.velocity).reshape(3, 1))
+        return lifted
+
+    def test_state_partitions(self):
+        interpolated, full_gp = self.graphs()
+        self.assertEqual(interpolated.size(), 2 + 16 + 4)
+        self.assertEqual(interpolated.keys().size(), 6)
+        self.assertEqual(full_gp.size(), 6 + 20)
+        self.assertEqual(full_gp.keys().size(), 14)
+
+    def test_conditional_mean_matches_fixed_noise_interpolation(self):
+        interpolated, full_gp = self.graphs()
+        knots = self.knot_values()
+        conditional_mean = gu.updateInterpValues3(
+            interpolated, knots, self.KNOTS, self.MEASUREMENT_STATES, self.Q)
+        self.assertGreater(interpolated.error(knots), 1.0)
+        self.assertAlmostEqual(full_gp.error(conditional_mean) / interpolated.error(knots), 1.0, places=10)
+
+    def test_qcqp_matches_nonlinear_with_unary_constraints(self):
+        _, full_gp = self.graphs()
+        problem = gtsam.QcqpProblem(full_gp)
+        # Only the two lift equalities of each AugmentedPoint: no linear coupling rows.
+        self.assertEqual(problem.dim()[1:], (2 * len(self.ALL_STATES), 0))
+        values = gtsam.Values()
+        for state in self.ALL_STATES:
+            gu.insertAugmentedPoint3(state.pose, gu.AugmentedPoint3(
+                self.true_position(state.time) + np.array([0.05 * state.time, -0.04, 0.03])), values)
+            values.insert(state.velocity, np.array([0.3, 0.1 * state.time, -0.2]))
+        cost, equality_violation, _ = problem.evaluate(self.lift(values))
+        self.assertGreater(cost, 1.0)
+        self.assertAlmostEqual(cost / full_gp.error(values), 1.0, places=10)
+        self.assertAlmostEqual(equality_violation, 0.0, places=12)
+
+    def test_augmented_lagrangian_matches_levenberg_marquardt(self):
+        interpolated, full_gp = self.graphs()
+        initial = gu.updateInterpValues3(
+            interpolated, self.knot_values(), self.KNOTS, self.MEASUREMENT_STATES, self.Q)
+        nonlinear = gtsam.LevenbergMarquardtOptimizer(full_gp, initial).optimize()
+
+        problem = gtsam.QcqpProblem(full_gp)
+        fix_homogeneous_coordinate(problem, [state.pose for state in self.ALL_STATES])
+        params = gtsam.AugmentedLagrangianParams()
+        params.updatePolicy = gtsam.AugmentedLagrangianUpdatePolicy.Aggressive
+        params.maxIterations = 200
+        params.absoluteViolationTolerance = 1e-9
+        params.relativeViolationTolerance = 1e-9
+        params.relativeCostTolerance = 1e-12
+        params.absoluteStationarityTolerance = 1e-8
+        solved = gtsam.AugmentedLagrangianOptimizer(problem, self.lift(initial), params).optimize()
+
+        cost, equality_violation, _ = problem.evaluate(solved)
+        self.assertAlmostEqual(equality_violation, 0.0, places=6)
+        self.assertAlmostEqual(cost, full_gp.error(nonlinear), places=6)
+        for state in self.KNOTS:
+            np.testing.assert_allclose(
+                gu.fromQcqpValue3(solved.atMatrix(state.pose)).vector().reshape(3),
+                gu.atAugmentedPoint3(state.pose, nonlinear).vector().reshape(3), atol=1e-4)
+            np.testing.assert_allclose(
+                # A (3, 1) array inserted from Python is stored as a Vector.
+                solved.atVector(state.velocity),
+                nonlinear.atPoint3(state.velocity), atol=1e-4)
+
+    @unittest.skipUnless(hasattr(gtsam, "MosekMonolithicSDP"), "GTSAM was built without MOSEK support")
+    def test_sdp_accepts_full_gp_qcqp(self):
+        interpolated, full_gp = self.graphs()
+        initial = gu.updateInterpValues3(
+            interpolated, self.knot_values(), self.KNOTS, self.MEASUREMENT_STATES, self.Q)
+        nonlinear = gtsam.LevenbergMarquardtOptimizer(full_gp, initial).optimize()
+        problem = gtsam.QcqpProblem(full_gp)
+        fix_homogeneous_coordinate(problem, [state.pose for state in self.ALL_STATES])
+        # The relaxation's optimum is a lower bound on any feasible cost; tightness is not asserted.
+        for sdp in (gtsam.MosekMonolithicSDP(problem),
+                    gtsam.MosekChordalSDP(problem, gtsam.ChordalOrderingType.Colamd)):
+            sdp.solve()
+            self.assertLessEqual(sdp.objectiveValue(), full_gp.error(nonlinear) * (1 + 1e-6) + 1e-9)
+
+
 if __name__ == '__main__':
     unittest.main()

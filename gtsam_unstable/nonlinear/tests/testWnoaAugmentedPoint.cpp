@@ -15,6 +15,7 @@
 
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/constrained/AugmentedLagrangianOptimizer.h>
 #include <gtsam/constrained/QcqpProblem.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
@@ -26,8 +27,10 @@
 #include <gtsam/nonlinear/WnoaInterpFactor.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam_unstable/geometry/AugmentedPoint.h>
+#include <gtsam_unstable/nonlinear/WnoaAugmentedPoint.h>
 #include <gtsam_unstable/slam/KnownLandmarkSquaredRangeFactor.h>
 
+#include <algorithm>
 #include <array>
 #include <set>
 #include <vector>
@@ -390,6 +393,201 @@ TEST(WnoaAugmentedPointQcqp, RejectsUnsupportedConfigurations) {
 }
 
 }  // namespace qcqp_fixture
+/* ************************************************************************* */
+namespace full_gp_fixture {
+
+using Point = AugmentedPoint<3>;
+
+const Vector3 kPsd(0.2, 0.3, 0.25);
+const std::array<Vector3, 4> kLandmarks = {
+    Vector3(0.0, 0.0, 0.0), Vector3(3.0, 0.0, 0.0), Vector3(0.0, 3.0, 0.0),
+    Vector3(0.0, 0.0, 3.0)};
+
+// Knots at t = 0, 1, 2, with three measurement times in the first interval and
+// one in the second.
+const std::set<StateData> kKnots = {StateData(P(0), V(0), 0.0),
+                                    StateData(P(1), V(1), 1.0),
+                                    StateData(P(2), V(2), 2.0)};
+const std::set<StateData> kMeasurementStates = {
+    StateData(P(10), V(10), 0.25), StateData(P(11), V(11), 0.5),
+    StateData(P(12), V(12), 0.75), StateData(P(13), V(13), 1.4)};
+
+Vector3 truePosition(double t) {
+  return Vector3(0.6 + 0.35 * t, -0.2 + 0.1 * t * t, 0.7 - 0.15 * t);
+}
+
+// Every distinct state: the knots and the measurement-time states.
+std::set<StateData> allStates() {
+  std::set<StateData> states = kKnots;
+  states.insert(kMeasurementStates.begin(), kMeasurementStates.end());
+  return states;
+}
+
+// Squared ranges to all landmarks from the first knot and from each
+// measurement-time state, each on the state's own key.
+NonlinearFactorGraph measurementGraph() {
+  NonlinearFactorGraph graph;
+  auto addRanges = [&graph](const StateData& state) {
+    for (size_t i = 0; i < kLandmarks.size(); ++i) {
+      const double noise = (i % 2 == 0) ? 0.01 : -0.01;
+      graph.emplace_shared<KnownLandmarkSquaredRangeFactor<Point>>(
+          state.pose, kLandmarks[i],
+          (truePosition(state.time) - kLandmarks[i]).norm() + noise,
+          noiseModel::Isotropic::Sigma(1, 0.05));
+    }
+  };
+  addRanges(*kKnots.begin());
+  for (const StateData& state : kMeasurementStates) addRanges(state);
+  return graph;
+}
+
+// Knot values offset from the true trajectory.
+Values knotValues() {
+  Values values;
+  for (const StateData& state : kKnots) {
+    values.insert(state.pose,
+                  Point(truePosition(state.time) + Vector3(0.1, -0.05, 0.08)));
+    values.insert(state.velocity, Vector3(0.3, 0.2, -0.1));
+  }
+  return values;
+}
+
+// Exact D=1 QCQP vectors of the states' positions and velocities.
+Values lift(const Values& typed) {
+  Values lifted;
+  for (const StateData& state : allStates()) {
+    insertQcqpValue(state.pose, typed.at<Point>(state.pose), lifted);
+    insertQcqpValue(state.velocity, typed.at<Vector3>(state.velocity), lifted);
+  }
+  return lifted;
+}
+
+template <class FACTOR>
+size_t countFactors(const NonlinearFactorGraph& graph) {
+  return std::count_if(graph.begin(), graph.end(), [](const auto& factor) {
+    return std::dynamic_pointer_cast<FACTOR>(factor) != nullptr;
+  });
+}
+
+// Verifies the two partitions of one measurement graph: interpolating the
+// measurement-time states wraps their factors, while estimating every state
+// keeps the factors on their own states and links consecutive states.
+TEST(WnoaAugmentedPointFullGp, StatePartitions) {
+  const NonlinearFactorGraph measurements = measurementGraph();
+  const NonlinearFactorGraph interpolated = interpolateFactorGraph<3>(
+      measurements, kKnots, kMeasurementStates, kPsd, true);
+  EXPECT_LONGS_EQUAL(2, countFactors<WnoaMotionFactor<Point>>(interpolated));
+  EXPECT_LONGS_EQUAL(16, countFactors<WnoaInterpFactor<Point>>(interpolated));
+  EXPECT_LONGS_EQUAL(6, interpolated.keys().size());
+
+  const NonlinearFactorGraph fullGp =
+      interpolateFactorGraph<3>(measurements, allStates(), {}, kPsd);
+  EXPECT_LONGS_EQUAL(6, countFactors<WnoaMotionFactor<Point>>(fullGp));
+  EXPECT_LONGS_EQUAL(0, countFactors<WnoaInterpFactor<Point>>(fullGp));
+  EXPECT_LONGS_EQUAL(
+      20, countFactors<KnownLandmarkSquaredRangeFactor<Point>>(fullGp));
+  EXPECT_LONGS_EQUAL(14, fullGp.keys().size());
+}
+
+// Verifies that the full Gaussian process objective, with the measurement-time
+// states at their WNOA conditional mean, equals the fixed-noise interpolated
+// objective, and that the motion chain then equals the knot prior, so the
+// interval prior is not counted twice.
+TEST(WnoaAugmentedPointFullGp, ConditionalMeanMatchesFixedNoiseInterpolation) {
+  const NonlinearFactorGraph measurements = measurementGraph();
+  const NonlinearFactorGraph interpolated = interpolateFactorGraph<3>(
+      measurements, kKnots, kMeasurementStates, kPsd, true);
+  const NonlinearFactorGraph fullGp =
+      interpolateFactorGraph<3>(measurements, allStates(), {}, kPsd);
+  const Values knots = knotValues();
+  const Values conditionalMean = updateInterpValues<3>(
+      interpolated, knots, kKnots, kMeasurementStates, kPsd);
+
+  const double interpolatedError = interpolated.error(knots);
+  CHECK(interpolatedError > 1.0);
+  EXPECT_DOUBLES_EQUAL(interpolatedError, fullGp.error(conditionalMean),
+                       1e-9 * interpolatedError);
+
+  const NonlinearFactorGraph knotPrior =
+      interpolateFactorGraph<3>(NonlinearFactorGraph(), kKnots, {}, kPsd);
+  const NonlinearFactorGraph chainPrior =
+      interpolateFactorGraph<3>(NonlinearFactorGraph(), allStates(), {}, kPsd);
+  CHECK(knotPrior.error(knots) > 1e-3);
+  EXPECT_DOUBLES_EQUAL(knotPrior.error(knots),
+                       chainPrior.error(conditionalMean), 1e-9);
+}
+
+// Verifies that the full Gaussian process graph converts to a QCQP with the
+// same objective and only single-key constraints: the two lift equalities of
+// each AugmentedPoint.
+TEST(WnoaAugmentedPointFullGp, QcqpMatchesNonlinearWithUnaryConstraints) {
+  const NonlinearFactorGraph fullGp =
+      interpolateFactorGraph<3>(measurementGraph(), allStates(), {}, kPsd);
+  const QcqpProblem problem(fullGp);
+  EXPECT_LONGS_EQUAL(2 * allStates().size(), problem.eConstraints().size());
+  for (const auto& constraint : problem.eConstraints()) {
+    EXPECT_LONGS_EQUAL(1, constraint->size());
+  }
+  EXPECT_LONGS_EQUAL(0, problem.iConstraints().size());
+
+  Values values;
+  for (const StateData& state : allStates()) {
+    values.insert(state.pose, Point(truePosition(state.time) +
+                                    Vector3(0.05 * state.time, -0.04, 0.03)));
+    values.insert(state.velocity, Vector3(0.3, 0.1 * state.time, -0.2));
+  }
+  const Values lifted = lift(values);
+  const double error = fullGp.error(values);
+  CHECK(error > 1.0);
+  EXPECT_DOUBLES_EQUAL(error, problem.costs().error(lifted), 1e-9 * error);
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(lifted),
+                       1e-12);
+}
+
+// Verifies that the full Gaussian process QCQP, solved locally with an
+// augmented Lagrangian and h = 1 on every point, reproduces the
+// Levenberg-Marquardt solution of the nonlinear full Gaussian process problem.
+TEST(WnoaAugmentedPointFullGp, AugmentedLagrangianMatchesLevenbergMarquardt) {
+  const NonlinearFactorGraph measurements = measurementGraph();
+  const NonlinearFactorGraph interpolated = interpolateFactorGraph<3>(
+      measurements, kKnots, kMeasurementStates, kPsd, true);
+  const NonlinearFactorGraph fullGp =
+      interpolateFactorGraph<3>(measurements, allStates(), {}, kPsd);
+  const Values initial = updateInterpValues<3>(
+      interpolated, knotValues(), kKnots, kMeasurementStates, kPsd);
+  const Values nonlinear =
+      LevenbergMarquardtOptimizer(fullGp, initial).optimize();
+
+  QcqpProblem problem(fullGp);
+  Matrix homogeneous = Matrix::Zero(1, 5);
+  homogeneous(0, 0) = 1.0;
+  for (const StateData& state : allStates()) {
+    problem.addConstraint(LinearConstraint::Equal(JacobianFactor(
+        state.pose, homogeneous, Vector::Ones(1), noiseModel::Unit::Create(1))));
+  }
+  auto params = std::make_shared<AugmentedLagrangianParams>();
+  params->updatePolicy = AugmentedLagrangianUpdatePolicy::Aggressive;
+  params->maxIterations = 200;
+  params->absoluteViolationTolerance = 1e-9;
+  params->relativeViolationTolerance = 1e-9;
+  params->relativeCostTolerance = 1e-12;
+  params->absoluteStationarityTolerance = 1e-8;
+  const Values solved =
+      AugmentedLagrangianOptimizer(problem, lift(initial), params).optimize();
+
+  EXPECT_DOUBLES_EQUAL(0.0, problem.eConstraints().violationNorm(solved), 1e-6);
+  EXPECT_DOUBLES_EQUAL(fullGp.error(nonlinear), problem.costs().error(solved),
+                       1e-6);
+  for (const StateData& state : kKnots) {
+    EXPECT(assert_equal(nonlinear.at<Point>(state.pose),
+                        fromQcqpValue<Point>(solved.at<Matrix>(state.pose)),
+                        1e-4));
+    const Vector3 velocity = solved.at<Matrix>(state.velocity).col(0);
+    EXPECT(assert_equal(nonlinear.at<Vector3>(state.velocity), velocity, 1e-4));
+  }
+}
+
+}  // namespace full_gp_fixture
 /* ************************************************************************* */
 int main() {
   TestResult tr;
