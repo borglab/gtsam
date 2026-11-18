@@ -146,8 +146,8 @@ fprintf('  Range-only optimization: passed (final error %.3g)\n', finalError);
 end
 
 function testQcqpConversion()
-% Motion and interpolated range factors convert to QCQPs; unsupported
-% configurations are rejected with catchable errors.
+% Motion factors convert to QCQPs; interpolated factors have no QCQP
+% conversion, and unsupported configurations raise catchable errors.
 left = gtsam.StateData(uint64(1), uint64(2), 0.0);
 mid = gtsam.StateData(uint64(5), uint64(6), 0.5);
 right = gtsam.StateData(uint64(3), uint64(4), 1.0);
@@ -164,19 +164,12 @@ inner = gtsam.KnownLandmarkSquaredRangeFactorAugmentedPoint3( ...
 interpolated = gtsam.NonlinearFactorGraph();
 interpolated.add(gtsam.MatlabWnoaInterpFactorAugmentedPoint3( ...
     inner, left, mid, right, q, true, true));
-assert(isa(gtsam.QcqpProblem(interpolated), 'gtsam.QcqpProblem'));
-assertThrows(@() gtsam.QcqpProblem(interpolated, 2), 'only supports D=1');
-
-% Interpolation noise that depends on the linearization point has no exact QCQP.
-adaptive = gtsam.NonlinearFactorGraph();
-adaptive.add(gtsam.MatlabWnoaInterpFactorAugmentedPoint3( ...
-    inner, left, mid, right, q, false, true));
-assertThrows(@() gtsam.QcqpProblem(adaptive), 'fixed_noise_model = true');
+assertThrows(@() gtsam.QcqpProblem(interpolated), 'not implemented');
 fprintf('  QCQP conversion and rejected configurations: passed\n');
 end
 
 function testQcqpLiftedValues()
-% The lifted position [h; x; u] used by the interpolated-range QCQP round-trips.
+% The lifted position [h; x; u] used by the squared-range QCQP round-trips.
 point = gtsam.AugmentedPoint3([1; -2; 3]);
 lifted = gtsam.qcqpValue3(point);
 assert(isequal(size(lifted), [5, 1]), 'Lifted position must have 5 rows.');
