@@ -11,10 +11,16 @@ Author: Frank Dellaert & Joel Truher
 # pylint: disable=invalid-name, no-name-in-module
 
 import unittest
-import numpy as np
 
-from gtsam import Pose3, Rot3, Point3
-from gtsam.utils.numerical_derivative import numericalDerivative11, numericalDerivative21, numericalDerivative22, numericalDerivative33
+import numpy as np
+from gtsam import Point3, Pose3, Rot3
+from gtsam.utils.numerical_derivative import (
+    local,
+    numericalDerivative11,
+    numericalDerivative21,
+    numericalDerivative22,
+    numericalDerivative33,
+)
 
 
 class TestNumericalDerivatives(unittest.TestCase):
@@ -34,6 +40,43 @@ class TestNumericalDerivatives(unittest.TestCase):
         np.testing.assert_allclose(
             numerical_derivative, analytical_derivative, rtol=1e-5
         )
+
+    def test_scalar_inputs(self):
+        # Retraction must keep scalar inputs scalar for Python and NumPy numbers.
+        for scalar_type in (float, int, np.float32, np.float64, np.int64):
+            for value in (0, -3, 3):
+                with self.subTest(scalar_type=scalar_type, value=value):
+                    x = scalar_type(value)
+                    actual = numericalDerivative11(lambda value: value ** 2, x)
+                    np.testing.assert_allclose(actual, [[2.0 * value]], rtol=1e-5)
+
+    def test_local_mixed_scalar_types(self):
+        # Perturbations can promote integer or low-precision scalar callbacks.
+        scalar_types = (float, int, np.float32, np.float64, np.int64)
+        for first_type in scalar_types:
+            for second_type in scalar_types:
+                with self.subTest(first_type=first_type, second_type=second_type):
+                    np.testing.assert_array_equal(
+                        local(first_type(-1), second_type(2)), [3.0]
+                    )
+
+    def test_local_rejects_scalar_array_mismatch(self):
+        for a, b in ((1.0, np.array([1.0])), (np.array([1.0]), 1.0)):
+            with self.subTest(a=type(a), b=type(b)), self.assertRaises(TypeError):
+                local(a, b)
+
+    def test_scalar_input_with_scalar_only_function(self):
+        # A scalar callback must not receive a one-element array.
+        def square(value):
+            self.assertTrue(np.isscalar(value))
+            return value ** 2
+
+        np.testing.assert_allclose(numericalDerivative11(square, 3.0), [[6.0]])
+
+    def test_scalar_input_vector_output(self):
+        # Scalar variables can also be used in vector-valued custom residuals.
+        actual = numericalDerivative11(lambda value: np.array([value, value ** 2]), 3.0)
+        np.testing.assert_allclose(actual, [[1.0], [6.0]])
 
     def test_numericalDerivative11_vector(self):
         # Test function of one vector variable
