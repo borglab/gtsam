@@ -45,4 +45,6 @@ TODO: the dimensions seem to be hardcoded and the types defined in the SmartFact
 
 See the [3D localization example](../../python/gtsam_unstable/examples/slam/KnownLandmarkSquaredRangeLocalizationExample.ipynb) for nonlinear, QCQP, and optional SDP solutions.
 
-The MATLAB regression tests are in `matlab/gtsam_unstable_tests/`; add that directory to the MATLAB path and run `testAugmentedPoint` and `testKnownLandmarkSquaredRangeFactor` after building both toolboxes.
+The [continuous-time range-only example](doc/RangeOnlyWnoaAugmentedPoint.ipynb) uses the same factor with a WNOA motion prior. It builds two problems from one set of range factors with `interpolateFactorGraph3`: an interpolated problem over the knot states only, solved with Levenberg–Marquardt, and a full Gaussian-process problem with a state at every measurement time, whose QCQP has only single-variable constraints and whose semidefinite relaxation is solved when MOSEK is available.
+
+The MATLAB regression tests are in `matlab/gtsam_unstable_tests/`; add that directory to the MATLAB path and run `testAugmentedPoint`, `testKnownLandmarkSquaredRangeFactor`, and `testWnoaAugmentedPoint` after building both toolboxes.

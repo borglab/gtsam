@@ -156,6 +156,9 @@ struct traits<AugmentedPoint<N>>
   /// Number of rows in the D=1 lifted QCQP variable.
   static constexpr int QcqpVectorDim = N + 2;
 
+  /// Row of the lifted variable [h, x, u] where the coordinates x start.
+  static constexpr int QcqpCoordinateOffset = 1;
+
   /**
    * Lift a point to [1, x.transpose(), x.dot(x)].transpose().
    *
