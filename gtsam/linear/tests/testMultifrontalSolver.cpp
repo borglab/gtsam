@@ -1132,6 +1132,41 @@ TEST(MultifrontalSolver, Load) {
 }
 
 /* ************************************************************************* */
+// Reloading compatible factors must use their current numerical noise models.
+TEST(MultifrontalSolver, ReloadChangedNoiseModel) {
+  for (bool batch : {false, true}) {
+    const auto makeGraph = [batch](double sigma) {
+      GaussianFactorGraph graph;
+      graph.emplace_shared<JacobianFactor>(0, I_1x1, Vector1::Zero());
+      const auto model = noiseModel::Isotropic::Sigma(1, sigma);
+      if (batch) {
+        auto factor = std::make_shared<BatchJacobianFactor<1, 1>>(
+            KeyVector{0}, std::vector<size_t>{1}, model);
+        factor->addRow({0}, {I_1x1}, Vector1(2.0));
+        graph.push_back(factor);
+      } else {
+        graph.emplace_shared<JacobianFactor>(0, I_1x1, Vector1(2.0), model);
+      }
+      return graph;
+    };
+    for (auto mode : {MultifrontalParameters::QRMode::Off,
+                      MultifrontalParameters::QRMode::Force}) {
+      auto params = noMergeParams();
+      params.qrMode = mode;
+      const GaussianFactorGraph initial = makeGraph(1.0);
+      MultifrontalSolver solver(initial, Ordering{0}, params);
+      solver.eliminateInPlace(initial);
+      EXPECT_DOUBLES_EQUAL(1.0, solver.updateSolution().at(0)(0), 1e-12);
+
+      const GaussianFactorGraph reweighted = makeGraph(0.5);
+      solver.load(reweighted);
+      solver.eliminateInPlace();
+      EXPECT_DOUBLES_EQUAL(1.6, solver.updateSolution().at(0)(0), 1e-12);
+    }
+  }
+}
+
+/* ************************************************************************* */
 // Compare solver output against multifrontal elimination baseline.
 TEST(MultifrontalSolver, Eliminate) {
   MultifrontalSolver solver(chain, chainOrdering, noMergeParams());
@@ -1388,6 +1423,197 @@ TEST(MultifrontalSolver, ConstrainedNoiseMixedKeysUnsupported) {
 }
 
 /* ************************************************************************* */
+namespace hard_constraint_block_tests {
+
+JacobianFactor::shared_ptr HardFactor(const Matrix& matrix) {
+  return std::make_shared<JacobianFactor>(
+      0, matrix, Vector::Zero(matrix.rows()),
+      noiseModel::Constrained::All(matrix.rows()));
+}
+
+GaussianFactorGraph Graph(const Matrix& hardMatrix) {
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, Matrix2::Identity(), Vector2(1, 2));
+  graph.push_back(HardFactor(hardMatrix));
+  return graph;
+}
+
+// A hard row removes one scalar direction, not a whole vector variable.
+TEST(MultifrontalSolver, RejectPartialHardVectorConstraints) {
+  const Ordering ordering{0};
+  const std::vector<Matrix> matrices{Matrix{{1., 0.}}, Matrix{{1., 1.}},
+                                     Matrix{{1., 1.}, {2., 2.}},
+                                     Matrix::Zero(2, 2)};
+  const std::vector<Vector2> solutions{Vector2(0, 2), Vector2(-.5, .5),
+                                       Vector2(-.5, .5), Vector2(1, 2)};
+  for (size_t i = 0; i < matrices.size(); ++i) {
+    const auto graph = Graph(matrices[i]);
+    EXPECT(assert_equal(solutions[i],
+                        graph.optimize(ordering, EliminateQR).at(0), 1e-9));
+    CHECK_EXCEPTION(MultifrontalSolver::Precompute(graph, ordering),
+                    MultifrontalSolverNotSupported);
+    CHECK_EXCEPTION(MultifrontalSolver(graph, ordering),
+                    MultifrontalSolverNotSupported);
+  }
+  try {
+    MultifrontalSolver solver(Graph(matrices.front()), ordering);
+    FAIL("Partial hard constraint was accepted");
+  } catch (const MultifrontalSolverNotSupported& error) {
+    EXPECT(std::string(error.what()).find("full column rank") !=
+           std::string::npos);
+  }
+}
+
+// Full-column-rank homogeneous hard equations legitimately fix all directions.
+TEST(MultifrontalSolver, FullRankHardVectorConstraintsMatchLegacyQr) {
+  const Ordering ordering{0};
+  for (const Matrix& matrix :
+       std::vector<Matrix>{Matrix2::Identity(), Matrix{{1., 1.}, {1., -1.}},
+                           Matrix{{1., 1.}, {1., -1.}, {2., 0.}}}) {
+    const auto graph = Graph(matrix);
+    const VectorValues expected = graph.optimize(ordering, EliminateQR);
+    EXPECT(assert_equal(Vector2::Zero(), expected.at(0), 1e-9));
+    const auto data = MultifrontalSolver::Precompute(graph, ordering);
+    EXPECT_LONGS_EQUAL(1, data.fixedKeys.count(0));
+    MultifrontalSolver solver(data, ordering);
+    solver.load(graph);
+    solver.eliminateInPlace();
+    EXPECT(assert_equal(expected, solver.updateSolution(), 1e-9));
+    solver.eliminateInPlace(graph);
+    EXPECT(assert_equal(expected, solver.updateSolution(), 1e-9));
+  }
+}
+
+// Each hard factor must independently fix its block, regardless of factor
+// order.
+TEST(MultifrontalSolver, MultipleUnaryHardFactorsUseTheSameContract) {
+  const Ordering ordering{0};
+  auto graph = Graph(Matrix2::Identity());
+  graph.push_back(HardFactor(Matrix{{1., 1.}, {1., -1.}}));
+  MultifrontalSolver solver(graph, ordering);
+  solver.eliminateInPlace(graph);
+  EXPECT(assert_equal(graph.optimize(ordering, EliminateQR),
+                      solver.updateSolution(), 1e-9));
+
+  for (bool complementary : {false, true}) {
+    auto partial =
+        Graph(complementary ? Matrix{{0., 1.}} : Matrix(Matrix2::Identity()));
+    partial.push_back(HardFactor(Matrix{{1., 0.}}));
+    EXPECT(assert_equal(Vector2::Zero(),
+                        partial.optimize(ordering, EliminateQR).at(0), 1e-9));
+    for (bool reverse : {false, true}) {
+      if (reverse) std::swap(partial[1], partial[2]);
+      CHECK_EXCEPTION(MultifrontalSolver::Precompute(partial, ordering),
+                      MultifrontalSolverNotSupported);
+    }
+  }
+}
+
+// Revalidation must inspect even hard factors omitted from every numeric
+// clique.
+TEST(MultifrontalSolver, RejectIncompatibleHardConstraintReloads) {
+  auto graph = Graph(Matrix2::Identity());
+  graph.emplace_shared<JacobianFactor>(1, Matrix11::Identity(), Vector1(3));
+  const Ordering ordering{0, 1};
+  std::vector<GaussianFactorGraph> incompatible;
+  auto changed = graph;
+  changed[1] = HardFactor(Matrix{{1., 1.}, {2., 2.}});
+  incompatible.push_back(changed);
+  changed[1] = std::make_shared<JacobianFactor>(
+      0, Matrix2::Identity(), Vector2(1, 0), noiseModel::Constrained::All(2));
+  incompatible.push_back(changed);
+  changed[1] = std::make_shared<JacobianFactor>(
+      0, Matrix2::Identity(), Vector2::Zero(),
+      noiseModel::Constrained::MixedSigmas(Vector2(0, 1e-13)));
+  incompatible.push_back(changed);
+  changed[1] =
+      std::make_shared<JacobianFactor>(0, Matrix2::Identity(), Vector2::Zero());
+  incompatible.push_back(changed);
+  changed[1] = nullptr;
+  incompatible.push_back(changed);
+  changed[1] = HardFactor(Matrix2::Identity());
+  changed[2] = std::make_shared<JacobianFactor>(
+      1, Matrix11::Identity(), Vector1(0), noiseModel::Constrained::All(1));
+  incompatible.push_back(changed);
+  changed = graph;
+  changed[0] = std::make_shared<JacobianFactor>(0, Matrix3::Identity(),
+                                                Vector3(1, 2, 3));
+  changed[1] = HardFactor(Matrix3::Identity());
+  incompatible.push_back(changed);
+  changed = graph;
+  Matrix nonfinite = Matrix2::Identity();
+  nonfinite(0, 0) = std::numeric_limits<double>::quiet_NaN();
+  changed[1] = HardFactor(nonfinite);
+  incompatible.push_back(changed);
+
+  for (const auto& invalid : incompatible) {
+    const auto data = MultifrontalSolver::Precompute(graph, ordering);
+    MultifrontalSolver solver(data, ordering);
+    CHECK_EXCEPTION(solver.load(invalid), MultifrontalSolverNotSupported);
+    solver.eliminateInPlace(graph);
+    EXPECT(assert_equal(graph.optimize(ordering, EliminateQR),
+                        solver.updateSolution(), 1e-9));
+    CHECK_EXCEPTION(solver.load(invalid), MultifrontalSolverNotSupported);
+    CHECK_EXCEPTION(solver.eliminateInPlace(), std::runtime_error);
+    solver.eliminateInPlace(graph);
+    CHECK_EXCEPTION(solver.eliminateInPlace(invalid),
+                    MultifrontalSolverNotSupported);
+    CHECK_EXCEPTION(solver.eliminateInPlace(), std::runtime_error);
+
+    MultifrontalSolver partial(data, ordering, 1);
+    partial.load(graph);
+    partial.eliminatePartialInPlace();
+    CHECK_EXCEPTION(partial.eliminatePartialInPlace(invalid),
+                    MultifrontalSolverNotSupported);
+    CHECK_EXCEPTION(partial.eliminatePartialInPlace(), std::runtime_error);
+  }
+}
+
+// Full-rank numerical changes are valid; a newly constrained free key is not.
+TEST(MultifrontalSolver, HardConstraintPrecomputedDataReloads) {
+  auto graph = Graph(Matrix2::Identity());
+  graph.emplace_shared<JacobianFactor>(1, Matrix11::Identity(), Vector1(3));
+  const Ordering ordering{0, 1};
+  MultifrontalSolver solver(MultifrontalSolver::Precompute(graph, ordering),
+                            ordering);
+  solver.eliminateInPlace(graph);
+  auto changed = graph;
+  changed[1] = HardFactor(Matrix{{1., 1.}, {1., -1.}});
+  changed[2] =
+      std::make_shared<JacobianFactor>(1, Matrix11::Identity(), Vector1(5));
+  solver.load(changed);
+  solver.eliminateInPlace();
+  EXPECT(assert_equal(changed.optimize(ordering, EliminateQR),
+                      solver.updateSolution(), 1e-9));
+
+  // Changing coefficients on the same factor object must not bypass validation.
+  auto& hard = dynamic_cast<JacobianFactor&>(*graph[1]);
+  hard.getA(hard.begin()).row(1).setZero();
+  CHECK_EXCEPTION(solver.load(graph), MultifrontalSolverNotSupported);
+  CHECK_EXCEPTION(solver.eliminateInPlace(graph),
+                  MultifrontalSolverNotSupported);
+  hard.getA(hard.begin()) = Matrix2::Identity();
+  solver.eliminateInPlace(graph);
+  EXPECT(assert_equal(graph.optimize(ordering, EliminateQR),
+                      solver.updateSolution(), 1e-9));
+
+  auto unconstrained = graph;
+  unconstrained[1] =
+      std::make_shared<JacobianFactor>(0, Matrix2::Identity(), Vector2::Zero());
+  const auto data = MultifrontalSolver::Precompute(unconstrained, ordering);
+  MultifrontalSolver freeSolver(data, ordering);
+  freeSolver.eliminateInPlace(unconstrained);
+  EXPECT(assert_equal(unconstrained.optimize(ordering, EliminateQR),
+                      freeSolver.updateSolution(), 1e-9));
+  CHECK_EXCEPTION(freeSolver.load(graph), MultifrontalSolverNotSupported);
+  CHECK_EXCEPTION(freeSolver.eliminateInPlace(graph),
+                  MultifrontalSolverNotSupported);
+  CHECK_EXCEPTION(freeSolver.eliminateInPlace(), std::runtime_error);
+}
+
+}  // namespace hard_constraint_block_tests
+/* ************************************************************************* */
+
 // Weighted scalar measurements produce the expected weighted estimate.
 TEST(MultifrontalSolver, WeightedScalarMeasurements) {
   const double w1 = 0.2;
@@ -1590,20 +1816,26 @@ TEST(MultifrontalSolver, BatchJacobianFactorMixedNoiseModels) {
 }
 
 /* ************************************************************************* */
-// Hessian factors are rejected by the multifrontal solver.
+// Direct Hessian assembly preserves affine terms, including negative minima.
 TEST(MultifrontalSolver, HessianFactors) {
   GaussianFactorGraph graph;
   graph.emplace_shared<HessianFactor>(x1, Matrix{{4.0}}, Vector{{8.0}}, 0.0);
 
   const Ordering ordering{x1};
-  CHECK_EXCEPTION(
-      { MultifrontalSolver solver(graph, ordering, noMergeParams()); },
-      std::runtime_error);
+  MultifrontalSolver solver(graph, ordering, noMergeParams());
+  solver.eliminateInPlace(graph);
+  const auto& result = solver.updateSolution();
+  EXPECT_DOUBLES_EQUAL(2.0, result.at(x1)(0), 1e-12);
+  double oldError, newError;
+  EXPECT_DOUBLES_EQUAL(8.0, solver.deltaError(&oldError, &newError), 1e-12);
+  EXPECT_DOUBLES_EQUAL(0.0, oldError, 1e-12);
+  EXPECT_DOUBLES_EQUAL(-8.0, newError, 1e-12);
 }
 
 /* ************************************************************************* */
-// Loading a HessianFactor into precomputed Jacobian-only structure is rejected.
-TEST(MultifrontalSolver, LoadRejectsHessianFactor) {
+// Symbolic structure can come from nonlinear row counts; the first load
+// selects Hessian assembly even if the initial leaf was configured for QR.
+TEST(MultifrontalSolver, LoadHessianIntoPrecomputedStructure) {
   GaussianFactorGraph jacobianGraph;
   jacobianGraph.emplace_shared<JacobianFactor>(
       x1, I_1x1, Vector{{2.0}}, noiseModel::Isotropic::Sigma(1, 1.0));
@@ -1614,10 +1846,65 @@ TEST(MultifrontalSolver, LoadRejectsHessianFactor) {
 
   const Ordering ordering{x1};
   auto data = MultifrontalSolver::Precompute(jacobianGraph, ordering);
-  MultifrontalSolver solver(std::move(data), ordering, noMergeParams());
+  auto params = noMergeParams();
+  params.qrMode = MultifrontalParameters::QRMode::Force;
+  MultifrontalSolver solver(std::move(data), ordering, params);
 
-  CHECK_EXCEPTION(solver.load(hessianGraph), MultifrontalSolverNotSupported);
+  solver.eliminateInPlace(hessianGraph);
+  EXPECT_DOUBLES_EQUAL(2.0, solver.updateSolution().at(x1)(0), 1e-12);
 }
+
+/* ************************************************************************* */
+namespace hessian_reload_tests {
+
+// Individual Hessians can be indefinite: only their assembled sum needs to
+// be positive definite. Check permuted block mappings, mixed rows, and reload.
+TEST(MultifrontalSolver, MixedIndefiniteHessianReload) {
+  GaussianFactorGraph graph;
+  graph.emplace_shared<HessianFactor>(x2, x1, Matrix{{-1.0}}, Matrix{{0.3}},
+                                      Vector{{0.5}}, Matrix{{-2.0}},
+                                      Vector{{-0.2}}, -3.0);
+  graph.emplace_shared<JacobianFactor>(x1, Matrix{{2.0}}, x2, Matrix{{0.5}},
+                                       Vector{{1.0}});
+  graph.emplace_shared<JacobianFactor>(x2, Matrix{{2.0}}, Vector{{0.0}});
+  const Ordering ordering{x1, x2};
+  auto params = noMergeParams();
+  params.compactCholeskySeparatorDimThreshold = 0;
+  MultifrontalSolver solver(graph, ordering, params);
+  for (double scale : {1.0, 2.0}) {
+    graph[0] = std::make_shared<HessianFactor>(
+        x2, x1, Matrix{{-1.0}}, Matrix{{0.3}}, Vector{{0.5 * scale}},
+        Matrix{{-2.0}}, Vector{{-0.2 * scale}}, -3.0);
+    solver.eliminateInPlace(graph);
+    const auto& result = solver.updateSolution();
+    const VectorValues expected = graph.optimize(ordering, EliminateCholesky);
+    EXPECT(assert_equal(expected, result, 1e-10));
+    VectorValues zero = result;
+    zero.setZero();
+    EXPECT_DOUBLES_EQUAL(graph.error(zero) - graph.error(result),
+                         solver.deltaError(), 1e-10);
+  }
+}
+
+// Fixed deltas contribute no Hessian columns, including when factor key order
+// differs from elimination order.
+TEST(MultifrontalSolver, HessianWithFixedKey) {
+  GaussianFactorGraph graph;
+  graph.emplace_shared<HessianFactor>(x2, x1, Matrix{{4.0}}, Matrix{{1.0}},
+                                      Vector{{8.0}}, Matrix{{3.0}},
+                                      Vector{{7.0}}, 20.0);
+  graph.emplace_shared<JacobianFactor>(
+      x1, I_1x1, Vector{{0.0}}, noiseModel::Constrained::All(1));
+  const Ordering ordering{x1, x2};
+  MultifrontalSolver solver(graph, ordering, noMergeParams());
+  solver.eliminateInPlace(graph);
+  const auto& result = solver.updateSolution();
+  EXPECT_DOUBLES_EQUAL(0.0, result.at(x1)(0), 1e-12);
+  EXPECT_DOUBLES_EQUAL(2.0, result.at(x2)(0), 1e-12);
+}
+
+}  // namespace hessian_reload_tests
+/* ************************************************************************* */
 
 /* ************************************************************************* */
 // Merge threshold changes the clique count.
@@ -1689,6 +1976,90 @@ TEST(MultifrontalSolver, BalancedSmoother) {
 }
 
 /* ************************************************************************* */
+// Ordinary, compact, and fused kernels agree on a weak frontal block.
+TEST(MultifrontalSolver, SharedCheckInLeafKernels) {
+  for (double strength : {1e8, 1e10}) {
+    const double w = std::sqrt(strength);
+    const Matrix A{{1.0, 0.0}, {w, -w}, {0.0, 1.0}};
+    const Matrix3 B{{0.0, 0.0, 0.0}, {0.0, 0.0, 0.0}, {-1.0, 0.0, 0.0}};
+    const Vector3 b{0.1, 0.0, 0.0};
+    for (int mode = 0; mode < 3; ++mode) {
+      GaussianFactorGraph graph;
+      if (mode == 2) {
+        using Batch = BatchJacobianFactor<3, 2, 3>;
+        auto factor = std::make_shared<Batch>(KeyVector{0, 1},
+                                             std::vector<size_t>{2, 3});
+        factor->addRow({0, 1}, {A, B}, b);
+        graph.push_back(factor);
+      } else {
+        graph.emplace_shared<JacobianFactor>(0, A, 1, B, b);
+      }
+      graph.emplace_shared<JacobianFactor>(1, I_3x3, Vector3::Zero());
+      // An extra parent key prevents symbolic amalgamation of the leaf into
+      // the retained clique, independent of the numeric merge cap.
+      graph.emplace_shared<JacobianFactor>(1, I_3x3, 2, -I_3x3, Vector3::Zero());
+      auto params = noMergeParams();
+      params.qrMode = MultifrontalParameters::QRMode::Off;
+      params.compactCholeskySeparatorDimThreshold = mode == 1 ? 1 : 256;
+      MultifrontalSolver solver(graph, Ordering{0, 1, 2}, size_t(1), params);
+      solver.load(graph);
+      LONGS_EQUAL(mode == 0 ? 0 : 1,
+          compact_leaf_fixture::compactCliqueCount(&solver));
+      if (strength == 1e8) {
+        solver.eliminatePartialInPlace();
+        const auto expected = graph.eliminatePartialSequential(Ordering{0}, EliminateQR);
+        EXPECT(assert_equal(expected.second->augmentedHessian(Ordering{1, 2}),
+            solver.remainingFactorGraph().augmentedHessian(Ordering{1, 2}), 1e-7));
+      } else {
+        try {
+          solver.eliminatePartialInPlace();
+          FAIL("Expected an indeterminate system");
+        } catch (const IndeterminateSystemException& exception) {
+          EXPECT_LONGS_EQUAL(0, exception.nearbyVariable());
+        }
+      }
+    }
+  }
+}
+
+/* ************************************************************************* */
+namespace deep_chain_merging_tests {
+
+// Separators remain valid as descendants are absorbed bottom-up. Exercise
+// several merge boundaries and reload the same deeply nested chain.
+TEST(MultifrontalSolver, DeepChainMergingPreservesSeparators) {
+  constexpr size_t count = 128;
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, Matrix11::Identity(), Vector1::Zero());
+  Ordering ordering;
+  for (size_t i = 0; i < count; ++i) {
+    ordering.push_back(i);
+    if (i > 0) {
+      graph.emplace_shared<JacobianFactor>(
+          i - 1, -Matrix11::Identity(), i, Matrix11::Identity(), Vector1::Ones());
+    }
+  }
+  for (size_t cap : {4, 16, 32}) {
+    auto params = noMergeParams();
+    params.mergeDimCap = cap;
+    MultifrontalSolver solver(graph, ordering, params);
+    EXPECT(solver.cliqueCount() < count);
+    for (double increment : {1.0, 2.0}) {
+      for (size_t i = 1; i < count; ++i) {
+        std::static_pointer_cast<JacobianFactor>(graph[i])->getb()(0) = increment;
+      }
+      solver.eliminateInPlace(graph);
+      const VectorValues& result = solver.updateSolution();
+      for (size_t i = 0; i < count; ++i) {
+        EXPECT_DOUBLES_EQUAL(increment * i, result.at(i)(0), 1e-8);
+      }
+    }
+  }
+}
+
+}  // namespace deep_chain_merging_tests
+/* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

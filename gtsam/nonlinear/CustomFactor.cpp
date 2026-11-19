@@ -56,6 +56,14 @@ Vector CustomFactor::unwhitenedError(const Values& x, OptionalMatrixVecType H) c
   }
 }
 
+std::optional<Vector> CustomFactor::parameterVjp(
+    const Values& values, const ParameterTag& parameter,
+    const Vector& factorResidualCotangent) const {
+  if (!parameter_vjp_function_) return std::nullopt;
+  return parameter_vjp_function_(*this, values, parameter,
+                                factorResidualCotangent);
+}
+
 void CustomFactor::print(const std::string &s, const KeyFormatter &keyFormatter) const {
   std::cout << s << "CustomFactor on ";
   auto keys_ = this->keys();

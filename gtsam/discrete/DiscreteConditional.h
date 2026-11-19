@@ -402,7 +402,8 @@ class GTSAM_EXPORT DiscreteConditional
    * assignments, and renormalize. Returns a DiscreteConditional with the same
    * keys and number of frontals.
    */
-  DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const override;
+  [[nodiscard]] DiscreteFactor::shared_ptr prune(
+      size_t maxNrAssignments) const override;
 
   /**
    * @brief Remove the discrete modes whose assignments are given to us.

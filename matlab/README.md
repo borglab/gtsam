@@ -92,6 +92,11 @@ params.emplace('intpntCoTolRelGap', 1e-8);
 solver.solve(params);
 ```
 
+A hard `FrobeniusPrior` fixes its variable: the SDP solvers substitute it out
+before lifting. `orderedKeys()`, `orderedKeyDims()`, and `variableEVRs()`
+describe only the free SDP variables; `qcqpValues()` also returns the fixed
+values after solving.
+
 `orderedKeyDims()` returns a wrapped map with `size()` and `at(key)` methods.
 `variableEVRs()` returns a wrapped vector with `size()` and zero-based `at(i)`
 access. The D=1 value dimensions are 2 for Rot2, 9 for Rot3, 6 for Pose2,

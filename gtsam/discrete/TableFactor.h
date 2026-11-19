@@ -113,6 +113,17 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
     return DiscreteKey(keys_[i], cardinalities_.at(keys_[i]));
   }
 
+  /**
+   * Apply a binary operator when every key and cardinality of `factor` is
+   * contained in this table. Each stored entry projects to exactly one index
+   * in `factor`; only stored matches invoke op, in the original operand order.
+   * Preserve the sorted result layout and the intersection of stored entries,
+   * including explicitly stored zeros. Storage strides, not keys_ order,
+   * determine the projection. See doc/TableFactorSubsetOperations.md for the
+   * index derivation, sparse semantics, and benchmark reproduction commands.
+   */
+  TableFactor applySubset(const TableFactor& factor, Binary op) const;
+
  public:
   /**
    * Convert probability table given as doubles to SparseVector.
@@ -334,21 +345,20 @@ class GTSAM_EXPORT TableFactor : public DiscreteFactor {
    * @brief Prune the decision tree of discrete variables.
    *
    * Pruning will set the values to be "pruned" to 0 indicating a 0
-   * probability. An assignment is pruned if it is not in the top
-   * `maxNrAssignments` values.
+   * probability. An assignment is pruned if its value is smaller than the
+   * `maxNrAssignments`-th largest value, counting duplicates.
    *
-   * A violation can occur if there are more
-   * duplicate values than `maxNrAssignments`. A violation here is the need to
-   * un-prune the decision tree (e.g. all assignment values are 1.0). We could
-   * have another case where some subset of duplicates exist (e.g. for a tree
-   * with 8 assignments we have 1, 1, 1, 1, 0.8, 0.7, 0.6, 0.5), but this is
-   * not a violation since the for `maxNrAssignments=5` the top values are (1,
-   * 0.8).
+   * Every assignment tied with that value is kept, so more than
+   * `maxNrAssignments` assignments survive when ties straddle the cutoff.
+   * For example, pruning (0.2, 0.2, 0.1, 0.2, 0.3) to 3 assignments gives
+   * (0.2, 0.2, 0, 0.2, 0.3), and a factor whose values are all equal is not
+   * pruned at all. This matches DecisionTreeFactor::prune.
    *
    * @param maxNrAssignments The maximum number of assignments to keep.
    * @return The pruned TableFactor.
    */
-  DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const override;
+  [[nodiscard]] DiscreteFactor::shared_ptr prune(
+      size_t maxNrAssignments) const override;
 
   /**
    * Get the number of non-zero values contained in this factor.

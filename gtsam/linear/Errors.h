@@ -52,7 +52,11 @@ GTSAM_EXPORT Errors operator-(const Errors& a, const Errors& b);
 /// Negation.
 GTSAM_EXPORT Errors operator-(const Errors& a);
 
-/// Dot product.
+/**
+ * Dot product of corresponding factor vectors; empty vectors contribute zero.
+ * Throws std::invalid_argument if the numbers of vectors or any corresponding
+ * vector dimensions differ.
+ */
 GTSAM_EXPORT double dot(const Errors& a, const Errors& b);
 
 /// BLAS level 2 style AXPY, `y := alpha*x + y`

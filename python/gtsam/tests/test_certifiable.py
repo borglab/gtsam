@@ -200,7 +200,10 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
         self.assertTrue(np.isfinite(solver.objectiveValue()))
         self.assertGreaterEqual(solver.solveTimeSeconds(), 0.0)
 
-        expected_keys = [X(index) for index in range(len(ground_truth))]
+        # X(0) is fixed by its hard FrobeniusPrior: it has no SDP block, but
+        # qcqpValues() returns it.
+        all_keys = [X(index) for index in range(len(ground_truth))]
+        expected_keys = all_keys[1:]
         self.assertEqual(list(solver.orderedKeys()), expected_keys)
         ordered_key_dims = solver.orderedKeyDims()
         self.assertIsInstance(ordered_key_dims, dict)
@@ -213,10 +216,10 @@ class TestMosekCertifiableWrappers(unittest.TestCase):
         repeated_qcqp_values = solver.qcqpValues()
         repeated_variable_evrs = solver.variableEVRs()
         self.assertEqual(qcqp_values.size(), len(ground_truth))
-        self.assertEqual(len(variable_evrs), len(ground_truth))
+        self.assertEqual(len(variable_evrs), len(expected_keys))
         self.assertTrue(all(np.isfinite(evr) for evr in variable_evrs))
         np.testing.assert_allclose(variable_evrs, repeated_variable_evrs)
-        for key in expected_keys:
+        for key in all_keys:
             self.assertEqual(qcqp_values.atMatrix(key).shape, (2, 1))
             np.testing.assert_allclose(
                 qcqp_values.atMatrix(key), repeated_qcqp_values.atMatrix(key)

@@ -19,6 +19,7 @@
 
 #include <gtsam/base/SymmetricBlockMatrix.h>
 #include <gtsam/linear/HessianFactor.h>
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Values.h>
 
@@ -27,7 +28,7 @@
 namespace gtsam {
 
 /**
- * Nonlinear wrapper around a HessianFactor-defined affine quadratic cost over
+ * Nonlinear wrapper around a Gaussian-factor-defined affine quadratic cost over
  * direct Vector and Matrix Values entries.
  *
  * Matrix entries are interpreted by column-major vectorization. The
@@ -48,14 +49,17 @@ class GTSAM_EXPORT QpCost : public NonlinearFactor {
         hessianFactor_(std::make_shared<HessianFactor>(factor)) {}
 
   /**
-   * Construct from any Gaussian factor by converting it to a Hessian factor.
+   * Construct from a Gaussian factor, retaining its square-root representation
+   * when available for sparse constrained solves and gradient evaluation.
    */
   explicit QpCost(const GaussianFactor& factor)
-      : QpCost(HessianFactor(factor)) {}
+      : QpCost(HessianFactor(factor)) {
+    if (const auto* jacobian = dynamic_cast<const JacobianFactor*>(&factor))
+      jacobianFactor_ = std::make_shared<JacobianFactor>(*jacobian);
+  }
 
   /**
-   * Construct from a shared Gaussian factor by converting it to a Hessian
-   * factor.
+   * Construct from a shared Gaussian factor, copying its original representation.
    */
   explicit QpCost(const GaussianFactor::shared_ptr& factor)
       : QpCost(factor ? *factor
@@ -72,6 +76,12 @@ class GTSAM_EXPORT QpCost : public NonlinearFactor {
   QpCost(const KeyVector& keys, const SymmetricBlockMatrix& Q,
          size_t columnDim = 1);
 
+  /// Return the original Gaussian representation of the affine quadratic.
+  const GaussianFactor& gaussianFactor() const {
+    if (jacobianFactor_) return *jacobianFactor_;
+    return *hessianFactor_;
+  }
+
   /// Return the stored Hessian factor.
   const HessianFactor& hessianFactor() const { return *hessianFactor_; }
 
@@ -82,13 +92,13 @@ class GTSAM_EXPORT QpCost : public NonlinearFactor {
   /** Check equality up to a tolerance. */
   bool equals(const NonlinearFactor& other, double tol = 1e-9) const override;
 
-  /** Evaluate the stored Hessian factor at the direct Vector/Matrix values. */
+  /** Evaluate the original Gaussian factor at the direct Vector/Matrix values. */
   double error(const Values& values) const override;
 
   /** Return scalar cost dimension. */
   size_t dim() const override { return 1; }
 
-  /** Return an exact Hessian factor around the current vector-space values. */
+  /** Return an exact Gaussian factor around the current vector-space values. */
   GaussianFactor::shared_ptr linearize(const Values& values) const override;
 
   /** Return a deep copy of this factor. */
@@ -98,6 +108,7 @@ class GTSAM_EXPORT QpCost : public NonlinearFactor {
 
  private:
   HessianFactor::shared_ptr hessianFactor_;
+  JacobianFactor::shared_ptr jacobianFactor_;
 };
 
 }  // namespace gtsam

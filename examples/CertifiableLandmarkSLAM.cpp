@@ -280,7 +280,7 @@ int runCertifiableLandmarkSLAM(const std::string& path,
         rotationGraph.push_back(factor);
     for (const auto& [key, rotation] :
          fastSync<RotT>(rotationGraph).template extract<RotT>()) {
-      InsertQcqpValue<RotT, d>(key, rotation, &initial);
+      insertQcqpValue<RotT, d>(key, rotation, &initial);
     }
     for (Key poseIndex : poseIndices)
       initial.insert(translationKey(poseIndex), randomBlock(1, p, rng, false));
@@ -324,7 +324,7 @@ int runCertifiableLandmarkSLAM(const std::string& path,
   if (result.rounded) {
     Values atRankD = result.layout.unstack(result.rounded->Yd);
     alignBlockDetSigns<d>(atRankD, poseIndices);
-    for (auto& [key, R] : ExtractQcqpValues<RotT, d>(atRankD))
+    for (auto& [key, R] : extractQcqpValues<RotT, d>(atRankD))
       rounded.insert(key, R);
     for (Key poseIndex : poseIndices) {
       const Matrix row = atRankD.at<Matrix>(translationKey(poseIndex));

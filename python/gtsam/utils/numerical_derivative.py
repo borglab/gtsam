@@ -31,19 +31,25 @@ X6 = TypeVar("X6")
 
 
 def local(a: Y, b: Y) -> np.ndarray:
+    if isinstance(a, (float, int, np.floating, np.integer)) and isinstance(
+        b, (float, int, np.floating, np.integer)
+    ):
+        # Numeric scalars share a one-dimensional tangent space.
+        return np.array([float(b) - float(a)])
     if type(a) is not type(b):
         raise TypeError(f"a {type(a)} b {type(b)}")
     if isinstance(a, np.ndarray):
         return b - a
-    if isinstance(a, (float, int, np.floating, np.integer)):
-        # Represent scalar values as a 1D "tangent vector" of length 1.
-        return np.array([float(b) - float(a)])
     # there is no common superclass for Y
     return a.localCoordinates(b)  # type:ignore
 
 
 def retract(a, xi: np.ndarray):
-    if isinstance(a, (np.ndarray, float, int)):
+    if isinstance(a, (float, int, np.floating, np.integer)):
+        # Use double precision, as in local(); do not quantize steps to an
+        # integer or low-precision input dtype. Arbitrary precision is not retained.
+        return float(a) + xi[0]
+    if isinstance(a, np.ndarray):
         return a + xi
     return a.retract(xi)
 

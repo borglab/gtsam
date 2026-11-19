@@ -73,7 +73,7 @@ bool SolveRot2Ring(size_t numPoses) {
 
   const std::vector<Rot2> groundTruth =
       MakeRot2RingGroundTruth(numPoses, delta);
-  const auto recoveredPoses = ExtractQcqpValues<Rot2, 1>(sdp.qcqpValues());
+  const auto recoveredPoses = extractQcqpValues<Rot2, 1>(sdp.qcqpValues());
   if (recoveredPoses.size() != groundTruth.size()) {
     std::cerr << "Recovered QCQP value count does not match ground truth."
               << std::endl;
@@ -127,7 +127,7 @@ bool SolveChordalRot2Ring(size_t numPoses) {
 
   const std::vector<Rot2> groundTruth =
       MakeRot2RingGroundTruth(numPoses, delta);
-  const auto recoveredPoses = ExtractQcqpValues<Rot2, 1>(sdp.qcqpValues());
+  const auto recoveredPoses = extractQcqpValues<Rot2, 1>(sdp.qcqpValues());
   if (recoveredPoses.size() != groundTruth.size()) {
     std::cerr << "Recovered QCQP value count does not match ground truth."
               << std::endl;

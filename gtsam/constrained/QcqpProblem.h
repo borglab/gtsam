@@ -26,10 +26,60 @@
 
 #include <stdexcept>
 #include <type_traits>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
 namespace gtsam {
+
+/**
+ * Collect variable QCQP equalities once per key, in insertion order.
+ * Use separate collectors for ordinary and redundant variable constraints.
+ * Factor-specific constraints do not belong in either collector.
+ */
+class QcqpVariableConstraints {
+  std::unordered_set<Key> keys_;
+  NonlinearEqualityConstraints constraints_;
+
+ public:
+  /**
+   * Generate and append a variable's equalities only on its first visit.
+   * generateConstraints returns (A, a, b) triples for
+   * trace(X' A X) + 2 a' x = b. All providers for a key must agree on the set.
+   * An empty set still marks the key as visited.
+   */
+  template <typename Generator>
+  void add(Key key, Generator generateConstraints) {
+    if (!keys_.insert(key).second) return;
+    for (const auto& [A, a, b] : generateConstraints()) {
+      constraints_.push_back(
+          QuadraticConstraint::Equal(key, A, a, b).createEqualityFactor());
+    }
+  }
+
+  /// Return the collected variable constraints.
+  const NonlinearEqualityConstraints& constraints() const { return constraints_; }
+};
+
+/**
+ * Optional interface for factors with variables that have redundant QCQP
+ * equalities. Deriving from this interface opts a factor in and requires an
+ * appendRedundantConstraints override. Factors without this interface are
+ * skipped when collecting redundant constraints.
+ */
+class GTSAM_EXPORT RedundantQcqpProvider {
+ public:
+  virtual ~RedundantQcqpProvider() = default;
+
+  /**
+   * Add redundant equalities through the collector, once per variable key.
+   * All providers are assumed to supply the same set for a given key, so
+   * previously visited keys must be left untouched, even for empty sets.
+   * May add nothing for variable types or column dimensions without them.
+   */
+  virtual void appendRedundantConstraints(
+      size_t columnDimension, QcqpVariableConstraints& constraints) const = 0;
+};
 
 namespace internal {
 
@@ -70,12 +120,12 @@ struct HasQcqpVectorDim<T, std::void_t<decltype(traits<T>::QcqpVectorDim)>>
  * variables without changing the row-space cost matrices.
  */
 template <typename T, int D = 1>
-void InsertQcqpValue(Key key, const T& value, Values* qcqpValues) {
+void insertQcqpValue(Key key, const T& value, Values* qcqpValues) {
   static_assert(internal::HasQcqpVariableTraits<T, D>::value,
-                "InsertQcqpValue requires traits<T>::QcqpValue<D> and "
+                "insertQcqpValue requires traits<T>::QcqpValue<D> and "
                 "traits<T>::QcqpConstraints<D>.");
   if (!qcqpValues) {
-    throw std::invalid_argument("InsertQcqpValue: qcqpValues is null.");
+    throw std::invalid_argument("insertQcqpValue: qcqpValues is null.");
   }
 
   const Matrix qcqpValue = traits<T>::template QcqpValue<D>(value);
@@ -84,52 +134,11 @@ void InsertQcqpValue(Key key, const T& value, Values* qcqpValues) {
     if (existing.rows() != qcqpValue.rows() ||
         existing.cols() != qcqpValue.cols()) {
       throw std::invalid_argument(
-          "InsertQcqpValue: inconsistent QCQP variable dimensions.");
+          "insertQcqpValue: inconsistent QCQP variable dimensions.");
     }
     return;
   }
   qcqpValues->insert(key, qcqpValue);
-}
-
-/**
- * Insert the QCQP equality constraints for one variable.
- *
- * traits<T>::QcqpConstraints<D>() returns (A, a, b) triples for
- * trace(X' A X) + 2 a' x = b, where an empty a means no linear term; only D=1
- * constraints may have one. Only an
- * already-present quadratic equality with the same key, matrix, linear term,
- * and right-hand side is considered a duplicate. Other unary constraints on
- * the key are preserved and do not suppress the manifold constraints.
- */
-template <typename T, int D = 1>
-void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
-  static_assert(internal::HasQcqpVariableTraits<T, D>::value,
-                "InsertQcqpConstraints requires traits<T>::QcqpValue<D> and "
-                "traits<T>::QcqpConstraints<D>.");
-  if (!constraints) {
-    throw std::invalid_argument("InsertQcqpConstraints: constraints is null.");
-  }
-
-  for (const auto& [A, a, b] : traits<T>::template QcqpConstraints<D>()) {
-    const QuadraticConstraint candidate =
-        QuadraticConstraint::Equal(key, A, a, b);
-    bool alreadyPresent = false;
-    for (const auto& factor : *constraints) {
-      const auto* quadratic =
-          dynamic_cast<const QuadraticEqualityConstraintFactor*>(factor.get());
-      if (!quadratic) continue;
-      const QuadraticConstraint& existing = quadratic->quadraticConstraint();
-      if (existing.key() == key && existing.A().isApprox(A, 0.0) &&
-          existing.a().isApprox(candidate.a(), 0.0) && existing.b() == b &&
-          existing.sigma() == 1.0) {
-        alreadyPresent = true;
-        break;
-      }
-    }
-    if (!alreadyPresent) {
-      constraints->push_back(candidate.createEqualityFactor());
-    }
-  }
 }
 
 /**
@@ -146,12 +155,12 @@ void InsertQcqpConstraints(Key key, NonlinearEqualityConstraints* constraints) {
  * absolute rotations are intentionally best-effort and gauge-dependent.
  */
 template <typename T, int D>
-std::vector<std::pair<Key, T>> ExtractQcqpValues(const Values& qcqpValues) {
+std::vector<std::pair<Key, T>> extractQcqpValues(const Values& qcqpValues) {
   static_assert(internal::HasQcqpExtractionTraits<T, D>::value,
-                "ExtractQcqpValues requires traits<T>::QcqpValue<D>, "
+                "extractQcqpValues requires traits<T>::QcqpValue<D>, "
                 "QcqpConstraints<D>, and FromQcqpValue<D>.");
   static_assert(D != 1 || internal::HasQcqpVectorDim<T>::value,
-                "ExtractQcqpValues<T, 1> requires "
+                "extractQcqpValues<T, 1> requires "
                 "traits<T>::QcqpVectorDim.");
   constexpr int expectedRows = [] {
     if constexpr (D == 1) {
@@ -188,7 +197,7 @@ void insertQcqpValue(Key key, const T& typedValue, Values& qcqpValues) {
   static_assert(internal::HasQcqpVariableTraits<T, 1>::value,
                 "insertQcqpValue requires traits<T>::QcqpValue<1> and "
                 "traits<T>::QcqpConstraints<1>.");
-  InsertQcqpValue<T, 1>(key, typedValue, &qcqpValues);
+  insertQcqpValue<T, 1>(key, typedValue, &qcqpValues);
 }
 
 /** Recover a typed value from an exact D=1 QCQP vector. */
@@ -211,7 +220,7 @@ Values extractQcqpValues(const Values& qcqpValues) {
   static_assert(internal::HasQcqpVectorDim<T>::value,
                 "extractQcqpValues requires traits<T>::QcqpVectorDim.");
   Values typedValues;
-  for (const auto& [key, typedValue] : ExtractQcqpValues<T, 1>(qcqpValues)) {
+  for (const auto& [key, typedValue] : extractQcqpValues<T, 1>(qcqpValues)) {
     typedValues.insert(key, typedValue);
   }
   return typedValues;
@@ -240,9 +249,19 @@ class GTSAM_EXPORT QcqpProblem : public ConstrainedOptProblem {
               const NonlinearInequalityConstraints& ineqConstraints)
       : Base(costs, eqConstraints, ineqConstraints) {}
 
-  /** Convert a supported nonlinear factor graph into QCQP costs/constraints. */
+  /**
+   * Convert a supported nonlinear factor graph into QCQP costs/constraints.
+   *
+   * With useRedundantConstraints, the variables' redundant constraints, such
+   * as the eleven of Rot3 and Pose3 at columnDimension 1, are added to the
+   * equality constraints. They are implied by the manifold constraints, so
+   * they leave the feasible set unchanged, but the QCQP then violates LICQ,
+   * which local QCQP solvers may not handle. They tighten the SDP
+   * relaxations, which lift them like any other equality constraint.
+   */
   explicit QcqpProblem(const NonlinearFactorGraph& graph,
-                       size_t columnDimension = 1);
+                       size_t columnDimension = 1,
+                       bool useRedundantConstraints = false);
 
   /** Add a quadratic cost. */
   void addCost(const QpCost& cost) { costs_.emplace_shared<QpCost>(cost); }

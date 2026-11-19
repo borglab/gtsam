@@ -35,8 +35,9 @@ double NonlinearFactor::error(const HybridValues& c) const {
 
 /* ************************************************************************* */
 void NonlinearFactor::qcqpFactors(
-    NonlinearFactorGraph* /*costs*/,
-    NonlinearEqualityConstraints* /*constraints*/,
+    NonlinearFactorGraph& /*costs*/,
+    NonlinearEqualityConstraints& /*constraints*/,
+    QcqpVariableConstraints& /*variableConstraints*/,
     size_t /*columnDimension*/) const {
   throw std::runtime_error("NonlinearFactor::qcqpFactors is not implemented");
 }

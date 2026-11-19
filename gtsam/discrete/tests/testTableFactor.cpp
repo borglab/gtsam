@@ -25,6 +25,7 @@
 #include <gtsam/discrete/Signature.h>
 #include <gtsam/discrete/TableDistribution.h>
 #include <gtsam/discrete/TableFactor.h>
+#include <gtsam/inference/Ordering.h>
 
 #include <algorithm>
 #include <chrono>
@@ -304,6 +305,169 @@ TEST(TableFactor, SparseTableBeyond32Keys) {
 }
 
 /* ************************************************************************* */
+namespace subset_operations {
+
+// Subset products and quotients agree with trees for every key order and subset.
+TEST(TableFactor, SubsetOperationsAcrossKeyOrders) {
+  const DiscreteKeys sortedKeys{{0, 2}, {2, 3}, {5, 2}};
+  DiscreteKeys keys = sortedKeys;
+  do {
+    const vector<double> values{0, 2, 3, 0, 5, 6, 7, 0, 9, 10, 0, 12};
+    const TableFactor joint(keys, values);
+    const DecisionTreeFactor tree(keys, values);
+    for (unsigned mask = 0; mask < 8; ++mask) {
+      DiscreteKeys subset;
+      size_t cardinality = 1;
+      for (size_t i = 0; i < keys.size(); ++i) {
+        if (mask & (1U << i)) {
+          subset.push_back(keys[i]);
+          cardinality *= keys[i].second;
+        }
+      }
+      std::reverse(subset.begin(), subset.end());
+      for (bool sparse : {false, true}) {
+        vector<double> weights(cardinality);
+        for (size_t i = 0; i < cardinality; ++i)
+          weights[i] = sparse && i % 3 == 1 ? 0 : i + 2;
+        const TableFactor factor(subset, weights);
+        const DecisionTreeFactor treeFactor = subset.empty()
+            ? DecisionTreeFactor(subset, DecisionTreeFactor::ADT(weights[0]))
+            : DecisionTreeFactor(subset, weights);
+        const auto product = joint * factor;
+        const auto quotient = joint / factor;
+        EXPECT(product.keys() == sortedKeys.indices());
+        EXPECT(quotient.keys() == sortedKeys.indices());
+        EXPECT(assert_equal(tree * treeFactor, product.toDecisionTreeFactor()));
+        EXPECT(assert_equal(tree / treeFactor, quotient.toDecisionTreeFactor()));
+      }
+    }
+  } while (std::next_permutation(keys.begin(), keys.end()));
+}
+
+// Generic apply evaluates stored zeros but not missing entries, and drops zero
+// results.
+TEST(TableFactor, SubsetApplyUsesStoredZeros) {
+  const DiscreteKey A(0, 2), B(1, 3);
+  SparseVector jointEntries(6);
+  jointEntries.insertBack(0) = 0;
+  jointEntries.insertBack(1) = 2;
+  jointEntries.insertBack(2) = 7;
+  jointEntries.insertBack(3) = 4;
+  jointEntries.insertBack(4) = 0;
+  jointEntries.insertBack(5) = 6;
+  const TableFactor joint(A & B, jointEntries);
+  SparseVector entries(3);
+  entries.insertBack(0) = 0;
+  entries.insertBack(2) = 7;
+  const TableFactor subset(DiscreteKeys{B}, entries);
+  const auto result = joint.apply(subset, [](double a, double b) { return a - b; });
+  // Indices 0 and 2 compute to zero and are dropped. Index 3 exists only
+  // because the subset's zero for B=0 is stored. Indices 1 and 4 are never
+  // evaluated because the subset has no entry for B=1.
+  SparseVector expected(6);
+  expected.insertBack(3) = 4;
+  expected.insertBack(5) = -1;
+  EXPECT_LONGS_EQUAL(2, result.nrValues());
+  EXPECT(assert_equal(TableFactor(A & B, expected), result));
+  vector<int64_t> storedIndices;
+  const SparseVector stored = result.sparseTable();
+  for (SparseVector::InnerIterator entry(stored); entry; ++entry)
+    storedIndices.push_back(entry.index());
+  EXPECT(storedIndices == vector<int64_t>({3, 5}));
+
+  const TableFactor empty(DiscreteKeys{B}, SparseVector(3));
+  EXPECT_LONGS_EQUAL(0, joint.apply(empty, Ring::add).nrValues());
+}
+
+// Strides, rather than metadata key order, determine subset lookup indices.
+TEST(TableFactor, SubsetApplyWithMetadataOrder) {
+  const DiscreteKey A(0, 2), B(1, 3);
+  const TableFactor original(B & A, "1 2 3 4 5 6");
+  const TableFactor metadata(A & B, original);
+  const TableFactor subset(B, "2 0 3");
+  EXPECT(assert_equal(TableFactor(A & B, "2 0 15 4 0 18"), metadata * subset));
+}
+
+// The right-hand table's stored order can differ from its metadata as well.
+TEST(TableFactor, SubsetApplyWithRightMetadataOrder) {
+  const DiscreteKey A(0, 2), B(1, 3), C(2, 2);
+  const TableFactor joint(B & A & C, "1 2 3 4 5 6 7 8 9 10 11 12");
+  for (const char* weights : {"2 3 5 7", "2 0 5 7"}) {
+    const TableFactor original(C & A, weights);
+    const TableFactor subset(A & C, original);
+    const auto product = joint * subset;
+    const auto quotient = joint / subset;
+    for (size_t a = 0; a < A.second; ++a) {
+      for (size_t b = 0; b < B.second; ++b) {
+        for (size_t c = 0; c < C.second; ++c) {
+          const DiscreteValues values{{A.first, a}, {B.first, b}, {C.first, c}};
+          EXPECT_DOUBLES_EQUAL(joint(values) * subset(values), product(values),
+                              1e-12);
+          EXPECT_DOUBLES_EQUAL(Ring::div(joint(values), subset(values)),
+                              quotient(values), 1e-12);
+        }
+      }
+    }
+  }
+}
+
+// An empty joint keeps its full scope when combined with a nonempty subset.
+TEST(TableFactor, SubsetApplyWithEmptyJoint) {
+  const DiscreteKey A(0, 2), B(1, 3);
+  const TableFactor empty(A & B, SparseVector(6));
+  const TableFactor subset(B, "2 3 4");
+  const auto result = empty.apply(subset, Ring::add);
+  EXPECT_LONGS_EQUAL(0, result.nrValues());
+  EXPECT(result.keys() == KeyVector({A.first, B.first}));
+  EXPECT_LONGS_EQUAL(6, result.sparseTable().size());
+}
+
+// Unit-cardinality dimensions neither contribute to nor interrupt indexing.
+TEST(TableFactor, SubsetApplyWithUnitCardinalities) {
+  const DiscreteKey A(0, 2), U(1, 1), B(2, 3), V(3, 1), C(4, 2);
+  for (const DiscreteKeys& keys :
+       vector<DiscreteKeys>{{A, U, B, V, C}, {C, V, B, U, A}}) {
+    const TableFactor joint(keys, "1 0 3 4 0 6 7 8 0 10 11 12");
+    const auto tree = joint.toDecisionTreeFactor();
+    for (const DiscreteKeys& subsetKeys :
+         vector<DiscreteKeys>{{B, V, C}, {C, V, B}, {U, V}}) {
+      size_t cardinality = 1;
+      for (const auto& key : subsetKeys) cardinality *= key.second;
+      vector<double> weights(cardinality);
+      for (size_t i = 0; i < cardinality; ++i)
+        weights[i] = i % 3 == 1 ? 0 : i + 2;
+      const TableFactor subset(subsetKeys, weights);
+      const DecisionTreeFactor treeSubset(subsetKeys, weights);
+      EXPECT(assert_equal(tree * treeSubset,
+                          (joint * subset).toDecisionTreeFactor()));
+      EXPECT(assert_equal(tree / treeSubset,
+                          (joint / subset).toDecisionTreeFactor()));
+    }
+  }
+}
+
+// Disjoint, overlapping, and larger right-hand scopes retain general joins.
+TEST(TableFactor, ApplyWithoutRightSubset) {
+  const DiscreteKey A(0, 2), B(1, 3), C(2, 2);
+  const TableFactor joint(B & A, "1 0 3 4 0 6");
+  const auto tree = joint.toDecisionTreeFactor();
+  for (const DiscreteKeys& keys :
+       vector<DiscreteKeys>{{C}, {B, C}, {C, B, A}}) {
+    size_t cardinality = 1;
+    for (const auto& key : keys) cardinality *= key.second;
+    vector<double> weights(cardinality);
+    for (size_t i = 0; i < cardinality; ++i)
+      weights[i] = i % 3 == 0 ? 0 : i + 2;
+    const TableFactor other(keys, weights);
+    const DecisionTreeFactor treeOther(keys, weights);
+    EXPECT(assert_equal(tree * treeOther, (joint * other).toDecisionTreeFactor()));
+    EXPECT(assert_equal(tree / treeOther, (joint / other).toDecisionTreeFactor()));
+  }
+}
+
+}  // namespace subset_operations
+
+/* ************************************************************************* */
 // Check multiplication with a table-backed conditional in both operand orders.
 TEST(TableFactor, TableConditionalMultiplication) {
   const DiscreteKey key(0, 3);
@@ -508,6 +672,18 @@ TEST(TableFactor, Prune) {
   EXPECT(assert_equal(expected3, *pruned3));
 }
 
+// Check that pruning keeps every value tied with the N-th largest, matching
+// DecisionTreeFactor::prune.
+TEST(TableFactor, PruneKeepsTies) {
+  DiscreteKey X(0, 5);
+  TableFactor f(X, "0.2 0.2 0.1 0.2 0.3");
+
+  auto pruned = std::dynamic_pointer_cast<TableFactor>(f.prune(3));
+
+  TableFactor expected(X, "0.2 0.2 0.0 0.2 0.3");
+  EXPECT(assert_equal(expected, *pruned));
+}
+
 /* ************************************************************************* */
 // Check markdown representation looks as expected.
 TEST(TableFactor, markdown) {
@@ -605,6 +781,64 @@ TEST(TableFactor, UnaryAssignment) {
 
   TableFactor expected(X & Y, "4 10 6 12 4 14");
   EXPECT(assert_equal(g, expected));
+}
+
+/* ************************************************************************* */
+// Check that zeros produced by an operation are not stored in the result.
+TEST(TableFactor, OperationsDropZeros) {
+  const DiscreteKey X(0, 2), Y(1, 2);
+  const TableFactor f(X & Y, "0.1 0.2 0.3 0.4");
+
+  // Unary ops that zero out values below 0.25.
+  const auto threshold = [](const double& x) { return x < 0.25 ? 0.0 : x; };
+  EXPECT_LONGS_EQUAL(2, f.apply(threshold).nrValues());
+  const auto thresholdAssignment = [&](const Assignment<Key>&,
+                                       const double& x) { return threshold(x); };
+  EXPECT_LONGS_EQUAL(2, f.apply(thresholdAssignment).nrValues());
+
+  // A binary op whose products underflow to zero.
+  const TableFactor tiny(X & Y, "1e-200 1e-200 1 1");
+  const auto product = [](const double& a, const double& b) {
+    return a * b * 1e-200;
+  };
+  EXPECT_LONGS_EQUAL(2, f.apply(tiny, product).nrValues());
+
+  // Summing out X cancels the values for Y=0.
+  const TableFactor g(X & Y, "1 2 -1 3");
+  EXPECT_LONGS_EQUAL(1, g.sum(1)->nrValues());
+  EXPECT_LONGS_EQUAL(1, g.sum(Ordering{X.first})->nrValues());
+}
+
+/* ************************************************************************* */
+// A computed scalar zero must annihilate factors in either multiplication order.
+TEST(TableFactor, ComputedScalarZero) {
+  const DiscreteKey X(0, 2);
+  const TableFactor prior(X, "0.25 0.75");
+  const TableFactor scalar(DiscreteKeys{}, std::vector<double>{1.0});
+  const auto zero = scalar.apply([](const double&) { return 0.0; });
+
+  for (const TableFactor& result :
+       {zero * prior, prior * zero, prior / zero}) {
+    EXPECT_DOUBLES_EQUAL(0.0, result(DiscreteValues{{X.first, 0}}), 1e-12);
+    EXPECT_DOUBLES_EQUAL(0.0, result(DiscreteValues{{X.first, 1}}), 1e-12);
+  }
+}
+
+/* ************************************************************************* */
+// Removing stored zeros must preserve the maximum of an all-zero factor.
+TEST(TableFactor, MaximumAfterZeroing) {
+  const DiscreteKey X(0, 2);
+  const auto zero = TableFactor(X, "0.25 0.75") * 0.0;
+  EXPECT_DOUBLES_EQUAL(0.0, zero->max(), 1e-12);
+}
+
+/* ************************************************************************* */
+// A default-constructed factor acts as the identity in multiplication.
+TEST(TableFactor, DefaultIsIdentity) {
+  const DiscreteKey X(0, 2);
+  const TableFactor prior(X, "0.25 0.75");
+  EXPECT(assert_equal(prior, TableFactor() * prior));
+  EXPECT(assert_equal(prior, prior * TableFactor()));
 }
 
 /* ************************************************************************* */
@@ -742,6 +976,29 @@ TEST(TableConditional, Prune) {
 TEST(TableFactor, Argmax) {
   const DiscreteValues expected{{A.first, 1}, {B.first, 2}};
   EXPECT(assert_equal(expected, TableFactor(A & B, spec).argmax()));
+}
+
+// Verify that sparse indices for a large integer range remain exact.
+TEST(TableFactor, EvaluateLargeIntegerStride) {
+  DiscreteKeys keys{{0, 2}};
+  DiscreteValues values{{0, 1}};
+  uint64_t stride = 1;
+  for (Key key = 1; key <= 34; ++key) {
+    keys.emplace_back(key, 3);
+    values[key] = 0;
+    stride *= 3;
+  }
+
+  // The logical table is large, but only one nonzero entry is allocated.
+  // stride = 3^34 = 16677181699666569, which fits in a 64-bit index.
+  SparseVector entries(2 * stride);
+  entries.insert(stride) = 7.0;
+  const TableFactor table(keys, entries);
+
+  EXPECT_DOUBLES_EQUAL(7.0, table(values), 1e-12);
+  const TableFactor subset(DiscreteKey(0, 2), "0 2");
+  EXPECT_DOUBLES_EQUAL(14.0, (table * subset)(values), 1e-12);
+  EXPECT_DOUBLES_EQUAL(3.5, (table / subset)(values), 1e-12);
 }
 
 #ifdef GTSAM_ALLOW_DEPRECATED_SINCE_V43

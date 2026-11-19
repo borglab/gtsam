@@ -155,6 +155,31 @@ TEST(DecisionTree, ConstructorOrder) {
 }
 
 /* ************************************************************************** */
+// Check that a label with a single choice keeps the values of the labels below
+// it, wherever it appears in the label order.
+TEST(DecisionTree, ConstructorSingleChoiceLabel) {
+  string A("A"), B("B"), C("C");
+
+  // B has one choice, so the values only depend on A and C.
+  const std::vector<int> ys = {1, 2, 3, 4};
+  const DT trees[] = {DT({{C, 2}, {A, 2}, {B, 1}}, ys),
+                      DT({{C, 2}, {B, 1}, {A, 2}}, ys),
+                      DT({{B, 1}, {C, 2}, {A, 2}}, ys)};
+
+  for (const DT& tree : trees) {
+    EXPECT_LONGS_EQUAL(4, tree.nrLeaves());
+    EXPECT_LONGS_EQUAL(1, tree({{A, 0}, {B, 0}, {C, 0}}));
+    EXPECT_LONGS_EQUAL(2, tree({{A, 1}, {B, 0}, {C, 0}}));
+    EXPECT_LONGS_EQUAL(3, tree({{A, 0}, {B, 0}, {C, 1}}));
+    EXPECT_LONGS_EQUAL(4, tree({{A, 1}, {B, 0}, {C, 1}}));
+#ifdef GTSAM_DT_MERGING
+    // Merging drops B from the tree entirely.
+    EXPECT(assert_equal(DT({{C, 2}, {A, 2}}, ys), tree));
+#endif
+  }
+}
+
+/* ************************************************************************** */
 // test DT
 TEST(DecisionTree, Example) {
   // Create labels

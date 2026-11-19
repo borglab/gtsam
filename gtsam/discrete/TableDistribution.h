@@ -125,7 +125,8 @@ class GTSAM_EXPORT TableDistribution : public DiscreteConditional {
   /// @{
 
   /// Prune the conditional and renormalize, returning a TableDistribution.
-  DiscreteFactor::shared_ptr prune(size_t maxNrAssignments) const override;
+  [[nodiscard]] DiscreteFactor::shared_ptr prune(
+      size_t maxNrAssignments) const override;
 
   /// @}
 

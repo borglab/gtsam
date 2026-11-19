@@ -61,3 +61,6 @@ build-tbb/
 /.ccache-pkg/
 /.sccache/
 /.sccache-pkg/
+
+# benchmark
+mpc_benchmark_local/

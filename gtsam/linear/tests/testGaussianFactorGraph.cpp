@@ -554,6 +554,37 @@ TEST(GaussianFactorGraph, InconsistentEliminationMessage) {
   }
 }
 /* ************************************************************************* */
+// Incremental elimination carries structural orphan wrappers with parent keys
+// but no numeric rows. They must not be read as populated Jacobian blocks.
+TEST(GaussianFactorGraph, HessianDiagonalSkipsOrphanWrappers) {
+  GaussianFactorGraph graph;
+  graph.emplace_shared<JacobianFactor>(0, Matrix11{2.0}, Vector1{0.0});
+  const auto expected = graph.hessianDiagonal();
+  auto orphan = std::make_shared<GaussianBayesTreeClique>();
+  auto conditional = std::make_shared<GaussianConditional>(
+      1, Vector1{0.0}, Matrix11{1.0}, 0, Matrix11{-1.0},
+      noiseModel::Unit::Create(1));
+  orphan->setEliminationResult({conditional, GaussianFactor::shared_ptr()});
+  graph.emplace_shared<BayesTreeOrphanWrapper<GaussianBayesTreeClique>>(orphan);
+  EXPECT(assert_equal(expected, graph.hessianDiagonal()));
+}
+
+// Dense graph solving uses the same checked Cholesky path as dense factors.
+TEST(GaussianFactorGraph, DenseCholeskySafeguard) {
+  for (double strength : {1e8, 1e10}) {
+    GaussianFactorGraph graph;
+    graph.emplace_shared<HessianFactor>(
+        0, Matrix2{{strength + 1.0, -strength}, {-strength, strength}},
+        Vector2::Zero(), 0.0);
+    if (strength == 1e8) {
+      EXPECT(assert_equal(VectorValues{{0, Vector2::Zero()}},
+                          graph.optimizeDensely()));
+    } else {
+      CHECK_EXCEPTION(graph.optimizeDensely(), IndeterminateSystemException);
+    }
+  }
+}
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

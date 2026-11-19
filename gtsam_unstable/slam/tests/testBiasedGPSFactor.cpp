@@ -77,6 +77,35 @@ TEST(BiasedGPSFactor, jacobian) {
 }
 
 /* ************************************************************************* */
+namespace single_jacobian {
+const Pose3 pose(Rot3::Rodrigues(0.1, 0.2, 0.3), Point3(1.0, 0.5, 0.2));
+const Point3 bias(0.3, -0.2, 0.1);
+const BiasedGPSFactor factor(X(1), B(1), Point3(1.5, 0.0, 0.4),
+                             Isotropic::Sigma(3, 0.05));
+
+// Requesting only the pose Jacobian must not touch the absent bias Jacobian.
+TEST(BiasedGPSFactor, poseJacobianOnly) {
+  Matrix expectedH1, expectedH2, actualH1;
+  const Vector3 expectedError =
+      factor.evaluateError(pose, bias, &expectedH1, &expectedH2);
+  const Vector3 actualError = factor.evaluateError(pose, bias, &actualH1, nullptr);
+  EXPECT(assert_equal(expectedError, actualError));
+  EXPECT(assert_equal(expectedH1, actualH1));
+}
+
+// Requesting only the bias Jacobian must not touch the absent pose Jacobian.
+TEST(BiasedGPSFactor, biasJacobianOnly) {
+  Matrix expectedH1, expectedH2, actualH2;
+  const Vector3 expectedError =
+      factor.evaluateError(pose, bias, &expectedH1, &expectedH2);
+  const Vector3 actualError = factor.evaluateError(pose, bias, nullptr, &actualH2);
+  EXPECT(assert_equal(expectedError, actualError));
+  EXPECT(assert_equal(expectedH2, actualH2));
+  EXPECT(assert_equal(Matrix(I_3x3), actualH2));
+}
+
+}  // namespace single_jacobian
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

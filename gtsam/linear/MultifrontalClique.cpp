@@ -19,6 +19,7 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/config.h>
 #include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/base/CholeskyCheck.h>
 #include <gtsam/linear/HessianFactor.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/MultifrontalClique.h>
@@ -419,6 +420,16 @@ MultifrontalClique::FactorLoadPlan::forJacobian(
   return plan;
 }
 
+MultifrontalClique::FactorLoadPlan MultifrontalClique::FactorLoadPlan::forHessian(
+    size_t factorIndex, const HessianFactor& factor,
+    const MultifrontalClique& clique) {
+  FactorLoadPlan plan;
+  plan.kind = FactorLoadKind::Hessian;
+  plan.factorIndex = factorIndex;
+  plan.mapKeys(factor.keys(), clique);
+  return plan;
+}
+
 MultifrontalClique::FactorLoadPlan MultifrontalClique::FactorLoadPlan::forBatch(
     size_t factorIndex, const BatchJacobianFactorBase& factor,
     const MultifrontalClique& clique) {
@@ -439,7 +450,7 @@ MultifrontalClique::FactorLoadPlan MultifrontalClique::FactorLoadPlan::forBatch(
 
 bool MultifrontalClique::FactorLoadPlan::needsMaterializedRows(
     const MultifrontalClique& clique) const {
-  if (kind == FactorLoadKind::Empty) return false;
+  if (kind == FactorLoadKind::Empty || kind == FactorLoadKind::Hessian) return false;
   if (kind == FactorLoadKind::Jacobian) return true;
   return clique.useQR() || !canDirectUpdate || !kUseDirectBatchHessianUpdate;
 }
@@ -575,8 +586,9 @@ size_t MultifrontalClique::addJacobianFactor(const JacobianFactor& factor,
   assert(blockIt == plan.blockIndices.end());
 
   Ab_(rhsBlockIdx).middleRows(rowOffset, plan.rows) = factor.getb();
-  if (plan.model && !plan.model->isConstrained()) {
-    plan.model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, plan.rows));
+  const auto& model = factor.get_model();
+  if (model && !model->isConstrained()) {
+    model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, plan.rows));
   }
   return plan.rows;
 }
@@ -586,13 +598,26 @@ size_t MultifrontalClique::addBatchJacobianFactor(
     const FactorLoadPlan& plan) {
   const size_t rows = internal::BatchJacobianFactorElimination::scatterRows(
       batchFactor, Ab_, rowOffset, plan.blockIndices);
-  if (plan.model && !plan.model->isConstrained()) {
-    plan.model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
+  const auto& model = batchFactor.get_model();
+  if (model && !model->isConstrained()) {
+    model->WhitenInPlace(Ab_.matrix().middleRows(rowOffset, rows));
   }
   return rows;
 }
 
 void MultifrontalClique::resolveLeafSolveMode() {
+  // Hessians need no square root and may be individually indefinite. Assemble
+  // them directly with the other contributions before factoring the clique.
+  if (hasHessianFactors_) {
+    if (solveMode_ != SolveMode::Cholesky || RSd_.nBlocks() == 0) {
+      solveMode_ = SolveMode::Cholesky;
+      RSd_ = VerticalBlockMatrix(blockDims_, static_cast<DenseIndex>(frontalDim),
+                                true);
+    }
+    if (info_.nBlocks() == 0) info_ = SymmetricBlockMatrix(blockDims_, true);
+    deferredSingleFactorAutoQr_ = false;
+    return;
+  }
   // Auto-QR defers allocation until the sole factor's representation is known.
   const bool needsDeferredStorage = deferredSingleFactorAutoQr_;
   if (deferredSingleFactorAutoQr_) {
@@ -654,9 +679,13 @@ void MultifrontalClique::buildLoadPlans(const GaussianFactorGraph& graph) {
     } else if (const auto* batchFactor =
                    dynamic_cast<const BatchJacobianFactorBase*>(factor.get())) {
       plan = FactorLoadPlan::forBatch(factorIndex, *batchFactor, *this);
+    } else if (const auto* hessianFactor =
+                   dynamic_cast<const HessianFactor*>(factor.get())) {
+      plan = FactorLoadPlan::forHessian(factorIndex, *hessianFactor, *this);
+      hasHessianFactors_ = true;
     } else {
       throw MultifrontalSolverNotSupported(
-          "only JacobianFactor or BatchJacobianFactor inputs are supported");
+          "only JacobianFactor, BatchJacobianFactor, or HessianFactor inputs are supported");
     }
 
     allBatchFactors_ &= plan.isDirectBatch();
@@ -749,6 +778,7 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
   for (const FactorLoadPlan& plan : loadPlans_) {
     const auto* factor = graph[plan.factorIndex].get();
     if (!factor) continue;
+    if (plan.kind == FactorLoadKind::Hessian) continue;
     if (plan.kind == FactorLoadKind::Jacobian) {
       auto* jacobianFactor = dynamic_cast<const JacobianFactor*>(factor);
       assert(jacobianFactor);
@@ -769,7 +799,7 @@ void MultifrontalClique::fillAb(const GaussianFactorGraph& graph) {
       continue;
     }
     throw MultifrontalSolverNotSupported(
-        "only JacobianFactor or BatchJacobianFactor inputs are supported");
+        "only JacobianFactor, BatchJacobianFactor, or HessianFactor inputs are supported");
   }
 
   assert((useQR() && RSd_.matrix().rows() ==
@@ -824,6 +854,26 @@ void MultifrontalClique::prepareForElimination() {
   } else if (Ab_.matrix().rows() > 0 && fillRows_ > 0) {
     info_.selfadjointView().rankUpdate(
         Ab_.matrix().topRows(static_cast<DenseIndex>(fillRows_)).transpose());
+  }
+
+  if (hasHessianFactors_) {
+    for (const FactorLoadPlan& plan : loadPlans_) {
+      if (plan.kind != FactorLoadKind::Hessian) continue;
+      const auto& factor = static_cast<const HessianFactor&>(
+          *activeLoadGraph_->at(plan.factorIndex));
+      const size_t size = factor.size();
+      const DenseIndex rhs = info_.nBlocks() - 1;
+      for (size_t i = 0; i <= size; ++i) {
+        const DenseIndex I = i == size ? rhs : plan.blockIndices[i];
+        if (I < 0) continue;  // Fixed variables have zero delta.
+        info_.updateDiagonalBlock(I, factor.info().block(i, i));
+        for (size_t j = i + 1; j <= size; ++j) {
+          const DenseIndex J = j == size ? rhs : plan.blockIndices[j];
+          if (J < 0) continue;
+          info_.updateOffDiagonalBlock(I, J, factor.info().block(i, j));
+        }
+      }
+    }
   }
 
   // Heuristic: avoid parallel overhead on small cliques.
@@ -900,23 +950,27 @@ void MultifrontalClique::prepareCompactCholesky() {
 }
 
 void MultifrontalClique::factorize() {
-  if (useQR()) {
-    // Copy Ab_ to preserve its invariant; QR writes in place.
-    assert(RSd_.matrix().rows() == Ab_.matrix().rows());
-    assert(RSd_.matrix().cols() == Ab_.matrix().cols());
-    RSd_.matrix() = Ab_.matrix();
-    inplace_QR(RSd_.matrix());
-    assert(RSd_.rowStart() == 0);
-    RSd_.rowEnd() = static_cast<DenseIndex>(frontalDim);
-  } else if (solveMode_ == SolveMode::FusedStarCholeskyLeaf) {
-    factorizeFusedStarCholesky();
-  } else if (useCompactCholesky()) {
-    factorizeCompactCholesky();
-  } else {
-    info_.choleskyPartial(numFrontals());
-    // Split exposes [R S d] while info_ retains the separator Schur complement.
-    info_.split(numFrontals(), &RSd_);
-    info_.blockStart() = 0;
+  try {
+    if (useQR()) {
+      // Copy Ab_ to preserve its invariant; QR writes in place.
+      assert(RSd_.matrix().rows() == Ab_.matrix().rows());
+      assert(RSd_.matrix().cols() == Ab_.matrix().cols());
+      RSd_.matrix() = Ab_.matrix();
+      inplace_QR(RSd_.matrix());
+      assert(RSd_.rowStart() == 0);
+      RSd_.rowEnd() = static_cast<DenseIndex>(frontalDim);
+    } else if (solveMode_ == SolveMode::FusedStarCholeskyLeaf) {
+      factorizeFusedStarCholesky();
+    } else if (useCompactCholesky()) {
+      factorizeCompactCholesky();
+    } else {
+      info_.choleskyPartial(numFrontals());
+      // Split exposes [R S d] while info_ retains the separator Schur complement.
+      info_.split(numFrontals(), &RSd_);
+      info_.blockStart() = 0;
+    }
+  } catch (const CholeskyFailed&) {
+    throw IndeterminateSystemException(orderedKeys_.front());
   }
   RSdReady_ = true;
 }
@@ -938,11 +992,9 @@ void MultifrontalClique::factorizeCompactCholesky() {
   if (llt.info() != Eigen::Success) throw CholeskyFailed();
   const Matrix R = llt.matrixU();
   // Match the scale-normalized pivot guard used by standard Cholesky.
-  constexpr double kMinimumNormalizedPivotSquared = 1.0 / (4096.0 * 4096.0);
   for (DenseIndex i = 0; i < n; ++i) {
     const double pivot = R(i, i);
-    if (!std::isfinite(pivot) ||
-        pivot * pivot < kMinimumNormalizedPivotSquared * A(i, i)) {
+    if (!internal::CholeskyCheck::accept(pivot, A(i, i))) {
       throw CholeskyFailed();
     }
   }

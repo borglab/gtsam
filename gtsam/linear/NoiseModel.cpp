@@ -18,6 +18,7 @@
 
 #include <gtsam/base/timing.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/linear/internal/ConstrainedQR.h>
 
 #include <Eigen/Cholesky>
 #include <cassert>
@@ -557,147 +558,9 @@ Constrained::shared_ptr Constrained::unit() const {
 }
 
 /* ************************************************************************* */
-// Special version of QR for Constrained calls slower but smarter code
-// that deals with possibly zero sigmas
-// It is Gram-Schmidt orthogonalization rather than Householder
-
-// Check whether column a triggers a constraint and corresponding variable is deterministic
-// Return constraint_row with maximum element in case variable plays in multiple constraints
-template <typename VECTOR>
-std::optional<size_t> check_if_constraint(VECTOR a, const Vector& invsigmas, size_t m) {
-  std::optional<size_t> constraint_row;
-  // not zero, so roundoff errors will not be counted
-  // TODO(frank): that's a fairly crude way of dealing with roundoff errors :-(
-  double max_element = 1e-9;
-  for (size_t i = 0; i < m; i++) {
-    if (!std::isinf(invsigmas[i]))
-      continue;
-    double abs_ai = std::abs(a(i,0));
-    if (abs_ai > max_element) {
-      max_element = abs_ai;
-      constraint_row = i;
-    }
-  }
-  return constraint_row;
-}
-
+// One constrained square-root implementation serves fronts of every size.
 SharedDiagonal Constrained::QR(Matrix& Ab) const {
-  static const double kInfinity = std::numeric_limits<double>::infinity();
-
-  // get size(A) and maxRank
-  size_t m = Ab.rows();
-  const size_t n = Ab.cols() - 1;
-  const size_t maxRank = min(m, n);
-
-  // create storage for [R d]
-  typedef std::tuple<size_t, Matrix, double> Triple;
-  list<Triple> Rd;
-
-  Matrix rd(1, n + 1);  // and for row of R
-  Vector invsigmas = sigmas_.array().inverse();
-  Vector weights = invsigmas.array().square();  // calculate weights once
-
-  // We loop over all columns, because the columns that can be eliminated
-  // are not necessarily contiguous. For each one, estimate the corresponding
-  // scalar variable x as d-rS, with S the separator (remaining columns).
-  // Then update A and b by substituting x with d-rS, zero-ing out x's column.
-  for (size_t j = 0; j < n; ++j) {
-    // extract the first column of A
-    Eigen::Block<Matrix> a = Ab.block(0, j, m, 1);
-
-    // Check whether we need to handle as a constraint
-    std::optional<size_t> constraint_row = check_if_constraint(a, invsigmas, m);
-
-    if (constraint_row) {
-      // Handle this as a constraint, as the i^th row has zero sigma with non-zero entry A(i,j)
-
-      // In this case, the row in [R|d] is simply the row in [A|b]
-      // NOTE(frank): we used to divide by a[i] but there is no need with a constraint
-      rd = Ab.row(*constraint_row);
-
-      // Construct solution (r, d, sigma)
-      Rd.push_back(std::make_tuple(j, rd, kInfinity));
-
-      // exit after rank exhausted
-      if (Rd.size() >= maxRank)
-        break;
-
-      // The constraint row will be zeroed out, so we can save work by swapping in the
-      // last valid row and decreasing m. This will save work on subsequent down-dates, too.
-      m -= 1;
-      if (*constraint_row != m) {
-        Ab.row(*constraint_row) = Ab.row(m);
-        weights(*constraint_row) = weights(m);
-        invsigmas(*constraint_row) = invsigmas(m);
-      }
-
-      // get a reduced a-column which is now shorter
-      Eigen::Block<Matrix> a_reduced = Ab.block(0, j, m, 1);
-      a_reduced *= (1.0/rd(0, j)); // NOTE(frank): this is the 1/a[i] = 1/rd(0,j) factor we need!
-
-      // Rank-1 down-date of Ab, expensive, using outer product
-      Ab.block(0, j + 1, m, n - j).noalias() -= a_reduced * rd.middleCols(j + 1, n - j);
-    } else {
-      // Treat in normal Gram-Schmidt way
-      // Calculate weighted pseudo-inverse and corresponding precision
-
-      // Form psuedo-inverse inv(a'inv(Sigma)a)a'inv(Sigma)
-      // For diagonal Sigma, inv(Sigma) = diag(precisions)
-      double precision = 0;
-      Vector pseudo(m);     // allocate storage for pseudo-inverse
-      for (size_t i = 0; i < m; i++) {
-        double ai = a(i, 0);
-        if (std::abs(ai) > 1e-9) {  // also catches remaining sigma==0 rows
-          pseudo[i] = weights[i] * ai;
-          precision += pseudo[i] * ai;
-        } else
-          pseudo[i] = 0;
-      }
-
-      if (precision > 1e-8) {
-        pseudo /= precision;
-
-        // create solution [r d], rhs is automatically r(n)
-        rd(0, j) = 1.0;  // put 1 on diagonal
-        rd.block(0, j + 1, 1, n - j) = pseudo.transpose() * Ab.block(0, j + 1, m, n - j);
-
-        // construct solution (r, d, sigma)
-        Rd.push_back(std::make_tuple(j, rd, precision));
-      } else {
-        // If precision is zero, no information on this column
-        // This is actually not limited to constraints, could happen in Gaussian::QR
-        // In that case, we're probably hosed. TODO: make sure Householder is rank-revealing
-        continue;  // but even if not, no need to update if a==zeros
-      }
-
-      // exit after rank exhausted
-      if (Rd.size() >= maxRank)
-        break;
-
-      // Rank-1 down-date of Ab, expensive, using outer product
-      Ab.block(0, j + 1, m, n - j).noalias() -= a * rd.middleCols(j + 1, n - j);
-    }
-  }
-
-  // Create storage for precisions
-  Vector precisions(Rd.size());
-
-  // Write back result in Ab, imperative as we are
-  size_t i = 0;  // start with first row
-  bool mixed = false;
-  Ab.setZero();  // make sure we don't look below
-  for (const Triple& t: Rd) {
-    const size_t& j = std::get<0>(t);
-    const Matrix& rd = std::get<1>(t);
-    precisions(i) = std::get<2>(t);
-    if (std::isinf(precisions(i)))
-      mixed = true;
-    Ab.block(i, j, 1, n + 1 - j) = rd.block(0, j, 1, n + 1 - j);
-    i += 1;
-  }
-
-  // Must include mu, as the defaults might be higher, resulting in non-convergence
-  return mixed ? Constrained::MixedPrecisions(mu_, precisions) : Diagonal::Precisions(precisions);
+  return internal::constrainedQR(Ab, sigmas_, mu_);
 }
 
 /* ************************************************************************* */

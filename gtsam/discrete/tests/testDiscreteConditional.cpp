@@ -420,6 +420,25 @@ TEST(DiscreteConditional, Argmax) {
 }
 
 /* ************************************************************************* */
+// Pruning keeps every value tied with the N-th largest and renormalizes, for
+// both decision-tree and table-backed conditionals.
+TEST(DiscreteConditional, PruneKeepsTies) {
+  const DiscreteKey X(0, 5);
+  const std::string spec = "0.2 0.2 0.1 0.2 0.3";
+
+  // The three 0.2 values tie for 3rd largest, so all of them survive.
+  const DiscreteConditional expected(1, DecisionTreeFactor(X, "2 2 0 2 3"));
+  for (const DiscreteConditional& conditional :
+       {DiscreteConditional(1, DecisionTreeFactor(X, spec)),
+        DiscreteConditional(1, TableFactor(X, spec))}) {
+    const auto pruned =
+        std::dynamic_pointer_cast<DiscreteConditional>(conditional.prune(3));
+    CHECK(pruned);
+    EXPECT(assert_equal(expected, *pruned));
+  }
+}
+
+/* ************************************************************************* */
 // Multiplication preserves normalization after pruning a table-backed prior.
 TEST(DiscreteConditional, PrunedTableConditionalProduct) {
   const DiscreteKey A(0, 2), C(2, 2);

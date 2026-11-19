@@ -743,6 +743,53 @@ struct traits<Rot3> : public internal::MatrixLieGroup<Rot3, 3> {
   }
 
   /**
+   * Return the eleven D=1 redundant SO(3) constraints (A, a, b), in the form
+   * of QcqpConstraints<1>(). Every rotation satisfies them, so they are
+   * implied by the nine manifold constraints and add nothing to the QCQP, but
+   * they tighten its SDP relaxation. They are five column-orthonormality
+   * equations of R'R = I (the last column norm follows from the trace) and
+   * the cyclic cross products cross(c2, c0) = c1 and cross(c0, c1) = c2,
+   * which complete the right-handedness rows cross(c1, c2) = c0.
+   */
+  static std::vector<std::tuple<Matrix, Vector, double>>
+  QcqpRedundantConstraints() {
+    // Index of R(row, column) in the column-major x = vec(R).
+    const auto index = [](int row, int column) { return row + 3 * column; };
+    std::vector<std::tuple<Matrix, Vector, double>> constraints;
+    constraints.reserve(11);
+
+    // R'R = I: dot(c_i, c_j) = delta_ij, omitting the implied ||c_2||^2 = 1.
+    for (int i = 0; i < 3; ++i) {
+      for (int j = i; j < 3; ++j) {
+        if (i == 2 && j == 2) continue;
+        Matrix A = Matrix::Zero(9, 9);
+        for (int row = 0; row < 3; ++row) {
+          A(index(row, i), index(row, j)) += 0.5;
+          A(index(row, j), index(row, i)) += 0.5;
+        }
+        constraints.emplace_back(A, Vector(), i == j ? 1.0 : 0.0);
+      }
+    }
+
+    // cross(c_j, c_k) = c_i for (i, j, k) = (1, 2, 0) and (2, 0, 1), with
+    // c_i as the linear term 2 a' x, so a = -e / 2.
+    for (int i = 1; i < 3; ++i) {
+      const int j = (i + 1) % 3, k = (i + 2) % 3;
+      for (int row = 0; row < 3; ++row) {
+        const int next = (row + 1) % 3, last = (row + 2) % 3;
+        Matrix A = Matrix::Zero(9, 9);
+        A(index(next, j), index(last, k)) += 0.5;
+        A(index(last, k), index(next, j)) += 0.5;
+        A(index(last, j), index(next, k)) -= 0.5;
+        A(index(next, k), index(last, j)) -= 0.5;
+        constraints.emplace_back(A, -0.5 * Vector::Unit(9, index(row, i)),
+                                 0.0);
+      }
+    }
+    return constraints;
+  }
+
+  /**
    * Project a D=1 vector or canonical 3-by-D lift back to Rot3.
    *
    * Matrix-form QCQP solutions have a right-O(D) gauge, making this

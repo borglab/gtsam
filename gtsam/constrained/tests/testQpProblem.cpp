@@ -101,6 +101,22 @@ TEST(QpCost, LinearizeExact) {
                        1e-12);
 }
 
+// Preserve the weak least-squares direction that normal equations erase.
+TEST(QpCost, SquareRootErrorAndLinearization) {
+  const Matrix A{{1e8, 1e8}, {1.0, 0.0}};
+  const JacobianFactor factor(x0, A, Vector2{0.0, 1.0});
+  const QpCost cost(factor);
+  const Values optimum = VectorValue(Vector2{1.0, -1.0});
+  CHECK(dynamic_cast<const JacobianFactor*>(&cost.gaussianFactor()));
+  EXPECT_DOUBLES_EQUAL(0.0, cost.error(optimum), 1e-15);
+  CHECK(cost.hessianFactor().error(VectorValues{{x0, Vector2{1., -1.}}}) < 0.0);
+  const auto shifted = cost.linearize(optimum);
+  CHECK(std::dynamic_pointer_cast<JacobianFactor>(shifted));
+  const LinearContainerFactor container(shifted, optimum);
+  const Values other = VectorValue(Vector2{2.0, -2.0});
+  EXPECT_DOUBLES_EQUAL(cost.error(other), container.error(other), 1e-12);
+}
+
 }  // namespace QpCostFixture
 /* ************************************************************************* */
 namespace LinearConstraintFixture {

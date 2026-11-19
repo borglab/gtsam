@@ -192,7 +192,8 @@ namespace gtsam {
     /**
      * @brief Merge branches with equal leaf values for every choice node in a
      * decision tree. If all branches are the same (i.e. have the same leaf
-     * value), replace the choice node with the equivalent leaf node.
+     * value), replace the choice node with the equivalent leaf node. A choice
+     * node with a single branch is replaced by that branch.
      *
      * This function applies the branch merging (if enabled) recursively on the
      * decision tree represented by the root node passed in as the argument. It
@@ -219,6 +220,12 @@ namespace gtsam {
       for (const auto& branch : choice->branches_) {
         f->push_back(Unique(branch));
       }
+
+      // A label with a single choice doesn't split anything, so its branch,
+      // leaf or subtree replaces it. This must come before the allSame_ check:
+      // allSame_ is only updated from the second branch onward, so it stays
+      // true here even when the one branch is a Choice, not a Leaf.
+      if (f->nrChoices() == 1) return f->branches_[0];
 
       // If all the branches are the same, we can merge them into one
       if (f->allSame_) {

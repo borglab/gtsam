@@ -50,7 +50,7 @@ def get_data() -> Tuple[gtsam.Values, List[gtsam.BinaryMeasurementUnit3]]:
             # Compute the normalized unit translation direction.
             i_iZj = gtsam.Unit3(i_itj)
             i_iZj_list.append(gtsam.BinaryMeasurementUnit3(
-                i, j, i_iZj, gtsam.noiseModel.Isotropic.Sigma(3, 0.01)))
+                i, j, i_iZj, gtsam.noiseModel.Isotropic.Sigma(2, 0.01)))
     # Add the last two rotations.
     wRc_values.insert(len(wTc_list) - 1, wTc_list[-1].rotation())
     wRc_values.insert(len(wTc_list) - 2, wTc_list[-2].rotation())

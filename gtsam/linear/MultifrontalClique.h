@@ -117,8 +117,8 @@ class GTSAM_EXPORT MultifrontalClique {
    * Load factor values into a lazily allocated, reusable Ab matrix.
    * @param graph The factor graph with updated values (structure must match
    *              the graph used to build this clique, apart from updated
-   *              numerical values). Only JacobianFactor and BatchJacobianFactor
-   *              inputs are supported.
+   *              numerical values). JacobianFactor, BatchJacobianFactor, and
+   *              HessianFactor inputs are supported.
    */
   void fillAb(const GaussianFactorGraph& graph);
 
@@ -279,7 +279,7 @@ class GTSAM_EXPORT MultifrontalClique {
   /// Linear lookup for block index in small cliques.
   DenseIndex blockIndex(Key key) const;
 
-  enum class FactorLoadKind : uint8_t { Empty, Jacobian, Batch };
+  enum class FactorLoadKind : uint8_t { Empty, Jacobian, Batch, Hessian };
 
   struct FactorLoadPlan {
     FactorLoadKind kind = FactorLoadKind::Empty;
@@ -306,6 +306,11 @@ class GTSAM_EXPORT MultifrontalClique {
     static FactorLoadPlan forJacobian(size_t factorIndex,
                                       const JacobianFactor& factor,
                                       const MultifrontalClique& clique);
+
+    /// Construct a plan for direct Hessian assembly into a Cholesky clique.
+    static FactorLoadPlan forHessian(size_t factorIndex,
+                                     const HessianFactor& factor,
+                                     const MultifrontalClique& clique);
 
     /// Construct a plan for a compact batch Jacobian factor.
     static FactorLoadPlan forBatch(size_t factorIndex,
@@ -464,6 +469,7 @@ class GTSAM_EXPORT MultifrontalClique {
   mutable bool hasDirectBatchFactors_ = false;
   mutable std::vector<FactorLoadPlan> loadPlans_;
   mutable bool loadPlansBuilt_ = false;
+  bool hasHessianFactors_ = false;
   mutable size_t materializedRows_ = 0;  ///< Packed fallback rows in Ab_.
   mutable size_t fillRows_ = 0;
 

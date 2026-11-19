@@ -16,6 +16,20 @@
 py::bind_vector<std::vector<gtsam::Matrix>>(
     m_, "JacobianVector", py::module_local(false));
 
+// Copies crossing Python callback boundaries retain the same parameter identity.
+{
+  auto parameterTag = py::reinterpret_borrow<
+      py::class_<gtsam::ParameterTag, std::shared_ptr<gtsam::ParameterTag>>>(
+      m_.attr("ParameterTag"));
+  parameterTag.def(py::self == py::self)
+      .def(py::self != py::self)
+      .def("__hash__", &gtsam::ParameterTag::hash)
+      .def("__copy__", [](const gtsam::ParameterTag& self) { return self; })
+      .def("__deepcopy__", [](const gtsam::ParameterTag& self, py::dict) {
+        return self;
+      });
+}
+
 {
   using PythonAffectedKeys =
       std::map<gtsam::FactorIndex, std::set<gtsam::Key>>;

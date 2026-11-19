@@ -9,6 +9,7 @@ It includes classes for representing constraints, building constrained problems,
 - [`ConstrainedOptProblem::AuxiliaryKeyGenerator`](doc/ConstrainedOptProblem.ipynb): Generates keys for auxiliary variables used when transforming inequality constraints.
 - [`NonlinearConstraint`](doc/NonlinearConstraint.ipynb): Base class for nonlinear constraints represented as constrained `NoiseModelFactor` objects.
 - [`QpProblem`](doc/QpProblem.ipynb): Quadratic programs with affine quadratic costs and linear constraints over direct `Vector` and `Matrix` values, including guidance on sparse versus dense active-set subproblems.
+- [QP solver benchmarks](doc/QpBenchmark.md): MPC and captured G1 comparisons against Clarabel, OSQP, and ProxQP, with a downloadable HTML report, graphics, and numerical checks.
 - [`LpProblem`](doc/LpProblem.ipynb): Linear programs with linear costs and linear constraints over direct `Vector` and `Matrix` values.
 
 ## Equality Constraints
@@ -41,9 +42,9 @@ It includes classes for representing constraints, building constrained problems,
 - [`QcqpProblem`](doc/QcqpProblem.ipynb): Holds quadratic costs and linear/quadratic constraints over vector or matrix variables.
 - [`QpCost`](doc/QcqpProblem.ipynb): Also used for QCQP objectives; `QpCost(keys, Q, columnDim)` creates a pure row-space quadratic cost $\frac{1}{2}\sum_{ij}\operatorname{tr}(X_i^\top Q_{ij}X_j)$ over vectors or matrices $X_i \in \mathbb{R}^{r_i \times d}$.
 - [`QuadraticConstraint`](doc/QcqpProblem.ipynb): Scalar quadratic constraint $\operatorname{tr}(X^\top A X) \sim b$, where $\sim$ is equal, less-equal, or greater-equal. For vector variables it may carry a linear term, $x^\top A x + 2a^\top x \sim b$, following Luo et al. (2010); `QuadraticConstraint::FromPqr` accepts the Boyd and Vandenberghe form $\frac{1}{2}x^\top P x + q^\top x + r \sim 0$ (*Convex Optimization*, Eq. (4.35)).
-- `QcqpProblem(graph, columnDim)`: Opt-in conversion hook for supported nonlinear factors that can populate `QpCost` objectives and `QuadraticConstraint` equalities over matrix-valued QCQP variables.
-- `InsertQcqpValue<T, D>` and `InsertQcqpConstraints<T, D>`: Helpers for inserting supported QCQP variable values and their equality constraints.
-- `ExtractQcqpValues<T, D>`: Projection of exact-shape D=1 vectors or matrix
+- `QcqpProblem(graph, columnDim, useRedundantConstraints)`: Opt-in conversion hook for supported nonlinear factors that can populate `QpCost` objectives and `QuadraticConstraint` equalities over matrix-valued QCQP variables. With `useRedundantConstraints`, it also adds redundant constraints implied by the manifold constraints, at D=1 the column-orthonormality and cyclic cross-product identities of SO(3) for Rot3 and Pose3: they tighten SDP relaxations, but the QCQP then violates LICQ.
+- `insertQcqpValue<T, D>` inserts supported QCQP variable values. `QcqpVariableConstraints::add` lazily generates each variable's equality constraints once per key and collects them in insertion order. Ordinary and redundant variable constraints use separate collectors.
+- `extractQcqpValues<T, D>`: Projection of exact-shape D=1 vectors or matrix
   slices back to manifold values. Absolute results from unanchored matrix
   components are gauge-dependent. Extraction is shape-only, so compact D=1 Rot2
   and Vector2 blocks (both 2-by-1) require key-directed recovery when they
@@ -76,6 +77,7 @@ factors throw from `NonlinearFactor::qcqpFactors`.
 
 - [`ConstrainedOptimizerParams`](doc/ConstrainedOptimizer.ipynb), [`ConstrainedOptimizerState`](doc/ConstrainedOptimizer.ipynb), [`ConstrainedOptimizer`](doc/ConstrainedOptimizer.ipynb): Shared base interfaces and iteration state for constrained solvers.
 - [`PenaltyOptimizerParams`](doc/PenaltyOptimizer.ipynb), [`PenaltyOptimizerState`](doc/PenaltyOptimizer.ipynb), [`PenaltyOptimizer`](doc/PenaltyOptimizer.ipynb): Penalty method solver and its parameters/state.
+- [`AugmentedLagrangianSolver`](doc/AugmentedLagrangianSolver.md): Direct Gaussian QP solver sharing the nonlinear optimizer’s ALM engine.
 - [`AugmentedLagrangianParams`](doc/AugmentedLagrangianOptimizer.ipynb), [`AugmentedLagrangianState`](doc/AugmentedLagrangianOptimizer.ipynb), [`AugmentedLagrangianOptimizer`](doc/AugmentedLagrangianOptimizer.ipynb): Augmented Lagrangian solver and its parameters/state.
 - [`ActiveSetSolver`](doc/QpProblem.ipynb): Active-set solver for [`QpProblem`](doc/QpProblem.ipynb) and [`LpProblem`](doc/LpProblem.ipynb), with sparse and dense QP subproblem modes.
 
@@ -92,6 +94,38 @@ which controls behavior near the active constraint boundary in
 `PenaltyOptimizer`. `AugmentedLagrangianOptimizer` instead requires exact PHR
 inequality terms and rejects custom smooth penalties so its projected
 multiplier update remains mathematically consistent.
+
+Both ALM frontends share one internal engine for penalty and multiplier updates,
+LM damping, diagnostics and stopping. `AugmentedLagrangianSolver` accepts native
+Gaussian graphs and `VectorValues`; `AugmentedLagrangianOptimizer` supplies
+nonlinear function evaluations, Jacobians and manifold retraction. Each call
+retains one Gaussian step graph and damped multifrontal workspace, with an
+ordering and symbolic structure reused across outer iterations. A standalone
+nonlinear `iterate()` call creates its own workspace.
+
+The Gaussian adapter copies objective coefficient storage once, shifts only
+RHS/linear terms, and updates augmented constraint coefficients when penalties
+or PHR activity change. The nonlinear adapter reuses each original
+linearization for its step and stationarity tests. Inactive PHR rows retain
+zero Jacobians and their factor slots. Original whitened residuals supply
+outer diagnostics and projected multipliers directly. On terminal BCL
+convergence, those multipliers agree with the reported stationarity.
+
+`lmParams` supplies damping, ordering, multifrontal settings and iteration
+limits. Numerical elimination is repeated for attempted inner solves; numerical
+factor reuse is not implemented. Stable model reduction uses gradient/Hessian
+products; a trial-gradient check handles roundoff-sized merit differences.
+Native ALM convergence does not include an absolute QP gap test. See the
+[Gaussian solver guide](doc/AugmentedLagrangianSolver.md) for a small driver,
+multiplier units, counters and profiling.
+
+The BCL inner stationarity schedule is bounded below by
+`absoluteStationarityTolerance`. This lets feasibility updates continue
+without demanding inner accuracy beyond the requested final tolerance.
+
+`timeAugmentedLagrangianPolicies --warmup 3 --repeats 21` benchmarks the policy
+examples and sparse inequality chains with 512 and 2,048 variables, reporting
+time, iteration counts, success, and final KKT residuals.
 
 ### 1) Build the Problem
 

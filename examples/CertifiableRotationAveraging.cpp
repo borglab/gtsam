@@ -94,11 +94,11 @@ Values RandomInitial(const std::set<Key>& keys) {
   std::uniform_real_distribution<double> uniform(-kPi, kPi);
   for (Key key : keys) {
     if constexpr (std::is_same_v<RotT, Rot2>) {
-      InsertQcqpValue<Rot2, IntrinsicDim>(
+      insertQcqpValue<Rot2, IntrinsicDim>(
           key, Rot2::fromAngle(uniform(rng)), &values);
     } else {
       const Vector3 rpy(uniform(rng), uniform(rng), uniform(rng));
-      InsertQcqpValue<Rot3, IntrinsicDim>(
+      insertQcqpValue<Rot3, IntrinsicDim>(
           key, Rot3::RzRyRx(rpy(0), rpy(1), rpy(2)), &values);
     }
   }
@@ -109,7 +109,7 @@ template <typename RotT, int IntrinsicDim>
 Values qcqpInitial(const Values& rotations) {
   Values initial;
   for (const auto& [key, rotation] : rotations.extract<RotT>()) {
-    InsertQcqpValue<RotT, IntrinsicDim>(key, rotation, &initial);
+    insertQcqpValue<RotT, IntrinsicDim>(key, rotation, &initial);
   }
   return initial;
 }
@@ -121,7 +121,7 @@ Values g2oInitial(const Values& poses, const std::set<Key>& keys) {
     if (!poses.exists(key)) {
       throw std::invalid_argument("g2o initialization is missing a graph key");
     }
-    InsertQcqpValue<RotT, IntrinsicDim>(key, poses.at<PoseT>(key).rotation(),
+    insertQcqpValue<RotT, IntrinsicDim>(key, poses.at<PoseT>(key).rotation(),
                                         &initial);
   }
   return initial;
@@ -225,7 +225,7 @@ int RunCertifiableRA(const std::string& dataPath,
     Values atRankD = result.layout.unstack(result.rounded->Yd);
     AlignBlockDetSigns<IntrinsicDim>(atRankD);
     for (auto& [key, R] :
-         ExtractQcqpValues<RotT, IntrinsicDim>(atRankD)) {
+         extractQcqpValues<RotT, IntrinsicDim>(atRankD)) {
       rounded.insert(key, R);
     }
   }

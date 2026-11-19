@@ -50,6 +50,64 @@ class gtsam::StereoPoint2;
 
 namespace gtsam {
 
+#include <gtsam_unstable/geometry/AugmentedPoint.h>
+// Only the wrappers restrict spatial dimensions to 2 and 3.
+template <N = {2, 3}>
+class AugmentedPoint {
+  // Standard Constructors
+  AugmentedPoint();
+  AugmentedPoint(const gtsam::Vector& point);
+
+  // Group
+  static gtsam::AugmentedPoint<N> Identity();
+
+  // Standard Interface
+  int dim() const;
+  double norm() const;
+  double dot(const gtsam::AugmentedPoint<N>& other) const;
+
+  // MATLAB needs a numeric vector type; the lambda preserves the C++ return type.
+  @pybind_lambda
+  gtsam::Vector vector() const;
+
+  // Testable
+  void print(const std::string& s = "") const;
+  bool equals(const gtsam::AugmentedPoint<N>& other, double tol = 1e-9) const;
+};
+
+// Typed access belongs to unstable rather than the stable Values wrapper.
+template <N = {2, 3}>
+void insertAugmentedPoint(gtsam::Key key, const gtsam::AugmentedPoint<N>& point,
+                          gtsam::Values& values);
+
+template <N = {2, 3}>
+void updateAugmentedPoint(gtsam::Key key, const gtsam::AugmentedPoint<N>& point,
+                          gtsam::Values& values);
+
+template <N = {2, 3}>
+void insertOrAssignAugmentedPoint(gtsam::Key key,
+                                  const gtsam::AugmentedPoint<N>& point,
+                                  gtsam::Values& values);
+
+template <N = {2, 3}>
+gtsam::AugmentedPoint<N> atAugmentedPoint(gtsam::Key key,
+                                         const gtsam::Values& values);
+
+// Dimension overloads avoid nested type arguments in wrapped free functions.
+template <N = {2, 3}>
+gtsam::Matrix qcqpValue(const gtsam::AugmentedPoint<N>& typedValue);
+
+template <N = {2, 3}>
+void insertQcqpValue(gtsam::Key key,
+                     const gtsam::AugmentedPoint<N>& typedValue,
+                     gtsam::Values& qcqpValues);
+
+template <N = {2, 3}>
+gtsam::AugmentedPoint<N> fromQcqpValue(const gtsam::Matrix& qcqpValue);
+
+template <N = {2, 3}>
+gtsam::Values extractQcqpValues(const gtsam::Values& qcqpValues);
+
 #include <gtsam_unstable/geometry/Pose3Upright.h>
 class Pose3Upright {
   Pose3Upright();
@@ -286,6 +344,30 @@ virtual class TransformBtwRobotsUnaryFactor : gtsam::NonlinearFactor {
   void serializable() const; // enabling serialization functionality
 };
 
+#include <gtsam_unstable/slam/KnownLandmarkSquaredRangeFactor.h>
+
+// Instantiate the supported position types.
+template <POSITION>
+virtual class KnownLandmarkSquaredRangeFactor : gtsam::NoiseModelFactor {
+  KnownLandmarkSquaredRangeFactor(
+      gtsam::Key key, const gtsam::Vector& wL, double measuredRange,
+      const gtsam::noiseModel::Base* model);
+
+  gtsam::Vector evaluateError(const POSITION& wX) const;
+};
+
+// Ordinary nonlinear factors.
+typedef gtsam::KnownLandmarkSquaredRangeFactor<gtsam::Vector2>
+    KnownLandmarkSquaredRangeFactor2;
+typedef gtsam::KnownLandmarkSquaredRangeFactor<gtsam::Vector3>
+    KnownLandmarkSquaredRangeFactor3;
+
+// Factors supporting both nonlinear optimization and QCQP conversion.
+typedef gtsam::KnownLandmarkSquaredRangeFactor<gtsam::AugmentedPoint<2>>
+    KnownLandmarkSquaredRangeFactorAugmentedPoint2;
+typedef gtsam::KnownLandmarkSquaredRangeFactor<gtsam::AugmentedPoint<3>>
+    KnownLandmarkSquaredRangeFactorAugmentedPoint3;
+
 #include <gtsam_unstable/slam/SmartRangeFactor.h>
 virtual class SmartRangeFactor : gtsam::NoiseModelFactor {
   SmartRangeFactor(double s);
@@ -397,6 +479,13 @@ virtual class RelativeElevationFactor: gtsam::NoiseModelFactor {
   //void print(string s) const;
 };
 
+#include <gtsam_unstable/slam/BiasedGPSFactor.h>
+virtual class BiasedGPSFactor : gtsam::NoiseModelFactor {
+  BiasedGPSFactor(gtsam::Key posekey, gtsam::Key biaskey, const gtsam::Point3& measured,
+                  const gtsam::noiseModel::Base* model);
+  const gtsam::Point3& measured() const;
+};
+
 #include <gtsam_unstable/slam/InvDepthFactorVariant1.h>
 virtual class InvDepthFactorVariant1 : gtsam::NoiseModelFactor {
   InvDepthFactorVariant1(gtsam::Key poseKey, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
@@ -413,6 +502,14 @@ virtual class InvDepthFactorVariant3a : gtsam::NoiseModelFactor {
 };
 virtual class InvDepthFactorVariant3b : gtsam::NoiseModelFactor {
   InvDepthFactorVariant3b(gtsam::Key poseKey1, gtsam::Key poseKey2, gtsam::Key landmarkKey, const gtsam::Point2& measured, const gtsam::Cal3_S2* K, const gtsam::noiseModel::Base* model);
+};
+
+#include <gtsam_unstable/slam/GaussMarkov1stOrderFactor.h>
+template <VALUE = {gtsam::Vector, gtsam::Point3}>
+virtual class GaussMarkov1stOrderFactor : gtsam::NoiseModelFactor {
+  GaussMarkov1stOrderFactor(gtsam::Key key1, gtsam::Key key2, double delta_t,
+                            const gtsam::Vector& tau,
+                            const gtsam::noiseModel::Gaussian* model);
 };
 
 

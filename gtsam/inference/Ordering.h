@@ -160,10 +160,10 @@ public:
   /// VariableIndex, it is faster to use COLAMD(const VariableIndex&).  In this function, a group
   /// for each variable should be specified in \c groups, and each group of variables will appear
   /// in the ordering in group index order.  \c groups should be a map from Key to group index.
-  /// The group indices used should be consecutive starting at 0, but may appear in \c groups in
-  /// arbitrary order.  Any variables not present in \c groups will be assigned to group 0.  This
-  /// function simply fills the \c cmember argument to CCOLAMD with the supplied indices, see the
-  /// CCOLAMD documentation for more information.
+  /// Only the order of the group indices matters: they need not be consecutive nor start at 0.
+  /// Any variables not present in \c groups will be assigned to group 0.  The indices are passed
+  /// to CCOLAMD as its \c cmember argument (replaced by their ranks if outside the range it
+  /// accepts), see the CCOLAMD documentation for more information.
   template<class FACTOR_GRAPH>
   static Ordering ColamdConstrained(const FACTOR_GRAPH& graph,
       const FastMap<Key, int>& groups) {
@@ -176,10 +176,10 @@ public:
   /// Compute a fill-reducing ordering using constrained COLAMD from a VariableIndex.  In this
   /// function, a group for each variable should be specified in \c groups, and each group of
   /// variables will appear in the ordering in group index order.  \c groups should be a map from
-  /// Key to group index. The group indices used should be consecutive starting at 0, but may
-  /// appear in \c groups in arbitrary order.  Any variables not present in \c groups will be
-  /// assigned to group 0.  This function simply fills the \c cmember argument to CCOLAMD with the
-  /// supplied indices, see the CCOLAMD documentation for more information.
+  /// Key to group index. Only the order of the group indices matters: they need not be
+  /// consecutive nor start at 0.  Any variables not present in \c groups will be assigned to
+  /// group 0.  The indices are passed to CCOLAMD as its \c cmember argument (replaced by their
+  /// ranks if outside the range it accepts), see the CCOLAMD documentation for more information.
   static Ordering ColamdConstrained(
       const VariableIndex& variableIndex, const FastMap<Key, int>& groups);
 

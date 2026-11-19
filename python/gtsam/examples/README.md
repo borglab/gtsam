@@ -103,6 +103,8 @@ Additional Notebook Examples
 - [Gal3ImuASVExample](navigation/Gal3ImuASVExample.ipynb)
 - [Gal3ImuExample](navigation/Gal3ImuExample.ipynb)
 - [Gal3ImuNEESReset](navigation/Gal3ImuNEESReset.ipynb)
+- [GradientsExample](nonlinear/GradientsExample.ipynb)
+- [GradientsPyTorchExample](nonlinear/GradientsPyTorchExample.ipynb)
 - [LQRExample](linear/LQRExample.ipynb)
 - [NavStateImuASVExample](navigation/NavStateImuASVExample.ipynb)
 - [NavStateImuExample](navigation/NavStateImuExample.ipynb)

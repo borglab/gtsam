@@ -24,7 +24,11 @@
 #include <gtsam/hybrid/HybridValues.h>
 #include <gtsam/inference/Ordering.h>
 
+#include <functional>
+#include <limits>
+#include <queue>
 #include <utility>
+#include <vector>
 
 using namespace std;
 
@@ -102,9 +106,10 @@ namespace gtsam {
   DiscreteFactor::shared_ptr DecisionTreeFactor::operator/(
       const DiscreteFactor::shared_ptr& f) const {
     if (auto tf = std::dynamic_pointer_cast<TableFactor>(f)) {
-      // Check if `f` is a TableFactor. If yes, then
-      // convert `this` to a TableFactor which is cheaper.
-      return std::make_shared<TableFactor>(tf->operator/(TableFactor(*this)));
+      // If `f` is a TableFactor, divide as tables, which is cheaper. Use the
+      // virtual conversion so derived decision tree factors can provide their
+      // actual sparse representation.
+      return std::make_shared<TableFactor>(toTableFactor() / *tf);
 
     } else if (auto dtf = std::dynamic_pointer_cast<DecisionTreeFactor>(f)) {
       // If `f` is a DecisionTreeFactor, divide normally.
@@ -387,151 +392,85 @@ namespace gtsam {
       : DiscreteFactor(keys.indices(), keys.cardinalities()),
         AlgebraicDecisionTree<Key>(keys, table) {}
 
-  /**
-   * @brief Min-Heap class to help with pruning.
-   * The `top` element is always the smallest value.
+  /** Min-heap of (value, nrAssignments) pairs holding the N largest values.
+   * Each leaf adds one entry weighted by the assignments it covers, rather than
+   * one copy per assignment, and the heap drops its smallest entries once the
+   * rest cover N. It therefore holds at most min(N, #leaves) + 1 entries,
+   * whether N is small or a leaf covers billions of assignments.
    */
-  class MinHeap {
-    std::vector<double> v_;
-
-   public:
-    /// Default constructor
-    MinHeap() {}
-
-    /// Push value onto the heap
-    void push(double x) {
-      v_.push_back(x);
-      std::push_heap(v_.begin(), v_.end(), std::greater<double>{});
-    }
-
-    /// Push value `x`, `n` number of times.
-    void push(double x, size_t n) {
-      for (size_t i = 0; i < n; ++i) {
-        v_.push_back(x);
-        std::push_heap(v_.begin(), v_.end(), std::greater<double>{});
-      }
-    }
-
-    /// Pop the top value of the heap.
-    double pop() {
-      std::pop_heap(v_.begin(), v_.end(), std::greater<double>{});
-      double x = v_.back();
-      v_.pop_back();
-      return x;
-    }
-
-    /// Return the top value of the heap without popping it.
-    double top() { return v_.at(0); }
-
-    /**
-     * @brief Print the heap as a sequence.
-     *
-     * @param s A string to prologue the output.
-     */
-    void print(const std::string& s = "") {
-      std::cout << (s.empty() ? "" : s + " ");
-      for (size_t i = 0; i < v_.size(); i++) {
-        std::cout << v_.at(i);
-        if (v_.size() > 1 && i < v_.size() - 1) std::cout << ", ";
-      }
-      std::cout << std::endl;
-    }
-
-    /// Return true if heap is empty.
-    bool empty() const { return v_.empty(); }
-
-    /// Return the size of the heap.
-    size_t size() const { return v_.size(); }
-  };
+  using WeightedValue = std::pair<double, size_t>;
+  using WeightedMinHeap =
+      std::priority_queue<WeightedValue, std::vector<WeightedValue>,
+                          std::greater<WeightedValue>>;
 
   /* ************************************************************************ */
   double DecisionTreeFactor::computeThreshold(const size_t N) const {
-    // Set of all keys
-    std::set<Key> allKeys = this->labels();
-    MinHeap min_heap;
+    // With nothing to keep, no value can reach the threshold.
+    if (N == 0) return std::numeric_limits<double>::infinity();
+
+    WeightedMinHeap min_heap;
+    // The min_heap's total count is tracked as its gap from N rather than as a
+    // sum, which could overflow when N is close to SIZE_MAX.
+    // While the heap covers fewer than N assignments, nrMissing is the
+    // shortfall; afterwards nrSurplus is the excess, which stays below the
+    // smallest entry's count since that entry could otherwise be dropped.
+    size_t nrMissing = N, nrSurplus = 0;
 
     auto op = [&](const Assignment<Key>& a, double p) {
-      // Get all the keys in the current assignment
-      KeySet assignment_keys;
-      for (auto&& [k, _] : a) {
-        assignment_keys.insert(k);
-      }
+      // A full min_heap only takes values above its smallest one.
+      if (nrMissing == 0 && p <= min_heap.top().first) return p;
 
-      // Find the keys missing in the assignment
-      KeyVector diff;
-      std::set_difference(allKeys.begin(), allKeys.end(),
-                          assignment_keys.begin(), assignment_keys.end(),
-                          std::back_inserter(diff));
-
-      // Compute the total number of assignments in the (pruned) subtree
+      // A leaf covers every assignment of the keys missing from its path.
+      // Iterate over the factor's keys rather than the tree's labels():
+      // merging drops keys the values don't depend on from the tree,
+      // but each leaf still stands for all of their assignments.
+      // Counts beyond N don't change the threshold, so saturate at N before
+      // multiplying to keep the count from overflowing.
       size_t nrAssignments = 1;
-      for (auto&& k : diff) {
-        nrAssignments *= cardinalities_.at(k);
+      for (auto&& [key, cardinality] : cardinalities_) {
+        if (a.count(key) > 0) continue;
+        nrAssignments = nrAssignments > N / cardinality
+                            ? N
+                            : nrAssignments * cardinality;
       }
 
-      // If min-heap is empty, fill it initially.
-      // This is because there is nothing at the top.
-      if (min_heap.empty()) {
-        min_heap.push(p, std::min(nrAssignments, N));
-
-      } else {
-        for (size_t i = 0; i < std::min(nrAssignments, N); ++i) {
-          // If p is larger than the smallest element,
-          // then we insert into the min heap.
-          // We check against the top each time because the
-          // heap maintains the smallest element at the top.
-          if (p > min_heap.top()) {
-            if (min_heap.size() == N) {
-              min_heap.pop();
-            }
-            min_heap.push(p);
-          } else {
-            // p is <= min value so move to the next one
-            break;
-          }
-        }
+      min_heap.emplace(p, nrAssignments);
+      if (nrAssignments < nrMissing) {
+        nrMissing -= nrAssignments;
+        return p;
       }
+
+      // The heap now covers N, with nrSurplus + nrPending to spare. Drop the
+      // smallest entries while the rest still cover N. The new entry is never
+      // dropped: each drop shrinks nrPending below its count.
+      size_t nrPending = nrAssignments - nrMissing;
+      nrMissing = 0;
+      while (nrPending >= min_heap.top().second - nrSurplus) {
+        nrPending -= min_heap.top().second - nrSurplus;
+        nrSurplus = 0;
+        min_heap.pop();
+      }
+      // Below the smallest entry's count by the loop condition, so no overflow.
+      nrSurplus += nrPending;
       return p;
     };
     this->visitWith(op);
 
-    // If total number of hypotheses is less than N, return 0.0
-    if (min_heap.size() < N) {
-      return 0.0;
-    }
-    return min_heap.top();
+    // The factor has fewer than N assignments in total.
+    if (nrMissing > 0) return 0.0;
+    return min_heap.top().first;
   }
 
   /* ************************************************************************ */
   DiscreteFactor::shared_ptr DecisionTreeFactor::prune(
       size_t maxNrAssignments) const {
-    const size_t N = maxNrAssignments;
-
-    double threshold = computeThreshold(N);
-
-    // Now threshold the decision tree
-    size_t total = 0;
-    auto thresholdFunc = [threshold, &total, N](const double& value) {
-      // There is a possible case where the `threshold` is equal to 0.0
-      // In that case `(value < threshold) == false`
-      // which increases the leaf total erroneously.
-      // Hence we check for 0.0 explicitly.
-      if (fpEqual(value, 0.0, 1e-12)) {
-        return 0.0;
-      }
-
-      // Check if value is less than the threshold and
-      // we haven't exceeded the maximum number of leaves.
-      // TODO(Varun): Bug since we can have a case where we need to prune higher
-      // probabilities after we have reached N.
-      // E.g. N=3 for [0.2, 0.2, 0.1, 0.2, 0.3]
-      // will give [0.2, 0.2, 0.0, 0.2, 0.0]
-      if (value < threshold || total >= N) {
-        return 0.0;
-      } else {
-        total += 1;
-        return value;
-      }
+    // Keep every value at or above the N-th largest one. We don't stop after N
+    // kept values: leaves are visited in tree order, not value order, so a cap
+    // would drop larger values that come later. Values tied with the threshold
+    // are all kept, so more than N assignments can survive.
+    const double threshold = computeThreshold(maxNrAssignments);
+    auto thresholdFunc = [threshold](const double& value) {
+      return value < threshold ? 0.0 : value;
     };
     DecisionTree<Key, double> thresholded(*this, thresholdFunc);
 

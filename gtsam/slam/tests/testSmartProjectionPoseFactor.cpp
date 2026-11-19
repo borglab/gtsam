@@ -1105,6 +1105,7 @@ TEST( SmartProjectionPoseFactor, Hessian ) {
 }
 
 /* *************************************************************************/
+// Verifies that the Hessian is invariant to a rigid motion of all cameras.
 TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
   // cout << " ************************ SmartProjectionPoseFactor: rotated Hessian **********************" << endl;
 
@@ -1127,6 +1128,11 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
   std::shared_ptr<GaussianFactor> factor = smartFactorInstance->linearize(
       values);
 
+  // Entries are O(1e7), so scale the tolerance with the matrix: a fixed 1e-7
+  // allows only a few dozen ULPs and fails under benign rounding changes.
+  const Matrix information = factor->information();
+  const double tolerance = 1e-12 * information.norm();
+
   Pose3 poseDrift = Pose3(Rot3::Ypr(-M_PI / 2, 0., -M_PI / 2), Point3(0, 0, 0));
 
   Values rotValues;
@@ -1138,7 +1144,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
       rotValues);
 
   // Hessian is invariant to rotations in the nondegenerate case
-  EXPECT(assert_equal(factor->information(), factorRot->information(), 1e-7));
+  EXPECT(assert_equal(information, factorRot->information(), tolerance));
 
   Pose3 poseDrift2 = Pose3(Rot3::Ypr(-M_PI / 2, -M_PI / 3, -M_PI / 2),
       Point3(10, -4, 5));
@@ -1152,7 +1158,7 @@ TEST( SmartProjectionPoseFactor, HessianWithRotation ) {
       smartFactorInstance->linearize(tranValues);
 
   // Hessian is invariant to rotations and translations in the nondegenerate case
-  EXPECT(assert_equal(factor->information(), factorRotTran->information(), 1e-7));
+  EXPECT(assert_equal(information, factorRotTran->information(), tolerance));
 }
 
 /* *************************************************************************/

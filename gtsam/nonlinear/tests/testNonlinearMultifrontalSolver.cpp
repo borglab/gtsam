@@ -23,6 +23,8 @@
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/constrained/NonlinearEquality.h>
+#include <gtsam/constrained/QpCost.h>
+#include <gtsam/linear/linearExceptions.h>
 #include <gtsam/nonlinear/NonlinearMultifrontalSolver.h>
 #include <gtsam/nonlinear/NonlinearOptimizerParams.h>
 #include <gtsam/nonlinear/Values.h>
@@ -162,6 +164,49 @@ TEST(NonlinearMultifrontalSolver, PrecomputeSoftConstraintThrows) {
   CHECK_EXCEPTION(
       NonlinearMultifrontalSolver::Precompute(graph, values, ordering),
       std::runtime_error);
+}
+
+/* ************************************************************************* */
+// Numerical loads must verify fixed keys inferred without linearizing factors,
+// including the separate fused loading path used with positive LM damping.
+TEST(NonlinearMultifrontalSolver, RevalidateHardConstraintNumericalLoads) {
+  const Key key = X(1);
+  const Ordering ordering{key};
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<PriorFactor<Point2>>(key, Point2(1, 2),
+                                            noiseModel::Unit::Create(2));
+  graph.emplace_shared<NonlinearEquality<Point2>>(key, Point2(0, 0));
+  Values values;
+  values.insert(key, Point2(0, 0));
+  const auto linear = graph.linearize(values);
+  const auto expected = linear->optimize(ordering, EliminateQR);
+  auto invalid = *linear;
+  invalid[1] = std::make_shared<JacobianFactor>(
+      key, Matrix{{1., 1.}, {2., 2.}}, Vector2::Zero(),
+      noiseModel::Constrained::All(2));
+
+  const auto data =
+      NonlinearMultifrontalSolver::Precompute(graph, values, ordering);
+  MultifrontalSolver precomputed(data, ordering);
+  CHECK_EXCEPTION(precomputed.load(invalid), MultifrontalSolverNotSupported);
+  precomputed.eliminateInPlace(*linear);
+  EXPECT(assert_equal(expected, precomputed.updateSolution(), 1e-9));
+
+  for (double damping : {0., 1.}) {
+    NonlinearMultifrontalSolver solver(graph, values, ordering);
+    CHECK_EXCEPTION(solver.eliminateInPlace(invalid, damping),
+                    MultifrontalSolverNotSupported);
+    CHECK_EXCEPTION(solver.eliminateInPlace(damping), std::runtime_error);
+    solver.load(*linear);
+    solver.eliminateInPlace(damping);
+    EXPECT(assert_equal(expected, solver.updateSolution(), 1e-9));
+    CHECK_EXCEPTION(solver.load(invalid), MultifrontalSolverNotSupported);
+    CHECK_EXCEPTION(solver.eliminateInPlace(damping), std::runtime_error);
+    solver.eliminateInPlace(*linear, damping);
+    CHECK_EXCEPTION(solver.eliminateInPlace(invalid, damping),
+                    MultifrontalSolverNotSupported);
+    CHECK_EXCEPTION(solver.eliminateInPlace(damping), std::runtime_error);
+  }
 }
 
 /* ************************************************************************* */
@@ -434,6 +479,31 @@ TEST(NonlinearMultifrontalSolver, Bal16ErrorOneIteration) {
 #endif
 
 /* ************************************************************************* */
+namespace quadratic_damping_tests {
+
+// Damping can regularize a loaded indefinite quadratic, and retrying must
+// reassemble the original Hessian rather than accumulate previous damping.
+TEST(NonlinearMultifrontalSolver, IndefiniteHessianDampingRetries) {
+  NonlinearFactorGraph graph;
+  graph.emplace_shared<QpCost>(
+      HessianFactor(0, Matrix{{-2.0}}, Vector{{1.0}}, 0.0));
+  Values values;
+  values.insert<Vector>(0, Vector::Zero(1));
+  const Ordering ordering{0};
+  NonlinearMultifrontalSolver solver(graph, values, ordering);
+  const auto linear = graph.linearize(values);
+  solver.load(*linear);
+  CHECK_EXCEPTION(solver.eliminateInPlace(1.0), IndeterminateSystemException);
+  for (double damping : {3.0, 4.0, 3.0}) {
+    solver.eliminateInPlace(damping);
+    EXPECT_DOUBLES_EQUAL(1.0 / (damping - 2.0),
+                         solver.updateSolution().at(0)(0), 1e-12);
+  }
+}
+
+}  // namespace quadratic_damping_tests
+/* ************************************************************************* */
+
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

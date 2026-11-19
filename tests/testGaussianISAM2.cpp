@@ -659,6 +659,37 @@ TEST(ISAM2, constrained_ordering)
 }
 
 /* ************************************************************************* */
+// ISAM2 keeps only the affected keys of the constraint groups, so groups
+// consecutive from 0 can leave a few variables with high group indices.
+TEST(ISAM2, constrained_ordering_partial_update) {
+  const auto noise = noiseModel::Isotropic::Sigma(3, 0.1);
+  const size_t n = 6;
+  NonlinearFactorGraph graph;
+  Values values;
+  FastMap<Key, int> groups;
+  graph.addPrior(0, Pose2(), noise);
+  values.insert(0, Pose2());
+  groups[0] = 0;
+  for (size_t i = 1; i < n; ++i) {
+    graph.emplace_shared<BetweenFactor<Pose2>>(i - 1, i, Pose2(1, 0, 0),
+                                               noise);
+    values.insert(i, Pose2(static_cast<double>(i), 0, 0));
+    groups[i] = static_cast<int>(i);
+  }
+  ISAM2 isam;
+  isam.update(graph, values, FactorIndices(), groups);
+
+  // A new factor on the last two variables only affects their cliques.
+  NonlinearFactorGraph newFactors;
+  newFactors.emplace_shared<BetweenFactor<Pose2>>(n - 2, n - 1, Pose2(1, 0, 0),
+                                                  noise);
+  isam.update(newFactors, Values(), FactorIndices(), groups);
+
+  EXPECT(assert_equal(Pose2(n - 1.0, 0, 0),
+                      isam.calculateEstimate<Pose2>(n - 1), 1e-9));
+}
+
+/* ************************************************************************* */
 TEST(ISAM2, slamlike_solution_partial_relinearization_check)
 {
   // These variables will be reused and accumulate factors and values

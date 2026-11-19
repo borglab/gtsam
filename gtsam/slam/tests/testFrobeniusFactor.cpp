@@ -307,8 +307,8 @@ TEST(FrobeniusLeftBetweenFactorPose3, QcqpError) {
 
   const QcqpProblem qcqp(graph, 1);
   Values qcqpValues;
-  InsertQcqpValue<Pose3, 1>(i, values.at<Pose3>(i), &qcqpValues);
-  InsertQcqpValue<Pose3, 1>(j, values.at<Pose3>(j), &qcqpValues);
+  insertQcqpValue<Pose3, 1>(i, values.at<Pose3>(i), &qcqpValues);
+  insertQcqpValue<Pose3, 1>(j, values.at<Pose3>(j), &qcqpValues);
 
   EXPECT(graph.error(values) > 0.0);
   EXPECT_DOUBLES_EQUAL(graph.error(values), qcqp.costs().error(qcqpValues),
@@ -352,8 +352,8 @@ TEST(FrobeniusLeftBetweenFactorRot2, QcqpError) {
   values.insert(i, iRw.compose(Rot2::fromAngle(0.04)));
   values.insert(j, jRw.compose(Rot2::fromAngle(-0.02)));
   Values qcqpValues;
-  InsertQcqpValue<Rot2, 1>(i, values.at<Rot2>(i), &qcqpValues);
-  InsertQcqpValue<Rot2, 1>(j, values.at<Rot2>(j), &qcqpValues);
+  insertQcqpValue<Rot2, 1>(i, values.at<Rot2>(i), &qcqpValues);
+  insertQcqpValue<Rot2, 1>(j, values.at<Rot2>(j), &qcqpValues);
 
   const QcqpProblem qcqp(graph, 1);
   EXPECT_DOUBLES_EQUAL(graph.error(values), qcqp.costs().error(qcqpValues),

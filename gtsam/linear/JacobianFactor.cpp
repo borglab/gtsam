@@ -34,6 +34,7 @@
 #include <array>
 #include <cassert>
 #include <cmath>
+#include <limits>
 #include <sstream>
 #include <stdexcept>
 
@@ -623,6 +624,10 @@ Matrix JacobianFactor::information() const {
 
 /* ************************************************************************* */
 void JacobianFactor::hessianDiagonalAdd(VectorValues& d) const {
+  // Structural Bayes-tree orphan wrappers have keys but no matrix blocks.
+  // Real zero-row factors still define variable dimensions and zero diagonals.
+  if (rows() == 0 && Ab_.nBlocks() != static_cast<DenseIndex>(size() + 1))
+    return;
   for (size_t pos = 0; pos < size(); ++pos) {
     Key j = keys_[pos];
     size_t nj = Ab_(pos).cols();
@@ -986,6 +991,11 @@ EliminateQR(const GaussianFactorGraph& factors, const Ordering& keys) {
         "involved in the provided factors.");
   }
 
+  // Preserve incoming whitened column scales for unconstrained frontal pivots.
+  Vector referenceDiagonal;
+  if (!jointFactor->isConstrained() && !keys.empty())
+    referenceDiagonal = jointFactor->hessianDiagonal().vector(keys);
+
   // Do dense elimination
   // The following QR variants eliminate to fully triangular or trapezoidal
   SharedDiagonal noiseModel;
@@ -1007,6 +1017,16 @@ EliminateQR(const GaussianFactorGraph& factors, const Ordering& keys) {
   // Split elimination result into conditional and remaining factor
   GaussianConditional::shared_ptr conditional =  //
       jointFactor->splitConditional(keys.size());
+
+  // Local roundoff safeguard, not a rank-revealing decomposition.
+  constexpr double tolerance = 64.0 * std::numeric_limits<double>::epsilon();
+  for (Eigen::Index i = 0; i < referenceDiagonal.size(); ++i) {
+    const double columnNorm = std::sqrt(referenceDiagonal(i));
+    const double pivot = std::abs(conditional->R()(i, i));
+    if (!(columnNorm > 0.0) || !std::isfinite(columnNorm) ||
+        !std::isfinite(pivot) || pivot / columnNorm <= tolerance)
+      throw IndeterminateSystemException(keys.front());
+  }
 
   return make_pair(conditional, jointFactor);
 }

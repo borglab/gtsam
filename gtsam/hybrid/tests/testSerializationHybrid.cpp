@@ -129,6 +129,34 @@ TEST(HybridSerialization, HybridGaussianConditional) {
 }
 
 /* ****************************************************************************/
+// A deserialized HybridGaussianConditional keeps its negative log normalization
+// constant and its pruned flag, which equals() does not compare.
+TEST(HybridSerialization, HybridGaussianConditionalConstantAndPruned) {
+  const DiscreteKey mode(M(0), 2);
+  Matrix1 I = Matrix1::Identity();
+  const auto conditional0 = std::make_shared<GaussianConditional>(
+      GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 0.5));
+  const auto conditional1 = std::make_shared<GaussianConditional>(
+      GaussianConditional::FromMeanAndStddev(Z(0), I, X(0), Vector1(0), 3));
+  const HybridGaussianConditional::FactorValuePairs pairs(
+      {mode}, std::vector<GaussianFactorValuePair>{
+                  {conditional0, conditional0->negLogConstant()},
+                  {conditional1, conditional1->negLogConstant()}});
+  const HybridGaussianConditional gm({mode}, pairs, true);
+
+  HybridGaussianConditional fromText, fromXML, fromBinary;
+  roundtrip(gm, fromText);
+  roundtripXML(gm, fromXML);
+  roundtripBinary(gm, fromBinary);
+  for (const HybridGaussianConditional* deserialized :
+       {&fromText, &fromXML, &fromBinary}) {
+    EXPECT_DOUBLES_EQUAL(gm.negLogConstant(), deserialized->negLogConstant(),
+                         1e-9);
+    EXPECT(deserialized->pruned());
+  }
+}
+
+/* ****************************************************************************/
 // Test HybridBayesNet serialization.
 TEST(HybridSerialization, HybridBayesNet) {
   Switching s(2);

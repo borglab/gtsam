@@ -30,6 +30,10 @@ virtual class CustomFactor : gtsam::NoiseModelFactor {
   CustomFactor(const gtsam::SharedNoiseModel& noiseModel,
                const gtsam::KeyVector& keys,
                const gtsam::CustomErrorFunction& errorFunction);
+  CustomFactor(const gtsam::SharedNoiseModel& noiseModel,
+               const gtsam::KeyVector& keys,
+               const gtsam::CustomErrorFunction& errorFunction,
+               const gtsam::CustomParameterVjpFunction& parameterVjpFunction);
 
   void print(string s = "",
              gtsam::KeyFormatter keyFormatter = gtsam::DefaultKeyFormatter);

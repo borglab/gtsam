@@ -71,7 +71,11 @@ namespace gtsam {
         result = result ? result->multiply(factor) : factor;
       }
     }
-    if (result->max() == 0.0 && result->nrValues() == 1) {
+    // Discrete factors are nonnegative, so a zero maximum means the product is
+    // zero everywhere.
+    // Also don't require a single stored value, since an all-zero
+    // TableFactor stores nothing.
+    if (result->max() == 0.0) {
       throw std::runtime_error(
           "Product factor is 0.0, possibly due to disjointed discrete "
           "factors.");
@@ -217,17 +221,17 @@ namespace gtsam {
     gttoc(sum);
 
     // Ordering keys for the conditional so that frontalKeys are really in front
-    Ordering orderedKeys;
-    orderedKeys.insert(orderedKeys.end(), frontalKeys.begin(),
-                       frontalKeys.end());
-    orderedKeys.insert(orderedKeys.end(), sum->keys().begin(),
-                       sum->keys().end());
+    DiscreteKeys orderedKeys;
+    for (Key key : frontalKeys)
+      orderedKeys.emplace_back(key, product->cardinality(key));
+    for (Key key : sum->keys())
+      orderedKeys.emplace_back(key, product->cardinality(key));
 
-    // now divide product/sum to get conditional
+    // Now divide product/sum to get conditional, keeping the original
+    // representation of the product, e.g., a sparse table
     gttic(divide);
     auto conditional = std::make_shared<DiscreteConditional>(
-        product->toDecisionTreeFactor(), sum->toDecisionTreeFactor(),
-        orderedKeys);
+        frontalKeys.size(), orderedKeys, *product / sum);
     gttoc(divide);
 
     return {conditional, sum};

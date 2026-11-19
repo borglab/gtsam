@@ -42,13 +42,13 @@ Vector VectorOrMatrixValue(const Values& values, Key key) {
 
 /* ************************************************************************* */
 VectorValues DirectVectorValues(const Values& values,
-                                const HessianFactor& factor) {
+                                const GaussianFactor& factor) {
   VectorValues result;
   for (auto it = factor.begin(); it != factor.end(); ++it) {
     const Vector vector = VectorOrMatrixValue(values, *it);
     if (factor.getDim(it) != vector.size()) {
       throw std::invalid_argument(
-          "QpCost: Hessian block dimension does not match value dimension.");
+          "QpCost: Gaussian block dimension does not match value dimension.");
     }
     result.insert(*it, vector);
   }
@@ -113,11 +113,17 @@ bool QpCost::equals(const NonlinearFactor& other, double tol) const {
 
 /* ************************************************************************* */
 double QpCost::error(const Values& values) const {
-  return hessianFactor_->error(DirectVectorValues(values, *hessianFactor_));
+  return gaussianFactor().error(DirectVectorValues(values, gaussianFactor()));
 }
 
 /* ************************************************************************* */
 GaussianFactor::shared_ptr QpCost::linearize(const Values& values) const {
+  if (jacobianFactor_) {
+    auto shifted = std::make_shared<JacobianFactor>(*jacobianFactor_);
+    shifted->getb() = -jacobianFactor_->unweighted_error(
+        DirectVectorValues(values, *jacobianFactor_));
+    return shifted;
+  }
   auto shifted = std::make_shared<HessianFactor>(*hessianFactor_);
   const VectorValues vectorValues = DirectVectorValues(values, *hessianFactor_);
   const Vector valueVector = vectorValues.vector(hessianFactor_->keys());

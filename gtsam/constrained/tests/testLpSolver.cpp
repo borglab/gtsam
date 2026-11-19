@@ -57,6 +57,16 @@ TEST(ActiveSetSolver, Bounded1DLP) {
   EXPECT_DOUBLES_EQUAL(2.0, result.at<Vector>(x)(0), 1e-7);
 }
 
+// An explicitly supplied ordering follows the cached LP solve path.
+TEST(ActiveSetSolver, Bounded1DLPWithRequestedOrdering) {
+  auto params = std::make_shared<ActiveSetSolverParams>();
+  params->ordering = Ordering{x};
+  const Values result =
+      ActiveSetSolver(CreateBounded1D(), params).optimize(Values1(0.0));
+
+  EXPECT_DOUBLES_EQUAL(2.0, result.at<Vector>(x)(0), 1e-7);
+}
+
 // Verifies vector-valued no-initial LP solve uses phase-I initialization.
 TEST(ActiveSetSolver, VectorOnlyNoInitialLP) {
   const Values result = CreateBounded1D().optimize();

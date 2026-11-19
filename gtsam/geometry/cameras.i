@@ -377,9 +377,9 @@ class PinholeCamera {
   PinholeCamera(const This other);
   PinholeCamera(const gtsam::Pose3& pose);
   PinholeCamera(const gtsam::Pose3& pose, const CALIBRATION& K);
-  static This Level(const CALIBRATION& K, const gtsam::Pose2& pose,
+  static This Level(const CALIBRATION& K, const gtsam::Pose2& pose2,
                     double height);
-  static This Level(const gtsam::Pose2& pose, double height);
+  static This Level(const gtsam::Pose2& pose2, double height);
   static This Lookat(const gtsam::Point3& eye, const gtsam::Point3& target,
                      const gtsam::Point3& upVector, const CALIBRATION& K);
 

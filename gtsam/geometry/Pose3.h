@@ -474,6 +474,28 @@ struct traits<Pose3> : public internal::MatrixLieGroup<Pose3, 4> {
     }
   }
 
+  /**
+   * Return the eleven D=1 redundant constraints of the embedded rotation:
+   * traits<Rot3>::QcqpRedundantConstraints() with zero translation rows and
+   * columns.
+   */
+  static std::vector<std::tuple<Matrix, Vector, double>>
+  QcqpRedundantConstraints() {
+    std::vector<std::tuple<Matrix, Vector, double>> constraints;
+    constraints.reserve(11);
+    for (const auto& [A, a, b] : traits<Rot3>::QcqpRedundantConstraints()) {
+      Matrix paddedA = Matrix::Zero(12, 12);
+      paddedA.topLeftCorner<9, 9>() = A;
+      Vector paddedLinear;
+      if (a.size() > 0) {
+        paddedLinear = Vector::Zero(12);
+        paddedLinear.head<9>() = a;
+      }
+      constraints.emplace_back(paddedA, paddedLinear, b);
+    }
+    return constraints;
+  }
+
   /** Project a D=1 QCQP vector back to Pose3. */
   template <int D>
   static Pose3 FromQcqpValue(const Matrix& X) {

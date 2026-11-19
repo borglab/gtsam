@@ -194,6 +194,27 @@ Scenario DifficultStartScenario() {
           PairValues(-3.0, 3.0)};
 }
 
+// Coupled sparse problems expose symbolic setup and storage costs that the
+// scalar policy examples cannot measure. The constrained solution is x=0.
+Scenario ChainScenario(size_t count) {
+  NonlinearFactorGraph costs;
+  NonlinearInequalityConstraints inequalities;
+  Values initial;
+  for (size_t i = 0; i < count; ++i) {
+    const Symbol key('x', i);
+    const Double_ x(key);
+    costs.addPrior(key, 2.0, gtsam::noiseModel::Unit::Create(1));
+    if (i > 0) {
+      costs.addExpressionFactor(gtsam::noiseModel::Unit::Create(1), 0.0,
+                                x - Double_(Symbol('x', i - 1)));
+    }
+    inequalities.emplace_shared<ScalarExpressionInequalityConstraint>(x, 1.0);
+    initial.insert(key, i % 2 == 0 ? 2.0 : -1.0);
+  }
+  return {"chain_" + std::to_string(count),
+          ConstrainedOptProblem(costs, {}, inequalities), initial};
+}
+
 /* ************************************************************************* */
 std::vector<Scenario> Scenarios() {
   std::vector<Scenario> scenarios;
@@ -203,6 +224,8 @@ std::vector<Scenario> Scenarios() {
   scenarios.push_back(MixedScenario("mixed", 1.0, 1.0));
   scenarios.push_back(MixedScenario("poorly_scaled", 0.01, 10.0));
   scenarios.push_back(DifficultStartScenario());
+  scenarios.push_back(ChainScenario(512));
+  scenarios.push_back(ChainScenario(2048));
   return scenarios;
 }
 
@@ -241,28 +264,53 @@ double InfinityNorm(const gtsam::Vector& vector) {
 
 /* ************************************************************************* */
 KktDiagnostics EvaluateFinalKkt(const Scenario& scenario,
-                                const AugmentedLagrangianOptimizer& optimizer,
                                 const AugmentedLagrangianState& final) {
   KktDiagnostics diagnostics;
-  const auto gradient = optimizer.augmentedLagrangianFunction(final)
-                            .linearize(final.values)
-                            ->gradientAtZero();
-  for (const auto& keyGradient : gradient) {
-    diagnostics.stationarity =
-        std::max(diagnostics.stationarity, InfinityNorm(keyGradient.second));
-  }
-  for (const auto& equality : scenario.problem.eConstraints()) {
+  auto gradient =
+      scenario.problem.costs().linearize(final.values)->gradientAtZero();
+  // KKT uses the ordinary Lagrangian at the returned multipliers, not a new
+  // augmented objective that adds another rho*constraint term to its gradient.
+  const auto addMultiplierGradient =
+      [&](const gtsam::KeyVector& keys,
+          const std::vector<gtsam::Matrix>& jacobians,
+          const gtsam::Vector& multiplier) {
+        for (size_t j = 0; j < keys.size(); ++j) {
+          const gtsam::Vector contribution =
+              jacobians[j].transpose() * multiplier;
+          if (gradient.exists(keys[j])) {
+            gradient.at(keys[j]) += contribution;
+          } else {
+            gradient.insert(keys[j], contribution);
+          }
+        }
+      };
+  for (size_t i = 0; i < scenario.problem.eConstraints().size(); ++i) {
+    const auto& equality = scenario.problem.eConstraints()[i];
+    std::vector<gtsam::Matrix> jacobians(equality->size());
+    gtsam::Vector residual =
+        equality->unwhitenedError(final.values, &jacobians);
+    equality->noiseModel()->WhitenSystem(jacobians, residual);
+    addMultiplierGradient(equality->keys(), jacobians, final.lambdaEq[i]);
     diagnostics.generalizedResidual =
-        std::max(diagnostics.generalizedResidual,
-                 InfinityNorm(equality->whitenedError(final.values)));
+        std::max(diagnostics.generalizedResidual, InfinityNorm(residual));
   }
   for (size_t i = 0; i < scenario.problem.iConstraints().size(); ++i) {
-    const double expression =
-        scenario.problem.iConstraints().at(i)->whitenedExpr(final.values)(0);
+    const auto& inequality = scenario.problem.iConstraints()[i];
+    std::vector<gtsam::Matrix> jacobians(inequality->size());
+    gtsam::Vector residual =
+        inequality->unwhitenedExpr(final.values, &jacobians);
+    inequality->noiseModel()->WhitenSystem(jacobians, residual);
+    addMultiplierGradient(inequality->keys(), jacobians,
+                          Vector1(final.lambdaIneq[i]));
+    const double expression = residual(0);
     const double projectedResidual =
         std::max(expression, -final.lambdaIneq.at(i) / final.muIneq);
     diagnostics.generalizedResidual =
         std::max(diagnostics.generalizedResidual, std::abs(projectedResidual));
+  }
+  for (const auto& keyGradient : gradient) {
+    diagnostics.stationarity =
+        std::max(diagnostics.stationarity, InfinityNorm(keyGradient.second));
   }
   return diagnostics;
 }
@@ -287,7 +335,7 @@ RunResult RunOnce(const Scenario& scenario,
     }
     const AugmentedLagrangianState& final = progress.back();
     const KktDiagnostics diagnostics =
-        EvaluateFinalKkt(scenario, optimizer, final);
+        EvaluateFinalKkt(scenario, final);
     result.stationarity = diagnostics.stationarity;
     result.generalizedResidual = diagnostics.generalizedResidual;
     result.kktResidual =
