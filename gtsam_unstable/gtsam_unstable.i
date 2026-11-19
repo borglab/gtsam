@@ -659,8 +659,8 @@ virtual class ProjectionFactorRollingShutter : gtsam::NoiseModelFactor {
 //*************************************************************************
 // navigation (EqVIO)
 //*************************************************************************
-#include <gtsam_unstable/navigation/EqVIOState.h>
-#include <gtsam_unstable/navigation/EqVIOFilter.h>
+#include <gtsam_unstable/navigation/VioEqFState.h>
+#include <gtsam_unstable/navigation/VioEqF.h>
 namespace eqvio {
 
 class IMUInput {
@@ -683,8 +683,8 @@ class State {
   gtsam::Vector3 gravityDir() const;
 };
 
-class EqVIOFilterParams {
-  EqVIOFilterParams();
+class VioEqFParams {
+  VioEqFParams();
   double initialPointDepth;
   double initialPointVariance;
   double outlierThresholdAbs;
@@ -700,11 +700,11 @@ class EqVIOFilterParams {
   gtsam::Matrix inputNoise;
 };
 
-class EqVIOFilter {
-  EqVIOFilter(const gtsam::eqvio::EqVIOFilterParams& params);
-  EqVIOFilter(const gtsam::eqvio::State& xi_ref, const gtsam::Matrix& Sigma,
-              const gtsam::KeyVector& landmarkKeys,
-              const gtsam::eqvio::EqVIOFilterParams& params);
+class VioEqF {
+  VioEqF(const gtsam::eqvio::VioEqFParams& params);
+  VioEqF(const gtsam::eqvio::State& xi_ref, const gtsam::Matrix& Sigma,
+         const gtsam::KeyVector& landmarkKeys,
+         const gtsam::eqvio::VioEqFParams& params);
   void initializeFromIMU(const gtsam::eqvio::IMUInput& imu);
   void predict(const gtsam::eqvio::IMUInput& imu, double dt);
   void update(const std::map<gtsam::Key, gtsam::Point2>& measurement,
