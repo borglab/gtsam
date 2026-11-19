@@ -1,25 +1,59 @@
 #pragma once
 #include <gtsam/navigation/ManifoldEKF.h>
-#include <gtsam_unstable/mekf/BodyVelocityOutput.h>
-#include <gtsam_unstable/mekf/Dynamics.h>
-#include <gtsam_unstable/mekf/PositionOutput.h>
-#include <gtsam_unstable/mekf/State.h>
+#include <gtsam_unstable/mekf/MEKFGeometry.h>
 
 #include <Eigen/Dense>
 
 // MultiplicativeEKF: baseline MEKF for biased INS. See mekf/README.md.
 // State-dependent F (finite-diff); naive position/DVL updates vs geometric
-// filters.
+// filters. The process model (Dynamics) and measurement outputs live here;
+// the state manifold is in MEKFGeometry.h.
 
 namespace mekf {
+
+struct ImuInput {
+  Vector3 omega = Vector3::Zero();
+  Vector3 accel = Vector3::Zero();
+
+  /// Gravity vector in the navigation frame. The filter is frame-agnostic: the
+  /// caller's choice of sign is what fixes which way +z points (Z-down/NED
+  /// gives +g on z, Z-up/ENU gives -g). Defaults to zero, i.e. no gravity.
+  Vector3 g_vec = Vector3::Zero();
+};
+
+MekfState propagateMean(const MekfState& X, const ImuInput& u, double dt);
+
+/// Finite-difference transition Jacobian F (state-dependent, recomputed each
+/// step).
+MekfState::Jacobian transitionJacobian(const MekfState& X, const ImuInput& u,
+                                       double dt);
+
+/// Body-frame velocity output: h(xi) = R^T v.
+/// Jacobian w.r.t. tangent under R_true = R_hat * Exp(d_theta):
+///   d(R^T v)/d(d_theta) = [R^T v]^x,  d(R^T v)/d(d_v) = R^T
+///   H = [ [R^T v]^x | R^T | 0 | 0 | 0 ]
+struct BodyVelocityOutput {
+  using Jacobian = Eigen::Matrix<double, 3, 15>;
+
+  static Vector3 predict(const MekfState& X);
+  static Jacobian jacobian(const MekfState& X);
+};
+
+/// Direct global position output: h(xi) = p.
+struct PositionOutput {
+  using Jacobian = Eigen::Matrix<double, 3, 15>;
+
+  static Vector3 predict(const MekfState& X);
+  static Jacobian jacobian();
+};
 
 /// Continuous-time IMU noise PSDs, per-axis (diagonal, not isotropic). Same
 /// convention as tfg::ImuNoise / gtsam::tgeqf::ImuNoise.
 struct ImuNoise {
-  Eigen::Vector3d gyro = Eigen::Vector3d::Zero();
-  Eigen::Vector3d accel = Eigen::Vector3d::Zero();
-  Eigen::Vector3d gyro_rw = Eigen::Vector3d::Zero();
-  Eigen::Vector3d accel_rw = Eigen::Vector3d::Zero();
+  Vector3 gyro = Vector3::Zero();
+  Vector3 accel = Vector3::Zero();
+  Vector3 gyro_rw = Vector3::Zero();
+  Vector3 accel_rw = Vector3::Zero();
 };
 
 class MultiplicativeEKF : public gtsam::ManifoldEKF<MekfState> {
@@ -38,19 +72,18 @@ class MultiplicativeEKF : public gtsam::ManifoldEKF<MekfState> {
   /// Strapdown predict + finite-diff F; P <- F P F^T + Qc dt.
   /// @param g_vec  Nav-frame gravity vector; its sign fixes the frame
   ///               convention (Z-down/NED: +g on z).
-  void propagate(const Eigen::Vector3d& omega, const Eigen::Vector3d& accel,
-                 const Eigen::Vector3d& g_vec, const Covariance& Qc, double dt);
+  void propagate(const Vector3& omega, const Vector3& accel,
+                 const Vector3& g_vec, const Covariance& Qc, double dt);
 
   /// Same predict with diagonal Qc from ImuNoise PSDs.
-  void propagate(const Eigen::Vector3d& omega, const Eigen::Vector3d& accel,
-                 const Eigen::Vector3d& g_vec, const ImuNoise& noise,
-                 double dt);
+  void propagate(const Vector3& omega, const Vector3& accel,
+                 const Vector3& g_vec, const ImuNoise& noise, double dt);
 
   /// GNSS position update (h = p, world-frame R_pos).
-  void update_position(const Eigen::Vector3d& pi, const Covariance3& R_pos);
+  void update_position(const Vector3& pi, const Covariance3& R_pos);
 
   /// DVL update (h = R^T v, state-dependent H, body-frame R_dvl).
-  void update_dvl(const Eigen::Vector3d& z_dvl, const Covariance3& R_dvl);
+  void update_dvl(const Vector3& z_dvl, const Covariance3& R_dvl);
 
   /**
    * Pressure-sensor depth update from the world-frame z position.
@@ -76,10 +109,10 @@ class MultiplicativeEKF : public gtsam::ManifoldEKF<MekfState> {
   TangentVector errorStateVector(const MekfState& X_true) const;
 
   gtsam::Rot3 attitude() const;
-  Eigen::Vector3d velocity() const;
-  Eigen::Vector3d position() const;
-  Eigen::Vector3d bias_gyro() const;
-  Eigen::Vector3d bias_accel() const;
+  Vector3 velocity() const;
+  Vector3 position() const;
+  Vector3 bias_gyro() const;
+  Vector3 bias_accel() const;
 };
 
 }  // namespace mekf

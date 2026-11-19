@@ -5,8 +5,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam_unstable/tfg_inekf/BodyVelocityOutput.h>
-#include <gtsam_unstable/tfg_inekf/Symmetry.h>  // phi
+#include <gtsam_unstable/tfg_inekf/TFGInEKF.h>  // BodyVelocityOutput, phi
 
 using namespace tfg;
 using namespace gtsam;

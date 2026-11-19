@@ -1,18 +1,17 @@
-#include <gtsam_unstable/mekf/State.h>
+#include <gtsam_unstable/mekf/MEKFGeometry.h>
 
 #include <iostream>
 
 namespace mekf {
 
 MekfState::MekfState()
-    : v(Eigen::Vector3d::Zero()),
-      p(Eigen::Vector3d::Zero()),
-      b_gyro(Eigen::Vector3d::Zero()),
-      b_accel(Eigen::Vector3d::Zero()) {}
+    : v(Vector3::Zero()),
+      p(Vector3::Zero()),
+      b_gyro(Vector3::Zero()),
+      b_accel(Vector3::Zero()) {}
 
-MekfState::MekfState(const gtsam::Rot3& R, const Eigen::Vector3d& v,
-                     const Eigen::Vector3d& p, const Eigen::Vector3d& b_gyro,
-                     const Eigen::Vector3d& b_accel)
+MekfState::MekfState(const Rot3& R, const Vector3& v, const Vector3& p,
+                     const Vector3& b_gyro, const Vector3& b_accel)
     : R(R), v(v), p(p), b_gyro(b_gyro), b_accel(b_accel) {}
 
 MekfState MekfState::identity() { return MekfState(); }

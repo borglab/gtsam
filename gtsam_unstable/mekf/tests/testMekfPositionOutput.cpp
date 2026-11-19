@@ -8,7 +8,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam_unstable/mekf/PositionOutput.h>
+#include <gtsam_unstable/mekf/MEKF.h>
 
 using namespace mekf;
 using namespace gtsam;

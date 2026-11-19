@@ -5,8 +5,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam_unstable/tfg_inekf/PositionOutput.h>
-#include <gtsam_unstable/tfg_inekf/Symmetry.h>  // phi
+#include <gtsam_unstable/tfg_inekf/TFGInEKF.h>  // PositionOutput, phi
 
 using namespace tfg;
 using namespace gtsam;

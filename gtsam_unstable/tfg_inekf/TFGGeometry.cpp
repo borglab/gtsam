@@ -1,6 +1,5 @@
-#include <gtsam/base/Matrix.h>
 #include <gtsam/geometry/SO3.h>
-#include <gtsam_unstable/tfg_inekf/Group.h>
+#include <gtsam_unstable/tfg_inekf/TFGGeometry.h>
 
 #include <iostream>
 
@@ -58,12 +57,8 @@ TwoFrameGroup TwoFrameGroup::FromState(const Rot3& R, const Vector3& v,
   return TwoFrameGroup(R, v, p, -(R * b_omega), -(R * b_accel));
 }
 
-Eigen::Vector3d TwoFrameGroup::bias_omega() const {
-  return R.unrotate(-gamma_omega);
-}
-Eigen::Vector3d TwoFrameGroup::bias_accel() const {
-  return R.unrotate(-gamma_accel);
-}
+Vector3 TwoFrameGroup::bias_omega() const { return R.unrotate(-gamma_omega); }
+Vector3 TwoFrameGroup::bias_accel() const { return R.unrotate(-gamma_accel); }
 
 TwoFrameGroup TwoFrameGroup::operator*(const TwoFrameGroup& Y) const {
   return TwoFrameGroup(R * Y.R, v + R * Y.v, p + R * Y.p,
@@ -112,14 +107,18 @@ TwoFrameGroup::Jacobian TwoFrameGroup::AdjointMap() const {
   return Ad;
 }
 
-Eigen::Matrix<double, 5, 5> TwoFrameGroup::C_matrix() const {
-  Eigen::Matrix<double, 5, 5> C = Eigen::Matrix<double, 5, 5>::Zero();
+gtsam::Matrix5 TwoFrameGroup::C_matrix() const {
+  gtsam::Matrix5 C = gtsam::Matrix5::Zero();
   C.block<3, 3>(0, 0) = R.matrix();
   C.block<3, 1>(0, 3) = v;
   C.block<3, 1>(0, 4) = p;
   C(3, 3) = 1.0;
   C(4, 4) = 1.0;
   return C;
+}
+
+TwoFrameGroup phi(const TwoFrameGroup& X, const TwoFrameGroup& xi) {
+  return xi * X;
 }
 
 }  // namespace tfg

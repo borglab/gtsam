@@ -6,7 +6,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam_unstable/tfg_inekf/Symmetry.h>
+#include <gtsam_unstable/tfg_inekf/TFGInEKF.h>
 
 using namespace tfg;
 using namespace gtsam;

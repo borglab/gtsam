@@ -7,7 +7,7 @@
  */
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam_unstable/mekf/State.h>
+#include <gtsam_unstable/mekf/MEKFGeometry.h>
 
 using namespace mekf;
 using namespace gtsam;

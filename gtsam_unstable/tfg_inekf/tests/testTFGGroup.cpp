@@ -5,7 +5,7 @@
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/base/numericalDerivative.h>
-#include <gtsam_unstable/tfg_inekf/Group.h>
+#include <gtsam_unstable/tfg_inekf/TFGGeometry.h>
 
 using namespace tfg;
 using namespace gtsam;

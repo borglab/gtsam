@@ -14,7 +14,7 @@
 #include <gtsam_unstable/examples_common/ImuProcessNoise.h>
 #include <gtsam_unstable/examples_common/ScenarioHarness.h>
 #include <gtsam_unstable/examples_common/TrajectoryCsv.h>
-#include <gtsam_unstable/tfg_inekf/InEKF.h>
+#include <gtsam_unstable/tfg_inekf/TFGInEKF.h>
 
 #include <ostream>
 #include <string>

@@ -1,17 +1,74 @@
+#include <gtsam/base/Matrix.h>
 #include <gtsam_unstable/mekf/MEKF.h>
 
+// Strapdown mean (forward Euler):
+//   R+ = R * Exp((omega - b_gyro) dt)
+//   v+ = v + (R (accel - b_accel) + g) dt   (g = u.g_vec, caller's frame)
+//   p+ = p + v dt
+// F: finite-diff of discrete map in local coords, re-evaluated each step.
+//
 // Attitude correction via Retract; MekfState has no Retract Jacobian, so
 // covariance transport on the correction is skipped.
 
 namespace mekf {
 
+MekfState propagateMean(const MekfState& X, const ImuInput& u, double dt) {
+  const Vector3 gyro_corr = u.omega - X.b_gyro;
+  const Vector3 acc_corr = u.accel - X.b_accel;
+
+  MekfState Xn;
+  Xn.R = X.R * gtsam::Rot3::Expmap(gyro_corr * dt);
+  Xn.v = X.v + (X.R.rotate(acc_corr) + u.g_vec) * dt;
+  Xn.p = X.p + X.v * dt;
+  Xn.b_gyro = X.b_gyro;
+  Xn.b_accel = X.b_accel;
+  return Xn;
+}
+
+MekfState::Jacobian transitionJacobian(const MekfState& X, const ImuInput& u,
+                                       double dt) {
+  constexpr double h = 1e-7;
+
+  const MekfState Xn_ref = propagateMean(X, u, dt);
+
+  MekfState::Jacobian F;
+  for (int j = 0; j < 15; ++j) {
+    MekfState::TangentVector e = MekfState::TangentVector::Zero();
+    e(j) = h;
+    const MekfState Xp = gtsam::traits<MekfState>::Retract(X, e);
+    const MekfState Xpn = propagateMean(Xp, u, dt);
+    F.col(j) = gtsam::traits<MekfState>::Local(Xn_ref, Xpn) / h;
+  }
+  return F;
+}
+
+Vector3 BodyVelocityOutput::predict(const MekfState& X) {
+  return X.R.unrotate(X.v);
+}
+
+BodyVelocityOutput::Jacobian BodyVelocityOutput::jacobian(const MekfState& X) {
+  const Vector3 body_v = predict(X);
+
+  Jacobian H = Jacobian::Zero();
+  H.block<3, 3>(0, 0) = gtsam::skewSymmetric(body_v);
+  H.block<3, 3>(0, 3) = X.R.matrix().transpose();
+  return H;
+}
+
+Vector3 PositionOutput::predict(const MekfState& X) { return X.p; }
+
+PositionOutput::Jacobian PositionOutput::jacobian() {
+  Jacobian H = Jacobian::Zero();
+  H.block<3, 3>(0, 6) = gtsam::Matrix3::Identity();
+  return H;
+}
+
 MultiplicativeEKF::MultiplicativeEKF(const MekfState& X0, const Covariance& P0)
     : Base(X0, P0) {}
 
-void MultiplicativeEKF::propagate(const Eigen::Vector3d& omega,
-                                  const Eigen::Vector3d& accel,
-                                  const Eigen::Vector3d& g_vec,
-                                  const Covariance& Qc, double dt) {
+void MultiplicativeEKF::propagate(const Vector3& omega, const Vector3& accel,
+                                  const Vector3& g_vec, const Covariance& Qc,
+                                  double dt) {
   ImuInput u;
   u.omega = omega;
   u.accel = accel;
@@ -22,10 +79,9 @@ void MultiplicativeEKF::propagate(const Eigen::Vector3d& omega,
   this->predict(X_next, F, Qc * dt);
 }
 
-void MultiplicativeEKF::propagate(const Eigen::Vector3d& omega,
-                                  const Eigen::Vector3d& accel,
-                                  const Eigen::Vector3d& g_vec,
-                                  const ImuNoise& noise, double dt) {
+void MultiplicativeEKF::propagate(const Vector3& omega, const Vector3& accel,
+                                  const Vector3& g_vec, const ImuNoise& noise,
+                                  double dt) {
   Covariance Qc = Covariance::Zero();
   if ((noise.gyro.array() > 0.0).any()) {
     Qc.block<3, 3>(0, 0) = noise.gyro.asDiagonal();
@@ -42,24 +98,24 @@ void MultiplicativeEKF::propagate(const Eigen::Vector3d& omega,
   propagate(omega, accel, g_vec, Qc, dt);
 }
 
-void MultiplicativeEKF::update_position(const Eigen::Vector3d& pi,
+void MultiplicativeEKF::update_position(const Vector3& pi,
                                         const Covariance3& R_pos) {
-  const Eigen::Vector3d prediction = PositionOutput::predict(this->state());
-  const Eigen::Matrix<double, 3, 15> H = PositionOutput::jacobian();
+  const Vector3 prediction = PositionOutput::predict(this->state());
+  const PositionOutput::Jacobian H = PositionOutput::jacobian();
   this->updateWithVector(prediction, H, pi, R_pos);
 }
 
-void MultiplicativeEKF::update_dvl(const Eigen::Vector3d& z_dvl,
+void MultiplicativeEKF::update_dvl(const Vector3& z_dvl,
                                    const Covariance3& R_dvl) {
-  const Eigen::Vector3d prediction = BodyVelocityOutput::predict(this->state());
-  const Eigen::Matrix<double, 3, 15> H =
+  const Vector3 prediction = BodyVelocityOutput::predict(this->state());
+  const BodyVelocityOutput::Jacobian H =
       BodyVelocityOutput::jacobian(this->state());
   this->updateWithVector(prediction, H, z_dvl, R_dvl);
 }
 
 void MultiplicativeEKF::update_depth(double z_depth, const Covariance1& R_depth,
                                      double horizontal_variance) {
-  Eigen::Vector3d pseudo_position = position();
+  Vector3 pseudo_position = position();
   pseudo_position.z() = z_depth;
 
   Covariance3 R_pseudo = Covariance3::Zero();
@@ -76,13 +132,9 @@ MultiplicativeEKF::TangentVector MultiplicativeEKF::errorStateVector(
 }
 
 gtsam::Rot3 MultiplicativeEKF::attitude() const { return this->state().R; }
-Eigen::Vector3d MultiplicativeEKF::velocity() const { return this->state().v; }
-Eigen::Vector3d MultiplicativeEKF::position() const { return this->state().p; }
-Eigen::Vector3d MultiplicativeEKF::bias_gyro() const {
-  return this->state().b_gyro;
-}
-Eigen::Vector3d MultiplicativeEKF::bias_accel() const {
-  return this->state().b_accel;
-}
+Vector3 MultiplicativeEKF::velocity() const { return this->state().v; }
+Vector3 MultiplicativeEKF::position() const { return this->state().p; }
+Vector3 MultiplicativeEKF::bias_gyro() const { return this->state().b_gyro; }
+Vector3 MultiplicativeEKF::bias_accel() const { return this->state().b_accel; }
 
 }  // namespace mekf

@@ -6,7 +6,7 @@
  */
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
-#include <gtsam_unstable/mekf/Dynamics.h>
+#include <gtsam_unstable/mekf/MEKF.h>
 
 using namespace mekf;
 using namespace gtsam;
