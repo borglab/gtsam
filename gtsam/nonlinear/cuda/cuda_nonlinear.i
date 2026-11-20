@@ -115,6 +115,14 @@ class BatchedDenseLevenbergMarquardtItemResult {
   bool converged;
 };
 
+// BatchedDenseLevenbergMarquardtOptimizer's constructor is declared
+// normally here, but optimize() is deliberately NOT declared -- it is
+// hand-bound instead in python/gtsam/specializations/cuda_nonlinear.h with
+// py::call_guard<py::gil_scoped_release>(), which wrap's .i syntax has no
+// way to express. See that file for why: optimize() runs an OpenMP
+// parallel region that calls each graph's own linearize(), which for a
+// CustomFactor means calling back into Python, and that deadlocks unless
+// the GIL is released before entering this call.
 class BatchedDenseLevenbergMarquardtOptimizer {
   BatchedDenseLevenbergMarquardtOptimizer(
       const std::vector<gtsam::NonlinearFactorGraph>& graphs,
@@ -124,7 +132,6 @@ class BatchedDenseLevenbergMarquardtOptimizer {
       const gtsam::cuda::BatchedDenseSolverOptions& deviceOptions =
           gtsam::cuda::BatchedDenseSolverOptions());
 
-  const std::vector<gtsam::Values>& optimize();
   const std::vector<gtsam::Values>& values() const;
   const std::vector<gtsam::cuda::BatchedDenseLevenbergMarquardtItemResult>&
   results() const;
@@ -132,13 +139,11 @@ class BatchedDenseLevenbergMarquardtOptimizer {
 
 #include <gtsam/nonlinear/cuda/BatchedDeviceGradients.h>
 
+// BatchedDeviceGradients's constructor is deliberately NOT declared here,
+// for the same reason optimize() above isn't: it runs the same kind of
+// OpenMP-parallel linearize() and needs the same GIL release, hand-bound in
+// python/gtsam/specializations/cuda_nonlinear.h instead.
 class BatchedDeviceGradients {
-  BatchedDeviceGradients(
-      const std::vector<gtsam::NonlinearFactorGraph>& graphs,
-      const std::vector<gtsam::Values>& solutions,
-      const gtsam::cuda::BatchedDenseSolverOptions& options =
-          gtsam::cuda::BatchedDenseSolverOptions());
-
   std::vector<gtsam::VectorValues> adjoint(
       const std::vector<gtsam::VectorValues>& stateCotangents) const;
   std::vector<std::optional<gtsam::Vector>> parameterGradient(

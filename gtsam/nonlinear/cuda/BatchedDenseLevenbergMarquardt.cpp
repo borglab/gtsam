@@ -181,41 +181,29 @@ struct BatchedDenseLevenbergMarquardtOptimizer::Impl {
         const auto linearizeStart = Clock::now();
         // graphs[i].linearize() calls every factor's own linearize()/
         // evaluateError, which for a CustomFactor means calling back into
-        // an arbitrary (and, from Python, GIL-requiring) user callback.
-        // Running that from multiple OpenMP worker threads deadlocks under
-        // pybind11: the calling thread holds the GIL across this whole
-        // call (none of GTSAM's wrap-generated bindings release it), so a
-        // worker thread trying to re-acquire the GIL to invoke a Python
-        // callback blocks forever waiting for a release that only happens
-        // after the (blocked) OpenMP barrier. Confirmed by reproducing
-        // exactly this hang (in the sibling BatchedDeviceGradients
-        // constructor, same pattern) with a Python CustomFactor. linearize()
-        // must therefore run serially, on the caller's own thread.
-        std::vector<GaussianFactorGraph::shared_ptr> linearized(
-            static_cast<size_t>(batchSize));
-        for (int item = 0; item < batchSize; ++item) {
-          const size_t i = static_cast<size_t>(item);
-          if (terminated[i]) continue;
-          linearized[i] = graphs[i].linearize(currentValues[i]);
-        }
-
-        // Everything below only touches the already-linearized (pure
-        // Eigen/C++) JacobianFactor data -- dense Jacobian extraction and
-        // the AᵗA/Aᵗb products never call back into factor code, so this
-        // part is safe to parallelize and is where the real cost (confirmed
-        // by profiling) lives: forming the 896x256-ish AᵗA/Aᵗb product per
-        // item is the measured dominant cost of the whole optimizer (~70%
-        // of forward time). Degrades to a plain serial loop with no
-        // code-path branching when the compiler has no -fopenmp (see
-        // gtsam/CMakeLists.txt's OpenMP_CXX_FOUND guard around this
-        // library's OpenMP::OpenMP_CXX link).
+        // an arbitrary, possibly Python, callback. Running that from
+        // multiple OpenMP worker threads is only safe if the GIL has
+        // already been released by the caller -- pybind11's own
+        // std::function trampoline then lets each worker thread safely
+        // (if serially, since Python itself still only runs one thread at
+        // a time) re-acquire it just for the callback. None of GTSAM's
+        // wrap-generated .def() bindings release the GIL by default, so
+        // this specific method is hand-bound instead, in
+        // python/gtsam/specializations/cuda_nonlinear.h, with
+        // py::call_guard<py::gil_scoped_release>() -- see that file for
+        // why, and for the deadlock this is a fix for (reproduced directly
+        // with a Python CustomFactor before that binding existed). A pure
+        // C++ caller (this project's own benchmark and unit tests, for
+        // example) never goes through that binding at all, so this loop is
+        // unconditionally safe there regardless.
 #pragma omp parallel for num_threads(batchSize) schedule(static)
         for (int item = 0; item < batchSize; ++item) {
           const size_t i = static_cast<size_t>(item);
           if (terminated[i]) continue;
+          const auto linearized = graphs[i].linearize(currentValues[i]);
           Matrix A;
           Vector b;
-          std::tie(A, b) = linearized[i]->jacobian(keyInfos[i].ordering());
+          std::tie(A, b) = linearized->jacobian(keyInfos[i].ordering());
           hBase[i] = A.transpose() * A;
           rhsBase[i] = A.transpose() * b;
         }

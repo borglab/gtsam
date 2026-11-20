@@ -82,29 +82,15 @@ BatchedDeviceGradients::BatchedDeviceGradients(
   impl_->jacobians.resize(static_cast<size_t>(batchSize));
   impl_->factorRowCounts.resize(static_cast<size_t>(batchSize));
 
-  // graphs[i].linearize() calls every factor's own linearize()/evaluateError,
-  // which for a CustomFactor means calling back into an arbitrary (and, from
-  // Python, GIL-requiring) user callback. Running that from multiple OpenMP
-  // worker threads deadlocks under pybind11: the calling thread holds the
-  // GIL across this whole call (none of GTSAM's wrap-generated bindings
-  // release it), so a worker thread trying to re-acquire the GIL to invoke a
-  // Python callback blocks forever waiting for a release that only happens
-  // after the (blocked) OpenMP barrier. Confirmed by reproducing exactly
-  // this hang with a Python CustomFactor before this fix. linearize() must
-  // therefore run serially, on the caller's own thread.
-  std::vector<GaussianFactorGraph::shared_ptr> linearized(
-      static_cast<size_t>(batchSize));
-  for (int b = 0; b < batchSize; ++b) {
-    const size_t i = static_cast<size_t>(b);
-    linearized[i] = graphs[i].linearize(solutions[i]);
-  }
-
   std::vector<double> hostH;  // batchSize blocks of dimension*dimension, col-major
   int dimension = 0;
   {
     // Determine dimension from item 0 before sizing the shared hostH/
-    // keyInfos storage the parallel loop below writes into by index.
-    const KeyInfo keyInfo0(*linearized[0]);
+    // keyInfos storage the parallel loop below writes into by index --
+    // doing this probe serially first keeps that loop free of any
+    // resize/reserve race.
+    const auto linearized0 = graphs[0].linearize(solutions[0]);
+    const KeyInfo keyInfo0(*linearized0);
     dimension = static_cast<int>(keyInfo0.numCols());
     if (dimension <= 0) {
       throw std::invalid_argument(
@@ -115,27 +101,36 @@ BatchedDeviceGradients::BatchedDeviceGradients(
                 static_cast<size_t>(dimension));
   }
 
-  // Everything below only touches the already-linearized (pure Eigen/C++)
-  // JacobianFactor data -- KeyInfo, dense Jacobian extraction, and the AᵗA
-  // product never call back into factor code, so this part is safe to
-  // parallelize and is where the real cost (confirmed by profiling) lives.
-  // Each item reads only its own linearized[b]/graphs[b]/solutions[b] and
-  // writes only its own hostH block/keyInfos[b]. Exceptions cannot cross an
-  // OpenMP parallel-region boundary, so a dimension mismatch is recorded per
-  // item and thrown once, after the loop, instead of thrown in place.
+  // Each item reads only its own graphs[b]/solutions[b] and writes only its
+  // own hostH block/keyInfos[b] -- the B independent graphs are
+  // embarrassingly parallel. graphs[i].linearize() calls every factor's own
+  // linearize()/evaluateError, which for a CustomFactor means calling back
+  // into an arbitrary, possibly Python, callback; running that from
+  // multiple OpenMP worker threads is only safe if the GIL has already
+  // been released by the caller, which is why this constructor is
+  // hand-bound in python/gtsam/specializations/cuda_nonlinear.h with
+  // py::call_guard<py::gil_scoped_release>() instead of being declared in
+  // cuda_nonlinear.i -- see that file for why, and for the deadlock this is
+  // a fix for (reproduced directly with a Python CustomFactor before that
+  // binding existed). A pure C++ caller never goes through that binding at
+  // all, so this loop is unconditionally safe there regardless. Exceptions
+  // cannot cross an OpenMP parallel-region boundary, so a dimension
+  // mismatch is recorded per item and thrown once, after the loop, instead
+  // of thrown in place.
   std::vector<bool> dimensionMismatch(static_cast<size_t>(batchSize), false);
   std::vector<int> mismatchedDims(static_cast<size_t>(batchSize), 0);
   std::vector<bool> notJacobianFactor(static_cast<size_t>(batchSize), false);
 #pragma omp parallel for num_threads(batchSize) schedule(static)
   for (int b = 0; b < batchSize; ++b) {
     const size_t i = static_cast<size_t>(b);
-    KeyInfo keyInfo(*linearized[i]);
+    const auto linearized = graphs[i].linearize(solutions[i]);
+    KeyInfo keyInfo(*linearized);
     if (static_cast<int>(keyInfo.numCols()) != dimension) {
       dimensionMismatch[i] = true;
       mismatchedDims[i] = static_cast<int>(keyInfo.numCols());
       continue;
     }
-    const auto [A, residual] = linearized[i]->jacobian(keyInfo.ordering());
+    const auto [A, residual] = linearized->jacobian(keyInfo.ordering());
     (void)residual;  // adjoint() only needs H; callers supply their own cotangents.
 
     const Matrix H = A.transpose() * A;
@@ -146,9 +141,9 @@ BatchedDeviceGradients::BatchedDeviceGradients(
     impl_->jacobians[i] = A;
 
     std::vector<int>& rowCounts = impl_->factorRowCounts[i];
-    rowCounts.resize(linearized[i]->size());
-    for (size_t f = 0; f < linearized[i]->size(); ++f) {
-      const auto& linearFactor = (*linearized[i])[f];
+    rowCounts.resize(linearized->size());
+    for (size_t f = 0; f < linearized->size(); ++f) {
+      const auto& linearFactor = (*linearized)[f];
       if (!linearFactor) {
         rowCounts[f] = 0;
         continue;
