@@ -221,6 +221,15 @@ if(GTSAM_ENABLE_CUDA)
     set_property(TARGET gtsam APPEND PROPERTY INSTALL_RPATH
       "${GTSAM_CUDSS_LIBRARY_DIR}")
   endif()
+  if(OpenMP_CXX_FOUND)
+    # The batched CUDA classes (BatchedDenseLevenbergMarquardt) parallelize
+    # per-item host-side linearization across an independent batch with
+    # #pragma omp; scoped to GTSAM_ENABLE_CUDA since that is the only code
+    # using it. OpenMP::OpenMP_CXX is found unconditionally in
+    # HandleOpenMP.cmake, so this degrades to a serial loop with no build
+    # change when the toolchain lacks OpenMP.
+    target_link_libraries(gtsam PUBLIC OpenMP::OpenMP_CXX)
+  endif()
 endif()
 if(GTSAM_USE_MOSEK)
   target_link_libraries(gtsam PRIVATE gtsam_mosek_backend)
