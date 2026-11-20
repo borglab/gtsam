@@ -13,7 +13,7 @@
  * @file    BatchedDenseCholeskySolver.cpp
  * @brief   Persistent cuSOLVER DN batched Cholesky backend for B independent
  *          dense SPD systems of the same dimension
- * @author  FIXME: fill in your name
+ * @author  Shaji
  * @date    Nov 20, 2026
  */
 

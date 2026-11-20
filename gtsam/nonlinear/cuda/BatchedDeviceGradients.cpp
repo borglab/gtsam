@@ -13,7 +13,7 @@
  * @file    BatchedDeviceGradients.cpp
  * @brief   GPU-resident differentiable backward for a batch of independent,
  *          converged nonlinear graphs of identical scalar dimension
- * @author  FIXME: fill in your name
+ * @author  Shaji
  * @date    Nov 20, 2026
  */
 
