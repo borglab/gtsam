@@ -75,6 +75,8 @@ project:
       - title: Linear
         children:
         - pattern: ./python/gtsam/examples/linear/*.ipynb
+        - title: Kalman Filtering and Smoothing (Interactive)
+          url: https://borglab.github.io/gtsam/KalmanFilteringAndSmoothing.html
       - title: Discrete
         children:
         - pattern: ./python/gtsam/examples/discrete/*.ipynb

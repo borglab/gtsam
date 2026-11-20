@@ -1,0 +1,39 @@
+fgz 1
+style node_size=9.5mm factor_size=3.5mm label_sep=0.2pt label_font=small
+
+x0 = x_{k-3}
+x1 = x_{k-2}
+x2 = x_{k-1}
+x3 = x_k
+b0 = b_0
+b1 = b_1
+bp = b
+u = u
+
+variable x0 (0, 0)
+variable x1 (3.5, 0)
+variable x2 (7, 0)
+variable x3 (10.5, 0)
+
+known b0 (5.25, 2.8)
+known b1 (5.25, -2.8)
+
+factor {x0} (-1.5, 0) shape=square
+factor {x0, x1} shape=square
+factor {x1, x2} shape=square
+factor {x2, x3} shape=square
+
+factor {x0, b0} shape=square
+factor {x1, b0} shape=square
+factor {x2, b0} shape=square
+factor {x3, b0} shape=square
+
+factor {x0, b1} shape=square
+factor {x1, b1} shape=square
+factor {x2, b1} shape=square
+factor {x3, b1} shape=square
+
+text bp (-1.5, 0.55) font=scriptsize
+text u (1.75, 0.55) font=scriptsize
+text u (5.25, 0.55) font=scriptsize
+text u (8.75, 0.55) font=scriptsize

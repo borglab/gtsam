@@ -1,0 +1,19 @@
+fgz 1
+style node_size=9.5mm factor_size=3.5mm label_sep=0.2pt label_font=small
+
+xk1 = x_{k-1}
+xk = x_k
+p = p
+u = u
+zk = z_k
+
+variable xk1 (0, 0)
+variable xk (3.5, 0)
+
+factor {xk1} (0, 1.4) shape=square
+factor {xk1, xk} shape=square
+factor {xk} (3.5, 1.4) shape=square
+
+text p (0, 1.95) font=scriptsize
+text u (1.75, 0.55) font=scriptsize
+text zk (3.5, 1.95) font=scriptsize
