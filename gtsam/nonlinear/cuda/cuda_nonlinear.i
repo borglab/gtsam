@@ -4,6 +4,7 @@
 
 namespace gtsam {
 
+#include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
@@ -98,6 +99,49 @@ class SparseLevenbergMarquardtOptimizer {
   double error() const;
   const gtsam::cuda::SparseLevenbergMarquardtParams& params() const;
   const gtsam::cuda::SparseLevenbergMarquardtResult& result() const;
+};
+
+#include <gtsam/nonlinear/cuda/BatchedDenseLevenbergMarquardt.h>
+
+class BatchedDenseLevenbergMarquardtItemResult {
+  BatchedDenseLevenbergMarquardtItemResult();
+
+  double initialError;
+  double finalError;
+  double finalLambda;
+  size_t acceptedIterations;
+  size_t lambdaAttempts;
+  bool converged;
+};
+
+class BatchedDenseLevenbergMarquardtOptimizer {
+  BatchedDenseLevenbergMarquardtOptimizer(
+      const std::vector<gtsam::NonlinearFactorGraph>& graphs,
+      const std::vector<gtsam::Values>& initialValues,
+      const gtsam::LevenbergMarquardtParams& params =
+          gtsam::LevenbergMarquardtParams(),
+      const gtsam::cuda::BatchedDenseSolverOptions& deviceOptions =
+          gtsam::cuda::BatchedDenseSolverOptions());
+
+  const std::vector<gtsam::Values>& optimize();
+  const std::vector<gtsam::Values>& values() const;
+  const std::vector<gtsam::cuda::BatchedDenseLevenbergMarquardtItemResult>&
+  results() const;
+};
+
+#include <gtsam/nonlinear/cuda/BatchedDeviceGradients.h>
+
+class BatchedDeviceGradients {
+  BatchedDeviceGradients(
+      const std::vector<gtsam::NonlinearFactorGraph>& graphs,
+      const std::vector<gtsam::Values>& solutions,
+      const gtsam::cuda::BatchedDenseSolverOptions& options =
+          gtsam::cuda::BatchedDenseSolverOptions());
+
+  std::vector<gtsam::VectorValues> adjoint(
+      const std::vector<gtsam::VectorValues>& stateCotangents) const;
+  int batchSize() const;
+  int dimension() const;
 };
 
 }  // namespace cuda
