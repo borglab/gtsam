@@ -24,10 +24,13 @@
 #include <gtsam/nonlinear/Gradients.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
+#include <gtsam/nonlinear/ParameterTag.h>
 #include <gtsam/nonlinear/cuda/BatchedDeviceGradients.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 
+#include <optional>
 #include <stdexcept>
 #include <vector>
 
@@ -102,6 +105,73 @@ VectorValues MakeCotangent(double scale) {
   cotangent.insert(kPose0, scale * (Vector(3) << 1.0, -0.5, 0.2).finished());
   cotangent.insert(kPose1, scale * (Vector(3) << -0.3, 0.8, -0.1).finished());
   cotangent.insert(kPose2, scale * (Vector(3) << 0.5, 0.1, 0.4).finished());
+  return cotangent;
+}
+
+const Key kScalar0 = Symbol('s', 0);
+
+// error(x) = x - target, with target playing the role of a learned
+// parameter identified by `tag` -- the default NonlinearFactor::parameterVjp
+// returns std::nullopt (no dependency), so parameterGradient() needs a
+// factor that actually overrides it to be worth testing at all. The VJP is
+// exact and trivial to check by hand: d(error)/d(target) = -I, so the
+// contribution is -factorResidualCotangent.
+class ParameterFactor : public NoiseModelFactorN<Vector> {
+ public:
+  using Base = NoiseModelFactorN<Vector>;
+
+  ParameterFactor(Key key, ParameterTag tag, const Vector& target,
+                  const SharedNoiseModel& model)
+      : Base(model, key), tag_(std::move(tag)), target_(target) {}
+
+  Vector evaluateError(const Vector& x, OptionalMatrixType H) const override {
+    if (H) *H = Matrix::Identity(x.size(), x.size());
+    return x - target_;
+  }
+
+  std::optional<Vector> parameterVjp(
+      const Values&, const ParameterTag& parameter,
+      const Vector& factorResidualCotangent) const override {
+    if (parameter != tag_) return std::nullopt;
+    return Vector(-factorResidualCotangent);
+  }
+
+ private:
+  ParameterTag tag_;
+  Vector target_;
+};
+
+struct BatchParameterProblem {
+  std::vector<NonlinearFactorGraph> graphs;
+  std::vector<Values> solutions;
+};
+
+// Two graphs, each one PriorFactor plus one ParameterFactor sharing `tag`,
+// at distinct fixed (not optimized -- parameterGradient only needs a point
+// to linearize at) solutions, so the batch exercises genuinely different
+// per-graph contributions rather than identical copies.
+BatchParameterProblem MakeBatchParameterProblem(const ParameterTag& tag) {
+  BatchParameterProblem problem;
+  const auto noise = noiseModel::Isotropic::Sigma(2, 0.1);
+  for (double offset : {0.0, 1.0}) {
+    NonlinearFactorGraph graph;
+    const Vector anchor = (Vector(2) << 1.0 + offset, 2.0 - offset).finished();
+    const Vector target = (Vector(2) << 0.5 - offset, -0.5 + offset).finished();
+    graph.emplace_shared<PriorFactor<Vector>>(kScalar0, anchor, noise);
+    graph.emplace_shared<ParameterFactor>(kScalar0, tag, target, noise);
+    Values solution;
+    solution.insert(kScalar0, (Vector(2) << 0.1, 0.2).finished());
+    problem.graphs.push_back(graph);
+    problem.solutions.push_back(solution);
+  }
+  return problem;
+}
+
+// A fixed cotangent over the single 2-dim kScalar0 block, for
+// MakeBatchParameterProblem's graphs.
+VectorValues MakeScalarCotangent(double scale) {
+  VectorValues cotangent;
+  cotangent.insert(kScalar0, scale * (Vector(2) << 1.0, -2.0).finished());
   return cotangent;
 }
 
@@ -185,6 +255,58 @@ TEST(BatchedDeviceGradients, AdjointThrowsForWrongCotangentBatchSize) {
   const std::vector<VectorValues> tooFewCotangents = {MakeCotangent(1.0)};
   CHECK_EXCEPTION(gpuGradients.adjoint(tooFewCotangents),
                  std::invalid_argument);
+}
+
+// Verifies BatchedDeviceGradients::ParameterGradientMatchesCpuGradients --
+// the per-factor projection step on top of the batched adjoint() solve
+// (pullback() + each factor's parameterVjp), which is what makes this class
+// a drop-in batched replacement for B calls to
+// gtsam::Gradients::parameterGradient, not just the underlying solve.
+TEST(BatchedDeviceGradients, ParameterGradientMatchesCpuGradients) {
+  if (!HasCudaDevice()) return;
+  const ParameterTag tag("test-parameter");
+  const BatchParameterProblem problem = MakeBatchParameterProblem(tag);
+  const std::vector<VectorValues> cotangents = {MakeScalarCotangent(1.0),
+                                                MakeScalarCotangent(-0.5)};
+
+  BatchedDeviceGradients gpuGradients(problem.graphs, problem.solutions);
+  const std::vector<std::optional<Vector>> actual =
+      gpuGradients.parameterGradient(cotangents, tag);
+
+  LONGS_EQUAL(static_cast<long>(problem.graphs.size()), actual.size());
+  for (size_t i = 0; i < problem.graphs.size(); ++i) {
+    Gradients cpuGradients(problem.graphs[i], problem.solutions[i]);
+    const std::optional<Vector> expected =
+        cpuGradients.parameterGradient(cotangents[i], tag);
+    CHECK(expected.has_value());
+    CHECK(actual[i].has_value());
+    EXPECT(assert_equal(*expected, *actual[i], 1e-9));
+  }
+}
+
+// Verifies BatchedDeviceGradients::ParameterGradientReturnsNulloptForUnrelatedTag
+// -- a graph where no factor depends on the queried tag must return
+// std::nullopt per graph, exactly like gtsam::Gradients::parameterGradient,
+// not an empty or zero vector.
+TEST(BatchedDeviceGradients, ParameterGradientReturnsNulloptForUnrelatedTag) {
+  if (!HasCudaDevice()) return;
+  const ParameterTag usedTag("used");
+  const ParameterTag unrelatedTag("unrelated");
+  const BatchParameterProblem problem = MakeBatchParameterProblem(usedTag);
+  const std::vector<VectorValues> cotangents = {MakeScalarCotangent(1.0),
+                                                MakeScalarCotangent(-0.5)};
+
+  BatchedDeviceGradients gpuGradients(problem.graphs, problem.solutions);
+  const std::vector<std::optional<Vector>> actual =
+      gpuGradients.parameterGradient(cotangents, unrelatedTag);
+
+  for (size_t i = 0; i < problem.graphs.size(); ++i) {
+    Gradients cpuGradients(problem.graphs[i], problem.solutions[i]);
+    const std::optional<Vector> expected =
+        cpuGradients.parameterGradient(cotangents[i], unrelatedTag);
+    CHECK(!expected.has_value());
+    CHECK(!actual[i].has_value());
+  }
 }
 
 /* ************************************************************************* */

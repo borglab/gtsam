@@ -7,6 +7,7 @@ namespace gtsam {
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/ParameterTag.h>
 #include <gtsam/nonlinear/Values.h>
 
 namespace cuda {
@@ -140,6 +141,9 @@ class BatchedDeviceGradients {
 
   std::vector<gtsam::VectorValues> adjoint(
       const std::vector<gtsam::VectorValues>& stateCotangents) const;
+  std::vector<std::optional<gtsam::Vector>> parameterGradient(
+      const std::vector<gtsam::VectorValues>& stateCotangents,
+      const gtsam::ParameterTag& parameter) const;
   int batchSize() const;
   int dimension() const;
 };

@@ -24,9 +24,11 @@
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/cuda/internal/BatchedDenseCholeskySolver.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/ParameterTag.h>
 #include <gtsam/nonlinear/Values.h>
 
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace gtsam::cuda {
@@ -86,6 +88,39 @@ class GTSAM_EXPORT BatchedDeviceGradients {
    */
   std::vector<VectorValues> adjoint(
       const std::vector<VectorValues>& stateCotangents) const;
+
+  /**
+   * Returns, per graph, one whitened factor-residual cotangent per factor
+   * slot (nonlinear-graph order; an inactive or null factor's slot is an
+   * empty vector), mirroring gtsam::Gradients::pullback: -(A_b * adjoint_b),
+   * split at each factor's row range within the dense A_b this batch already
+   * built at construction. This is the per-factor projection step
+   * parameterGradient needs on top of the batched adjoint() solve above --
+   * cheap, factor-order host bookkeeping, not something that benefits from
+   * further GPU batching the way the solve itself did.
+   */
+  std::vector<std::vector<Vector>> pullback(
+      const std::vector<VectorValues>& stateCotangents) const;
+
+  /**
+   * Returns, per graph, the accumulated gradient through the solved states
+   * for `parameter`, mirroring gtsam::Gradients::parameterGradient: calls
+   * pullback() once for the whole batch, then for every active factor in
+   * each graph, un-whitens that factor's slot of the pullback and calls its
+   * NoiseModelFactor::parameterVjp, accumulating contributions that match
+   * `parameter`. A graph where no factor depends on `parameter` gets
+   * std::nullopt, exactly like gtsam::Gradients::parameterGradient.
+   *
+   * This is what makes BatchedDeviceGradients a drop-in batched replacement
+   * for B calls to gtsam::Gradients::parameterGradient, not just the
+   * underlying adjoint solve: the expensive part (one dense factorize + N
+   * batched solves) is shared across every parameterGradient() call on this
+   * object, exactly like repeated gtsam::Gradients::parameterGradient calls
+   * reuse that object's one cached factorization.
+   */
+  std::vector<std::optional<Vector>> parameterGradient(
+      const std::vector<VectorValues>& stateCotangents,
+      const ParameterTag& parameter) const;
 
   /// Number of graphs in the batch.
   int batchSize() const;
