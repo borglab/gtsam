@@ -222,20 +222,14 @@ if(GTSAM_ENABLE_CUDA)
       "${GTSAM_CUDSS_LIBRARY_DIR}")
   endif()
   if(OpenMP_CXX_FOUND)
-    # Only the two batched CUDA classes that actually contain #pragma omp
-    # (parallelizing per-item host-side linearization across an independent
-    # batch) get the OpenMP compile flag -- not target_link_libraries(gtsam
-    # ... OpenMP::OpenMP_CXX), which would add it to every source in the
-    # gtsam target, recompiling the whole library under a changed flag for
-    # two files' benefit. target_link_options only affects gtsam's own
-    # final link command (so the compiler driver links libgomp), not how
-    # any individual .cpp file gets compiled. OpenMP_CXX_FOUND/_FLAGS are
-    # set unconditionally in HandleOpenMP.cmake, so this degrades to a
-    # plain serial loop with no build change when the toolchain lacks
-    # OpenMP.
+    # Only the batched CUDA files with #pragma omp get -fopenmp here, not
+    # target_link_libraries(... OpenMP::OpenMP_CXX). A file missing from
+    # this list runs its pragma serially with no warning (cost ~8x once).
     set_source_files_properties(
       nonlinear/cuda/BatchedDenseLevenbergMarquardt.cpp
       nonlinear/cuda/BatchedDeviceGradients.cpp
+      nonlinear/cuda/BatchedBlockTridiagonalLevenbergMarquardt.cpp
+      nonlinear/cuda/BatchedBlockTridiagonalDeviceGradients.cpp
       PROPERTIES COMPILE_OPTIONS "${OpenMP_CXX_FLAGS}")
     target_link_options(gtsam PUBLIC ${OpenMP_CXX_FLAGS})
   endif()

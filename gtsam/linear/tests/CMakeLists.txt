@@ -14,6 +14,10 @@ if(NOT GTSAM_ENABLE_CUDA AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/testCudaBatched
   list(APPEND EXCLUDE_TESTS "testCudaBatchedDenseCholeskySolver.cpp")
 endif()
 
+if(NOT GTSAM_ENABLE_CUDA AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/testCudaBatchedBlockTridiagonalCholeskySolver.cpp")
+  list(APPEND EXCLUDE_TESTS "testCudaBatchedBlockTridiagonalCholeskySolver.cpp")
+endif()
+
 gtsamAddTestsGlob(linear "test*.cpp" "${EXCLUDE_TESTS}" "gtsam")
 
 # Set properties to serialization target if Boost serialization is enabled and MSVC
