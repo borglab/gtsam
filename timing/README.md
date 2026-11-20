@@ -606,3 +606,134 @@ This generates:
   - `steiner_solve`
 - If the generated results become stale, it is safe to delete
   `timing/results/bayes_tree_covariance/` and regenerate it.
+
+## Batched Dense GPU Levenberg-Marquardt Benchmark
+
+`timeBatchedDenseLM` measures `BatchedDenseLevenbergMarquardtOptimizer` and
+`BatchedDeviceGradients` -- a batched GPU path for solving many independent,
+identically-sized nonlinear graphs at once, plus the matching batched
+differentiable backward -- against GTSAM's real (CPU) serial
+`LevenbergMarquardtOptimizer`/`Gradients`, across one and two GPUs.
+
+### Build
+
+From the build directory:
+
+```bash
+make -j16 timeBatchedDenseLM
+```
+
+### Graph structure
+
+Each of the B=8 independent graphs per batch has 4 variables (`Symbol('x', 0..3)`),
+each a 64-dimensional `gtsam::Vector`, for 256 scalar columns total, and 14
+factors: 10 binary `NonlinearCouplingFactor`s plus 4 unary `PriorFactor<Vector>`
+anchors (one per variable), all sharing one `noiseModel::Isotropic::Sigma(64,
+0.1)` noise model.
+
+`NonlinearCouplingFactor(key_i, key_j, offset, model)` has residual and
+analytic Jacobians
+
+```
+error(x_i, x_j) = x_i - (x_j + 0.1 * x_j^2) - offset        (elementwise square)
+H_i = d(error)/d(x_i) = I_64
+H_j = d(error)/d(x_j) = -(I_64 + diag(0.2 * x_j))
+```
+
+The `0.1 * x_j^2` term is what makes this nonlinear -- a plain
+`BetweenFactor<Vector>` has no such term and would converge in a single
+linear solve, which would not exercise the repeated damped solves this
+benchmark is meant to measure. The 10 structural factors connect the 6
+unique pairs among the 4 variables, with 4 of those pairs repeated once more
+to reach 10 edges: `(x0,x1), (x1,x2), (x2,x3), (x0,x2), (x1,x3), (x0,x3),
+(x0,x1), (x1,x2), (x2,x3), (x0,x2)`.
+
+Each graph is drawn fresh from a seeded RNG, in this order: each structural
+factor's 64-dim `offset` ~ i.i.d. `N(0, 0.05^2)`; each anchor's 64-dim target
+~ i.i.d. `N(0, 1)`; each variable's 64-dim initial value ~ i.i.d. `N(0, 1)`,
+independent of its anchor target, so there is a genuine nonzero initial
+residual. Source: `buildWindowGraph()`/`buildInitialValues()`/
+`NonlinearCouplingFactor` in `timing/batched_dense/timeBatchedDenseLM.cpp`.
+
+### Run the benchmark executable
+
+Run from `build/timing/batched_dense/`. `--real-tolerances` lets items stop
+once genuinely converged (GTSAM's real default tolerances) instead of
+forcing every run through `--max-iterations`; omit it to force a fixed
+iteration count for duration-controlled runs instead.
+
+```bash
+# CPU baseline (serial LevenbergMarquardtOptimizer, one graph at a time)
+./timeBatchedDenseLM --backend cpu --b-per-gpu 8 --max-iterations 40 \
+  --real-tolerances --repeats 500
+
+# 1-GPU batched
+./timeBatchedDenseLM --backend gpu --device-offset 0 --num-gpus 1 \
+  --b-per-gpu 8 --max-iterations 40 --real-tolerances --repeats 500
+
+# 2-GPU batched, sharded (one thread per device, no inter-GPU communication)
+./timeBatchedDenseLM --backend gpu --device-offset 1 --num-gpus 2 \
+  --b-per-gpu 8 --max-iterations 40 --real-tolerances --repeats 500
+
+# Numerical-agreement and convergence check against CPU, over 10 random batches
+./timeBatchedDenseLM --device-offset 0 --b-per-gpu 8 --max-iterations 40 \
+  --real-tolerances --verify --verify-batches 10
+```
+
+### Results
+
+Measured on 8x NVIDIA RTX A6000 (49 GB each) and an AMD EPYC 73F3 (64
+logical CPUs visible to OpenMP), 500 repeats per data point:
+
+| Backend | Devices | Mean step time | Throughput | vs. CPU | vs. 1 GPU |
+|---|---|---|---|---|---|
+| CPU (`LevenbergMarquardtOptimizer`, serial) | -- | 0.1059 s | 75.4 graphs/s | 1.00x | -- |
+| GPU, batched | 1x RTX A6000 | 0.0864 s | 88.0 graphs/s | 1.17x | 1.00x |
+| GPU, batched, sharded | 2x RTX A6000 | 0.0839 s / 0.0803 s (per device) | 180.3 graphs/s | 2.39x | 2.05x |
+
+Multi-GPU sharding gives 2.05x throughput from 2 GPUs -- within 3% of
+perfect linear scaling, with no evidence of contention or shared-resource
+overhead. Of one representative 0.126 s forward step, only 0.009 s is pure
+cuSOLVER kernel time (convergence now takes ~4-5 iterations, not the full
+`--max-iterations` budget); 0.042 s is OpenMP-parallelized per-item
+linearization; the remainder is GPU dispatch/transfer overhead.
+
+Over 10 independently-seeded batches (80 graphs total), each graph optimized
+from identical initial values by both backends:
+
+| Metric | Value |
+|---|---|
+| Mean accepted iterations, GPU-batched | 4.075 |
+| Mean accepted iterations, CPU `LevenbergMarquardtOptimizer` | 4.075 (exact match) |
+| Max final-error difference (GPU vs. CPU) | 3.64e-12 |
+| Max final-`Values` difference (`localCoordinates` norm) | 1.57e-15 |
+| Max backward-adjoint difference (`BatchedDeviceGradients` vs. `Gradients`) | 5.18e-17 |
+
+Not bit-identical by construction (dense batched GPU Cholesky vs. CPU
+Bayes-tree elimination are different algorithms), but all differences are at
+or below double-precision machine epsilon, and the matching mean iteration
+count confirms the batched optimizer's per-item trust-region accept/reject
+logic reproduces `LevenbergMarquardtOptimizer`'s real policy rather than an
+approximation of it.
+
+### Notes
+
+- cuSOLVER is not a new dependency: `CUDA::cusolver` is already linked by
+  `gtsam/CMakeLists.txt` whenever `GTSAM_ENABLE_CUDA` is on, and is already
+  used by the existing `DenseCholeskySolver`. `BatchedDenseCholeskySolver`
+  calls the batched variants of the same already-linked API
+  (`cusolverDnXpotrfBatched`/`XpotrsBatched`), not a different library.
+- `cusolverDnXpotrsBatched` accepts only `nrhs=1` per call (confirmed
+  empirically -- `CUSOLVER_STATUS_INVALID_VALUE` for `nrhs>1`); multi-RHS
+  reuse of one factorization is a loop of single-RHS calls, each writing to
+  its own info slot so none need a synchronization barrier between them.
+- OpenMP parallelizes the per-item host-side linearization in both
+  `BatchedDenseLevenbergMarquardtOptimizer` and `BatchedDeviceGradients`
+  (`#pragma omp parallel for`, `schedule(static) num_threads(batchSize)`
+  measurably beat `schedule(dynamic)` for this uniform B=8 workload).
+  `OpenMP::OpenMP_CXX` is found unconditionally in `cmake/HandleOpenMP.cmake`
+  but was previously only applied to the `gtsam` target when using Intel
+  MKL; `gtsam/CMakeLists.txt` now also links it under `GTSAM_ENABLE_CUDA`,
+  degrading to a serial loop with no build change when OpenMP is absent.
+- Python bindings and a sparse (cuDSS) batched backend for larger graphs are
+  not included here -- dense cuSOLVER is appropriate at this problem size.
