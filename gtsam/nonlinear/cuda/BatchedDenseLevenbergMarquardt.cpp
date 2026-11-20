@@ -179,24 +179,43 @@ struct BatchedDenseLevenbergMarquardtOptimizer::Impl {
       // than the batched GPU solve itself.
       {
         const auto linearizeStart = Clock::now();
-        // Every item reads only its own graphs[i]/currentValues[i]/
-        // keyInfos[i] and writes only its own hBase[i]/rhsBase[i] -- the
-        // B=8 items are fully independent, and this loop (linearize() +
-        // forming the 896x256-ish AᵗA/Aᵗb product per item) is the
-        // measured dominant cost of the whole optimizer (~70% of forward
-        // time), so it is the one parallelized with OpenMP. Degrades to a
-        // plain serial loop with no code-path branching when the compiler
-        // has no -fopenmp (see gtsam/CMakeLists.txt's OpenMP_CXX_FOUND
-        // guard around this library's OpenMP::OpenMP_CXX link).
+        // graphs[i].linearize() calls every factor's own linearize()/
+        // evaluateError, which for a CustomFactor means calling back into
+        // an arbitrary (and, from Python, GIL-requiring) user callback.
+        // Running that from multiple OpenMP worker threads deadlocks under
+        // pybind11: the calling thread holds the GIL across this whole
+        // call (none of GTSAM's wrap-generated bindings release it), so a
+        // worker thread trying to re-acquire the GIL to invoke a Python
+        // callback blocks forever waiting for a release that only happens
+        // after the (blocked) OpenMP barrier. Confirmed by reproducing
+        // exactly this hang (in the sibling BatchedDeviceGradients
+        // constructor, same pattern) with a Python CustomFactor. linearize()
+        // must therefore run serially, on the caller's own thread.
+        std::vector<GaussianFactorGraph::shared_ptr> linearized(
+            static_cast<size_t>(batchSize));
+        for (int item = 0; item < batchSize; ++item) {
+          const size_t i = static_cast<size_t>(item);
+          if (terminated[i]) continue;
+          linearized[i] = graphs[i].linearize(currentValues[i]);
+        }
+
+        // Everything below only touches the already-linearized (pure
+        // Eigen/C++) JacobianFactor data -- dense Jacobian extraction and
+        // the AᵗA/Aᵗb products never call back into factor code, so this
+        // part is safe to parallelize and is where the real cost (confirmed
+        // by profiling) lives: forming the 896x256-ish AᵗA/Aᵗb product per
+        // item is the measured dominant cost of the whole optimizer (~70%
+        // of forward time). Degrades to a plain serial loop with no
+        // code-path branching when the compiler has no -fopenmp (see
+        // gtsam/CMakeLists.txt's OpenMP_CXX_FOUND guard around this
+        // library's OpenMP::OpenMP_CXX link).
 #pragma omp parallel for num_threads(batchSize) schedule(static)
         for (int item = 0; item < batchSize; ++item) {
           const size_t i = static_cast<size_t>(item);
           if (terminated[i]) continue;
-          const auto linearized =
-              graphs[i].linearize(currentValues[i]);
           Matrix A;
           Vector b;
-          std::tie(A, b) = linearized->jacobian(keyInfos[i].ordering());
+          std::tie(A, b) = linearized[i]->jacobian(keyInfos[i].ordering());
           hBase[i] = A.transpose() * A;
           rhsBase[i] = A.transpose() * b;
         }
