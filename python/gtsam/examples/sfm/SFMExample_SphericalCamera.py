@@ -22,7 +22,7 @@ from gtsam import symbol_shorthand
 L = symbol_shorthand.L
 X = symbol_shorthand.X
 
-from gtsam.examples import SFMdata
+from gtsam.utils import SFMdata
 from gtsam.utils import plot
 
 from gtsam import (DoglegOptimizer, GeneralSFMFactorSphericalCamera,

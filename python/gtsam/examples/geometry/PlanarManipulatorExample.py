@@ -43,7 +43,7 @@ def vee(M):
 
 
 def delta(g0, g1):
-    """Difference between x,y,,theta components of SE(2) poses."""
+    """Difference between the x, y, and theta components of SE(2) poses."""
     return vector3(g1.x() - g0.x(), g1.y() - g0.y(), g1.theta() - g0.theta())
 
 

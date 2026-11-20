@@ -6,7 +6,7 @@ import numpy as np
 
 import gtsam
 
-from gtsam.examples.LeggedEstimatorExample import make_legged_estimator_params
+from gtsam.utils.LeggedEstimatorExample import make_legged_estimator_params
 
 
 def make_simple_estimator():

@@ -12,7 +12,7 @@ import argparse
 
 import matplotlib.pyplot as plt
 import numpy as np
-from gtsam.examples import SFMdata
+from gtsam.utils import SFMdata
 
 import gtsam
 from gtsam import (

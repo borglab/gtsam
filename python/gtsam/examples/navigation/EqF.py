@@ -22,7 +22,7 @@ def checkNorm(x: np.ndarray, tol: float = 1e-3):
     """Check norm of a vector being 1 or nan
 
     :param x: A numpy array
-    :param tol: tollerance, default 1e-3
+    :param tol: tolerance, default 1e-3
     :return: Boolean true if norm is 1 or nan
     """
     return abs(np.linalg.norm(x) - 1) < tol or np.isnan(np.linalg.norm(x))
@@ -37,8 +37,8 @@ class State:
     ----------
     Let's assume we want to use three known direction a, b, and c, where only the sensor that measure b is
     uncalibrated (we'd like to estimate the calibration states). Therefore, the system's d list looks like
-    d = [b, a, c], and the S list should look like S = [Sb]. The association between d and S is done via indeces.
-    In general S[i] correspond to the calibration state of the sensor that measure the direcion d[i]
+    d = [b, a, c], and the S list should look like S = [Sb]. The association between d and S is done via indices.
+    In general S[i] correspond to the calibration state of the sensor that measure the direction d[i]
     ----------
     """
 
@@ -373,7 +373,7 @@ def checkNorm(x: np.ndarray, tol: float = 1e-3):
     """Check norm of a vector being 1 or nan
 
     :param x: A numpy array
-    :param tol: tollerance, default 1e-3
+    :param tol: tolerance, default 1e-3
     :return: Boolean true if norm is 1 or nan
     """
     return abs(np.linalg.norm(x) - 1) < tol or np.isnan(np.linalg.norm(x))
