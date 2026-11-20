@@ -32,26 +32,16 @@
 
 namespace gtsam::cuda {
 
-/**
- * Host-side timing breakdown for one optimize() call, separate from the
- * actual GPU solver time (see linearSolveStats()) -- isolates per-item
- * bookkeeping cost (linearization, trial-point retract/error) from the
- * batched linear-algebra step, to find where host time actually goes.
- */
+/// Host-side timing breakdown for one optimize() call, separate from
+/// linearSolveStats()'s pure GPU time.
 struct BatchedDenseLevenbergMarquardtHostTimings {
-  /// Outer-loop: linearize() + forming H_base = A^T A / rhs_base = A^T b,
-  /// once per outer iteration per active item (not repeated across retries).
+  /// linearize() + forming H_base/rhs_base, once per outer iteration.
   double linearizeAndFormSeconds = 0.0;
-  /// Per attempt round: retract() + graph.error(trialValues) for every
-  /// participating item -- scales with the number of lambda-retry rounds.
+  /// retract() + graph.error(), per participating item per attempt round.
   double retractAndErrorSeconds = 0.0;
-  /// Per attempt round: copying H_base/rhs_base plus damping into the flat
-  /// host buffers uploaded to the device.
+  /// Copying H_base/rhs_base plus damping into host buffers, per round.
   double marshalSeconds = 0.0;
-  /// Per attempt round: upload + factorize() + solve() + sync + download
-  /// call overhead, wall-clock, as seen by this class -- includes the pure
-  /// cuSOLVER kernel time counted separately in linearSolveStats(), plus
-  /// whatever upload/dispatch/sync/download overhead surrounds it.
+  /// Upload + factorize/solve + sync + download wall-clock, per round.
   double gpuRoundTripSeconds = 0.0;
 };
 
@@ -66,50 +56,18 @@ struct BatchedDenseLevenbergMarquardtItemResult {
 };
 
 /**
- * Batch Levenberg-Marquardt optimizer that solves B independent, identically
- * scalar-dimensioned nonlinear graphs together, batching only the expensive
- * linear-algebra step -- dense Cholesky factorize and solve over all B
- * damped normal equations at once -- on one GPU. Per-item lambda tracking,
- * acceptance, and convergence are fully independent, so each graph's
- * trust-region schedule proceeds exactly as it would running alone; batching
- * changes only where the arithmetic runs, not the optimization trajectory
- * (acceptance here uses a classic monotonic-decrease Levenberg rule, not
- * GTSAM's linearized/nonlinear model-fidelity ratio, so trajectories match
- * LevenbergMarquardtOptimizer in outcome, not attempt-for-attempt).
- *
- * This is the dense-batched counterpart to SparseLevenbergMarquardtOptimizer.
- * That class amortizes CUDA setup over one graph's own outer iterations,
- * which loses to CPU at DFG-TAMP's problem size and calling pattern -- one
- * fresh ~256-column optimizer per (batch_item, timestep), never reused
- * (CLAUDE.md's GPU-accelerated GTSAM TODO measured this at ~50% slower than
- * CPU). This class instead amortizes setup over DFG-TAMP's actual
- * B=8-graphs-per-training-step batch (JointWindowTrainer.training_step),
- * which is the real lever: batching many independent small problems is how
- * every comparable GPU win in the batched-optimization literature works.
- * See the scratchpad prototype this implements (recorded in
- * i-want-you-to-dapper-torvalds.md) for the validated speedup this is based
- * on: 2.1x forward over CPU at this exact B=8, n=256, 40-iteration shape.
- *
- * Dense, not sparse, for the same reason as BatchedDenseCholeskySolver:
- * DFG-TAMP's window graphs are small (~256 columns), so dense batched
- * Cholesky is a legitimate, already-linked substitute for a batched sparse
- * solve (cuDSS has no batched multi-system API and is not installed on this
- * machine either way).
- *
- * The graph topology, each graph's key ordering, and the total batch size
- * are fixed at construction. optimize() may be called once.
+ * Batch Levenberg-Marquardt for B independent, equal-dimension nonlinear
+ * graphs, batching only the dense Cholesky factorize+solve over all B
+ * damped normal equations at once on one GPU. Per-item lambda/acceptance/
+ * convergence are fully independent, so trajectories match
+ * LevenbergMarquardtOptimizer's outcome. Dense, not sparse, since
+ * DFG-TAMP's window graphs (~256 columns) are small enough for this to
+ * substitute for a sparse solve. optimize() may be called once.
  */
 class GTSAM_EXPORT BatchedDenseLevenbergMarquardtOptimizer {
  public:
-  /**
-   * Linearizes every graph once to fix each item's key ordering (reused for
-   * every later outer iteration, so retract/jacobian stay consistent even if
-   * recomputing an ordering from scratch each time would differ).
-   *
-   * Throws std::invalid_argument if graphs and initialValues differ in size,
-   * the batch is empty, or any two graphs linearize to a different total
-   * scalar dimension.
-   */
+  /// Linearizes every graph once to fix each item's key ordering. Throws
+  /// on a batch-size mismatch or differing scalar dimensions.
   BatchedDenseLevenbergMarquardtOptimizer(
       const std::vector<NonlinearFactorGraph>& graphs,
       const std::vector<Values>& initialValues,
@@ -122,13 +80,8 @@ class GTSAM_EXPORT BatchedDenseLevenbergMarquardtOptimizer {
   BatchedDenseLevenbergMarquardtOptimizer& operator=(
       const BatchedDenseLevenbergMarquardtOptimizer&) = delete;
 
-  /**
-   * Runs every item's LM loop for up to params.maxIterations accepted outer
-   * iterations (an item that converges or hits params.lambdaUpperBound stops
-   * early and is carried as a cheap no-op for the rest of the batch), each
-   * outer iteration batching one dense factorize+solve per lambda attempt
-   * across every still-active item. Returns the final per-graph values.
-   */
+  /// Runs every item's LM loop up to params.maxIterations outer iterations
+  /// (converged/capped items become cheap no-ops). Returns final values.
   const std::vector<Values>& optimize();
 
   /// Returns the current (post-optimize(), if called) per-graph values.

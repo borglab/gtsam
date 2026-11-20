@@ -193,9 +193,7 @@ TEST(BatchedDenseCholeskySolver, SolveReusesFactorizationAcrossCalls) {
   }
 }
 
-// Verifies BatchedDenseCholeskySolver::MultiColumnSolveMatchesPerColumnReference
-// -- the nrhs=1-per-call loop inside solve(k>1, ...) (cusolverDnXpotrsBatched
-// itself accepts only nrhs=1) must still produce the same answer as k
+// The nrhs=1-per-call loop inside solve(k>1, ...) must match k
 // independent single-column solves.
 TEST(BatchedDenseCholeskySolver, MultiColumnSolveMatchesPerColumnReference) {
   if (!HasCudaDevice()) return;

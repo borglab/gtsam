@@ -3,28 +3,10 @@
 m_.attr("cuda").attr("GncSparseLMParams") = m_.attr("GncCudaSparseLMParams");
 m_.attr("cuda").attr("GncSparseLMOptimizer") = m_.attr("GncCudaSparseLMOptimizer");
 
-// BatchedDenseLevenbergMarquardtOptimizer::optimize() and
-// BatchedDeviceGradients's constructor each run an OpenMP parallel region
-// that calls graphs[i].linearize(...) across the batch's independent
-// items. linearize() calls every factor's own linearize()/evaluateError,
-// which for a CustomFactor means calling back into an arbitrary Python
-// callback. None of this module's wrap-generated .def() bindings release
-// the GIL, so the calling thread holds it across the whole call; an
-// OpenMP worker thread that then tries to re-acquire the GIL to run a
-// Python callback blocks forever waiting for a release that only happens
-// after the (already-blocked) OpenMP barrier -- a real deadlock,
-// reproduced directly with a Python gtsam.CustomFactor, not just reasoned
-// about. wrap's .i syntax has no per-method call_guard annotation, so
-// these two are deliberately left out of cuda_nonlinear.i and hand-bound
-// here instead with py::call_guard<py::gil_scoped_release>(): releasing
-// the GIL before entering the C++ call lets pybind11's own std::function
-// trampoline safely (if serially, since Python itself still only runs one
-// thread at a time) re-acquire it from whichever OpenMP worker thread
-// actually needs to run a Python callback, while the rest of each
-// worker's (non-Python) work still runs truly in parallel. A pure C++
-// caller never goes through either of these bindings at all, so neither
-// method's own correctness depends on this -- it is purely what makes the
-// *Python* entry point safe.
+// Both run OpenMP-parallel linearize() over a CustomFactor's Python
+// callback; no wrap binding releases the GIL by default, so an OpenMP
+// worker re-acquiring it deadlocks (reproduced directly). Hand-bound here
+// with call_guard<gil_scoped_release>() since .i syntax can't express it.
 {
   auto batchedLm = py::reinterpret_borrow<py::class_<
       gtsam::cuda::BatchedDenseLevenbergMarquardtOptimizer,

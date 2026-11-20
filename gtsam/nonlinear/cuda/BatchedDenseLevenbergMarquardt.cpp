@@ -51,22 +51,13 @@ struct BatchedDenseLevenbergMarquardtOptimizer::Impl {
   std::vector<KeyInfo> keyInfos;
   LevenbergMarquardtParams params;
   BatchedDenseCholeskySolver solver;
-  // Persistent across every attempt round and outer iteration so the inner
-  // loop never cudaMalloc/cudaFree on the steady-state path: an earlier
-  // version allocated a fresh DeviceArray per round, and that repeated
-  // allocation -- not the actual cuSOLVER compute -- turned out to be the
-  // dominant real cost at DFG-TAMP's problem size. resize() inside upload()
-  // is a no-op once the size matches, which it always does here since
-  // batchSize/dimension are fixed for the optimizer's lifetime.
+  // Persistent across every round so upload() never reallocates; a fresh
+  // DeviceArray per round was previously the dominant real cost here.
   DeviceArray<double> deviceH;
   DeviceArray<double> deviceRhs;
   LinearSolveStats stats;
   BatchedDenseLevenbergMarquardtHostTimings hostTimings;
-  // Host-side counterparts to the same persistent-buffer fix: a fresh
-  // ~batchSize*dimension^2 std::vector<double> allocated per attempt round
-  // (134 rounds observed in one real training step) is itself a real,
-  // avoidable cost, separate from and on top of the H_base recomputation
-  // this class also used to redo on every retry.
+  // Host-side counterpart to the same persistent-buffer fix.
   std::vector<double> hostH;
   std::vector<double> hostRhs;
   std::vector<bool> participating;
@@ -79,10 +70,7 @@ struct BatchedDenseLevenbergMarquardtOptimizer::Impl {
   int dimension = 0;
   std::vector<double> currentError;
   std::vector<double> lambda;
-  // Per-item rejection multiplier for gtsam::internal::increase/decrease
-  // LevenbergMarquardtLambda -- the same state LevenbergMarquardtOptimizer's
-  // own internal loop keeps (there called currentFactor), just one per item
-  // instead of one for the whole (single) problem.
+  // Per-item rejection multiplier, one per item instead of one globally.
   std::vector<double> currentFactor;
   std::vector<bool> terminated;  // converged or hit lambdaUpperBound
   std::vector<BatchedDenseLevenbergMarquardtItemResult> itemResults;
@@ -165,37 +153,17 @@ struct BatchedDenseLevenbergMarquardtOptimizer::Impl {
     const int maxOuterIterations = static_cast<int>(params.maxIterations);
     for (int outer = 0; outer < maxOuterIterations && !allTerminated();
         ++outer) {
-      // Linearize once per outer iteration (the same convention
-      // SparseLevenbergMarquardtOptimizer uses: lambda attempts within one
-      // outer iteration retry against this one linearization). H_base/
-      // rhsBase (the undamped A^T A / A^T b) are also formed only once here,
-      // not inside the attempt-round loop below: within one outer iteration,
-      // every lambda-retry attempt reuses the SAME linearization, so only
-      // the cheap O(dimension) diagonal damping term actually needs to
-      // change per attempt, not the O(dimension^2 * rows) matrix product
-      // that built H_base. Recomputing that product on every retry (as an
-      // earlier version of this loop did) turned out to be the dominant
-      // real cost of this optimizer -- orders of magnitude more host time
-      // than the batched GPU solve itself.
+      // H_base/rhsBase formed once per outer iteration, not per retry:
+      // only the O(dimension) damping term changes per attempt, so
+      // recomputing the full matrix product on every retry (as an earlier
+      // version did) was the dominant real cost of this optimizer.
       {
         const auto linearizeStart = Clock::now();
-        // graphs[i].linearize() calls every factor's own linearize()/
-        // evaluateError, which for a CustomFactor means calling back into
-        // an arbitrary, possibly Python, callback. Running that from
-        // multiple OpenMP worker threads is only safe if the GIL has
-        // already been released by the caller -- pybind11's own
-        // std::function trampoline then lets each worker thread safely
-        // (if serially, since Python itself still only runs one thread at
-        // a time) re-acquire it just for the callback. None of GTSAM's
-        // wrap-generated .def() bindings release the GIL by default, so
-        // this specific method is hand-bound instead, in
-        // python/gtsam/specializations/cuda_nonlinear.h, with
-        // py::call_guard<py::gil_scoped_release>() -- see that file for
-        // why, and for the deadlock this is a fix for (reproduced directly
-        // with a Python CustomFactor before that binding existed). A pure
-        // C++ caller (this project's own benchmark and unit tests, for
-        // example) never goes through that binding at all, so this loop is
-        // unconditionally safe there regardless.
+        // Safe to run linearize() (and any CustomFactor Python callback)
+        // from OpenMP worker threads only because this constructor is
+        // hand-bound with py::call_guard<py::gil_scoped_release>() in
+        // cuda_nonlinear.h; a pure C++ caller never goes through that
+        // binding, so is unconditionally safe here regardless.
 #pragma omp parallel for num_threads(batchSize) schedule(static)
         for (int item = 0; item < batchSize; ++item) {
           const size_t i = static_cast<size_t>(item);
@@ -228,12 +196,8 @@ struct BatchedDenseLevenbergMarquardtOptimizer::Impl {
     return currentValues;
   }
 
-  /// Builds and solves one batched damped system across every item that is
-  /// neither terminated nor has already accepted a step this outer
-  /// iteration; items outside that set get a harmless identity placeholder
-  /// so the batch stays uniformly sized at `batchSize`. Reuses this outer
-  /// iteration's cached hBase/rhsBase (see optimize()): only the diagonal
-  /// damping term is rebuilt per attempt.
+  /// Builds and solves one batched damped system across every active item
+  /// (others get an identity placeholder); reuses cached hBase/rhsBase.
   void runAttemptRound(int outer, std::vector<bool>* acceptedThisOuter) {
     const auto marshalStart = Clock::now();
     std::fill(hostH.begin(), hostH.end(), 0.0);
@@ -313,17 +277,8 @@ struct BatchedDenseLevenbergMarquardtOptimizer::Impl {
             std::to_string(item));
       }
 
-      // GTSAM's real trust-region model-fidelity rule (same policy
-      // LevenbergMarquardtOptimizer/SparseLevenbergMarquardtOptimizer use),
-      // not a simplified monotonic-decrease rule: predicted reduction for
-      // (H+lambda*I)delta=rhsBase is linearizedChange = 0.5*delta . (rhsBase
-      // + lambda*delta) (standard LM/Nielsen derivation: since
-      // H*delta = rhsBase - lambda*delta, cost reduction rhsBase.delta -
-      // 0.5*delta.H.delta simplifies to this). Accepting only when the
-      // model actually predicted the observed improvement well (not just
-      // "any improvement") rejects far fewer/more appropriately than the
-      // earlier rule, directly cutting the retry-round count that was
-      // inflating both GPU dispatch and host marshaling cost.
+      // GTSAM's real trust-region model-fidelity rule (standard LM/Nielsen
+      // derivation), not a simplified monotonic-decrease rule.
       const double linearizedChange =
           0.5 * delta.dot(rhsBase[i] + lambda[i] * delta);
       const double costChange = currentError[i] - trialError;

@@ -11,21 +11,10 @@
 
 /**
  * @file    timeBatchedDenseLM.cpp
- * @brief   Benchmark BatchedDenseLevenbergMarquardtOptimizer and
- *          BatchedDeviceGradients against DFG-TAMP's real window-graph
- *          shape (4 slots x 64 dims = 256 columns, 10 structural + 4 anchor
- *          factors per graph, B=8 independent graphs per training step),
- *          sharded across one or more GPUs.
- *
- * One Vector-valued NonlinearFactorN coupling factor supplies real curvature
- * (a BetweenFactor<Vector> alone is affine, so would converge in a single LM
- * step and never exercise repeated damped solves the way the real
- * NeuralFactor-based window graphs do). Each GPU runs its own thread with an
- * independent batch of --b-per-gpu graphs, repeating the forward+backward
- * "training step" shape for either a calibrated number of repeats (picked to
- * take roughly --target-seconds) or an explicit --repeats count, so a 1-GPU
- * and an N-GPU run can be compared on exactly the same per-GPU workload.
- *
+ * @brief   Benchmark BatchedDenseLevenbergMarquardtOptimizer/
+ *          BatchedDeviceGradients against DFG-TAMP's window-graph shape
+ *          (4 slots x 64 dims = 256 columns, B=8 graphs), sharded across
+ *          one or more GPUs for comparable per-GPU workload.
  * @date    Nov 20, 2026
  */
 
@@ -72,16 +61,9 @@ constexpr int kTotalDimension = kNumSlots * kSlotDimension;  // 256, matches
 constexpr int kStructuralFactors = 10;
 constexpr int kAnchorFactors = kNumSlots;  // 4, one per slot.
 
-/**
- * Nonlinear coupling factor between two 64-dim slot variables.
- *
- * error(x1, x2) = x1 - (x2 + 0.1 * x2^2) - offset, elementwise. The x2^2 term
- * gives the Hessian real dependence on x2 (unlike a plain BetweenFactor on a
- * Euclidean vector, which is affine and would converge in one LM step), so
- * repeated outer iterations perform genuinely different linearizations as
- * the optimizer moves -- the same reason DFG-TAMP's real NeuralFactor-based
- * window graphs need a multi-iteration LM loop rather than one linear solve.
- */
+/// Coupling factor between two 64-dim slot variables: error(x1,x2) =
+/// x1-(x2+0.1*x2^2)-offset. The x2^2 term gives real curvature, unlike a
+/// plain (affine) BetweenFactor, so repeated LM iterations do real work.
 class NonlinearCouplingFactor : public NoiseModelFactorN<Vector, Vector> {
  public:
   using Base = NoiseModelFactorN<Vector, Vector>;
@@ -214,12 +196,9 @@ LevenbergMarquardtParams ForwardParams(int maxIterations, bool realTolerances) {
   LevenbergMarquardtParams params;
   params.maxIterations = static_cast<size_t>(maxIterations);
   if (!realTolerances) {
-    // Zeroed so the benchmark always performs exactly maxIterations outer
-    // iterations of real work, regardless of how quickly this synthetic
-    // problem's residual drops -- matching the scratchpad prototype's fixed
-    // OUTER_ITERS methodology and giving a controllable, reproducible
-    // duration. With --real-tolerances, items that are genuinely converged
-    // stop early instead, which both backends benefit from equally.
+    // Zeroed so the benchmark always runs exactly maxIterations outer
+    // iterations, for a controllable duration; --real-tolerances lets
+    // converged items stop early instead.
     params.relativeErrorTol = 0.0;
     params.absoluteErrorTol = 0.0;
     params.errorTol = 0.0;
@@ -227,10 +206,8 @@ LevenbergMarquardtParams ForwardParams(int maxIterations, bool realTolerances) {
   return params;
 }
 
-/// One forward+backward "training step" on bPerGpu independent graphs,
-/// mirroring JointWindowTrainer.training_step's shape: forward LM solve for
-/// every graph in the batch, then nTags backward adjoint queries against the
-/// converged batch.
+/// One forward+backward "training step": forward LM solve for every
+/// graph, then nTags backward adjoint queries against the converged batch.
 double RunOneStep(int bPerGpu, int nTags, int maxIterations,
                   bool realTolerances,
                   const cuda::BatchedDenseSolverOptions& deviceOptions,
@@ -301,15 +278,8 @@ double RunOneStep(int bPerGpu, int nTags, int maxIterations,
   return forwardSeconds + backwardSeconds;
 }
 
-/**
- * CPU baseline for the same forward+backward "training step" shape, using
- * gtsam's ordinary LevenbergMarquardtOptimizer and Gradients classes
- * directly -- no batching, one graph at a time, exactly today's real
- * dfg_tamp/dfg/solve.py code path. Shares buildWindowGraph/buildInitialValues
- * and ForwardParams with the GPU path so both measure the identical
- * workload (same graphs, same LM configuration, same tolerances disabled so
- * neither path can finish early and shortcut the comparison).
- */
+/// CPU baseline: ordinary LevenbergMarquardtOptimizer/Gradients, one
+/// graph at a time, sharing the GPU path's graphs/params for a fair comparison.
 double RunOneStepCpu(int bPerGpu, int nTags, int maxIterations,
                     bool realTolerances, std::mt19937* rng) {
   std::vector<NonlinearFactorGraph> graphs;
@@ -378,19 +348,9 @@ void RunOnDevice(int deviceId, int bPerGpu, int nTags, int maxIterations,
       static_cast<double>(stepSeconds.size());
 }
 
-/**
- * Numerical-agreement and convergence-behavior check over nBatches
- * independently-seeded batches of bPerGpu graphs each. For every graph,
- * optimizes with both the GPU-batched optimizer and GTSAM's real (CPU)
- * LevenbergMarquardtOptimizer from identical initial values, then compares
- * final error, final Values, and accepted-iteration count; does the same
- * for backward, comparing BatchedDeviceGradients::adjoint() against
- * gtsam::Gradients::adjoint() at CPU's own converged point. Not
- * bit-identical by design (confirmed with the user) -- the bar is
- * numerically close, reported here rather than asserted, since the two
- * backends use different code paths (dense batched GPU Cholesky vs CPU
- * Bayes-tree elimination).
- */
+/// Numerical-agreement check over nBatches batches: compares GPU-batched
+/// vs CPU final error/Values/iterations and adjoint() output. Not
+/// bit-identical by design; close agreement is reported, not asserted.
 void RunCorrectnessCheck(int bPerGpu, int maxIterations, bool realTolerances,
                          int deviceId, int nBatches) {
   cuda::BatchedDenseSolverOptions deviceOptions;
@@ -550,10 +510,8 @@ int main(int argc, char** argv) {
 
     int repeats = options.repeats;
     if (repeats < 0) {
-      // Calibrate on the first device: run one untimed warmup step (to pay
-      // one-time cuSOLVER/context setup outside the measurement), then one
-      // timed step, and extrapolate the repeat count needed to fill
-      // targetSeconds.
+      // Warmup step pays one-time setup outside the measurement, then
+      // extrapolate repeat count from one timed step to fill targetSeconds.
       cuda::BatchedDenseSolverOptions calibrationOptions;
       calibrationOptions.deviceId = options.deviceOffset;
       std::mt19937 rng(12345);

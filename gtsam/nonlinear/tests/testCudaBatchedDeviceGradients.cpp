@@ -54,11 +54,8 @@ const Key kPose0 = Symbol('x', 0);
 const Key kPose1 = Symbol('x', 1);
 const Key kPose2 = Symbol('x', 2);
 
-// Same two-problem Pose2 batch shape as
-// testCudaBatchedDenseLevenbergMarquardt.cpp, but this file only needs each
-// graph's *converged* solution (computed once, directly, via the real CPU
-// optimizer) to exercise the backward pass -- the forward optimizer under
-// test lives in that other file.
+// Same Pose2 batch shape as testCudaBatchedDenseLevenbergMarquardt.cpp,
+// but only needs each graph's converged solution for the backward pass.
 NonlinearFactorGraph MakePose2Graph(double odometryYOffset) {
   NonlinearFactorGraph graph;
   const auto priorNoise =
@@ -110,12 +107,8 @@ VectorValues MakeCotangent(double scale) {
 
 const Key kScalar0 = Symbol('s', 0);
 
-// error(x) = x - target, with target playing the role of a learned
-// parameter identified by `tag` -- the default NonlinearFactor::parameterVjp
-// returns std::nullopt (no dependency), so parameterGradient() needs a
-// factor that actually overrides it to be worth testing at all. The VJP is
-// exact and trivial to check by hand: d(error)/d(target) = -I, so the
-// contribution is -factorResidualCotangent.
+// error(x) = x - target, target playing a learned parameter `tag`.
+// d(error)/d(target) = -I, so the VJP contribution is -factorResidualCotangent.
 class ParameterFactor : public NoiseModelFactorN<Vector> {
  public:
   using Base = NoiseModelFactorN<Vector>;
@@ -146,10 +139,8 @@ struct BatchParameterProblem {
   std::vector<Values> solutions;
 };
 
-// Two graphs, each one PriorFactor plus one ParameterFactor sharing `tag`,
-// at distinct fixed (not optimized -- parameterGradient only needs a point
-// to linearize at) solutions, so the batch exercises genuinely different
-// per-graph contributions rather than identical copies.
+// Two graphs (PriorFactor + ParameterFactor sharing `tag`) at distinct
+// fixed solutions, for genuinely different per-graph contributions.
 BatchParameterProblem MakeBatchParameterProblem(const ParameterTag& tag) {
   BatchParameterProblem problem;
   const auto noise = noiseModel::Isotropic::Sigma(2, 0.1);
@@ -199,10 +190,7 @@ TEST(BatchedDeviceGradients, AdjointMatchesCpuGradientsPerGraph) {
              gpuGradients.batchSize());
 }
 
-// Verifies BatchedDeviceGradients::MultipleAdjointCallsReuseFactorizationAndMatchCpu
-// -- the whole point of factorizing once per batch: repeated adjoint() calls
-// with different cotangents must all stay correct against CPU, matching the
-// "factorize once, solve N RHS" pattern parameterGradient-style queries use.
+// Repeated adjoint() calls, different cotangents, must all match CPU.
 TEST(BatchedDeviceGradients, MultipleAdjointCallsReuseFactorizationAndMatchCpu) {
   if (!HasCudaDevice()) return;
   const BatchConvergedProblem problem = MakeBatchConvergedProblem();
@@ -257,11 +245,8 @@ TEST(BatchedDeviceGradients, AdjointThrowsForWrongCotangentBatchSize) {
                  std::invalid_argument);
 }
 
-// Verifies BatchedDeviceGradients::ParameterGradientMatchesCpuGradients --
-// the per-factor projection step on top of the batched adjoint() solve
-// (pullback() + each factor's parameterVjp), which is what makes this class
-// a drop-in batched replacement for B calls to
-// gtsam::Gradients::parameterGradient, not just the underlying solve.
+// parameterGradient() (pullback() + each factor's parameterVjp) must
+// match CPU gtsam::Gradients::parameterGradient.
 TEST(BatchedDeviceGradients, ParameterGradientMatchesCpuGradients) {
   if (!HasCudaDevice()) return;
   const ParameterTag tag("test-parameter");
@@ -284,10 +269,7 @@ TEST(BatchedDeviceGradients, ParameterGradientMatchesCpuGradients) {
   }
 }
 
-// Verifies BatchedDeviceGradients::ParameterGradientReturnsNulloptForUnrelatedTag
-// -- a graph where no factor depends on the queried tag must return
-// std::nullopt per graph, exactly like gtsam::Gradients::parameterGradient,
-// not an empty or zero vector.
+// A tag no factor depends on must return std::nullopt, not an empty vector.
 TEST(BatchedDeviceGradients, ParameterGradientReturnsNulloptForUnrelatedTag) {
   if (!HasCudaDevice()) return;
   const ParameterTag usedTag("used");

@@ -35,31 +35,20 @@ namespace gtsam::cuda {
 
 struct BatchedDeviceGradients::Impl {
   std::vector<KeyInfo> keyInfos;
-  // adjoint() is logically const (it answers a query, it does not change
-  // what graph this batch represents), but the solve reuses and therefore
-  // mutates this solver's internal cuSOLVER/device state -- the same
-  // rationale CudssSpdSolver::Impl uses `mutable` for its cached state.
+  // adjoint() is logically const but mutates this solver's device state.
   mutable BatchedDenseCholeskySolver solver;
   DeviceArray<double> factorized;
-  // Reused across every adjoint() call (one per tag) instead of a fresh
-  // DeviceArray each time: a prior version allocated a new rhs buffer per
-  // call, and that repeated cudaMalloc/cudaFree -- not the actual solve --
-  // was the dominant cost of this class at DFG-TAMP's problem size.
+  // Reused across adjoint() calls to avoid a fresh DeviceArray each time.
   mutable DeviceArray<double> rhs;
   int batchSize = 0;
   int dimension = 0;
-  // Retained for pullback()/parameterGradient(), which need the original
-  // graphs/solutions (to call each factor's parameterVjp) and each item's
-  // dense whitened Jacobian A (to project adjoint()'s H^{-1}*cotangent back
-  // into factor-residual space, A * lambda, the same quantity
-  // gtsam::Gradients::pullback computes per factor via graph_ * adjoint()).
+  // Retained for pullback()/parameterGradient(): original graphs/
+  // solutions plus each item's dense whitened Jacobian A.
   std::vector<NonlinearFactorGraph> graphs;
   std::vector<Values> solutions;
   std::vector<Matrix> jacobians;
-  // Per graph, per original nonlinear-factor index (not just active ones):
-  // that factor's row count within jacobians[b], or 0 for a null/inactive
-  // factor -- mirrors how Gradients' own linearization keeps a zero-row
-  // placeholder at an inactive factor's slot instead of removing it.
+  // Per graph, per factor index: row count within jacobians[b], or 0 for
+  // a null/inactive factor (mirrors Gradients' zero-row placeholder).
   std::vector<std::vector<int>> factorRowCounts;
 
   explicit Impl(const BatchedDenseSolverOptions& options) : solver(options) {}
@@ -85,10 +74,7 @@ BatchedDeviceGradients::BatchedDeviceGradients(
   std::vector<double> hostH;  // batchSize blocks of dimension*dimension, col-major
   int dimension = 0;
   {
-    // Determine dimension from item 0 before sizing the shared hostH/
-    // keyInfos storage the parallel loop below writes into by index --
-    // doing this probe serially first keeps that loop free of any
-    // resize/reserve race.
+    // Probe dimension from item 0 serially before sizing shared storage.
     const auto linearized0 = graphs[0].linearize(solutions[0]);
     const KeyInfo keyInfo0(*linearized0);
     dimension = static_cast<int>(keyInfo0.numCols());
@@ -101,22 +87,11 @@ BatchedDeviceGradients::BatchedDeviceGradients(
                 static_cast<size_t>(dimension));
   }
 
-  // Each item reads only its own graphs[b]/solutions[b] and writes only its
-  // own hostH block/keyInfos[b] -- the B independent graphs are
-  // embarrassingly parallel. graphs[i].linearize() calls every factor's own
-  // linearize()/evaluateError, which for a CustomFactor means calling back
-  // into an arbitrary, possibly Python, callback; running that from
-  // multiple OpenMP worker threads is only safe if the GIL has already
-  // been released by the caller, which is why this constructor is
-  // hand-bound in python/gtsam/specializations/cuda_nonlinear.h with
-  // py::call_guard<py::gil_scoped_release>() instead of being declared in
-  // cuda_nonlinear.i -- see that file for why, and for the deadlock this is
-  // a fix for (reproduced directly with a Python CustomFactor before that
-  // binding existed). A pure C++ caller never goes through that binding at
-  // all, so this loop is unconditionally safe there regardless. Exceptions
-  // cannot cross an OpenMP parallel-region boundary, so a dimension
-  // mismatch is recorded per item and thrown once, after the loop, instead
-  // of thrown in place.
+  // Each item is independent; safe to run linearize() (and any Python
+  // CustomFactor callback) from OpenMP threads only because this
+  // constructor is hand-bound with py::call_guard<gil_scoped_release>()
+  // in cuda_nonlinear.h. Exceptions can't cross the parallel region, so a
+  // dimension mismatch is recorded per item and thrown once after.
   std::vector<bool> dimensionMismatch(static_cast<size_t>(batchSize), false);
   std::vector<int> mismatchedDims(static_cast<size_t>(batchSize), 0);
   std::vector<bool> notJacobianFactor(static_cast<size_t>(batchSize), false);

@@ -115,14 +115,9 @@ class BatchedDenseLevenbergMarquardtItemResult {
   bool converged;
 };
 
-// BatchedDenseLevenbergMarquardtOptimizer's constructor is declared
-// normally here, but optimize() is deliberately NOT declared -- it is
-// hand-bound instead in python/gtsam/specializations/cuda_nonlinear.h with
-// py::call_guard<py::gil_scoped_release>(), which wrap's .i syntax has no
-// way to express. See that file for why: optimize() runs an OpenMP
-// parallel region that calls each graph's own linearize(), which for a
-// CustomFactor means calling back into Python, and that deadlocks unless
-// the GIL is released before entering this call.
+// optimize() is deliberately NOT declared here -- it is hand-bound in
+// cuda_nonlinear.h with py::call_guard<gil_scoped_release>(), which .i
+// syntax can't express; needed since it runs linearize() under OpenMP.
 class BatchedDenseLevenbergMarquardtOptimizer {
   BatchedDenseLevenbergMarquardtOptimizer(
       const std::vector<gtsam::NonlinearFactorGraph>& graphs,
@@ -139,10 +134,9 @@ class BatchedDenseLevenbergMarquardtOptimizer {
 
 #include <gtsam/nonlinear/cuda/BatchedDeviceGradients.h>
 
-// BatchedDeviceGradients's constructor is deliberately NOT declared here,
-// for the same reason optimize() above isn't: it runs the same kind of
-// OpenMP-parallel linearize() and needs the same GIL release, hand-bound in
-// python/gtsam/specializations/cuda_nonlinear.h instead.
+// Constructor deliberately NOT declared here, same reason as optimize()
+// above: OpenMP-parallel linearize() needs the GIL release hand-bound in
+// cuda_nonlinear.h.
 class BatchedDeviceGradients {
   std::vector<gtsam::VectorValues> adjoint(
       const std::vector<gtsam::VectorValues>& stateCotangents) const;

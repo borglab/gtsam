@@ -67,13 +67,9 @@ double elapsed(std::chrono::steady_clock::time_point start) {
       .count();
 }
 
-/// Fills a persistent device pointer array (one pointer per batch item, base
-/// + i * strideElements) by overwriting `cache` in place. `cache` is resized
-/// only the first time (or if batchSize changes); every later call just
-/// re-uploads the small pointer values, with no new cudaMalloc/cudaFree --
-/// profiling an earlier version of this class found repeated allocation
-/// (a fresh DeviceArray per factorize()/solve() call) to be the dominant real
-/// cost at DFG-TAMP's problem size, well above the actual cuSOLVER compute.
+/// Fills a persistent device pointer array (base + i*strideElements per
+/// item) in place, reusing `cache`'s allocation to avoid a fresh
+/// cudaMalloc/cudaFree on every factorize()/solve() call.
 void uploadBatchPointers(double* base, int batchSize, size_t strideElements,
                         cudaStream_t stream, DeviceArray<double*>* cache) {
   std::vector<double*> hostPointers(static_cast<size_t>(batchSize));
@@ -88,9 +84,7 @@ void uploadBatchPointers(double* base, int batchSize, size_t strideElements,
 
 struct BatchedDenseCholeskySolver::Impl {
   cusolverDnHandle_t handle = nullptr;
-  // Persistent across calls so factorize()/solve() never cudaMalloc/cudaFree
-  // on the steady-state path -- only resize() the first time, or if
-  // batchSize/k actually changes, does either array reallocate.
+  // Persistent across calls; only resize() on a real size change.
   DeviceArray<double*> aPointers;
   DeviceArray<double*> bPointers;
   DeviceArray<int> potrfInfo;
@@ -141,12 +135,8 @@ void BatchedDenseCholeskySolver::factorize(int batchSize, int dimension,
                      &impl_->aPointers);
   impl_->potrfInfo.resize(static_cast<size_t>(batchSize));
 
-  // Queued, not synchronized: the caller (solve(), right after this call on
-  // the same stream) does not need factorization to be host-visible before
-  // it can enqueue more work -- GPU-side stream ordering already guarantees
-  // solve()'s kernels wait for this one. The single synchronization point
-  // that actually matters is deferred to right before info is read back,
-  // below -- one blocking round trip per factorize() instead of two.
+  // Queued, not synchronized: stream ordering already guarantees solve()
+  // waits for this; the one sync that matters is right before info is read.
   GTSAM_CUSOLVER_CHECK(cusolverDnDpotrfBatched(
       impl_->handle, CUBLAS_FILL_MODE_LOWER, dimension, impl_->aPointers.data(),
       dimension, impl_->potrfInfo.data(), batchSize));
@@ -194,18 +184,12 @@ void BatchedDenseCholeskySolver::solve(int k, DeviceArray<double>* rhs,
   const auto start = std::chrono::steady_clock::now();
   GTSAM_CUSOLVER_CHECK(cusolverDnSetStream(impl_->handle, stream));
 
-  // aPointers already holds this exact factorization's pointers from the
-  // matching factorize() call -- no re-upload needed, it hasn't changed.
+  // aPointers already holds this factorization's pointers, no re-upload.
   const size_t bItemStride =
       static_cast<size_t>(impl_->dimension) * static_cast<size_t>(k);
-  // One info slot per column so none of the k calls below need to wait for
-  // the others before enqueuing -- cusolverDnXpotrsBatched accepts only
-  // nrhs=1 per call (confirmed empirically: CUSOLVER_STATUS_INVALID_VALUE
-  // for nrhs>1), so k right-hand-side columns means k calls, every one
-  // reusing the same factorization with no refactorization, but none of
-  // them need a synchronization barrier between them: they are independent
-  // column solves against the same fixed factorization, and GPU-side stream
-  // ordering already serializes them correctly without a host round trip.
+  // cusolverDnXpotrsBatched accepts only nrhs=1 (confirmed empirically), so
+  // k RHS columns means k calls; one info slot per column avoids a sync
+  // between them since stream ordering already serializes correctly.
   impl_->potrsInfo.resize(static_cast<size_t>(k));
   for (int column = 0; column < k; ++column) {
     uploadBatchPointers(
@@ -218,10 +202,8 @@ void BatchedDenseCholeskySolver::solve(int k, DeviceArray<double>* rhs,
         impl_->dimension, impl_->potrsInfo.data() + column, impl_->batchSize));
   }
 
-  // The one synchronization point for this whole solve() call: waits for
-  // every column's kernel (so the numeric result in `rhs` is also complete,
-  // not just the info download) and makes every column's info host-visible
-  // at once, instead of one blocking round trip per column.
+  // One sync for the whole call: waits for every column's kernel and info
+  // download at once, instead of a round trip per column.
   std::vector<int> hostInfo;
   impl_->potrsInfo.download(&hostInfo, stream);
   GTSAM_CUDA_CHECK(cudaStreamSynchronize(stream));

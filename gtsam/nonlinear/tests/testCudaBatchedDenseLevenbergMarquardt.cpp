@@ -50,10 +50,8 @@ const Key kPose0 = Symbol('x', 0);
 const Key kPose1 = Symbol('x', 1);
 const Key kPose2 = Symbol('x', 2);
 
-// Two distinct 3-pose Pose2 LM problems with the same topology (same keys,
-// same factor types) but different odometry and initial values, so a batch
-// of them genuinely exercises per-item independence rather than B identical
-// copies of one problem.
+// Two distinct 3-pose Pose2 LM problems, same topology but different
+// odometry/initial values, to exercise per-item independence.
 struct BatchPose2Problem {
   std::vector<NonlinearFactorGraph> graphs;
   std::vector<Values> initial;
@@ -100,9 +98,7 @@ LevenbergMarquardtParams RealToleranceParams() {
 
 using namespace batched_dense_lm_fixture;
 
-// Verifies BatchedDenseLevenbergMarquardtOptimizer::MatchesCpuPose2ResultPerGraph
-// -- each item's final Values and error must match running the same graph
-// through the real (CPU) LevenbergMarquardtOptimizer independently.
+// Each item's final Values/error must match the real CPU optimizer.
 TEST(BatchedDenseLevenbergMarquardt, MatchesCpuPose2ResultPerGraph) {
   if (!HasCudaDevice()) return;
   const BatchPose2Problem problem = MakeBatchPose2Problem();
@@ -123,10 +119,7 @@ TEST(BatchedDenseLevenbergMarquardt, MatchesCpuPose2ResultPerGraph) {
   }
 }
 
-// Verifies BatchedDenseLevenbergMarquardt::AcceptedIterationsMatchCpuOptimizer
-// -- the per-item trust-region accept/reject logic (gtsam::internal's real
-// policy) should reproduce LevenbergMarquardtOptimizer's own iteration count,
-// not just a similarly-shaped approximation.
+// Per-item accept/reject should reproduce the CPU optimizer's iteration count.
 TEST(BatchedDenseLevenbergMarquardt, AcceptedIterationsMatchCpuOptimizer) {
   if (!HasCudaDevice()) return;
   const BatchPose2Problem problem = MakeBatchPose2Problem();
