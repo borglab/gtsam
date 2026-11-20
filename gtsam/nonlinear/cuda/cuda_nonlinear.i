@@ -147,6 +147,48 @@ class BatchedDeviceGradients {
   int dimension() const;
 };
 
+#include <gtsam/nonlinear/cuda/BatchedBlockTridiagonalLevenbergMarquardt.h>
+
+class BatchedBlockTridiagonalLevenbergMarquardtItemResult {
+  BatchedBlockTridiagonalLevenbergMarquardtItemResult();
+
+  double initialError;
+  double finalError;
+  double finalLambda;
+  size_t acceptedIterations;
+  size_t lambdaAttempts;
+  bool converged;
+};
+
+// optimize() left out, same reason as BatchedDenseLevenbergMarquardtOptimizer's.
+class BatchedBlockTridiagonalLevenbergMarquardtOptimizer {
+  BatchedBlockTridiagonalLevenbergMarquardtOptimizer(
+      const std::vector<gtsam::NonlinearFactorGraph>& graphs,
+      const std::vector<gtsam::Values>& initialValues, int numBlocks,
+      int blockDim,
+      const gtsam::LevenbergMarquardtParams& params =
+          gtsam::LevenbergMarquardtParams(),
+      const gtsam::cuda::BatchedDenseSolverOptions& deviceOptions =
+          gtsam::cuda::BatchedDenseSolverOptions());
+
+  const std::vector<gtsam::Values>& values() const;
+  const std::vector<gtsam::cuda::BatchedBlockTridiagonalLevenbergMarquardtItemResult>&
+  results() const;
+};
+
+#include <gtsam/nonlinear/cuda/BatchedBlockTridiagonalDeviceGradients.h>
+
+// Constructor left out, same reason as BatchedDeviceGradients's.
+class BatchedBlockTridiagonalDeviceGradients {
+  std::vector<gtsam::VectorValues> adjoint(
+      const std::vector<gtsam::VectorValues>& stateCotangents) const;
+  std::vector<std::optional<gtsam::Vector>> parameterGradient(
+      const std::vector<gtsam::VectorValues>& stateCotangents,
+      const gtsam::ParameterTag& parameter) const;
+  int batchSize() const;
+  int dimension() const;
+};
+
 }  // namespace cuda
 
 #include <gtsam/nonlinear/GncParams.h>

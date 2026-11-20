@@ -34,4 +34,36 @@ m_.attr("cuda").attr("GncSparseLMOptimizer") = m_.attr("GncCudaSparseLMOptimizer
       gtwrap::internal::py_arg<const std::vector<gtsam::Values>&>("solutions"),
       gtwrap::internal::py_arg<const gtsam::cuda::BatchedDenseSolverOptions&>(
           "options") = gtsam::cuda::BatchedDenseSolverOptions());
+
+  // Block-tridiagonal counterparts, same GIL-release reason.
+  auto batchedBlockLm = py::reinterpret_borrow<py::class_<
+      gtsam::cuda::BatchedBlockTridiagonalLevenbergMarquardtOptimizer,
+      std::shared_ptr<
+          gtsam::cuda::BatchedBlockTridiagonalLevenbergMarquardtOptimizer>>>(
+      m_.attr("cuda").attr("BatchedBlockTridiagonalLevenbergMarquardtOptimizer"));
+  batchedBlockLm.def(
+      "optimize",
+      static_cast<const std::vector<gtsam::Values>& (
+          gtsam::cuda::BatchedBlockTridiagonalLevenbergMarquardtOptimizer::*)()>(
+          &gtsam::cuda::BatchedBlockTridiagonalLevenbergMarquardtOptimizer::
+              optimize),
+      py::call_guard<py::gil_scoped_release>(),
+      py::return_value_policy::reference_internal);
+
+  auto batchedBlockGradients = py::reinterpret_borrow<py::class_<
+      gtsam::cuda::BatchedBlockTridiagonalDeviceGradients,
+      std::shared_ptr<gtsam::cuda::BatchedBlockTridiagonalDeviceGradients>>>(
+      m_.attr("cuda").attr("BatchedBlockTridiagonalDeviceGradients"));
+  batchedBlockGradients.def(
+      py::init<const std::vector<gtsam::NonlinearFactorGraph>&,
+               const std::vector<gtsam::Values>&, int, int,
+               const gtsam::cuda::BatchedDenseSolverOptions&>(),
+      py::call_guard<py::gil_scoped_release>(),
+      gtwrap::internal::py_arg<const std::vector<gtsam::NonlinearFactorGraph>&>(
+          "graphs"),
+      gtwrap::internal::py_arg<const std::vector<gtsam::Values>&>("solutions"),
+      gtwrap::internal::py_arg<int>("numBlocks"),
+      gtwrap::internal::py_arg<int>("blockDim"),
+      gtwrap::internal::py_arg<const gtsam::cuda::BatchedDenseSolverOptions&>(
+          "options") = gtsam::cuda::BatchedDenseSolverOptions());
 }
