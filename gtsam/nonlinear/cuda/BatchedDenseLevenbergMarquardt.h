@@ -13,6 +13,7 @@
  * @file    BatchedDenseLevenbergMarquardt.h
  * @brief   Levenberg-Marquardt over B independent, equal-dimension nonlinear
  *          graphs, batching only the dense linear solve on one GPU
+ * @author  FIXME: fill in your name
  * @date    Nov 20, 2026
  */
 
