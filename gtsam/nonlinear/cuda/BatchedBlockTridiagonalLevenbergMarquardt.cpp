@@ -51,6 +51,22 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
   DeviceArray<double> deviceDiag;
   DeviceArray<double> deviceOffDiag;
   DeviceArray<double> deviceRhs;
+  // factorize()/solve() destructively overwrite deviceOffDiag/deviceRhs in
+  // place (documented in BatchedBlockTridiagonalCholeskySolver.h -- they
+  // become Z_t and the solution, respectively), so each attempt needs a
+  // fresh copy of the original values before calling them again. Unlike
+  // deviceDiag (genuinely different every attempt: lambda damping
+  // changes), offDiag/rhs only change when the participating set changes
+  // (an item accepts or terminates), so instead of re-marshaling host-side
+  // and re-uploading over PCIe every attempt, the untouched original is
+  // kept here and refreshed into deviceOffDiag/deviceRhs via a cheap
+  // on-device copy (no PCIe) every attempt; the comparatively expensive
+  // host-side rebuild + upload into these two only happens when the
+  // participating set actually changed.
+  DeviceArray<double> pristineOffDiag;
+  DeviceArray<double> pristineRhs;
+  std::vector<bool> previousParticipating;
+  bool pristineValid = false;
   LinearSolveStats stats;
   std::vector<double> hostDiag;
   std::vector<double> hostOffDiag;
@@ -195,6 +211,12 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
         }
       }
 
+      // diagBase/offDiagBase/rhsBase were just rebuilt above from a fresh
+      // linearization, so any pristine offDiag/rhs from the previous outer
+      // iteration is now stale and must be rebuilt on this iteration's
+      // first attempt, regardless of whether the participating pattern
+      // happens to match.
+      pristineValid = false;
       std::vector<bool> acceptedThisOuter(static_cast<size_t>(batchSize),
                                          false);
       for (size_t attempt = 0;
@@ -213,7 +235,6 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
 
   void runAttemptRound(std::vector<bool>* acceptedThisOuter) {
     std::fill(hostDiag.begin(), hostDiag.end(), 0.0);
-    std::fill(hostOffDiag.begin(), hostOffDiag.end(), 0.0);
     std::fill(participating.begin(), participating.end(), false);
 
     const size_t diagItemStride = static_cast<size_t>(numBlocks) *
@@ -227,11 +248,11 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
     const size_t blockElems =
         static_cast<size_t>(blockDim) * static_cast<size_t>(blockDim);
 
+    // hostDiag genuinely changes every attempt (lambda damping), so it is
+    // always rebuilt and uploaded directly into the working buffer below.
     for (int item = 0; item < batchSize; ++item) {
       const size_t i = static_cast<size_t>(item);
       const size_t diagItemOffset = i * diagItemStride;
-      const size_t offDiagItemOffset = i * offDiagItemStride;
-      const size_t rhsItemOffset = i * rhsItemStride;
       if (terminated[i] || (*acceptedThisOuter)[i]) {
         for (int t = 0; t < numBlocks; ++t) {
           const size_t blockOffset =
@@ -256,25 +277,50 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
                                      static_cast<size_t>(blockDim) +
                   static_cast<size_t>(d)] += lambda[i];
         }
-        const Vector& rhsBlock = rhsBase[i][static_cast<size_t>(t)];
-        std::copy(rhsBlock.data(), rhsBlock.data() + rhsBlock.size(),
-                 hostRhs.begin() + rhsItemOffset +
-                     static_cast<size_t>(t) * static_cast<size_t>(blockDim));
-        if (t + 1 < numBlocks) {
-          const size_t offBlockOffset =
-              offDiagItemOffset + static_cast<size_t>(t) * blockElems;
-          const Matrix& offBlock = offDiagBase[i][static_cast<size_t>(t)];
-          std::copy(offBlock.data(), offBlock.data() + offBlock.size(),
-                   hostOffDiag.begin() + offBlockOffset);
-        }
       }
     }
-
     deviceDiag.upload(hostDiag);
-    deviceOffDiag.upload(hostOffDiag);
+
+    // offDiag/rhs only change when the participating set itself changes
+    // (an item accepted or terminated since the last attempt): rebuild and
+    // upload into the pristine buffers only then, otherwise reuse what is
+    // already there.
+    if (!pristineValid || participating != previousParticipating) {
+      std::fill(hostOffDiag.begin(), hostOffDiag.end(), 0.0);
+      for (int item = 0; item < batchSize; ++item) {
+        const size_t i = static_cast<size_t>(item);
+        if (!participating[i]) continue;
+        const size_t offDiagItemOffset = i * offDiagItemStride;
+        const size_t rhsItemOffset = i * rhsItemStride;
+        for (int t = 0; t < numBlocks; ++t) {
+          const Vector& rhsBlock = rhsBase[i][static_cast<size_t>(t)];
+          std::copy(rhsBlock.data(), rhsBlock.data() + rhsBlock.size(),
+                   hostRhs.begin() + rhsItemOffset +
+                       static_cast<size_t>(t) * static_cast<size_t>(blockDim));
+          if (t + 1 < numBlocks) {
+            const size_t offBlockOffset =
+                offDiagItemOffset + static_cast<size_t>(t) * blockElems;
+            const Matrix& offBlock = offDiagBase[i][static_cast<size_t>(t)];
+            std::copy(offBlock.data(), offBlock.data() + offBlock.size(),
+                     hostOffDiag.begin() + offBlockOffset);
+          }
+        }
+      }
+      pristineOffDiag.upload(hostOffDiag);
+      pristineRhs.upload(hostRhs);
+      previousParticipating = participating;
+      pristineValid = true;
+    }
+
+    // factorize()/solve() destructively overwrite their offDiag/rhs
+    // arguments, so the working buffers need a fresh copy from the
+    // (untouched) pristine ones before every call -- cheap, on-device,
+    // no PCIe transfer, regardless of whether the pristine rebuild above
+    // ran this attempt.
+    deviceOffDiag.copyFrom(pristineOffDiag);
     solver.factorize(batchSize, numBlocks, blockDim, &deviceDiag,
                      &deviceOffDiag, nullptr, &stats);
-    deviceRhs.upload(hostRhs);
+    deviceRhs.copyFrom(pristineRhs);
     solver.solve(1, &deviceRhs, nullptr, &stats);
     std::vector<double> hostDelta;
     deviceRhs.download(&hostDelta);
