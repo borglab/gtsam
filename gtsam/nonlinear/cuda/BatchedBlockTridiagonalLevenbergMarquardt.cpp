@@ -99,6 +99,12 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
   double diagHookStageSeconds = 0.0;
   double diagHookComputeBatchSeconds = 0.0;
   double diagLinearizeSeconds = 0.0;
+  // Split of diagLinearizeSeconds: time actually inside graphs[i].linearize()
+  // (the per-item C++->Python callback dispatch/cache-lookup) vs. time
+  // inside linearized->jacobian(ordering()) (plain C++ dense-matrix
+  // assembly from the resulting GaussianFactorGraph, no Python involved).
+  double diagLinearizeCallSeconds = 0.0;
+  double diagJacobianAssembleSeconds = 0.0;
   double diagAssemblySeconds = 0.0;
   // Throwaway CPU recomputation of the exact same diag/offDiag/rhs this
   // outer iteration's GPU assembly just produced, timed only -- answers
@@ -229,9 +235,17 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
       auto linearizeStart = Clock::now();
       for (size_t idx = 0; idx < numActive; ++idx) {
         const size_t i = static_cast<size_t>(activeItems[idx]);
+        auto linearizeCallStart = Clock::now();
         const auto linearized = graphs[i].linearize(currentValues[i]);
+        diagLinearizeCallSeconds +=
+            std::chrono::duration<double>(Clock::now() - linearizeCallStart)
+                .count();
+        auto jacobianAssembleStart = Clock::now();
         std::tie(itemA[idx], itemB[idx]) =
             linearized->jacobian(keyInfos[i].ordering());
+        diagJacobianAssembleSeconds +=
+            std::chrono::duration<double>(Clock::now() - jacobianAssembleStart)
+                .count();
         if (jacobianRows < 0) {
           jacobianRows = static_cast<int>(itemA[idx].rows());
         } else if (static_cast<int>(itemA[idx].rows()) != jacobianRows) {
@@ -351,12 +365,14 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
     fprintf(stderr,
             "[diag-forward] hookStageSeconds=%.3f "
             "hookComputeBatchSeconds=%.3f linearizeSeconds=%.3f "
+            "linearizeCallSeconds=%.3f jacobianAssembleSeconds=%.3f "
             "assemblySeconds=%.3f cpuAssemblyEquivalentSeconds=%.3f "
             "attemptRoundSeconds=%.3f attemptErrorSeconds=%.3f "
             "attemptErrorCalls=%zu factorizationSeconds=%.3f "
             "solveSeconds=%.3f factorizationCount=%zu solveCount=%zu\n",
             diagHookStageSeconds, diagHookComputeBatchSeconds,
-            diagLinearizeSeconds, diagAssemblySeconds,
+            diagLinearizeSeconds, diagLinearizeCallSeconds,
+            diagJacobianAssembleSeconds, diagAssemblySeconds,
             diagCpuAssemblyEquivalentSeconds, diagAttemptRoundSeconds,
             diagAttemptErrorSeconds, diagAttemptErrorCalls,
             stats.factorizationSeconds, stats.solveSeconds,
