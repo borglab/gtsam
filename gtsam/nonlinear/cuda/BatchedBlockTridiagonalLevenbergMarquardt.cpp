@@ -27,7 +27,6 @@
 #include <gtsam/nonlinear/internal/LevenbergMarquardtPolicy.h>
 
 #include <algorithm>
-#include <chrono>
 #include <cmath>
 #include <limits>
 #include <sstream>
@@ -39,8 +38,6 @@ namespace gtsam::cuda {
 namespace {
 
 constexpr size_t kMaxAttemptsPerOuterIteration = 32;
-
-using Clock = std::chrono::steady_clock;
 
 // Where one factor's (fixed, graph-structure-only) row range and each of
 // its keys' column slots land in the dense per-item Jacobian -- computed
@@ -113,27 +110,6 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
   std::vector<bool> terminated;
   std::vector<BatchedBlockTridiagonalLevenbergMarquardtItemResult> itemResults;
   bool optimized = false;
-
-  // TEMPORARY diagnostics -- to be reverted once the current real-workload
-  // breakdown is measured. See [diag-forward] print in optimize().
-  double diagHookStageSeconds = 0.0;
-  double diagHookComputeBatchSeconds = 0.0;
-  double diagLinearizeSeconds = 0.0;
-  // Split of diagLinearizeSeconds: time actually inside graphs[i].linearize()
-  // (the per-item C++->Python callback dispatch/cache-lookup) vs. time
-  // inside linearized->jacobian(ordering()) (plain C++ dense-matrix
-  // assembly from the resulting GaussianFactorGraph, no Python involved).
-  double diagLinearizeCallSeconds = 0.0;
-  double diagJacobianAssembleSeconds = 0.0;
-  double diagAssemblySeconds = 0.0;
-  // Throwaway CPU recomputation of the exact same diag/offDiag/rhs this
-  // outer iteration's GPU assembly just produced, timed only -- answers
-  // "would CPU have been faster for this exact op on this exact data,"
-  // independent of cross-item batching.
-  double diagCpuAssemblyEquivalentSeconds = 0.0;
-  double diagAttemptRoundSeconds = 0.0;
-  double diagAttemptErrorSeconds = 0.0;
-  size_t diagAttemptErrorCalls = 0;
 
   Impl(const std::vector<NonlinearFactorGraph>& inputGraphs,
        const std::vector<Values>& initialValues, int inputNumBlocks,
@@ -272,31 +248,18 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
       // the (now cached) results back through the unchanged CustomFactor
       // callback contract.
       for (const auto& hook : factorGroupHooks) {
-        auto stageStart = Clock::now();
         for (int item : activeItems) {
           hook.stage(item, currentValues[static_cast<size_t>(item)]);
         }
-        diagHookStageSeconds +=
-            std::chrono::duration<double>(Clock::now() - stageStart).count();
-        auto computeStart = Clock::now();
         hook.computeBatch();
-        diagHookComputeBatchSeconds +=
-            std::chrono::duration<double>(Clock::now() - computeStart)
-                .count();
       }
       const size_t numActive = activeItems.size();
       std::vector<Matrix> itemA(numActive);
       std::vector<Vector> itemB(numActive);
       int jacobianRows = -1;
-      auto linearizeStart = Clock::now();
       for (size_t idx = 0; idx < numActive; ++idx) {
         const size_t i = static_cast<size_t>(activeItems[idx]);
-        auto linearizeCallStart = Clock::now();
         const auto linearized = graphs[i].linearize(currentValues[i]);
-        diagLinearizeCallSeconds +=
-            std::chrono::duration<double>(Clock::now() - linearizeCallStart)
-                .count();
-        auto jacobianAssembleStart = Clock::now();
         const std::vector<FactorAssemblyPlan>& plan = itemAssemblyPlan[i];
         const size_t totalRows =
             plan.empty() ? 0 : plan.back().rowOffset + plan.back().rowCount;
@@ -330,9 +293,6 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
                 jf->getA(jf->begin() + static_cast<std::ptrdiff_t>(k));
           }
         }
-        diagJacobianAssembleSeconds +=
-            std::chrono::duration<double>(Clock::now() - jacobianAssembleStart)
-                .count();
         if (jacobianRows < 0) {
           jacobianRows = static_cast<int>(itemA[idx].rows());
         } else if (static_cast<int>(itemA[idx].rows()) != jacobianRows) {
@@ -342,9 +302,6 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
               "count for the batched GPU Hessian assembly");
         }
       }
-      diagLinearizeSeconds +=
-          std::chrono::duration<double>(Clock::now() - linearizeStart)
-              .count();
 
       // Stack active items' Jacobians/RHS into one contiguous buffer,
       // then assemble diag/offDiag/rhs for the whole batch via GPU GEMM.
@@ -362,7 +319,6 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
                               idx * static_cast<size_t>(jacobianRows),
                           jacobianRows) = itemB[idx];
       }
-      auto assemblyStart = Clock::now();
       deviceJacobianA.upload(hostJacobianA);
       deviceJacobianB.upload(hostJacobianB);
       hessianAssembler.assemble(static_cast<int>(numActive), numBlocks,
@@ -374,35 +330,6 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
       deviceOffDiagRaw.download(&hostOffDiagRaw);
       deviceRhsRaw.download(&hostRhsRaw);
       GTSAM_CUDA_CHECK(cudaStreamSynchronize(nullptr));
-      diagAssemblySeconds +=
-          std::chrono::duration<double>(Clock::now() - assemblyStart).count();
-
-      // Throwaway: recompute the same diag/offDiag/rhs via plain CPU Eigen
-      // matmul on the exact same itemA/itemB data, timed only, result
-      // discarded -- isolates "is this op itself faster on CPU" from
-      // "is cross-item batching faster than per-item."
-      {
-        auto cpuStart = Clock::now();
-        volatile double sink = 0.0;
-        for (size_t idx = 0; idx < numActive; ++idx) {
-          const Matrix& A = itemA[idx];
-          const Vector& b = itemB[idx];
-          for (int t = 0; t < numBlocks; ++t) {
-            const auto colsT = A.middleCols(t * blockDim, blockDim);
-            Matrix diagBlock = colsT.transpose() * colsT;
-            Vector rhsBlock = colsT.transpose() * b;
-            sink += diagBlock(0, 0) + rhsBlock(0);
-            if (t + 1 < numBlocks) {
-              const auto colsT1 = A.middleCols((t + 1) * blockDim, blockDim);
-              Matrix offDiagBlock = colsT.transpose() * colsT1;
-              sink += offDiagBlock(0, 0);
-            }
-          }
-        }
-        diagCpuAssemblyEquivalentSeconds +=
-            std::chrono::duration<double>(Clock::now() - cpuStart).count();
-        (void)sink;
-      }
 
       for (size_t idx = 0; idx < numActive; ++idx) {
         const size_t i = static_cast<size_t>(activeItems[idx]);
@@ -441,29 +368,9 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
                       [](bool a) { return a; }) &&
           !allTerminated();
           ++attempt) {
-        auto attemptStart = Clock::now();
         runAttemptRound(&acceptedThisOuter);
-        diagAttemptRoundSeconds +=
-            std::chrono::duration<double>(Clock::now() - attemptStart)
-                .count();
       }
     }
-
-    fprintf(stderr,
-            "[diag-forward] hookStageSeconds=%.3f "
-            "hookComputeBatchSeconds=%.3f linearizeSeconds=%.3f "
-            "linearizeCallSeconds=%.3f jacobianAssembleSeconds=%.3f "
-            "assemblySeconds=%.3f cpuAssemblyEquivalentSeconds=%.3f "
-            "attemptRoundSeconds=%.3f attemptErrorSeconds=%.3f "
-            "attemptErrorCalls=%zu factorizationSeconds=%.3f "
-            "solveSeconds=%.3f factorizationCount=%zu solveCount=%zu\n",
-            diagHookStageSeconds, diagHookComputeBatchSeconds,
-            diagLinearizeSeconds, diagLinearizeCallSeconds,
-            diagJacobianAssembleSeconds, diagAssemblySeconds,
-            diagCpuAssemblyEquivalentSeconds, diagAttemptRoundSeconds,
-            diagAttemptErrorSeconds, diagAttemptErrorCalls,
-            stats.factorizationSeconds, stats.solveSeconds,
-            stats.factorizationCount, stats.solveCount);
 
     finish();
     return currentValues;
@@ -591,13 +498,9 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
       Values trialValues;
       double trialError = 0.0;
       if (linearizedChange >= 0.0) {
-        auto errorStart = Clock::now();
         VectorValues deltaValues = buildVectorValues(delta, keyInfos[i]);
         trialValues = currentValues[i].retract(deltaValues);
         trialError = graphs[i].error(trialValues);
-        diagAttemptErrorSeconds +=
-            std::chrono::duration<double>(Clock::now() - errorStart).count();
-        ++diagAttemptErrorCalls;
         if (!std::isfinite(trialError)) {
           throw std::runtime_error(
               "BatchedBlockTridiagonalLevenbergMarquardtOptimizer produced a "
