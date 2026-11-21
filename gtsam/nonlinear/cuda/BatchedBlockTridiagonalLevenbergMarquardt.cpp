@@ -21,6 +21,7 @@
 
 #include <gtsam/base/cuda/Errors.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/cuda/internal/BatchedBlockHessianAssembler.h>
 #include <gtsam/nonlinear/internal/LevenbergMarquardtPolicy.h>
@@ -41,12 +42,31 @@ constexpr size_t kMaxAttemptsPerOuterIteration = 32;
 
 using Clock = std::chrono::steady_clock;
 
+// Where one factor's (fixed, graph-structure-only) row range and each of
+// its keys' column slots land in the dense per-item Jacobian -- computed
+// once per item from the first linearization, then reused every outer
+// iteration to copy each factor's freshly-linearized block directly into
+// place, bypassing GaussianFactorGraph::jacobian(ordering)'s generic
+// VariableSlots/ordering-inversion machinery (the real cost for a graph
+// whose structure never changes across outer iterations, only its values).
+struct ColumnSlot {
+  size_t colOffset = 0;
+  size_t colWidth = 0;
+};
+struct FactorAssemblyPlan {
+  size_t rowOffset = 0;
+  size_t rowCount = 0;
+  std::vector<ColumnSlot> columns;  // one per key, in factor->keys() order
+};
+
 }  // namespace
 
 struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
   std::vector<NonlinearFactorGraph> graphs;
   std::vector<Values> currentValues;
   std::vector<KeyInfo> keyInfos;
+  // [item][factorIndex] -- see FactorAssemblyPlan.
+  std::vector<std::vector<FactorAssemblyPlan>> itemAssemblyPlan;
   // Primed with every active item's Values and computed as one cross-item
   // batch before each outer iteration's per-item linearize() below; see
   // BatchedFactorGroupHook.h.
@@ -141,6 +161,7 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
     batchSize = static_cast<int>(inputGraphs.size());
     dimension = numBlocks * blockDim;
     keyInfos.reserve(static_cast<size_t>(batchSize));
+    itemAssemblyPlan.resize(static_cast<size_t>(batchSize));
     for (int b = 0; b < batchSize; ++b) {
       const auto linearized = graphs[static_cast<size_t>(b)].linearize(
           currentValues[static_cast<size_t>(b)]);
@@ -151,6 +172,41 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
            << "every graph to linearize to numBlocks*blockDim=" << dimension
            << " scalar columns; graph " << b << " has " << keyInfo.numCols();
         throw std::invalid_argument(os.str());
+      }
+
+      // Build this item's fixed row/column assembly plan from the same
+      // linearization, before keyInfo is moved into keyInfos below.
+      std::vector<FactorAssemblyPlan>& plan =
+          itemAssemblyPlan[static_cast<size_t>(b)];
+      plan.resize(linearized->size());
+      size_t rowCursor = 0;
+      for (size_t f = 0; f < linearized->size(); ++f) {
+        const auto& factor = linearized->at(f);
+        auto jf = std::dynamic_pointer_cast<JacobianFactor>(factor);
+        if (factor && !jf) {
+          throw std::runtime_error(
+              "BatchedBlockTridiagonalLevenbergMarquardtOptimizer's "
+              "specialized Jacobian assembly requires every linearized "
+              "factor to be a JacobianFactor");
+        }
+        FactorAssemblyPlan& factorPlan = plan[f];
+        factorPlan.rowOffset = rowCursor;
+        factorPlan.rowCount = jf ? static_cast<size_t>(jf->rows()) : 0;
+        rowCursor += factorPlan.rowCount;
+        if (!jf) continue;
+        factorPlan.columns.resize(jf->size());
+        for (size_t k = 0; k < jf->size(); ++k) {
+          const Key key = jf->keys()[k];
+          const auto entryIt = keyInfo.find(key);
+          if (entryIt == keyInfo.end()) {
+            throw std::runtime_error(
+                "BatchedBlockTridiagonalLevenbergMarquardtOptimizer: "
+                "linearized factor references a key absent from this "
+                "item's KeyInfo");
+          }
+          factorPlan.columns[k].colOffset = entryIt->second.start;
+          factorPlan.columns[k].colWidth = entryIt->second.dim;
+        }
       }
       keyInfos.push_back(std::move(keyInfo));
     }
@@ -241,8 +297,39 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
             std::chrono::duration<double>(Clock::now() - linearizeCallStart)
                 .count();
         auto jacobianAssembleStart = Clock::now();
-        std::tie(itemA[idx], itemB[idx]) =
-            linearized->jacobian(keyInfos[i].ordering());
+        const std::vector<FactorAssemblyPlan>& plan = itemAssemblyPlan[i];
+        const size_t totalRows =
+            plan.empty() ? 0 : plan.back().rowOffset + plan.back().rowCount;
+        itemA[idx] = Matrix::Zero(static_cast<Eigen::Index>(totalRows),
+                                  dimension);
+        itemB[idx] = Vector::Zero(static_cast<Eigen::Index>(totalRows));
+        for (size_t f = 0; f < plan.size(); ++f) {
+          const FactorAssemblyPlan& factorPlan = plan[f];
+          if (factorPlan.rowCount == 0) continue;
+          auto jf = std::dynamic_pointer_cast<JacobianFactor>(
+              linearized->at(f));
+          if (!jf) {
+            throw std::runtime_error(
+                "BatchedBlockTridiagonalLevenbergMarquardtOptimizer: factor "
+                "" + std::to_string(f) +
+                " linearized to a non-JacobianFactor or null after "
+                "producing rows at construction -- active()/type must stay "
+                "stable across outer iterations for the cached assembly "
+                "plan to remain valid");
+          }
+          itemB[idx].segment(static_cast<Eigen::Index>(factorPlan.rowOffset),
+                             static_cast<Eigen::Index>(factorPlan.rowCount)) =
+              jf->getb();
+          for (size_t k = 0; k < factorPlan.columns.size(); ++k) {
+            const ColumnSlot& slot = factorPlan.columns[k];
+            itemA[idx].block(
+                static_cast<Eigen::Index>(factorPlan.rowOffset),
+                static_cast<Eigen::Index>(slot.colOffset),
+                static_cast<Eigen::Index>(factorPlan.rowCount),
+                static_cast<Eigen::Index>(slot.colWidth)) =
+                jf->getA(jf->begin() + static_cast<std::ptrdiff_t>(k));
+          }
+        }
         diagJacobianAssembleSeconds +=
             std::chrono::duration<double>(Clock::now() - jacobianAssembleStart)
                 .count();
