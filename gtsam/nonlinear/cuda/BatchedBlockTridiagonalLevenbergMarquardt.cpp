@@ -176,14 +176,10 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
     const int maxOuterIterations = static_cast<int>(params.maxIterations);
     const size_t blockElems =
         static_cast<size_t>(blockDim) * static_cast<size_t>(blockDim);
-    double diagLinearizeSeconds = 0.0;
-    double diagAssemblySeconds = 0.0;
-    double diagAttemptRoundSeconds = 0.0;
     for (int outer = 0; outer < maxOuterIterations && !allTerminated();
         ++outer) {
       // linearize() stays on CPU; only the At^T*At/At^T*b/At^T*At1
       // formation below moves to the GPU.
-      auto diagT0 = Clock::now();
       std::vector<int> activeItems;
       for (int item = 0; item < batchSize; ++item) {
         if (!terminated[static_cast<size_t>(item)]) activeItems.push_back(item);
@@ -206,9 +202,6 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
               "count for the batched GPU Hessian assembly");
         }
       }
-      auto diagT1 = Clock::now();
-      diagLinearizeSeconds +=
-          std::chrono::duration<double>(diagT1 - diagT0).count();
 
       // Stack active items' Jacobians/RHS into one contiguous buffer,
       // then assemble diag/offDiag/rhs for the whole batch via GPU GEMM.
@@ -263,8 +256,6 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
           }
         }
       }
-      diagAssemblySeconds +=
-          std::chrono::duration<double>(Clock::now() - diagT1).count();
 
       // offDiagBase/rhsBase were just rebuilt from a fresh linearization,
       // so the pristine copy is stale and must be rebuilt on attempt 1.
@@ -277,28 +268,13 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
                       [](bool a) { return a; }) &&
           !allTerminated();
           ++attempt) {
-        auto roundT0 = Clock::now();
         runAttemptRound(&acceptedThisOuter);
-        diagAttemptRoundSeconds +=
-            std::chrono::duration<double>(Clock::now() - roundT0).count();
       }
     }
 
-    fprintf(stderr,
-            "[diag-forward] linearizeSeconds=%.6f assemblySeconds=%.6f "
-            "attemptRoundSeconds=%.6f attemptErrorSeconds=%.6f "
-            "attemptErrorCalls=%zu factorizationSeconds=%.6f "
-            "solveSeconds=%.6f factorizationCount=%zu solveCount=%zu\n",
-            diagLinearizeSeconds, diagAssemblySeconds, diagAttemptRoundSeconds,
-            diagAttemptErrorSeconds, diagAttemptErrorCalls,
-            stats.factorizationSeconds, stats.solveSeconds,
-            stats.factorizationCount, stats.solveCount);
     finish();
     return currentValues;
   }
-
-  double diagAttemptErrorSeconds = 0.0;
-  size_t diagAttemptErrorCalls = 0;
 
   void runAttemptRound(std::vector<bool>* acceptedThisOuter) {
     std::fill(hostDiag.begin(), hostDiag.end(), 0.0);
@@ -422,13 +398,9 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
       Values trialValues;
       double trialError = 0.0;
       if (linearizedChange >= 0.0) {
-        auto errorT0 = Clock::now();
         VectorValues deltaValues = buildVectorValues(delta, keyInfos[i]);
         trialValues = currentValues[i].retract(deltaValues);
         trialError = graphs[i].error(trialValues);
-        diagAttemptErrorSeconds +=
-            std::chrono::duration<double>(Clock::now() - errorT0).count();
-        ++diagAttemptErrorCalls;
         if (!std::isfinite(trialError)) {
           throw std::runtime_error(
               "BatchedBlockTridiagonalLevenbergMarquardtOptimizer produced a "
