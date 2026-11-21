@@ -178,6 +178,7 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
         static_cast<size_t>(blockDim) * static_cast<size_t>(blockDim);
     double diagLinearizeSeconds = 0.0;
     double diagAssemblySeconds = 0.0;
+    double diagAttemptRoundSeconds = 0.0;
     for (int outer = 0; outer < maxOuterIterations && !allTerminated();
         ++outer) {
       // linearize() stays on CPU; only the At^T*At/At^T*b/At^T*At1
@@ -276,15 +277,22 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
                       [](bool a) { return a; }) &&
           !allTerminated();
           ++attempt) {
+        auto roundT0 = Clock::now();
         runAttemptRound(&acceptedThisOuter);
+        diagAttemptRoundSeconds +=
+            std::chrono::duration<double>(Clock::now() - roundT0).count();
       }
     }
 
     fprintf(stderr,
             "[diag-forward] linearizeSeconds=%.6f assemblySeconds=%.6f "
-            "attemptErrorSeconds=%.6f attemptErrorCalls=%zu\n",
-            diagLinearizeSeconds, diagAssemblySeconds, diagAttemptErrorSeconds,
-            diagAttemptErrorCalls);
+            "attemptRoundSeconds=%.6f attemptErrorSeconds=%.6f "
+            "attemptErrorCalls=%zu factorizationSeconds=%.6f "
+            "solveSeconds=%.6f factorizationCount=%zu solveCount=%zu\n",
+            diagLinearizeSeconds, diagAssemblySeconds, diagAttemptRoundSeconds,
+            diagAttemptErrorSeconds, diagAttemptErrorCalls,
+            stats.factorizationSeconds, stats.solveSeconds,
+            stats.factorizationCount, stats.solveCount);
     finish();
     return currentValues;
   }
