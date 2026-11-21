@@ -51,18 +51,10 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
   DeviceArray<double> deviceDiag;
   DeviceArray<double> deviceOffDiag;
   DeviceArray<double> deviceRhs;
-  // factorize()/solve() destructively overwrite deviceOffDiag/deviceRhs in
-  // place (documented in BatchedBlockTridiagonalCholeskySolver.h -- they
-  // become Z_t and the solution, respectively), so each attempt needs a
-  // fresh copy of the original values before calling them again. Unlike
-  // deviceDiag (genuinely different every attempt: lambda damping
-  // changes), offDiag/rhs only change when the participating set changes
-  // (an item accepts or terminates), so instead of re-marshaling host-side
-  // and re-uploading over PCIe every attempt, the untouched original is
-  // kept here and refreshed into deviceOffDiag/deviceRhs via a cheap
-  // on-device copy (no PCIe) every attempt; the comparatively expensive
-  // host-side rebuild + upload into these two only happens when the
-  // participating set actually changed.
+  // factorize()/solve() destructively overwrite deviceOffDiag/deviceRhs
+  // (they become Z_t and the solution), so each attempt needs a fresh
+  // copy; kept here untouched and refreshed via a cheap on-device copy
+  // every attempt, only re-marshaled/re-uploaded when participating changes.
   DeviceArray<double> pristineOffDiag;
   DeviceArray<double> pristineRhs;
   std::vector<bool> previousParticipating;
@@ -211,11 +203,8 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
         }
       }
 
-      // diagBase/offDiagBase/rhsBase were just rebuilt above from a fresh
-      // linearization, so any pristine offDiag/rhs from the previous outer
-      // iteration is now stale and must be rebuilt on this iteration's
-      // first attempt, regardless of whether the participating pattern
-      // happens to match.
+      // offDiagBase/rhsBase were just rebuilt from a fresh linearization,
+      // so the pristine copy is stale and must be rebuilt on attempt 1.
       pristineValid = false;
       std::vector<bool> acceptedThisOuter(static_cast<size_t>(batchSize),
                                          false);
@@ -312,11 +301,8 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
       pristineValid = true;
     }
 
-    // factorize()/solve() destructively overwrite their offDiag/rhs
-    // arguments, so the working buffers need a fresh copy from the
-    // (untouched) pristine ones before every call -- cheap, on-device,
-    // no PCIe transfer, regardless of whether the pristine rebuild above
-    // ran this attempt.
+    // Refresh working buffers from the untouched pristine copies every
+    // attempt (cheap, on-device), since factorize()/solve() destroy them.
     deviceOffDiag.copyFrom(pristineOffDiag);
     solver.factorize(batchSize, numBlocks, blockDim, &deviceDiag,
                      &deviceOffDiag, nullptr, &stats);
