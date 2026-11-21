@@ -1,0 +1,12 @@
+fgz 1
+style node_size=9.5mm factor_size=3mm label_sep=0.2pt label_font=small
+
+x0 = x_{k-3}
+x1 = x_{k-2}
+x2 = x_{k-1}
+x3 = x_k
+
+node x3 {} (10.5, 0)
+node x2 {x3} (7, 0)
+node x1 {x2} (3.5, 0)
+node x0 {x1} (0, 0)
