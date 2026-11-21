@@ -170,6 +170,13 @@ class BatchedBlockTridiagonalLevenbergMarquardtItemResult {
 };
 
 class BatchedBlockTridiagonalLevenbergMarquardtOptimizer {
+  // Two overloads, not one with a defaulted trailing vector-of-custom-type
+  // parameter: pybind's py::arg(...) = {} default-value mechanism cannot
+  // deduce a std::vector<BatchedFactorGroupHook> from a bare {} (confirmed
+  // by a real regression -- the single-constructor-with-default form
+  // compiled silently but made factorGroupHooks a required argument at
+  // the Python level). Matches CustomFactor's own precedent for an
+  // optional trailing callback-ish parameter in this file.
   BatchedBlockTridiagonalLevenbergMarquardtOptimizer(
       const std::vector<gtsam::NonlinearFactorGraph>& graphs,
       const std::vector<gtsam::Values>& initialValues, int numBlocks,
@@ -177,9 +184,14 @@ class BatchedBlockTridiagonalLevenbergMarquardtOptimizer {
       const gtsam::LevenbergMarquardtParams& params =
           gtsam::LevenbergMarquardtParams(),
       const gtsam::cuda::BatchedDenseSolverOptions& deviceOptions =
-          gtsam::cuda::BatchedDenseSolverOptions(),
+          gtsam::cuda::BatchedDenseSolverOptions());
+  BatchedBlockTridiagonalLevenbergMarquardtOptimizer(
+      const std::vector<gtsam::NonlinearFactorGraph>& graphs,
+      const std::vector<gtsam::Values>& initialValues, int numBlocks,
+      int blockDim, const gtsam::LevenbergMarquardtParams& params,
+      const gtsam::cuda::BatchedDenseSolverOptions& deviceOptions,
       const std::vector<gtsam::cuda::BatchedFactorGroupHook>&
-          factorGroupHooks = {});
+          factorGroupHooks);
 
   const std::vector<gtsam::Values>& optimize();
   const std::vector<gtsam::Values>& values() const;
