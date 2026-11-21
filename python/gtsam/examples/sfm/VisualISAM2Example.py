@@ -18,7 +18,7 @@ import gtsam.utils.plot as gtsam_plot
 import matplotlib.pyplot as plt
 import numpy as np
 from gtsam.symbol_shorthand import L, X
-from gtsam.examples import SFMdata
+from gtsam.utils import SFMdata
 from mpl_toolkits.mplot3d import Axes3D  # pylint: disable=W0611
 
 
@@ -80,7 +80,7 @@ def visual_ISAM2_example():
     # performs partial relinearization/reordering at each step. A parameter
     # structure is available that allows the user to set various properties, such
     # as the relinearization threshold and type of linear solver. For this
-    # example, we we set the relinearization threshold small so the iSAM2 result
+    # example, we set the relinearization threshold small so the iSAM2 result
     # will approach the batch result.
     parameters = gtsam.ISAM2Params()
     parameters.setRelinearizeThreshold(0.01)

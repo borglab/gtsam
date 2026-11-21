@@ -19,7 +19,7 @@ from typing import List, Tuple
 
 import gtsam
 import numpy as np
-from gtsam.examples import SFMdata
+from gtsam.utils import SFMdata
 
 # Hyperparameters for 1dsfm, values used from Kyle Wilson's code.
 MAX_1DSFM_PROJECTION_DIRECTIONS = 48

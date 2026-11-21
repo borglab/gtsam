@@ -37,6 +37,9 @@ project:
       - file: ./gtsam/constrained/constrained.md
         children:
         - pattern: ./gtsam/constrained/doc/*.{md,ipynb}
+      - file: ./gtsam/certifiable/certifiable.md
+        children:
+        - pattern: ./gtsam/certifiable/doc/*.ipynb
       - file: ./gtsam/symbolic/symbolic.md
         children:
         - pattern: ./gtsam/symbolic/doc/*
@@ -46,6 +49,9 @@ project:
       - file: ./gtsam/sfm/sfm.md
         children:
         - pattern: ./gtsam/sfm/doc/*
+      - title: SAM Factors
+        children:
+        - pattern: ./gtsam/sam/doc/*.ipynb
       - file: ./gtsam/slam/slam.md
         children:
         - pattern: ./gtsam/slam/doc/*

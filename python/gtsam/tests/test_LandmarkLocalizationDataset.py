@@ -15,7 +15,7 @@ import unittest
 
 import gtsam
 import numpy as np
-from gtsam.examples.LandmarkLocalizationDataset import (
+from gtsam.utils.LandmarkLocalizationDataset import (
     LandmarkLocalizationDataset,
 )
 from gtsam.symbol_shorthand import L

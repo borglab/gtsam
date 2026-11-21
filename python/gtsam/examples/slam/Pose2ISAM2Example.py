@@ -160,7 +160,7 @@ def Pose2SLAM_ISAM2_example():
         isam.update(graph, initial_estimate)
         current_estimate = isam.calculateEstimate()
 
-        # Report all current state estimates from the iSAM2 optimzation.
+        # Report all current state estimates from the iSAM2 optimization.
         report_on_progress(graph, current_estimate, i)
         initial_estimate.clear()
 

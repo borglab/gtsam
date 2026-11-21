@@ -22,9 +22,13 @@ import numpy as np
 from gtsam.symbol_shorthand import B, V, X
 from gtsam.utils.plot import plot_pose3
 from mpl_toolkits.mplot3d import Axes3D
-from PreintegrationExample import POSES_FIG, PreintegrationExample
 
 import gtsam
+
+if __package__:
+    from .PreintegrationExample import POSES_FIG, PreintegrationExample
+else:
+    from PreintegrationExample import POSES_FIG, PreintegrationExample
 
 GRAVITY = 9.81
 

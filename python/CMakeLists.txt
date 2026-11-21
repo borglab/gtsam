@@ -230,7 +230,7 @@ if(NOT GTSAM_ENABLE_CUDA)
         "${GTSAM_MODULE_PATH}/tests/test_CudaSparseLevenbergMarquardt.py")
 endif()
 
-# Hack to get python test and util files copied every time they are modified
+# Track Python source edits so the build tree copies stay up to date.
 file(GLOB GTSAM_PYTHON_TEST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/tests/*.py")
 if(NOT GTSAM_ENABLE_CUDA)
     list(FILTER GTSAM_PYTHON_TEST_FILES EXCLUDE REGEX
@@ -240,10 +240,13 @@ foreach(test_file ${GTSAM_PYTHON_TEST_FILES})
         get_filename_component(test_file_name ${test_file} NAME)
         configure_file(${test_file} "${GTSAM_MODULE_PATH}/tests/${test_file_name}" COPYONLY)
 endforeach()
-file(GLOB GTSAM_PYTHON_TEST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/examples/*.py")
-foreach(test_file ${GTSAM_PYTHON_TEST_FILES})
-        get_filename_component(test_file_name ${test_file} NAME)
-        configure_file(${test_file} "${GTSAM_MODULE_PATH}/tests/${test_file_name}" COPYONLY)
+set(GTSAM_PYTHON_EXAMPLES_DIR "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/examples")
+file(GLOB_RECURSE GTSAM_PYTHON_EXAMPLE_FILES
+     RELATIVE "${GTSAM_PYTHON_EXAMPLES_DIR}" CONFIGURE_DEPENDS
+     "${GTSAM_PYTHON_EXAMPLES_DIR}/*.py")
+foreach(example_file IN LISTS GTSAM_PYTHON_EXAMPLE_FILES)
+    configure_file("${GTSAM_PYTHON_EXAMPLES_DIR}/${example_file}"
+                   "${GTSAM_MODULE_PATH}/examples/${example_file}" COPYONLY)
 endforeach()
 file(GLOB GTSAM_PYTHON_UTIL_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/utils/*.py")
 foreach(util_file ${GTSAM_PYTHON_UTIL_FILES})

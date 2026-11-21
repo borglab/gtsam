@@ -111,7 +111,7 @@ def run(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', '--named_dataset', type=str, default="pose3example-grid",
-                        help='Find and read frome example dataset file')
+                        help='Find and read the example dataset file')
     parser.add_argument('-i', '--input_file', type=str, default="",
                         help='Read pose constraints graph from the specified file')
     parser.add_argument('-o', '--output_file', type=str, default="shonan.g2o",
