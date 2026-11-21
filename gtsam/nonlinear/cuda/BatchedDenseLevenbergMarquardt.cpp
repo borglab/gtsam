@@ -259,29 +259,34 @@ struct BatchedDenseLevenbergMarquardtOptimizer::Impl {
             std::to_string(item));
       }
 
-      const VectorValues deltaValues =
-          buildVectorValues(delta, keyInfos[i]);
-      const Values trialValues =
-          currentValues[i].retract(deltaValues);
-      const double trialError = graphs[i].error(trialValues);
-      if (!std::isfinite(trialError)) {
-        throw std::runtime_error(
-            "BatchedDenseLevenbergMarquardtOptimizer produced a non-finite "
-            "trial error for item " +
-            std::to_string(item));
-      }
-
       // GTSAM's real trust-region model-fidelity rule (standard LM/Nielsen
       // derivation), not a simplified monotonic-decrease rule.
       const double linearizedChange =
           0.5 * delta.dot(rhsBase[i] + lambda[i] * delta);
-      const double costChange = currentError[i] - trialError;
+
+      // Matches real LevenbergMarquardtOptimizer: skip retract()/error()
+      // when the linear model already predicts a rejected step.
+      double costChange = 0.0;
       double modelFidelity = 0.0;
       bool stepSuccessful = false;
-      if (linearizedChange >
-          std::numeric_limits<double>::epsilon() * std::abs(currentError[i])) {
-        modelFidelity = costChange / linearizedChange;
-        stepSuccessful = modelFidelity > params.minModelFidelity;
+      Values trialValues;
+      double trialError = 0.0;
+      if (linearizedChange >= 0.0) {
+        const VectorValues deltaValues = buildVectorValues(delta, keyInfos[i]);
+        trialValues = currentValues[i].retract(deltaValues);
+        trialError = graphs[i].error(trialValues);
+        if (!std::isfinite(trialError)) {
+          throw std::runtime_error(
+              "BatchedDenseLevenbergMarquardtOptimizer produced a non-finite "
+              "trial error for item " +
+              std::to_string(item));
+        }
+        costChange = currentError[i] - trialError;
+        if (linearizedChange > std::numeric_limits<double>::epsilon() *
+                                   std::abs(currentError[i])) {
+          modelFidelity = costChange / linearizedChange;
+          stepSuccessful = modelFidelity > params.minModelFidelity;
+        }
       }
 
       if (stepSuccessful) {
