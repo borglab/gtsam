@@ -159,12 +159,6 @@ struct BatchedDenseLevenbergMarquardtOptimizer::Impl {
       // version did) was the dominant real cost of this optimizer.
       {
         const auto linearizeStart = Clock::now();
-        // Safe to run linearize() (and any CustomFactor Python callback)
-        // from OpenMP worker threads only because this constructor is
-        // hand-bound with py::call_guard<py::gil_scoped_release>() in
-        // cuda_nonlinear.h; a pure C++ caller never goes through that
-        // binding, so is unconditionally safe here regardless.
-#pragma omp parallel for num_threads(batchSize) schedule(static)
         for (int item = 0; item < batchSize; ++item) {
           const size_t i = static_cast<size_t>(item);
           if (terminated[i]) continue;

@@ -115,9 +115,6 @@ class BatchedDenseLevenbergMarquardtItemResult {
   bool converged;
 };
 
-// optimize() is deliberately NOT declared here -- it is hand-bound in
-// cuda_nonlinear.h with py::call_guard<gil_scoped_release>(), which .i
-// syntax can't express; needed since it runs linearize() under OpenMP.
 class BatchedDenseLevenbergMarquardtOptimizer {
   BatchedDenseLevenbergMarquardtOptimizer(
       const std::vector<gtsam::NonlinearFactorGraph>& graphs,
@@ -127,6 +124,7 @@ class BatchedDenseLevenbergMarquardtOptimizer {
       const gtsam::cuda::BatchedDenseSolverOptions& deviceOptions =
           gtsam::cuda::BatchedDenseSolverOptions());
 
+  const std::vector<gtsam::Values>& optimize();
   const std::vector<gtsam::Values>& values() const;
   const std::vector<gtsam::cuda::BatchedDenseLevenbergMarquardtItemResult>&
   results() const;
@@ -134,10 +132,11 @@ class BatchedDenseLevenbergMarquardtOptimizer {
 
 #include <gtsam/nonlinear/cuda/BatchedDeviceGradients.h>
 
-// Constructor deliberately NOT declared here, same reason as optimize()
-// above: OpenMP-parallel linearize() needs the GIL release hand-bound in
-// cuda_nonlinear.h.
 class BatchedDeviceGradients {
+  BatchedDeviceGradients(const std::vector<gtsam::NonlinearFactorGraph>& graphs,
+                         const std::vector<gtsam::Values>& solutions,
+                         const gtsam::cuda::BatchedDenseSolverOptions& options =
+                             gtsam::cuda::BatchedDenseSolverOptions());
   std::vector<gtsam::VectorValues> adjoint(
       const std::vector<gtsam::VectorValues>& stateCotangents) const;
   std::vector<std::optional<gtsam::Vector>> parameterGradient(
@@ -160,7 +159,6 @@ class BatchedBlockTridiagonalLevenbergMarquardtItemResult {
   bool converged;
 };
 
-// optimize() left out, same reason as BatchedDenseLevenbergMarquardtOptimizer's.
 class BatchedBlockTridiagonalLevenbergMarquardtOptimizer {
   BatchedBlockTridiagonalLevenbergMarquardtOptimizer(
       const std::vector<gtsam::NonlinearFactorGraph>& graphs,
@@ -171,6 +169,7 @@ class BatchedBlockTridiagonalLevenbergMarquardtOptimizer {
       const gtsam::cuda::BatchedDenseSolverOptions& deviceOptions =
           gtsam::cuda::BatchedDenseSolverOptions());
 
+  const std::vector<gtsam::Values>& optimize();
   const std::vector<gtsam::Values>& values() const;
   const std::vector<gtsam::cuda::BatchedBlockTridiagonalLevenbergMarquardtItemResult>&
   results() const;
@@ -178,8 +177,12 @@ class BatchedBlockTridiagonalLevenbergMarquardtOptimizer {
 
 #include <gtsam/nonlinear/cuda/BatchedBlockTridiagonalDeviceGradients.h>
 
-// Constructor left out, same reason as BatchedDeviceGradients's.
 class BatchedBlockTridiagonalDeviceGradients {
+  BatchedBlockTridiagonalDeviceGradients(
+      const std::vector<gtsam::NonlinearFactorGraph>& graphs,
+      const std::vector<gtsam::Values>& solutions, int numBlocks, int blockDim,
+      const gtsam::cuda::BatchedDenseSolverOptions& options =
+          gtsam::cuda::BatchedDenseSolverOptions());
   std::vector<gtsam::VectorValues> adjoint(
       const std::vector<gtsam::VectorValues>& stateCotangents) const;
   std::vector<std::optional<gtsam::Vector>> parameterGradient(

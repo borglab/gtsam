@@ -84,21 +84,16 @@ BatchedBlockTridiagonalDeviceGradients::BatchedBlockTridiagonalDeviceGradients(
   std::vector<double> hostOffDiag(static_cast<size_t>(batchSize) *
                                  (numBlocks - 1) * blockElems);
 
-  // Same OpenMP/GIL-release precondition as BatchedDeviceGradients's
-  // identical loop -- see that file and
-  // python/gtsam/specializations/cuda_nonlinear.h.
-  std::vector<bool> dimensionMismatch(static_cast<size_t>(batchSize), false);
-  std::vector<int> mismatchedDims(static_cast<size_t>(batchSize), 0);
-  std::vector<bool> notJacobianFactor(static_cast<size_t>(batchSize), false);
-#pragma omp parallel for num_threads(batchSize) schedule(static)
   for (int b = 0; b < batchSize; ++b) {
     const size_t i = static_cast<size_t>(b);
     const auto linearized = graphs[i].linearize(solutions[i]);
     KeyInfo keyInfo(*linearized);
     if (static_cast<int>(keyInfo.numCols()) != dimension) {
-      dimensionMismatch[i] = true;
-      mismatchedDims[i] = static_cast<int>(keyInfo.numCols());
-      continue;
+      std::ostringstream os;
+      os << "BatchedBlockTridiagonalDeviceGradients requires every graph to "
+         << "linearize to numBlocks*blockDim=" << dimension << " scalar "
+         << "columns; graph " << b << " has " << keyInfo.numCols();
+      throw std::invalid_argument(os.str());
     }
     const auto [A, residual] = linearized->jacobian(keyInfo.ordering());
     (void)residual;
@@ -143,26 +138,12 @@ BatchedBlockTridiagonalDeviceGradients::BatchedBlockTridiagonalDeviceGradients(
       const auto jacobianFactor =
           std::dynamic_pointer_cast<JacobianFactor>(linearFactor);
       if (!jacobianFactor) {
-        notJacobianFactor[i] = true;
-        break;
+        throw std::invalid_argument(
+            "BatchedBlockTridiagonalDeviceGradients requires factor residual "
+            "Jacobians from a NoiseModelFactor (graph " + std::to_string(b) +
+            ")");
       }
       rowCounts[f] = static_cast<int>(jacobianFactor->rows());
-    }
-  }
-  for (int b = 0; b < batchSize; ++b) {
-    const size_t i = static_cast<size_t>(b);
-    if (dimensionMismatch[i]) {
-      std::ostringstream os;
-      os << "BatchedBlockTridiagonalDeviceGradients requires every graph to "
-         << "linearize to numBlocks*blockDim=" << dimension << " scalar "
-         << "columns; graph " << b << " has " << mismatchedDims[i];
-      throw std::invalid_argument(os.str());
-    }
-    if (notJacobianFactor[i]) {
-      throw std::invalid_argument(
-          "BatchedBlockTridiagonalDeviceGradients requires factor residual "
-          "Jacobians from a NoiseModelFactor (graph " + std::to_string(b) +
-          ")");
     }
   }
 

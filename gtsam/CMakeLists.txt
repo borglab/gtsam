@@ -221,18 +221,6 @@ if(GTSAM_ENABLE_CUDA)
     set_property(TARGET gtsam APPEND PROPERTY INSTALL_RPATH
       "${GTSAM_CUDSS_LIBRARY_DIR}")
   endif()
-  if(OpenMP_CXX_FOUND)
-    # Only the batched CUDA files with #pragma omp get -fopenmp here, not
-    # target_link_libraries(... OpenMP::OpenMP_CXX). A file missing from
-    # this list runs its pragma serially with no warning (cost ~8x once).
-    set_source_files_properties(
-      nonlinear/cuda/BatchedDenseLevenbergMarquardt.cpp
-      nonlinear/cuda/BatchedDeviceGradients.cpp
-      nonlinear/cuda/BatchedBlockTridiagonalLevenbergMarquardt.cpp
-      nonlinear/cuda/BatchedBlockTridiagonalDeviceGradients.cpp
-      PROPERTIES COMPILE_OPTIONS "${OpenMP_CXX_FLAGS}")
-    target_link_options(gtsam PUBLIC ${OpenMP_CXX_FLAGS})
-  endif()
 endif()
 if(GTSAM_USE_MOSEK)
   target_link_libraries(gtsam PRIVATE gtsam_mosek_backend)

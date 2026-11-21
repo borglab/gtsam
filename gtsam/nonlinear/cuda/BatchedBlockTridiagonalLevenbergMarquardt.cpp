@@ -166,11 +166,6 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
     const int maxOuterIterations = static_cast<int>(params.maxIterations);
     for (int outer = 0; outer < maxOuterIterations && !allTerminated();
         ++outer) {
-      // Same GIL-release precondition as BatchedDenseLevenbergMarquardt's
-      // identical loop (see cuda_nonlinear.h). Also needs -fopenmp
-      // registered for this file in gtsam/CMakeLists.txt, or the pragma
-      // below silently runs serially (cost ~8x here once, before being caught).
-#pragma omp parallel for num_threads(batchSize) schedule(static)
       for (int item = 0; item < batchSize; ++item) {
         const size_t i = static_cast<size_t>(item);
         if (terminated[i]) continue;

@@ -87,23 +87,16 @@ BatchedDeviceGradients::BatchedDeviceGradients(
                 static_cast<size_t>(dimension));
   }
 
-  // Each item is independent; safe to run linearize() (and any Python
-  // CustomFactor callback) from OpenMP threads only because this
-  // constructor is hand-bound with py::call_guard<gil_scoped_release>()
-  // in cuda_nonlinear.h. Exceptions can't cross the parallel region, so a
-  // dimension mismatch is recorded per item and thrown once after.
-  std::vector<bool> dimensionMismatch(static_cast<size_t>(batchSize), false);
-  std::vector<int> mismatchedDims(static_cast<size_t>(batchSize), 0);
-  std::vector<bool> notJacobianFactor(static_cast<size_t>(batchSize), false);
-#pragma omp parallel for num_threads(batchSize) schedule(static)
   for (int b = 0; b < batchSize; ++b) {
     const size_t i = static_cast<size_t>(b);
     const auto linearized = graphs[i].linearize(solutions[i]);
     KeyInfo keyInfo(*linearized);
     if (static_cast<int>(keyInfo.numCols()) != dimension) {
-      dimensionMismatch[i] = true;
-      mismatchedDims[i] = static_cast<int>(keyInfo.numCols());
-      continue;
+      std::ostringstream os;
+      os << "BatchedDeviceGradients requires every graph to linearize to "
+         << "the same scalar dimension; graph 0 has " << dimension
+         << ", graph " << b << " has " << keyInfo.numCols();
+      throw std::invalid_argument(os.str());
     }
     const auto [A, residual] = linearized->jacobian(keyInfo.ordering());
     (void)residual;  // adjoint() only needs H; callers supply their own cotangents.
@@ -129,25 +122,11 @@ BatchedDeviceGradients::BatchedDeviceGradients(
       const auto jacobianFactor =
           std::dynamic_pointer_cast<JacobianFactor>(linearFactor);
       if (!jacobianFactor) {
-        notJacobianFactor[i] = true;
-        break;
+        throw std::invalid_argument(
+            "BatchedDeviceGradients requires factor residual Jacobians from "
+            "a NoiseModelFactor (graph " + std::to_string(b) + ")");
       }
       rowCounts[f] = static_cast<int>(jacobianFactor->rows());
-    }
-  }
-  for (int b = 0; b < batchSize; ++b) {
-    const size_t i = static_cast<size_t>(b);
-    if (dimensionMismatch[i]) {
-      std::ostringstream os;
-      os << "BatchedDeviceGradients requires every graph to linearize to "
-         << "the same scalar dimension; graph 0 has " << dimension
-         << ", graph " << b << " has " << mismatchedDims[i];
-      throw std::invalid_argument(os.str());
-    }
-    if (notJacobianFactor[i]) {
-      throw std::invalid_argument(
-          "BatchedDeviceGradients requires factor residual Jacobians from a "
-          "NoiseModelFactor (graph " + std::to_string(b) + ")");
     }
   }
 
