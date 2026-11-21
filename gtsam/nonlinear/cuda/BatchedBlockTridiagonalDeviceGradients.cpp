@@ -23,6 +23,7 @@
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/JacobianFactor.h>
 #include <gtsam/linear/NoiseModel.h>
+#include <gtsam/linear/cuda/internal/BatchedBlockHessianAssembler.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 #include <algorithm>
@@ -77,13 +78,8 @@ BatchedBlockTridiagonalDeviceGradients::BatchedBlockTridiagonalDeviceGradients(
   impl_->jacobians.resize(static_cast<size_t>(batchSize));
   impl_->factorRowCounts.resize(static_cast<size_t>(batchSize));
 
-  const size_t blockElems =
-      static_cast<size_t>(blockDim) * static_cast<size_t>(blockDim);
-  std::vector<double> hostDiag(static_cast<size_t>(batchSize) * numBlocks *
-                              blockElems);
-  std::vector<double> hostOffDiag(static_cast<size_t>(batchSize) *
-                                 (numBlocks - 1) * blockElems);
-
+  std::vector<Matrix> itemA(static_cast<size_t>(batchSize));
+  int jacobianRows = -1;
   for (int b = 0; b < batchSize; ++b) {
     const size_t i = static_cast<size_t>(b);
     const auto linearized = graphs[i].linearize(solutions[i]);
@@ -97,31 +93,14 @@ BatchedBlockTridiagonalDeviceGradients::BatchedBlockTridiagonalDeviceGradients(
     }
     const auto [A, residual] = linearized->jacobian(keyInfo.ordering());
     (void)residual;
-
-    const size_t diagItemOffset =
-        i * static_cast<size_t>(numBlocks) * blockElems;
-    const size_t offDiagItemOffset =
-        i * static_cast<size_t>(numBlocks - 1) * blockElems;
-    // Copy each block into contiguous memory first, since A.block(...)
-    // is a strided view and multiplying through it directly is slow.
-    std::vector<Matrix> blockCopies(static_cast<size_t>(numBlocks));
-    for (int t = 0; t < numBlocks; ++t) {
-      blockCopies[static_cast<size_t>(t)] =
-          A.block(0, t * blockDim, A.rows(), blockDim);
-    }
-    for (int t = 0; t < numBlocks; ++t) {
-      const Matrix& At = blockCopies[static_cast<size_t>(t)];
-      const Matrix Htt = At.transpose() * At;
-      std::copy(Htt.data(), Htt.data() + Htt.size(),
-               hostDiag.begin() + diagItemOffset +
-                   static_cast<size_t>(t) * blockElems);
-      if (t + 1 < numBlocks) {
-        const Matrix& At1 = blockCopies[static_cast<size_t>(t + 1)];
-        const Matrix Htt1 = At.transpose() * At1;
-        std::copy(Htt1.data(), Htt1.data() + Htt1.size(),
-                 hostOffDiag.begin() + offDiagItemOffset +
-                     static_cast<size_t>(t) * blockElems);
-      }
+    itemA[i] = A;
+    if (jacobianRows < 0) {
+      jacobianRows = static_cast<int>(A.rows());
+    } else if (static_cast<int>(A.rows()) != jacobianRows) {
+      throw std::invalid_argument(
+          "BatchedBlockTridiagonalDeviceGradients requires every graph to "
+          "linearize to the same residual row count for the batched GPU "
+          "Hessian assembly");
     }
 
     impl_->keyInfos[i] = std::move(keyInfo);
@@ -147,8 +126,34 @@ BatchedBlockTridiagonalDeviceGradients::BatchedBlockTridiagonalDeviceGradients(
     }
   }
 
-  impl_->factorizedDiagonal.upload(hostDiag);
-  impl_->factorizedOffDiagonal.upload(hostOffDiag);
+  // Forms diag/offDiag for the whole batch via GPU batched GEMM instead
+  // of a per-item, per-block CPU Eigen matmul loop; rhs is unused here
+  // (adjoint() supplies its own cotangent RHS at solve time).
+  std::vector<double> hostJacobianA(static_cast<size_t>(batchSize) *
+                                    static_cast<size_t>(jacobianRows) *
+                                    static_cast<size_t>(dimension));
+  for (int b = 0; b < batchSize; ++b) {
+    Eigen::Map<Matrix>(hostJacobianA.data() +
+                          static_cast<size_t>(b) *
+                              static_cast<size_t>(jacobianRows) *
+                              static_cast<size_t>(dimension),
+                      jacobianRows, dimension) = itemA[static_cast<size_t>(b)];
+  }
+  const std::vector<double> hostJacobianB(
+      static_cast<size_t>(batchSize) * static_cast<size_t>(jacobianRows),
+      0.0);
+  DeviceArray<double> deviceJacobianA;
+  DeviceArray<double> deviceJacobianB;
+  DeviceArray<double> deviceRhsUnused;
+  deviceJacobianA.upload(hostJacobianA);
+  deviceJacobianB.upload(hostJacobianB);
+  BatchedBlockHessianAssembler assembler(options);
+  assembler.assemble(batchSize, numBlocks, blockDim, jacobianRows,
+                     &deviceJacobianA, &deviceJacobianB,
+                     &impl_->factorizedDiagonal, &impl_->factorizedOffDiagonal,
+                     &deviceRhsUnused);
+  GTSAM_CUDA_CHECK(cudaStreamSynchronize(nullptr));
+
   impl_->solver.factorize(batchSize, numBlocks, blockDim,
                          &impl_->factorizedDiagonal,
                          &impl_->factorizedOffDiagonal);
