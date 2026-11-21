@@ -27,6 +27,8 @@
 #include <gtsam/nonlinear/NonlinearFactor.h>
 
 #include <algorithm>
+#include <chrono>
+#include <cstdio>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -51,8 +53,23 @@ struct BatchedBlockTridiagonalDeviceGradients::Impl {
   std::vector<Values> solutions;
   std::vector<Matrix> jacobians;
   std::vector<std::vector<int>> factorRowCounts;
+  // Temporary diagnostic timers isolating the parameterVjp C++/Python
+  // boundary crossing from everything else; see parameterGradient().
+  mutable double diagPullbackSeconds = 0.0;
+  mutable double diagWhitenSeconds = 0.0;
+  mutable double diagVjpCallSeconds = 0.0;
+  mutable size_t diagVjpCalls = 0;
 
   explicit Impl(const BatchedDenseSolverOptions& options) : solver(options) {}
+  ~Impl() {
+    if (diagVjpCalls > 0) {
+      fprintf(stderr,
+              "[diag-backward] pullbackSeconds=%.6f whitenSeconds=%.6f "
+              "vjpCallSeconds=%.6f vjpCalls=%zu\n",
+              diagPullbackSeconds, diagWhitenSeconds, diagVjpCallSeconds,
+              diagVjpCalls);
+    }
+  }
 };
 
 BatchedBlockTridiagonalDeviceGradients::BatchedBlockTridiagonalDeviceGradients(
@@ -252,8 +269,13 @@ std::vector<std::optional<Vector>>
 BatchedBlockTridiagonalDeviceGradients::parameterGradient(
     const std::vector<VectorValues>& stateCotangents,
     const ParameterTag& parameter) const {
+  auto pullbackStart = std::chrono::steady_clock::now();
   const std::vector<std::vector<Vector>> whitenedCotangents =
       pullback(stateCotangents);
+  impl_->diagPullbackSeconds +=
+      std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                    pullbackStart)
+          .count();
   const int batchSize = impl_->batchSize;
   std::vector<std::optional<Vector>> result(static_cast<size_t>(batchSize));
 
@@ -268,6 +290,7 @@ BatchedBlockTridiagonalDeviceGradients::parameterGradient(
       if (!factor || !factor->active(solution)) continue;
       const auto& noiseFactor = static_cast<const NoiseModelFactor&>(*factor);
 
+      auto whitenStart = std::chrono::steady_clock::now();
       Vector factorResidualCotangent = whitenedCotangents[i][index];
       if (const auto& noise = noiseFactor.noiseModel()) {
         if (const auto diagonal =
@@ -286,9 +309,19 @@ BatchedBlockTridiagonalDeviceGradients::parameterGradient(
             "nonfinite unwhitened factor residual cotangent (graph " +
             std::to_string(b) + ", factor " + std::to_string(index) + ")");
       }
+      impl_->diagWhitenSeconds +=
+          std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                        whitenStart)
+              .count();
 
+      auto vjpStart = std::chrono::steady_clock::now();
       const auto contribution =
           noiseFactor.parameterVjp(solution, parameter, factorResidualCotangent);
+      impl_->diagVjpCallSeconds +=
+          std::chrono::duration<double>(std::chrono::steady_clock::now() -
+                                        vjpStart)
+              .count();
+      ++impl_->diagVjpCalls;
       if (!contribution) continue;
       if (contribution->size() == 0 || !contribution->allFinite() ||
           (accumulated && accumulated->size() != contribution->size())) {
