@@ -168,6 +168,43 @@ TEST(BatchedBlockTridiagonalLevenbergMarquardt, AcceptedIterationsMatchCpuOptimi
   }
 }
 
+// Starting almost at the CPU-converged solution exercises the
+// stopSearchingLambda-equivalent path (valid trial, negligible cost change).
+TEST(BatchedBlockTridiagonalLevenbergMarquardt, MatchesCpuNearConvergence) {
+  if (!HasCudaDevice()) return;
+  const BatchPose2Problem problem = MakeBatchPose2Problem();
+  const LevenbergMarquardtParams params = RealToleranceParams();
+
+  std::vector<Values> nearConverged;
+  for (size_t i = 0; i < problem.graphs.size(); ++i) {
+    const Values converged =
+        LevenbergMarquardtOptimizer(problem.graphs[i], problem.initial[i],
+                                    params)
+            .optimize();
+    VectorValues tinyPerturbation;
+    tinyPerturbation.insert(kPose0, Vector3(1e-6, -1e-6, 1e-7));
+    tinyPerturbation.insert(kPose1, Vector3(-1e-6, 1e-6, -1e-7));
+    tinyPerturbation.insert(kPose2, Vector3(1e-7, -1e-7, 1e-6));
+    nearConverged.push_back(converged.retract(tinyPerturbation));
+  }
+
+  BatchedBlockTridiagonalLevenbergMarquardtOptimizer optimizer(
+      problem.graphs, nearConverged, kNumBlocks, kBlockDim, params);
+  const std::vector<Values>& actual = optimizer.optimize();
+  const auto& results = optimizer.results();
+
+  for (size_t i = 0; i < problem.graphs.size(); ++i) {
+    LevenbergMarquardtOptimizer cpu(problem.graphs[i], nearConverged[i],
+                                    params);
+    const Values expected = cpu.optimize();
+    EXPECT(assert_equal(expected, actual[i], 1e-9));
+    DOUBLES_EQUAL(problem.graphs[i].error(expected),
+                 problem.graphs[i].error(actual[i]), 1e-9);
+    LONGS_EQUAL(static_cast<long>(cpu.iterations()),
+               static_cast<long>(results[i].acceptedIterations));
+  }
+}
+
 TEST(BatchedBlockTridiagonalLevenbergMarquardt, ValuesBeforeOptimizeAreInitial) {
   if (!HasCudaDevice()) return;
   const BatchPose2Problem problem = MakeBatchPose2Problem();

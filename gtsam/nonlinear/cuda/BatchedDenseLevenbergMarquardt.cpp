@@ -301,6 +301,14 @@ struct BatchedDenseLevenbergMarquardtOptimizer::Impl {
           terminated[i] = true;
           itemResults[i].converged = true;
         }
+      } else if (linearizedChange >= 0.0 &&
+                std::abs(costChange) <
+                    params.relativeErrorTol * currentError[i]) {
+        // Matches tryLambda's stopSearchingLambda: cost barely changed even
+        // on a valid trial, not worth a bigger lambda; no step is taken.
+        (*acceptedThisOuter)[i] = true;
+        terminated[i] = true;
+        itemResults[i].converged = true;
       } else {
         gtsam::internal::increaseLevenbergMarquardtLambda(
             params, &lambda[i], &currentFactor[i]);
