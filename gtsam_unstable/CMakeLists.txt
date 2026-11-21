@@ -6,6 +6,9 @@ set (gtsam_unstable_subdirs
     base
     geometry
     navigation
+    tg_eqf
+    tfg_inekf
+    mekf
     linear
     discrete
     dynamics
@@ -68,6 +71,9 @@ set(gtsam_unstable_srcs
     ${base_srcs}
     ${geometry_srcs}
     ${navigation_srcs}
+    ${tg_eqf_srcs}
+    ${tfg_inekf_srcs}
+    ${mekf_srcs}
     ${linear_srcs}
     ${discrete_srcs}
     ${dynamics_srcs}

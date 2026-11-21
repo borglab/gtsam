@@ -1,4 +1,18 @@
 
+> **`tg-eqf` branch: biased-INS filters.** This branch adds the following all under `gtsam_unstable/`:
+>
+> | Path | Contents |
+> |------|----------|
+> | [`tg_eqf/`](gtsam_unstable/tg_eqf/) | **TG-EqF**: Equivariant Filter on the tangent group SE₂(3) ⋉ se₂(3) (18-dim state `[R, v, p, b_w, b_a, b_v]`), built on `gtsam::EquivariantFilter`. Position, DVL body-velocity, depth and virtual-bias outputs. Wrapped for Python as `gtsam_unstable.tgeqf` (see [`TGEqFExample.py`](python/gtsam_unstable/examples/TGEqFExample.py)). |
+> | [`tfg_inekf/`](gtsam_unstable/tfg_inekf/) | **TFG-InEKF**: Invariant EKF on the Two-Frames Group SO(3) × ℝ¹² (15-dim), built on `gtsam::InvariantEKF`. |
+> | [`mekf/`](gtsam_unstable/mekf/) | **MEKF**: baseline multiplicative EKF (15-dim), built on `gtsam::ManifoldEKF`. |
+> | [`examples_common/`](gtsam_unstable/examples_common/) | Filter-agnostic scenario harness shared by all three filters: ground-truth trajectories (`IMUScenarios.h`, `SamoaWaypoints.h` from a real AUV survey), IMU/aiding simulation and noise (`ScenarioHarness.h`, `ImuProcessNoise.h`), the common run loop (`FilterScenarioRunner.h`, `ScenarioMain.h`) and CSV logging (`TrajectoryCsv.h`). |
+>
+> Each filter directory has `tests/` and `examples/`, with one executable per
+> scenario (`TypicalNavigation`, `Vertical`, `WaypointSpline`, `SamoaSurvey`),
+> so the three filters run on identical trajectories and noise draws for
+> direct comparison. Build wiring is in `gtsam_unstable/CMakeLists.txt`.
+
 # GTSAM: Georgia Tech Smoothing and Mapping Library
 [![C++ API](https://img.shields.io/badge/API-C%2B%2B-blue.svg)](https://gtsam.org/doxygen/)
 [![Docs](https://img.shields.io/badge/Docs-Python%20%7C%20C%2B%2B-green.svg)](https://borglab.github.io/gtsam/)
