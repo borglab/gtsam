@@ -47,6 +47,10 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
   std::vector<NonlinearFactorGraph> graphs;
   std::vector<Values> currentValues;
   std::vector<KeyInfo> keyInfos;
+  // Primed with every active item's Values and computed as one cross-item
+  // batch before each outer iteration's per-item linearize() below; see
+  // BatchedFactorGroupHook.h.
+  std::vector<BatchedFactorGroupHook> factorGroupHooks;
   LevenbergMarquardtParams params;
   BatchedBlockTridiagonalCholeskySolver solver;
   // Forms diag/offDiag/rhs on GPU via batched GEMM; see
@@ -93,9 +97,11 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
   Impl(const std::vector<NonlinearFactorGraph>& inputGraphs,
        const std::vector<Values>& initialValues, int inputNumBlocks,
        int inputBlockDim, const LevenbergMarquardtParams& inputParams,
-       const BatchedDenseSolverOptions& deviceOptions)
+       const BatchedDenseSolverOptions& deviceOptions,
+       const std::vector<BatchedFactorGroupHook>& inputFactorGroupHooks)
       : graphs(inputGraphs),
         currentValues(initialValues),
+        factorGroupHooks(inputFactorGroupHooks),
         params(inputParams),
         solver(deviceOptions),
         hessianAssembler(deviceOptions),
@@ -183,6 +189,16 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
       std::vector<int> activeItems;
       for (int item = 0; item < batchSize; ++item) {
         if (!terminated[static_cast<size_t>(item)]) activeItems.push_back(item);
+      }
+      // Cross-item-batch every registered Python-backed factor group's net
+      // evaluation once, before the per-item linearize() loop below reads
+      // the (now cached) results back through the unchanged CustomFactor
+      // callback contract.
+      for (const auto& hook : factorGroupHooks) {
+        for (int item : activeItems) {
+          hook.stage(item, currentValues[static_cast<size_t>(item)]);
+        }
+        hook.computeBatch();
       }
       const size_t numActive = activeItems.size();
       std::vector<Matrix> itemA(numActive);
@@ -462,9 +478,10 @@ BatchedBlockTridiagonalLevenbergMarquardtOptimizer::
         const std::vector<NonlinearFactorGraph>& graphs,
         const std::vector<Values>& initialValues, int numBlocks, int blockDim,
         const LevenbergMarquardtParams& params,
-        const BatchedDenseSolverOptions& deviceOptions)
+        const BatchedDenseSolverOptions& deviceOptions,
+        const std::vector<BatchedFactorGroupHook>& factorGroupHooks)
     : impl_(std::make_unique<Impl>(graphs, initialValues, numBlocks, blockDim,
-                                  params, deviceOptions)) {}
+                                  params, deviceOptions, factorGroupHooks)) {}
 
 BatchedBlockTridiagonalLevenbergMarquardtOptimizer::
     ~BatchedBlockTridiagonalLevenbergMarquardtOptimizer() = default;

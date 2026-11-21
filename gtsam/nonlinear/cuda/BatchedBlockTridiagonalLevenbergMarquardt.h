@@ -25,6 +25,7 @@
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/cuda/BatchedFactorGroupHook.h>
 
 #include <cstddef>
 #include <memory>
@@ -57,11 +58,18 @@ class GTSAM_EXPORT BatchedBlockTridiagonalLevenbergMarquardtOptimizer {
   /// numBlocks/blockDim describe the shared chain structure (column
   /// t*blockDim.. must be chain step t's natural-key-order columns).
   /// Throws on a batch-size mismatch or a graph of the wrong dimension.
+  /// factorGroupHooks, if given, are primed with every active item's
+  /// current Values (and computed as one cross-item batch) before each
+  /// outer iteration's per-item linearize() call -- see
+  /// BatchedFactorGroupHook.h. Each item's graph must still contain the
+  /// same Python-backed factors as always; the hooks only change when
+  /// those factors' underlying net evaluation actually runs.
   BatchedBlockTridiagonalLevenbergMarquardtOptimizer(
       const std::vector<NonlinearFactorGraph>& graphs,
       const std::vector<Values>& initialValues, int numBlocks, int blockDim,
       const LevenbergMarquardtParams& params = LevenbergMarquardtParams(),
-      const BatchedDenseSolverOptions& deviceOptions = {});
+      const BatchedDenseSolverOptions& deviceOptions = {},
+      const std::vector<BatchedFactorGroupHook>& factorGroupHooks = {});
   ~BatchedBlockTridiagonalLevenbergMarquardtOptimizer();
 
   BatchedBlockTridiagonalLevenbergMarquardtOptimizer(

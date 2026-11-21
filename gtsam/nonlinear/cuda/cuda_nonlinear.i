@@ -146,6 +146,16 @@ class BatchedDeviceGradients {
   int dimension() const;
 };
 
+#include <gtsam/nonlinear/cuda/BatchedFactorGroupHook.h>
+
+class BatchedFactorGroupHook {
+  BatchedFactorGroupHook();
+  BatchedFactorGroupHook(
+      const gtsam::cuda::BatchedFactorGroupStageFunction& stageFunction,
+      const gtsam::cuda::BatchedFactorGroupComputeBatchFunction&
+          computeBatchFunction);
+};
+
 #include <gtsam/nonlinear/cuda/BatchedBlockTridiagonalLevenbergMarquardt.h>
 
 class BatchedBlockTridiagonalLevenbergMarquardtItemResult {
@@ -167,7 +177,9 @@ class BatchedBlockTridiagonalLevenbergMarquardtOptimizer {
       const gtsam::LevenbergMarquardtParams& params =
           gtsam::LevenbergMarquardtParams(),
       const gtsam::cuda::BatchedDenseSolverOptions& deviceOptions =
-          gtsam::cuda::BatchedDenseSolverOptions());
+          gtsam::cuda::BatchedDenseSolverOptions(),
+      const std::vector<gtsam::cuda::BatchedFactorGroupHook>&
+          factorGroupHooks = {});
 
   const std::vector<gtsam::Values>& optimize();
   const std::vector<gtsam::Values>& values() const;
