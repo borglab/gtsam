@@ -227,14 +227,16 @@ if(NOT GTSAM_ENABLE_CUDA)
     file(REMOVE
         "${GTSAM_MODULE_PATH}/tests/test_CudaGnc.py"
         "${GTSAM_MODULE_PATH}/tests/test_CudaSfm.py"
-        "${GTSAM_MODULE_PATH}/tests/test_CudaSparseLevenbergMarquardt.py")
+        "${GTSAM_MODULE_PATH}/tests/test_CudaSparseLevenbergMarquardt.py"
+        "${GTSAM_MODULE_PATH}/tests/test_CudaBatchedDenseLevenbergMarquardt.py"
+        "${GTSAM_MODULE_PATH}/tests/test_CudaBatchedBlockTridiagonalLevenbergMarquardt.py")
 endif()
 
 # Hack to get python test and util files copied every time they are modified
 file(GLOB GTSAM_PYTHON_TEST_FILES "${CMAKE_CURRENT_SOURCE_DIR}/gtsam/tests/*.py")
 if(NOT GTSAM_ENABLE_CUDA)
     list(FILTER GTSAM_PYTHON_TEST_FILES EXCLUDE REGEX
-        ".*/test_Cuda(Gnc|Sfm|SparseLevenbergMarquardt)\\.py$")
+        ".*/test_Cuda(Gnc|Sfm|SparseLevenbergMarquardt|BatchedDenseLevenbergMarquardt|BatchedBlockTridiagonalLevenbergMarquardt)\\.py$")
 endif()
 foreach(test_file ${GTSAM_PYTHON_TEST_FILES})
         get_filename_component(test_file_name ${test_file} NAME)
