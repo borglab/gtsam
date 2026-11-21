@@ -22,6 +22,7 @@
 #include <gtsam/base/cuda/Errors.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/VectorValues.h>
+#include <gtsam/linear/cuda/internal/BatchedBlockHessianAssembler.h>
 #include <gtsam/nonlinear/internal/LevenbergMarquardtPolicy.h>
 
 #include <algorithm>
@@ -48,6 +49,14 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
   std::vector<KeyInfo> keyInfos;
   LevenbergMarquardtParams params;
   BatchedBlockTridiagonalCholeskySolver solver;
+  // Forms diag/offDiag/rhs on GPU via batched GEMM; see
+  // BatchedBlockHessianAssembler.h.
+  BatchedBlockHessianAssembler hessianAssembler;
+  DeviceArray<double> deviceJacobianA;
+  DeviceArray<double> deviceJacobianB;
+  DeviceArray<double> deviceDiagRaw;
+  DeviceArray<double> deviceOffDiagRaw;
+  DeviceArray<double> deviceRhsRaw;
   DeviceArray<double> deviceDiag;
   DeviceArray<double> deviceOffDiag;
   DeviceArray<double> deviceRhs;
@@ -89,6 +98,7 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
         currentValues(initialValues),
         params(inputParams),
         solver(deviceOptions),
+        hessianAssembler(deviceOptions),
         numBlocks(inputNumBlocks),
         blockDim(inputBlockDim) {
     if (inputGraphs.empty() || inputGraphs.size() != initialValues.size()) {
@@ -164,36 +174,85 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
     }
 
     const int maxOuterIterations = static_cast<int>(params.maxIterations);
+    const size_t blockElems =
+        static_cast<size_t>(blockDim) * static_cast<size_t>(blockDim);
     for (int outer = 0; outer < maxOuterIterations && !allTerminated();
         ++outer) {
+      // linearize() stays on CPU; only the At^T*At/At^T*b/At^T*At1
+      // formation below moves to the GPU.
+      std::vector<int> activeItems;
       for (int item = 0; item < batchSize; ++item) {
-        const size_t i = static_cast<size_t>(item);
-        if (terminated[i]) continue;
+        if (!terminated[static_cast<size_t>(item)]) activeItems.push_back(item);
+      }
+      const size_t numActive = activeItems.size();
+      std::vector<Matrix> itemA(numActive);
+      std::vector<Vector> itemB(numActive);
+      int jacobianRows = -1;
+      for (size_t idx = 0; idx < numActive; ++idx) {
+        const size_t i = static_cast<size_t>(activeItems[idx]);
         const auto linearized = graphs[i].linearize(currentValues[i]);
-        Matrix A;
-        Vector b;
-        std::tie(A, b) = linearized->jacobian(keyInfos[i].ordering());
+        std::tie(itemA[idx], itemB[idx]) =
+            linearized->jacobian(keyInfos[i].ordering());
+        if (jacobianRows < 0) {
+          jacobianRows = static_cast<int>(itemA[idx].rows());
+        } else if (static_cast<int>(itemA[idx].rows()) != jacobianRows) {
+          throw std::runtime_error(
+              "BatchedBlockTridiagonalLevenbergMarquardtOptimizer requires "
+              "every active item to linearize to the same residual row "
+              "count for the batched GPU Hessian assembly");
+        }
+      }
 
-        // Only the block-tridiagonal pieces (see
-        // BatchedBlockTridiagonalCholeskySolver.h for why exact, not
-        // approximate, on a chain graph), never the full dense A^T A.
+      // Stack active items' Jacobians/RHS into one contiguous buffer,
+      // then assemble diag/offDiag/rhs for the whole batch via GPU GEMM.
+      std::vector<double> hostJacobianA(
+          numActive * static_cast<size_t>(jacobianRows) *
+          static_cast<size_t>(dimension));
+      std::vector<double> hostJacobianB(numActive *
+                                        static_cast<size_t>(jacobianRows));
+      for (size_t idx = 0; idx < numActive; ++idx) {
+        Eigen::Map<Matrix>(hostJacobianA.data() +
+                              idx * static_cast<size_t>(jacobianRows) *
+                                  static_cast<size_t>(dimension),
+                          jacobianRows, dimension) = itemA[idx];
+        Eigen::Map<Vector>(hostJacobianB.data() +
+                              idx * static_cast<size_t>(jacobianRows),
+                          jacobianRows) = itemB[idx];
+      }
+      deviceJacobianA.upload(hostJacobianA);
+      deviceJacobianB.upload(hostJacobianB);
+      hessianAssembler.assemble(static_cast<int>(numActive), numBlocks,
+                               blockDim, jacobianRows, &deviceJacobianA,
+                               &deviceJacobianB, &deviceDiagRaw,
+                               &deviceOffDiagRaw, &deviceRhsRaw);
+      std::vector<double> hostDiagRaw, hostOffDiagRaw, hostRhsRaw;
+      deviceDiagRaw.download(&hostDiagRaw);
+      deviceOffDiagRaw.download(&hostOffDiagRaw);
+      deviceRhsRaw.download(&hostRhsRaw);
+      GTSAM_CUDA_CHECK(cudaStreamSynchronize(nullptr));
+
+      for (size_t idx = 0; idx < numActive; ++idx) {
+        const size_t i = static_cast<size_t>(activeItems[idx]);
         diagBase[i].resize(static_cast<size_t>(numBlocks));
         rhsBase[i].resize(static_cast<size_t>(numBlocks));
         offDiagBase[i].resize(static_cast<size_t>(numBlocks - 1));
-        // Copy each block into contiguous memory first, since A.block(...)
-        // is a strided view and multiplying through it directly is slow.
-        std::vector<Matrix> blockCopies(static_cast<size_t>(numBlocks));
+        const size_t diagOffset = idx * numBlocks * blockElems;
+        const size_t offDiagOffset = idx * (numBlocks - 1) * blockElems;
+        const size_t rhsOffset = idx * static_cast<size_t>(dimension);
         for (int t = 0; t < numBlocks; ++t) {
-          blockCopies[static_cast<size_t>(t)] =
-              A.block(0, t * blockDim, A.rows(), blockDim);
-        }
-        for (int t = 0; t < numBlocks; ++t) {
-          const Matrix& At = blockCopies[static_cast<size_t>(t)];
-          diagBase[i][static_cast<size_t>(t)] = At.transpose() * At;
-          rhsBase[i][static_cast<size_t>(t)] = At.transpose() * b;
+          diagBase[i][static_cast<size_t>(t)] = Eigen::Map<const Matrix>(
+              hostDiagRaw.data() + diagOffset +
+                  static_cast<size_t>(t) * blockElems,
+              blockDim, blockDim);
+          rhsBase[i][static_cast<size_t>(t)] = Eigen::Map<const Vector>(
+              hostRhsRaw.data() + rhsOffset +
+                  static_cast<size_t>(t) * static_cast<size_t>(blockDim),
+              blockDim);
           if (t + 1 < numBlocks) {
-            const Matrix& At1 = blockCopies[static_cast<size_t>(t + 1)];
-            offDiagBase[i][static_cast<size_t>(t)] = At.transpose() * At1;
+            offDiagBase[i][static_cast<size_t>(t)] = Eigen::Map<const Matrix>(
+                hostOffDiagRaw.data() + offDiagOffset +
+                    static_cast<size_t>(t) * blockElems,
+                blockDim, blockDim);
           }
         }
       }
