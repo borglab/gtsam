@@ -25,6 +25,7 @@
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/cuda/BatchedBlockTridiagonalLevenbergMarquardt.h>
+#include <gtsam/nonlinear/cuda/BatchedFactorGroupHook.h>
 #include <gtsam/nonlinear/cuda/BatchedDenseLevenbergMarquardt.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
@@ -97,6 +98,43 @@ LevenbergMarquardtParams RealToleranceParams() {
 
 constexpr int kNumBlocks = 3;
 constexpr int kBlockDim = 3;
+
+const Key kVec0 = Symbol('v', 0);
+const Key kVec1 = Symbol('v', 1);
+constexpr int kVecNumBlocks = 2;
+constexpr int kVecBlockDim = 3;
+
+// A 2-block chain whose first block's prior sigmas span 6 orders of
+// magnitude (0.001, 1.0, 1000.0): see testCudaBatchedDenseLevenbergMarquardt
+// .cpp's identical fixture for the full rationale (PR #2937 review's "one
+// LM step on an ill-scaled graph with diagonal damping" acceptance test).
+NonlinearFactorGraph MakeIllScaledChainGraph() {
+  NonlinearFactorGraph graph;
+  const auto illScaledNoise = noiseModel::Diagonal::Sigmas(
+      (Vector(3) << 0.001, 1.0, 1000.0).finished());
+  const auto chainNoise =
+      noiseModel::Diagonal::Sigmas((Vector(3) << 0.5, 0.5, 0.5).finished());
+  graph.emplace_shared<PriorFactor<Vector>>(
+      kVec0, (Vector(3) << 1.0, 1.0, 1.0).finished(), illScaledNoise);
+  graph.emplace_shared<BetweenFactor<Vector>>(
+      kVec0, kVec1, (Vector(3) << 0.5, 0.5, 0.5).finished(), chainNoise);
+  return graph;
+}
+
+Values MakeIllScaledChainInitial() {
+  Values initial;
+  initial.insert(kVec0, (Vector(3) << 0.0, 0.0, 0.0).finished());
+  initial.insert(kVec1, (Vector(3) << 0.0, 0.0, 0.0).finished());
+  return initial;
+}
+
+LevenbergMarquardtParams OneStepParams(bool diagonalDamping) {
+  LevenbergMarquardtParams params;
+  params.maxIterations = 1;
+  params.lambdaInitial = 10.0;
+  params.dampingParams.diagonalDamping = diagonalDamping;
+  return params;
+}
 
 }  // namespace batched_block_tridiagonal_lm_fixture
 /* ************************************************************************* */
@@ -241,6 +279,77 @@ TEST(BatchedBlockTridiagonalLevenbergMarquardt, ThrowsForMismatchedScalarDimensi
       std::invalid_argument);
 }
 
+// A factor connecting block 0 and block 2 directly (skipping block 1) must
+// be rejected: BatchedBlockHessianAssembler only ever forms diag[t]=At^T At
+// and offDiag[t]=At^T At+1, so a non-adjacent coupling would otherwise be
+// silently dropped from the assembled Hessian instead of causing a visible
+// failure (PR #2937 review, high-priority finding 1).
+TEST(BatchedBlockTridiagonalLevenbergMarquardt, ThrowsForNonAdjacentBlockCoupling) {
+  if (!HasCudaDevice()) return;
+  BatchPose2Problem problem = MakeBatchPose2Problem();
+  problem.graphs[0].emplace_shared<BetweenFactor<Pose2>>(
+      kPose0, kPose2, Pose2(3.5, -0.1, 0.0),
+      noiseModel::Diagonal::Sigmas((Vector(3) << 0.2, 0.2, 0.15).finished()));
+  CHECK_EXCEPTION(
+      BatchedBlockTridiagonalLevenbergMarquardtOptimizer(
+          problem.graphs, problem.initial, kNumBlocks, kBlockDim),
+      std::invalid_argument);
+}
+
+// PR #2937 review's specific acceptance test: one LM step on an ill-scaled
+// graph with diagonalDamping=true must match the CPU optimizer's actual
+// diagonal-scaled step, not just converge to the same eventual optimum.
+TEST(BatchedBlockTridiagonalLevenbergMarquardt,
+    DiagonalDampingMatchesCpuOnIllScaledGraph) {
+  if (!HasCudaDevice()) return;
+  const std::vector<NonlinearFactorGraph> graphs = {MakeIllScaledChainGraph()};
+  const std::vector<Values> initial = {MakeIllScaledChainInitial()};
+  const LevenbergMarquardtParams params = OneStepParams(/*diagonalDamping=*/true);
+
+  BatchedBlockTridiagonalLevenbergMarquardtOptimizer optimizer(
+      graphs, initial, kVecNumBlocks, kVecBlockDim, params);
+  const Values actual = optimizer.optimize().front();
+
+  const Values expected =
+      LevenbergMarquardtOptimizer(graphs[0], initial[0], params).optimize();
+  EXPECT(assert_equal(expected, actual, 1e-9));
+}
+
+TEST(BatchedBlockTridiagonalLevenbergMarquardt,
+    FlatDampingMatchesCpuOnIllScaledGraph) {
+  if (!HasCudaDevice()) return;
+  const std::vector<NonlinearFactorGraph> graphs = {MakeIllScaledChainGraph()};
+  const std::vector<Values> initial = {MakeIllScaledChainInitial()};
+  const LevenbergMarquardtParams params = OneStepParams(/*diagonalDamping=*/false);
+
+  BatchedBlockTridiagonalLevenbergMarquardtOptimizer optimizer(
+      graphs, initial, kVecNumBlocks, kVecBlockDim, params);
+  const Values actual = optimizer.optimize().front();
+
+  const Values expected =
+      LevenbergMarquardtOptimizer(graphs[0], initial[0], params).optimize();
+  EXPECT(assert_equal(expected, actual, 1e-9));
+}
+
+TEST(BatchedBlockTridiagonalLevenbergMarquardt,
+    DiagonalAndFlatDampingDisagreeOnIllScaledGraph) {
+  if (!HasCudaDevice()) return;
+  const std::vector<NonlinearFactorGraph> graphs = {MakeIllScaledChainGraph()};
+  const std::vector<Values> initial = {MakeIllScaledChainInitial()};
+
+  BatchedBlockTridiagonalLevenbergMarquardtOptimizer diagonalOptimizer(
+      graphs, initial, kVecNumBlocks, kVecBlockDim,
+      OneStepParams(/*diagonalDamping=*/true));
+  BatchedBlockTridiagonalLevenbergMarquardtOptimizer flatOptimizer(
+      graphs, initial, kVecNumBlocks, kVecBlockDim,
+      OneStepParams(/*diagonalDamping=*/false));
+
+  const Vector diagonalResult =
+      diagonalOptimizer.optimize().front().at<Vector>(kVec0);
+  const Vector flatResult = flatOptimizer.optimize().front().at<Vector>(kVec0);
+  CHECK((diagonalResult - flatResult).norm() > 1e-3);
+}
+
 // numBlocks <= 1 and blockDim <= 0 must both be rejected before any
 // linearization.
 TEST(BatchedBlockTridiagonalLevenbergMarquardt, ThrowsForInvalidChainShape) {
@@ -254,6 +363,55 @@ TEST(BatchedBlockTridiagonalLevenbergMarquardt, ThrowsForInvalidChainShape) {
       BatchedBlockTridiagonalLevenbergMarquardtOptimizer(
           problem.graphs, problem.initial, kNumBlocks, /*blockDim=*/0),
       std::invalid_argument);
+}
+
+// See testCudaBatchedDenseLevenbergMarquardt.cpp's identical test for the
+// full rationale -- no existing test anywhere exercised
+// BatchedFactorGroupHook before this (PR #2937 review's Python-backed
+// factor evaluation hook finding).
+TEST(BatchedBlockTridiagonalLevenbergMarquardt, FactorGroupHookIsStagedAndComputed) {
+  if (!HasCudaDevice()) return;
+  const BatchPose2Problem problem = MakeBatchPose2Problem();
+  const LevenbergMarquardtParams params = RealToleranceParams();
+
+  std::vector<int> stagedItems;
+  int computeBatchCalls = 0;
+  BatchedFactorGroupHook hook(
+      [&](int item, const Values&) { stagedItems.push_back(item); },
+      [&]() { ++computeBatchCalls; });
+
+  BatchedBlockTridiagonalLevenbergMarquardtOptimizer optimizer(
+      problem.graphs, problem.initial, kNumBlocks, kBlockDim, params,
+      BatchedDenseSolverOptions(), {hook});
+  optimizer.optimize();
+
+  CHECK(computeBatchCalls > 0);
+  CHECK(!stagedItems.empty());
+  for (int item : stagedItems) {
+    CHECK(item >= 0);
+    CHECK(item < static_cast<int>(problem.graphs.size()));
+  }
+}
+
+TEST(BatchedBlockTridiagonalLevenbergMarquardt,
+    FactorGroupHookDoesNotChangeResultWhenUnused) {
+  if (!HasCudaDevice()) return;
+  const BatchPose2Problem problem = MakeBatchPose2Problem();
+  const LevenbergMarquardtParams params = RealToleranceParams();
+
+  BatchedBlockTridiagonalLevenbergMarquardtOptimizer withoutHook(
+      problem.graphs, problem.initial, kNumBlocks, kBlockDim, params);
+  const std::vector<Values> expected = withoutHook.optimize();
+
+  BatchedFactorGroupHook inertHook([](int, const Values&) {}, []() {});
+  BatchedBlockTridiagonalLevenbergMarquardtOptimizer withHook(
+      problem.graphs, problem.initial, kNumBlocks, kBlockDim, params,
+      BatchedDenseSolverOptions(), {inertHook});
+  const std::vector<Values> actual = withHook.optimize();
+
+  for (size_t i = 0; i < expected.size(); ++i) {
+    EXPECT(assert_equal(expected[i], actual[i], 1e-9));
+  }
 }
 
 /* ************************************************************************* */

@@ -49,6 +49,10 @@ struct BatchedDenseLevenbergMarquardtOptimizer::Impl {
   std::vector<NonlinearFactorGraph> graphs;
   std::vector<Values> currentValues;
   std::vector<KeyInfo> keyInfos;
+  // Primed with every active item's Values and computed as one cross-item
+  // batch before each outer iteration's per-item linearize() below; see
+  // BatchedFactorGroupHook.h.
+  std::vector<BatchedFactorGroupHook> factorGroupHooks;
   LevenbergMarquardtParams params;
   BatchedDenseCholeskySolver solver;
   // Persistent across every round so upload() never reallocates; a fresh
@@ -75,15 +79,26 @@ struct BatchedDenseLevenbergMarquardtOptimizer::Impl {
   std::vector<bool> terminated;  // converged or hit lambdaUpperBound
   std::vector<BatchedDenseLevenbergMarquardtItemResult> itemResults;
   bool optimized = false;
+  // -1 means "whatever device is already current" (see
+  // BatchedDenseSolverOptions). optimize() re-asserts this before its own
+  // direct DeviceArray upload/download (deviceH/deviceRhs above), not just
+  // relying on solver's construction-time cudaSetDevice -- cudaSetDevice is
+  // thread-global, so a second same-thread instance constructed on a
+  // different device would otherwise leave this instance's later optimize()
+  // call running against the wrong device's memory.
+  int deviceId = -1;
 
   Impl(const std::vector<NonlinearFactorGraph>& inputGraphs,
        const std::vector<Values>& initialValues,
        const LevenbergMarquardtParams& inputParams,
-       const BatchedDenseSolverOptions& deviceOptions)
+       const BatchedDenseSolverOptions& deviceOptions,
+       const std::vector<BatchedFactorGroupHook>& inputFactorGroupHooks)
       : graphs(inputGraphs),
         currentValues(initialValues),
+        factorGroupHooks(inputFactorGroupHooks),
         params(inputParams),
-        solver(deviceOptions) {
+        solver(deviceOptions),
+        deviceId(deviceOptions.deviceId) {
     if (inputGraphs.empty() || inputGraphs.size() != initialValues.size()) {
       throw std::invalid_argument(
           "BatchedDenseLevenbergMarquardtOptimizer requires equally-sized, "
@@ -144,6 +159,9 @@ struct BatchedDenseLevenbergMarquardtOptimizer::Impl {
   }
 
   const std::vector<Values>& optimize() {
+    if (deviceId >= 0) {
+      GTSAM_CUDA_CHECK(cudaSetDevice(deviceId));
+    }
     if (optimized) return currentValues;
     if (params.maxIterations == 0 || allTerminated()) {
       finish();
@@ -159,6 +177,17 @@ struct BatchedDenseLevenbergMarquardtOptimizer::Impl {
       // version did) was the dominant real cost of this optimizer.
       {
         const auto linearizeStart = Clock::now();
+        // Cross-item-batch every registered Python-backed factor group's
+        // net evaluation once, before the per-item linearize() loop below
+        // reads the (now cached) results back through the unchanged
+        // CustomFactor callback contract -- see BatchedFactorGroupHook.h.
+        for (const auto& hook : factorGroupHooks) {
+          for (int item = 0; item < batchSize; ++item) {
+            if (terminated[static_cast<size_t>(item)]) continue;
+            hook.stage(item, currentValues[static_cast<size_t>(item)]);
+          }
+          hook.computeBatch();
+        }
         for (int item = 0; item < batchSize; ++item) {
           const size_t i = static_cast<size_t>(item);
           if (terminated[i]) continue;
@@ -213,10 +242,25 @@ struct BatchedDenseLevenbergMarquardtOptimizer::Impl {
       participating[i] = true;
       std::copy(hBase[i].data(), hBase[i].data() + hBase[i].size(),
                hostH.begin() + hOffset);
+      // Matches LevenbergMarquardtOptimizer::buildDampedSystem exactly:
+      // diagonalDamping scales each diagonal entry's damping by that same
+      // entry's own (clamped) magnitude -- H_dd += lambda*clamp(H_dd, min,
+      // max) -- instead of flat identity damping H_dd += lambda. Previously
+      // this optimizer always applied flat damping regardless of
+      // params.dampingParams.diagonalDamping, silently diverging from the
+      // CPU optimizer's trajectory whenever a caller requested it (PR #2937
+      // review, "nonlinear optimization" finding).
       for (int d = 0; d < dimension; ++d) {
-        hostH[hOffset + static_cast<size_t>(d) *
-                            static_cast<size_t>(dimension) +
-              static_cast<size_t>(d)] += lambda[i];
+        const size_t idx = hOffset + static_cast<size_t>(d) *
+                                         static_cast<size_t>(dimension) +
+                           static_cast<size_t>(d);
+        const double dampingTerm =
+            params.dampingParams.diagonalDamping
+                ? lambda[i] * std::clamp(hostH[idx],
+                                        params.dampingParams.minDiagonal,
+                                        params.dampingParams.maxDiagonal)
+                : lambda[i];
+        hostH[idx] += dampingTerm;
       }
       std::copy(rhsBase[i].data(), rhsBase[i].data() + rhsBase[i].size(),
                hostRhs.begin() + rhsOffset);
@@ -340,9 +384,10 @@ BatchedDenseLevenbergMarquardtOptimizer::
         const std::vector<NonlinearFactorGraph>& graphs,
         const std::vector<Values>& initialValues,
         const LevenbergMarquardtParams& params,
-        const BatchedDenseSolverOptions& deviceOptions)
+        const BatchedDenseSolverOptions& deviceOptions,
+        const std::vector<BatchedFactorGroupHook>& factorGroupHooks)
     : impl_(std::make_unique<Impl>(graphs, initialValues, params,
-                                  deviceOptions)) {}
+                                  deviceOptions, factorGroupHooks)) {}
 
 BatchedDenseLevenbergMarquardtOptimizer::
     ~BatchedDenseLevenbergMarquardtOptimizer() = default;

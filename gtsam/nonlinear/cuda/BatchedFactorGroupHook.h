@@ -12,7 +12,12 @@
 /**
  * @file    BatchedFactorGroupHook.h
  * @brief   Deferred cross-item batching hook for Python-backed factor
- *          groups shared across a BatchedBlockTridiagonal* optimizer's items
+ *          groups shared across a Batched* optimizer's items -- how
+ *          expensive factor evaluation is batched is independent of which
+ *          linear-algebra backend (dense or block-tridiagonal) solves the
+ *          resulting system, so both BatchedDenseLevenbergMarquardt-
+ *          Optimizer and BatchedBlockTridiagonalLevenbergMarquardtOptimizer
+ *          accept this.
  * @author  Shaji
  * @date    Nov 21, 2026
  */

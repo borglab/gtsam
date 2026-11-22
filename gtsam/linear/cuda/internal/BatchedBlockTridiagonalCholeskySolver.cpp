@@ -129,10 +129,18 @@ struct BatchedBlockTridiagonalCholeskySolver::Impl {
   int numBlocks = 0;
   int blockDim = 0;
   bool factorized = false;
+  // -1 means "whatever device is already current" (see
+  // BatchedDenseSolverOptions); otherwise re-asserted at the top of every
+  // public entry point below, not just here at construction -- cudaSetDevice
+  // is thread-global, so a second same-thread instance constructed on a
+  // different device would otherwise silently leave this one's later calls
+  // running against the wrong device's memory.
+  int deviceId = -1;
 
-  explicit Impl(const BatchedDenseSolverOptions& options) {
-    if (options.deviceId >= 0) {
-      GTSAM_CUDA_CHECK(cudaSetDevice(options.deviceId));
+  explicit Impl(const BatchedDenseSolverOptions& options)
+      : deviceId(options.deviceId) {
+    if (deviceId >= 0) {
+      GTSAM_CUDA_CHECK(cudaSetDevice(deviceId));
     }
     GTSAM_CUSOLVER_CHECK(cusolverDnCreate(&solverHandle));
     GTSAM_CUBLAS_CHECK(cublasCreate(&blasHandle));
@@ -192,6 +200,9 @@ void BatchedBlockTridiagonalCholeskySolver::factorize(
         "numBlocks > 1 and diagonalBlocks/offDiagonalBlocks sized "
         "batchSize*numBlocks*blockDim*blockDim / "
         "batchSize*(numBlocks-1)*blockDim*blockDim");
+  }
+  if (impl_->deviceId >= 0) {
+    GTSAM_CUDA_CHECK(cudaSetDevice(impl_->deviceId));
   }
   const auto start = std::chrono::steady_clock::now();
   GTSAM_CUSOLVER_CHECK(cusolverDnSetStream(impl_->solverHandle, stream));
@@ -303,6 +314,9 @@ void BatchedBlockTridiagonalCholeskySolver::solve(int k,
     throw std::invalid_argument(
         "BatchedBlockTridiagonalCholeskySolver::solve requires rhs sized "
         "batchSize*numBlocks*blockDim*k matching the factorized batch");
+  }
+  if (impl_->deviceId >= 0) {
+    GTSAM_CUDA_CHECK(cudaSetDevice(impl_->deviceId));
   }
   const auto start = std::chrono::steady_clock::now();
   GTSAM_CUSOLVER_CHECK(cusolverDnSetStream(impl_->solverHandle, stream));

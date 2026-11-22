@@ -66,10 +66,18 @@ struct BatchedBlockHessianAssembler::Impl {
   // Raw At^T*At+1 results before discarding the one invalid cross-item
   // pair per item (see assemble()'s offDiag comment).
   DeviceArray<double> rawOffDiag;
+  // -1 means "whatever device is already current" (see
+  // BatchedDenseSolverOptions); otherwise re-asserted at the top of
+  // assemble() too, not just here at construction -- cudaSetDevice is
+  // thread-global, so a second same-thread instance constructed on a
+  // different device would otherwise silently leave this one's later calls
+  // running against the wrong device's memory.
+  int deviceId = -1;
 
-  explicit Impl(const BatchedDenseSolverOptions& options) {
-    if (options.deviceId >= 0) {
-      GTSAM_CUDA_CHECK(cudaSetDevice(options.deviceId));
+  explicit Impl(const BatchedDenseSolverOptions& options)
+      : deviceId(options.deviceId) {
+    if (deviceId >= 0) {
+      GTSAM_CUDA_CHECK(cudaSetDevice(deviceId));
     }
     GTSAM_CUBLAS_CHECK(cublasCreate(&blasHandle));
   }
@@ -97,6 +105,9 @@ void BatchedBlockHessianAssembler::assemble(
     throw std::invalid_argument(
         "BatchedBlockHessianAssembler::assemble requires numBlocks > 1 and "
         "non-null buffers");
+  }
+  if (impl_->deviceId >= 0) {
+    GTSAM_CUDA_CHECK(cudaSetDevice(impl_->deviceId));
   }
   const size_t dimension = static_cast<size_t>(numBlocks) * blockDim;
   const size_t expectedA =

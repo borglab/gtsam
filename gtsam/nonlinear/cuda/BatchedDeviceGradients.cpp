@@ -32,6 +32,86 @@
 #include <string>
 
 namespace gtsam::cuda {
+namespace {
+
+// Mirrors gtsam::Gradients' private checkNoise (Gradients.cpp) exactly:
+// requires null noise, or a dimension-matched, unconstrained
+// noiseModel::Gaussian with finite positive sigmas (Diagonal) or a finite
+// positive-definite whitening matrix (full Gaussian). Robust and Constrained
+// models are rejected, matching gtsam::Gradients' documented support
+// ("robust losses, hard constraints ... are not" supported), since
+// graph.linearize() would otherwise silently fold a robust kernel's
+// reweighting into A, and the unchecked static_pointer_cast<Gaussian> below
+// (mirroring Gradients::parameterGradient) would be an invalid cast for a
+// noiseModel::Robust, which does not derive from noiseModel::Gaussian.
+// Duplicated here rather than shared to keep this change scoped to GPU
+// code; keep in sync with Gradients.cpp's checkNoise if that changes.
+void checkGaussianNoise(const SharedNoiseModel& model, size_t rows,
+                        int graphIndex, size_t factorIndex) {
+  if (!model) return;
+  const auto gaussian = std::dynamic_pointer_cast<noiseModel::Gaussian>(model);
+  if (!gaussian || model->isConstrained() || model->dim() != rows) {
+    throw std::invalid_argument(
+        "BatchedDeviceGradients requires factor residual noise models to be "
+        "dimension-matched, unconstrained Gaussian (graph " +
+        std::to_string(graphIndex) + ", factor " +
+        std::to_string(factorIndex) + ")");
+  }
+  if (const auto diagonal =
+          std::dynamic_pointer_cast<noiseModel::Diagonal>(model)) {
+    if (!diagonal->sigmasRef().allFinite() ||
+        (diagonal->sigmasRef().array() <= 0).any()) {
+      throw std::invalid_argument(
+          "BatchedDeviceGradients requires finite, positive noise sigmas "
+          "(graph " + std::to_string(graphIndex) + ", factor " +
+          std::to_string(factorIndex) + ")");
+    }
+  } else {
+    const Matrix whitening = gaussian->R();
+    if (!whitening.allFinite() || (whitening.diagonal().array() == 0).any()) {
+      throw std::invalid_argument(
+          "BatchedDeviceGradients requires a finite, positive-definite "
+          "noise covariance (graph " + std::to_string(graphIndex) +
+          ", factor " + std::to_string(factorIndex) + ")");
+    }
+  }
+}
+
+// Flattens a (possibly partial) state cotangent against keyInfo's layout,
+// matching gtsam::Gradients' documented adjoint() contract ("State
+// cotangents use the same local tangent bases as the factor residual
+// Jacobians; omitted known keys mean zero. ... Unknown keys, invalid
+// dimensions and nonfinite inputs are errors."). The generic
+// VectorValues::vector(ordering) used previously requires every ordering
+// key to be present (it calls .at(key) unconditionally for each), so it
+// could not accept a partial cotangent at all.
+Vector flattenCotangent(const VectorValues& cotangent, const KeyInfo& keyInfo,
+                       int dimension, int graphIndex) {
+  Vector flat = Vector::Zero(dimension);
+  for (const auto& entry : keyInfo) {
+    if (!cotangent.exists(entry.first)) continue;  // omitted key means zero
+    const Vector& value = cotangent.at(entry.first);
+    if (static_cast<size_t>(value.size()) != entry.second.dim ||
+        !value.allFinite()) {
+      throw std::invalid_argument(
+          "BatchedDeviceGradients::adjoint: cotangent " +
+          std::to_string(graphIndex) +
+          " has an invalid or nonfinite value at a known key");
+    }
+    flat.segment(static_cast<Eigen::Index>(entry.second.start),
+                static_cast<Eigen::Index>(entry.second.dim)) = value;
+  }
+  for (auto it = cotangent.begin(); it != cotangent.end(); ++it) {
+    if (!keyInfo.count(it->first)) {
+      throw std::invalid_argument(
+          "BatchedDeviceGradients::adjoint: cotangent " +
+          std::to_string(graphIndex) + " has a key unknown to this graph");
+    }
+  }
+  return flat;
+}
+
+}  // namespace
 
 struct BatchedDeviceGradients::Impl {
   std::vector<KeyInfo> keyInfos;
@@ -50,8 +130,17 @@ struct BatchedDeviceGradients::Impl {
   // Per graph, per factor index: row count within jacobians[b], or 0 for
   // a null/inactive factor (mirrors Gradients' zero-row placeholder).
   std::vector<std::vector<int>> factorRowCounts;
+  // -1 means "whatever device is already current" (see
+  // BatchedDenseSolverOptions). adjoint() re-asserts this before its own
+  // direct DeviceArray upload/download, not just relying on solver's
+  // construction-time cudaSetDevice -- cudaSetDevice is thread-global, so a
+  // second same-thread BatchedDeviceGradients constructed on a different
+  // device would otherwise leave this instance's later adjoint() calls
+  // running against the wrong device's memory.
+  int deviceId = -1;
 
-  explicit Impl(const BatchedDenseSolverOptions& options) : solver(options) {}
+  explicit Impl(const BatchedDenseSolverOptions& options)
+      : solver(options), deviceId(options.deviceId) {}
 };
 
 BatchedDeviceGradients::BatchedDeviceGradients(
@@ -126,6 +215,16 @@ BatchedDeviceGradients::BatchedDeviceGradients(
             "BatchedDeviceGradients requires factor residual Jacobians from "
             "a NoiseModelFactor (graph " + std::to_string(b) + ")");
       }
+      const auto* noiseFactor =
+          dynamic_cast<const NoiseModelFactor*>(graphs[i][f].get());
+      if (!noiseFactor) {
+        throw std::invalid_argument(
+            "BatchedDeviceGradients requires factor residual Jacobians from "
+            "a NoiseModelFactor (graph " + std::to_string(b) + ", factor " +
+            std::to_string(f) + ")");
+      }
+      checkGaussianNoise(noiseFactor->noiseModel(), jacobianFactor->rows(), b,
+                        f);
       rowCounts[f] = static_cast<int>(jacobianFactor->rows());
     }
   }
@@ -145,6 +244,9 @@ std::vector<VectorValues> BatchedDeviceGradients::adjoint(
         "BatchedDeviceGradients::adjoint requires one cotangent per graph in "
         "the batch");
   }
+  if (impl_->deviceId >= 0) {
+    GTSAM_CUDA_CHECK(cudaSetDevice(impl_->deviceId));
+  }
   const int batchSize = impl_->batchSize;
   const int dimension = impl_->dimension;
 
@@ -152,14 +254,8 @@ std::vector<VectorValues> BatchedDeviceGradients::adjoint(
                              static_cast<size_t>(dimension));
   for (int b = 0; b < batchSize; ++b) {
     const Vector flat =
-        stateCotangents[static_cast<size_t>(b)].vector(
-            impl_->keyInfos[static_cast<size_t>(b)].ordering());
-    if (flat.size() != dimension) {
-      std::ostringstream os;
-      os << "BatchedDeviceGradients::adjoint: cotangent " << b
-         << " has dimension " << flat.size() << ", expected " << dimension;
-      throw std::invalid_argument(os.str());
-    }
+        flattenCotangent(stateCotangents[static_cast<size_t>(b)],
+                        impl_->keyInfos[static_cast<size_t>(b)], dimension, b);
     std::copy(flat.data(), flat.data() + flat.size(),
              hostRhs.begin() + static_cast<size_t>(b) *
                                     static_cast<size_t>(dimension));
@@ -287,6 +383,97 @@ std::vector<std::optional<Vector>> BatchedDeviceGradients::parameterGradient(
       throw std::runtime_error(
           "BatchedDeviceGradients::parameterGradient: nonfinite accumulated "
           "parameter gradient for graph " +
+          std::to_string(b));
+    }
+    result[i] = accumulated;
+  }
+  return result;
+}
+
+std::vector<VectorValues> BatchedDeviceGradients::pushforward(
+    const std::vector<std::vector<Vector>>& factorResidualDirections) const {
+  const int batchSize = impl_->batchSize;
+  if (static_cast<int>(factorResidualDirections.size()) != batchSize) {
+    throw std::invalid_argument(
+        "BatchedDeviceGradients::pushforward requires one factor residual "
+        "direction per graph in the batch");
+  }
+  std::vector<VectorValues> rhsBatch(static_cast<size_t>(batchSize));
+  for (int b = 0; b < batchSize; ++b) {
+    const size_t i = static_cast<size_t>(b);
+    const std::vector<int>& rowCounts = impl_->factorRowCounts[i];
+    if (factorResidualDirections[i].size() != rowCounts.size()) {
+      throw std::invalid_argument(
+          "BatchedDeviceGradients::pushforward: graph " + std::to_string(b) +
+          " expected one factor residual direction block per factor slot");
+    }
+    Vector flat = Vector::Zero(impl_->jacobians[i].rows());
+    int offset = 0;
+    for (size_t f = 0; f < rowCounts.size(); ++f) {
+      const int rows = rowCounts[f];
+      const Vector& block = factorResidualDirections[i][f];
+      if (block.size() != rows || !block.allFinite()) {
+        throw std::invalid_argument(
+            "BatchedDeviceGradients::pushforward: graph " + std::to_string(b) +
+            " factor " + std::to_string(f) +
+            " has an invalid or nonfinite factor residual direction");
+      }
+      if (rows > 0) {
+        flat.segment(offset, rows) = block;
+        offset += rows;
+      }
+    }
+    const Vector rhsFlat = -(impl_->jacobians[i].transpose() * flat);
+    rhsBatch[i] = buildVectorValues(rhsFlat, impl_->keyInfos[i]);
+  }
+  // Reuses the batched solve adjoint() already provides, mirroring
+  // gtsam::Gradients::pushforward's own "return adjoint(rhs)".
+  return adjoint(rhsBatch);
+}
+
+std::vector<std::optional<Vector>> BatchedDeviceGradients::noiseGradient(
+    const std::vector<VectorValues>& stateCotangents,
+    const SharedNoiseModel model) const {
+  const auto diagonal = std::dynamic_pointer_cast<noiseModel::Diagonal>(model);
+  if (!diagonal || model->isUnit() || model->isConstrained()) {
+    throw std::invalid_argument(
+        "BatchedDeviceGradients::noiseGradient supports Diagonal and "
+        "Isotropic models only");
+  }
+  const bool isotropic =
+      static_cast<bool>(std::dynamic_pointer_cast<noiseModel::Isotropic>(model));
+  const std::vector<std::vector<Vector>> whitenedCotangents =
+      pullback(stateCotangents);
+  const Vector& precisions = diagonal->precisions();
+  const int batchSize = impl_->batchSize;
+  std::vector<std::optional<Vector>> result(static_cast<size_t>(batchSize));
+
+  for (int b = 0; b < batchSize; ++b) {
+    const size_t i = static_cast<size_t>(b);
+    const NonlinearFactorGraph& graph = impl_->graphs[i];
+    const Values& solution = impl_->solutions[i];
+    std::optional<Vector> accumulated;
+
+    for (size_t index = 0; index < graph.size(); ++index) {
+      const auto& factor = graph[index];
+      if (!factor || !factor->active(solution)) continue;
+      const auto& noiseFactor = static_cast<const NoiseModelFactor&>(*factor);
+      if (noiseFactor.noiseModel().get() != model.get()) continue;
+      const Vector residual = noiseFactor.unwhitenedError(solution);
+      const Vector& cotangent = whitenedCotangents[i][index];
+      Vector contribution =
+          -2.0 * cotangent.array() * residual.array() * precisions.array();
+      if (isotropic) contribution = Vector::Constant(1, contribution.sum());
+      if (accumulated) {
+        *accumulated += contribution;
+      } else {
+        accumulated = contribution;
+      }
+    }
+    if (accumulated && !accumulated->allFinite()) {
+      throw std::runtime_error(
+          "BatchedDeviceGradients::noiseGradient: nonfinite noise-model "
+          "gradient for graph " +
           std::to_string(b));
     }
     result[i] = accumulated;

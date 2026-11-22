@@ -115,7 +115,20 @@ class BatchedDenseLevenbergMarquardtItemResult {
   bool converged;
 };
 
+#include <gtsam/nonlinear/cuda/BatchedFactorGroupHook.h>
+
+class BatchedFactorGroupHook {
+  BatchedFactorGroupHook();
+  BatchedFactorGroupHook(
+      const gtsam::cuda::BatchedFactorGroupStageFunction& stageFunction,
+      const gtsam::cuda::BatchedFactorGroupComputeBatchFunction&
+          computeBatchFunction);
+};
+
 class BatchedDenseLevenbergMarquardtOptimizer {
+  // Two overloads, not one with a defaulted trailing vector-of-custom-type
+  // parameter: see BatchedBlockTridiagonalLevenbergMarquardtOptimizer's
+  // identical comment below for why.
   BatchedDenseLevenbergMarquardtOptimizer(
       const std::vector<gtsam::NonlinearFactorGraph>& graphs,
       const std::vector<gtsam::Values>& initialValues,
@@ -123,6 +136,13 @@ class BatchedDenseLevenbergMarquardtOptimizer {
           gtsam::LevenbergMarquardtParams(),
       const gtsam::cuda::BatchedDenseSolverOptions& deviceOptions =
           gtsam::cuda::BatchedDenseSolverOptions());
+  BatchedDenseLevenbergMarquardtOptimizer(
+      const std::vector<gtsam::NonlinearFactorGraph>& graphs,
+      const std::vector<gtsam::Values>& initialValues,
+      const gtsam::LevenbergMarquardtParams& params,
+      const gtsam::cuda::BatchedDenseSolverOptions& deviceOptions,
+      const std::vector<gtsam::cuda::BatchedFactorGroupHook>&
+          factorGroupHooks);
 
   const std::vector<gtsam::Values>& optimize();
   const std::vector<gtsam::Values>& values() const;
@@ -142,18 +162,14 @@ class BatchedDeviceGradients {
   std::vector<std::optional<gtsam::Vector>> parameterGradient(
       const std::vector<gtsam::VectorValues>& stateCotangents,
       const gtsam::ParameterTag& parameter) const;
+  std::vector<gtsam::VectorValues> pushforward(
+      const std::vector<std::vector<gtsam::Vector>>& factorResidualDirections)
+      const;
+  std::vector<std::optional<gtsam::Vector>> noiseGradient(
+      const std::vector<gtsam::VectorValues>& stateCotangents,
+      const gtsam::SharedNoiseModel model) const;
   int batchSize() const;
   int dimension() const;
-};
-
-#include <gtsam/nonlinear/cuda/BatchedFactorGroupHook.h>
-
-class BatchedFactorGroupHook {
-  BatchedFactorGroupHook();
-  BatchedFactorGroupHook(
-      const gtsam::cuda::BatchedFactorGroupStageFunction& stageFunction,
-      const gtsam::cuda::BatchedFactorGroupComputeBatchFunction&
-          computeBatchFunction);
 };
 
 #include <gtsam/nonlinear/cuda/BatchedBlockTridiagonalLevenbergMarquardt.h>
@@ -213,6 +229,12 @@ class BatchedBlockTridiagonalDeviceGradients {
   std::vector<std::optional<gtsam::Vector>> parameterGradient(
       const std::vector<gtsam::VectorValues>& stateCotangents,
       const gtsam::ParameterTag& parameter) const;
+  std::vector<gtsam::VectorValues> pushforward(
+      const std::vector<std::vector<gtsam::Vector>>& factorResidualDirections)
+      const;
+  std::vector<std::optional<gtsam::Vector>> noiseGradient(
+      const std::vector<gtsam::VectorValues>& stateCotangents,
+      const gtsam::SharedNoiseModel model) const;
   int batchSize() const;
   int dimension() const;
 };

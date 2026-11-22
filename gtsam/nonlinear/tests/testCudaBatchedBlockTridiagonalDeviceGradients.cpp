@@ -22,6 +22,7 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/LossFunctions.h>
 #include <gtsam/nonlinear/Gradients.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -128,6 +129,41 @@ class ChainFactor : public NoiseModelFactorN<Vector, Vector> {
   Vector measured_;
 };
 
+// One residual-direction block per factor slot, matching
+// MakeBatchConvergedProblem()'s 3-factor chain (Prior + 2 Between, each
+// rows=3) -- for pushforward(). See testCudaBatchedDeviceGradients.cpp's
+// identical fixture for the full rationale.
+std::vector<Vector> MakeFactorResidualDirection(double scale) {
+  return {
+      scale * (Vector(3) << 0.2, -0.1, 0.3).finished(),
+      scale * (Vector(3) << -0.4, 0.15, -0.2).finished(),
+      scale * (Vector(3) << 0.1, 0.05, -0.3).finished(),
+  };
+}
+
+struct GraphWithKnownNoise {
+  NonlinearFactorGraph graph;
+  SharedNoiseModel odometryNoise;
+};
+
+// See testCudaBatchedDeviceGradients.cpp's identical fixture for the full
+// rationale (shared instance across both BetweenFactors; a second call
+// gets a distinct, value-equal instance for object-identity testing).
+GraphWithKnownNoise MakePose2GraphWithKnownNoise(double odometryYOffset) {
+  GraphWithKnownNoise result;
+  const auto priorNoise =
+      noiseModel::Diagonal::Sigmas((Vector(3) << 0.15, 0.15, 0.1).finished());
+  result.odometryNoise =
+      noiseModel::Diagonal::Sigmas((Vector(3) << 0.2, 0.2, 0.15).finished());
+  result.graph.emplace_shared<PriorFactor<Pose2>>(kPose0, Pose2(0.0, 0.0, 0.0),
+                                                 priorNoise);
+  result.graph.emplace_shared<BetweenFactor<Pose2>>(
+      kPose0, kPose1, Pose2(2.0, odometryYOffset, 0.1), result.odometryNoise);
+  result.graph.emplace_shared<BetweenFactor<Pose2>>(
+      kPose1, kPose2, Pose2(1.5, -0.1, -0.08), result.odometryNoise);
+  return result;
+}
+
 const Key kBlock0 = Symbol('b', 0);
 const Key kBlock1 = Symbol('b', 1);
 const Key kBlock2 = Symbol('b', 2);
@@ -156,6 +192,10 @@ class ParameterFactor : public NoiseModelFactorN<Vector> {
     if (parameter != tag_) return std::nullopt;
     return Vector(-factorResidualCotangent);
   }
+
+  /// Exposed only for ParameterGradientMatchesFiniteDifference -- see
+  /// testCudaBatchedDeviceGradients.cpp's identical fixture.
+  const Vector& target() const { return target_; }
 
  private:
   ParameterTag tag_;
@@ -304,9 +344,157 @@ TEST(BatchedBlockTridiagonalDeviceGradients, AdjointThrowsForWrongCotangentBatch
                  std::invalid_argument);
 }
 
+// A factor connecting block 0 and block 2 directly (skipping block 1) must
+// be rejected here too: this class is BatchedBlockHessianAssembler's second
+// caller, with the identical dense-Jacobian-to-block-sparse-assembly
+// pattern as BatchedBlockTridiagonalLevenbergMarquardt (PR #2937 review,
+// high-priority finding 1).
+TEST(BatchedBlockTridiagonalDeviceGradients, ThrowsForNonAdjacentBlockCoupling) {
+  if (!HasCudaDevice()) return;
+  BatchConvergedProblem problem = MakeBatchConvergedProblem();
+  problem.graphs[0].emplace_shared<BetweenFactor<Pose2>>(
+      kPose0, kPose2, Pose2(3.5, -0.1, 0.0),
+      noiseModel::Diagonal::Sigmas((Vector(3) << 0.2, 0.2, 0.15).finished()));
+  CHECK_EXCEPTION(
+      BatchedBlockTridiagonalDeviceGradients(
+          problem.graphs, problem.converged, kPoseNumBlocks, kPoseBlockDim),
+      std::invalid_argument);
+}
+
+// See testCudaBatchedDeviceGradients.cpp's identical test for the full
+// rationale (PR #2937 review, high-priority finding 2).
+TEST(BatchedBlockTridiagonalDeviceGradients, ThrowsForRobustNoiseModel) {
+  if (!HasCudaDevice()) return;
+  BatchConvergedProblem problem = MakeBatchConvergedProblem();
+  const auto baseNoise =
+      noiseModel::Diagonal::Sigmas((Vector(3) << 0.2, 0.2, 0.15).finished());
+  const auto robustNoise =
+      noiseModel::Robust::Create(noiseModel::mEstimator::Huber::Create(1.0), baseNoise);
+  problem.graphs[0].emplace_shared<PriorFactor<Pose2>>(
+      kPose0, Pose2(0.1, 0.1, 0.0), robustNoise);
+  CHECK_EXCEPTION(
+      BatchedBlockTridiagonalDeviceGradients(
+          problem.graphs, problem.converged, kPoseNumBlocks, kPoseBlockDim),
+      std::invalid_argument);
+}
+
+TEST(BatchedBlockTridiagonalDeviceGradients, ThrowsForConstrainedNoiseModel) {
+  if (!HasCudaDevice()) return;
+  BatchConvergedProblem problem = MakeBatchConvergedProblem();
+  problem.graphs[0].emplace_shared<PriorFactor<Pose2>>(
+      kPose0, Pose2(0.1, 0.1, 0.0), noiseModel::Constrained::All(3));
+  CHECK_EXCEPTION(
+      BatchedBlockTridiagonalDeviceGradients(
+          problem.graphs, problem.converged, kPoseNumBlocks, kPoseBlockDim),
+      std::invalid_argument);
+}
+
+// See testCudaBatchedDeviceGradients.cpp's identical test for the full
+// rationale (PR #2937 review, high-priority finding 3).
+TEST(BatchedBlockTridiagonalDeviceGradients,
+    AdjointSupportsPartialCotangentMatchingCpu) {
+  if (!HasCudaDevice()) return;
+  const BatchConvergedProblem problem = MakeBatchConvergedProblem();
+  VectorValues partial;
+  partial.insert(kPose1, (Vector(3) << -0.3, 0.8, -0.1).finished());
+  const std::vector<VectorValues> cotangents = {partial, partial};
+
+  BatchedBlockTridiagonalDeviceGradients gpuGradients(
+      problem.graphs, problem.converged, kPoseNumBlocks, kPoseBlockDim);
+  const std::vector<VectorValues> actual = gpuGradients.adjoint(cotangents);
+
+  for (size_t i = 0; i < problem.graphs.size(); ++i) {
+    Gradients cpuGradients(problem.graphs[i], problem.converged[i]);
+    const VectorValues expected = cpuGradients.adjoint(cotangents[i]);
+    EXPECT(assert_equal(expected, actual[i], 1e-7));
+  }
+}
+
+TEST(BatchedBlockTridiagonalDeviceGradients,
+    AdjointSupportsEmptyCotangentMatchingCpu) {
+  if (!HasCudaDevice()) return;
+  const BatchConvergedProblem problem = MakeBatchConvergedProblem();
+  const VectorValues empty;
+  const std::vector<VectorValues> cotangents = {empty, empty};
+
+  BatchedBlockTridiagonalDeviceGradients gpuGradients(
+      problem.graphs, problem.converged, kPoseNumBlocks, kPoseBlockDim);
+  const std::vector<VectorValues> actual = gpuGradients.adjoint(cotangents);
+
+  for (size_t i = 0; i < problem.graphs.size(); ++i) {
+    Gradients cpuGradients(problem.graphs[i], problem.converged[i]);
+    const VectorValues expected = cpuGradients.adjoint(cotangents[i]);
+    EXPECT(assert_equal(expected, actual[i], 1e-7));
+  }
+}
+
+TEST(BatchedBlockTridiagonalDeviceGradients, AdjointThrowsForUnknownCotangentKey) {
+  if (!HasCudaDevice()) return;
+  const BatchConvergedProblem problem = MakeBatchConvergedProblem();
+  VectorValues withUnknownKey;
+  withUnknownKey.insert(Symbol('x', 99), (Vector(3) << 1.0, 0.0, 0.0).finished());
+  const std::vector<VectorValues> cotangents = {withUnknownKey, withUnknownKey};
+
+  BatchedBlockTridiagonalDeviceGradients gpuGradients(
+      problem.graphs, problem.converged, kPoseNumBlocks, kPoseBlockDim);
+  CHECK_EXCEPTION(gpuGradients.adjoint(cotangents), std::invalid_argument);
+}
+
 // parameterGradient() on a parameter attached to the *middle* chain block
 // must match CPU gtsam::Gradients::parameterGradient exactly -- the real
 // correctness bar for a drop-in differentiable-backward replacement.
+// See testCudaBatchedDeviceGradients.cpp's identical test for the full
+// rationale (PR #2937 review's finite-difference-check request). The
+// ParameterFactor here is factor index 3 (0=Prior, 1=Chain(0,1),
+// 2=Chain(1,2), 3=Parameter on the middle block).
+TEST(BatchedBlockTridiagonalDeviceGradients,
+    ParameterGradientMatchesFiniteDifference) {
+  if (!HasCudaDevice()) return;
+  const ParameterTag tag("chain_finite_difference_check");
+  const BatchParameterProblem problem = MakeBatchParameterProblem(tag);
+  const std::vector<VectorValues> cotangents = MakeChainCotangents(1.0);
+
+  BatchedBlockTridiagonalDeviceGradients gpuGradients(
+      problem.graphs, problem.solutions, kParamNumBlocks, kParamBlockDim);
+  const std::vector<std::optional<Vector>> analytic =
+      gpuGradients.parameterGradient(cotangents, tag);
+  const std::vector<std::vector<Vector>> factorResidualCotangents =
+      gpuGradients.pullback(cotangents);
+
+  constexpr double kEps = 1e-6;
+  constexpr size_t kParameterFactorIndex = 3;
+  for (size_t b = 0; b < problem.graphs.size(); ++b) {
+    CHECK(analytic[b].has_value());
+    const Values& solution = problem.solutions[b];
+    const auto& parameterFactor = static_cast<const ParameterFactor&>(
+        *problem.graphs[b].at(kParameterFactorIndex));
+    const SharedNoiseModel noise = parameterFactor.noiseModel();
+    const auto diagonal =
+        std::dynamic_pointer_cast<noiseModel::Diagonal>(noise);
+
+    Vector factorResidualCotangent =
+        factorResidualCotangents[b][kParameterFactorIndex];
+    diagonal->whitenInPlace(factorResidualCotangent);
+
+    Vector numeric(2);
+    for (int d = 0; d < 2; ++d) {
+      Vector plusTarget = parameterFactor.target();
+      Vector minusTarget = parameterFactor.target();
+      plusTarget(d) += kEps;
+      minusTarget(d) -= kEps;
+      const Vector residualPlus =
+          ParameterFactor(parameterFactor.keys()[0], tag, plusTarget, noise)
+              .unwhitenedError(solution);
+      const Vector residualMinus =
+          ParameterFactor(parameterFactor.keys()[0], tag, minusTarget, noise)
+              .unwhitenedError(solution);
+      numeric(d) = factorResidualCotangent.dot(residualPlus - residualMinus) /
+                  (2.0 * kEps);
+    }
+    EXPECT(assert_equal(numeric, *analytic[b], 1e-4));
+  }
+}
+
 TEST(BatchedBlockTridiagonalDeviceGradients, ParameterGradientMatchesCpuGradients) {
   if (!HasCudaDevice()) return;
   const ParameterTag tag("chain_block1_target");
@@ -342,6 +530,73 @@ TEST(BatchedBlockTridiagonalDeviceGradients, ParameterGradientIsNulloptForUnused
   const std::vector<std::optional<Vector>> actual =
       gpuGradients.parameterGradient(cotangents, unusedTag);
   for (const auto& value : actual) CHECK(!value.has_value());
+}
+
+// See testCudaBatchedDeviceGradients.cpp's identical test for the full
+// rationale (PR #2937 review's pushforward/noiseGradient parity finding).
+TEST(BatchedBlockTridiagonalDeviceGradients, PushforwardMatchesCpuGradients) {
+  if (!HasCudaDevice()) return;
+  const BatchConvergedProblem problem = MakeBatchConvergedProblem();
+  const std::vector<std::vector<Vector>> directions = {
+      MakeFactorResidualDirection(1.0), MakeFactorResidualDirection(-0.5)};
+
+  BatchedBlockTridiagonalDeviceGradients gpuGradients(
+      problem.graphs, problem.converged, kPoseNumBlocks, kPoseBlockDim);
+  const std::vector<VectorValues> actual = gpuGradients.pushforward(directions);
+
+  for (size_t i = 0; i < problem.graphs.size(); ++i) {
+    Gradients cpuGradients(problem.graphs[i], problem.converged[i]);
+    const Errors errors(directions[i].begin(), directions[i].end());
+    const VectorValues expected = cpuGradients.pushforward(errors);
+    EXPECT(assert_equal(expected, actual[i], 1e-7));
+  }
+}
+
+TEST(BatchedBlockTridiagonalDeviceGradients,
+    NoiseGradientMatchesCpuGradientsByInstanceIdentity) {
+  if (!HasCudaDevice()) return;
+  const GraphWithKnownNoise g0 = MakePose2GraphWithKnownNoise(0.2);
+  const GraphWithKnownNoise g1 = MakePose2GraphWithKnownNoise(-0.3);
+  const std::vector<NonlinearFactorGraph> graphs = {g0.graph, g1.graph};
+  const std::vector<Values> initial = {MakePose2Initial(0.0),
+                                       MakePose2Initial(0.15)};
+  std::vector<Values> converged;
+  for (size_t i = 0; i < graphs.size(); ++i) {
+    converged.push_back(
+        LevenbergMarquardtOptimizer(graphs[i], initial[i]).optimize());
+  }
+  const std::vector<VectorValues> cotangents = {MakeCotangent(1.0),
+                                                MakeCotangent(-1.0)};
+
+  BatchedBlockTridiagonalDeviceGradients gpuGradients(
+      graphs, converged, kPoseNumBlocks, kPoseBlockDim);
+  const std::vector<std::optional<Vector>> actual =
+      gpuGradients.noiseGradient(cotangents, g0.odometryNoise);
+
+  Gradients cpuGradients0(graphs[0], converged[0]);
+  const std::optional<Vector> expected0 =
+      cpuGradients0.noiseGradient(cotangents[0], g0.odometryNoise);
+  CHECK(expected0.has_value());
+  CHECK(actual[0].has_value());
+  EXPECT(assert_equal(*expected0, *actual[0], 1e-7));
+
+  Gradients cpuGradients1(graphs[1], converged[1]);
+  const std::optional<Vector> expected1 =
+      cpuGradients1.noiseGradient(cotangents[1], g0.odometryNoise);
+  CHECK(!expected1.has_value());
+  CHECK(!actual[1].has_value());
+}
+
+TEST(BatchedBlockTridiagonalDeviceGradients, NoiseGradientThrowsForUnsupportedModel) {
+  if (!HasCudaDevice()) return;
+  const BatchConvergedProblem problem = MakeBatchConvergedProblem();
+  const std::vector<VectorValues> cotangents = {MakeCotangent(1.0),
+                                                MakeCotangent(-1.0)};
+  BatchedBlockTridiagonalDeviceGradients gpuGradients(
+      problem.graphs, problem.converged, kPoseNumBlocks, kPoseBlockDim);
+  CHECK_EXCEPTION(
+      gpuGradients.noiseGradient(cotangents, noiseModel::Unit::Create(3)),
+      std::invalid_argument);
 }
 
 /* ************************************************************************* */

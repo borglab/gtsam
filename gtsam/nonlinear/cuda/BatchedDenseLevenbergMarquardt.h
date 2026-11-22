@@ -25,6 +25,7 @@
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/cuda/BatchedFactorGroupHook.h>
 
 #include <cstddef>
 #include <memory>
@@ -68,11 +69,22 @@ class GTSAM_EXPORT BatchedDenseLevenbergMarquardtOptimizer {
  public:
   /// Linearizes every graph once to fix each item's key ordering. Throws
   /// on a batch-size mismatch or differing scalar dimensions.
+  /// factorGroupHooks, if given, are primed with every active item's
+  /// current Values (and computed as one cross-item batch) before each
+  /// outer iteration's per-item linearize() call -- see
+  /// BatchedFactorGroupHook.h. Previously only
+  /// BatchedBlockTridiagonalLevenbergMarquardtOptimizer exposed this: how
+  /// expensive Python-backed factors are batch-evaluated is independent of
+  /// which linear-algebra backend solves the resulting system, so dense
+  /// graphs benefit from it too (PR #2937 review, "the same header exposes
+  /// a Python-backed factor evaluation hook only on the chain optimizer"
+  /// finding).
   BatchedDenseLevenbergMarquardtOptimizer(
       const std::vector<NonlinearFactorGraph>& graphs,
       const std::vector<Values>& initialValues,
       const LevenbergMarquardtParams& params = LevenbergMarquardtParams(),
-      const BatchedDenseSolverOptions& deviceOptions = {});
+      const BatchedDenseSolverOptions& deviceOptions = {},
+      const std::vector<BatchedFactorGroupHook>& factorGroupHooks = {});
   ~BatchedDenseLevenbergMarquardtOptimizer();
 
   BatchedDenseLevenbergMarquardtOptimizer(

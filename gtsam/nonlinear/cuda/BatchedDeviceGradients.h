@@ -21,6 +21,7 @@
 
 #include <gtsam/dllexport.h>
 #include <gtsam/linear/KeyInfo.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/cuda/internal/BatchedDenseCholeskySolver.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -41,11 +42,21 @@ namespace gtsam::cuda {
  * (BatchedDenseCholeskySolver), so N per-tag queries become N cheap
  * batched solves instead of N*B small CPU solves. Dense, not sparse, for
  * the same reason as BatchedDenseCholeskySolver.
+ *
+ * Matches gtsam::Gradients' supported-noise convention exactly: every
+ * active factor must be a NoiseModelFactor whose noise model is null or a
+ * dimension-matched, unconstrained noiseModel::Gaussian with finite,
+ * positive sigmas (or a finite positive-definite covariance for a full
+ * Gaussian); robust losses and hard constraints are rejected at
+ * construction, not silently folded into A.
  */
 class GTSAM_EXPORT BatchedDeviceGradients {
  public:
   /// Linearizes each (graph, solution) pair without damping and
-  /// factorizes the batch once. Throws on a batch-size or dimension mismatch.
+  /// factorizes the batch once. Throws on a batch-size or dimension
+  /// mismatch, a factor without a NoiseModelFactor residual Jacobian, or an
+  /// unsupported noise model (robust, constrained, or otherwise not a
+  /// dimension-matched unconstrained Gaussian).
   BatchedDeviceGradients(const std::vector<NonlinearFactorGraph>& graphs,
                          const std::vector<Values>& solutions,
                          const BatchedDenseSolverOptions& options = {});
@@ -56,6 +67,10 @@ class GTSAM_EXPORT BatchedDeviceGradients {
 
   /// Returns lambda_b satisfying H_b*lambda_b = stateCotangents[b] per
   /// graph, in one batched GPU solve reusing the cached factorization.
+  /// Each cotangent may be partial: an omitted known key means zero, as in
+  /// gtsam::Gradients::adjoint. A key absent from graph b's keys, or a
+  /// present key with the wrong (or nonfinite) value, throws
+  /// std::invalid_argument.
   std::vector<VectorValues> adjoint(
       const std::vector<VectorValues>& stateCotangents) const;
 
@@ -70,6 +85,23 @@ class GTSAM_EXPORT BatchedDeviceGradients {
   std::vector<std::optional<Vector>> parameterGradient(
       const std::vector<VectorValues>& stateCotangents,
       const ParameterTag& parameter) const;
+
+  /// Returns, per graph, -H_b^{-1} * A_b^T * factorResidualDirections[b],
+  /// mirroring gtsam::Gradients::pushforward exactly: supply one finite
+  /// vector per factor slot (graph b's factorResidualDirections[b][f]),
+  /// with that factor's row dimension; null/inactive slots require empty
+  /// vectors. Reuses adjoint()'s batched solve, same as the CPU class does.
+  std::vector<VectorValues> pushforward(
+      const std::vector<std::vector<Vector>>& factorResidualDirections) const;
+
+  /// Returns, per graph, the gradient through the solved states with
+  /// respect to model's sigmas, mirroring gtsam::Gradients::noiseGradient
+  /// exactly (including its object-identity factor matching and Diagonal/
+  /// Isotropic-only support); std::nullopt if no active factor holds
+  /// model.
+  std::vector<std::optional<Vector>> noiseGradient(
+      const std::vector<VectorValues>& stateCotangents,
+      const SharedNoiseModel model) const;
 
   /// Number of graphs in the batch.
   int batchSize() const;

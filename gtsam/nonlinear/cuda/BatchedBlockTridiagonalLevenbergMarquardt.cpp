@@ -110,6 +110,14 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
   std::vector<bool> terminated;
   std::vector<BatchedBlockTridiagonalLevenbergMarquardtItemResult> itemResults;
   bool optimized = false;
+  // -1 means "whatever device is already current" (see
+  // BatchedDenseSolverOptions). optimize() and polish() each re-assert this
+  // before their own direct DeviceArray upload/download, not just relying
+  // on solver's/hessianAssembler's construction-time cudaSetDevice --
+  // cudaSetDevice is thread-global, so a second same-thread instance
+  // constructed on a different device would otherwise leave this
+  // instance's later calls running against the wrong device's memory.
+  int deviceId = -1;
 
   Impl(const std::vector<NonlinearFactorGraph>& inputGraphs,
        const std::vector<Values>& initialValues, int inputNumBlocks,
@@ -123,7 +131,8 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
         solver(deviceOptions),
         hessianAssembler(deviceOptions),
         numBlocks(inputNumBlocks),
-        blockDim(inputBlockDim) {
+        blockDim(inputBlockDim),
+        deviceId(deviceOptions.deviceId) {
     if (inputGraphs.empty() || inputGraphs.size() != initialValues.size()) {
       throw std::invalid_argument(
           "BatchedBlockTridiagonalLevenbergMarquardtOptimizer requires "
@@ -171,6 +180,8 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
         rowCursor += factorPlan.rowCount;
         if (!jf) continue;
         factorPlan.columns.resize(jf->size());
+        int minBlock = std::numeric_limits<int>::max();
+        int maxBlock = std::numeric_limits<int>::min();
         for (size_t k = 0; k < jf->size(); ++k) {
           const Key key = jf->keys()[k];
           const auto entryIt = keyInfo.find(key);
@@ -180,8 +191,45 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
                 "linearized factor references a key absent from this "
                 "item's KeyInfo");
           }
-          factorPlan.columns[k].colOffset = entryIt->second.start;
-          factorPlan.columns[k].colWidth = entryIt->second.dim;
+          const size_t colOffset = entryIt->second.start;
+          const size_t colWidth = entryIt->second.dim;
+          factorPlan.columns[k].colOffset = colOffset;
+          factorPlan.columns[k].colWidth = colWidth;
+
+          // Enforce the documented block-tridiagonal precondition (each
+          // factor touches at most two adjacent numBlocks*blockDim groups,
+          // and no key straddles a group boundary): silently violating
+          // this would make BatchedBlockHessianAssembler (which only ever
+          // forms diag[t]=At^T At and offDiag[t]=At^T At+1) drop this
+          // factor's contribution to any non-adjacent block pair, producing
+          // a wrong (incomplete) normal-equations system with no runtime
+          // signal. See BatchedBlockTridiagonalLevenbergMarquardtOptimizer's
+          // class doc ("each factor touching only one or two adjacent
+          // groups").
+          const int firstBlock = static_cast<int>(colOffset / blockDim);
+          const int lastBlock =
+              static_cast<int>((colOffset + colWidth - 1) / blockDim);
+          if (firstBlock != lastBlock) {
+            throw std::invalid_argument(
+                "BatchedBlockTridiagonalLevenbergMarquardtOptimizer requires "
+                "every key to lie within a single numBlocks*blockDim group; "
+                "factor " + std::to_string(f) + " (graph " +
+                std::to_string(b) + ") has a key straddling a group "
+                "boundary at column " + std::to_string(colOffset));
+          }
+          minBlock = std::min(minBlock, firstBlock);
+          maxBlock = std::max(maxBlock, firstBlock);
+        }
+        if (!factorPlan.columns.empty() && maxBlock - minBlock > 1) {
+          throw std::invalid_argument(
+              "BatchedBlockTridiagonalLevenbergMarquardtOptimizer requires "
+              "every factor to touch at most two adjacent blocks (chain "
+              "structure); factor " + std::to_string(f) + " (graph " +
+              std::to_string(b) + ") spans blocks " +
+              std::to_string(minBlock) + ".." + std::to_string(maxBlock) +
+              " -- BatchedBlockHessianAssembler only forms diagonal and "
+              "immediate off-diagonal Hessian blocks and would silently "
+              "drop this factor's contribution to non-adjacent blocks");
         }
       }
       keyInfos.push_back(std::move(keyInfo));
@@ -367,6 +415,9 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
   // runAttemptRound, which is why this does not reuse it despite the
   // similar shape.
   const std::vector<Values>& polish(int numSteps) {
+    if (deviceId >= 0) {
+      GTSAM_CUDA_CHECK(cudaSetDevice(deviceId));
+    }
     if (numSteps <= 0) return currentValues;
 
     std::vector<int> allItems(static_cast<size_t>(batchSize));
@@ -420,6 +471,9 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
   }
 
   const std::vector<Values>& optimize() {
+    if (deviceId >= 0) {
+      GTSAM_CUDA_CHECK(cudaSetDevice(deviceId));
+    }
     if (optimized) return currentValues;
     if (params.maxIterations == 0 || allTerminated()) {
       finish();
@@ -495,10 +549,21 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
         const Matrix& block = diagBase[i][static_cast<size_t>(t)];
         std::copy(block.data(), block.data() + block.size(),
                  hostDiag.begin() + blockOffset);
+        // Matches LevenbergMarquardtOptimizer::buildDampedSystem exactly
+        // (see BatchedDenseLevenbergMarquardt.cpp's identical fix): honor
+        // diagonalDamping instead of always applying flat identity damping
+        // (PR #2937 review, "nonlinear optimization" finding).
         for (int d = 0; d < blockDim; ++d) {
-          hostDiag[blockOffset + static_cast<size_t>(d) *
-                                     static_cast<size_t>(blockDim) +
-                  static_cast<size_t>(d)] += lambda[i];
+          const size_t idx = blockOffset + static_cast<size_t>(d) *
+                                               static_cast<size_t>(blockDim) +
+                             static_cast<size_t>(d);
+          const double dampingTerm =
+              params.dampingParams.diagonalDamping
+                  ? lambda[i] * std::clamp(hostDiag[idx],
+                                          params.dampingParams.minDiagonal,
+                                          params.dampingParams.maxDiagonal)
+                  : lambda[i];
+          hostDiag[idx] += dampingTerm;
         }
       }
     }

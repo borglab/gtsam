@@ -31,6 +31,17 @@ namespace gtsam::cuda {
  * rhs[i] = A_i^T b_i for B independent dense Jacobians of identical
  * row/column shape, via cuBLAS batched GEMM -- replaces a per-item,
  * per-block CPU Eigen matmul loop with a handful of GPU kernel launches.
+ *
+ * Precondition (not checked here): each dense Jacobian's nonzero columns
+ * must fall within at most two adjacent numBlocks*blockDim-wide groups per
+ * row range (a block-tridiagonal/chain sparsity pattern). assemble() never
+ * forms or checks At^T At+2 and beyond, so a Jacobian with wider coupling
+ * (for example a factor connecting block 0 and block 2 directly) silently
+ * loses that contribution to the assembled diag/offDiag blocks, producing
+ * an incomplete normal-equations system. This precondition is enforced by
+ * this assembler's two callers, BatchedBlockTridiagonalLevenbergMarquardt-
+ * Optimizer and BatchedBlockTridiagonalDeviceGradients, both of which
+ * validate every factor's key-to-block mapping before building deviceA.
  */
 class BatchedBlockHessianAssembler {
  public:
