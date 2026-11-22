@@ -225,6 +225,200 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
                        [](bool t) { return t; });
   }
 
+  // Stages+batches every registered factor group's net evaluation, then
+  // linearizes every item in activeItems and assembles diag/offDiag/rhs via
+  // the GPU Hessian assembler, leaving the result in deviceDiagRaw/
+  // deviceOffDiagRaw/deviceRhsRaw (still on-device, in activeItems order).
+  // Shared by optimize()'s per-outer-iteration assembly (which additionally
+  // downloads to host via downloadAssembledBatch(), below, since it needs
+  // per-item lambda damping applied on the CPU before re-uploading) and
+  // polish()'s per-step assembly (which consumes the device buffers
+  // directly -- no lambda, no retry, so no host round trip is needed).
+  void assembleBatchToDevice(const std::vector<int>& activeItems) {
+    // Cross-item-batch every registered Python-backed factor group's net
+    // evaluation once, before the per-item linearize() loop below reads
+    // the (now cached) results back through the unchanged CustomFactor
+    // callback contract.
+    for (const auto& hook : factorGroupHooks) {
+      for (int item : activeItems) {
+        hook.stage(item, currentValues[static_cast<size_t>(item)]);
+      }
+      hook.computeBatch();
+    }
+    const size_t numActive = activeItems.size();
+    std::vector<Matrix> itemA(numActive);
+    std::vector<Vector> itemB(numActive);
+    int jacobianRows = -1;
+    for (size_t idx = 0; idx < numActive; ++idx) {
+      const size_t i = static_cast<size_t>(activeItems[idx]);
+      const auto linearized = graphs[i].linearize(currentValues[i]);
+      const std::vector<FactorAssemblyPlan>& plan = itemAssemblyPlan[i];
+      const size_t totalRows =
+          plan.empty() ? 0 : plan.back().rowOffset + plan.back().rowCount;
+      itemA[idx] = Matrix::Zero(static_cast<Eigen::Index>(totalRows),
+                                dimension);
+      itemB[idx] = Vector::Zero(static_cast<Eigen::Index>(totalRows));
+      for (size_t f = 0; f < plan.size(); ++f) {
+        const FactorAssemblyPlan& factorPlan = plan[f];
+        if (factorPlan.rowCount == 0) continue;
+        auto jf = std::dynamic_pointer_cast<JacobianFactor>(
+            linearized->at(f));
+        if (!jf) {
+          throw std::runtime_error(
+              "BatchedBlockTridiagonalLevenbergMarquardtOptimizer: factor "
+              "" + std::to_string(f) +
+              " linearized to a non-JacobianFactor or null after "
+              "producing rows at construction -- active()/type must stay "
+              "stable across outer iterations for the cached assembly "
+              "plan to remain valid");
+        }
+        itemB[idx].segment(static_cast<Eigen::Index>(factorPlan.rowOffset),
+                           static_cast<Eigen::Index>(factorPlan.rowCount)) =
+            jf->getb();
+        for (size_t k = 0; k < factorPlan.columns.size(); ++k) {
+          const ColumnSlot& slot = factorPlan.columns[k];
+          itemA[idx].block(
+              static_cast<Eigen::Index>(factorPlan.rowOffset),
+              static_cast<Eigen::Index>(slot.colOffset),
+              static_cast<Eigen::Index>(factorPlan.rowCount),
+              static_cast<Eigen::Index>(slot.colWidth)) =
+              jf->getA(jf->begin() + static_cast<std::ptrdiff_t>(k));
+        }
+      }
+      if (jacobianRows < 0) {
+        jacobianRows = static_cast<int>(itemA[idx].rows());
+      } else if (static_cast<int>(itemA[idx].rows()) != jacobianRows) {
+        throw std::runtime_error(
+            "BatchedBlockTridiagonalLevenbergMarquardtOptimizer requires "
+            "every active item to linearize to the same residual row "
+            "count for the batched GPU Hessian assembly");
+      }
+    }
+
+    // Stack active items' Jacobians/RHS into one contiguous buffer,
+    // then assemble diag/offDiag/rhs for the whole batch via GPU GEMM.
+    std::vector<double> hostJacobianA(
+        numActive * static_cast<size_t>(jacobianRows) *
+        static_cast<size_t>(dimension));
+    std::vector<double> hostJacobianB(numActive *
+                                      static_cast<size_t>(jacobianRows));
+    for (size_t idx = 0; idx < numActive; ++idx) {
+      Eigen::Map<Matrix>(hostJacobianA.data() +
+                            idx * static_cast<size_t>(jacobianRows) *
+                                static_cast<size_t>(dimension),
+                        jacobianRows, dimension) = itemA[idx];
+      Eigen::Map<Vector>(hostJacobianB.data() +
+                            idx * static_cast<size_t>(jacobianRows),
+                        jacobianRows) = itemB[idx];
+    }
+    deviceJacobianA.upload(hostJacobianA);
+    deviceJacobianB.upload(hostJacobianB);
+    hessianAssembler.assemble(static_cast<int>(numActive), numBlocks,
+                             blockDim, jacobianRows, &deviceJacobianA,
+                             &deviceJacobianB, &deviceDiagRaw,
+                             &deviceOffDiagRaw, &deviceRhsRaw);
+  }
+
+  // Downloads deviceDiagRaw/deviceOffDiagRaw/deviceRhsRaw (as left by the
+  // most recent assembleBatchToDevice(activeItems) call) into diagBase/
+  // offDiagBase/rhsBase at those items' indices -- only optimize()'s
+  // runAttemptRound needs this (per-item lambda damping is CPU-side
+  // bookkeeping), so it is a separate step from assembleBatchToDevice.
+  void downloadAssembledBatch(const std::vector<int>& activeItems) {
+    const size_t blockElems =
+        static_cast<size_t>(blockDim) * static_cast<size_t>(blockDim);
+    const size_t numActive = activeItems.size();
+    std::vector<double> hostDiagRaw, hostOffDiagRaw, hostRhsRaw;
+    deviceDiagRaw.download(&hostDiagRaw);
+    deviceOffDiagRaw.download(&hostOffDiagRaw);
+    deviceRhsRaw.download(&hostRhsRaw);
+    GTSAM_CUDA_CHECK(cudaStreamSynchronize(nullptr));
+
+    for (size_t idx = 0; idx < numActive; ++idx) {
+      const size_t i = static_cast<size_t>(activeItems[idx]);
+      diagBase[i].resize(static_cast<size_t>(numBlocks));
+      rhsBase[i].resize(static_cast<size_t>(numBlocks));
+      offDiagBase[i].resize(static_cast<size_t>(numBlocks - 1));
+      const size_t diagOffset = idx * numBlocks * blockElems;
+      const size_t offDiagOffset = idx * (numBlocks - 1) * blockElems;
+      const size_t rhsOffset = idx * static_cast<size_t>(dimension);
+      for (int t = 0; t < numBlocks; ++t) {
+        diagBase[i][static_cast<size_t>(t)] = Eigen::Map<const Matrix>(
+            hostDiagRaw.data() + diagOffset +
+                static_cast<size_t>(t) * blockElems,
+            blockDim, blockDim);
+        rhsBase[i][static_cast<size_t>(t)] = Eigen::Map<const Vector>(
+            hostRhsRaw.data() + rhsOffset +
+                static_cast<size_t>(t) * static_cast<size_t>(blockDim),
+            blockDim);
+        if (t + 1 < numBlocks) {
+          offDiagBase[i][static_cast<size_t>(t)] = Eigen::Map<const Matrix>(
+              hostOffDiagRaw.data() + offDiagOffset +
+                  static_cast<size_t>(t) * blockElems,
+              blockDim, blockDim);
+        }
+      }
+    }
+  }
+
+  // Plain (undamped) Gauss-Newton polish: every item participates, every
+  // step is taken unconditionally (no lambda, no retry, no accept/reject,
+  // no termination/convergence bookkeeping) -- unlike optimize()'s
+  // runAttemptRound, which is why this does not reuse it despite the
+  // similar shape.
+  const std::vector<Values>& polish(int numSteps) {
+    if (numSteps <= 0) return currentValues;
+
+    std::vector<int> allItems(static_cast<size_t>(batchSize));
+    for (int item = 0; item < batchSize; ++item) {
+      allItems[static_cast<size_t>(item)] = item;
+    }
+    const size_t rhsItemStride =
+        static_cast<size_t>(numBlocks) * static_cast<size_t>(blockDim);
+
+    for (int step = 0; step < numSteps; ++step) {
+      // Every item always participates and no lambda damping is added, so
+      // (unlike optimize()'s runAttemptRound) there is nothing CPU-side to
+      // do to deviceDiagRaw/deviceOffDiagRaw/deviceRhsRaw before solving --
+      // feed them to the solver directly, skipping the
+      // download-to-host-then-reupload round trip downloadAssembledBatch()
+      // exists for. factorize()/solve() are destructive, but these buffers
+      // are already fully consumed by the end of this step, so that's fine.
+      assembleBatchToDevice(allItems);
+      solver.factorize(batchSize, numBlocks, blockDim, &deviceDiagRaw,
+                       &deviceOffDiagRaw, nullptr, &stats);
+      solver.solve(1, &deviceRhsRaw, nullptr, &stats);
+      std::vector<double> hostDelta;
+      deviceRhsRaw.download(&hostDelta);
+      GTSAM_CUDA_CHECK(cudaStreamSynchronize(nullptr));
+
+      for (int item = 0; item < batchSize; ++item) {
+        const size_t i = static_cast<size_t>(item);
+        Vector delta(dimension);
+        std::copy(hostDelta.begin() + i * rhsItemStride,
+                 hostDelta.begin() + (i + 1) * rhsItemStride, delta.data());
+        if (!delta.allFinite()) {
+          throw std::runtime_error(
+              "BatchedBlockTridiagonalLevenbergMarquardtOptimizer::polish "
+              "produced a non-finite delta for item " +
+              std::to_string(item));
+        }
+        VectorValues deltaValues = buildVectorValues(delta, keyInfos[i]);
+        currentValues[i] = currentValues[i].retract(deltaValues);
+      }
+      // Any subsequent optimize() attempt round must not reuse offDiag/rhs
+      // cached before this polish step changed currentValues.
+      pristineValid = false;
+    }
+
+    for (int item = 0; item < batchSize; ++item) {
+      const size_t i = static_cast<size_t>(item);
+      currentError[i] = graphs[i].error(currentValues[i]);
+      itemResults[i].finalError = currentError[i];
+    }
+    return currentValues;
+  }
+
   const std::vector<Values>& optimize() {
     if (optimized) return currentValues;
     if (params.maxIterations == 0 || allTerminated()) {
@@ -233,132 +427,18 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
     }
 
     const int maxOuterIterations = static_cast<int>(params.maxIterations);
-    const size_t blockElems =
-        static_cast<size_t>(blockDim) * static_cast<size_t>(blockDim);
     for (int outer = 0; outer < maxOuterIterations && !allTerminated();
         ++outer) {
-      // linearize() stays on CPU; only the At^T*At/At^T*b/At^T*At1
-      // formation below moves to the GPU.
       std::vector<int> activeItems;
       for (int item = 0; item < batchSize; ++item) {
         if (!terminated[static_cast<size_t>(item)]) activeItems.push_back(item);
       }
-      // Cross-item-batch every registered Python-backed factor group's net
-      // evaluation once, before the per-item linearize() loop below reads
-      // the (now cached) results back through the unchanged CustomFactor
-      // callback contract.
-      for (const auto& hook : factorGroupHooks) {
-        for (int item : activeItems) {
-          hook.stage(item, currentValues[static_cast<size_t>(item)]);
-        }
-        hook.computeBatch();
-      }
-      const size_t numActive = activeItems.size();
-      std::vector<Matrix> itemA(numActive);
-      std::vector<Vector> itemB(numActive);
-      int jacobianRows = -1;
-      for (size_t idx = 0; idx < numActive; ++idx) {
-        const size_t i = static_cast<size_t>(activeItems[idx]);
-        const auto linearized = graphs[i].linearize(currentValues[i]);
-        const std::vector<FactorAssemblyPlan>& plan = itemAssemblyPlan[i];
-        const size_t totalRows =
-            plan.empty() ? 0 : plan.back().rowOffset + plan.back().rowCount;
-        itemA[idx] = Matrix::Zero(static_cast<Eigen::Index>(totalRows),
-                                  dimension);
-        itemB[idx] = Vector::Zero(static_cast<Eigen::Index>(totalRows));
-        for (size_t f = 0; f < plan.size(); ++f) {
-          const FactorAssemblyPlan& factorPlan = plan[f];
-          if (factorPlan.rowCount == 0) continue;
-          auto jf = std::dynamic_pointer_cast<JacobianFactor>(
-              linearized->at(f));
-          if (!jf) {
-            throw std::runtime_error(
-                "BatchedBlockTridiagonalLevenbergMarquardtOptimizer: factor "
-                "" + std::to_string(f) +
-                " linearized to a non-JacobianFactor or null after "
-                "producing rows at construction -- active()/type must stay "
-                "stable across outer iterations for the cached assembly "
-                "plan to remain valid");
-          }
-          itemB[idx].segment(static_cast<Eigen::Index>(factorPlan.rowOffset),
-                             static_cast<Eigen::Index>(factorPlan.rowCount)) =
-              jf->getb();
-          for (size_t k = 0; k < factorPlan.columns.size(); ++k) {
-            const ColumnSlot& slot = factorPlan.columns[k];
-            itemA[idx].block(
-                static_cast<Eigen::Index>(factorPlan.rowOffset),
-                static_cast<Eigen::Index>(slot.colOffset),
-                static_cast<Eigen::Index>(factorPlan.rowCount),
-                static_cast<Eigen::Index>(slot.colWidth)) =
-                jf->getA(jf->begin() + static_cast<std::ptrdiff_t>(k));
-          }
-        }
-        if (jacobianRows < 0) {
-          jacobianRows = static_cast<int>(itemA[idx].rows());
-        } else if (static_cast<int>(itemA[idx].rows()) != jacobianRows) {
-          throw std::runtime_error(
-              "BatchedBlockTridiagonalLevenbergMarquardtOptimizer requires "
-              "every active item to linearize to the same residual row "
-              "count for the batched GPU Hessian assembly");
-        }
-      }
+      assembleBatchToDevice(activeItems);
+      downloadAssembledBatch(activeItems);
 
-      // Stack active items' Jacobians/RHS into one contiguous buffer,
-      // then assemble diag/offDiag/rhs for the whole batch via GPU GEMM.
-      std::vector<double> hostJacobianA(
-          numActive * static_cast<size_t>(jacobianRows) *
-          static_cast<size_t>(dimension));
-      std::vector<double> hostJacobianB(numActive *
-                                        static_cast<size_t>(jacobianRows));
-      for (size_t idx = 0; idx < numActive; ++idx) {
-        Eigen::Map<Matrix>(hostJacobianA.data() +
-                              idx * static_cast<size_t>(jacobianRows) *
-                                  static_cast<size_t>(dimension),
-                          jacobianRows, dimension) = itemA[idx];
-        Eigen::Map<Vector>(hostJacobianB.data() +
-                              idx * static_cast<size_t>(jacobianRows),
-                          jacobianRows) = itemB[idx];
-      }
-      deviceJacobianA.upload(hostJacobianA);
-      deviceJacobianB.upload(hostJacobianB);
-      hessianAssembler.assemble(static_cast<int>(numActive), numBlocks,
-                               blockDim, jacobianRows, &deviceJacobianA,
-                               &deviceJacobianB, &deviceDiagRaw,
-                               &deviceOffDiagRaw, &deviceRhsRaw);
-      std::vector<double> hostDiagRaw, hostOffDiagRaw, hostRhsRaw;
-      deviceDiagRaw.download(&hostDiagRaw);
-      deviceOffDiagRaw.download(&hostOffDiagRaw);
-      deviceRhsRaw.download(&hostRhsRaw);
-      GTSAM_CUDA_CHECK(cudaStreamSynchronize(nullptr));
-
-      for (size_t idx = 0; idx < numActive; ++idx) {
-        const size_t i = static_cast<size_t>(activeItems[idx]);
-        diagBase[i].resize(static_cast<size_t>(numBlocks));
-        rhsBase[i].resize(static_cast<size_t>(numBlocks));
-        offDiagBase[i].resize(static_cast<size_t>(numBlocks - 1));
-        const size_t diagOffset = idx * numBlocks * blockElems;
-        const size_t offDiagOffset = idx * (numBlocks - 1) * blockElems;
-        const size_t rhsOffset = idx * static_cast<size_t>(dimension);
-        for (int t = 0; t < numBlocks; ++t) {
-          diagBase[i][static_cast<size_t>(t)] = Eigen::Map<const Matrix>(
-              hostDiagRaw.data() + diagOffset +
-                  static_cast<size_t>(t) * blockElems,
-              blockDim, blockDim);
-          rhsBase[i][static_cast<size_t>(t)] = Eigen::Map<const Vector>(
-              hostRhsRaw.data() + rhsOffset +
-                  static_cast<size_t>(t) * static_cast<size_t>(blockDim),
-              blockDim);
-          if (t + 1 < numBlocks) {
-            offDiagBase[i][static_cast<size_t>(t)] = Eigen::Map<const Matrix>(
-                hostOffDiagRaw.data() + offDiagOffset +
-                    static_cast<size_t>(t) * blockElems,
-                blockDim, blockDim);
-          }
-        }
-      }
-
-      // offDiagBase/rhsBase were just rebuilt from a fresh linearization,
-      // so the pristine copy is stale and must be rebuilt on attempt 1.
+      // diagBase/offDiagBase/rhsBase were just rebuilt from a fresh
+      // linearization, so the pristine copy is stale and must be rebuilt
+      // on attempt 1.
       pristineValid = false;
       std::vector<bool> acceptedThisOuter(static_cast<size_t>(batchSize),
                                          false);
@@ -573,6 +653,11 @@ BatchedBlockTridiagonalLevenbergMarquardtOptimizer::
 const std::vector<Values>&
 BatchedBlockTridiagonalLevenbergMarquardtOptimizer::optimize() {
   return impl_->optimize();
+}
+
+const std::vector<Values>&
+BatchedBlockTridiagonalLevenbergMarquardtOptimizer::polish(int numSteps) {
+  return impl_->polish(numSteps);
 }
 
 const std::vector<Values>&

@@ -85,7 +85,22 @@ class GTSAM_EXPORT BatchedBlockTridiagonalLevenbergMarquardtOptimizer {
    */
   const std::vector<Values>& optimize();
 
-  /// Returns the current (post-optimize(), if called) per-graph values.
+  /**
+   * Runs numSteps plain (undamped) Gauss-Newton steps across every item,
+   * batched on the same block-tridiagonal GPU path optimize() uses --
+   * reuses the same factorGroupHooks, assembly plan, Cholesky solver, and
+   * device buffers, but with no lambda damping, no per-attempt retry, and
+   * no accept/reject test: every step is taken unconditionally for every
+   * item. Intended as a cheap refinement pass after optimize() converges
+   * (matching callers that previously ran extra plain Gauss-Newton steps
+   * per item on CPU via graph.linearize(values).optimize()), not as a
+   * general-purpose solver -- it does not check or update convergence,
+   * lambda, or terminated state. May be called whether or not optimize()
+   * has been called, and may be called more than once.
+   */
+  const std::vector<Values>& polish(int numSteps);
+
+  /// Returns the current (post-optimize()/polish(), if called) per-graph values.
   const std::vector<Values>& values() const;
   /// Returns per-item diagnostics after optimize() has run.
   const std::vector<BatchedBlockTridiagonalLevenbergMarquardtItemResult>&

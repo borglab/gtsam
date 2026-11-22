@@ -194,6 +194,7 @@ class BatchedBlockTridiagonalLevenbergMarquardtOptimizer {
           factorGroupHooks);
 
   const std::vector<gtsam::Values>& optimize();
+  const std::vector<gtsam::Values>& polish(int numSteps);
   const std::vector<gtsam::Values>& values() const;
   const std::vector<gtsam::cuda::BatchedBlockTridiagonalLevenbergMarquardtItemResult>&
   results() const;
