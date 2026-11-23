@@ -20,7 +20,9 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam_unstable/navigation/Gal3GnssEqF.h>
 
+#include <algorithm>
 #include <random>
+#include <vector>
 
 using namespace gtsam;
 using namespace gtsam::galilean;
@@ -160,6 +162,23 @@ TEST(GalileanSymmetry, InputMatrixB) {
   EXPECT(assert_equal(expected, Matrix(B), 1e-6));
 }
 
+// The combined Φ/B evaluation matches the single-matrix APIs exactly.
+TEST(GalileanSymmetry, StateAndInputMatricesShared) {
+  std::mt19937 rng(8);
+  for (int i = 0; i < 3; ++i) {
+    const Group X = randomGroup(rng);  // nonidentity
+    const Vector10 wTilde = randomVector10(rng, 1.0);
+    for (double dt : {0.0, 0.005, 0.1}) {
+      Matrix20 Phi, B;
+      EqFStateAndInputMatrices(X, kEarth, wTilde, dt, Phi, B);
+      EXPECT(assert_equal(Matrix(EqFStateMatrixA(X, kEarth, wTilde, dt)),
+                          Matrix(Phi), 0.0));
+      EXPECT(assert_equal(Matrix(EqFInputMatrixB(X, kEarth, wTilde, dt)),
+                          Matrix(B), 0.0));
+    }
+  }
+}
+
 // GNSS output Jacobian w.r.t. F with Υ held fixed (wStart = 0), and C.
 TEST(GalileanSymmetry, OutputJacobians) {
   std::mt19937 rng(7);
@@ -229,6 +248,124 @@ TEST(GalileanSymmetry, UpsilonBufferWindow) {
   for (int k = 0; k < 100; ++k) buffer.push(Vector10::Zero(), 0.01);
   EXPECT(buffer.span() >= 0.1 - 1e-12);
   EXPECT(buffer.span() < 0.1 + 0.01 + 1e-12);
+}
+
+namespace {
+/// Brute-force reference for the Υ buffer: full input history under
+/// zero-order hold, integrated over [s, now] interval by interval.
+struct ReferenceHistory {
+  struct Interval {
+    double start, dt;
+    Vector10 input;
+  };
+  std::vector<Interval> intervals;
+  double now = 0.0;
+
+  void push(const Vector10& w, double dt) {
+    intervals.push_back({now, dt, w});
+    now += dt;  // same accumulation as UpsilonBuffer
+  }
+
+  /// Υ over [s, now] and the input held at s (later interval on a boundary,
+  /// last interval at s == now).
+  Gal3 upsilon(double s, Vector10* wStart) const {
+    Gal3 result;
+    *wStart = intervals.back().input;
+    bool found = false;
+    for (const Interval& in : intervals) {
+      const double end = in.start + in.dt;
+      if (!found && in.start <= s && s < end) {
+        *wStart = in.input;
+        found = true;
+      }
+      const double overlap = std::min(end, now) - std::max(in.start, s);
+      if (overlap > 0.0) result = result * Gal3::Expmap(in.input * overlap);
+    }
+    return result;
+  }
+};
+}  // namespace
+
+// On-demand integration matches a brute-force reference with variable
+// durations, pruning, partial intervals and out-of-range delays.
+TEST(GalileanSymmetry, UpsilonBufferMatchesReference) {
+  std::mt19937 rng(10);
+  std::uniform_real_distribution<double> duration(0.002, 0.02);
+  std::uniform_real_distribution<double> fraction(-0.2, 1.2);
+  UpsilonBuffer buffer(0.15);
+  ReferenceHistory reference;
+  for (int k = 0; k < 200; ++k) {
+    const Vector10 w = randomVector10(rng, 1.0);
+    const double dt = duration(rng);
+    buffer.push(w, dt);
+    reference.push(w, dt);
+    for (int q = 0; q < 5; ++q) {
+      // Includes negative delays and delays beyond the available span.
+      const double delta = fraction(rng) * buffer.span();
+      const double s = reference.now - std::clamp(delta, 0.0, buffer.span());
+      Vector10 wActual, wExpected;
+      const Gal3 actual = buffer.at(delta, &wActual);
+      const Gal3 expected = reference.upsilon(s, &wExpected);
+      EXPECT(assert_equal(expected, actual, 1e-9));
+      EXPECT(assert_equal(wExpected, wActual, 0.0));
+    }
+  }
+  // Pruning keeps the buffer bounded: one interval reaches past the window.
+  EXPECT(buffer.size() < 200);
+  EXPECT(buffer.span() >= 0.15);
+}
+
+// Boundary cases, with dyadic durations so interval starts are exact.
+TEST(GalileanSymmetry, UpsilonBufferBoundaries) {
+  // Empty buffer: identity and zero input.
+  {
+    UpsilonBuffer empty(1.0);
+    Vector10 w = Vector10::Ones();
+    EXPECT(assert_equal(Gal3(), empty.at(0.1, &w), 1e-15));
+    EXPECT(assert_equal(Vector10(Vector10::Zero()), w, 0.0));
+  }
+
+  std::mt19937 rng(12);
+  const std::vector<double> durations = {0.0078125, 0.015625, 0.00390625,
+                                         0.03125, 0.0078125};  // sum 0.06640625
+  std::vector<Vector10> inputs;
+  UpsilonBuffer buffer(1.0);
+  for (double dt : durations) {
+    inputs.push_back(randomVector10(rng, 1.0));
+    buffer.push(inputs.back(), dt);
+  }
+  const double now = 0.06640625;
+  EXPECT_DOUBLES_EQUAL(now, buffer.span(), 0.0);
+
+  // Zero and negative delay: identity, but still the last input.
+  Vector10 w;
+  EXPECT(assert_equal(Gal3(), buffer.at(0.0, &w), 1e-15));
+  EXPECT(assert_equal(inputs.back(), w, 0.0));
+  EXPECT(assert_equal(Gal3(), buffer.at(-0.01, &w), 1e-15));
+  EXPECT(assert_equal(inputs.back(), w, 0.0));
+
+  // Exact internal boundary: selects the interval starting there, which is
+  // then integrated in full.
+  // Interval 3 starts at 0.0078125 + 0.015625 + 0.00390625 = 0.02734375.
+  const double boundary = 0.02734375;
+  Gal3 expected = Gal3::Expmap(inputs[3] * durations[3]) *
+                  Gal3::Expmap(inputs[4] * durations[4]);
+  EXPECT(assert_equal(expected, buffer.at(now - boundary, &w), 1e-12));
+  EXPECT(assert_equal(inputs[3], w, 0.0));
+
+  // Partial last interval only.
+  EXPECT(assert_equal(Gal3::Expmap(inputs[4] * 0.00390625),
+                      buffer.at(0.00390625, &w), 1e-12));
+  EXPECT(assert_equal(inputs[4], w, 0.0));
+
+  // Full span and beyond: clamped to the oldest interval.
+  Gal3 all;
+  for (size_t k = 0; k < inputs.size(); ++k)
+    all = all * Gal3::Expmap(inputs[k] * durations[k]);
+  EXPECT(assert_equal(all, buffer.at(now, &w), 1e-12));
+  EXPECT(assert_equal(inputs[0], w, 0.0));
+  EXPECT(assert_equal(all, buffer.at(10.0, &w), 1e-12));
+  EXPECT(assert_equal(inputs[0], w, 0.0));
 }
 
 int main() {

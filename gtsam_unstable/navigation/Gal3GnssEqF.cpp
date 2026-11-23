@@ -142,14 +142,15 @@ void GalileanFilter::predict(const IMUInput& imu, double dt) {
   const Vector10 wTilde = imu.extended() - bias(xi);
   const Group& X = groupEstimate();
 
-  const Matrix20 Phi = EqFStateMatrixA(X, gN_, wTilde, dt);
-  const Matrix20 B = EqFInputMatrixB(X, gN_, wTilde, dt);
+  Matrix20 Phi, B;
+  EqFStateAndInputMatrices(X, gN_, wTilde, dt, Phi, B);
   const Matrix20 Qd = B * params_.inputNoise() * B.transpose() / dt +
                       params_.stateProcessNoise() * dt;
 
   // Alg. 1 propagation: X̂ ← X̂ Λ (exact discrete lift), Σ ← Φ Σ Φᵀ + Qd.
   predictWithStep(LiftDiscrete(xi, imu, gN_, dt), Phi, Qd);
-  // Alg. 1 propagation: Υ_k ← Υ_k exp(w̃^ dt) for all k.
+  // Alg. 1 propagation: record the held input w̃ for this interval. Υ(δ) is
+  // integrated from these inputs on demand when a GNSS fix arrives.
   buffer_.push(wTilde, dt);
 }
 
@@ -189,8 +190,11 @@ bool GalileanFilter::update(const GnssMeasurement& measurement) {
     return false;
   }
 
-  const Point3 yHat = predictGnss(state());
-  const Matrix3x20 C = measurementMatrixC();  // eqs. 40-42
+  // Query the Υ buffer once: reuse predictGnss()'s Jacobian for C.
+  Matrix3x20 H;
+  const Point3 yHat = predictGnss(state(), H);
+  const Matrix3x10 HF = H.leftCols<10>();
+  const Matrix3x20 C = EqFOutputMatrixC(groupEstimate(), HF);  // eqs. 40-42
 
   // Outlier gate on the normalized innovation squared.
   const Vector3 r = measurement.position - yHat;

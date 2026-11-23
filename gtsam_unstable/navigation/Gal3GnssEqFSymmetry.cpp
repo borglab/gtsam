@@ -42,6 +42,23 @@ ErrorBlocks errorBlocks(const Group& X, const Vector10& gN,
   blocks.A2 = blocks.A1 * Gal3::Expmap(wOrigin * dt).AdjointMap();
   return blocks;
 }
+
+Matrix20 stateMatrixA(const ErrorBlocks& k, double dt) {
+  // eq. 34 in GTSAM error coordinates (S A S).
+  Matrix20 Phi = Matrix20::Zero();
+  Phi.topLeftCorner<10, 10>() = k.A1;
+  Phi.topRightCorner<10, 10>() = -k.A1 * k.JL * dt;
+  Phi.bottomRightCorner<10, 10>() = k.A2;
+  return Phi;
+}
+
+Matrix20 inputMatrixB(const ErrorBlocks& k, double dt) {
+  // eq. 36 in GTSAM error coordinates (S B).
+  Matrix20 B = Matrix20::Zero();
+  B.topLeftCorner<10, 10>() = -k.A1 * k.JL * k.AdX * dt;
+  B.bottomRightCorner<10, 10>() = k.A2 * k.AdX * dt;
+  return B;
+}
 }  // namespace
 
 State Symmetry::operator()(const State& xi, const Group& X,
@@ -100,23 +117,20 @@ Group LiftDiscrete(const State& xi, const IMUInput& imu, const Vector10& gN,
 
 Matrix20 EqFStateMatrixA(const Group& X, const Vector10& gN,
                          const Vector10& wTilde, double dt) {
-  const ErrorBlocks k = errorBlocks(X, gN, wTilde, dt);
-  // eq. 34 in GTSAM error coordinates (S A S).
-  Matrix20 Phi = Matrix20::Zero();
-  Phi.topLeftCorner<10, 10>() = k.A1;
-  Phi.topRightCorner<10, 10>() = -k.A1 * k.JL * dt;
-  Phi.bottomRightCorner<10, 10>() = k.A2;
-  return Phi;
+  return stateMatrixA(errorBlocks(X, gN, wTilde, dt), dt);
 }
 
 Matrix20 EqFInputMatrixB(const Group& X, const Vector10& gN,
                          const Vector10& wTilde, double dt) {
+  return inputMatrixB(errorBlocks(X, gN, wTilde, dt), dt);
+}
+
+void EqFStateAndInputMatrices(const Group& X, const Vector10& gN,
+                              const Vector10& wTilde, double dt, Matrix20& Phi,
+                              Matrix20& B) {
   const ErrorBlocks k = errorBlocks(X, gN, wTilde, dt);
-  // eq. 36 in GTSAM error coordinates (S B).
-  Matrix20 B = Matrix20::Zero();
-  B.topLeftCorner<10, 10>() = -k.A1 * k.JL * k.AdX * dt;
-  B.bottomRightCorner<10, 10>() = k.A2 * k.AdX * dt;
-  return B;
+  Phi = stateMatrixA(k, dt);
+  B = inputMatrixB(k, dt);
 }
 
 Point3 GnssOutput(const Gal3& F, const Gal3& Upsilon, const Vector10& wStart,
@@ -166,11 +180,10 @@ Matrix20 ResetJacobian(const Vector20& epsilonBar, const Vector20& deltaX) {
 }
 
 void UpsilonBuffer::push(const Vector10& wTilde, double dt) {
-  entries_.push_back({now_, wTilde, Gal3()});
-  const Gal3 increment = Gal3::Expmap(wTilde * dt);
-  for (Entry& e : entries_) e.upsilon = e.upsilon * increment;  // eq. 20
+  // dt is the hold duration supplied by predict(), not an IMU timestamp.
+  entries_.push_back({now_, wTilde, dt});
   now_ += dt;
-  // Keep exactly one entry starting at or before now - window.
+  // Keep the interval that contains the beginning of the retained window.
   while (entries_.size() > 1 && entries_[1].start <= now_ - window_) {
     entries_.pop_front();
   }
@@ -192,8 +205,18 @@ Gal3 UpsilonBuffer::at(double delta, Vector10* wStart) const {
       [](double value, const Entry& e) { return value < e.start; });
   if (it != entries_.begin()) --it;
   if (wStart) *wStart = it->input;
-  // Trim [s_k, s) off the front of Υ_k: exact under zero-order hold.
-  return Gal3::Expmap(-it->input * (s - it->start)) * it->upsilon;
+
+  // Preserve the endpoint input above, even for a zero/negative delay.
+  if (s == now_) return Gal3();
+
+  // Only the first interval can be partial. Clamp roundoff at its ends.
+  const double firstDt = std::clamp(it->dt - (s - it->start), 0.0, it->dt);
+  Gal3 upsilon = Gal3::Expmap(it->input * firstDt);
+  for (++it; it != entries_.end(); ++it) {
+    // Time order matters (eq. 20): append each later increment on the RIGHT.
+    upsilon = upsilon * Gal3::Expmap(it->input * it->dt);
+  }
+  return upsilon;
 }
 
 }  // namespace galilean

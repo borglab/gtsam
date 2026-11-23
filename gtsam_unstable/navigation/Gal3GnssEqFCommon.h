@@ -117,17 +117,27 @@ inline Vector3 accelBias(const State& xi) { return xi.second.segment<3>(3); }
 /// @}
 
 /**
- * Sliding buffer of IMU preintegration matrices Υ (Sec. 2.4, eq. 20).
+ * Sliding buffer of held IMU inputs for the preintegration matrix Υ
+ * (Sec. 2.4, eq. 20).
  *
- * Entry k holds Υ_k = ∏_{s_k}^{now} exp(w̃^ dt) together with the input w̃_k
- * held on [s_k, s_k + dt_k). Υ(δ) for any δ in the window is recovered
- * exactly (under zero-order hold) by trimming the first held interval.
+ * Entry k stores the bias-corrected input w̃_k held on [s_k, s_k + dt_k).
+ * Υ(δ) = ∏_{t-δ}^{now} exp(w̃^ dt) is integrated on demand when queried:
+ * the first (possibly partial) interval is followed by the later intervals,
+ * composed in chronological order. This is exact under zero-order hold.
+ * push() is amortized O(1); at() costs O(log N + M) for the M intervals
+ * covered by the query.
  */
 class GTSAM_UNSTABLE_EXPORT UpsilonBuffer {
  public:
   explicit UpsilonBuffer(double window = 0.6) : window_(window) {}
 
-  /// Append input w̃ = w_N - b̂ held for dt and propagate all entries (eq. 20).
+  /**
+   * Append input w̃ = w_N - b̂ held for dt.
+   * The bias correction is frozen when the sample is recorded; later bias
+   * updates do not re-correct stored samples.
+   * @param wTilde Bias-corrected input.
+   * @param dt Hold duration (> 0), not an IMU timestamp.
+   */
   void push(const Vector10& wTilde, double dt);
 
   /**
@@ -146,9 +156,9 @@ class GTSAM_UNSTABLE_EXPORT UpsilonBuffer {
 
  private:
   struct Entry {
-    double start;    ///< s_k
-    Vector10 input;  ///< w̃ held on [s_k, s_k + dt_k)
-    Gal3 upsilon;    ///< ∏ from s_k to now
+    double start;    ///< Elapsed time at the start of this hold interval.
+    Vector10 input;  ///< Bias-corrected input captured when pushed.
+    double dt;       ///< Original duration of this hold interval.
   };
 
   double window_;

@@ -216,6 +216,19 @@ TEST(GalileanFilter, MeasurementJacobians) {
       Matrix(filter.measurementMatrixC()), 1e-6));
 }
 
+// update() builds C from predictGnss()'s Jacobian; it must equal the
+// public measurementMatrixC().
+TEST(GalileanFilter, UpdateOutputMatrixMatchesPublicC) {
+  std::mt19937 rng(9);
+  GalileanFilter filter = exercisedFilter(rng);
+  Eigen::Matrix<double, 3, 20> H;
+  filter.predictGnss(filter.state(), H);
+  const Matrix3x10 HF = H.leftCols<10>();
+  EXPECT(assert_equal(Matrix(filter.measurementMatrixC()),
+                      Matrix(EqFOutputMatrixC(filter.groupEstimate(), HF)),
+                      0.0));
+}
+
 // Navigation-state outputs are consistent: T(t-δ) Υ(δ) = Γ(δ) T(t).
 TEST(GalileanFilter, NavStateConsistency) {
   std::mt19937 rng(11);

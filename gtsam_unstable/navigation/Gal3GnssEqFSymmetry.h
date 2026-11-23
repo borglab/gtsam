@@ -85,6 +85,17 @@ GTSAM_UNSTABLE_EXPORT Matrix20 EqFInputMatrixB(const Group& X,
                                                double dt);
 
 /**
+ * Compute Φ and B together, sharing their intermediate blocks.
+ * Equivalent to EqFStateMatrixA() and EqFInputMatrixB() with the same
+ * arguments. The output arguments must refer to distinct matrices.
+ */
+GTSAM_UNSTABLE_EXPORT void EqFStateAndInputMatrices(const Group& X,
+                                                    const Vector10& gN,
+                                                    const Vector10& wTilde,
+                                                    double dt, Matrix20& Phi,
+                                                    Matrix20& B);
+
+/**
  * Delayed GNSS output (eqs. 37-38):  y = R_T p₀ + p_T,  T = F Υ⁻¹.
  * @param F Galilean frame; its time component is the delay δ.
  * @param Upsilon Preintegration Υ(δ) from t-δ to now.
