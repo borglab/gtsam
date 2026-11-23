@@ -35,8 +35,8 @@ or a robot on a manifold, and lets the caller change an objective by editing fac
 | `planner.iterate(graph, initial, dynamics, proposal, rule, search)` | Advances a caller-owned search by one iteration. Initialize it with `proposal.initialize(planner.nominalControls(initial))`. |
 
 The C++ declarations give the callable signatures and the layout of a sampled
-batch. [SamplingPlanner](../SamplingPlanner.h), [GaussianProposal](../ControlProposals.h),
-and [MPPI](../SamplingAlgorithms.h).
+batch. [SamplingPlanner](https://github.com/borglab/gtsam/blob/develop/gtsam/planning/SamplingPlanner.h), [GaussianProposal](https://github.com/borglab/gtsam/blob/develop/gtsam/planning/ControlProposals.h),
+and [MPPI](https://github.com/borglab/gtsam/blob/develop/gtsam/planning/SamplingAlgorithms.h).
 
 ## Choosing the dynamics
 

@@ -15,9 +15,9 @@ next mean control sequence.
 
 | Example | Robot | What it shows |
 |---|---|---|
-| `PointMassMPPITrajectoryOptimizationExample` | A point mass in the plane: state [px, py, vx, vy], control the acceleration [ax, ay] | Trajectory optimization from rest at the origin to rest at (3, 2) in 3 s. |
-| `UnicycleMPPITrajectoryOptimizationExample` | A unicycle: state a `Pose2`, control [v, omega], the forward speed and the yaw rate | Trajectory optimization for a robot that cannot move sideways, from the origin facing along x to (3, 2) facing along y in 3 s. |
-| `UnicycleMPPIMPCExample` | The same unicycle, simulated with process noise | Model predictive control toward the same goal, until the unicycle is within 0.05 m and 0.1 rad of it. |
+| [PointMassMPPITrajectoryOptimizationExample](https://github.com/borglab/gtsam/blob/develop/gtsam_unstable/examples/mppi/PointMassMPPITrajectoryOptimizationExample.cpp) | A point mass in the plane: state [px, py, vx, vy], control the acceleration [ax, ay] | Trajectory optimization from rest at the origin to rest at (3, 2) in 3 s. |
+| [UnicycleMPPITrajectoryOptimizationExample](https://github.com/borglab/gtsam/blob/develop/gtsam_unstable/examples/mppi/UnicycleMPPITrajectoryOptimizationExample.cpp) | A unicycle: state a `Pose2`, control [v, omega], the forward speed and the yaw rate | Trajectory optimization for a robot that cannot move sideways, from the origin facing along x to (3, 2) facing along y in 3 s. |
+| [UnicycleMPPIMPCExample](https://github.com/borglab/gtsam/blob/develop/gtsam_unstable/examples/mppi/UnicycleMPPIMPCExample.cpp) | The same unicycle, simulated with process noise | Model predictive control toward the same goal, until the unicycle is within 0.05 m and 0.1 rad of it. |
 
 The point-mass example supplies a vector field returning velocity and
 acceleration. The two unicycle examples supply a discrete transition returning
