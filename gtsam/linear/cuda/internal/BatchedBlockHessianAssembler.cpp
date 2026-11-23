@@ -66,12 +66,8 @@ struct BatchedBlockHessianAssembler::Impl {
   // Raw At^T*At+1 results before discarding the one invalid cross-item
   // pair per item (see assemble()'s offDiag comment).
   DeviceArray<double> rawOffDiag;
-  // -1 means "whatever device is already current" (see
-  // BatchedDenseSolverOptions); otherwise re-asserted at the top of
-  // assemble() too, not just here at construction -- cudaSetDevice is
-  // thread-global, so a second same-thread instance constructed on a
-  // different device would otherwise silently leave this one's later calls
-  // running against the wrong device's memory.
+  // Re-asserted at the top of assemble() too, not just here:
+  // cudaSetDevice is thread-global and must stay current per call.
   int deviceId = -1;
 
   explicit Impl(const BatchedDenseSolverOptions& options)

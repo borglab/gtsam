@@ -36,13 +36,9 @@
 namespace gtsam::cuda {
 namespace {
 
-// See BatchedDeviceGradients.cpp's identical helper for the rationale:
-// mirrors gtsam::Gradients' private checkNoise (Gradients.cpp), rejecting
-// robust/constrained/non-Gaussian noise models so graph.linearize()'s
-// whitened A matches Gradients' convention and the unchecked
-// static_pointer_cast<Gaussian> in parameterGradient() below (mirroring
-// Gradients::parameterGradient) stays a valid cast. Duplicated rather than
-// shared to keep this change scoped to GPU code.
+// Rejects noise models that would make graph.linearize() silently whiten
+// with a robust reweighting, or make the static_pointer_cast<Gaussian>
+// below invalid (noiseModel::Robust does not derive from Gaussian).
 void checkGaussianNoise(const SharedNoiseModel& model, size_t rows,
                         int graphIndex, size_t factorIndex) {
   if (!model) return;
@@ -75,11 +71,8 @@ void checkGaussianNoise(const SharedNoiseModel& model, size_t rows,
   }
 }
 
-// See BatchedDeviceGradients.cpp's identical helper for the rationale:
-// matches gtsam::Gradients' documented adjoint() contract (omitted known
-// keys mean zero; unknown keys, invalid or nonfinite values are errors),
-// which the generic VectorValues::vector(ordering) used previously could
-// not express (it requires every ordering key to be present).
+// Omitted known key means zero, unknown key is an error, matching
+// GaussianBayesTree::backSubstituteTranspose's own semantics.
 Vector flattenCotangent(const VectorValues& cotangent, const KeyInfo& keyInfo,
                        int dimension, int graphIndex) {
   Vector flat = Vector::Zero(dimension);
@@ -125,13 +118,8 @@ struct BatchedBlockTridiagonalDeviceGradients::Impl {
   std::vector<Values> solutions;
   std::vector<Matrix> jacobians;
   std::vector<std::vector<int>> factorRowCounts;
-  // -1 means "whatever device is already current" (see
-  // BatchedDenseSolverOptions). adjoint() re-asserts this before its own
-  // direct DeviceArray upload/download, not just relying on solver's
-  // construction-time cudaSetDevice -- cudaSetDevice is thread-global, so a
-  // second same-thread instance constructed on a different device would
-  // otherwise leave this instance's later adjoint() calls running against
-  // the wrong device's memory.
+  // Re-asserted before adjoint()'s own device uploads/downloads:
+  // cudaSetDevice is thread-global and must stay current per call.
   int deviceId = -1;
 
   explicit Impl(const BatchedDenseSolverOptions& options)
@@ -216,14 +204,9 @@ BatchedBlockTridiagonalDeviceGradients::BatchedBlockTridiagonalDeviceGradients(
       checkGaussianNoise(noiseFactor->noiseModel(), jacobianFactor->rows(), b,
                         f);
 
-      // Enforce the documented block-tridiagonal precondition (each factor
-      // touches at most two adjacent numBlocks*blockDim groups, no key
-      // straddles a group boundary): silently violating this would make
-      // BatchedBlockHessianAssembler (which only ever forms
-      // diag[t]=At^T At and offDiag[t]=At^T At+1 from the dense itemA
-      // built below) drop this factor's contribution to any non-adjacent
-      // block pair, producing a wrong (incomplete) normal-equations system
-      // with no runtime signal.
+      // Each factor must touch at most two adjacent blocks: the assembler
+      // below only ever forms diag[t]/offDiag[t]=At^T At+1, so wider
+      // coupling would silently drop that factor's contribution.
       int minBlock = std::numeric_limits<int>::max();
       int maxBlock = std::numeric_limits<int>::min();
       // Uses impl_->keyInfos[i], not the local `keyInfo`: it was already

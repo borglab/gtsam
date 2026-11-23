@@ -34,18 +34,9 @@
 namespace gtsam::cuda {
 namespace {
 
-// Mirrors gtsam::Gradients' private checkNoise (Gradients.cpp) exactly:
-// requires null noise, or a dimension-matched, unconstrained
-// noiseModel::Gaussian with finite positive sigmas (Diagonal) or a finite
-// positive-definite whitening matrix (full Gaussian). Robust and Constrained
-// models are rejected, matching gtsam::Gradients' documented support
-// ("robust losses, hard constraints ... are not" supported), since
-// graph.linearize() would otherwise silently fold a robust kernel's
-// reweighting into A, and the unchecked static_pointer_cast<Gaussian> below
-// (mirroring Gradients::parameterGradient) would be an invalid cast for a
-// noiseModel::Robust, which does not derive from noiseModel::Gaussian.
-// Duplicated here rather than shared to keep this change scoped to GPU
-// code; keep in sync with Gradients.cpp's checkNoise if that changes.
+// Rejects noise models that would make graph.linearize() silently whiten
+// with a robust reweighting, or make the static_pointer_cast<Gaussian>
+// below invalid (noiseModel::Robust does not derive from Gaussian).
 void checkGaussianNoise(const SharedNoiseModel& model, size_t rows,
                         int graphIndex, size_t factorIndex) {
   if (!model) return;
@@ -77,14 +68,8 @@ void checkGaussianNoise(const SharedNoiseModel& model, size_t rows,
   }
 }
 
-// Flattens a (possibly partial) state cotangent against keyInfo's layout,
-// matching gtsam::Gradients' documented adjoint() contract ("State
-// cotangents use the same local tangent bases as the factor residual
-// Jacobians; omitted known keys mean zero. ... Unknown keys, invalid
-// dimensions and nonfinite inputs are errors."). The generic
-// VectorValues::vector(ordering) used previously requires every ordering
-// key to be present (it calls .at(key) unconditionally for each), so it
-// could not accept a partial cotangent at all.
+// Omitted known key means zero, unknown key is an error, matching
+// GaussianBayesTree::backSubstituteTranspose's own semantics.
 Vector flattenCotangent(const VectorValues& cotangent, const KeyInfo& keyInfo,
                        int dimension, int graphIndex) {
   Vector flat = Vector::Zero(dimension);
@@ -130,13 +115,8 @@ struct BatchedDeviceGradients::Impl {
   // Per graph, per factor index: row count within jacobians[b], or 0 for
   // a null/inactive factor (mirrors Gradients' zero-row placeholder).
   std::vector<std::vector<int>> factorRowCounts;
-  // -1 means "whatever device is already current" (see
-  // BatchedDenseSolverOptions). adjoint() re-asserts this before its own
-  // direct DeviceArray upload/download, not just relying on solver's
-  // construction-time cudaSetDevice -- cudaSetDevice is thread-global, so a
-  // second same-thread BatchedDeviceGradients constructed on a different
-  // device would otherwise leave this instance's later adjoint() calls
-  // running against the wrong device's memory.
+  // Re-asserted before adjoint()'s own device uploads/downloads:
+  // cudaSetDevice is thread-global and must stay current per call.
   int deviceId = -1;
 
   explicit Impl(const BatchedDenseSolverOptions& options)
@@ -426,8 +406,7 @@ std::vector<VectorValues> BatchedDeviceGradients::pushforward(
     const Vector rhsFlat = -(impl_->jacobians[i].transpose() * flat);
     rhsBatch[i] = buildVectorValues(rhsFlat, impl_->keyInfos[i]);
   }
-  // Reuses the batched solve adjoint() already provides, mirroring
-  // gtsam::Gradients::pushforward's own "return adjoint(rhs)".
+  // Reuses adjoint()'s batched solve for the final H^{-1} * rhs step.
   return adjoint(rhsBatch);
 }
 

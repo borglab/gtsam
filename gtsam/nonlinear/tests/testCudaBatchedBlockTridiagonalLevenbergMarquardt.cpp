@@ -105,9 +105,8 @@ constexpr int kVecNumBlocks = 2;
 constexpr int kVecBlockDim = 3;
 
 // A 2-block chain whose first block's prior sigmas span 6 orders of
-// magnitude (0.001, 1.0, 1000.0): see testCudaBatchedDenseLevenbergMarquardt
-// .cpp's identical fixture for the full rationale (PR #2937 review's "one
-// LM step on an ill-scaled graph with diagonal damping" acceptance test).
+// magnitude (0.001, 1.0, 1000.0); see testCudaBatchedDenseLevenbergMarquardt
+// .cpp's identical fixture for the rationale.
 NonlinearFactorGraph MakeIllScaledChainGraph() {
   NonlinearFactorGraph graph;
   const auto illScaledNoise = noiseModel::Diagonal::Sigmas(
@@ -279,11 +278,8 @@ TEST(BatchedBlockTridiagonalLevenbergMarquardt, ThrowsForMismatchedScalarDimensi
       std::invalid_argument);
 }
 
-// A factor connecting block 0 and block 2 directly (skipping block 1) must
-// be rejected: BatchedBlockHessianAssembler only ever forms diag[t]=At^T At
-// and offDiag[t]=At^T At+1, so a non-adjacent coupling would otherwise be
-// silently dropped from the assembled Hessian instead of causing a visible
-// failure (PR #2937 review, high-priority finding 1).
+// A factor connecting block 0 and block 2 directly (skipping block 1)
+// must be rejected, not silently dropped from the assembled Hessian.
 TEST(BatchedBlockTridiagonalLevenbergMarquardt, ThrowsForNonAdjacentBlockCoupling) {
   if (!HasCudaDevice()) return;
   BatchPose2Problem problem = MakeBatchPose2Problem();
@@ -296,9 +292,8 @@ TEST(BatchedBlockTridiagonalLevenbergMarquardt, ThrowsForNonAdjacentBlockCouplin
       std::invalid_argument);
 }
 
-// PR #2937 review's specific acceptance test: one LM step on an ill-scaled
-// graph with diagonalDamping=true must match the CPU optimizer's actual
-// diagonal-scaled step, not just converge to the same eventual optimum.
+// One LM step with diagonalDamping=true must match the CPU optimizer's
+// actual diagonal-scaled step, not just the eventual converged optimum.
 TEST(BatchedBlockTridiagonalLevenbergMarquardt,
     DiagonalDampingMatchesCpuOnIllScaledGraph) {
   if (!HasCudaDevice()) return;
@@ -366,9 +361,7 @@ TEST(BatchedBlockTridiagonalLevenbergMarquardt, ThrowsForInvalidChainShape) {
 }
 
 // See testCudaBatchedDenseLevenbergMarquardt.cpp's identical test for the
-// full rationale -- no existing test anywhere exercised
-// BatchedFactorGroupHook before this (PR #2937 review's Python-backed
-// factor evaluation hook finding).
+// rationale: no test anywhere exercised BatchedFactorGroupHook before this.
 TEST(BatchedBlockTridiagonalLevenbergMarquardt, FactorGroupHookIsStagedAndComputed) {
   if (!HasCudaDevice()) return;
   const BatchPose2Problem problem = MakeBatchPose2Problem();

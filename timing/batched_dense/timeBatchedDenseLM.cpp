@@ -15,21 +15,10 @@
  *          BatchedDeviceGradients against DFG-TAMP's window-graph shape
  *          (4 slots x 64 dims = 256 columns, B=8 graphs).
  *
- * With --num-gpus > 1, this measures independent per-device throughput,
- * not an integrated multi-GPU training step: one host thread runs on each
- * device (RunOnDevice), each with its own completely independent
- * BatchedDenseLevenbergMarquardtOptimizer batch and its own
- * BatchedDenseSolverOptions::deviceId. There is no library-level device
- * pool, no distributed batch dispatch, and no cross-GPU result or gradient
- * aggregation anywhere in gtsam/nonlinear/cuda/ or gtsam/linear/cuda/ --
- * those APIs each accept one deviceId and solve a batch for that device
- * only. The "Overall wall-clock"/"Throughput" lines below report the sum
- * of N independent single-GPU jobs run concurrently, which is a real and
- * useful number for capacity planning, but it is not evidence of
- * multi-GPU training orchestration; a caller wanting that must build the
- * per-device dispatch and aggregation themselves, as this file's own
- * --num-gpus path does (PR #2937 review, "multi-GPU orchestration is in
- * the timing executable, not the GTSAM optimizer or gradient API").
+ * With --num-gpus > 1, this measures independent per-device throughput
+ * (one host thread per device, each with its own optimizer batch), not an
+ * integrated multi-GPU training step: there is no cross-device batch
+ * splitting or result/gradient aggregation anywhere in this library.
  * @date    Nov 20, 2026
  */
 
@@ -340,12 +329,9 @@ struct GpuResult {
   double meanStepSeconds = 0.0;
 };
 
-/// Runs repeats independent RunOneStep() calls, all pinned to deviceId via
-/// BatchedDenseSolverOptions::deviceId, on this host thread. One call to
-/// this function per GPU is the entirety of this file's "multi-GPU"
-/// support: it is per-device batched solving dispatched by N independent
-/// host threads, not a single integrated multi-GPU training step -- see
-/// this file's top docstring.
+/// Runs repeats independent RunOneStep() calls, all pinned to deviceId,
+/// on this host thread -- one call to this function per GPU is the
+/// entirety of this file's per-device dispatch (see the file docstring).
 void RunOnDevice(int deviceId, int bPerGpu, int nTags, int maxIterations,
                  bool realTolerances, int repeats, unsigned seed,
                  GpuResult* result) {
@@ -531,13 +517,9 @@ int main(int argc, char** argv) {
     }
 
     if (options.backend == "compare") {
-      // PR #2937 review: "Suggested regression/benchmark: Report
-      // linearization, assembly, transfer, factorization, solve, and
-      // total time separately, and compare against both scalar CPU and
-      // batched CPU baselines on identical graph batches." Same seed for
-      // both rngs -> buildWindowGraph()/buildInitialValues() (called in
-      // the same order by RunOneStep and RunOneStepCpu) produce a
-      // bit-identical graph batch for each side's timed call.
+      // Same seed for both rngs: buildWindowGraph()/buildInitialValues(),
+      // called in the same order by RunOneStep and RunOneStepCpu, produce
+      // a bit-identical graph batch for each side's timed call.
       std::mt19937 rngGpu(2024);
       std::mt19937 rngCpu(2024);
       cuda::BatchedDenseSolverOptions deviceOptions;
@@ -564,22 +546,14 @@ int main(int argc, char** argv) {
       report << "scalar CPU total (forward+backward):  " << cpuSeconds
              << "s\n";
       report << "speedup (cpu/gpu): " << (cpuSeconds / gpuSeconds) << "x\n";
-      report << "See the preceding stderr \"[diagnostics]\" lines (from "
-               << "RunOneStep's own, already-instrumented timed call) for "
-               << "the GPU-side phase breakdown: linearizeAndForm, marshal, "
+      report << "See the preceding stderr \"[diagnostics]\" lines for the "
+               << "GPU-side phase breakdown: linearizeAndForm, marshal, "
                << "retractAndError, gpuRoundTrip host seconds, plus "
-               << "factorizationSeconds/solveSeconds from LinearSolveStats "
-               << "(the \"assembly\"/\"transfer\"/\"factorization\"/\"solve\" "
-               << "split the review asked for).\n";
+               << "factorizationSeconds/solveSeconds from LinearSolveStats.\n";
       report << "NOTE: this reports a scalar CPU baseline (one graph at a "
-               << "time via LevenbergMarquardtOptimizer/Gradients) only. A "
-               << "separate batched/vectorized or multi-threaded CPU "
-               << "baseline is intentionally not included: an earlier "
-               << "version of this benchmark had CPU multithreading and it "
-               << "was deliberately removed to keep this PR scoped to GPU "
-               << "work only (see this file's git history); adding one back "
-               << "would be new non-GPU engineering scope, not a benchmark "
-               << "change.\n";
+               << "time via LevenbergMarquardtOptimizer/Gradients) only; a "
+               << "batched/vectorized or multi-threaded CPU baseline is "
+               << "intentionally out of scope for this GPU benchmark.\n";
 
       std::cout << report.str();
       if (!options.outputPath.empty()) {

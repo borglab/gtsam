@@ -110,13 +110,9 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
   std::vector<bool> terminated;
   std::vector<BatchedBlockTridiagonalLevenbergMarquardtItemResult> itemResults;
   bool optimized = false;
-  // -1 means "whatever device is already current" (see
-  // BatchedDenseSolverOptions). optimize() and polish() each re-assert this
-  // before their own direct DeviceArray upload/download, not just relying
-  // on solver's/hessianAssembler's construction-time cudaSetDevice --
-  // cudaSetDevice is thread-global, so a second same-thread instance
-  // constructed on a different device would otherwise leave this
-  // instance's later calls running against the wrong device's memory.
+  // Re-asserted by optimize()/polish() before their own device
+  // uploads/downloads: cudaSetDevice is thread-global and must stay
+  // current per call.
   int deviceId = -1;
 
   Impl(const std::vector<NonlinearFactorGraph>& inputGraphs,
@@ -196,16 +192,9 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
           factorPlan.columns[k].colOffset = colOffset;
           factorPlan.columns[k].colWidth = colWidth;
 
-          // Enforce the documented block-tridiagonal precondition (each
-          // factor touches at most two adjacent numBlocks*blockDim groups,
-          // and no key straddles a group boundary): silently violating
-          // this would make BatchedBlockHessianAssembler (which only ever
-          // forms diag[t]=At^T At and offDiag[t]=At^T At+1) drop this
-          // factor's contribution to any non-adjacent block pair, producing
-          // a wrong (incomplete) normal-equations system with no runtime
-          // signal. See BatchedBlockTridiagonalLevenbergMarquardtOptimizer's
-          // class doc ("each factor touching only one or two adjacent
-          // groups").
+          // Each factor must touch at most two adjacent blocks: the
+          // assembler below only ever forms diag[t]/offDiag[t]=At^T At+1,
+          // so wider coupling would silently drop that factor's term.
           const int firstBlock = static_cast<int>(colOffset / blockDim);
           const int lastBlock =
               static_cast<int>((colOffset + colWidth - 1) / blockDim);
@@ -255,6 +244,14 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
     diagBase.resize(static_cast<size_t>(batchSize));
     offDiagBase.resize(static_cast<size_t>(batchSize));
     rhsBase.resize(static_cast<size_t>(batchSize));
+    // Batch the initial error() evaluation across every item too, so it
+    // doesn't fall through to the unbatched, one-item-at-a-time fallback.
+    for (const auto& hook : factorGroupHooks) {
+      for (int b = 0; b < batchSize; ++b) {
+        hook.stage(b, currentValues[static_cast<size_t>(b)]);
+      }
+      hook.computeBatch();
+    }
     for (int b = 0; b < batchSize; ++b) {
       currentError[static_cast<size_t>(b)] =
           graphs[static_cast<size_t>(b)].error(
@@ -549,10 +546,9 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
         const Matrix& block = diagBase[i][static_cast<size_t>(t)];
         std::copy(block.data(), block.data() + block.size(),
                  hostDiag.begin() + blockOffset);
-        // Matches LevenbergMarquardtOptimizer::buildDampedSystem exactly
-        // (see BatchedDenseLevenbergMarquardt.cpp's identical fix): honor
-        // diagonalDamping instead of always applying flat identity damping
-        // (PR #2937 review, "nonlinear optimization" finding).
+        // Matches LevenbergMarquardtOptimizer::buildDampedSystem: scale
+        // damping by each entry's own magnitude when diagonalDamping is
+        // set, instead of always applying flat identity damping.
         for (int d = 0; d < blockDim; ++d) {
           const size_t idx = blockOffset + static_cast<size_t>(d) *
                                                static_cast<size_t>(blockDim) +
@@ -611,6 +607,12 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
     deviceRhs.download(&hostDelta);
     GTSAM_CUDA_CHECK(cudaStreamSynchronize(nullptr));
 
+    // Pass 1: compute delta/linearizedChange and, if not already a
+    // rejected step, this attempt's trial Values -- no error() call yet.
+    std::vector<Values> trialValuesPerItem(static_cast<size_t>(batchSize));
+    std::vector<double> linearizedChangePerItem(static_cast<size_t>(batchSize),
+                                                0.0);
+    std::vector<bool> needsTrialError(static_cast<size_t>(batchSize), false);
     for (int item = 0; item < batchSize; ++item) {
       const size_t i = static_cast<size_t>(item);
       if (!participating[i]) continue;
@@ -632,20 +634,38 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
         rhsFlat.segment(t * blockDim, blockDim) =
             rhsBase[i][static_cast<size_t>(t)];
       }
-      const double linearizedChange =
-          0.5 * delta.dot(rhsFlat + lambda[i] * delta);
+      linearizedChangePerItem[i] = 0.5 * delta.dot(rhsFlat + lambda[i] * delta);
 
       // Matches real LevenbergMarquardtOptimizer: skip retract()/error()
       // when the linear model already predicts a rejected step.
+      if (linearizedChangePerItem[i] >= 0.0) {
+        VectorValues deltaValues = buildVectorValues(delta, keyInfos[i]);
+        trialValuesPerItem[i] = currentValues[i].retract(deltaValues);
+        needsTrialError[i] = true;
+      }
+    }
+
+    // Batch factor-group net evaluation at the trial Values too, same
+    // reason as assembleBatchToDevice does for linearize().
+    for (const auto& hook : factorGroupHooks) {
+      for (int item = 0; item < batchSize; ++item) {
+        const size_t i = static_cast<size_t>(item);
+        if (needsTrialError[i]) hook.stage(item, trialValuesPerItem[i]);
+      }
+      hook.computeBatch();
+    }
+
+    for (int item = 0; item < batchSize; ++item) {
+      const size_t i = static_cast<size_t>(item);
+      if (!participating[i]) continue;
+
+      const double linearizedChange = linearizedChangePerItem[i];
       double costChange = 0.0;
       double modelFidelity = 0.0;
       bool stepSuccessful = false;
-      Values trialValues;
       double trialError = 0.0;
-      if (linearizedChange >= 0.0) {
-        VectorValues deltaValues = buildVectorValues(delta, keyInfos[i]);
-        trialValues = currentValues[i].retract(deltaValues);
-        trialError = graphs[i].error(trialValues);
+      if (needsTrialError[i]) {
+        trialError = graphs[i].error(trialValuesPerItem[i]);
         if (!std::isfinite(trialError)) {
           throw std::runtime_error(
               "BatchedBlockTridiagonalLevenbergMarquardtOptimizer produced a "
@@ -661,7 +681,7 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
       }
 
       if (stepSuccessful) {
-        currentValues[i] = trialValues;
+        currentValues[i] = trialValuesPerItem[i];
         currentError[i] = trialError;
         gtsam::internal::decreaseLevenbergMarquardtLambda(
             params, modelFidelity, &lambda[i], &currentFactor[i]);

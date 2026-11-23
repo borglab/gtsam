@@ -28,14 +28,8 @@ namespace gtsam::cuda {
 
 /**
  * Options for a batched dense SPD backend. deviceId of -1 keeps whatever
- * device is already current for the calling thread (one worker thread per
- * GPU); >= 0 pins this instance to that device at construction. This
- * selects a single device for this one instance's batch; it is not a
- * multi-GPU dispatch mechanism. Spanning several GPUs means a caller
- * constructing one of these instances per device, each with its own
- * deviceId and its own batch, and combining their results itself -- there
- * is no cross-device batch splitting or result/gradient aggregation
- * anywhere in this library.
+ * device is current for the calling thread; >= 0 pins this instance to
+ * one device. Spanning GPUs means one instance per device, combined by the caller.
  */
 struct BatchedDenseSolverOptions {
   int deviceId = -1;

@@ -37,21 +37,13 @@ namespace gtsam::cuda {
 /**
  * Block-tridiagonal-exact counterpart to BatchedDeviceGradients, for the
  * same chain-graph shape BatchedBlockTridiagonalLevenbergMarquardtOptimizer
- * targets. adjoint()/pullback()/parameterGradient() match
- * BatchedDeviceGradients exactly, including its supported-noise convention
- * (gtsam::Gradients'; robust losses and hard constraints are rejected at
- * construction) and its partial-cotangent contract (omitted known keys mean
- * zero); only the one-time H factorization at construction uses the block
- * solver instead of a dense n x n one.
+ * targets; matches its noise and partial-cotangent contract exactly.
  */
 class GTSAM_EXPORT BatchedBlockTridiagonalDeviceGradients {
  public:
   /// Linearizes each (graph, solution) pair without damping and factorizes
   /// the whole batch once. numBlocks/blockDim describe the shared chain
-  /// structure. Throws on a batch-size mismatch, wrong-dimension graph, a
-  /// factor without a NoiseModelFactor residual Jacobian, or an unsupported
-  /// noise model (robust, constrained, or otherwise not a dimension-matched
-  /// unconstrained Gaussian).
+  /// structure; throws on a batch/dimension mismatch or unsupported input.
   BatchedBlockTridiagonalDeviceGradients(
       const std::vector<NonlinearFactorGraph>& graphs,
       const std::vector<Values>& solutions, int numBlocks, int blockDim,

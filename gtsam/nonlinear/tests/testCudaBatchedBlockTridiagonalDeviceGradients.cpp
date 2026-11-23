@@ -130,9 +130,7 @@ class ChainFactor : public NoiseModelFactorN<Vector, Vector> {
 };
 
 // One residual-direction block per factor slot, matching
-// MakeBatchConvergedProblem()'s 3-factor chain (Prior + 2 Between, each
-// rows=3) -- for pushforward(). See testCudaBatchedDeviceGradients.cpp's
-// identical fixture for the full rationale.
+// MakeBatchConvergedProblem()'s 3-factor chain (Prior + 2 Between).
 std::vector<Vector> MakeFactorResidualDirection(double scale) {
   return {
       scale * (Vector(3) << 0.2, -0.1, 0.3).finished(),
@@ -344,11 +342,9 @@ TEST(BatchedBlockTridiagonalDeviceGradients, AdjointThrowsForWrongCotangentBatch
                  std::invalid_argument);
 }
 
-// A factor connecting block 0 and block 2 directly (skipping block 1) must
-// be rejected here too: this class is BatchedBlockHessianAssembler's second
-// caller, with the identical dense-Jacobian-to-block-sparse-assembly
-// pattern as BatchedBlockTridiagonalLevenbergMarquardt (PR #2937 review,
-// high-priority finding 1).
+// A factor connecting block 0 and block 2 directly (skipping block 1)
+// must be rejected: this class shares BatchedBlockHessianAssembler's
+// dense-Jacobian-to-block-sparse-assembly pattern.
 TEST(BatchedBlockTridiagonalDeviceGradients, ThrowsForNonAdjacentBlockCoupling) {
   if (!HasCudaDevice()) return;
   BatchConvergedProblem problem = MakeBatchConvergedProblem();
@@ -361,8 +357,7 @@ TEST(BatchedBlockTridiagonalDeviceGradients, ThrowsForNonAdjacentBlockCoupling) 
       std::invalid_argument);
 }
 
-// See testCudaBatchedDeviceGradients.cpp's identical test for the full
-// rationale (PR #2937 review, high-priority finding 2).
+// See testCudaBatchedDeviceGradients.cpp's identical test for the rationale.
 TEST(BatchedBlockTridiagonalDeviceGradients, ThrowsForRobustNoiseModel) {
   if (!HasCudaDevice()) return;
   BatchConvergedProblem problem = MakeBatchConvergedProblem();
@@ -389,8 +384,7 @@ TEST(BatchedBlockTridiagonalDeviceGradients, ThrowsForConstrainedNoiseModel) {
       std::invalid_argument);
 }
 
-// See testCudaBatchedDeviceGradients.cpp's identical test for the full
-// rationale (PR #2937 review, high-priority finding 3).
+// See testCudaBatchedDeviceGradients.cpp's identical test for the rationale.
 TEST(BatchedBlockTridiagonalDeviceGradients,
     AdjointSupportsPartialCotangentMatchingCpu) {
   if (!HasCudaDevice()) return;
@@ -440,13 +434,9 @@ TEST(BatchedBlockTridiagonalDeviceGradients, AdjointThrowsForUnknownCotangentKey
   CHECK_EXCEPTION(gpuGradients.adjoint(cotangents), std::invalid_argument);
 }
 
-// parameterGradient() on a parameter attached to the *middle* chain block
-// must match CPU gtsam::Gradients::parameterGradient exactly -- the real
-// correctness bar for a drop-in differentiable-backward replacement.
-// See testCudaBatchedDeviceGradients.cpp's identical test for the full
-// rationale (PR #2937 review's finite-difference-check request). The
-// ParameterFactor here is factor index 3 (0=Prior, 1=Chain(0,1),
-// 2=Chain(1,2), 3=Parameter on the middle block).
+// See testCudaBatchedDeviceGradients.cpp's identical test for the
+// rationale. ParameterFactor here is factor index 3 (0=Prior,
+// 1=Chain(0,1), 2=Chain(1,2), 3=Parameter on the middle block).
 TEST(BatchedBlockTridiagonalDeviceGradients,
     ParameterGradientMatchesFiniteDifference) {
   if (!HasCudaDevice()) return;
@@ -495,6 +485,9 @@ TEST(BatchedBlockTridiagonalDeviceGradients,
   }
 }
 
+// parameterGradient() on a parameter attached to the *middle* chain block
+// must match CPU gtsam::Gradients::parameterGradient exactly -- the real
+// correctness bar for a drop-in differentiable-backward replacement.
 TEST(BatchedBlockTridiagonalDeviceGradients, ParameterGradientMatchesCpuGradients) {
   if (!HasCudaDevice()) return;
   const ParameterTag tag("chain_block1_target");
@@ -532,8 +525,7 @@ TEST(BatchedBlockTridiagonalDeviceGradients, ParameterGradientIsNulloptForUnused
   for (const auto& value : actual) CHECK(!value.has_value());
 }
 
-// See testCudaBatchedDeviceGradients.cpp's identical test for the full
-// rationale (PR #2937 review's pushforward/noiseGradient parity finding).
+// See testCudaBatchedDeviceGradients.cpp's identical test for the rationale.
 TEST(BatchedBlockTridiagonalDeviceGradients, PushforwardMatchesCpuGradients) {
   if (!HasCudaDevice()) return;
   const BatchConvergedProblem problem = MakeBatchConvergedProblem();

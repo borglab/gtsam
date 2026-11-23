@@ -79,13 +79,8 @@ struct BatchedDenseLevenbergMarquardtOptimizer::Impl {
   std::vector<bool> terminated;  // converged or hit lambdaUpperBound
   std::vector<BatchedDenseLevenbergMarquardtItemResult> itemResults;
   bool optimized = false;
-  // -1 means "whatever device is already current" (see
-  // BatchedDenseSolverOptions). optimize() re-asserts this before its own
-  // direct DeviceArray upload/download (deviceH/deviceRhs above), not just
-  // relying on solver's construction-time cudaSetDevice -- cudaSetDevice is
-  // thread-global, so a second same-thread instance constructed on a
-  // different device would otherwise leave this instance's later optimize()
-  // call running against the wrong device's memory.
+  // Re-asserted by optimize() before its own device uploads/downloads:
+  // cudaSetDevice is thread-global and must stay current per call.
   int deviceId = -1;
 
   Impl(const std::vector<NonlinearFactorGraph>& inputGraphs,
@@ -177,10 +172,8 @@ struct BatchedDenseLevenbergMarquardtOptimizer::Impl {
       // version did) was the dominant real cost of this optimizer.
       {
         const auto linearizeStart = Clock::now();
-        // Cross-item-batch every registered Python-backed factor group's
-        // net evaluation once, before the per-item linearize() loop below
-        // reads the (now cached) results back through the unchanged
-        // CustomFactor callback contract -- see BatchedFactorGroupHook.h.
+        // Batch every registered factor group's net evaluation once,
+        // before the per-item linearize() loop reads the cached results.
         for (const auto& hook : factorGroupHooks) {
           for (int item = 0; item < batchSize; ++item) {
             if (terminated[static_cast<size_t>(item)]) continue;
@@ -242,14 +235,9 @@ struct BatchedDenseLevenbergMarquardtOptimizer::Impl {
       participating[i] = true;
       std::copy(hBase[i].data(), hBase[i].data() + hBase[i].size(),
                hostH.begin() + hOffset);
-      // Matches LevenbergMarquardtOptimizer::buildDampedSystem exactly:
-      // diagonalDamping scales each diagonal entry's damping by that same
-      // entry's own (clamped) magnitude -- H_dd += lambda*clamp(H_dd, min,
-      // max) -- instead of flat identity damping H_dd += lambda. Previously
-      // this optimizer always applied flat damping regardless of
-      // params.dampingParams.diagonalDamping, silently diverging from the
-      // CPU optimizer's trajectory whenever a caller requested it (PR #2937
-      // review, "nonlinear optimization" finding).
+      // Matches LevenbergMarquardtOptimizer::buildDampedSystem: scale
+      // damping by each entry's own magnitude when diagonalDamping is
+      // set, instead of always applying flat identity damping.
       for (int d = 0; d < dimension; ++d) {
         const size_t idx = hOffset + static_cast<size_t>(d) *
                                          static_cast<size_t>(dimension) +

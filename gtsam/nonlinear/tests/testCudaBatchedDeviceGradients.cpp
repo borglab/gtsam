@@ -123,10 +123,9 @@ struct GraphWithKnownNoise {
   SharedNoiseModel odometryNoise;
 };
 
-// Both BetweenFactors share one odometryNoise instance (so noiseGradient's
-// documented accumulation across multiple factors with the same instance
-// is exercised); a second call gets its own distinct instance with equal
-// sigmas, for testing noiseGradient's object-identity (not value) matching.
+// Both BetweenFactors share one odometryNoise instance; a second call gets
+// its own distinct instance with equal sigmas, testing noiseGradient's
+// object-identity (not value) matching.
 GraphWithKnownNoise MakePose2GraphWithKnownNoise(double odometryYOffset) {
   GraphWithKnownNoise result;
   const auto priorNoise =
@@ -264,14 +263,9 @@ TEST(BatchedDeviceGradients, ThrowsForMismatchedBatchSizes) {
       std::invalid_argument);
 }
 
-// gtsam::Gradients documents "robust losses, hard constraints ... are not"
-// supported (Gradients.h) and rejects them at construction via its private
-// checkNoise; the GPU class must match, both to avoid silently using a
-// robust-reweighted Jacobian (graph.linearize() would apply the robust
-// kernel's reweighting, which Gradients' own convention never does) and to
-// avoid an invalid static_pointer_cast<Gaussian> on a noiseModel::Robust
-// (which does not derive from noiseModel::Gaussian) later in
-// parameterGradient() (PR #2937 review, high-priority finding 2).
+// Robust noise models are rejected: graph.linearize() would otherwise fold
+// IRLS reweighting into A, and the later static_pointer_cast<Gaussian> on
+// a noiseModel::Robust (not a Gaussian) would be an invalid cast.
 TEST(BatchedDeviceGradients, ThrowsForRobustNoiseModel) {
   if (!HasCudaDevice()) return;
   BatchConvergedProblem problem = MakeBatchConvergedProblem();
@@ -299,12 +293,8 @@ TEST(BatchedDeviceGradients, ThrowsForConstrainedNoiseModel) {
       std::invalid_argument);
 }
 
-// Gradients.h documents: "State cotangents use the same local tangent
-// bases as the factor residual Jacobians; omitted known keys mean zero."
 // A cotangent naming only one of the chain's three keys must match CPU
-// gtsam::Gradients::adjoint exactly (PR #2937 review, high-priority
-// finding 3). Previously this threw: VectorValues::vector(ordering) calls
-// .at(key) for every ordering key unconditionally.
+// gtsam::Gradients::adjoint exactly: omitted known keys mean zero.
 TEST(BatchedDeviceGradients, AdjointSupportsPartialCotangentMatchingCpu) {
   if (!HasCudaDevice()) return;
   const BatchConvergedProblem problem = MakeBatchConvergedProblem();
@@ -352,14 +342,9 @@ TEST(BatchedDeviceGradients, AdjointThrowsForUnknownCotangentKey) {
   CHECK_EXCEPTION(gpuGradients.adjoint(cotangents), std::invalid_argument);
 }
 
-// PR #2937 review: "I'd add... a finite-difference check of parameter
-// gradients." The existing ParameterGradientMatchesCpuGradients test only
-// proves GPU matches CPU gtsam::Gradients -- it can't catch a bug the two
-// implementations share. This instead validates parameterGradient's output
-// against a pure central-difference estimate built only from re-evaluating
-// ParameterFactor::unwhitenedError at perturbed targets and pullback()'s
-// own cotangent -- never calling parameterVjp at all, so it is independent
-// of both implementations under test.
+// Validates parameterGradient against a central-difference estimate from
+// ParameterFactor::unwhitenedError at perturbed targets -- never calls
+// parameterVjp, so it is independent of the analytic implementation.
 TEST(BatchedDeviceGradients, ParameterGradientMatchesFiniteDifference) {
   if (!HasCudaDevice()) return;
   const ParameterTag tag("finite-difference-check");
@@ -384,11 +369,8 @@ TEST(BatchedDeviceGradients, ParameterGradientMatchesFiniteDifference) {
     const auto diagonal =
         std::dynamic_pointer_cast<noiseModel::Diagonal>(noise);
 
-    // pullback() returns a whitened-space cotangent; parameterGradient
-    // converts it with W transpose before calling parameterVjp (for a
-    // Diagonal/Isotropic model, W^T == W since R is diagonal) -- apply the
-    // identical conversion here so the finite-difference target matches
-    // what parameterGradient actually fed to parameterVjp.
+    // pullback() returns a whitened-space cotangent; apply the same W
+    // transpose parameterGradient does (W^T == W for Diagonal/Isotropic).
     Vector factorResidualCotangent = factorResidualCotangents[b][1];
     diagonal->whitenInPlace(factorResidualCotangent);
 
@@ -480,10 +462,7 @@ TEST(BatchedDeviceGradients, ParameterGradientReturnsNulloptForUnrelatedTag) {
   }
 }
 
-// PR #2937 review: "the batched API also omits scalar pushforward and
-// noiseGradient" (a gtsam::Gradients parity gap, not a correctness defect
-// in what already existed). pushforward() must match
-// gtsam::Gradients::pushforward exactly.
+// pushforward() must match gtsam::Gradients::pushforward exactly.
 TEST(BatchedDeviceGradients, PushforwardMatchesCpuGradients) {
   if (!HasCudaDevice()) return;
   const BatchConvergedProblem problem = MakeBatchConvergedProblem();
@@ -563,10 +542,9 @@ TEST(BatchedDeviceGradients, NoiseGradientThrowsForUnsupportedModel) {
       std::invalid_argument);
 }
 
-// See testCudaBatchedDenseLevenbergMarquardt.cpp's identical test for the
-// full rationale (PR #2937 review's multi-device regression, applied here
-// to gradients rather than optimizer results, and its identical note on
-// why each device's work must run on its own host thread).
+// Each device's work must run on its own host thread (not interleaved
+// instances on one thread): see the identical test in
+// testCudaBatchedDenseLevenbergMarquardt.cpp for why.
 TEST(BatchedDeviceGradients, DispatchAcrossTwoDevicesMatchesCpuGradients) {
   int deviceCount = 0;
   if (cudaGetDeviceCount(&deviceCount) != cudaSuccess || deviceCount < 2) return;

@@ -97,13 +97,8 @@ LevenbergMarquardtParams RealToleranceParams() {
 
 const Key kVec0 = Symbol('v', 0);
 
-// A single 3-vector prior with sigmas spanning 6 orders of magnitude
-// (0.001, 1.0, 1000.0): flat identity damping (H_dd += lambda) and
-// diagonal damping (H_dd += lambda*clamp(H_dd, min, max)) take genuinely
-// different first steps here, since the three diagonal Hessian entries
-// (precisions 1e6, 1, 1e-6) differ by 12 orders of magnitude -- the
-// acceptance test the PR #2937 review asked for ("one LM step on an
-// ill-scaled graph with diagonal damping enabled").
+// A single 3-vector prior with sigmas spanning 6 orders of magnitude, so
+// flat and diagonal damping take genuinely different first steps.
 NonlinearFactorGraph MakeIllScaledGraph() {
   NonlinearFactorGraph graph;
   const auto noise = noiseModel::Diagonal::Sigmas(
@@ -119,11 +114,8 @@ Values MakeIllScaledInitial() {
   return initial;
 }
 
-// maxIterations=1 and a fixed lambdaInitial (not the default, so both CPU
-// and GPU start from the identical lambda) isolate the one damped step this
-// test is about -- comparing only final optima (as MatchesCpuPose2ResultPerGraph
-// does) could hide a damping-policy mismatch if both policies still
-// converge to the same optimum given enough iterations.
+// maxIterations=1 and a fixed lambdaInitial isolate the one damped step;
+// comparing only final optima could hide a damping-policy mismatch.
 LevenbergMarquardtParams OneStepParams(bool diagonalDamping) {
   LevenbergMarquardtParams params;
   params.maxIterations = 1;
@@ -254,9 +246,8 @@ TEST(BatchedDenseLevenbergMarquardt, ThrowsForMismatchedScalarDimensions) {
       std::invalid_argument);
 }
 
-// PR #2937 review's specific acceptance test: one LM step on an ill-scaled
-// graph with diagonalDamping=true must match the CPU optimizer's actual
-// diagonal-scaled step, not just converge to the same eventual optimum.
+// One LM step with diagonalDamping=true must match the CPU optimizer's
+// actual diagonal-scaled step, not just the eventual converged optimum.
 TEST(BatchedDenseLevenbergMarquardt, DiagonalDampingMatchesCpuOnIllScaledGraph) {
   if (!HasCudaDevice()) return;
   const std::vector<NonlinearFactorGraph> graphs = {MakeIllScaledGraph()};
@@ -306,13 +297,9 @@ TEST(BatchedDenseLevenbergMarquardt, DiagonalAndFlatDampingDisagreeOnIllScaledGr
   CHECK((diagonalResult - flatResult).norm() > 1e-3);
 }
 
-// PR #2937 review: "the same header exposes a Python-backed factor
-// evaluation hook only on the chain optimizer... its placement couples two
-// independent choices: how to evaluate factors and how to solve the
-// resulting system." Verifies the newly-added factorGroupHooks wiring on
-// the dense optimizer actually runs: stage() once per active item per
-// outer iteration, computeBatch() once per outer iteration. No existing
-// test anywhere exercised BatchedFactorGroupHook before this.
+// Verifies factorGroupHooks wiring actually runs: stage() once per
+// active item per outer iteration, computeBatch() once per iteration.
+// No test anywhere exercised BatchedFactorGroupHook before this.
 TEST(BatchedDenseLevenbergMarquardt, FactorGroupHookIsStagedAndComputed) {
   if (!HasCudaDevice()) return;
   const BatchPose2Problem problem = MakeBatchPose2Problem();
@@ -360,21 +347,9 @@ TEST(BatchedDenseLevenbergMarquardt, FactorGroupHookDoesNotChangeResultWhenUnuse
   }
 }
 
-// PR #2937 review's suggested regression for the real (per-device) scope:
-// "add an API-level test that dispatches known batches to multiple
-// devices and verifies the combined results". This is not a claim of
-// integrated multi-GPU training (see BatchedDenseSolverOptions'
-// docstring and timeBatchedDenseLM.cpp's top docstring) -- it verifies
-// that a caller building their own per-device dispatch gets correct,
-// independently-verified results from each device.
-//
-// Each device's construct+optimize runs entirely on its own host thread
-// (matching timeBatchedDenseLM.cpp's RunOnDevice, the one pattern this
-// library actually supports): interleaving two deviceId-pinned instances
-// on a single host thread is not a supported usage -- a constructor's
-// cudaSetDevice only sets the *calling thread's* current device, so a
-// second instance's construction on the same thread silently invalidates
-// the first instance's device context for any of its later calls.
+// Each device's construct+optimize must run on its own host thread:
+// cudaSetDevice is thread-global, so interleaving two deviceId-pinned
+// instances on one thread silently invalidates the first one's context.
 TEST(BatchedDenseLevenbergMarquardt, DispatchAcrossTwoDevicesMatchesCpuPerGraph) {
   int deviceCount = 0;
   if (cudaGetDeviceCount(&deviceCount) != cudaSuccess || deviceCount < 2) return;
