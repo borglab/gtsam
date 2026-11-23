@@ -147,6 +147,12 @@ control. [C++ examples](../../../gtsam_unstable/examples/mppi/README.md)
 
 ## Python user guides
 
+The Python and MATLAB planners use dynamic vectors for controls.
+`SamplingPlannerVectorVector` also uses a vector for the state, so the same
+class handles a scalar system and a four-coordinate point mass. Use
+`SamplingPlannerPose2Vector` for a planar pose. Its vector field returns a
+three-coordinate tangent vector, and its discrete transition returns a `Pose2`.
+
 [Planning a trajectory with a factor graph](SamplingPlanner.ipynb) builds a graph and
 uses both forms of dynamics. [Gaussian proposals and the MPPI update](MPPI.ipynb)
 follows a Gaussian proposal through one update and visualizes how each sampled

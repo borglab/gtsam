@@ -1,4 +1,4 @@
-% Exercise the planning models, graph controllers and fixed-size Values types.
+% Exercise the planning models, graph controllers and vector and pose trajectories.
 % Authors: Akash Ratheesh and Frank Dellaert. See LICENSE for details.
 
 function testPlanning()
@@ -24,38 +24,44 @@ states.push_back(x0);
 states.push_back(x1);
 for isPointMass = [true, false]
     graph = gtsam.NonlinearFactorGraph();
-    initial = gtsam.Values();
-    initial.insertPoint2(u0, zeros(2, 1));
     if isPointMass
         model = gtsam.PointMass(0.1);
         start = [0; 0; 1; 0];
-        initial.insertVector4(x0, start);
-        initial.insertVector4(x1, model.predict(start, zeros(2, 1)));
         graph.add(gtsam.PointMassDynamicsFactor(x0, u0, x1, model, ...
             gtsam.noiseModel.Constrained.All(4)));
         controller = gtsam.VanillaMPPIControllerPointMassDynamicsFactor(params);
-        planner = gtsam.SamplingPlannerVector4Point2(states, keys, 0.1);
+        planner = gtsam.SamplingPlannerVectorVector(states, keys, 0.1);
         dynamics = gtsam.pointMassVectorField();
     else
         model = gtsam.Unicycle(0.1);
         start = gtsam.Pose2();
-        initial.insert(x0, start);
-        initial.insert(x1, start);
         graph.add(gtsam.UnicycleDynamicsFactor(x0, u0, x1, model, ...
             gtsam.noiseModel.Constrained.All(3)));
         controller = gtsam.VanillaMPPIControllerUnicycleDynamicsFactor(params);
-        planner = gtsam.SamplingPlannerPose2Point2(states, keys, 0.1);
+        planner = gtsam.SamplingPlannerPose2Vector(states, keys, 0.1);
         dynamics = gtsam.unicycleTransition(model);
     end
     graph.add(gtsam.PriorFactorPoint2(u0, [1; 0], gtsam.noiseModel.Unit.Create(2)));
+    controls = [0.2; -0.1];
+    initial = controller.initialValues(graph, keys, start, controls);
+    assert(isequal(initial.atPoint2(u0), controls));
+    predicted = model.predict(start, controls);
+    if isPointMass
+        assert(norm(initial.atVector(x1) - predicted) < 1e-12);
+    else
+        assert(initial.atPose2(x1).equals(predicted, 1e-12));
+    end
     result = controller.optimize(graph, initial, keys);
     proposal = gtsam.GaussianProposal(eye(2), params.numSamples, params.seed);
-    plan = planner.optimize(graph, initial, dynamics, proposal, rule, params.iterations);
+    seed = gtsam.Values();
+    seed.insert(x0, start);
+    nominal = planner.rollout(seed, controls, dynamics);
+    plan = planner.optimize(graph, nominal, dynamics, proposal, rule, params.iterations);
     assert(norm(plan.atPoint2(u0) - result.atPoint2(u0)) < 1e-12);
     assert(abs(graph.error(plan) - graph.error(result)) < 1e-12);
     predicted = model.predict(start, result.atPoint2(u0));
     if isPointMass
-        assert(norm(result.atVector4(x1) - predicted) < 1e-12);
+        assert(norm(result.atVector(x1) - predicted) < 1e-12);
     else
         assert(result.atPose2(x1).equals(predicted, 1e-12));
     end

@@ -48,44 +48,52 @@ class MPPI {
 
 #include <gtsam/planning/wrap/PlannerBindings.h>
 
-template<State, Control>
+class VectorField {};
+class Pose2Transition {};
+
+// Each native model supplies a different callable signature. Spell out the
+// overloads so MATLAB can dispatch on its concrete dynamics object.
+template<State={gtsam::Vector}, Control={gtsam::Vector}>
 class SamplingPlanner {
   SamplingPlanner(gtsam::KeyVector stateKeys, gtsam::KeyVector controlKeys, double dt,
                   bool parallelCandidateScoring = false);
   gtsam::Matrix nominalControls(const gtsam::Values& initial) const;
-};
-
-typedef gtsam::SamplingPlanner<gtsam::Vector, gtsam::Vector> SamplingPlannerVectorVector;
-
-
-class Vector4Point2Field {};
-class Pose2Point2Transition {};
-
-template<State, Control, Dynamics>
-class WrappedSamplingPlanner {
-  WrappedSamplingPlanner(gtsam::KeyVector stateKeys, gtsam::KeyVector controlKeys, double dt,
-                         bool parallelCandidateScoring = false);
-  gtsam::Matrix nominalControls(const gtsam::Values& initial) const;
   @pybind_lambda
   gtsam::Values rollout(const gtsam::Values& initial, const gtsam::Matrix& controls,
-                        const Dynamics& dynamics) const;
+                        const gtsam::VectorField& dynamics) const;
   @pybind_lambda
   gtsam::Vector rolloutAndScore(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
-                                const gtsam::Matrix& controls, const Dynamics& dynamics) const;
+                                const gtsam::Matrix& controls, const gtsam::VectorField& dynamics) const;
   @pybind_lambda
   void iterate(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
-               const Dynamics& dynamics, const gtsam::GaussianProposal& proposal,
+               const gtsam::VectorField& dynamics, const gtsam::GaussianProposal& proposal,
                const gtsam::MPPI& algorithm, gtsam::ControlDistribution& search) const;
   @pybind_lambda
   gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
-                         const Dynamics& dynamics, const gtsam::GaussianProposal& proposal,
+                         const gtsam::VectorField& dynamics, const gtsam::GaussianProposal& proposal,
                          const gtsam::MPPI& algorithm, size_t iterations) const;
 };
 
-typedef gtsam::WrappedSamplingPlanner<gtsam::Vector4, gtsam::Point2, gtsam::Vector4Point2Field>
-    SamplingPlannerVector4Point2;
-typedef gtsam::WrappedSamplingPlanner<gtsam::Pose2, gtsam::Point2, gtsam::Pose2Point2Transition>
-    SamplingPlannerPose2Point2;
+template<State={gtsam::Pose2}, Control={gtsam::Vector}>
+class SamplingPlanner {
+  SamplingPlanner(gtsam::KeyVector stateKeys, gtsam::KeyVector controlKeys, double dt,
+                  bool parallelCandidateScoring = false);
+  gtsam::Matrix nominalControls(const gtsam::Values& initial) const;
+  @pybind_lambda
+  gtsam::Values rollout(const gtsam::Values& initial, const gtsam::Matrix& controls,
+                        const gtsam::Pose2Transition& dynamics) const;
+  @pybind_lambda
+  gtsam::Vector rolloutAndScore(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
+                                const gtsam::Matrix& controls, const gtsam::Pose2Transition& dynamics) const;
+  @pybind_lambda
+  void iterate(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
+               const gtsam::Pose2Transition& dynamics, const gtsam::GaussianProposal& proposal,
+               const gtsam::MPPI& algorithm, gtsam::ControlDistribution& search) const;
+  @pybind_lambda
+  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
+                         const gtsam::Pose2Transition& dynamics, const gtsam::GaussianProposal& proposal,
+                         const gtsam::MPPI& algorithm, size_t iterations) const;
+};
 
 #include <gtsam/planning/VanillaMPPIController.h>
 

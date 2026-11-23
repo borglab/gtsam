@@ -19,36 +19,52 @@ class TestStagPlanning(unittest.TestCase):
         noise = gtsam.noiseModel.Constrained.All
         models = [
             (gu.PointMass(0.1), np.array([0., 0., 1., 0.]),
-             gtsam.SamplingPlannerVector4Point2, gu.PointMassDynamicsFactor, noise(4)),
-            (gu.Unicycle(0.1), gtsam.Pose2(), gtsam.SamplingPlannerPose2Point2,
+             gtsam.SamplingPlannerVectorVector, gu.PointMassDynamicsFactor, noise(4)),
+            (gu.Unicycle(0.1), gtsam.Pose2(), gtsam.SamplingPlannerPose2Vector,
              gu.UnicycleDynamicsFactor, noise(3)),
         ]
         for model, start, planner_type, factor, model_noise in models:
             with self.subTest(model=type(model).__name__):
                 planner = planner_type([X(0), X(1)], [U(0)], 0.1)
-                initial = gtsam.Values()
-                initial.insertPoint2(U(0), np.zeros(2))
                 point_mass = isinstance(model, gu.PointMass)
                 if point_mass:
-                    initial.insertVector4(X(0), start)
+                    controller_type = gu.VanillaMPPIControllerPointMassDynamicsFactor
                     dynamics = gu.pointMassVectorField()
+                    callback = model.dynamics
                 else:
-                    initial.insert(X(0), start)
+                    controller_type = gu.VanillaMPPIControllerUnicycleDynamicsFactor
                     dynamics = gu.unicycleTransition(model)
+                    callback = gtsam.discreteTransition(model.predict)
                 graph = gtsam.NonlinearFactorGraph()
-                graph.add(gtsam.PriorFactorPoint2(U(0), np.array([1., 0.]), unit))
+                graph.add(gtsam.PriorFactorVector(U(0), np.array([1., 0.]), unit))
                 graph.add(factor(X(0), U(0), X(1), model, model_noise))
+                params = gtsam.VanillaMPPIParams()
+                params.controlCovariance = np.eye(2)
+                controls = np.zeros((2, 1))
+                typed = controller_type(params).initialValues(graph, [U(0)], start, controls)
+                np.testing.assert_array_equal(typed.atPoint2(U(0)), controls[:, 0])
+                seed = gtsam.Values()
+                seed.insert(X(0), start)
+                initial = planner.rollout(seed, controls, dynamics)
+                np.testing.assert_array_equal(planner.nominalControls(initial), controls)
                 proposal = gtsam.GaussianProposal(np.eye(2), 32, 17)
                 nominal = planner.rollout(initial, np.zeros((2, 1)), dynamics)
                 result = planner.optimize(graph, initial, dynamics, proposal, gtsam.MPPI(), 2)
+                # The native model and the Python callback must produce the same
+                # seeded update, including for a discrete step returning Pose2.
+                replay = gtsam.GaussianProposal(np.eye(2), 32, 17)
+                search = replay.initialize(controls)
+                for _ in range(2):
+                    planner.iterate(graph, initial, callback, replay, gtsam.MPPI(), search)
+                np.testing.assert_allclose(search.mean, planner.nominalControls(result))
                 self.assertLess(graph.error(result), graph.error(nominal))
-                predicted = model.predict(start, result.atPoint2(U(0)))
+                predicted = model.predict(start, result.atVector(U(0)))
                 if point_mass:
-                    np.testing.assert_allclose(result.atVector4(X(1)), predicted)
+                    np.testing.assert_allclose(result.atVector(X(1)), predicted)
                 else:
                     self.assertTrue(result.atPose2(X(1)).equals(predicted, 1e-12))
 
-    def test_fixed_size_state_and_custom_cost(self):
+    def test_point_mass_and_custom_cost(self):
         graph = gtsam.NonlinearFactorGraph()
         model = gu.PointMass(0.1)
         graph.add(gu.PointMassDynamicsFactor(
@@ -58,7 +74,7 @@ class TestStagPlanning(unittest.TestCase):
 
         def effort(factor, values, jacobians):
             self.assertEqual(threading.get_ident(), caller)
-            return values.atPoint2(U(0))
+            return values.atVector(U(0))
 
         graph.add(gtsam.CustomFactor(gtsam.noiseModel.Unit.Create(2), [U(0)], effort))
         params = gtsam.VanillaMPPIParams()
@@ -70,8 +86,8 @@ class TestStagPlanning(unittest.TestCase):
         start = np.array([0.0, 0.0, 1.0, 0.0])
         initial = controller.initialValues(graph, [U(0)], start, np.zeros((2, 1)))
         result = controller.optimize(graph, initial, [U(0)])
-        np.testing.assert_allclose(result.atVector4(X(1)),
-                                   model.predict(start, result.atPoint2(U(0))))
+        np.testing.assert_allclose(result.atVector(X(1)),
+                                   model.predict(start, result.atVector(U(0))))
         self.assertTrue(np.isfinite(graph.error(result)))
 
 

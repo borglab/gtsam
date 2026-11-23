@@ -9,16 +9,17 @@
 namespace gtsam {
 
 /// The point mass supplies a tangent vector. The planner applies its own dt.
-inline Vector4Point2Field pointMassVectorField() {
-  return {PointMass::dynamics};
-}
+inline VectorField pointMassVectorField() { return {PointMass::dynamics}; }
 
 /// The unicycle supplies a complete discrete step using its model time step.
-inline Pose2Point2Transition unicycleTransition(const Unicycle& model) {
-  return {[model](const Pose2& state, const Point2& control) {
-            return model.predict(state, control);
-          },
-          true};
+inline Pose2Transition unicycleTransition(const Unicycle& model) {
+  return {
+      [model](const Pose2& state, const Vector& control) {
+        if (control.size() != 2)
+          throw std::invalid_argument("Unicycle expects speed and turn rate.");
+        return model.predict(state, control);
+      },
+      true};
 }
 
 }  // namespace gtsam

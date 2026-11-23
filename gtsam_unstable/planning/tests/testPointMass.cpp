@@ -24,6 +24,7 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/planning/SamplingPlanner.h>
+#include <gtsam/planning/VanillaMPPIController.h>
 #include <gtsam_unstable/planning/dynamics/models/PointMass.h>
 
 #include <memory>
@@ -36,13 +37,14 @@ using symbol_shorthand::X;
 namespace point_mass {
 
 const PointMass model(0.1);  // default time step 0.1 s
-const Vector4 state{1.0, 2.0, 3.0, 4.0};
-const Vector2 control{0.5, -1.0};
+const Vector state = Vector4{1.0, 2.0, 3.0, 4.0};
+const Vector control = Vector2{0.5, -1.0};
 
 // Checks that the state has dimension 4 and the control dimension 2.
 TEST(PointMass, Dimensions) {
-  EXPECT_LONGS_EQUAL(4, PointMass::StateDim);
-  EXPECT_LONGS_EQUAL(2, PointMass::ControlDim);
+  CHECK_EXCEPTION(model.predict(Vector::Zero(3), control),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(model.predict(state, Vector::Zero(3)), std::invalid_argument);
 }
 
 // Checks one forward Euler step: the position moves by v dt with the old
@@ -57,7 +59,7 @@ TEST(PointMass, PredictGivenTimeStep) {
 // Integrating the field must reproduce the model's discrete prediction.
 TEST(PointMass, PlannerIntegratesModelField) {
   const double dt = 0.5;
-  SamplingPlanner<Vector4, Vector2> planner({X(0), X(1)}, {U(0)}, dt);
+  SamplingPlanner<Vector, Vector> planner({X(0), X(1)}, {U(0)}, dt);
   Values initial;
   initial.insert(X(0), state);
   const Values trajectory =
@@ -65,7 +67,21 @@ TEST(PointMass, PlannerIntegratesModelField) {
   EXPECT(assert_equal(Vector4{3.0, 4.0, 0.5, -1.0},
                       PointMass::dynamics(state, control)));
   EXPECT(assert_equal(model.predict(state, control, dt),
-                      trajectory.at<Vector4>(X(1))));
+                      trajectory.at<Vector>(X(1))));
+}
+
+// A controller with dynamic controls reads their width from the trajectory.
+TEST(PointMass, NominalControlDimensions) {
+  VanillaMPPIController<PointMassDynamicsFactor> controller;
+  Values values;
+  values.insert(U(0), control);
+  values.insert(U(1), control);
+  Matrix nominal;
+  controller.getControl(values, {U(0), U(1)}, nominal);
+  EXPECT(assert_equal(control.replicate(1, 2).eval(), nominal));
+  values.update(U(1), Vector::Zero(3).eval());
+  CHECK_EXCEPTION(controller.getControl(values, {U(0), U(1)}, nominal),
+                  std::invalid_argument);
 }
 
 // Checks that predict without a time step uses the default dt.
@@ -77,28 +93,28 @@ TEST(PointMass, PredictDefaultTimeStep) {
 // Checks the Jacobians of both predict overloads against numerical
 // derivatives.
 TEST(PointMass, PredictJacobians) {
-  Matrix4 H_state;
-  Matrix42 H_control;
+  Matrix H_state;
+  Matrix H_control;
 
-  const auto predictDefault = [](const Vector4& x, const Vector2& u) {
+  const auto predictDefault = [](const Vector& x, const Vector& u) {
     return model.predict(x, u);
   };
   model.predict(state, control, H_state, H_control);
-  EXPECT(assert_equal(numericalDerivative21<Vector4, Vector4, Vector2>(
+  EXPECT(assert_equal(numericalDerivative21<Vector, Vector, Vector, 4>(
                           predictDefault, state, control),
                       H_state, 1e-8));
-  EXPECT(assert_equal(numericalDerivative22<Vector4, Vector4, Vector2>(
+  EXPECT(assert_equal(numericalDerivative22<Vector, Vector, Vector, 2>(
                           predictDefault, state, control),
                       H_control, 1e-8));
 
-  const auto predictGiven = [](const Vector4& x, const Vector2& u) {
+  const auto predictGiven = [](const Vector& x, const Vector& u) {
     return model.predict(x, u, 0.5);
   };
   model.predict(state, control, 0.5, H_state, H_control);
-  EXPECT(assert_equal(numericalDerivative21<Vector4, Vector4, Vector2>(
+  EXPECT(assert_equal(numericalDerivative21<Vector, Vector, Vector, 4>(
                           predictGiven, state, control),
                       H_state, 1e-8));
-  EXPECT(assert_equal(numericalDerivative22<Vector4, Vector4, Vector2>(
+  EXPECT(assert_equal(numericalDerivative22<Vector, Vector, Vector, 2>(
                           predictGiven, state, control),
                       H_control, 1e-8));
 }
@@ -109,16 +125,19 @@ TEST(PointMass, DynamicsFactor) {
   const auto shared = std::make_shared<const PointMass>(0.1);
   const PointMassDynamicsFactor factor(X(0), U(0), X(1), shared,
                                        noiseModel::Isotropic::Sigma(4, 0.1));
-  EXPECT(assert_equal(
-      Vector4::Zero().eval(),
-      Vector4(factor.evaluateError(state, control,
-                                   shared->predict(state, control))),
-      1e-9));
+  EXPECT(assert_equal(Vector4::Zero().eval(),
+                      Vector4(factor.evaluateError(
+                          state, control, shared->predict(state, control))),
+                      1e-9));
+
+  CHECK_EXCEPTION(factor.evaluateError(state, control, Vector::Zero(3)),
+                  std::invalid_argument);
 
   Values values;
   values.insert(X(0), state);
   values.insert(U(0), control);
-  values.insert(X(1), Vector4{1.5, 2.5, 3.0, 3.5});  // not the prediction
+  values.insert(X(1),
+                Vector(Vector4{1.5, 2.5, 3.0, 3.5}));  // not the prediction
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, values, 1e-5, 1e-5);
 }
 

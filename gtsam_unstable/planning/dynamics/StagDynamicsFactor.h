@@ -58,6 +58,12 @@ typename traits<STATE>::TangentVector stagDynamicsError(
       state, control, dt, H_state ? &predicted_H_state : nullptr,
       H_control ? &predicted_H_control : nullptr);
 
+  if constexpr (StateDim == Eigen::Dynamic) {
+    if (traits<STATE>::GetDimension(predicted) !=
+        traits<STATE>::GetDimension(nextState))
+      throw std::invalid_argument(
+          "The predicted and supplied next state dimensions differ.");
+  }
   Eigen::Matrix<double, StateDim, StateDim> error_H_predicted;
   const typename traits<STATE>::TangentVector error = traits<STATE>::Local(
       predicted, nextState,

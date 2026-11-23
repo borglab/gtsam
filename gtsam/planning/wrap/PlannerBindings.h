@@ -11,20 +11,16 @@ namespace gtsam {
 
 // Named callable types let MATLAB and Python pass compiled dynamics to the
 // same templated C++ planner. The dynamics themselves belong to the caller.
-struct Vector4Point2Field {
-  using Function = Vector4(const Vector4&, const Point2&);
+struct VectorField {
+  using Function = Vector(const Vector&, const Vector&);
   Function& function;
 
-  Vector4 operator()(const Vector4& state, const Point2& control) const {
+  Vector operator()(const Vector& state, const Vector& control) const {
     return function(state, control);
   }
 };
 
-using Pose2Point2Transition =
-    DiscreteTransition<std::function<Pose2(const Pose2&, const Point2&)>>;
-
-// The third parameter selects the callable overload emitted by the wrapper.
-template <class State, class Control, class Dynamics>
-using WrappedSamplingPlanner = SamplingPlanner<State, Control>;
+using Pose2Transition =
+    DiscreteTransition<std::function<Pose2(const Pose2&, const Vector&)>>;
 
 }  // namespace gtsam

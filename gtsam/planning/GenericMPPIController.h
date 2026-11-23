@@ -73,7 +73,7 @@ struct GenericMPPIParams : public MPCControllerParams {
  * @tparam DYNAMICS_FACTOR A ternary nonlinear factor on (state, control,
  *     next state), with the X1, X2 and X3 type aliases of NoiseModelFactorT
  *     and a const predict(state, control) method returning the next state.
- *     The control must be a fixed-size Eigen column vector.
+ *     The control must be an Eigen column vector.
  * @tparam SAMPLER  Control sampler, as described above.
  */
 template <class DYNAMICS_FACTOR, class SAMPLER>
@@ -83,17 +83,15 @@ class GenericMPPIController : public MPCController {
   static_assert(std::is_same_v<State, typename DYNAMICS_FACTOR::X3>,
                 "The dynamics factor must predict the same state type.");
   static_assert(
-      traits<Control>::dimension != Eigen::Dynamic &&
-          std::is_same_v<Control,
-                         Eigen::Matrix<double, traits<Control>::dimension, 1>>,
-      "GenericMPPIController: Control must be a fixed-size Eigen "
-      "vector, e.g. Vector2.");
+      std::is_same_v<Control,
+                     Eigen::Matrix<double, traits<Control>::dimension, 1>>,
+      "GenericMPPIController: Control must be an Eigen column vector.");
 
  public:
   /// The underlying planner using this factor's state and control types.
   using Planner = SamplingPlanner<State, Control>;
 
-  /// Control dimension M.
+  /// Compile-time control dimension, or Eigen::Dynamic.
   static constexpr int ControlDim = traits<Control>::dimension;
 
   /// The future graph's dynamics factor, on (x_k, u_k, x_{k+1}).
@@ -133,14 +131,24 @@ class GenericMPPIController : public MPCController {
   /**
    * Get the nominal control sequence from initial: ubar gets one column per
    * control key, in the order of controlKeys. ubar is resized to
-   * ControlDim x controlKeys.size().
+   * the control vector length by controlKeys.size().
    * @throws ValuesKeyDoesNotExist if initial has no value for a control key.
    */
   void getControl(const Values& initial, const KeyVector& controlKeys,
                   Matrix& ubar) const {
-    ubar.resize(ControlDim, controlKeys.size());
+    Eigen::Index rows = ControlDim;
+    if constexpr (ControlDim == Eigen::Dynamic) {
+      rows = controlKeys.empty()
+                 ? 0
+                 : initial.at<Control>(controlKeys.front()).size();
+    }
+    ubar.resize(rows, controlKeys.size());
     for (size_t k = 0; k < controlKeys.size(); ++k) {
-      ubar.col(k) = initial.at<Control>(controlKeys[k]);
+      const Control control = initial.at<Control>(controlKeys[k]);
+      if (control.size() != rows || !rows)
+        throw std::invalid_argument(
+            "Controls must have a common nonzero dimension.");
+      ubar.col(k) = control;
     }
   }
 

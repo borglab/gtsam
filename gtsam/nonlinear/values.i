@@ -222,12 +222,7 @@ class Values {
   void insert_or_assign(gtsam::Key j, const gtsam::NavState& nav_state);
   void insert_or_assign(gtsam::Key j, const double& c);
 
-  // Preserve fixed-size Eigen types when the caller supplies a numeric array.
-  template <T = {gtsam::Point2, gtsam::Vector4}>
-  void insert(gtsam::Key j, const T& val);
-
   template <T = {gtsam::Vector,
-                 gtsam::Vector4,
                  gtsam::Matrix,
                  gtsam::Point2,
                  gtsam::Point3,

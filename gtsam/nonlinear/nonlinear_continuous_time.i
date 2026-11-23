@@ -144,7 +144,6 @@ updateInterpValuesWithCovariance(
 template <T = {double,
                gtsam::Vector,
                gtsam::Point1,
-               gtsam::Vector4,
                gtsam::Vector6,
                gtsam::Point2,
                gtsam::StereoPoint2,

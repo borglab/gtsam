@@ -85,7 +85,7 @@ class VanillaMPPIController
       : Base(params, GaussianNoiseSampler(params.controlCovariance,
                                           params.numSamples, params.seed)),
         params_(params) {
-    if (this->sampler().dim() != 0 &&
+    if (Base::ControlDim != Eigen::Dynamic && this->sampler().dim() != 0 &&
         this->sampler().dim() != static_cast<size_t>(Base::ControlDim)) {
       throw std::invalid_argument(
           "VanillaMPPIController: controlCovariance must match the dimension "

@@ -70,8 +70,8 @@ int main() {
   const double dt = 0.1;
   const size_t H = 30;
 
-  const Vector4 start{0.0, 0.0, 0.0, 0.0};  // at rest at the origin
-  const Vector4 goal{3.0, 2.0, 0.0, 0.0};   // at rest at (3, 2)
+  const Vector start = Vector4{0.0, 0.0, 0.0, 0.0};  // at rest at the origin
+  const Vector goal = Vector4{3.0, 2.0, 0.0, 0.0};   // at rest at (3, 2)
 
   // The cost weights, given as the precisions of the priors' noise models.
   const auto stateCost =
@@ -82,10 +82,11 @@ int main() {
 
   // The planner integrates the vector field at each step. The graph scores
   // control effort and distance to the goal, with terminal weights on x_H.
+  const Vector zeroControl = Vector::Zero(2);
   NonlinearFactorGraph graph;
   KeyVector stateKeys{X(0)}, controlKeys;
   for (size_t k = 0; k < H; ++k) {
-    graph.addPrior(U(k), Vector2{0.0, 0.0}, controlCost);
+    graph.addPrior(U(k), zeroControl, controlCost);
     graph.addPrior(X(k + 1), goal, k + 1 < H ? stateCost : terminalCost);
     stateKeys.push_back(X(k + 1));
     controlKeys.push_back(U(k));
@@ -98,14 +99,14 @@ int main() {
   Values initial;
   initial.insert(X(0), start);
   for (size_t k = 0; k < H; ++k) {
-    initial.insert(U(k), Vector2{0.0, 0.0});
+    initial.insert(U(k), zeroControl);
     initial.insert(X(k + 1), start);
   }
   std::printf("Initial plan (zero controls): cost %.3f\n",
               graph.error(initial));
 
   // The proposal draws 1024 control sequences with standard deviation 0.5.
-  SamplingPlanner<Vector4, Vector2> planner(stateKeys, controlKeys, dt);
+  SamplingPlanner<Vector, Vector> planner(stateKeys, controlKeys, dt);
   GaussianProposal proposal(0.25 * Matrix2::Identity(), 1024);
   const MPPI mppi(1.0);
   const size_t iterations = 30;
@@ -118,13 +119,13 @@ int main() {
   std::printf("%6s %7s %7s %7s %7s %7s %7s\n", "t [s]", "px", "py", "vx",
               "vy", "ax", "ay");
   for (size_t k = 0; k < H; k += 5) {
-    const Vector4 x = plan.at<Vector4>(X(k));
-    const Vector2 u = plan.at<Vector2>(U(k));
+    const Vector x = plan.at<Vector>(X(k));
+    const Vector u = plan.at<Vector>(U(k));
     std::printf("%6.1f %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f\n", k * dt, x(0),
                 x(1), x(2), x(3), u(0), u(1));
   }
 
-  const Vector4 last = plan.at<Vector4>(X(H));
+  const Vector last = plan.at<Vector>(X(H));
   std::printf("\nFinal state at t = %.1f s: position (%.3f, %.3f), "
               "velocity (%.3f, %.3f)\n",
               H * dt, last(0), last(1), last(2), last(3));
