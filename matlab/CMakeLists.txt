@@ -91,6 +91,7 @@ set(interface_files
     ${GTSAM_SOURCE_DIR}/gtsam/sfm/sfm.i
     ${GTSAM_SOURCE_DIR}/gtsam/navigation/navigation.i
     ${GTSAM_SOURCE_DIR}/gtsam/navigation/navigation_geometric.i
+    ${GTSAM_SOURCE_DIR}/gtsam/planning/planning.i
     # matlab/custom.i lives outside the main gtsam/ tree, see comment below.
     ${GTSAM_SOURCE_DIR}/matlab/custom.i
 )
