@@ -50,6 +50,7 @@ set (gtsam_subdirs
     sfm
     slam
     navigation
+    planning
 )
 
 set(gtsam_srcs)

@@ -30,11 +30,6 @@ endif()
 
 gtsamAddExamplesGlob("*.cpp" "${excluded_examples}" "gtsam;${Boost_PROGRAM_OPTIONS_LIBRARY}" ${GTSAM_BUILD_EXAMPLES_ALWAYS})
 
-# The MPPI examples use the mpc_stag module of gtsam_unstable.
-if(GTSAM_BUILD_UNSTABLE)
-  add_subdirectory(mppi)
-endif()
-
 if(Torch_FOUND)
   target_link_libraries(GradientsTorchExample ${TORCH_LIBRARIES})
   # Honor LibTorch's required standard on this example only.
