@@ -95,16 +95,4 @@ class SamplingPlanner {
                          const gtsam::MPPI& algorithm, size_t iterations) const;
 };
 
-#include <gtsam/planning/VanillaMPPIController.h>
-
-class VanillaMPPIParams {
-  VanillaMPPIParams();
-  size_t numSamples;
-  gtsam::Matrix controlCovariance;
-  uint64_t seed;
-  size_t iterations;
-  double inverseTemperature;
-  bool parallelCandidateScoring;
-};
-
 }  // namespace gtsam

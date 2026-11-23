@@ -28,21 +28,15 @@ struct ControlDistribution {
   Matrix mean;
 };
 
-/**
- * Adapt a sampler's sampleControls(mean) operation to a trajectory proposal.
- * The sampler owns its random stream. The search state belongs to one solve.
- */
-template <class Sampler>
-class SampledControlProposal {
+/// Independent Gaussian perturbations around a nominal control sequence.
+class GaussianProposal {
  public:
   using State = ControlDistribution;
 
-  /// Take ownership of the sampler at its current position.
-  explicit SampledControlProposal(Sampler sampler)
-      : sampler_(std::move(sampler)) {}
-
-  /// Access the sampler and its random-stream position.
-  const Sampler& sampler() const { return sampler_; }
+  /// Seed the per-candidate random streams for this proposal.
+  GaussianProposal(const Matrix& covariance, size_t samples,
+                   std::uint64_t seed = 42)
+      : sampler_(covariance, samples, seed) {}
 
   /// Initialize the proposal around an M-by-H nominal control sequence.
   State initialize(Matrix nominal) const {
@@ -87,20 +81,7 @@ class SampledControlProposal {
   }
 
  private:
-  Sampler sampler_;
-};
-
-/// Independent Gaussian control perturbations with a fixed covariance per step.
-class GaussianProposal : public SampledControlProposal<GaussianNoiseSampler> {
- public:
-  using SampledControlProposal::SampledControlProposal;
-
-  /// Construct a proposal using the sampler's deterministic per-candidate
-  /// streams.
-  GaussianProposal(const Matrix& covariance, size_t samples,
-                   std::uint64_t seed = 42)
-      : SampledControlProposal(
-            GaussianNoiseSampler(covariance, samples, seed)) {}
+  GaussianNoiseSampler sampler_;
 };
 
 }  // namespace gtsam

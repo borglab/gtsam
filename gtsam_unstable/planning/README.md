@@ -7,7 +7,7 @@ chain of states and controls. A dynamics factor on `X(k), U(k), X(k+1)`
 compares the model's prediction with the supplied next state. Its residual
 is zero when the two agree. A nonlinear optimizer can differentiate the
 residual, and a sampling planner can use the same prediction to construct
-a feasible trajectory. [Planning architecture and API](../../gtsam/planning/doc/MPPIControllers.md)
+a feasible trajectory. [Planning architecture and API](../../gtsam/planning/doc/PlanningOverview.md)
 
 | Class | Role |
 | --- | --- |
@@ -15,7 +15,6 @@ a feasible trajectory. [Planning architecture and API](../../gtsam/planning/doc/
 | `StagDynamicsFactor<State, Control>` | Evaluates the local coordinates of the next state about the predicted state. |
 | `PointMass` and `PointMassDynamicsFactor` | Describe planar motion under acceleration. The point mass also exposes its tangent velocity through `PointMass::dynamics`. |
 | `Unicycle` and `UnicycleDynamicsFactor` | Advance a `Pose2` by a forward body-frame translation and a turn. |
-| `StagMPCController` | Provides the `MPCController` interface for graph-based controllers. |
 
 The point-mass example passes a vector field to `SamplingPlanner`. The
 planner's Euler step integrates position from velocity and velocity from
@@ -29,10 +28,6 @@ trajectory satisfies the dynamics by construction, so their residuals vanish.
 The receding-horizon example scores just those priors and uses its transition
 to enforce the same dynamics. Both examples use a Gaussian proposal and the
 MPPI update. [C++ examples](../examples/mppi/README.md)
-
-For an existing graph whose dynamics vary along the horizon, supply the ordered
-control keys to `VanillaMPPIController<UnicycleDynamicsFactor>`. It locates the
-matching factor at each step and passes its prediction to the sampling planner.
 
 The Python guide constructs a unicycle horizon and checks the discrete
 predictions against its dynamics factors.

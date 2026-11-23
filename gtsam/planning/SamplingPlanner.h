@@ -22,8 +22,8 @@
 
 namespace gtsam {
 
-/// A discrete dynamics function returning a next state, optionally using the
-/// step index.
+/// A discrete dynamics function returning the next state for a state and
+/// control.
 template <class Step>
 struct DiscreteTransition {
   Step step;
@@ -31,7 +31,7 @@ struct DiscreteTransition {
 };
 
 /**
- * Mark a callable step(x,u) or step(k,x,u) as an exact discrete transition.
+ * Mark a callable step(x,u) as an exact discrete transition.
  * Set sendable to false when the callable must run on the planning thread.
  */
 template <class Step>
@@ -56,8 +56,8 @@ bool sendableDynamics(const DiscreteTransition<Step>& transition) {
 
 /// Integrate a tangent vector at the current state with one Euler retraction.
 template <class State, class Control, class Field>
-State nextState(const Field& field, size_t, const State& state,
-                const Control& control, double dt) {
+State nextState(const Field& field, const State& state, const Control& control,
+                double dt) {
   const auto velocity = field(state, control);
   if (static_cast<size_t>(velocity.size()) !=
       traits<State>::GetDimension(state))
@@ -66,17 +66,11 @@ State nextState(const Field& field, size_t, const State& state,
   return traits<State>::Retract(state, dt * velocity);
 }
 
-/// Advance an exact state transition, optionally selecting the model by time
-/// index.
+/// Advance one step with the supplied state transition.
 template <class State, class Control, class Step>
-State nextState(const DiscreteTransition<Step>& model, size_t k,
-                const State& state, const Control& control, double) {
-  if constexpr (std::is_invocable_v<const Step&, size_t, const State&,
-                                    const Control&>) {
-    return model.step(k, state, control);
-  } else {
-    return model.step(state, control);
-  }
+State nextState(const DiscreteTransition<Step>& model, const State& state,
+                const Control& control, double) {
+  return model.step(state, control);
 }
 
 }  // namespace internal
@@ -206,7 +200,7 @@ class SamplingPlanner {
                      const Dynamics& dynamics) const {
     for (size_t k = 0; k < controlKeys_.size(); ++k) {
       const Control control = controls.col(k);
-      states[k + 1] = internal::nextState(dynamics, k, states[k], control, dt_);
+      states[k + 1] = internal::nextState(dynamics, states[k], control, dt_);
     }
   }
 

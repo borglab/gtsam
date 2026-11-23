@@ -24,7 +24,6 @@
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/factorTesting.h>
 #include <gtsam/planning/SamplingPlanner.h>
-#include <gtsam/planning/VanillaMPPIController.h>
 #include <gtsam_unstable/planning/dynamics/models/PointMass.h>
 
 #include <memory>
@@ -70,18 +69,17 @@ TEST(PointMass, PlannerIntegratesModelField) {
                       trajectory.at<Vector>(X(1))));
 }
 
-// A controller with dynamic controls reads their width from the trajectory.
+// A planner with dynamic controls reads their width from the trajectory.
 TEST(PointMass, NominalControlDimensions) {
-  VanillaMPPIController<PointMassDynamicsFactor> controller;
+  SamplingPlanner<Vector, Vector> planner({X(0), X(1), X(2)}, {U(0), U(1)},
+                                          0.1);
   Values values;
   values.insert(U(0), control);
   values.insert(U(1), control);
-  Matrix nominal;
-  controller.getControl(values, {U(0), U(1)}, nominal);
+  const Matrix nominal = planner.nominalControls(values);
   EXPECT(assert_equal(control.replicate(1, 2).eval(), nominal));
   values.update(U(1), Vector::Zero(3).eval());
-  CHECK_EXCEPTION(controller.getControl(values, {U(0), U(1)}, nominal),
-                  std::invalid_argument);
+  CHECK_EXCEPTION(planner.nominalControls(values), std::invalid_argument);
 }
 
 // Checks that predict without a time step uses the default dt.

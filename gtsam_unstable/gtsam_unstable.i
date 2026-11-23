@@ -41,7 +41,6 @@ class gtsam::VectorValues;
 class gtsam::KeyList;
 class gtsam::KeySet;
 class gtsam::KeyVector;
-class gtsam::VanillaMPPIParams;
 class gtsam::VectorField;
 class gtsam::Pose2Transition;
 class gtsam::LevenbergMarquardtParams;
@@ -764,25 +763,5 @@ virtual class UnicycleDynamicsFactor : gtsam::NoiseModelFactor {
 #include <gtsam_unstable/planning/wrap/ModelBindings.h>
 gtsam::VectorField pointMassVectorField();
 gtsam::Pose2Transition unicycleTransition(const gtsam::Unicycle& model);
-
-#include <gtsam/planning/VanillaMPPIController.h>
-// The MATLAB dispatcher needs the concrete state type for initialValues.
-template<Factor={gtsam::PointMassDynamicsFactor}>
-class VanillaMPPIController {
-  VanillaMPPIController(const gtsam::VanillaMPPIParams& params);
-  gtsam::Values initialValues(const gtsam::NonlinearFactorGraph& graph, const gtsam::KeyVector& controlKeys,
-                             const gtsam::Vector& start, const gtsam::Matrix& controls) const;
-  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& futureGraph, const gtsam::Values& initial,
-                         const gtsam::KeyVector& controlKeys);
-};
-
-template<Factor={gtsam::UnicycleDynamicsFactor}>
-class VanillaMPPIController {
-  VanillaMPPIController(const gtsam::VanillaMPPIParams& params);
-  gtsam::Values initialValues(const gtsam::NonlinearFactorGraph& graph, const gtsam::KeyVector& controlKeys,
-                             const gtsam::Pose2& start, const gtsam::Matrix& controls) const;
-  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& futureGraph, const gtsam::Values& initial,
-                         const gtsam::KeyVector& controlKeys);
-};
 
 } //\namespace gtsam

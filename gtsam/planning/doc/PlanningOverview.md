@@ -65,7 +65,7 @@ auto transition = discreteTransition([dt](const Pose2& x, const Vector2& u) {
 });
 ```
 
-Both callables use the same rollout and scoring path. Each horizon step writes
+The planner uses the same dynamics callable at every step of the horizon. Each horizon step writes
 its control and predicted successor into `Values`. The graph can therefore
 read any state or control in the horizon as well as auxiliary variables
 supplied by the caller. In TBB builds, independent rollouts may call native
@@ -138,10 +138,6 @@ receding-horizon controller executes its first control, measures the next
 state, shifts the remaining controls forward by one step, and calls the same
 planner again. Keeping the proposal across solves advances its random stream.
 
-An application that already represents dynamics as a chain of ternary factors
-can use `GenericMPPIController<DynamicsFactor, Sampler>`. It reads the ordered
-chain, uses the factors' discrete predictions, and delegates to the sampling
-planner. `VanillaMPPIController<DynamicsFactor>` selects Gaussian sampling.
 The examples illustrate both open-loop optimization and receding-horizon
 control. [C++ examples](../../../gtsam_unstable/examples/mppi/README.md)
 

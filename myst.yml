@@ -43,7 +43,7 @@ project:
       - file: ./gtsam/navigation/navigation.md
         children:
         - pattern: ./gtsam/navigation/doc/*.{md,ipynb}
-      - file: ./gtsam/planning/doc/MPPIControllers.md
+      - file: ./gtsam/planning/doc/PlanningOverview.md
         title: Planning
         children:
         - file: ./gtsam/planning/doc/SamplingPlanner.ipynb

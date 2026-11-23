@@ -15,6 +15,7 @@
 
 #include <cmath>
 #include <limits>
+#include <thread>
 
 using namespace gtsam;
 using symbol_shorthand::U;
@@ -72,29 +73,78 @@ TEST(SamplingPlanner, DynamicVectorField) {
                   std::invalid_argument);
 }
 
-// An indexed discrete transition returns the next state without integration.
-TEST(SamplingPlanner, TimeVaryingDiscreteTransition) {
+// A discrete transition returns the next state without integration.
+TEST(SamplingPlanner, DiscreteTransitionRollout) {
   const SamplingPlanner<Vector1, Vector1> planner({X(0), X(1), X(2)},
                                                   {U(0), U(1)}, 0.05);
   Values initial;
   initial.insert(X(0), Vector1{2.});
   initial.insert(100, 7.);
   const Matrix controls{{3., -1.}};
-  const auto step = [](size_t k, const Vector1& x,
-                       const Vector1& u) -> Vector1 {
-    return x + (k + 1.) * u;
+  const auto step = [](const Vector1& x, const Vector1& u) -> Vector1 {
+    return x + u;
   };
   const Values plan =
       planner.rollout(initial, controls, discreteTransition(step));
   EXPECT(assert_equal(Vector1{5.}, plan.at<Vector1>(X(1))));
-  EXPECT(assert_equal(Vector1{3.}, plan.at<Vector1>(X(2))));
+  EXPECT(assert_equal(Vector1{4.}, plan.at<Vector1>(X(2))));
   EXPECT_DOUBLES_EQUAL(7., plan.at<double>(100), 0.);
-  const Values unindexed = planner.rollout(
-      initial, controls,
-      discreteTransition(
-          [](const Vector1& x, const Vector1& u) -> Vector1 { return x + u; }));
-  EXPECT(assert_equal(Vector1{4.}, unindexed.at<Vector1>(X(2))));
 }
+
+// Thread-affine transitions must run on the caller even with parallel scoring.
+TEST(SamplingPlanner, TransitionOnCallingThread) {
+  const auto caller = std::this_thread::get_id();
+  const auto step = discreteTransition(
+      [caller](const Vector1& x, const Vector1& u) -> Vector1 {
+        if (std::this_thread::get_id() != caller)
+          throw std::runtime_error("Transition evaluated on another thread.");
+        return x + u;
+      },
+      false);
+  SamplingPlanner<Vector1, Vector1> planner({X(0), X(1)}, {U(0)}, 0.1, true);
+  NonlinearFactorGraph graph;
+  graph.addPrior<Vector1>(X(1), Vector1{1.}, noiseModel::Unit::Create(1));
+  Values initial;
+  initial.insert(X(0), Vector1{0.});
+  const Matrix controls = Matrix::Ones(1, 64);
+  EXPECT(assert_equal(Vector::Zero(64).eval(),
+                      planner.rolloutAndScore(graph, initial, controls, step)));
+}
+
+namespace prior_scoring {
+
+/// A derived prior delegates its activation decision to the Values overload.
+class InactivePrior : public PriorFactor<Vector2> {
+ public:
+  using PriorFactor<Vector2>::PriorFactor;
+  bool active(const Values&) const override { return false; }
+};
+
+// Robust priors and subclass overrides must agree with full graph evaluation.
+TEST(SamplingPlanner, PriorScoring) {
+  SamplingPlanner<Vector2, Vector2> planner({X(0), X(1)}, {U(0)}, 0.5);
+  const auto field = [](const Vector2&, const Vector2& u) { return u; };
+  const auto noise = noiseModel::Unit::Create(2);
+  const auto huber = noiseModel::mEstimator::Huber::Create(
+      0.1, noiseModel::mEstimator::Base::Scalar);
+  NonlinearFactorGraph graph;
+  graph.addPrior<Vector2>(X(1), Vector2{3., 4.},
+                          noiseModel::Robust::Create(huber, noise));
+  graph.emplace_shared<InactivePrior>(U(0), Vector2{4., 5.}, noise);
+  Values initial;
+  initial.insert(X(0), Vector2{0., 0.});
+  const Matrix controls{{1., 3.}, {-2., 0.}};
+  const Vector costs = planner.rolloutAndScore(graph, initial, controls, field);
+  for (Eigen::Index i = 0; i < controls.cols(); ++i)
+    EXPECT_DOUBLES_EQUAL(
+        graph.error(planner.rollout(initial, controls.col(i), field)), costs[i],
+        0.);
+  graph.addPrior<Vector2>(X(1), Vector2{1., 2.}, Matrix3::Identity());
+  CHECK_EXCEPTION(planner.rolloutAndScore(graph, initial, controls, field),
+                  std::invalid_argument);
+}
+
+}  // namespace prior_scoring
 
 // A seeded draw uses Akash's per-candidate Gaussian streams, including repeated
 // calls.
@@ -126,6 +176,7 @@ TEST(SamplingPlanner, FactoredGaussianMPPI) {
   initial.insert(U(1), Vector1{-0.1});
   initial.insert(anchor, Vector1{1.5});
   NonlinearFactorGraph graph;
+  graph.addPrior<Vector1>(U(1), Vector1{0.4}, noiseModel::Unit::Create(1));
   graph.emplace_shared<BetweenFactor<Vector1>>(X(0), X(2), Vector1{1.0},
                                                noiseModel::Unit::Create(1));
   graph.emplace_shared<BetweenFactor<Vector1>>(X(1), anchor, Vector1{0.2},
@@ -143,6 +194,8 @@ TEST(SamplingPlanner, FactoredGaussianMPPI) {
       const Values values = planner.rollout(initial, controls, field);
       errors[j] = graph.error(values);
     }
+    EXPECT(assert_equal(errors, planner.rolloutAndScore(
+                                    graph, initial, batch.controls, field)));
     const Vector weights = (-2. * errors.array()).exp();
     Matrix mean = Matrix::Zero(1, 2);
     for (size_t j = 0; j < 8; ++j)

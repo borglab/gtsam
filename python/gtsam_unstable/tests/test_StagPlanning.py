@@ -28,21 +28,15 @@ class TestStagPlanning(unittest.TestCase):
                 planner = planner_type([X(0), X(1)], [U(0)], 0.1)
                 point_mass = isinstance(model, gu.PointMass)
                 if point_mass:
-                    controller_type = gu.VanillaMPPIControllerPointMassDynamicsFactor
                     dynamics = gu.pointMassVectorField()
                     callback = model.dynamics
                 else:
-                    controller_type = gu.VanillaMPPIControllerUnicycleDynamicsFactor
                     dynamics = gu.unicycleTransition(model)
                     callback = gtsam.discreteTransition(model.predict)
                 graph = gtsam.NonlinearFactorGraph()
                 graph.add(gtsam.PriorFactorVector(U(0), np.array([1., 0.]), unit))
                 graph.add(factor(X(0), U(0), X(1), model, model_noise))
-                params = gtsam.VanillaMPPIParams()
-                params.controlCovariance = np.eye(2)
                 controls = np.zeros((2, 1))
-                typed = controller_type(params).initialValues(graph, [U(0)], start, controls)
-                np.testing.assert_array_equal(typed.atPoint2(U(0)), controls[:, 0])
                 seed = gtsam.Values()
                 seed.insert(X(0), start)
                 initial = planner.rollout(seed, controls, dynamics)
@@ -77,15 +71,14 @@ class TestStagPlanning(unittest.TestCase):
             return values.atVector(U(0))
 
         graph.add(gtsam.CustomFactor(gtsam.noiseModel.Unit.Create(2), [U(0)], effort))
-        params = gtsam.VanillaMPPIParams()
-        params.controlCovariance = np.eye(2)
-        params.numSamples = 16
-        self.assertFalse(params.parallelCandidateScoring)
-        params.parallelCandidateScoring = True
-        controller = gu.VanillaMPPIControllerPointMassDynamicsFactor(params)
-        start = np.array([0.0, 0.0, 1.0, 0.0])
-        initial = controller.initialValues(graph, [U(0)], start, np.zeros((2, 1)))
-        result = controller.optimize(graph, initial, [U(0)])
+        planner = gtsam.SamplingPlannerVectorVector([X(0), X(1)], [U(0)], 0.1, True)
+        start = np.array([0., 0., 1., 0.])
+        seed = gtsam.Values()
+        seed.insert(X(0), start)
+        dynamics = gu.pointMassVectorField()
+        initial = planner.rollout(seed, np.zeros((2, 1)), dynamics)
+        result = planner.optimize(graph, initial, dynamics,
+                                  gtsam.GaussianProposal(np.eye(2), 16, 24), gtsam.MPPI(), 1)
         np.testing.assert_allclose(result.atVector(X(1)),
                                    model.predict(start, result.atVector(U(0))))
         self.assertTrue(np.isfinite(graph.error(result)))
