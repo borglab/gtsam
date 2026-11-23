@@ -23,9 +23,17 @@ struct ControlBatch {
   Matrix controls;
 };
 
-/// Search state of a proposal with fixed dispersion, one column per time step.
+/// Search state of a proposal with per-knot marginal standard deviations, one
+/// column per time step.
 struct ControlDistribution {
   Matrix mean;
+  Matrix stddev{};
+  size_t iteration = 0;
+};
+
+/// Reserve the first candidate for the nominal plan in every search rule.
+struct GaussianProposalOptions {
+  bool includeNominal = false;
 };
 
 /// Independent Gaussian perturbations around a nominal control sequence.
@@ -35,15 +43,23 @@ class GaussianProposal {
 
   /// Seed the per-candidate random streams for this proposal.
   GaussianProposal(const Matrix& covariance, size_t samples,
-                   std::uint64_t seed = 42)
-      : sampler_(covariance, samples, seed) {}
+                   std::uint64_t seed = 42,
+                   GaussianProposalOptions options = {})
+      : sampler_(covariance, samples, seed),
+        initialStddev_(covariance.diagonal().array().sqrt()),
+        options_(options) {
+    if (!samples)
+      throw std::invalid_argument("Expected at least one candidate.");
+  }
 
   /// Initialize the proposal around an M-by-H nominal control sequence.
   State initialize(Matrix nominal) const {
-    if (!nominal.size())
+    if (!nominal.cols() || nominal.rows() != initialStddev_.size() ||
+        !nominal.allFinite())
       throw std::invalid_argument(
-          "Expected a nonempty nominal control sequence.");
-    return {std::move(nominal)};
+          "Expected finite nominal controls matching the covariance.");
+    Matrix spread = initialStddev_.replicate(1, nominal.cols());
+    return {std::move(nominal), std::move(spread)};
   }
 
   /**
@@ -53,13 +69,32 @@ class GaussianProposal {
    */
   ControlBatch sample(const State& state, const Values& /*initial*/,
                       double /*dt*/, bool includeIncumbent = false) const {
-    ControlBatch batch{sampler_.sampleControls(state.mean)};
     const Eigen::Index horizon = state.mean.cols();
-    if (!horizon || batch.controls.rows() != state.mean.rows() ||
-        !batch.controls.cols() || batch.controls.cols() % horizon)
+    if (!horizon || state.mean.rows() != initialStddev_.size())
       throw std::invalid_argument(
-          "Expected a batch of complete control sequences.");
-    if (includeIncumbent) batch.controls.leftCols(horizon) = state.mean;
+          "Nominal controls must match the covariance.");
+    ControlBatch batch;
+    if (!state.stddev.size()) {
+      batch.controls = sampler_.sampleControls(state.mean);
+    } else {
+      if (state.stddev.rows() != state.mean.rows() ||
+          state.stddev.cols() != horizon || !state.stddev.allFinite() ||
+          (state.stddev.array() < 0.).any())
+        throw std::invalid_argument("Invalid marginal standard deviations.");
+      if ((state.stddev.colwise() - initialStddev_).isZero(0.)) {
+        batch.controls = sampler_.sampleControls(state.mean);
+      } else {
+        batch.controls = sampler_.sampleNoise(horizon).array().colwise() /
+                         initialStddev_.array();
+        for (Eigen::Index k = 0; k < batch.controls.cols(); k += horizon) {
+          auto trajectory = batch.controls.middleCols(k, horizon);
+          trajectory.array() *= state.stddev.array();
+          trajectory += state.mean;
+        }
+      }
+    }
+    if (includeIncumbent || options_.includeNominal)
+      batch.controls.leftCols(horizon) = state.mean;
     return batch;
   }
 
@@ -78,10 +113,33 @@ class GaussianProposal {
                 batch.controls.middleCols(i * mean.cols(), mean.cols());
     }
     state.mean.swap(mean);
+    ++state.iteration;
+  }
+
+  /// Refit marginal standard deviations while retaining cross-control
+  /// correlations.
+  void fit(State& state, const ControlBatch& batch, const Vector& weights,
+           double minStddev) const {
+    if (!(minStddev > 0.) || !std::isfinite(minStddev))
+      throw std::invalid_argument("Expected a positive finite spread floor.");
+    update(state, batch, weights);
+    Matrix variance = Matrix::Zero(state.mean.rows(), state.mean.cols());
+    for (Eigen::Index i = 0; i < weights.size(); ++i) {
+      if (weights[i] > 0.)
+        variance.array() +=
+            weights[i] *
+            (batch.controls.middleCols(i * variance.cols(), variance.cols()) -
+             state.mean)
+                .array()
+                .square();
+    }
+    state.stddev = variance.array().sqrt().max(minStddev);
   }
 
  private:
   GaussianNoiseSampler sampler_;
+  Vector initialStddev_;
+  GaussianProposalOptions options_;
 };
 
 }  // namespace gtsam

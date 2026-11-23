@@ -15,7 +15,7 @@ flowchart LR
     P["Gaussian proposal"] -->|candidate controls| R["SamplingPlanner rollout"]
     D["Dynamics callable"] --> R
     R -->|trajectory Values| G["Factor graph"]
-    G -->|candidate costs| A["MPPI"]
+    G -->|candidate costs| A["MPPI, CEM or predictive sampling"]
     A -->|normalized weights| P
 ```
 
@@ -30,6 +30,8 @@ or a robot on a manifold, and lets the caller change an objective by editing fac
 | `SamplingPlanner<State, Control>(stateKeys, controlKeys, dt)` | Associates the trajectory with its ordered graph keys and sets the integration step for a vector field. |
 | `GaussianProposal(covariance, numSamples, seed)` | Uses `GaussianNoiseSampler` to perturb the current control sequence and updates it with a weighted mean. |
 | `MPPI(inverseTemperature)` | Converts the graph costs into normalized weights and passes them back to the proposal. |
+| `CEM(elites, minStddev)` | Fits the Gaussian to the lowest-cost candidates. |
+| `PredictiveSampling()` | Selects the lowest-cost candidate, including the incumbent. |
 | `planner.rollout(initial, controls, dynamics)` | Predicts the trajectory for a single control sequence and returns its `Values`. |
 | `planner.optimize(graph, initial, dynamics, proposal, rule, iterations)` | Initializes the search, repeats the sampling update, and returns the final nominal trajectory. |
 | `planner.iterate(graph, initial, dynamics, proposal, rule, search)` | Advances a caller-owned search by one iteration. Initialize it with `proposal.initialize(planner.nominalControls(initial))`. |
@@ -153,3 +155,18 @@ three-coordinate tangent vector, and its discrete transition returns a `Pose2`.
 uses both forms of dynamics. [Gaussian proposals and the MPPI update](MPPI.ipynb)
 follows a Gaussian proposal through one update and visualizes how each sampled
 trajectory contributes to the next plan.
+
+## Changing the update rule
+
+The planner evaluates every sampled trajectory with the same factor graph.
+MPPI averages the sampled controls using exponential cost weights. Predictive
+sampling includes the incumbent and selects the lowest-cost trajectory, so its
+nominal cost can only decrease or stay constant for a deterministic rollout.
+CEM gives equal weight to the lowest-cost finite elites and refits both the
+mean and marginal standard deviation at each control and time step. The
+standard-deviation floor keeps the search exploring when the elites agree.
+
+Pass `CEM(elites, minStddev)` or `PredictiveSampling()` in the same argument
+position as `MPPI(inverseTemperature)`. The explicit Gaussian proposal owns
+the random streams. The search state holds the fitted controls and dispersion.
+See the [sampling search guide](SamplingSearch.ipynb) for a complete solve.
