@@ -2,7 +2,10 @@
 // Authors: Akash Ratheesh and Frank Dellaert.
 #pragma once
 
-#include <gtsam/planning/SamplingPlanner.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/planning/EliteMPPI.h>
+#include <gtsam/planning/MPPITracking.h>
+#include <gtsam/planning/TrackingFeedback.h>
 #include <pybind11/functional.h>
 
 namespace gtsam::python {
@@ -40,6 +43,18 @@ void bindSearch(py::class_<Planner, std::shared_ptr<Planner>>& cls) {
            Release());
 }
 
+/// Register the update rules supported by this proposal.
+template <class Dynamics, class Proposal, class Planner>
+void bindSearchRules(py::class_<Planner, std::shared_ptr<Planner>>& cls) {
+  bindSearch<Dynamics, Proposal, MPPI>(cls);
+  bindSearch<Dynamics, Proposal, TsallisMPPI>(cls);
+  bindSearch<Dynamics, Proposal, PredictiveSampling>(cls);
+  if constexpr (!std::is_same_v<Proposal, PiecewiseLinearProposal>) {
+    bindSearch<Dynamics, Proposal, CEM>(cls);
+    bindSearch<Dynamics, Proposal, EliteMPPI>(cls);
+  }
+}
+
 /// Release the GIL around rollouts. Python callbacks reacquire it at
 /// invocation.
 template <class Dynamics, class Planner>
@@ -50,9 +65,9 @@ void bindPythonDynamics(py::class_<Planner, std::shared_ptr<Planner>>& cls) {
       .def("rolloutAndScore", &Planner::template rolloutAndScore<Dynamics>,
            py::arg("cost"), py::arg("initial"), py::arg("controls"),
            py::arg("dynamics"), Release());
-  bindSearch<Dynamics, GaussianProposal, MPPI>(cls);
-  bindSearch<Dynamics, GaussianProposal, CEM>(cls);
-  bindSearch<Dynamics, GaussianProposal, PredictiveSampling>(cls);
+  bindSearchRules<Dynamics, GaussianProposal>(cls);
+  bindSearchRules<Dynamics, SmoothControlProposal>(cls);
+  bindSearchRules<Dynamics, PiecewiseLinearProposal>(cls);
 }
 
 template <class State, class Control>
@@ -63,6 +78,10 @@ void bindPlannerCallbacks(py::module_& module, const char* name) {
   auto cls =
       py::reinterpret_borrow<py::class_<Planner, std::shared_ptr<Planner>>>(
           module.attr(name));
+  using Policy = std::function<Control(size_t, const State&)>;
+  cls.def("rolloutPolicy", &Planner::template rolloutPolicy<Policy, Field>,
+          py::arg("initial"), py::arg("policy"), py::arg("dynamics"),
+          py::call_guard<py::gil_scoped_release>());
   bindPythonDynamics<Field>(cls);
   bindPythonDynamics<DiscreteTransition<PythonStep>>(cls);
 }

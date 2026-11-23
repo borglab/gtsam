@@ -24,6 +24,15 @@
 
 namespace gtsam::internal {
 
+/// Evaluate one trajectory's factors in graph order on the current thread.
+inline double candidateGraphError(const NonlinearFactorGraph& graph,
+                                  const Values& values) {
+  double error = 0.0;
+  for (const auto& factor : graph)
+    if (factor) error += factor->error(values);
+  return error;
+}
+
 /// A non-sendable factor must be evaluated on the thread that called the
 /// planner.
 inline bool allFactorsSendable(const NonlinearFactorGraph& graph) {

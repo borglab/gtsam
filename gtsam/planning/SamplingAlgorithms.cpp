@@ -27,7 +27,67 @@ void checkCosts(const Vector& costs) {
         "Expected finite costs or +infinity, with at least one finite cost.");
 }
 
+double checkedTemperature(double beta) {
+  if (!std::isfinite(beta) || beta < 0)
+    throw std::invalid_argument(
+        "Expected a finite nonnegative inverse temperature.");
+  return beta;
+}
+
+Vector exponentialWeights(const Vector& costs, double beta,
+                          const Vector& offsets) {
+  checkCosts(costs);
+  Vector logs = Vector::Zero(costs.size());
+  if (beta != 0) logs = -beta * (costs.array() - costs.minCoeff());
+  if (offsets.size()) {
+    if (offsets.size() != costs.size() || offsets.hasNaN() ||
+        offsets.maxCoeff() == std::numeric_limits<double>::infinity())
+      throw std::invalid_argument(
+          "Expected one finite or negative infinite log offset per candidate.");
+    logs += offsets;
+  }
+  for (Eigen::Index i = 0; i < costs.size(); ++i)
+    if (!std::isfinite(costs[i]))
+      logs[i] = -std::numeric_limits<double>::infinity();
+  const double maxLog = logs.maxCoeff();
+  if (!std::isfinite(maxLog))
+    throw std::domain_error("All candidates have zero weight.");
+  Vector weights = (logs.array() - maxLog).exp();
+  weights /= weights.sum();
+  return (weights.array() < std::numeric_limits<double>::min())
+      .select(0.0, weights);
+}
+
+double empiricalRisk(Vector costs, double alpha, bool averageTail) {
+  if (!costs.size() || !costs.allFinite() || !(alpha >= 0. && alpha <= 1.))
+    throw std::invalid_argument(
+        "Expected finite scenario costs and a quantile in [0, 1].");
+  std::sort(costs.data(), costs.data() + costs.size());
+  const double index = alpha * (costs.size() - 1);
+  const auto lower = static_cast<Eigen::Index>(std::floor(index));
+  const auto upper = static_cast<Eigen::Index>(std::ceil(index));
+  const double fraction = index - lower;
+  const double quantile =
+      (1. - fraction) * costs[lower] + fraction * costs[upper];
+  if (!averageTail) return quantile;
+  const double weight = 1. / (1 + costs.size() - upper);
+  return weight * quantile + (weight * costs.tail(costs.size() - upper)).sum();
+}
+
 }  // namespace
+
+double valueAtRisk(const Vector& costs, double alpha) {
+  return empiricalRisk(costs, alpha, false);
+}
+
+double conditionalValueAtRisk(const Vector& costs, double alpha) {
+  return empiricalRisk(costs, alpha, true);
+}
+
+MPPI::MPPI(double beta) : inverseTemperature_(checkedTemperature(beta)) {}
+Vector MPPI::weights(const Vector& costs, const Vector& offsets) const {
+  return exponentialWeights(costs, inverseTemperature_, offsets);
+}
 
 Vector PredictiveSampling::weights(const Vector& costs) const {
   checkCosts(costs);

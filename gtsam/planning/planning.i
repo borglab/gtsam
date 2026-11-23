@@ -26,16 +26,21 @@ class ControlDistribution {
 
 class ControlBatch {
   gtsam::Matrix controls;
+  gtsam::Vector logWeightOffsets;
 };
 
 class GaussianProposalOptions {
   GaussianProposalOptions();
+  gtsam::Matrix stddev;
+  double decay;
+  double zeroMeanFraction;
   bool includeNominal;
+  gtsam::Vector likelihoodCoefficients;
 };
 
-class GaussianProposal {
-  GaussianProposal(const gtsam::Matrix& covariance, size_t samples, uint64_t seed = 42);
-  GaussianProposal(const gtsam::Matrix& covariance, size_t samples, uint64_t seed,
+virtual class GaussianProposal {
+  GaussianProposal(const gtsam::Matrix& covariance, size_t samples, size_t seed = 42);
+  GaussianProposal(const gtsam::Matrix& covariance, size_t samples, size_t seed,
                    gtsam::GaussianProposalOptions options);
   @pybind_lambda
   gtsam::ControlDistribution initialize(const gtsam::Matrix& nominal) const;
@@ -43,25 +48,120 @@ class GaussianProposal {
                              double dt, bool includeIncumbent = false) const;
   void update(gtsam::ControlDistribution& state, const gtsam::ControlBatch& batch,
               const gtsam::Vector& weights) const;
+
+};
+
+virtual class ColoredNoiseProposal : gtsam::GaussianProposal {
+  ColoredNoiseProposal(const gtsam::Matrix& covariance, size_t samples, double exponent,
+                       size_t seed = 42);
+  ColoredNoiseProposal(const gtsam::Matrix& covariance, size_t samples, double exponent,
+                       size_t seed, gtsam::GaussianProposalOptions options);
+};
+
+virtual class NormalLognormalProposal : gtsam::GaussianProposal {
+  NormalLognormalProposal(const gtsam::Matrix& covariance, size_t samples, double logStddev,
+                          size_t seed = 42);
+  NormalLognormalProposal(const gtsam::Matrix& covariance, size_t samples, double logStddev,
+                          size_t seed, gtsam::GaussianProposalOptions options);
+};
+
+class MotionPrimitiveOptions {
+  MotionPrimitiveOptions();
+  gtsam::Vector amplitude;
+  double coloredFraction;
+  double shiftedFraction;
+  double coloredScale;
+  double shiftedScale;
+  double exponent;
+  size_t fixedPrefix;
+};
+
+class PiecewiseLinearProposal {
+  PiecewiseLinearProposal(const gtsam::Matrix& covariance, size_t samples, size_t segments, size_t seed = 42);
+  PiecewiseLinearProposal(const gtsam::Matrix& covariance, size_t samples, size_t segments, size_t seed,
+                          gtsam::GaussianProposalOptions options);
+  PiecewiseLinearProposal(const gtsam::Matrix& covariance, size_t samples, size_t segments,
+                          gtsam::MotionPrimitiveOptions mixture, size_t seed = 42);
+  @pybind_lambda
+  gtsam::ControlDistribution initialize(const gtsam::Matrix& nominal) const;
+};
+
+class SmoothControlProposal {
+  SmoothControlProposal(const gtsam::Matrix& covariance, size_t samples, size_t seed = 42);
+  SmoothControlProposal(const gtsam::Matrix& covariance, size_t samples, size_t seed,
+                        gtsam::GaussianProposalOptions options);
 };
 
 #include <gtsam/planning/SamplingAlgorithms.h>
 
+double valueAtRisk(const gtsam::Vector& costs, double alpha);
+double conditionalValueAtRisk(const gtsam::Vector& costs, double alpha);
+
 class MPPI {
   MPPI(double inverseTemperature = 1.0);
-  gtsam::Vector weights(const gtsam::Vector& costs) const;
   @pybind_lambda
   void apply(const gtsam::GaussianProposal& proposal, gtsam::ControlDistribution& search,
              const gtsam::ControlBatch& batch, const gtsam::Vector& costs) const;
-};
 
-class CEM {
-  CEM(size_t elites, double minStddev = 1e-3);
+  @pybind_lambda
   gtsam::Vector weights(const gtsam::Vector& costs) const;
+  gtsam::Vector weights(const gtsam::Vector& costs, const gtsam::Vector& logWeightOffsets) const;
 };
 
 class PredictiveSampling {
   PredictiveSampling();
+  gtsam::Vector weights(const gtsam::Vector& costs) const;
+};
+
+class CEM {
+  CEM(size_t elites, double minStddev = 0.001);
+  gtsam::Vector weights(const gtsam::Vector& costs) const;
+};
+
+#include <gtsam/planning/MPPITracking.h>
+
+// The callable tracking operations are bound with the Python dynamics callbacks.
+class MPPITracking {
+  MPPITracking(const gtsam::Matrix& covariance, size_t samples, double inverseTemperature, size_t seed = 42);
+  MPPITracking(const gtsam::Matrix& covariance, size_t samples, double inverseTemperature, size_t seed,
+               const gtsam::GaussianProposalOptions& options);
+  @pybind_lambda
+  void setControlHistory(const gtsam::Matrix& nominal);
+  void setControlHistory(const gtsam::Matrix& nominal, const gtsam::Matrix& actual);
+};
+
+class TsallisMPPI {
+  TsallisMPPI(double cutoff, double shape, double inverseTemperature = 1.0);
+  gtsam::Vector weights(const gtsam::Vector& costs) const;
+};
+class MPPIPlans {
+  gtsam::Values nominal;
+  gtsam::Values actual;
+  size_t candidate;
+};
+
+gtsam::Matrix smoothControlTrajectory(const gtsam::Matrix& controls, const gtsam::Matrix& history);
+
+#include <gtsam/planning/TrackingFeedback.h>
+
+class DDPTracking {
+  DDPTracking(const gtsam::Matrix& statePrecision, const gtsam::Matrix& controlPrecision,
+              const gtsam::Matrix& terminalPrecision);
+  // A subsequent solve can resize or replace the stored trajectory and gains.
+  @pybind_lambda
+  gtsam::Matrix states() const;
+  @pybind_lambda
+  gtsam::Matrix gain(size_t step) const;
+};
+
+gtsam::Vector contractionFeedback(const gtsam::Vector& error, const gtsam::Matrix& metric,
+                                  const gtsam::Matrix& inputJacobian,
+                                  const gtsam::Vector& driftDifference, double rate);
+
+#include <gtsam/planning/EliteMPPI.h>
+
+class EliteMPPI {
+  EliteMPPI(size_t elites, double inverseTemperature = 1.0, double minStddev = 0.001);
   gtsam::Vector weights(const gtsam::Vector& costs) const;
 };
 
@@ -146,4 +246,12 @@ class SamplingPlanner {
                          const gtsam::PredictiveSampling& algorithm, size_t iterations) const;
 };
 
+template<State={gtsam::Pose3}, Control={gtsam::Vector}>
+class SamplingPlanner {
+  SamplingPlanner(gtsam::KeyVector stateKeys, gtsam::KeyVector controlKeys, double dt,
+                  bool parallelCandidateScoring = false);
+  gtsam::Matrix nominalControls(const gtsam::Values& initial) const;
+};
+
 }  // namespace gtsam
+
