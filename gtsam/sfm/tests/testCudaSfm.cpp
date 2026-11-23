@@ -1264,6 +1264,40 @@ TEST(SfmLevenbergMarquardt, DenseSchurStopsWhenFixedDampingCannotIncrease) {
   }
 }
 
+// A valid solve followed by a rejected trial uses the same damping guard.
+TEST(SfmLevenbergMarquardt, DenseSchurStopsAfterRejectedTrialWithFixedDamping) {
+  const SfmData data = makePerturbedBalLikeData(makeTrueBalLikeData());
+
+  for (double lambdaFactor : {0.0, 1.0}) {
+    auto params = SfmLevenbergMarquardtParams::ceresDefaults();
+    params.setLinearSolver(LinearSolverType::DenseCholesky);
+    params.maxIterations = 1;
+    params.lambdaInitial = 1e-3;
+    params.lambdaFactor = lambdaFactor;
+    params.useFixedLambdaFactor = true;
+    params.relativeErrorTol = 0.0;
+    params.minModelFidelity = std::numeric_limits<double>::infinity();
+    params.enableDetailedProfiling = true;
+
+    const auto result = optimizeSfmWithoutValueDownload(data, params);
+    EXPECT_LONGS_EQUAL(0, result.acceptedSteps);
+    EXPECT_LONGS_EQUAL(1, result.innerIterations);
+    DOUBLES_EQUAL(result.initialError, result.finalError, 0.0);
+    DOUBLES_EQUAL(params.lambdaInitial, result.finalLambda, 0.0);
+    CHECK(!result.iterationProfiles.empty());
+
+    const auto& attempts = result.iterationProfiles.front().attemptProfiles;
+    CHECK(!attempts.empty());
+    const auto& attempt = attempts.front();
+    CHECK(attempt.attemptedTrial);
+    CHECK(std::isfinite(attempt.trialError));
+    CHECK(!attempt.stepSuccessful);
+    CHECK(!attempt.stopSearchingLambda);
+    CHECK(!attempt.lambdaUpperBoundReached);
+    CHECK(attempt.terminated);
+  }
+}
+
 // Verifies SfmLevenbergMarquardt::ImplicitSchurPcgMatchesDense.
 TEST(SfmLevenbergMarquardt, ImplicitSchurPcgMatchesDense) {
   const SfmData measuredData = makeTrueBalLikeData();
