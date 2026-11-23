@@ -43,6 +43,13 @@ project:
       - file: ./gtsam/navigation/navigation.md
         children:
         - pattern: ./gtsam/navigation/doc/*.{md,ipynb}
+      - file: ./gtsam/planning/doc/MPPIControllers.md
+        children:
+        - file: ./gtsam/planning/doc/SamplingPlanner.ipynb
+        - file: ./gtsam/planning/doc/MPPI.ipynb
+      - file: ./gtsam_unstable/planning/README.md
+        children:
+        - file: ./gtsam_unstable/planning/doc/MPPIWithDynamicsFactors.ipynb
       - file: ./gtsam/sfm/sfm.md
         children:
         - pattern: ./gtsam/sfm/doc/*
@@ -87,6 +94,10 @@ project:
       - title: Navigation
         children:
         - pattern: ./python/gtsam/examples/navigation/*.ipynb
+      - title: Planning
+        file: ./gtsam_unstable/examples/mppi/README.md
+        children:
+        - pattern: ./python/gtsam_unstable/examples/planning/*.ipynb
       - title: Structure from Motion
         children:
         - pattern: ./python/gtsam/examples/sfm/*.ipynb

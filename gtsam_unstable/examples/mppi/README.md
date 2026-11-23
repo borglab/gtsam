@@ -53,3 +53,15 @@ The trajectory optimization examples print the cost of the initial and of the
 optimized plan, the plan every 0.5 s, and the final distance to the goal. The
 MPC example prints the pose and the applied control every 0.5 s, and the time
 at which it reached the goal.
+
+## Python notebooks
+
+Each notebook runs the native sampling planner on the corresponding example graph.
+The plots show the planned states and controls or, for MPC, the measured
+trajectory as the robot replans.
+
+- [Point-mass trajectory optimization](../../../python/gtsam_unstable/examples/planning/PointMassMPPITrajectoryOptimizationExample.ipynb)
+- [Unicycle trajectory optimization](../../../python/gtsam_unstable/examples/planning/UnicycleMPPITrajectoryOptimizationExample.ipynb)
+- [Unicycle receding-horizon control](../../../python/gtsam_unstable/examples/planning/UnicycleMPPIMPCExample.ipynb)
+
+The interactive Plotly figures require an internet connection.

@@ -41,6 +41,9 @@ class gtsam::VectorValues;
 class gtsam::KeyList;
 class gtsam::KeySet;
 class gtsam::KeyVector;
+class gtsam::VanillaMPPIParams;
+class gtsam::Vector4Point2Field;
+class gtsam::Pose2Point2Transition;
 class gtsam::LevenbergMarquardtParams;
 class gtsam::ISAM2Params;
 class gtsam::GaussianDensity;
@@ -735,5 +738,39 @@ virtual class LocalOrientedPlane3Factor : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
+
+// Dynamics models and factors for the point-mass and unicycle examples.
+#include <gtsam_unstable/planning/dynamics/models/PointMass.h>
+class PointMass {
+  PointMass(double dt);
+  static gtsam::Vector4 dynamics(const gtsam::Vector4& state, const gtsam::Vector2& control);
+  @pybind_lambda
+  gtsam::Vector4 predict(const gtsam::Vector4& state, const gtsam::Vector2& control) const;
+};
+virtual class PointMassDynamicsFactor : gtsam::NoiseModelFactor {
+  PointMassDynamicsFactor(gtsam::Key stateKey, gtsam::Key controlKey, gtsam::Key nextStateKey,
+                          const gtsam::PointMass* dynamics, const gtsam::noiseModel::Base* noiseModel);
+};
+#include <gtsam_unstable/planning/dynamics/models/Unicycle.h>
+class Unicycle {
+  Unicycle(double dt);
+  @pybind_lambda
+  gtsam::Pose2 predict(const gtsam::Pose2& state, const gtsam::Vector2& control) const;
+};
+virtual class UnicycleDynamicsFactor : gtsam::NoiseModelFactor {
+  UnicycleDynamicsFactor(gtsam::Key stateKey, gtsam::Key controlKey, gtsam::Key nextStateKey,
+                         const gtsam::Unicycle* dynamics, const gtsam::noiseModel::Base* noiseModel);
+};
+#include <gtsam_unstable/planning/wrap/ModelBindings.h>
+gtsam::Vector4Point2Field pointMassVectorField();
+gtsam::Pose2Point2Transition unicycleTransition(const gtsam::Unicycle& model);
+
+#include <gtsam/planning/VanillaMPPIController.h>
+template<Factor={gtsam::PointMassDynamicsFactor,gtsam::UnicycleDynamicsFactor}>
+class VanillaMPPIController {
+  VanillaMPPIController(const gtsam::VanillaMPPIParams& params);
+  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& futureGraph, const gtsam::Values& initial,
+                         const gtsam::KeyVector& controlKeys);
+};
 
 } //\namespace gtsam

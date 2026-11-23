@@ -33,3 +33,7 @@ MPPI update. [C++ examples](../examples/mppi/README.md)
 For an existing graph whose dynamics vary along the horizon, supply the ordered
 control keys to `VanillaMPPIController<UnicycleDynamicsFactor>`. It locates the
 matching factor at each step and passes its prediction to the sampling planner.
+
+The Python guide constructs a unicycle horizon and checks the discrete
+predictions against its dynamics factors.
+[Scoring a unicycle trajectory with dynamics factors](doc/MPPIWithDynamicsFactors.ipynb)

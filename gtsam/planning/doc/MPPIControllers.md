@@ -144,3 +144,10 @@ chain, uses the factors' discrete predictions, and delegates to the sampling
 planner. `VanillaMPPIController<DynamicsFactor>` selects Gaussian sampling.
 The examples illustrate both open-loop optimization and receding-horizon
 control. [C++ examples](../../../gtsam_unstable/examples/mppi/README.md)
+
+## Python user guides
+
+[Planning a trajectory with a factor graph](SamplingPlanner.ipynb) builds a graph and
+uses both forms of dynamics. [Gaussian proposals and the MPPI update](MPPI.ipynb)
+follows a Gaussian proposal through one update and visualizes how each sampled
+trajectory contributes to the next plan.
