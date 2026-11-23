@@ -1001,12 +1001,20 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
       if (rejectStep) {
         if (reducedSession) reducedSession->invalidateWarmStart();
         stageStart = detailedProfileStart(detailedProfiling);
+        const double previousLambda = lambda;
         gtsam::internal::increaseLevenbergMarquardtLambda(
             params, &lambda, &currentFactor);
-        if (lambda >= params.lambdaUpperBound) {
+        attemptProfile.lambdaUpperBoundReached =
+            lambda >= params.lambdaUpperBound;
+        // An adaptive multiplier can grow even when this update leaves
+        // lambda unchanged. A fixed multiplier must increase lambda now.
+        const bool canRetry =
+            std::isfinite(lambda) && lambda > 0.0 &&
+            (!params.useFixedLambdaFactor || lambda > previousLambda);
+        if (!canRetry) lambda = previousLambda;
+        if (!canRetry || attemptProfile.lambdaUpperBoundReached) {
           acceptedOrDone = true;
           terminate = true;
-          attemptProfile.lambdaUpperBoundReached = true;
         }
         attemptProfile.lambdaUpdateElapsed =
             detailedElapsedSince(detailedProfiling, stageStart);
