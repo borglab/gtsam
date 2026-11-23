@@ -1216,6 +1216,54 @@ TEST(SfmLevenbergMarquardt, DenseSchurRunsWithoutCudss) {
 
 #endif
 
+// Verifies that dense Schur skips a weak solve and retries with more damping.
+TEST(SfmLevenbergMarquardt, DenseSchurRetriesRejectedCholeskyPivot) {
+  const SfmData data = makePerturbedBalLikeData(makeTrueBalLikeData());
+
+  for (bool diagonalDamping : {false, true}) {
+    SfmLevenbergMarquardtParams params;
+    params.maxIterations = 1;
+    params.lambdaInitial = 1e-10;
+    params.enableDetailedProfiling = true;
+    params.dampingParams.diagonalDamping = diagonalDamping;
+    if (diagonalDamping) {
+      // The first adaptive update keeps lambda, then doubles the multiplier.
+      params.useFixedLambdaFactor = false;
+      params.lambdaFactor = 1.0;
+    }
+
+    const auto result = optimizeSfmWithoutValueDownload(data, params);
+    EXPECT_LONGS_EQUAL(1, result.acceptedSteps);
+    CHECK(result.finalError < result.initialError);
+    CHECK(!result.iterationProfiles.empty());
+
+    const auto& attempts = result.iterationProfiles.front().attemptProfiles;
+    CHECK(attempts.size() > 1);
+    CHECK(!attempts.front().attemptedTrial);
+    CHECK(attempts.back().lambda > attempts.front().lambda);
+    CHECK(attempts.back().accepted);
+  }
+}
+
+// Verifies that a rejected dense solve stops if fixed damping cannot increase.
+TEST(SfmLevenbergMarquardt, DenseSchurStopsWhenFixedDampingCannotIncrease) {
+  const SfmData data = makePerturbedBalLikeData(makeTrueBalLikeData());
+
+  for (double lambdaFactor : {0.0, 1.0}) {
+    SfmLevenbergMarquardtParams params;
+    params.lambdaInitial = 1e-10;
+    params.lambdaFactor = lambdaFactor;
+    params.useFixedLambdaFactor = true;
+    params.enableDetailedProfiling = true;
+
+    const auto result = optimizeSfmWithoutValueDownload(data, params);
+    EXPECT_LONGS_EQUAL(0, result.acceptedSteps);
+    EXPECT_LONGS_EQUAL(1, result.innerIterations);
+    DOUBLES_EQUAL(result.initialError, result.finalError, 0.0);
+    DOUBLES_EQUAL(params.lambdaInitial, result.finalLambda, 0.0);
+  }
+}
+
 // Verifies SfmLevenbergMarquardt::ImplicitSchurPcgMatchesDense.
 TEST(SfmLevenbergMarquardt, ImplicitSchurPcgMatchesDense) {
   const SfmData measuredData = makeTrueBalLikeData();
