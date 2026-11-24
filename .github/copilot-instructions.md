@@ -4,6 +4,10 @@ GTSAM is a C++17 library for factor graphs and sensor fusion, with Python and
 MATLAB wrappers. Follow the existing code near your change and keep changes
 focused.
 
+Consult [ARCHITECTURE.md](../ARCHITECTURE.md) before adding functionality to
+identify existing abstractions and appropriate extension points. Run
+`python3 scripts/check_code_quality.py` for the automated source conventions.
+
 When fixing additional build problems discovered during a task, establish the
 concrete failure and explain why each fix is necessary. Keep independently
 useful API or infrastructure redesigns in separate PRs.

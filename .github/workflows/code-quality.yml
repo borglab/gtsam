@@ -1,0 +1,21 @@
+name: Code quality
+
+on:
+  pull_request:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-checks:
+    name: GTSAM source conventions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Test quality checker
+        run: python3 -m unittest discover -s scripts -p test_code_quality.py
+      - name: Check source conventions
+        run: python3 scripts/check_code_quality.py

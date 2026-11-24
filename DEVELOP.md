@@ -1,5 +1,8 @@
 # Information for Developers
 
+See [GTSAM architecture](ARCHITECTURE.md) for the module map, extension points,
+and automated source quality checks.
+
 ## Coding Conventions
 
 * Classes and types use `UpperCamelCase`; methods and functions use `lowerCamelCase`.
