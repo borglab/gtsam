@@ -134,7 +134,7 @@ WnoaFactorGraph<PoseType>::WnoaFactorGraph(
     size_t operator()(const std::pair<StateData, StateData>& p) const noexcept {
       const size_t h1 = std::hash<StateData>{}(p.first);
       const size_t h2 = std::hash<StateData>{}(p.second);
-      return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
+      return h1 ^ (h2 + 0x9e3779b9u + (h1 << 6u) + (h1 >> 2u));
     }
   };
   std::unordered_map<std::pair<StateData, StateData>, std::vector<size_t>,

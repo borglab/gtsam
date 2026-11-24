@@ -234,25 +234,25 @@ class WnoaMotionFactor
     // Compute Final Jacobians
     if (Hp1) {
       // Derivative of error wrt pose p1
-      Hp1->resize(2 * dim, dim);
+      Hp1->resize(Eigen::Index{2} * dim, dim);
       Hp1->template block<dim, dim>(0, 0) = dxi_dT1;
       Hp1->template block<dim, dim>(dim, 0) = dvErr_dxi * dxi_dT1;
     }
     if (Hv1) {
       // Derivative of error wrt velocity v1
-      Hv1->resize(2 * dim, dim);
+      Hv1->resize(Eigen::Index{2} * dim, dim);
       Hv1->template block<dim, dim>(0, 0) = -deltaT_ * MatrixN::Identity();
       Hv1->template block<dim, dim>(dim, 0) = -MatrixN::Identity();
     }
     if (Hp2) {
       // Derivative of error wrt pose p2
-      Hp2->resize(2 * dim, dim);
+      Hp2->resize(Eigen::Index{2} * dim, dim);
       Hp2->template block<dim, dim>(0, 0) = dxi_dT2;
       Hp2->template block<dim, dim>(dim, 0) = dvErr_dxi * dxi_dT2;
     }
     if (Hv2) {
       // Derivative of error wrt velocity v2
-      Hv2->resize(2 * dim, dim);
+      Hv2->resize(Eigen::Index{2} * dim, dim);
       Hv2->template block<dim, dim>(0, 0).setZero();
       Hv2->template block<dim, dim>(dim, 0) = invJr;
     }

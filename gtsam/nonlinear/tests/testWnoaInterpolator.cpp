@@ -32,6 +32,8 @@
 
 #include <cmath>
 #include <memory>
+#include <optional>
+#include <stdexcept>
 #include <vector>
 
 using namespace std;
@@ -111,6 +113,14 @@ TEST(Interpolator, Constructor) {
   Interpolator<Point3> interpolatorP3(data.Q_p3);
   Interpolator<Pose2> interpolatorSE2(data.Q_se2);
   Interpolator<Pose3> interpolatorSE3(data.Q_se3);
+}
+
+// Interpolation requires at least one timestamped state.
+TEST(Interpolator, RejectsMissingBorders) {
+  const Interpolator<Point1> interpolator(fixture().Q_p1);
+  CHECK_EXCEPTION(
+      interpolator.interpolatePoseAndVelocity(std::nullopt, std::nullopt, 0.0),
+      std::invalid_argument);
 }
 
 /* ************************************************************************* */

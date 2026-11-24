@@ -798,8 +798,8 @@ class WnoaInterpFactor : public NoiseModelFactor {
            "derivative");
 
     // Initialize new covariance with the existing measurement covariance
-    int err_dim = noise_model_ptr->dim();
     Matrix noise_cov = noise_model_ptr->covariance();
+    const Eigen::Index err_dim = noise_cov.rows();
 
     // Use cached mapping from inner keys to indices for Jacobian lookup
     // Compute the covariance update based on interpolated states
