@@ -31,6 +31,15 @@ class CodeQualityTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(list(check_source(path, source)), [])
 
+    def test_geometry_in_nonlinear(self):
+        source = '#include <gtsam/geometry/Pose3.h>'
+        self.assertTrue(list(check_source("gtsam/nonlinear/WnoaFactor.h", source)))
+        self.assertEqual(
+            list(check_source("gtsam/nonlinear/GraphvizFormatting.cpp", source)),
+            [],
+        )
+        self.assertEqual(list(check_source("gtsam/slam/Foo.h", source)), [])
+
     def test_stable_dependency(self):
         source = '#include <gtsam_unstable/foo.h>\n#include "../../gtsam_unstable/bar.h"'
         self.assertEqual([line for line, _ in check_source("gtsam/base/Foo.h", source)], [1, 2])

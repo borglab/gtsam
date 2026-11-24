@@ -35,8 +35,8 @@ responsibilities rather than independent compilation targets.
 
 Library code can include headers from its own module and any module reachable
 by following the dependencies in this table. For example,
-`nonlinear` can include `linear`, `symbolic`, `inference`, `geometry`, and
-`base` directly. `hybrid` can use both the discrete and nonlinear stacks.
+`nonlinear` can include `linear`, `symbolic`, `inference`, and `base`
+directly. `hybrid` can use both the discrete and nonlinear stacks.
 
 | Including module | Immediate dependencies |
 | --- | --- |
@@ -44,9 +44,9 @@ by following the dependencies in this table. For example,
 | `inference` | `base` |
 | `geometry`, `symbolic`, `discrete` | `inference` |
 | `linear` | `symbolic` |
-| `nonlinear` | `geometry`, `linear` |
-| `basis`, `constrained`, `planning` | `nonlinear` |
-| `hybrid` | `discrete`, `nonlinear` |
+| `nonlinear` | `linear` |
+| `basis`, `constrained`, `planning` | `geometry`, `nonlinear` |
+| `hybrid` | `discrete`, `geometry`, `nonlinear` |
 | `certifiable`, `sam` | `constrained` |
 | `slam` | `sam` |
 | `sfm`, `navigation` | `slam` |
@@ -66,6 +66,13 @@ records each existing exception by including file and included header. The
 module rule covers stable library C/C++ and CUDA sources. Tests, examples,
 benchmarks, documentation, and wrapper glue can compose modules freely within
 the other stable/experimental boundaries described below.
+
+Nonlinear factors should use manifold traits for operations on their value
+types. WNOA templates follow this pattern. Concrete geometry types are included
+by their callers and by the source file that provides exported WNOA graph
+instantiations. The existing Graphviz layout recognizes concrete poses to place
+nodes. A future layout interface could accept a position callback, with a SLAM
+adapter providing the existing pose and point handling.
 
 ## Estimation and optimization
 

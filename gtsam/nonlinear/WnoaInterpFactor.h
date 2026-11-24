@@ -24,11 +24,6 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/timing.h>
-#include <gtsam/geometry/Point1.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Values.h>

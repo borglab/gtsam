@@ -16,6 +16,11 @@
  */
 
 #include <gtsam/config.h>  // for GTSAM_USE_TBB
+#include <gtsam/geometry/Point1.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
 #include <gtsam/nonlinear/WnoaFactorGraph.h>
 
 #include <Eigen/Core>  // for Eigen::setNbThreads

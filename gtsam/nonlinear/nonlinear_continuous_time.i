@@ -16,6 +16,7 @@ namespace gtsam {
 #include <gtsam/geometry/FundamentalMatrix.h>
 #include <gtsam/geometry/Gal3.h>
 #include <gtsam/geometry/PinholeCamera.h>
+#include <gtsam/geometry/Point1.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
