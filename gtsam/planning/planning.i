@@ -20,14 +20,23 @@ class GaussianNoiseSampler {
 
 class ControlDistribution {
   gtsam::Matrix mean;
+  gtsam::Matrix stddev;
+  size_t iteration;
 };
 
 class ControlBatch {
   gtsam::Matrix controls;
 };
 
+class GaussianProposalOptions {
+  GaussianProposalOptions();
+  bool includeNominal;
+};
+
 class GaussianProposal {
   GaussianProposal(const gtsam::Matrix& covariance, size_t samples, uint64_t seed = 42);
+  GaussianProposal(const gtsam::Matrix& covariance, size_t samples, uint64_t seed,
+                   gtsam::GaussianProposalOptions options);
   @pybind_lambda
   gtsam::ControlDistribution initialize(const gtsam::Matrix& nominal) const;
   gtsam::ControlBatch sample(const gtsam::ControlDistribution& state, const gtsam::Values& initial,
@@ -44,6 +53,16 @@ class MPPI {
   @pybind_lambda
   void apply(const gtsam::GaussianProposal& proposal, gtsam::ControlDistribution& search,
              const gtsam::ControlBatch& batch, const gtsam::Vector& costs) const;
+};
+
+class CEM {
+  CEM(size_t elites, double minStddev = 1e-3);
+  gtsam::Vector weights(const gtsam::Vector& costs) const;
+};
+
+class PredictiveSampling {
+  PredictiveSampling();
+  gtsam::Vector weights(const gtsam::Vector& costs) const;
 };
 
 #include <gtsam/planning/wrap/PlannerBindings.h>
@@ -72,6 +91,22 @@ class SamplingPlanner {
   gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
                          const gtsam::VectorField& dynamics, const gtsam::GaussianProposal& proposal,
                          const gtsam::MPPI& algorithm, size_t iterations) const;
+  @pybind_lambda
+  void iterate(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
+               const gtsam::VectorField& dynamics, const gtsam::GaussianProposal& proposal,
+               const gtsam::CEM& algorithm, gtsam::ControlDistribution& search) const;
+  @pybind_lambda
+  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
+                         const gtsam::VectorField& dynamics, const gtsam::GaussianProposal& proposal,
+                         const gtsam::CEM& algorithm, size_t iterations) const;
+  @pybind_lambda
+  void iterate(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
+               const gtsam::VectorField& dynamics, const gtsam::GaussianProposal& proposal,
+               const gtsam::PredictiveSampling& algorithm, gtsam::ControlDistribution& search) const;
+  @pybind_lambda
+  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
+                         const gtsam::VectorField& dynamics, const gtsam::GaussianProposal& proposal,
+                         const gtsam::PredictiveSampling& algorithm, size_t iterations) const;
 };
 
 template<State={gtsam::Pose2}, Control={gtsam::Vector}>
@@ -93,6 +128,22 @@ class SamplingPlanner {
   gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
                          const gtsam::Pose2Transition& dynamics, const gtsam::GaussianProposal& proposal,
                          const gtsam::MPPI& algorithm, size_t iterations) const;
+  @pybind_lambda
+  void iterate(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
+               const gtsam::Pose2Transition& dynamics, const gtsam::GaussianProposal& proposal,
+               const gtsam::CEM& algorithm, gtsam::ControlDistribution& search) const;
+  @pybind_lambda
+  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
+                         const gtsam::Pose2Transition& dynamics, const gtsam::GaussianProposal& proposal,
+                         const gtsam::CEM& algorithm, size_t iterations) const;
+  @pybind_lambda
+  void iterate(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
+               const gtsam::Pose2Transition& dynamics, const gtsam::GaussianProposal& proposal,
+               const gtsam::PredictiveSampling& algorithm, gtsam::ControlDistribution& search) const;
+  @pybind_lambda
+  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost, const gtsam::Values& initial,
+                         const gtsam::Pose2Transition& dynamics, const gtsam::GaussianProposal& proposal,
+                         const gtsam::PredictiveSampling& algorithm, size_t iterations) const;
 };
 
 }  // namespace gtsam

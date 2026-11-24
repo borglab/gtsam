@@ -47,14 +47,16 @@ for isPointMass = [true, false]
     else
         assert(initial.atPose2(x1).equals(predicted, 1e-12));
     end
-    proposal = gtsam.GaussianProposal(eye(2), 16, uint64(24));
-    result = planner.optimize(graph, initial, dynamics, proposal, rule, 1);
-    predicted = model.predict(start, result.atVector(u0));
-    if isPointMass
-        assert(norm(result.atVector(x1) - predicted) < 1e-12);
-    else
-        assert(result.atPose2(x1).equals(predicted, 1e-12));
+    for searchRule = {rule, gtsam.CEM(4), gtsam.PredictiveSampling()}
+        proposal = gtsam.GaussianProposal(eye(2), 16, uint64(24));
+        result = planner.optimize(graph, initial, dynamics, proposal, searchRule{1}, 1);
+        predicted = model.predict(start, result.atVector(u0));
+        if isPointMass
+            assert(norm(result.atVector(x1) - predicted) < 1e-12);
+        else
+            assert(result.atPose2(x1).equals(predicted, 1e-12));
+        end
+        assert(graph.error(result) < graph.error(initial));
     end
-    assert(graph.error(result) < graph.error(initial));
 end
 end

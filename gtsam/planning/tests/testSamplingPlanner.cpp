@@ -236,6 +236,24 @@ TEST(MPPI, StableWeightsAndRejectedControls) {
   EXPECT(assert_equal(Matrix{{3., 4.}}, search.mean));
 }
 
+TEST(SamplingPlanner, EliteFitAndIncumbent) {
+  const GaussianProposal proposal(Matrix1::Identity(), 3, 17);
+  auto search = proposal.initialize(Matrix::Zero(1, 2));
+  const ControlBatch batch{Matrix{{0., 1., 2., 1., 8., 9.}}};
+  const Vector3 costs{2., 2., 8.};
+  CEM(2, .25).apply(proposal, search, batch, costs);
+  EXPECT(assert_equal(Matrix{{1., 1.}}, search.mean));
+  EXPECT(assert_equal(Matrix{{1., .25}}, search.stddev));
+  auto next =
+      proposal.sample(search, {}, 1., PredictiveSampling::includeIncumbent);
+  EXPECT(assert_equal(search.mean, Matrix(next.controls.leftCols(2))));
+  EXPECT(
+      assert_equal(Vector3{1., 0., 0.}, PredictiveSampling().weights(costs)));
+  CHECK_EXCEPTION(GaussianProposal(Matrix1::Identity(), 0),
+                  std::invalid_argument);
+  CHECK_EXCEPTION(CEM(4).weights(costs), std::invalid_argument);
+}
+
 int main() {
   TestResult result;
   return TestRegistry::runAllTests(result);

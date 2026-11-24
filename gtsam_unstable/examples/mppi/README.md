@@ -65,3 +65,8 @@ trajectory as the robot replans.
 - [Unicycle receding-horizon control](../../../python/gtsam_unstable/examples/planning/UnicycleMPPIMPCExample.ipynb)
 
 The interactive Plotly figures require an internet connection.
+
+The [unicycle search comparison](../../../python/gtsam_unstable/examples/planning/UnicycleSamplingExample.ipynb)
+runs three update rules with the same model and cost graph. The
+[LQR comparison](../../../python/gtsam_unstable/examples/planning/SamplingPlannerLQR.ipynb)
+compares their graph costs against the exact linear-quadratic solution at equal rollout budgets.

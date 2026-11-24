@@ -66,4 +66,39 @@ class MPPI {
   double inverseTemperature_;
 };
 
+/// Select the lowest-cost sequence, reserving one slot for the incumbent.
+class GTSAM_EXPORT PredictiveSampling {
+ public:
+  static constexpr bool includeIncumbent = true;
+  PredictiveSampling() = default;
+  /// Return a one-hot vector selecting the first minimum-cost sequence.
+  Vector weights(const Vector& costs) const;
+  /// Update the proposal with the selected candidate.
+  template <class Proposal, class Search, class Batch>
+  void apply(const Proposal& proposal, Search& state, const Batch& batch,
+             const Vector& costs) const {
+    proposal.update(state, batch, weights(costs));
+  }
+};
+
+/// Cross-entropy search with an explicit proposal-specific fit to the elites.
+class GTSAM_EXPORT CEM {
+ public:
+  static constexpr bool includeIncumbent = false;
+  /// Set the elite count and positive floor on fitted standard deviations.
+  explicit CEM(size_t elites, double minStddev = 1e-3);
+  /// Return uniform weights on the lowest-cost finite elites.
+  Vector weights(const Vector& costs) const;
+  /// Fit the proposal family to the elite candidates.
+  template <class Proposal, class Search, class Batch>
+  void apply(const Proposal& proposal, Search& state, const Batch& batch,
+             const Vector& costs) const {
+    proposal.fit(state, batch, weights(costs), minStddev_);
+  }
+
+ private:
+  size_t elites_;
+  double minStddev_;
+};
+
 }  // namespace gtsam

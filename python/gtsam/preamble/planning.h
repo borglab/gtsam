@@ -19,8 +19,29 @@ struct PythonStep {
   }
 };
 
-// Release the caller's GIL while planning. PythonStep and pybind11's
-// std::function caster acquire it when invoking a Python callback.
+/// Bind a search rule and a proposal to a Python dynamics callable.
+template <class Dynamics, class Proposal, class Rule, class Planner>
+void bindSearch(py::class_<Planner, std::shared_ptr<Planner>>& cls) {
+  using Release = py::call_guard<py::gil_scoped_release>;
+  cls.def(
+         "iterate",
+         [](const Planner& planner, const NonlinearFactorGraph& cost,
+            const Values& initial, const Dynamics& dynamics,
+            const Proposal& proposal, const Rule& rule,
+            typename Proposal::State& search) {
+           planner.iterate(cost, initial, dynamics, proposal, rule, search);
+         },
+         py::arg("cost"), py::arg("initial"), py::arg("dynamics"),
+         py::arg("proposal"), py::arg("algorithm"), py::arg("search"),
+         Release())
+      .def("optimize", &Planner::template optimize<Dynamics, Proposal, Rule>,
+           py::arg("cost"), py::arg("initial"), py::arg("dynamics"),
+           py::arg("proposal"), py::arg("algorithm"), py::arg("iterations"),
+           Release());
+}
+
+/// Release the GIL around rollouts. Python callbacks reacquire it at
+/// invocation.
 template <class Dynamics, class Planner>
 void bindPythonDynamics(py::class_<Planner, std::shared_ptr<Planner>>& cls) {
   using Release = py::call_guard<py::gil_scoped_release>;
@@ -28,24 +49,10 @@ void bindPythonDynamics(py::class_<Planner, std::shared_ptr<Planner>>& cls) {
           py::arg("controls"), py::arg("dynamics"), Release())
       .def("rolloutAndScore", &Planner::template rolloutAndScore<Dynamics>,
            py::arg("cost"), py::arg("initial"), py::arg("controls"),
-           py::arg("dynamics"), Release())
-      .def(
-          "iterate",
-          [](const Planner& planner, const NonlinearFactorGraph& cost,
-             const Values& initial, const Dynamics& dynamics,
-             const GaussianProposal& proposal, const MPPI& algorithm,
-             ControlDistribution& search) {
-            planner.iterate(cost, initial, dynamics, proposal, algorithm,
-                            search);
-          },
-          py::arg("cost"), py::arg("initial"), py::arg("dynamics"),
-          py::arg("proposal"), py::arg("algorithm"), py::arg("search"),
-          Release())
-      .def("optimize",
-           &Planner::template optimize<Dynamics, GaussianProposal, MPPI>,
-           py::arg("cost"), py::arg("initial"), py::arg("dynamics"),
-           py::arg("proposal"), py::arg("algorithm"), py::arg("iterations"),
-           Release());
+           py::arg("dynamics"), Release());
+  bindSearch<Dynamics, GaussianProposal, MPPI>(cls);
+  bindSearch<Dynamics, GaussianProposal, CEM>(cls);
+  bindSearch<Dynamics, GaussianProposal, PredictiveSampling>(cls);
 }
 
 template <class State, class Control>
