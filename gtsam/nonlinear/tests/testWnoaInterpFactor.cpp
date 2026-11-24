@@ -16,25 +16,40 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Manifold.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Vector.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/types.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/WnoaFactor.h>
 #include <gtsam/nonlinear/WnoaFactorGraph.h>
 #include <gtsam/nonlinear/WnoaInterpFactor.h>
 #include <gtsam/nonlinear/WnoaInterpolator.h>
+#include <gtsam/nonlinear/WnoaStateData.h>
 #include <gtsam/slam/BetweenFactor.h>
 
-#include <Eigen/Eigenvalues>
+#include <Eigen/Eigenvalues>  // IWYU pragma: keep (SelfAdjointEigenSolver)
+
+#include <algorithm>
+#include <cstddef>
+#include <iostream>
+#include <memory>
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 using namespace std;
 using namespace gtsam;

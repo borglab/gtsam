@@ -6,8 +6,11 @@
  * Press, 2024.
  * -------------------------------------------------------------------------- */
 
-#include "WnoaInterpolator-inl.h"
+#include <gtsam/nonlinear/WnoaInterpolator.h>
 
+#include "WnoaInterpolator-inl.h"  // IWYU pragma: keep (template definitions)
+
+#include <gtsam/dllexport.h>
 #include <gtsam/geometry/Point1.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>

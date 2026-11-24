@@ -16,6 +16,9 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Vector.h>
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Point1.h>
 #include <gtsam/geometry/Point2.h>
@@ -25,12 +28,11 @@
 #include <gtsam/geometry/Rot2.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/inference/Symbol.h>
-#include <gtsam/nonlinear/GaussNewtonOptimizer.h>
-#include <gtsam/constrained/NonlinearEquality.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/Values.h>
-#include <gtsam/nonlinear/WnoaFactor.h>
 #include <gtsam/nonlinear/WnoaInterpolator.h>
+
+#include <cmath>
+#include <memory>
+#include <vector>
 
 using namespace std;
 using namespace gtsam;

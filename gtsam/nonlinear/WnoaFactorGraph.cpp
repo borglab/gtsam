@@ -15,30 +15,40 @@
  *  @author Sven Lilge
  */
 
-#include <gtsam/config.h>  // for GTSAM_USE_TBB
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/types.h>
+#include <gtsam/config.h>  // IWYU pragma: keep (GTSAM_USE_TBB)
+#include <gtsam/dllexport.h>
 #include <gtsam/geometry/Point1.h>
 #include <gtsam/geometry/Point2.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
 #include <gtsam/geometry/Pose3.h>
+#include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/WnoaFactorGraph.h>
-
-#include <Eigen/Core>  // for Eigen::setNbThreads
+#include <gtsam/nonlinear/WnoaInterpFactor.h>
+#include <gtsam/nonlinear/WnoaInterpolator.h>
+#include <gtsam/nonlinear/WnoaStateData.h>
 
 #ifdef GTSAM_USE_TBB
-#include <tbb/concurrent_unordered_map.h>
+#include <tbb/blocked_range.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_for.h>
-#include <tbb/parallel_for_each.h>
 #include <tbb/partitioner.h>
+
+#include <thread>
 #endif
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <memory>
-#include <mutex>
-#include <thread>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace gtsam {
 
@@ -90,7 +100,7 @@ class _LinearizeOneFactor {
 template <typename PoseType>
 WnoaFactorGraph<PoseType>::WnoaFactorGraph(
     std::unordered_map<StateData, std::pair<StateData, StateData>> interp_map,
-    const Eigen::Vector<double, dim> q_psd_diag, bool fixed_noise_model)
+    const VectorN q_psd_diag, bool fixed_noise_model)
     : interpolator_(q_psd_diag),
       interp_to_borders_map_(std::move(interp_map)),
       fixed_noise_model_(fixed_noise_model) {
