@@ -77,12 +77,17 @@ MODULE_INCLUDE_EXCEPTIONS = {
     ("gtsam/nonlinear/NonlinearFactorGraph.cpp", "gtsam/geometry/Pose2.h"),
     ("gtsam/nonlinear/NonlinearFactorGraph.cpp", "gtsam/geometry/Pose3.h"),
     ("gtsam/nonlinear/NonlinearFactorGraph.h", "gtsam/geometry/Point2.h"),
-    # Existing exported WNOA graph instantiations.
+    # Existing exported WNOA instantiations.
     ("gtsam/nonlinear/WnoaFactorGraph.cpp", "gtsam/geometry/Point1.h"),
     ("gtsam/nonlinear/WnoaFactorGraph.cpp", "gtsam/geometry/Point2.h"),
     ("gtsam/nonlinear/WnoaFactorGraph.cpp", "gtsam/geometry/Point3.h"),
     ("gtsam/nonlinear/WnoaFactorGraph.cpp", "gtsam/geometry/Pose2.h"),
     ("gtsam/nonlinear/WnoaFactorGraph.cpp", "gtsam/geometry/Pose3.h"),
+    ("gtsam/nonlinear/WnoaInterpolator.cpp", "gtsam/geometry/Point1.h"),
+    ("gtsam/nonlinear/WnoaInterpolator.cpp", "gtsam/geometry/Point2.h"),
+    ("gtsam/nonlinear/WnoaInterpolator.cpp", "gtsam/geometry/Point3.h"),
+    ("gtsam/nonlinear/WnoaInterpolator.cpp", "gtsam/geometry/Pose2.h"),
+    ("gtsam/nonlinear/WnoaInterpolator.cpp", "gtsam/geometry/Pose3.h"),
     ("gtsam/nonlinear/utilities.h", "gtsam/geometry/Point2.h"),
     ("gtsam/nonlinear/utilities.h", "gtsam/geometry/Point3.h"),
     ("gtsam/nonlinear/utilities.h", "gtsam/geometry/Pose2.h"),

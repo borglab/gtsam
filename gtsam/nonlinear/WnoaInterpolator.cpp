@@ -8,6 +8,12 @@
 
 #include "WnoaInterpolator-inl.h"
 
+#include <gtsam/geometry/Point1.h>
+#include <gtsam/geometry/Point2.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Pose3.h>
+
 namespace gtsam {
 
 // ---- Explicit Instantiations ----
