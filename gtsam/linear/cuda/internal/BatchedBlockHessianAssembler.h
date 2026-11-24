@@ -20,7 +20,7 @@
 #pragma once
 
 #include <gtsam/base/cuda/DeviceArray.h>
-#include <gtsam/linear/cuda/internal/BatchedDenseCholeskySolver.h>
+#include <gtsam/linear/cuda/internal/BatchedSolverOptions.h>
 
 #include <memory>
 
@@ -41,7 +41,7 @@ class BatchedBlockHessianAssembler {
   /// Calls cudaSetDevice(options.deviceId) first when deviceId >= 0, then
   /// creates the cuBLAS handle on that device.
   explicit BatchedBlockHessianAssembler(
-      const BatchedDenseSolverOptions& options = {});
+      const BatchedSolverOptions& options = {});
   ~BatchedBlockHessianAssembler();
 
   BatchedBlockHessianAssembler(const BatchedBlockHessianAssembler&) = delete;

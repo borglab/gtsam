@@ -22,7 +22,6 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/linear/cuda/internal/BatchedBlockTridiagonalCholeskySolver.h>
-#include <gtsam/linear/cuda/internal/BatchedDenseCholeskySolver.h>
 
 #include <Eigen/Cholesky>
 #include <random>
@@ -53,8 +52,7 @@ struct BlockItem {
 };
 
 // Assembles one item's blocks into the equivalent dense SPD matrix, for an
-// independent Eigen ground truth and for cross-checking against
-// BatchedDenseCholeskySolver.
+// independent Eigen ground truth.
 Matrix AssembleDense(const BlockItem& item) {
   const int numBlocks = static_cast<int>(item.diagonal.size());
   const int blockDim = static_cast<int>(item.diagonal.front().rows());
@@ -294,10 +292,10 @@ TEST(BatchedBlockTridiagonalCholeskySolver, LargerRandomBatchMatchesEigen) {
   }
 }
 
-// Cross-checks against the already-validated BatchedDenseCholeskySolver: the
-// same block-tridiagonal batch, assembled into dense matrices and solved by
-// the dense backend, must agree with the block solver's result.
-TEST(BatchedBlockTridiagonalCholeskySolver, MatchesBatchedDenseCholeskySolverOnEquivalentSystem) {
+// Cross-checks against an independent Eigen dense solve of the same batch,
+// assembled into dense n x n matrices, at a size distinct from the other
+// Eigen-reference tests above (batchSize=2, numBlocks=5, blockDim=4).
+TEST(BatchedBlockTridiagonalCholeskySolver, MatchesEigenDenseCholeskyOnAssembledSystem) {
   if (!HasCudaDevice()) return;
   const int batchSize = 2, numBlocks = 5, blockDim = 4;
   std::vector<BlockItem> batch;
@@ -311,36 +309,14 @@ TEST(BatchedBlockTridiagonalCholeskySolver, MatchesBatchedDenseCholeskySolverOnE
   std::uniform_real_distribution<double> dist(-1.0, 1.0);
   const int n = numBlocks * blockDim;
   std::vector<Vector> b(static_cast<size_t>(batchSize));
+  std::vector<Vector> expected(static_cast<size_t>(batchSize));
   for (int i = 0; i < batchSize; ++i) {
     b[static_cast<size_t>(i)] = Vector(n);
     for (int r = 0; r < n; ++r) b[static_cast<size_t>(i)](r) = dist(rng);
+    expected[static_cast<size_t>(i)] =
+        dense[static_cast<size_t>(i)].ldlt().solve(b[static_cast<size_t>(i)]);
   }
 
-  // Dense backend, on the assembled n x n matrices.
-  std::vector<double> denseFlat(static_cast<size_t>(batchSize) * n * n);
-  size_t offset = 0;
-  for (const auto& m : dense) {
-    Eigen::Map<Matrix>(denseFlat.data() + offset, n, n) = m;
-    offset += static_cast<size_t>(n) * n;
-  }
-  std::vector<double> denseRhsFlat(static_cast<size_t>(batchSize) * n);
-  offset = 0;
-  for (const auto& v : b) {
-    Eigen::Map<Vector>(denseRhsFlat.data() + offset, n) = v;
-    offset += static_cast<size_t>(n);
-  }
-  DeviceArray<double> denseValues(denseFlat.size());
-  denseValues.upload(denseFlat);
-  DeviceArray<double> denseRhs(denseRhsFlat.size());
-  denseRhs.upload(denseRhsFlat);
-  BatchedDenseCholeskySolver denseSolver;
-  denseSolver.factorize(batchSize, n, &denseValues);
-  denseSolver.solve(1, &denseRhs);
-  std::vector<double> denseResultFlat;
-  denseRhs.download(&denseResultFlat);
-  cudaStreamSynchronize(nullptr);
-
-  // Block solver, on the same batch's blocks.
   std::vector<std::vector<Matrix>> rhsBlocks(static_cast<size_t>(batchSize));
   for (int i = 0; i < batchSize; ++i)
     for (int t = 0; t < numBlocks; ++t)
@@ -355,18 +331,16 @@ TEST(BatchedBlockTridiagonalCholeskySolver, MatchesBatchedDenseCholeskySolverOnE
   const auto blockResult = DownloadRhs(rhs, batchSize, numBlocks, blockDim, 1);
 
   for (int i = 0; i < batchSize; ++i) {
-    Vector fromBlock(n);
+    Vector actual(n);
     for (int t = 0; t < numBlocks; ++t)
-      fromBlock.segment(t * blockDim, blockDim) =
+      actual.segment(t * blockDim, blockDim) =
           blockResult[static_cast<size_t>(i)][static_cast<size_t>(t)].col(0);
-    Vector fromDense = Eigen::Map<const Vector>(
-        denseResultFlat.data() + static_cast<size_t>(i) * n, n);
-    EXPECT(assert_equal(fromDense, fromBlock, 1e-9));
+    EXPECT(assert_equal(expected[static_cast<size_t>(i)], actual, 1e-9));
   }
 }
 
 // A diagonal block that is not SPD (here, exactly zero) must be rejected
-// with a clear error, exactly like BatchedDenseCholeskySolver.
+// with a clear error.
 TEST(BatchedBlockTridiagonalCholeskySolver, RejectsNonPositiveDefiniteBlock) {
   if (!HasCudaDevice()) return;
   BlockItem item;

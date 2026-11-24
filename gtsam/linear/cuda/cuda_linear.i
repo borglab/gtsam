@@ -28,12 +28,11 @@ class PcgOptions {
   int convergenceCheckInterval;
 };
 
-#include <gtsam/linear/cuda/internal/BatchedDenseCholeskySolver.h>
+#include <gtsam/linear/cuda/internal/BatchedSolverOptions.h>
 
-/// Device selection for the batched dense CUDA backends
-/// (BatchedDenseLevenbergMarquardtOptimizer, BatchedDeviceGradients).
-class BatchedDenseSolverOptions {
-  BatchedDenseSolverOptions();
+/// Device selection shared by every batched CUDA backend.
+class BatchedSolverOptions {
+  BatchedSolverOptions();
   int deviceId;
 };
 

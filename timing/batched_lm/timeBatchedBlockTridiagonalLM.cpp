@@ -12,11 +12,18 @@
 /**
  * @file    timeBatchedBlockTridiagonalLM.cpp
  * @brief   Benchmark BatchedBlockTridiagonalLevenbergMarquardtOptimizer
- *          against BatchedDenseLevenbergMarquardtOptimizer and CPU at
- *          DFG-TAMP's real window-graph shape (T=8 x 192-dim = 1536
- *          columns), where the dense path measured 81.6s/step vs CPU's
- *          ~22s/step. One key per timestep, chained by adjacent-only
- *          factors, mirroring build_window_graph's structure.
+ *          against CPU at DFG-TAMP's real window-graph shape (T=8 x
+ *          192-dim = 1536 columns). One key per timestep, chained by
+ *          adjacent-only factors, mirroring build_window_graph's
+ *          structure.
+ *
+ * An earlier version of this benchmark also compared against a dense
+ * batched optimizer (treating each item's full Hessian as one dense
+ * matrix, ignoring the chain sparsity); it measured 81.6s/step at this
+ * shape versus CPU's ~22s/step. That dense path has since been removed
+ * from the library entirely, since GTSAM is a sparse factor-graph library
+ * and the block-tridiagonal path above is both the architecturally
+ * appropriate and the empirically faster choice for this chain structure.
  * @date    Nov 20, 2026
  */
 
@@ -27,7 +34,6 @@
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/cuda/BatchedBlockTridiagonalLevenbergMarquardt.h>
-#include <gtsam/nonlinear/cuda/BatchedDenseLevenbergMarquardt.h>
 #include <gtsam/slam/PriorFactor.h>
 
 #include <chrono>
@@ -46,9 +52,8 @@ constexpr int kNumBlocks = 8;    // T timesteps, matches the reported run.
 constexpr int kBlockDim = 192;   // 3 slots x 64 dims, matches the reported run.
 constexpr int kBatchSize = 8;    // B window graphs per training step.
 
-/// Same nonlinear coupling factor as timeBatchedDenseLM.cpp (duplicated,
-/// not shared): the x2^2 term gives real curvature so repeated LM
-/// iterations do genuinely different linearizations.
+/// The x2^2 term gives real curvature so repeated LM iterations do
+/// genuinely different linearizations.
 class NonlinearCouplingFactor : public NoiseModelFactorN<Vector, Vector> {
  public:
   using Base = NoiseModelFactorN<Vector, Vector>;
@@ -158,30 +163,9 @@ int main(int argc, char** argv) {
               << (total / repeats) << "s" << std::endl;
   }
 
-  // GPU, dense batched (the path that measured 81.6s/step in real training
-  // at this exact shape) -- one fresh optimizer per repeat, matching how
-  // dfg_trainer.py calls this once per (batch, timestep), never reusing one.
-  {
-    double total = 0.0;
-    size_t totalAttempts = 0;
-    double gpuRoundTripSeconds = 0.0;
-    for (int r = 0; r < repeats; ++r) {
-      const auto start = Clock::now();
-      BatchedDenseLevenbergMarquardtOptimizer optimizer(graphs, initialValues,
-                                                        params);
-      optimizer.optimize();
-      total += elapsedSeconds(start);
-      for (const auto& item : optimizer.results()) totalAttempts += item.lambdaAttempts;
-      gpuRoundTripSeconds += optimizer.hostTimings().gpuRoundTripSeconds;
-    }
-    std::cout << "GPU dense batched (BatchedDenseLevenbergMarquardt): "
-                 "mean_step="
-              << (total / repeats) << "s totalLambdaAttempts="
-              << totalAttempts << " gpuRoundTripSeconds="
-              << (gpuRoundTripSeconds / repeats) << std::endl;
-  }
-
-  // GPU, block-tridiagonal batched (the fix under test).
+  // GPU, block-tridiagonal batched (exploits the chain sparsity instead of
+  // forming a dense n x n Hessian; see the file docstring for why there is
+  // no dense-batched comparison here any more).
   {
     double total = 0.0;
     size_t totalAttempts = 0;

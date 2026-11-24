@@ -26,7 +26,6 @@
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/cuda/BatchedBlockTridiagonalLevenbergMarquardt.h>
 #include <gtsam/nonlinear/cuda/BatchedFactorGroupHook.h>
-#include <gtsam/nonlinear/cuda/BatchedDenseLevenbergMarquardt.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 
@@ -105,8 +104,7 @@ constexpr int kVecNumBlocks = 2;
 constexpr int kVecBlockDim = 3;
 
 // A 2-block chain whose first block's prior sigmas span 6 orders of
-// magnitude (0.001, 1.0, 1000.0); see testCudaBatchedDenseLevenbergMarquardt
-// .cpp's identical fixture for the rationale.
+// magnitude, so flat and diagonal damping take genuinely different steps.
 NonlinearFactorGraph MakeIllScaledChainGraph() {
   NonlinearFactorGraph graph;
   const auto illScaledNoise = noiseModel::Diagonal::Sigmas(
@@ -141,8 +139,7 @@ LevenbergMarquardtParams OneStepParams(bool diagonalDamping) {
 using namespace batched_block_tridiagonal_lm_fixture;
 
 // Each item's final Values and error must match running the same graph
-// through the real (CPU) LevenbergMarquardtOptimizer independently -- same
-// bar BatchedDenseLevenbergMarquardt is held to.
+// through the real (CPU) LevenbergMarquardtOptimizer independently.
 TEST(BatchedBlockTridiagonalLevenbergMarquardt, MatchesCpuPose2ResultPerGraph) {
   if (!HasCudaDevice()) return;
   const BatchPose2Problem problem = MakeBatchPose2Problem();
@@ -163,29 +160,8 @@ TEST(BatchedBlockTridiagonalLevenbergMarquardt, MatchesCpuPose2ResultPerGraph) {
   }
 }
 
-// The block-tridiagonal-exact solve must reproduce BatchedDense's own result
-// on a graph small enough for both: the block decomposition changes only
-// how the linear system is factorized, not what system is solved.
-TEST(BatchedBlockTridiagonalLevenbergMarquardt, MatchesBatchedDenseResultPerGraph) {
-  if (!HasCudaDevice()) return;
-  const BatchPose2Problem problem = MakeBatchPose2Problem();
-  const LevenbergMarquardtParams params = RealToleranceParams();
-
-  BatchedBlockTridiagonalLevenbergMarquardtOptimizer blockOptimizer(
-      problem.graphs, problem.initial, kNumBlocks, kBlockDim, params);
-  const std::vector<Values>& blockResult = blockOptimizer.optimize();
-
-  BatchedDenseLevenbergMarquardtOptimizer denseOptimizer(
-      problem.graphs, problem.initial, params);
-  const std::vector<Values>& denseResult = denseOptimizer.optimize();
-
-  for (size_t i = 0; i < problem.graphs.size(); ++i) {
-    EXPECT(assert_equal(denseResult[i], blockResult[i], 1e-9));
-  }
-}
-
 // GTSAM's real trust-region policy should reproduce LevenbergMarquardtOptimizer's
-// own accepted-iteration count, same bar BatchedDense is held to.
+// own accepted-iteration count.
 TEST(BatchedBlockTridiagonalLevenbergMarquardt, AcceptedIterationsMatchCpuOptimizer) {
   if (!HasCudaDevice()) return;
   const BatchPose2Problem problem = MakeBatchPose2Problem();
@@ -360,8 +336,8 @@ TEST(BatchedBlockTridiagonalLevenbergMarquardt, ThrowsForInvalidChainShape) {
       std::invalid_argument);
 }
 
-// See testCudaBatchedDenseLevenbergMarquardt.cpp's identical test for the
-// rationale: no test anywhere exercised BatchedFactorGroupHook before this.
+// Verifies factorGroupHooks wiring actually runs: stage() once per
+// active item per outer iteration, computeBatch() once per iteration.
 TEST(BatchedBlockTridiagonalLevenbergMarquardt, FactorGroupHookIsStagedAndComputed) {
   if (!HasCudaDevice()) return;
   const BatchPose2Problem problem = MakeBatchPose2Problem();
@@ -375,7 +351,7 @@ TEST(BatchedBlockTridiagonalLevenbergMarquardt, FactorGroupHookIsStagedAndComput
 
   BatchedBlockTridiagonalLevenbergMarquardtOptimizer optimizer(
       problem.graphs, problem.initial, kNumBlocks, kBlockDim, params,
-      BatchedDenseSolverOptions(), {hook});
+      BatchedSolverOptions(), {hook});
   optimizer.optimize();
 
   CHECK(computeBatchCalls > 0);
@@ -399,7 +375,7 @@ TEST(BatchedBlockTridiagonalLevenbergMarquardt,
   BatchedFactorGroupHook inertHook([](int, const Values&) {}, []() {});
   BatchedBlockTridiagonalLevenbergMarquardtOptimizer withHook(
       problem.graphs, problem.initial, kNumBlocks, kBlockDim, params,
-      BatchedDenseSolverOptions(), {inertHook});
+      BatchedSolverOptions(), {inertHook});
   const std::vector<Values> actual = withHook.optimize();
 
   for (size_t i = 0; i < expected.size(); ++i) {

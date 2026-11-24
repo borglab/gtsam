@@ -118,7 +118,7 @@ struct BatchedBlockTridiagonalLevenbergMarquardtOptimizer::Impl {
   Impl(const std::vector<NonlinearFactorGraph>& inputGraphs,
        const std::vector<Values>& initialValues, int inputNumBlocks,
        int inputBlockDim, const LevenbergMarquardtParams& inputParams,
-       const BatchedDenseSolverOptions& deviceOptions,
+       const BatchedSolverOptions& deviceOptions,
        const std::vector<BatchedFactorGroupHook>& inputFactorGroupHooks)
       : graphs(inputGraphs),
         currentValues(initialValues),
@@ -727,7 +727,7 @@ BatchedBlockTridiagonalLevenbergMarquardtOptimizer::
         const std::vector<NonlinearFactorGraph>& graphs,
         const std::vector<Values>& initialValues, int numBlocks, int blockDim,
         const LevenbergMarquardtParams& params,
-        const BatchedDenseSolverOptions& deviceOptions,
+        const BatchedSolverOptions& deviceOptions,
         const std::vector<BatchedFactorGroupHook>& factorGroupHooks)
     : impl_(std::make_unique<Impl>(graphs, initialValues, numBlocks, blockDim,
                                   params, deviceOptions, factorGroupHooks)) {}

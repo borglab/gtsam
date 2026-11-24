@@ -7,9 +7,7 @@ install(FILES ${nonlinear_headers_internal} DESTINATION ${CMAKE_INSTALL_INCLUDED
 
 if(GTSAM_ENABLE_CUDA)
   set(nonlinear_cuda_headers
-      cuda/SparseLevenbergMarquardt.h
-      cuda/BatchedDenseLevenbergMarquardt.h
-      cuda/BatchedDeviceGradients.h)
+      cuda/SparseLevenbergMarquardt.h)
   install(FILES ${nonlinear_cuda_headers} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/gtsam/nonlinear/cuda)
 endif()
 

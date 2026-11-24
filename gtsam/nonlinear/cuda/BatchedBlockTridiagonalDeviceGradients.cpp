@@ -104,8 +104,7 @@ Vector flattenCotangent(const VectorValues& cotangent, const KeyInfo& keyInfo,
 struct BatchedBlockTridiagonalDeviceGradients::Impl {
   std::vector<KeyInfo> keyInfos;
   // adjoint() is logically const but mutates this solver's cached device
-  // state across repeated calls -- same rationale BatchedDeviceGradients
-  // uses `mutable` for its own solver.
+  // state across repeated calls, hence `mutable`.
   mutable BatchedBlockTridiagonalCholeskySolver solver;
   DeviceArray<double> factorizedDiagonal;
   DeviceArray<double> factorizedOffDiagonal;
@@ -122,14 +121,14 @@ struct BatchedBlockTridiagonalDeviceGradients::Impl {
   // cudaSetDevice is thread-global and must stay current per call.
   int deviceId = -1;
 
-  explicit Impl(const BatchedDenseSolverOptions& options)
+  explicit Impl(const BatchedSolverOptions& options)
       : solver(options), deviceId(options.deviceId) {}
 };
 
 BatchedBlockTridiagonalDeviceGradients::BatchedBlockTridiagonalDeviceGradients(
     const std::vector<NonlinearFactorGraph>& graphs,
     const std::vector<Values>& solutions, int numBlocks, int blockDim,
-    const BatchedDenseSolverOptions& options)
+    const BatchedSolverOptions& options)
     : impl_(std::make_unique<Impl>(options)) {
   if (graphs.empty() || graphs.size() != solutions.size()) {
     throw std::invalid_argument(

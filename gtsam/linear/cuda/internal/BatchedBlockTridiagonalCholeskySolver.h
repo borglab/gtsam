@@ -21,7 +21,7 @@
 
 #include <gtsam/base/cuda/DeviceArray.h>
 #include <gtsam/linear/cuda/LinearSolver.h>
-#include <gtsam/linear/cuda/internal/BatchedDenseCholeskySolver.h>
+#include <gtsam/linear/cuda/internal/BatchedSolverOptions.h>
 
 #include <memory>
 
@@ -31,16 +31,16 @@ namespace gtsam::cuda {
  * Batched block-tridiagonal Cholesky backend (block Thomas algorithm) for
  * B independent systems whose scalar dimension partitions into numBlocks
  * blockDim-wide blocks, each factor/RHS touching only one or two adjacent
- * blocks -- e.g. DFG-TAMP's window graphs, where BatchedDenseCholeskySolver's
- * dense O(n^3) factorization is no longer a good substitute for a true
- * sparse solve. Reduces factorize cost to O(numBlocks * blockDim^3).
+ * blocks -- e.g. DFG-TAMP's window graphs. Exploits the chain sparsity
+ * directly instead of factorizing a dense n x n Hessian, reducing
+ * factorize cost to O(numBlocks * blockDim^3).
  */
 class BatchedBlockTridiagonalCholeskySolver {
  public:
   /// Calls cudaSetDevice(options.deviceId) first when deviceId >= 0, then
   /// creates the cuSOLVER and cuBLAS handles on that device.
   explicit BatchedBlockTridiagonalCholeskySolver(
-      const BatchedDenseSolverOptions& options = {});
+      const BatchedSolverOptions& options = {});
   ~BatchedBlockTridiagonalCholeskySolver();
 
   BatchedBlockTridiagonalCholeskySolver(

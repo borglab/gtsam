@@ -29,7 +29,6 @@
 #include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/ParameterTag.h>
 #include <gtsam/nonlinear/cuda/BatchedBlockTridiagonalDeviceGradients.h>
-#include <gtsam/nonlinear/cuda/BatchedDeviceGradients.h>
 #include <gtsam/slam/BetweenFactor.h>
 #include <gtsam/slam/PriorFactor.h>
 
@@ -144,9 +143,9 @@ struct GraphWithKnownNoise {
   SharedNoiseModel odometryNoise;
 };
 
-// See testCudaBatchedDeviceGradients.cpp's identical fixture for the full
-// rationale (shared instance across both BetweenFactors; a second call
-// gets a distinct, value-equal instance for object-identity testing).
+// Both BetweenFactors share one odometryNoise instance; a second call gets
+// its own distinct instance with equal sigmas, testing noiseGradient's
+// object-identity (not value) matching.
 GraphWithKnownNoise MakePose2GraphWithKnownNoise(double odometryYOffset) {
   GraphWithKnownNoise result;
   const auto priorNoise =
@@ -169,8 +168,7 @@ constexpr int kParamNumBlocks = 3;
 constexpr int kParamBlockDim = 2;
 
 // error(x) = x - target, with target playing the role of a learned
-// parameter identified by `tag` -- see testCudaBatchedDeviceGradients.cpp's
-// identical fixture for the full rationale.
+// parameter identified by `tag`.
 class ParameterFactor : public NoiseModelFactorN<Vector> {
  public:
   using Base = NoiseModelFactorN<Vector>;
@@ -191,8 +189,8 @@ class ParameterFactor : public NoiseModelFactorN<Vector> {
     return Vector(-factorResidualCotangent);
   }
 
-  /// Exposed only for ParameterGradientMatchesFiniteDifference -- see
-  /// testCudaBatchedDeviceGradients.cpp's identical fixture.
+  /// Exposed only for ParameterGradientMatchesFiniteDifference, to rebuild
+  /// this factor at a perturbed target.
   const Vector& target() const { return target_; }
 
  private:
@@ -267,26 +265,6 @@ TEST(BatchedBlockTridiagonalDeviceGradients, AdjointMatchesCpuGradientsPerGraph)
              gpuGradients.batchSize());
 }
 
-// The block-tridiagonal-exact backward must also agree with
-// BatchedDeviceGradients's own dense result on a graph small enough for both.
-TEST(BatchedBlockTridiagonalDeviceGradients, AdjointMatchesBatchedDenseGradients) {
-  if (!HasCudaDevice()) return;
-  const BatchConvergedProblem problem = MakeBatchConvergedProblem();
-  const std::vector<VectorValues> cotangents = {MakeCotangent(1.0),
-                                                MakeCotangent(-1.0)};
-
-  BatchedBlockTridiagonalDeviceGradients blockGradients(
-      problem.graphs, problem.converged, kPoseNumBlocks, kPoseBlockDim);
-  const std::vector<VectorValues> blockResult = blockGradients.adjoint(cotangents);
-
-  BatchedDeviceGradients denseGradients(problem.graphs, problem.converged);
-  const std::vector<VectorValues> denseResult = denseGradients.adjoint(cotangents);
-
-  for (size_t i = 0; i < problem.graphs.size(); ++i) {
-    EXPECT(assert_equal(denseResult[i], blockResult[i], 1e-9));
-  }
-}
-
 TEST(BatchedBlockTridiagonalDeviceGradients, MultipleAdjointCallsReuseFactorizationAndMatchCpu) {
   if (!HasCudaDevice()) return;
   const BatchConvergedProblem problem = MakeBatchConvergedProblem();
@@ -357,7 +335,9 @@ TEST(BatchedBlockTridiagonalDeviceGradients, ThrowsForNonAdjacentBlockCoupling) 
       std::invalid_argument);
 }
 
-// See testCudaBatchedDeviceGradients.cpp's identical test for the rationale.
+// Robust noise models are rejected: graph.linearize() would otherwise fold
+// IRLS reweighting into A, and the later static_pointer_cast<Gaussian> on
+// a noiseModel::Robust (not a Gaussian) would be an invalid cast.
 TEST(BatchedBlockTridiagonalDeviceGradients, ThrowsForRobustNoiseModel) {
   if (!HasCudaDevice()) return;
   BatchConvergedProblem problem = MakeBatchConvergedProblem();
@@ -384,7 +364,8 @@ TEST(BatchedBlockTridiagonalDeviceGradients, ThrowsForConstrainedNoiseModel) {
       std::invalid_argument);
 }
 
-// See testCudaBatchedDeviceGradients.cpp's identical test for the rationale.
+// A cotangent naming only one of the chain's three keys must match CPU
+// gtsam::Gradients::adjoint exactly: omitted known keys mean zero.
 TEST(BatchedBlockTridiagonalDeviceGradients,
     AdjointSupportsPartialCotangentMatchingCpu) {
   if (!HasCudaDevice()) return;
@@ -434,9 +415,9 @@ TEST(BatchedBlockTridiagonalDeviceGradients, AdjointThrowsForUnknownCotangentKey
   CHECK_EXCEPTION(gpuGradients.adjoint(cotangents), std::invalid_argument);
 }
 
-// See testCudaBatchedDeviceGradients.cpp's identical test for the
-// rationale. ParameterFactor here is factor index 3 (0=Prior,
-// 1=Chain(0,1), 2=Chain(1,2), 3=Parameter on the middle block).
+// Validates parameterGradient against a central-difference estimate from
+// ParameterFactor::unwhitenedError, independent of parameterVjp. Factor
+// index 3 here (0=Prior, 1=Chain(0,1), 2=Chain(1,2), 3=Parameter).
 TEST(BatchedBlockTridiagonalDeviceGradients,
     ParameterGradientMatchesFiniteDifference) {
   if (!HasCudaDevice()) return;
@@ -525,7 +506,7 @@ TEST(BatchedBlockTridiagonalDeviceGradients, ParameterGradientIsNulloptForUnused
   for (const auto& value : actual) CHECK(!value.has_value());
 }
 
-// See testCudaBatchedDeviceGradients.cpp's identical test for the rationale.
+// pushforward() must match gtsam::Gradients::pushforward exactly.
 TEST(BatchedBlockTridiagonalDeviceGradients, PushforwardMatchesCpuGradients) {
   if (!HasCudaDevice()) return;
   const BatchConvergedProblem problem = MakeBatchConvergedProblem();

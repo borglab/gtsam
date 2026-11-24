@@ -34,7 +34,7 @@
 namespace gtsam::cuda {
 
 /// Per-item outcome after a BatchedBlockTridiagonalLevenbergMarquardtOptimizer
-/// run -- same fields as BatchedDenseLevenbergMarquardtItemResult.
+/// run.
 struct BatchedBlockTridiagonalLevenbergMarquardtItemResult {
   double initialError = 0.0;
   double finalError = 0.0;
@@ -48,10 +48,10 @@ struct BatchedBlockTridiagonalLevenbergMarquardtItemResult {
  * Batch Levenberg-Marquardt for B independent *chain* nonlinear graphs
  * (scalar unknowns partition into numBlocks blockDim-wide groups, each
  * factor touching only one or two adjacent groups -- DFG-TAMP's
- * build_window_graph shape). Same algorithm/trajectory as
- * BatchedDenseLevenbergMarquardtOptimizer, but assembles and factorizes
- * only the block-tridiagonal pieces via BatchedBlockTridiagonalCholeskySolver
- * instead of a dense n x n Hessian. optimize() may be called once.
+ * build_window_graph shape). Assembles and factorizes only the block-
+ * tridiagonal pieces via BatchedBlockTridiagonalCholeskySolver, exploiting
+ * the chain sparsity instead of forming a dense n x n Hessian. optimize()
+ * may be called once.
  */
 class GTSAM_EXPORT BatchedBlockTridiagonalLevenbergMarquardtOptimizer {
  public:
@@ -68,7 +68,7 @@ class GTSAM_EXPORT BatchedBlockTridiagonalLevenbergMarquardtOptimizer {
       const std::vector<NonlinearFactorGraph>& graphs,
       const std::vector<Values>& initialValues, int numBlocks, int blockDim,
       const LevenbergMarquardtParams& params = LevenbergMarquardtParams(),
-      const BatchedDenseSolverOptions& deviceOptions = {},
+      const BatchedSolverOptions& deviceOptions = {},
       const std::vector<BatchedFactorGroupHook>& factorGroupHooks = {});
   ~BatchedBlockTridiagonalLevenbergMarquardtOptimizer();
 

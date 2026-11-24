@@ -99,8 +99,7 @@ double elapsed(std::chrono::steady_clock::time_point start) {
 }
 
 /// Fills a persistent device pointer array (one pointer per batch item,
-/// base + i*strideElements), same rationale as BatchedDenseCholeskySolver's
-/// identical helper: avoids a fresh cudaMalloc/cudaFree per chain step.
+/// base + i*strideElements), avoiding a fresh cudaMalloc/cudaFree per step.
 void uploadBatchPointers(double* base, int batchSize, size_t strideElements,
                         cudaStream_t stream, DeviceArray<double*>* cache) {
   std::vector<double*> hostPointers(static_cast<size_t>(batchSize));
@@ -133,7 +132,7 @@ struct BatchedBlockTridiagonalCholeskySolver::Impl {
   // cudaSetDevice is thread-global and must stay current per call.
   int deviceId = -1;
 
-  explicit Impl(const BatchedDenseSolverOptions& options)
+  explicit Impl(const BatchedSolverOptions& options)
       : deviceId(options.deviceId) {
     if (deviceId >= 0) {
       GTSAM_CUDA_CHECK(cudaSetDevice(deviceId));
@@ -166,7 +165,7 @@ struct BatchedBlockTridiagonalCholeskySolver::Impl {
 };
 
 BatchedBlockTridiagonalCholeskySolver::BatchedBlockTridiagonalCholeskySolver(
-    const BatchedDenseSolverOptions& options)
+    const BatchedSolverOptions& options)
     : impl_(std::make_unique<Impl>(options)) {}
 BatchedBlockTridiagonalCholeskySolver::
     ~BatchedBlockTridiagonalCholeskySolver() = default;

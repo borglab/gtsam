@@ -35,9 +35,13 @@
 namespace gtsam::cuda {
 
 /**
- * Block-tridiagonal-exact counterpart to BatchedDeviceGradients, for the
- * same chain-graph shape BatchedBlockTridiagonalLevenbergMarquardtOptimizer
- * targets; matches its noise and partial-cotangent contract exactly.
+ * GPU-resident differentiable backward for a batch of independent,
+ * converged *chain* nonlinear graphs, mirroring gtsam::Gradients but
+ * solving every graph's cotangent query in one batched GPU call via the
+ * block-tridiagonal Cholesky solver, for the same chain-graph shape
+ * BatchedBlockTridiagonalLevenbergMarquardtOptimizer targets. Every active
+ * factor must be a NoiseModelFactor with a dimension-matched, unconstrained
+ * noiseModel::Gaussian; robust and constrained noise models are rejected.
  */
 class GTSAM_EXPORT BatchedBlockTridiagonalDeviceGradients {
  public:
@@ -47,7 +51,7 @@ class GTSAM_EXPORT BatchedBlockTridiagonalDeviceGradients {
   BatchedBlockTridiagonalDeviceGradients(
       const std::vector<NonlinearFactorGraph>& graphs,
       const std::vector<Values>& solutions, int numBlocks, int blockDim,
-      const BatchedDenseSolverOptions& options = {});
+      const BatchedSolverOptions& options = {});
   ~BatchedBlockTridiagonalDeviceGradients();
 
   BatchedBlockTridiagonalDeviceGradients(
@@ -55,24 +59,33 @@ class GTSAM_EXPORT BatchedBlockTridiagonalDeviceGradients {
   BatchedBlockTridiagonalDeviceGradients& operator=(
       const BatchedBlockTridiagonalDeviceGradients&) = delete;
 
-  /// Same semantics as BatchedDeviceGradients::adjoint.
+  /// Returns lambda_b satisfying H_b*lambda_b = stateCotangents[b] per
+  /// graph. Omitted known keys mean zero; an unknown key or a present key
+  /// with the wrong (or nonfinite) value throws std::invalid_argument.
   std::vector<VectorValues> adjoint(
       const std::vector<VectorValues>& stateCotangents) const;
 
-  /// Same semantics as BatchedDeviceGradients::pullback.
+  /// Returns, per graph, one whitened factor-residual cotangent per
+  /// factor slot, mirroring gtsam::Gradients::pullback: -(A_b * adjoint_b).
   std::vector<std::vector<Vector>> pullback(
       const std::vector<VectorValues>& stateCotangents) const;
 
-  /// Same semantics as BatchedDeviceGradients::parameterGradient.
+  /// Returns, per graph, the accumulated gradient for `parameter`,
+  /// mirroring gtsam::Gradients::parameterGradient; std::nullopt if no
+  /// factor depends on it.
   std::vector<std::optional<Vector>> parameterGradient(
       const std::vector<VectorValues>& stateCotangents,
       const ParameterTag& parameter) const;
 
-  /// Same semantics as BatchedDeviceGradients::pushforward.
+  /// Returns, per graph, -H_b^{-1} * A_b^T * factorResidualDirections[b].
+  /// Supply one finite vector per factor slot, matching that factor's row
+  /// dimension; null/inactive slots take an empty vector.
   std::vector<VectorValues> pushforward(
       const std::vector<std::vector<Vector>>& factorResidualDirections) const;
 
-  /// Same semantics as BatchedDeviceGradients::noiseGradient.
+  /// Returns, per graph, the gradient w.r.t. model's sigmas (Diagonal or
+  /// Isotropic only, matched by object identity); std::nullopt if no
+  /// active factor holds model.
   std::vector<std::optional<Vector>> noiseGradient(
       const std::vector<VectorValues>& stateCotangents,
       const SharedNoiseModel model) const;

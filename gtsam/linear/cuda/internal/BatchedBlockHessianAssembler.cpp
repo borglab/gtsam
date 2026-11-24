@@ -70,7 +70,7 @@ struct BatchedBlockHessianAssembler::Impl {
   // cudaSetDevice is thread-global and must stay current per call.
   int deviceId = -1;
 
-  explicit Impl(const BatchedDenseSolverOptions& options)
+  explicit Impl(const BatchedSolverOptions& options)
       : deviceId(options.deviceId) {
     if (deviceId >= 0) {
       GTSAM_CUDA_CHECK(cudaSetDevice(deviceId));
@@ -83,7 +83,7 @@ struct BatchedBlockHessianAssembler::Impl {
 };
 
 BatchedBlockHessianAssembler::BatchedBlockHessianAssembler(
-    const BatchedDenseSolverOptions& options)
+    const BatchedSolverOptions& options)
     : impl_(std::make_unique<Impl>(options)) {}
 BatchedBlockHessianAssembler::~BatchedBlockHessianAssembler() = default;
 BatchedBlockHessianAssembler::BatchedBlockHessianAssembler(

@@ -102,19 +102,6 @@ class SparseLevenbergMarquardtOptimizer {
   const gtsam::cuda::SparseLevenbergMarquardtResult& result() const;
 };
 
-#include <gtsam/nonlinear/cuda/BatchedDenseLevenbergMarquardt.h>
-
-class BatchedDenseLevenbergMarquardtItemResult {
-  BatchedDenseLevenbergMarquardtItemResult();
-
-  double initialError;
-  double finalError;
-  double finalLambda;
-  size_t acceptedIterations;
-  size_t lambdaAttempts;
-  bool converged;
-};
-
 #include <gtsam/nonlinear/cuda/BatchedFactorGroupHook.h>
 
 class BatchedFactorGroupHook {
@@ -123,53 +110,6 @@ class BatchedFactorGroupHook {
       const gtsam::cuda::BatchedFactorGroupStageFunction& stageFunction,
       const gtsam::cuda::BatchedFactorGroupComputeBatchFunction&
           computeBatchFunction);
-};
-
-class BatchedDenseLevenbergMarquardtOptimizer {
-  // Two overloads, not one with a defaulted trailing vector-of-custom-type
-  // parameter: see BatchedBlockTridiagonalLevenbergMarquardtOptimizer's
-  // identical comment below for why.
-  BatchedDenseLevenbergMarquardtOptimizer(
-      const std::vector<gtsam::NonlinearFactorGraph>& graphs,
-      const std::vector<gtsam::Values>& initialValues,
-      const gtsam::LevenbergMarquardtParams& params =
-          gtsam::LevenbergMarquardtParams(),
-      const gtsam::cuda::BatchedDenseSolverOptions& deviceOptions =
-          gtsam::cuda::BatchedDenseSolverOptions());
-  BatchedDenseLevenbergMarquardtOptimizer(
-      const std::vector<gtsam::NonlinearFactorGraph>& graphs,
-      const std::vector<gtsam::Values>& initialValues,
-      const gtsam::LevenbergMarquardtParams& params,
-      const gtsam::cuda::BatchedDenseSolverOptions& deviceOptions,
-      const std::vector<gtsam::cuda::BatchedFactorGroupHook>&
-          factorGroupHooks);
-
-  const std::vector<gtsam::Values>& optimize();
-  const std::vector<gtsam::Values>& values() const;
-  const std::vector<gtsam::cuda::BatchedDenseLevenbergMarquardtItemResult>&
-  results() const;
-};
-
-#include <gtsam/nonlinear/cuda/BatchedDeviceGradients.h>
-
-class BatchedDeviceGradients {
-  BatchedDeviceGradients(const std::vector<gtsam::NonlinearFactorGraph>& graphs,
-                         const std::vector<gtsam::Values>& solutions,
-                         const gtsam::cuda::BatchedDenseSolverOptions& options =
-                             gtsam::cuda::BatchedDenseSolverOptions());
-  std::vector<gtsam::VectorValues> adjoint(
-      const std::vector<gtsam::VectorValues>& stateCotangents) const;
-  std::vector<std::optional<gtsam::Vector>> parameterGradient(
-      const std::vector<gtsam::VectorValues>& stateCotangents,
-      const gtsam::ParameterTag& parameter) const;
-  std::vector<gtsam::VectorValues> pushforward(
-      const std::vector<std::vector<gtsam::Vector>>& factorResidualDirections)
-      const;
-  std::vector<std::optional<gtsam::Vector>> noiseGradient(
-      const std::vector<gtsam::VectorValues>& stateCotangents,
-      const gtsam::SharedNoiseModel model) const;
-  int batchSize() const;
-  int dimension() const;
 };
 
 #include <gtsam/nonlinear/cuda/BatchedBlockTridiagonalLevenbergMarquardt.h>
@@ -199,13 +139,13 @@ class BatchedBlockTridiagonalLevenbergMarquardtOptimizer {
       int blockDim,
       const gtsam::LevenbergMarquardtParams& params =
           gtsam::LevenbergMarquardtParams(),
-      const gtsam::cuda::BatchedDenseSolverOptions& deviceOptions =
-          gtsam::cuda::BatchedDenseSolverOptions());
+      const gtsam::cuda::BatchedSolverOptions& deviceOptions =
+          gtsam::cuda::BatchedSolverOptions());
   BatchedBlockTridiagonalLevenbergMarquardtOptimizer(
       const std::vector<gtsam::NonlinearFactorGraph>& graphs,
       const std::vector<gtsam::Values>& initialValues, int numBlocks,
       int blockDim, const gtsam::LevenbergMarquardtParams& params,
-      const gtsam::cuda::BatchedDenseSolverOptions& deviceOptions,
+      const gtsam::cuda::BatchedSolverOptions& deviceOptions,
       const std::vector<gtsam::cuda::BatchedFactorGroupHook>&
           factorGroupHooks);
 
@@ -222,8 +162,8 @@ class BatchedBlockTridiagonalDeviceGradients {
   BatchedBlockTridiagonalDeviceGradients(
       const std::vector<gtsam::NonlinearFactorGraph>& graphs,
       const std::vector<gtsam::Values>& solutions, int numBlocks, int blockDim,
-      const gtsam::cuda::BatchedDenseSolverOptions& options =
-          gtsam::cuda::BatchedDenseSolverOptions());
+      const gtsam::cuda::BatchedSolverOptions& options =
+          gtsam::cuda::BatchedSolverOptions());
   std::vector<gtsam::VectorValues> adjoint(
       const std::vector<gtsam::VectorValues>& stateCotangents) const;
   std::vector<std::optional<gtsam::Vector>> parameterGradient(
