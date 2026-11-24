@@ -15,7 +15,9 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/TestableAssertions.h>
 #include <gtsam/constrained/QcqpProblem.h>
+#include <gtsam/linear/JacobianFactor.h>
 #include <gtsam_unstable/geometry/AugmentedPoint.h>
 
 #include <Eigen/Core>
@@ -69,7 +71,7 @@ TEST(AugmentedPoint, VectorSpace) {
   CHECK_EXCEPTION(point + Vector::Zero(2), std::invalid_argument);
 }
 
-// Verifies the lifted coordinates and both quadratic equalities.
+// Verifies the lifted coordinates and the three equalities.
 TEST(AugmentedPoint, QcqpLiftAndConstraints3D) {
   const Point point(Eigen::Vector3d(1.0, -2.0, 3.0));
   const Matrix X = Traits::QcqpValue<1>(point);
@@ -80,8 +82,8 @@ TEST(AugmentedPoint, QcqpLiftAndConstraints3D) {
   EXPECT(expected.isApprox(X.col(0), 1e-12));
 
   const auto constraints = Traits::QcqpConstraints<1>();
-  EXPECT_LONGS_EQUAL(2, constraints.size());
-  if (constraints.size() != 2) return;
+  EXPECT_LONGS_EQUAL(3, constraints.size());
+  if (constraints.size() != 3) return;
 
   // Each tuple represents X^T A X + 2 a^T X = b.
   for (const auto& constraint : constraints) {
@@ -91,18 +93,27 @@ TEST(AugmentedPoint, QcqpLiftAndConstraints3D) {
 
     EXPECT_LONGS_EQUAL(5, A.rows());
     EXPECT_LONGS_EQUAL(5, A.cols());
-    EXPECT_LONGS_EQUAL(0, a.size());
     EXPECT(A.isApprox(A.transpose(), 1e-12));
-    EXPECT_DOUBLES_EQUAL(b, (X.transpose() * A * X)(0, 0), 1e-12);
+    const double linear = a.size() == 0 ? 0.0 : 2.0 * a.dot(X.col(0));
+    EXPECT_DOUBLES_EQUAL(b, (X.transpose() * A * X)(0, 0) + linear, 1e-12);
   }
 
+  // x^T x - h*u = 0 and h^2 = 1 are quadratic; h = 1 is linear.
   const Matrix& A = std::get<0>(constraints.at(0));
   const Matrix& H = std::get<0>(constraints.at(1));
+  EXPECT_LONGS_EQUAL(0, std::get<1>(constraints.at(0)).size());
+  EXPECT_LONGS_EQUAL(0, std::get<1>(constraints.at(1)).size());
   EXPECT_DOUBLES_EQUAL(0.0, std::get<2>(constraints.at(0)), 1e-12);
   EXPECT_DOUBLES_EQUAL(1.0, std::get<2>(constraints.at(1)), 1e-12);
   EXPECT_DOUBLES_EQUAL(-0.5, A(0, 4), 1e-12);
   EXPECT_DOUBLES_EQUAL(-0.5, A(4, 0), 1e-12);
   EXPECT_DOUBLES_EQUAL(1.0, H(0, 0), 1e-12);
+
+  const auto& [L, a, b] = constraints.at(2);
+  const Vector expectedLinear = (Vector(5) << 0.5, 0.0, 0.0, 0.0, 0.0).finished();
+  EXPECT(L.isZero(0.0));
+  EXPECT(assert_equal(expectedLinear, a));
+  EXPECT_DOUBLES_EQUAL(1.0, b, 1e-12);
 
   // Changing u violates x^T x - h*u = 0.
   Matrix inconsistent = X;
@@ -116,7 +127,7 @@ TEST(AugmentedPoint, QcqpRoundTripAndSign) {
   const Matrix X = qcqpValue<3>(point);
   EXPECT(point.equals(fromQcqpValue<3>(X)));
 
-  // h^2 = 1 permits h = -1; recovery must cancel the global sign.
+  // Recovery divides by h, so a negated lift gives the same point.
   EXPECT(point.equals(fromQcqpValue<3>(-X)));
 
   CHECK_EXCEPTION(Traits::FromQcqpValue<1>(Matrix::Zero(4, 1)),
@@ -129,6 +140,59 @@ TEST(AugmentedPoint, QcqpRoundTripAndSign) {
   Matrix invalidH = X;
   invalidH(0, 0) = std::numeric_limits<double>::quiet_NaN();
   CHECK_EXCEPTION(Traits::FromQcqpValue<1>(invalidH), std::invalid_argument);
+}
+
+// Regression: with only x^T x = h*u and h^2 = 1, a lift with h = -1 was
+// feasible. A cost that reads the raw coordinates x of two points, here a
+// relative position x2 - x1 = delta, then had a zero-cost feasible solution
+// whose recovered points x/h violate that relative position. The variable
+// constraints alone must now reject it, without an added h = 1 constraint.
+TEST(AugmentedPoint, NegativeHomogeneousCoordinateIsInfeasible) {
+  const Key key1 = 1, key2 = 2;
+  const Point p1(Eigen::Vector3d(1.0, -2.0, 3.0));
+  const Eigen::Vector3d delta(0.5, 0.25, -1.0);
+
+  QcqpVariableConstraints variableConstraints;
+  variableConstraints.add(key1, Traits::QcqpConstraints<1>);
+  variableConstraints.add(key2, Traits::QcqpConstraints<1>);
+  EXPECT_LONGS_EQUAL(6, variableConstraints.constraints().size());
+
+  // QCQP cost 0.5 |x2 - x1 - delta|^2 on the raw lifted coordinates.
+  Matrix S = Matrix::Zero(3, 5);
+  S.block<3, 3>(0, 1).setIdentity();
+  NonlinearFactorGraph costs;
+  costs.emplace_shared<QpCost>(
+      JacobianFactor(key1, -S, key2, S, delta, noiseModel::Unit::Create(3)));
+
+  // The intended solution: canonical lifts of p1 and p1 + delta.
+  const Point p2(p1.vector() + delta);
+  Values canonical;
+  canonical.insert(key1, Traits::QcqpValue<1>(p1));
+  canonical.insert(key2, Traits::QcqpValue<1>(p2));
+  EXPECT_DOUBLES_EQUAL(0.0, costs.error(canonical), 1e-12);
+  EXPECT_DOUBLES_EQUAL(
+      0.0, variableConstraints.constraints().violationNorm(canonical), 1e-12);
+
+  // The spurious solution: key2 holds the negated lift of q = -(p1 + delta),
+  // so its raw coordinates are p1 + delta and the cost is still zero.
+  const Point q(-p2.vector());
+  Values spurious;
+  spurious.insert(key1, Traits::QcqpValue<1>(p1));
+  spurious.insert(key2, Matrix(-Traits::QcqpValue<1>(q)));
+  EXPECT_DOUBLES_EQUAL(0.0, costs.error(spurious), 1e-12);
+
+  // It satisfies x^T x = h*u and h^2 = 1 but recovers a point other than p2.
+  const Matrix X2 = spurious.at<Matrix>(key2);
+  const auto constraints = Traits::QcqpConstraints<1>();
+  for (size_t i = 0; i < 2; ++i) {
+    const auto& [A, a, b] = constraints.at(i);
+    EXPECT_DOUBLES_EQUAL(b, (X2.transpose() * A * X2)(0, 0), 1e-12);
+  }
+  EXPECT(Traits::FromQcqpValue<1>(X2).equals(q));
+  EXPECT(!q.equals(p2, 1e-3));
+
+  // h = 1 excludes it.
+  EXPECT(variableConstraints.constraints().violationNorm(spurious) > 1.0);
 }
 
 // Verifies unsupported multi-column QCQP conversions are rejected.
