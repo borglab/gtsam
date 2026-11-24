@@ -6,6 +6,31 @@ from check_code_quality import check_source
 
 
 class CodeQualityTest(unittest.TestCase):
+    def test_module_dependency_direction(self):
+        self.assertEqual(
+            list(check_source("gtsam/nonlinear/Foo.h", '#include <gtsam/inference/Key.h>')),
+            [],
+        )
+        source = '#include "../nonlinear/Values.h"'
+        [(line, message)] = check_source("gtsam/inference/Foo.h", source)
+        self.assertEqual(line, 1)
+        self.assertIn("inference cannot include nonlinear", message)
+
+    def test_module_dependency_exception(self):
+        source = '#include <gtsam/nonlinear/Values.h>'
+        self.assertEqual(list(check_source("gtsam/base/numericalDerivative.h", source)), [])
+        self.assertTrue(list(check_source("gtsam/base/Foo.h", source)))
+        self.assertTrue(list(check_source(
+            "gtsam/base/numericalDerivative.h",
+            '#include <gtsam/nonlinear/NonlinearFactorGraph.h>',
+        )))
+
+    def test_module_dependency_scope(self):
+        source = '#include <gtsam/slam/BetweenFactor.h>'
+        for path in ("gtsam/base/tests/testFoo.cpp", "gtsam/base/base.i", "gtsam/base/wrap/Foo.h"):
+            with self.subTest(path=path):
+                self.assertEqual(list(check_source(path, source)), [])
+
     def test_stable_dependency(self):
         source = '#include <gtsam_unstable/foo.h>\n#include "../../gtsam_unstable/bar.h"'
         self.assertEqual([line for line, _ in check_source("gtsam/base/Foo.h", source)], [1, 2])

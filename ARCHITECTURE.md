@@ -31,6 +31,42 @@ The [CMake module list](gtsam/CMakeLists.txt) defines the stable library.
 These modules share one C++ library. The table describes conceptual
 responsibilities rather than independent compilation targets.
 
+## Include direction between modules
+
+Library code can include headers from its own module and any module reachable
+by following the dependencies in this table. For example,
+`nonlinear` can include `linear`, `symbolic`, `inference`, `geometry`, and
+`base` directly. `hybrid` can use both the discrete and nonlinear stacks.
+
+| Including module | Immediate dependencies |
+| --- | --- |
+| `base` | None |
+| `inference` | `base` |
+| `geometry`, `symbolic`, `discrete` | `inference` |
+| `linear` | `symbolic` |
+| `nonlinear` | `geometry`, `linear` |
+| `basis`, `constrained`, `planning` | `nonlinear` |
+| `hybrid` | `discrete`, `nonlinear` |
+| `certifiable`, `sam` | `constrained` |
+| `slam` | `sam` |
+| `sfm`, `navigation` | `slam` |
+
+The graph captures GTSAM's intended layering. For example, camera sets use
+inference keys, range factors can construct constrained problems, and navigation
+factors can reuse SLAM's `BetweenFactor`. When a lower module needs behavior from
+a higher one, put the integration in the higher module or extract the shared
+operation into a lower module that both can use.
+
+Several existing includes cross this boundary. Compatibility headers in `base`,
+`nonlinear`, and `slam` forward to relocated implementations. Other exceptions
+include inference's indexed symbolic elimination, geometry's optimized
+triangulation and Karcher means, and `HybridValues` overloads in discrete,
+linear, and nonlinear factors. The [checker](scripts/check_code_quality.py)
+records each existing exception by including file and included header. The
+module rule covers stable library C/C++ and CUDA sources. Tests, examples,
+benchmarks, documentation, and wrapper glue can compose modules freely within
+the other stable/experimental boundaries described below.
+
 ## Estimation and optimization
 
 The usual estimation path is:
@@ -125,10 +161,10 @@ algorithms in the library and use examples to demonstrate their use.
 ## Automated quality checks
 
 Run `python3 scripts/check_code_quality.py` from the repository root to check
-stable-to-unstable includes, export macro ownership, and the deprecated
-exception spelling. CI runs the same checks. The script scans tracked C++
-and wrapper sources, excludes vendored dependencies, and documents narrowly
-scoped compatibility exceptions.
+module include direction, stable-to-unstable includes, export macro ownership,
+and the deprecated exception spelling. CI runs the same checks. The script
+scans tracked C++ and wrapper sources, excludes vendored dependencies, and
+documents existing exceptions.
 
 The [developer guide](DEVELOP.md) and
 [repository guidance](.github/copilot-instructions.md) describe coding
