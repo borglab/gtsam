@@ -77,9 +77,6 @@ class WnoaMotionFactor
 
   double deltaT_;  ///< Time between the two states
 
-  inline static const MatrixN kIdentity = MatrixN::Identity();
-  inline static const MatrixN kZero = MatrixN::Zero();
-
   /**
    * @brief Compute relative pose/velocity terms shared by WNOA error/Jacobians.
    *
@@ -244,8 +241,8 @@ class WnoaMotionFactor
     if (Hv1) {
       // Derivative of error wrt velocity v1
       Hv1->resize(2 * dim, dim);
-      Hv1->template block<dim, dim>(0, 0) = -deltaT_ * kIdentity;
-      Hv1->template block<dim, dim>(dim, 0) = -kIdentity;
+      Hv1->template block<dim, dim>(0, 0) = -deltaT_ * MatrixN::Identity();
+      Hv1->template block<dim, dim>(dim, 0) = -MatrixN::Identity();
     }
     if (Hp2) {
       // Derivative of error wrt pose p2
@@ -256,7 +253,7 @@ class WnoaMotionFactor
     if (Hv2) {
       // Derivative of error wrt velocity v2
       Hv2->resize(2 * dim, dim);
-      Hv2->template block<dim, dim>(0, 0) = kZero;
+      Hv2->template block<dim, dim>(0, 0).setZero();
       Hv2->template block<dim, dim>(dim, 0) = invJr;
     }
 
@@ -343,10 +340,10 @@ class WnoaMotionFactor
   static Matrix2N TransitionFunction(double deltaT) {
     // Construct the transition matrix for the WNOA factor
     Matrix2N F;
-    F.template topLeftCorner<dim, dim>() = kIdentity;
-    F.template topRightCorner<dim, dim>() = deltaT * kIdentity;
-    F.template bottomLeftCorner<dim, dim>() = kZero;
-    F.template bottomRightCorner<dim, dim>() = kIdentity;
+    F.template topLeftCorner<dim, dim>().setIdentity();
+    F.template topRightCorner<dim, dim>() = deltaT * MatrixN::Identity();
+    F.template bottomLeftCorner<dim, dim>().setZero();
+    F.template bottomRightCorner<dim, dim>().setIdentity();
     return F;
   }
 
@@ -380,9 +377,9 @@ class WnoaMotionFactor
     Matrix2N F;
     // first column is pose, second column is velocity
     F.template topLeftCorner<dim, dim>() = dxi_dT1;
-    F.template topRightCorner<dim, dim>() = -deltaT * kIdentity;
+    F.template topRightCorner<dim, dim>() = -deltaT * MatrixN::Identity();
     F.template bottomLeftCorner<dim, dim>() = dvErr_dxi * dxi_dT1;
-    F.template bottomRightCorner<dim, dim>() = -kIdentity;
+    F.template bottomRightCorner<dim, dim>() = -MatrixN::Identity();
     return F;
   }
 
@@ -416,7 +413,7 @@ class WnoaMotionFactor
     Matrix2N E;
     // First column is pose, second column is velocity
     E.template topLeftCorner<dim, dim>() = dxi_dT2;
-    E.template topRightCorner<dim, dim>() = kZero;
+    E.template topRightCorner<dim, dim>().setZero();
     E.template bottomLeftCorner<dim, dim>() = dvErr_dxi * dxi_dT2;
     E.template bottomRightCorner<dim, dim>() = invJr;
     return -E;
