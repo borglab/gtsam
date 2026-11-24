@@ -37,14 +37,23 @@ public:
   virtual void  run (TestResult& result) = 0;
 
 
-  void      setNext(Test *test);
+  void      setNext(Test *test) noexcept;
   Test      *getNext () const;
-  std::string    getName() const {return name_;}
-  std::string   getFilename() const {return filename_;}
+  std::string getName() const { return literalName_ ? literalName_ : name_; }
+  std::string getFilename() const {
+    return literalFilename_ ? literalFilename_ : filename_;
+  }
   long      getLineNumber() const {return lineNumber_;}
   bool        safe() const {return safeCheck_;}
 
 protected:
+  // Test macros pass string literals, which remain valid for the entire run.
+  struct LiteralMetadata {
+    const char* name;
+    const char* filename;
+  };
+  Test(LiteralMetadata metadata, long lineNumber, bool safeCheck) noexcept;
+  void initializeMetadata();
 
   bool check (long expected, long actual, TestResult& result, const std::string& fileName, long lineNumber);
   bool check (const std::string& expected, const std::string& actual, TestResult& result, const std::string& fileName, long lineNumber);
@@ -55,17 +64,28 @@ protected:
   long       lineNumber_; /// This is the line line number of the test, rather than the a single check
   bool       safeCheck_;
 
+private:
+  const char* literalName_ = nullptr;
+  const char* literalFilename_ = nullptr;
+
 };
 
 /**
  * Normal test will wrap execution in a try/catch block to catch exceptions more effectively
  */
 #define TEST(testGroup, testName)\
-  class testGroup##testName##Test : public Test \
-  { public: testGroup##testName##Test () : Test (#testName "Test", __FILE__, __LINE__, true) {} \
-            void run (TestResult& result_) override;} \
-    testGroup##testName##Instance; \
-  void testGroup##testName##Test::run (TestResult& result_)
+  class testGroup##testName##Test : public Test {\
+   public:\
+    testGroup##testName##Test() noexcept\
+        : Test({#testName "Test", __FILE__}, __LINE__, true) {}\
+    void run(TestResult& result_) override {\
+      initializeMetadata();\
+      runTest(result_);\
+    }\
+   private:\
+    void runTest(TestResult& result_);\
+  } testGroup##testName##Instance;\
+  void testGroup##testName##Test::runTest(TestResult& result_)
 
 /**
  * Declare friend in a class to test its private methods
@@ -78,12 +98,18 @@ protected:
  * will not wrap execution with a try/catch block
  */
 #define TEST_UNSAFE(testGroup, testName)\
-  class testGroup##testName##Test : public Test \
-  { public: testGroup##testName##Test () : Test (#testName "Test", __FILE__, __LINE__, false) {} \
-            virtual ~testGroup##testName##Test () {} \
-            void run (TestResult& result_) override;} \
-    testGroup##testName##Instance; \
-  void testGroup##testName##Test::run (TestResult& result_)
+  class testGroup##testName##Test : public Test {\
+   public:\
+    testGroup##testName##Test() noexcept\
+        : Test({#testName "Test", __FILE__}, __LINE__, false) {}\
+    void run(TestResult& result_) override {\
+      initializeMetadata();\
+      runTest(result_);\
+    }\
+   private:\
+    void runTest(TestResult& result_);\
+  } testGroup##testName##Instance;\
+  void testGroup##testName##Test::runTest(TestResult& result_)
 
 /**
  * Use this to disable unwanted tests without commenting them out.
