@@ -1,0 +1,16 @@
+---
+Checks: >-
+  -*,
+  clang-analyzer-core.*,
+  clang-analyzer-cplusplus.*,
+  bugprone-dangling-handle,
+  bugprone-float-loop-counter,
+  bugprone-implicit-widening-of-multiplication-result,
+  bugprone-infinite-loop,
+  bugprone-integer-division,
+  bugprone-narrowing-conversions,
+  bugprone-throwing-static-initialization,
+  bugprone-undefined-memory-manipulation,
+  bugprone-unchecked-optional-access,
+  bugprone-use-after-move
+...

@@ -3,6 +3,15 @@
 See [GTSAM architecture](ARCHITECTURE.md) for the module map, extension points,
 and automated source quality checks.
 
+## Clang-Tidy
+
+Pull request CI uses [the repository's Clang-Tidy configuration](.clang-tidy)
+to check changed lines in C++ source files listed in the Linux compilation
+database. It reports selected correctness diagnostics as errors. To analyze
+a source file locally, configure a build with
+`-DCMAKE_EXPORT_COMPILE_COMMANDS=ON` and run
+`clang-tidy -p build path/to/file.cpp`.
+
 ## Coding Conventions
 
 * Classes and types use `UpperCamelCase`; methods and functions use `lowerCamelCase`.
