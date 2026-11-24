@@ -131,6 +131,13 @@ $$
 
 Subtracting the minimum preserves the weights and stabilizes the exponential.
 A larger inverse temperature gives lower-cost trajectories more influence.
+
+Choose proposal spread in control units and inverse temperature in inverse graph-error units.
+Changing either alters how far a fixed-budget search can move and how precisely it can
+refine a solution. The [LQR comparison](../../../python/gtsam_unstable/examples/planning/SamplingPlannerLQR.ipynb)
+calibrates open-loop MPPI variants on separate random seeds and evaluates it against the exact
+solution. The [circle-tracking example](../../../python/gtsam_unstable/examples/planning/DoubleIntegratorCoRL.ipynb)
+calibrates feedback-based methods on disturbed closed-loop trajectories.
 Control-effort factors enter $J_i$ directly. This corresponds to the
 $\alpha=1$ formulation of MPPI with a Gaussian centered on the nominal plan.
 [Williams et al., IEEE Transactions on Robotics](https://doi.org/10.1109/TRO.2018.2865891)
