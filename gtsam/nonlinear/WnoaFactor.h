@@ -22,6 +22,7 @@
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/VectorSpace.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/WnoaStateData.h>
 
