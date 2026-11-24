@@ -225,7 +225,8 @@ TEST(Interpolator, InterpolatePoseAndVelocityP1) {
   Vector1 v_common(2.0);
   Point1 p0_p1_common_v = p0_p1;
   Point1 p1_p1_common_v = p0_p1_common_v + timestep * v_common;
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     auto pvtau = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Point1>(p0_p1_common_v, v_common, 0.0),
         TimestampedPoseVelocity<Point1>(p1_p1_common_v, v_common, timestep),
@@ -241,7 +242,8 @@ TEST(Interpolator, InterpolatePoseAndVelocityP2) {
   Vector2 v_common(0.5, -0.5);
   Point2 p0_p2_common_v = p0_p2;
   Point2 p1_p2_common_v = p0_p2_common_v + timestep * v_common;
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     auto pvtau = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Point2>(p0_p2_common_v, v_common, 0.0),
         TimestampedPoseVelocity<Point2>(p1_p2_common_v, v_common, timestep),
@@ -257,7 +259,8 @@ TEST(Interpolator, InterpolatePoseAndVelocityP3) {
   Vector3 v_common(0.5, -0.5, 0.5);
   Point3 p0_p3_common_v = p0_p3;
   Point3 p1_p3_common_v = p0_p3_common_v + timestep * v_common;
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     auto pvtau = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Point3>(p0_p3_common_v, v_common, 0.0),
         TimestampedPoseVelocity<Point3>(p1_p3_common_v, v_common, timestep),
@@ -274,7 +277,8 @@ TEST(Interpolator, InterpolatePoseAndVelocitySE2) {
   Vector3 v_common(0.65, -0.1, 0.15);
   Pose2 p0_se2_common_v = p0_se2;
   Pose2 p1_se2_common_v = p0_se2_common_v.expmap(timestep * v_common);
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     auto pvtau = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Pose2>(p0_se2_common_v, v_common, 0.0),
         TimestampedPoseVelocity<Pose2>(p1_se2_common_v, v_common, timestep),
@@ -291,7 +295,8 @@ TEST(Interpolator, InterpolatePoseAndVelocitySE3) {
   Vector6 v_common(0.15, -0.25, 0.35, 0.45, -0.55, 0.65);
   Pose3 p0_se3_common_v = p0_se3;
   Pose3 p1_se3_common_v = p0_se3_common_v.expmap(timestep * v_common);
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     auto pvtau = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Pose3>(p0_se3_common_v, v_common, 0.0),
         TimestampedPoseVelocity<Pose3>(p1_se3_common_v, v_common, timestep),
@@ -311,7 +316,8 @@ TEST(Interpolator, InterpolatePoseAndVelocitySE3) {
  */
 TEST(Interpolator, ExtrapolatePoseAndVelocityP1) {
   Interpolator<Point1> interpolator(Q_p1);
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     auto pvtau = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Point1>(p0_p1, v0_p1, 0.0),
         TimestampedPoseVelocity<Point1>(p1_p1, v1_p1, timestep),
@@ -331,7 +337,8 @@ TEST(Interpolator, ExtrapolatePoseAndVelocityP1) {
 /* ************************************************************************* */
 TEST(Interpolator, ExtrapolatePoseAndVelocityP2) {
   Interpolator<Point2> interpolator(Q_p2);
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     auto pvtau = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Point2>(p0_p2, v0_p2, 0.0),
         TimestampedPoseVelocity<Point2>(p1_p2, v1_p2, timestep),
@@ -351,7 +358,8 @@ TEST(Interpolator, ExtrapolatePoseAndVelocityP2) {
 /* ************************************************************************* */
 TEST(Interpolator, ExtrapolatePoseAndVelocityP3) {
   Interpolator<Point3> interpolator(Q_p3);
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     auto pvtau = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Point3>(p0_p3, v0_p3, 0.0),
         TimestampedPoseVelocity<Point3>(p1_p3, v1_p3, timestep),
@@ -372,7 +380,8 @@ TEST(Interpolator, ExtrapolatePoseAndVelocityP3) {
 /* ************************************************************************* */
 TEST(Interpolator, ExtrapolatePoseAndVelocitySE2) {
   Interpolator<Pose2> interpolator(Q_se2);
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     auto pvtau = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Pose2>(p0_se2, v0_se2, 0.0),
         TimestampedPoseVelocity<Pose2>(p1_se2, v1_se2, timestep),
@@ -393,7 +402,8 @@ TEST(Interpolator, ExtrapolatePoseAndVelocitySE2) {
 /* ************************************************************************* */
 TEST(Interpolator, ExtrapolatePoseAndVelocitySE3) {
   Interpolator<Pose3> interpolator(Q_se3);
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     auto pvtau = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Pose3>(p0_se3, v0_se3, 0.0),
         TimestampedPoseVelocity<Pose3>(p1_se3, v1_se3, timestep),
@@ -419,7 +429,8 @@ TEST(Interpolator, ExtrapolatePoseAndVelocitySE3) {
  */
 TEST(Interpolator, ForwardBackwardP1) {
   Interpolator<Point1> interpolator(Q_p1);
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     auto pvtau1 = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Point1>(p0_p1, v0_p1, 0.0),
         TimestampedPoseVelocity<Point1>(p1_p1, v1_p1, timestep),
@@ -437,7 +448,8 @@ TEST(Interpolator, ForwardBackwardP1) {
 /* ************************************************************************* */
 TEST(Interpolator, ForwardBackwardP2) {
   Interpolator<Point2> interpolator(Q_p2);
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     auto pvtau1 = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Point2>(p0_p2, v0_p2, 0.0),
         TimestampedPoseVelocity<Point2>(p1_p2, v1_p2, timestep),
@@ -455,7 +467,8 @@ TEST(Interpolator, ForwardBackwardP2) {
 /* ************************************************************************* */
 TEST(Interpolator, ForwardBackwardP3) {
   Interpolator<Point3> interpolator(Q_p3);
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     auto pvtau1 = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Point3>(p0_p3, v0_p3, 0.0),
         TimestampedPoseVelocity<Point3>(p1_p3, v1_p3, timestep),
@@ -473,7 +486,8 @@ TEST(Interpolator, ForwardBackwardP3) {
 /* ************************************************************************* */
 TEST(Interpolator, ForwardBackwardSE2) {
   Interpolator<Pose2> interpolator(Q_se2);
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     auto pvtau1 = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Pose2>(p0_se2, v0_se2, 0.0),
         TimestampedPoseVelocity<Pose2>(p1_se2, v1_se2, timestep),
@@ -491,7 +505,8 @@ TEST(Interpolator, ForwardBackwardSE2) {
 /* ************************************************************************* */
 TEST(Interpolator, ForwardBackwardSE3) {
   Interpolator<Pose3> interpolator(Q_se3);
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     auto pvtau1 = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Pose3>(p0_se3, v0_se3, 0.0),
         TimestampedPoseVelocity<Pose3>(p1_se3, v1_se3, timestep),
@@ -520,7 +535,8 @@ TEST(Interpolator, FrameTranslationP1) {
   Point1 p1_transformed = p1_p1 + T_frame;
   Interpolator<Point1> interpolator(Q_p1);
 
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     // pvtau1: Interpolate in the original frame
     auto pvtau1 = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Point1>(p0_p1, v0_p1, 0.0),
@@ -548,7 +564,8 @@ TEST(Interpolator, FrameTranslationP2) {
   Point2 p0_transformed = p0_p2 + T_frame;
   Point2 p1_transformed = p1_p2 + T_frame;
   Interpolator<Point2> interpolator(Q_p2);
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     // pvtau1: Interpolate in the original frame
     auto pvtau1 = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Point2>(p0_p2, v0_p2, 0.0),
@@ -574,7 +591,8 @@ TEST(Interpolator, FrameTranslationP3) {
   Point3 p0_transformed = p0_p3 + T_frame;
   Point3 p1_transformed = p1_p3 + T_frame;
   Interpolator<Point3> interpolator(Q_p3);
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     // pvtau1: Interpolate in the original frame
     auto pvtau1 = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Point3>(p0_p3, v0_p3, 0.0),
@@ -599,7 +617,8 @@ TEST(Interpolator, FrameTranslationSE2) {
   Pose2 p0_transformed = Pose2(Rot2::Identity(), T_frame).compose(p0_se2);
   Pose2 p1_transformed = Pose2(Rot2::Identity(), T_frame).compose(p1_se2);
   Interpolator<Pose2> interpolator(Q_se2);
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     // pvtau1: Interpolate in the original frame
     auto pvtau1 = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Pose2>(p0_se2, v0_se2, 0.0),
@@ -624,7 +643,8 @@ TEST(Interpolator, FrameTranslationSE3) {
   Pose3 p0_transformed = Pose3(Rot3::Identity(), T_frame).compose(p0_se3);
   Pose3 p1_transformed = Pose3(Rot3::Identity(), T_frame).compose(p1_se3);
   Interpolator<Pose3> interpolator(Q_se3);
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     // pvtau1: Interpolate in the original frame
     auto pvtau1 = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Pose3>(p0_se3, v0_se3, 0.0),
@@ -652,7 +672,8 @@ TEST(Interpolator, FrameRotationSE2) {
   // Use an isotropic noise to avoid a non-isotropic noise in the new frame
   Interpolator<Pose2> interpolator(Q_se2_isotropic);
 
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     // pvtau1: Interpolate in the original frame
     auto pvtau1 = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Pose2>(p0_se2, v0_se2, 0.0),
@@ -683,7 +704,8 @@ TEST(Interpolator, FrameRotationSE3) {
   Vector6 Q_se3_isotropic = Vector6::Ones() * 0.8;  // isotropic noise for SE(3)
   // Use an isotropic noise to avoid a non-isotropic noise in the new frame
   Interpolator<Pose3> interpolator(Q_se3_isotropic);
-  for (double ratio = 0.0; ratio <= 1.0; ratio += 0.1) {
+  for (int sample = 0; sample <= 10; ++sample) {
+    const double ratio = sample / 10.0;
     // pvtau1: Interpolate in the original frame
     auto pvtau1 = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Pose3>(p0_se3, v0_se3, 0.0),
@@ -816,7 +838,8 @@ consistent with Eq. (5.23) in the paper. */
 
 TEST(Interpolator, LambdaPsiConsistencyP1) {
   Interpolator<Point1> interpolator(Q_p1);
-  for (double ratio = 0.1; ratio <= 0.9; ratio += 0.1) {
+  for (int sample = 1; sample <= 9; ++sample) {
+    const double ratio = sample / 10.0;
     // get lambda and psi using Eq. (11.41) in the book
     auto [Lambda_book, Psi_book] =
         interpolator.getLambdaPsi(0.0, timestep, timestep * ratio);
@@ -838,7 +861,8 @@ TEST(Interpolator, LambdaPsiConsistencyP1) {
 /* ************************************************************************* */
 TEST(Interpolator, LambdaPsiConsistencyP2) {
   Interpolator<Point2> interpolator(Q_p2);
-  for (double ratio = 0.1; ratio <= 0.9; ratio += 0.1) {
+  for (int sample = 1; sample <= 9; ++sample) {
+    const double ratio = sample / 10.0;
     // get lambda and psi using Eq. (11.41) in the book
     auto [Lambda_book, Psi_book] =
         interpolator.getLambdaPsi(0.0, timestep, timestep * ratio);
@@ -860,7 +884,8 @@ TEST(Interpolator, LambdaPsiConsistencyP2) {
 /* ************************************************************************* */
 TEST(Interpolator, LambdaPsiConsistencyP3) {
   Interpolator<Point3> interpolator(Q_p3);
-  for (double ratio = 0.1; ratio <= 0.9; ratio += 0.1) {
+  for (int sample = 1; sample <= 9; ++sample) {
+    const double ratio = sample / 10.0;
     // get lambda and psi using Eq. (11.41) in the book
     auto [Lambda_book, Psi_book] =
         interpolator.getLambdaPsi(0.0, timestep, timestep * ratio);
