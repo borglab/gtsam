@@ -21,6 +21,8 @@ DT = T1 - T0
 PSD = np.array([0.2, 0.5, 1.5])
 P0, V0 = np.array([1.0, -2.0, 3.0]), np.array([0.5, -0.25, 0.75])
 P1, V1 = np.array([1.3, -1.7, 2.8]), np.array([0.25, 0.1, 0.5])
+T2 = 2.0  # Third knot for graph-level tests with two intervals.
+P2, V2 = np.array([1.5, -1.6, 3.1]), np.array([0.4, 0.3, 0.2])
 
 
 def pose_key(index):
@@ -39,13 +41,13 @@ def insert_state(values, state, position, velocity):
     values.insert(state.velocity, np.asarray(velocity, dtype=float))
 
 
-def conditional_mean(s, p0, v0, p1, v1):
+def conditional_mean(s, p0, v0, p1, v1, dt=DT):
     """WNOA conditional mean of a vector space: cubic Hermite interpolation at offset s."""
-    u = s / DT
-    position = ((2 * u**3 - 3 * u**2 + 1) * p0 + (u**3 - 2 * u**2 + u) * DT * v0
-                + (-2 * u**3 + 3 * u**2) * p1 + (u**3 - u**2) * DT * v1)
-    velocity = ((6 * u**2 - 6 * u) / DT * p0 + (3 * u**2 - 4 * u + 1) * v0
-                + (-6 * u**2 + 6 * u) / DT * p1 + (3 * u**2 - 2 * u) * v1)
+    u = s / dt
+    position = ((2 * u**3 - 3 * u**2 + 1) * p0 + (u**3 - 2 * u**2 + u) * dt * v0
+                + (-2 * u**3 + 3 * u**2) * p1 + (u**3 - u**2) * dt * v1)
+    velocity = ((6 * u**2 - 6 * u) / dt * p0 + (3 * u**2 - 4 * u + 1) * v0
+                + (-6 * u**2 + 6 * u) / dt * p1 + (3 * u**2 - 2 * u) * v1)
     return position, velocity
 
 
@@ -61,6 +63,13 @@ class TestWnoaAugmentedPoint(unittest.TestCase):
         insert_state(values, self.left, P0[:dimension], V0[:dimension])
         insert_state(values, self.right, P1[:dimension], V1[:dimension])
         return values
+
+    def three_knots(self, dimension=3):
+        """Knots at T0, T1 and T2 with their values, for graph-level tests."""
+        last = gtsam.StateData(pose_key(3), velocity_key(3), T2)
+        values = self.knot_values(dimension)
+        insert_state(values, last, P2[:dimension], V2[:dimension])
+        return {self.left, self.right, last}, last, values
 
     def interpolated(self, inner, middle, dimension=3, fixed_noise=True):
         factor_type = getattr(gtsam_unstable, f"WnoaInterpFactorAugmentedPoint{dimension}")
@@ -192,6 +201,128 @@ class TestWnoaAugmentedPoint(unittest.TestCase):
                 gtsam_unstable.atAugmentedPoint3(state.pose, result).vector().ravel(),
                 p0 + i * velocity, atol=1e-4)
             np.testing.assert_allclose(result.atVector(state.velocity), velocity, atol=1e-4)
+
+    def test_interpolate_factor_graph(self):
+        """interpolateFactorGraph adds motion factors and wraps factors on interpolated states."""
+        noise = gtsam.noiseModel.Isotropic.Sigma(1, 0.1)
+        for dimension in (2, 3):
+            psd = PSD[:dimension]
+            motion_type = getattr(gtsam_unstable, f"WnoaMotionFactorAugmentedPoint{dimension}")
+            interp_type = getattr(gtsam_unstable, f"WnoaInterpFactorAugmentedPoint{dimension}")
+            range_type = getattr(gtsam_unstable, f"KnownLandmarkSquaredRangeFactorAugmentedPoint{dimension}")
+            interpolate = getattr(gtsam_unstable, f"interpolateFactorGraphAugmentedPoint{dimension}")
+            knots, last, values = self.three_knots(dimension)
+            middle = gtsam.StateData(pose_key(10), velocity_key(10), T1 + 0.2)
+            landmark = np.array([2.0, 0.5, -1.0])[:dimension]
+            on_knot = range_type(self.left.pose, landmark, 2.5, noise)
+            on_middle = range_type(middle.pose, landmark, 2.5, noise)
+
+            graph = gtsam.NonlinearFactorGraph()
+            graph.add(motion_type(self.left, self.right, psd))  # Replaced, not duplicated.
+            graph.add(on_knot)
+            graph.add(on_middle)
+
+            for fixed_noise in (True, False):
+                result = interpolate(graph, knots, {middle}, psd, fixed_noise)
+                self.assertEqual(result.size(), 4)
+                motions, knot_factor, wrapped = [result.at(0), result.at(1)], result.at(2), result.at(3)
+
+                # One WNOA motion factor between each pair of neighbouring knots.
+                for factor, (a, b) in zip(motions, [(self.left, self.right), (self.right, last)]):
+                    self.assertIsInstance(factor, motion_type)
+                    self.assertEqual(list(factor.keys()), [a.pose, a.velocity, b.pose, b.velocity])
+                    self.assertAlmostEqual(factor.error(values), motion_type(a, b, psd).error(values),
+                                           places=12)
+
+                # Factors on knots are copied; factors on interpolated states are wrapped.
+                self.assertEqual(list(knot_factor.keys()), [self.left.pose])
+                self.assertAlmostEqual(knot_factor.error(values), on_knot.error(values), places=12)
+                self.assertIsInstance(wrapped, interp_type)
+                self.assertEqual(set(wrapped.keys()),
+                                 {self.right.pose, self.right.velocity, last.pose, last.velocity})
+                expected = interp_type(on_middle, {self.right, last}, {middle}, psd, fixed_noise, True)
+                self.assertAlmostEqual(wrapped.error(values), expected.error(values), places=12)
+
+                # The interpolated state does not become a variable.
+                self.assertNotIn(middle.pose, set(result.keyVector()))
+                self.assertNotIn(middle.velocity, set(result.keyVector()))
+
+            outside = gtsam.StateData(pose_key(11), velocity_key(11), T2 + 0.1)
+            with self.assertRaises(RuntimeError):
+                interpolate(graph, knots, {outside}, psd)
+
+    def test_update_interp_values(self):
+        """updateInterpValues adds interpolated states and keeps the knot values."""
+        noise = gtsam.noiseModel.Isotropic.Sigma(1, 0.1)
+        for dimension in (2, 3):
+            psd = PSD[:dimension]
+            range_type = getattr(gtsam_unstable, f"KnownLandmarkSquaredRangeFactorAugmentedPoint{dimension}")
+            interpolate = getattr(gtsam_unstable, f"interpolateFactorGraphAugmentedPoint{dimension}")
+            update = getattr(gtsam_unstable, f"updateInterpValuesAugmentedPoint{dimension}")
+            at_position = getattr(gtsam_unstable, f"atAugmentedPoint{dimension}")
+            at_velocity = getattr(gtsam.Values, f"atPoint{dimension}")  # Fixed-size tangent vector.
+            knots, _, values = self.three_knots(dimension)
+            middles = {gtsam.StateData(pose_key(10 + i), velocity_key(10 + i), t)
+                       for i, t in enumerate((T0 + 0.1, T1 + 0.3))}
+            landmark = np.array([2.0, 0.5, -1.0])[:dimension]
+
+            graph = gtsam.NonlinearFactorGraph()
+            inner_factors = [range_type(m.pose, landmark, 2.5, noise) for m in middles]
+            for factor in inner_factors:
+                graph.add(factor)
+            interp_graph = interpolate(graph, knots, middles, psd, True)
+            updated = update(interp_graph, values, knots, middles, psd)
+
+            self.assertEqual(updated.size(), values.size() + 2 * len(middles))
+            for knot in knots:
+                np.testing.assert_array_equal(at_position(knot.pose, updated).vector(),
+                                              at_position(knot.pose, values).vector())
+            for middle in middles:
+                self.assertTrue(updated.exists(middle.pose) and updated.exists(middle.velocity))
+                self.assertEqual(at_velocity(updated, middle.velocity).shape, (dimension,))
+
+            # Inner factors on the inserted states agree with the wrapped factors on the knots.
+            wrapped = [interp_graph.at(i) for i in range(2, interp_graph.size())]
+            for inner, outer in zip(inner_factors, wrapped):
+                np.testing.assert_allclose(inner.unwhitenedError(updated),
+                                           outer.unwhitenedError(values), atol=1e-12)
+
+    def test_update_interp_values_matches_conditional_mean(self):
+        """Interpolated positions and velocities equal the WNOA conditional mean."""
+        intervals = [(T0, T1, P0, V0, P1, V1), (T1, T2, P1, V1, P2, V2)]
+        offsets = (0.05, 0.13, 0.31)
+        for dimension in (2, 3):
+            psd = PSD[:dimension]
+            update = getattr(gtsam_unstable, f"updateInterpValuesAugmentedPoint{dimension}")
+            update_point = getattr(gtsam, f"updateInterpValuesPoint{dimension}")
+            at_position = getattr(gtsam_unstable, f"atAugmentedPoint{dimension}")
+            at_point = getattr(gtsam.Values, f"atPoint{dimension}")
+            knots, _, values = self.three_knots(dimension)
+
+            # The same knots as ordinary points, for the stable Point instantiation.
+            point_values = gtsam.Values()
+            for knot in knots:
+                point_values.insert(knot.pose, at_position(knot.pose, values).vector().ravel())
+                point_values.insert(knot.velocity, values.atVector(knot.velocity))
+
+            expected, middles = {}, set()
+            for k, (ta, tb, pa, va, pb, vb) in enumerate(intervals):
+                for j, s in enumerate(offsets):
+                    middle = gtsam.StateData(pose_key(10 + 10 * k + j), velocity_key(10 + 10 * k + j), ta + s)
+                    middles.add(middle)
+                    expected[middle.pose, middle.velocity] = conditional_mean(
+                        s, pa[:dimension], va[:dimension], pb[:dimension], vb[:dimension], tb - ta)
+
+            graph = gtsam.NonlinearFactorGraph()
+            updated = update(graph, values, knots, middles, psd)
+            point_updated = update_point(graph, point_values, knots, middles, psd)
+            for (pose, velocity), (position, velocity_mean) in expected.items():
+                np.testing.assert_allclose(at_position(pose, updated).vector().ravel(), position, atol=1e-12)
+                np.testing.assert_allclose(at_point(updated, velocity), velocity_mean, atol=1e-12)
+                np.testing.assert_allclose(at_position(pose, updated).vector().ravel(),
+                                           at_point(point_updated, pose), atol=1e-12)
+                np.testing.assert_allclose(at_point(updated, velocity),
+                                           at_point(point_updated, velocity), atol=1e-12)
 
 
 if __name__ == "__main__":

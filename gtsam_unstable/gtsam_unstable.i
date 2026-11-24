@@ -498,6 +498,24 @@ typedef gtsam::WnoaInterpFactor<gtsam::AugmentedPoint<2>>
 typedef gtsam::WnoaInterpFactor<gtsam::AugmentedPoint<3>>
     WnoaInterpFactorAugmentedPoint3;
 
+// Graph interpolation helpers for AugmentedPoint positions, mirroring the Point
+// and Pose instantiations in gtsam/nonlinear/nonlinear_continuous_time.i. The
+// AugmentedPoint2/3 aliases are declared in AugmentedPoint.h.
+#include <gtsam/nonlinear/WnoaFactorGraph.h>
+template <POSE = {gtsam::AugmentedPoint2, gtsam::AugmentedPoint3}>
+gtsam::NonlinearFactorGraph interpolateFactorGraph(
+    const gtsam::NonlinearFactorGraph& graph,
+    const std::set<gtsam::StateData>& estimated_states,
+    const std::set<gtsam::StateData>& interp_states, gtsam::Vector q_psd_diag,
+    bool fixed_noise = false);
+
+template <POSE = {gtsam::AugmentedPoint2, gtsam::AugmentedPoint3}>
+gtsam::Values updateInterpValues(
+    const gtsam::NonlinearFactorGraph& interp_graph,
+    const gtsam::Values& values, const std::set<gtsam::StateData>& estim_states,
+    const std::set<gtsam::StateData>& interp_states,
+    const gtsam::Vector q_psd_diag);
+
 //*************************************************************************
 // slam
 //*************************************************************************

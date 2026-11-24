@@ -138,6 +138,11 @@ class AugmentedPoint {
   VectorType point_;  ///< Euclidean point coordinates.
 };
 
+/// Aliases for the wrapped dimensions. The wrappers name template arguments of
+/// free functions with plain type names, e.g. interpolateFactorGraph.
+using AugmentedPoint2 = AugmentedPoint<2>;
+using AugmentedPoint3 = AugmentedPoint<3>;
+
 /**
  * GTSAM vector-space traits and D=1 QCQP lift for AugmentedPoint<N>.
  *
