@@ -117,12 +117,13 @@ TEST(Phi, IsARightAction) {
 
 // On the navigation block the action is right translation of the extended pose,
 // T_out = T * A. Checked in the 5x5 matrix representation, which reaches
-// State::T_matrix and ExtendedPose3<2>::matrix() from an independent
+// State::navigationMatrix and ExtendedPose3<2>::matrix() from an independent
 // direction.
 TEST(Phi, RightTranslatesTheExtendedPose) {
   const State xi = fixture::makeXi();
   const TGElement X = fixture::makeX();
-  EXPECT(fixture::meq(phi(X, xi).T_matrix(), xi.T_matrix() * X.first.matrix(),
+  EXPECT(fixture::meq(phi(X, xi).navigationMatrix(),
+                      xi.navigationMatrix() * X.first.matrix(),
                       fixture::kTolL));
 }
 

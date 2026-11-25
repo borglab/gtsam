@@ -71,7 +71,7 @@ class GTSAM_UNSTABLE_EXPORT TwoFrameGroup {
   Jacobian AdjointMap() const;
 
   /// 5x5 matrix realisation of the SE_2(3) navigation part.
-  gtsam::Matrix5 C_matrix() const;
+  gtsam::Matrix5 navigationMatrix() const;
 };
 
 }  // namespace tfg

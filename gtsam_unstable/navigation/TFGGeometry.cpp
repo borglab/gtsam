@@ -125,7 +125,7 @@ TwoFrameGroup::Jacobian TwoFrameGroup::AdjointMap() const {
   return Ad;
 }
 
-gtsam::Matrix5 TwoFrameGroup::C_matrix() const {
+gtsam::Matrix5 TwoFrameGroup::navigationMatrix() const {
   gtsam::Matrix5 C = gtsam::Matrix5::Zero();
   C.block<3, 3>(0, 0) = R.matrix();
   C.block<3, 1>(0, 3) = v;

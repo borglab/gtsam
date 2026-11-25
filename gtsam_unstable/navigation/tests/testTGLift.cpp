@@ -105,7 +105,7 @@ TEST(Lift, ClosedFormMatchesMatrixConstruction) {
 
   using Se23 = ExtendedPose3<2>;
 
-  const Eigen::Matrix<double, 5, 5> T = xi.T_matrix();
+  const Eigen::Matrix<double, 5, 5> T = xi.navigationMatrix();
   Vector9 w;
   w.segment<3>(0) = u.w;
   w.segment<3>(3) = u.a;

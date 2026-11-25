@@ -749,7 +749,7 @@ class State {
   gtsam::ExtendedPose3<2> T;
   gtsam::Vector9 b;
   static gtsam::tgeqf::State identity();
-  gtsam::Matrix5 T_matrix() const;
+  gtsam::Matrix5 navigationMatrix() const;
   gtsam::tgeqf::State retract(
       const gtsam::tgeqf::State::TangentVector& delta) const;
   gtsam::tgeqf::State::TangentVector localCoordinates(

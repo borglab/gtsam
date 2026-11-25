@@ -56,7 +56,7 @@ TEST(TwoFrameGroup, Identity) {
 
 TEST(TwoFrameGroup, CMatrixBlocks) {
   auto X = makeX();
-  auto C = X.C_matrix();
+  auto C = X.navigationMatrix();
   EXPECT(meq(X.R.matrix(), C.block<3, 3>(0, 0)));
   EXPECT(veq(X.v, C.block<3, 1>(0, 3)));
   EXPECT(veq(X.p, C.block<3, 1>(0, 4)));
@@ -220,7 +220,8 @@ TEST(TwoFrameGroup, RetractLocalFromNonIdentity) {
 TEST(TwoFrameGroup, ComposeMatchesMatrixRealisation) {
   auto X = makeX(), Y = makeY();
   auto XY = X * Y;
-  EXPECT(meq(XY.C_matrix(), X.C_matrix() * Y.C_matrix(), kTolL));
+  EXPECT(meq(XY.navigationMatrix(), X.navigationMatrix() * Y.navigationMatrix(),
+             kTolL));
   EXPECT(veq(XY.gamma_omega, X.gamma_omega + X.R * Y.gamma_omega, kTolL));
   EXPECT(veq(XY.gamma_accel, X.gamma_accel + X.R * Y.gamma_accel, kTolL));
 }
@@ -229,7 +230,7 @@ TEST(TwoFrameGroup, ComposeMatchesMatrixRealisation) {
 TEST(TwoFrameGroup, InverseMatchesMatrixRealisation) {
   auto X = makeX();
   auto Xi = X.inverse();
-  EXPECT(meq(Xi.C_matrix(), X.C_matrix().inverse(), kTolL));
+  EXPECT(meq(Xi.navigationMatrix(), X.navigationMatrix().inverse(), kTolL));
   EXPECT(veq(Xi.gamma_omega, -(X.R.unrotate(X.gamma_omega)), kTolL));
   EXPECT(veq(Xi.gamma_accel, -(X.R.unrotate(X.gamma_accel)), kTolL));
 }

@@ -48,7 +48,8 @@ struct GTSAM_UNSTABLE_EXPORT State {
 
   static State identity() { return {}; }
 
-  Matrix5 T_matrix() const { return T.matrix(); }
+  /// 5x5 matrix realisation of the SE_2(3) navigation part T.
+  Matrix5 navigationMatrix() const { return T.matrix(); }
 
   /// Retract in the origin chart: Retract(xi, eps) = phi(Expmap_G(eps), xi).
   /// The navigation block reads SE_2(3) logarithm coordinates in T's body
