@@ -279,6 +279,15 @@ class GTSAM_UNSTABLE_EXPORT TGEqF
    * Pressure-sensor depth update from the world-frame z position using the
    * right error pseudo position output.
    *
+   * The depth is stacked onto the estimated horizontal position to form the
+   * pseudo-position p_tilde = [p_x, p_y, z_depth]^T, which is fed through
+   * update_position() with the horizontal variance inflated so only the
+   * vertical direction is corrected. This is the depth
+   * pseudo-measurement construction of E. R. Potokar, K. Norman, and
+   * J. G. Mangelson, "Invariant Extended Kalman Filtering for Underwater
+   * Navigation," IEEE Robotics and Automation Letters, vol. 6, no. 3, 2021,
+   * doi:10.1109/LRA.2021.3085167.
+   *
    * @param z_depth              Measured world-frame z position.
    * @param R_depth              Variance of z_depth, as a 1x1 matrix.
    * @param horizontal_variance  Variance assigned to the pseudo-measured x and

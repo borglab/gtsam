@@ -144,8 +144,11 @@ class GTSAM_UNSTABLE_EXPORT TfgInEKF
    * p_tilde = [p_x, p_y, z_depth]^T, which is fed through the position output
    * with the horizontal variance inflated so only the vertical direction is
    * corrected. Since the horizontal entries come from the estimate rather than
-   * the true state, this update is a second-order approximation. See Sec. V-B
-   * of tg_eqf/docs/EqF_design_for_DVL_Depth_aided_INS.pdf.
+   * the true state, this update is a second-order approximation. This is the
+   * depth pseudo-measurement construction of E. R. Potokar, K. Norman, and
+   * J. G. Mangelson, "Invariant Extended Kalman Filtering for Underwater
+   * Navigation," IEEE Robotics and Automation Letters, vol. 6, no. 3, 2021,
+   * doi:10.1109/LRA.2021.3085167.
    *
    * @param z_depth              Measured world-frame z position.
    * @param R_depth              Variance of z_depth, as a 1x1 matrix.
