@@ -98,10 +98,20 @@ the other stable/experimental boundaries described below.
 Nonlinear factors should use manifold traits for operations on their value
 types. The generic WNOA graph and interpolator live in `nonlinear`. Their
 explicit instantiations live in `sam`, which can include both the templates
-and the concrete geometry types. The existing Graphviz layout recognizes
-concrete poses to place nodes. A future layout interface could accept a
-position callback, with a SLAM adapter providing the existing pose and point
-handling.
+and the concrete geometry types. The pose-aware Graphviz layout also lives
+in `sam`. It supplies the existing `NonlinearFactorGraph::dot` and `saveGraph`
+overloads that take `Values`.
+
+Generic graph visualization can supply coordinates by key through
+`DotWriter::variablePositions`. The graph topology is rendered through the
+`FactorGraph` interface.
+
+```cpp
+gtsam::DotWriter writer;
+writer.variablePositions.emplace(key, gtsam::Vector2{1.0, 2.0});
+const gtsam::NonlinearFactorGraph::Base& topology = graph;
+const auto dot = topology.dot(gtsam::DefaultKeyFormatter, writer);
+```
 
 ## Estimation and optimization
 

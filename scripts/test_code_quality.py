@@ -35,7 +35,7 @@ class CodeQualityTest(unittest.TestCase):
         source = '#include <gtsam/geometry/Pose3.h>'
         self.assertTrue(list(check_source("gtsam/nonlinear/WnoaFactor.h", source)))
         self.assertEqual(
-            list(check_source("gtsam/nonlinear/GraphvizFormatting.cpp", source)),
+            list(check_source("gtsam/sam/GraphvizFormatting.cpp", source)),
             [],
         )
         self.assertEqual(list(check_source("gtsam/slam/Foo.h", source)), [])
