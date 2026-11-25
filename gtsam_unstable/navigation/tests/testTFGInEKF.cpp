@@ -8,6 +8,8 @@
 #include <gtsam/navigation/Scenario.h>
 #include <gtsam_unstable/navigation/TFGInEKF.h>
 
+#include <functional>
+
 using namespace tfg;
 using namespace gtsam;
 
@@ -690,33 +692,99 @@ TEST(TfgInEKF, ResetJacobianMatchesNumericalDerivative) {
                       1e-8));
 }
 
+/// One measurement update from rotatedState() and correlatedPrior(), run by the
+/// filter and, with the reset skipped, by the base InvariantEKF.
+struct ResetCheck {
+  bool same_state;      // both reach the same corrected estimate
+  Vector15 eta;         // the correction the update applied
+  Cov15 untransported;  // Joseph-updated covariance, before the reset
+  Cov15 expected;       // its reset transport B P B^T
+  Cov15 filtered;       // the covariance the filter ships
+};
+
+ResetCheck resetCheck(
+    const std::function<void(TfgInEKF&)>& update,
+    const std::function<void(gtsam::InvariantEKF<TwoFrameGroup>&)>&
+        baseUpdate) {
+  const TwoFrameGroup X0 = rotatedState();
+  TfgInEKF ekf(X0, correlatedPrior());
+  update(ekf);
+  gtsam::InvariantEKF<TwoFrameGroup> base(X0, correlatedPrior());
+  baseUpdate(base);
+
+  const Vector15 eta = traits<TwoFrameGroup>::Local(X0, base.state());
+  const Cov15 B = TfgInEKF::resetJacobian(eta);
+  return {traits<TwoFrameGroup>::Equals(base.state(), ekf.state(), 1e-12), eta,
+          base.covariance(), B * base.covariance() * B.transpose(),
+          ekf.covariance()};
+}
+
+/// update_position without the reset: body-frame residual and rotated noise.
+void basePositionUpdate(gtsam::InvariantEKF<TwoFrameGroup>& base,
+                        const Vector3& pi, const Cov3& R_pos) {
+  const TwoFrameGroup X = base.state();
+  const Matrix3 R = X.R.matrix();
+  base.updateWithVector(PositionOutput::predict(X, pi),
+                        PositionOutput::jacobian(X, pi), Vector3::Zero(),
+                        R.transpose() * R_pos * R, /*performReset=*/false);
+}
+
 // A position update transports the Joseph-updated covariance by the reset
 // Jacobian of the applied correction, unlike the untransported base update.
 TEST(TfgInEKF, PositionUpdateAppliesCovarianceReset) {
-  const TwoFrameGroup X0 = rotatedState();
-  const Cov15 P0 = correlatedPrior();
   const Eigen::Vector3d fix(1.6, 1.5, -2.6);
   const Cov3 R_pos = Cov3::Identity() * 0.01;
+  const ResetCheck c =
+      resetCheck([&](TfgInEKF& ekf) { ekf.update_position(fix, R_pos); },
+                 [&](gtsam::InvariantEKF<TwoFrameGroup>& base) {
+                   basePositionUpdate(base, fix, R_pos);
+                 });
 
-  TfgInEKF ekf(X0, P0);
-  ekf.update_position(fix, R_pos);
+  EXPECT(c.same_state);
+  EXPECT(c.eta.head<3>().norm() > 1e-3);  // the fix corrected attitude
+  EXPECT(assert_equal((Matrix)c.expected, (Matrix)c.filtered, 1e-12));
+  EXPECT((c.untransported - c.filtered).norm() > 1e-6);
+}
 
-  // Same update without the reset, mirroring update_position's body-frame
-  // residual and rotated noise.
-  const Matrix3 R0 = X0.R.matrix();
-  gtsam::InvariantEKF<TwoFrameGroup> plain(X0, P0);
-  plain.updateWithVector(PositionOutput::predict(X0, fix),
-                         PositionOutput::jacobian(X0, fix), Vector3::Zero(),
-                         R0.transpose() * R_pos * R0, /*performReset=*/false);
+// The DVL update applies the same reset.
+TEST(TfgInEKF, DvlUpdateAppliesCovarianceReset) {
+  const Eigen::Vector3d z_dvl(0.8, -0.5, 0.3);
+  const Cov3 R_dvl = Cov3::Identity() * 0.01;
+  const ResetCheck c = resetCheck(
+      [&](TfgInEKF& ekf) { ekf.update_dvl(z_dvl, R_dvl); },
+      [&](gtsam::InvariantEKF<TwoFrameGroup>& base) {
+        base.updateWithVector(BodyVelocityOutput::predict(base.state()),
+                              BodyVelocityOutput::jacobian(base.state()), z_dvl,
+                              R_dvl, /*performReset=*/false);
+      });
 
-  const Vector15 eta = traits<TwoFrameGroup>::Local(X0, plain.state());
-  EXPECT(eta.head<3>().norm() > 1e-3);  // the fix corrected attitude
+  EXPECT(c.same_state);
+  EXPECT(c.eta.head<3>().norm() > 1e-3);
+  EXPECT(assert_equal((Matrix)c.expected, (Matrix)c.filtered, 1e-12));
+  EXPECT((c.untransported - c.filtered).norm() > 1e-6);
+}
 
-  const Cov15 B = TfgInEKF::resetJacobian(eta);
-  const Cov15 expected = B * plain.covariance() * B.transpose();
-  EXPECT(traits<TwoFrameGroup>::Equals(plain.state(), ekf.state(), 1e-12));
-  EXPECT(assert_equal((Matrix)expected, (Matrix)ekf.covariance(), 1e-12));
-  EXPECT((plain.covariance() - ekf.covariance()).norm() > 1e-6);
+// The depth update, a pseudo-position update, applies the same reset.
+TEST(TfgInEKF, DepthUpdateAppliesCovarianceReset) {
+  const double z_depth = -2.6;
+  TfgInEKF::Covariance1 R_depth;
+  R_depth(0, 0) = 0.01;
+  const ResetCheck c = resetCheck(
+      [&](TfgInEKF& ekf) { ekf.update_depth(z_depth, R_depth); },
+      [&](gtsam::InvariantEKF<TwoFrameGroup>& base) {
+        Eigen::Vector3d pseudo_position = base.state().p;
+        pseudo_position.z() = z_depth;
+        const Cov3 R_pseudo =
+            Eigen::Vector3d(TfgInEKF::kDefaultHorizontalVariance,
+                            TfgInEKF::kDefaultHorizontalVariance, R_depth(0, 0))
+                .asDiagonal();
+        basePositionUpdate(base, pseudo_position, R_pseudo);
+      });
+
+  EXPECT(c.same_state);
+  EXPECT(c.eta.head<3>().norm() > 1e-3);
+  EXPECT(assert_equal((Matrix)c.expected, (Matrix)c.filtered, 1e-12));
+  EXPECT((c.untransported - c.filtered).norm() > 1e-6);
 }
 
 }  // namespace covariance_reset

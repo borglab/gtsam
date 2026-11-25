@@ -16,6 +16,7 @@
 
 #include <chrono>
 #include <cstdio>
+#include <functional>
 #include <utility>
 
 using namespace gtsam::tgeqf;
@@ -401,16 +402,17 @@ State offOriginRef() {
   return xi_ref;
 }
 
-/// One position update at rotatedX0(), on twins with and without the reset,
-/// plus the transport rebuilt from the correction the update actually applied.
+/// One measurement update at rotatedX0(), on twins with and without the
+/// reset, plus the transport rebuilt from the correction the update actually
+/// applied.
 /// Xd comes from the public group estimates alone: X_after = Exp(delta_x)
 /// X_before, so Xd = Exp(-delta_x) = X_before * X_after^-1.
 struct UpdatePair {
   Eigen::Matrix<double, 18, 18> P_with, P_without, J;
 };
 
-UpdatePair positionUpdatePair(const TGEqF::Covariance18& Sigma0,
-                              double offset_scale = 1.0) {
+UpdatePair updatePair(const TGEqF::Covariance18& Sigma0,
+                      const std::function<void(TGEqF&)>& update) {
   const State xi_ref = State::identity();
   const TGElement X0 = fixture::rotatedX0();
   TGEqF with_reset(xi_ref, Sigma0, X0);
@@ -418,17 +420,25 @@ UpdatePair positionUpdatePair(const TGEqF::Covariance18& Sigma0,
   without_reset.set_reset_step(false);
 
   const TGElement X_before = with_reset.groupEstimate();
-  const Vector3 pi =
-      with_reset.position() + offset_scale * Vector3(0.5, 0.3, -0.2);
-  const TGEqF::Covariance3 R = 1e-2 * TGEqF::Covariance3::Identity();
-  with_reset.update_position(pi, R);
-  without_reset.update_position(pi, R);
+  update(with_reset);
+  update(without_reset);
 
   const TGElement Xd = X_before * with_reset.groupEstimate().inverse();
   const Vector18 delta_x = -TGElement::Logmap(Xd);
   const Vector18 delta_xi = fixture::orbitJacobian0(xi_ref) * delta_x;
   return {with_reset.errorCovariance(), without_reset.errorCovariance(),
           with_reset.resetMatrix(delta_xi, delta_x)};
+}
+
+UpdatePair positionUpdatePair(const TGEqF::Covariance18& Sigma0,
+                              double offset_scale = 1.0) {
+  return updatePair(Sigma0, [offset_scale](TGEqF& filter) {
+    // The offset is relative to the shared prior, so both twins see the
+    // same measurement.
+    const Vector3 pi =
+        filter.position() + offset_scale * Vector3(0.5, 0.3, -0.2);
+    filter.update_position(pi, 1e-2 * TGEqF::Covariance3::Identity());
+  });
 }
 
 // resetMatrix is the derivative of the exact re-centring map, at a correction
@@ -525,6 +535,44 @@ TEST(TGEqF, ResetTransportsTheUpdatedCovariance) {
 
   Eigen::LLT<Eigen::Matrix<double, 18, 18>> llt(u.P_with);
   EXPECT(llt.info() == Eigen::Success);
+}
+
+// The DVL update applies the same reset as the position update.
+TEST(TGEqF, DvlUpdateIsResetTransported) {
+  const UpdatePair u = updatePair(fixture::anisotropicSigma(), [](TGEqF& f) {
+    f.update_dvl(Vector3(0.8, -0.5, 0.3),
+                 1e-2 * TGEqF::Covariance3::Identity());
+  });
+
+  EXPECT(assert_equal((Matrix)(u.J * u.P_without * u.J.transpose()),
+                      (Matrix)u.P_with, 1e-9));
+  EXPECT((u.P_with - u.P_without).norm() > 1e-6);
+}
+
+// The depth update, a pseudo-position update, applies the same reset.
+TEST(TGEqF, DepthUpdateIsResetTransported) {
+  TGEqF::Covariance1 R_depth;
+  R_depth(0, 0) = 1e-2;
+  const UpdatePair u = updatePair(fixture::anisotropicSigma(), [&](TGEqF& f) {
+    f.update_depth(f.position().z() - 0.4, R_depth);
+  });
+
+  EXPECT(assert_equal((Matrix)(u.J * u.P_without * u.J.transpose()),
+                      (Matrix)u.P_with, 1e-9));
+  EXPECT((u.P_with - u.P_without).norm() > 1e-6);
+}
+
+// The direct (scalar) depth update applies the same reset.
+TEST(TGEqF, DirectDepthUpdateIsResetTransported) {
+  TGEqF::Covariance1 R_depth;
+  R_depth(0, 0) = 1e-2;
+  const UpdatePair u = updatePair(fixture::anisotropicSigma(), [&](TGEqF& f) {
+    f.update_depth_direct(f.position().z() - 0.4, R_depth);
+  });
+
+  EXPECT(assert_equal((Matrix)(u.J * u.P_without * u.J.transpose()),
+                      (Matrix)u.P_with, 1e-9));
+  EXPECT((u.P_with - u.P_without).norm() > 1e-6);
 }
 
 // The reset is a first-order term in the correction: halving the innovation

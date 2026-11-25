@@ -10,6 +10,8 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam_unstable/navigation/MEKF.h>
 
+#include <functional>
+
 using namespace mekf;
 using namespace gtsam;
 
@@ -374,30 +376,93 @@ TEST(Mekf, ResetJacobianMatchesNumericalDerivative) {
                       (Matrix)MultiplicativeEKF::resetJacobian(eta), 1e-8));
 }
 
+/// One measurement update from rotatedState() and correlatedPrior(), run by the
+/// filter and, with the reset skipped, by the base ManifoldEKF.
+struct ResetCheck {
+  bool same_state;      // both reach the same corrected estimate
+  Vector15 eta;         // the correction the update applied
+  Cov15 untransported;  // Joseph-updated covariance, before the reset
+  Cov15 expected;       // its reset transport B P B^T
+  Cov15 filtered;       // the covariance the filter ships
+};
+
+ResetCheck resetCheck(
+    const std::function<void(MultiplicativeEKF&)>& update,
+    const std::function<void(gtsam::ManifoldEKF<MekfState>&)>& baseUpdate) {
+  const MekfState X0 = rotatedState();
+  MultiplicativeEKF ekf(X0, correlatedPrior());
+  update(ekf);
+  gtsam::ManifoldEKF<MekfState> base(X0, correlatedPrior());
+  baseUpdate(base);
+
+  const Vector15 eta = traits<MekfState>::Local(X0, base.state());
+  const Cov15 B = MultiplicativeEKF::resetJacobian(eta);
+  return {traits<MekfState>::Equals(base.state(), ekf.state(), 1e-12), eta,
+          base.covariance(), B * base.covariance() * B.transpose(),
+          ekf.covariance()};
+}
+
 // A position update transports the Joseph-updated covariance by the reset
 // Jacobian of the applied correction, unlike the untransported base update.
 TEST(Mekf, PositionUpdateAppliesCovarianceReset) {
-  const MekfState X0 = rotatedState();
-  const Cov15 P0 = correlatedPrior();
   const Eigen::Vector3d fix(1.6, 1.5, -2.6);
   const Cov3 R_pos = Cov3::Identity() * 0.01;
+  const ResetCheck c = resetCheck(
+      [&](MultiplicativeEKF& ekf) { ekf.update_position(fix, R_pos); },
+      [&](gtsam::ManifoldEKF<MekfState>& base) {
+        base.updateWithVector(PositionOutput::predict(base.state()),
+                              PositionOutput::jacobian(), fix, R_pos,
+                              /*performReset=*/false);
+      });
 
-  MultiplicativeEKF ekf(X0, P0);
-  ekf.update_position(fix, R_pos);
+  EXPECT(c.same_state);
+  EXPECT(c.eta.head<3>().norm() > 1e-3);  // the fix corrected attitude
+  EXPECT(assert_equal((Matrix)c.expected, (Matrix)c.filtered, 1e-12));
+  EXPECT((c.untransported - c.filtered).norm() > 1e-6);
+}
 
-  gtsam::ManifoldEKF<MekfState> plain(X0, P0);
-  plain.updateWithVector(PositionOutput::predict(X0),
-                         PositionOutput::jacobian(), fix, R_pos,
-                         /*performReset=*/false);
+// The DVL update applies the same reset.
+TEST(Mekf, DvlUpdateAppliesCovarianceReset) {
+  const Eigen::Vector3d z_dvl(0.8, -0.5, 0.3);
+  const Cov3 R_dvl = Cov3::Identity() * 0.01;
+  const ResetCheck c = resetCheck(
+      [&](MultiplicativeEKF& ekf) { ekf.update_dvl(z_dvl, R_dvl); },
+      [&](gtsam::ManifoldEKF<MekfState>& base) {
+        base.updateWithVector(BodyVelocityOutput::predict(base.state()),
+                              BodyVelocityOutput::jacobian(base.state()), z_dvl,
+                              R_dvl, /*performReset=*/false);
+      });
 
-  const Vector15 eta = traits<MekfState>::Local(X0, plain.state());
-  EXPECT(eta.head<3>().norm() > 1e-3);  // the fix corrected attitude
+  EXPECT(c.same_state);
+  EXPECT(c.eta.head<3>().norm() > 1e-3);
+  EXPECT(assert_equal((Matrix)c.expected, (Matrix)c.filtered, 1e-12));
+  EXPECT((c.untransported - c.filtered).norm() > 1e-6);
+}
 
-  const Cov15 B = MultiplicativeEKF::resetJacobian(eta);
-  const Cov15 expected = B * plain.covariance() * B.transpose();
-  EXPECT(traits<MekfState>::Equals(plain.state(), ekf.state(), 1e-12));
-  EXPECT(assert_equal((Matrix)expected, (Matrix)ekf.covariance(), 1e-12));
-  EXPECT((plain.covariance() - ekf.covariance()).norm() > 1e-6);
+// The depth update, a pseudo-position update, applies the same reset.
+TEST(Mekf, DepthUpdateAppliesCovarianceReset) {
+  const double z_depth = -2.6;
+  MultiplicativeEKF::Covariance1 R_depth;
+  R_depth(0, 0) = 0.01;
+  const ResetCheck c = resetCheck(
+      [&](MultiplicativeEKF& ekf) { ekf.update_depth(z_depth, R_depth); },
+      [&](gtsam::ManifoldEKF<MekfState>& base) {
+        Eigen::Vector3d pseudo_position = base.state().p;
+        pseudo_position.z() = z_depth;
+        const Cov3 R_pseudo =
+            Eigen::Vector3d(MultiplicativeEKF::kDefaultHorizontalVariance,
+                            MultiplicativeEKF::kDefaultHorizontalVariance,
+                            R_depth(0, 0))
+                .asDiagonal();
+        base.updateWithVector(PositionOutput::predict(base.state()),
+                              PositionOutput::jacobian(), pseudo_position,
+                              R_pseudo, /*performReset=*/false);
+      });
+
+  EXPECT(c.same_state);
+  EXPECT(c.eta.head<3>().norm() > 1e-3);
+  EXPECT(assert_equal((Matrix)c.expected, (Matrix)c.filtered, 1e-12));
+  EXPECT((c.untransported - c.filtered).norm() > 1e-6);
 }
 
 }  // namespace covariance_reset
