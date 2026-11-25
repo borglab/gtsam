@@ -370,7 +370,7 @@ TEST(SamplingPlanner, GaussianLikelihoodUpdate) {
   auto state = proposal.initialize(planner.nominalControls(initial));
   const auto batch = proposal.sample(state, initial, 1., false);
   EXPECT(assert_equal((Matrix{{1., 2., 2., 0., -1., 1.}}), batch.controls));
-  EXPECT(assert_equal(Vector3(1.25, -0.25, -0.75), batch.logWeightOffsets));
+  EXPECT(assert_equal(Vector3(-1.25, 0.25, 0.75), batch.logWeightOffsets));
   const Vector3 costs{0.25, 0.25, 2.};
   for (int j = 0; j < 3; ++j)
     EXPECT_DOUBLES_EQUAL(
@@ -378,7 +378,7 @@ TEST(SamplingPlanner, GaussianLikelihoodUpdate) {
         graph.error(planner.rollout(
             initial, batch.controls.middleCols(2 * j, 2), dynamics)),
         1e-12);
-  Vector3 weights{1., std::exp(-1.5), std::exp(-3.75)};
+  Vector3 weights{std::exp(-1.5), 1., std::exp(-1.25)};
   weights /= weights.sum();
   EXPECT(assert_equal(weights, MPPI().weights(costs, batch.logWeightOffsets)));
   planner.iterate(graph, initial, dynamics, proposal, MPPI(), state);

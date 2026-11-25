@@ -145,9 +145,9 @@ Vector GaussianProposal::logWeightOffsets(const State& state,
       state.stddev.array().square();
   for (Eigen::Index j = 0; j < (1.0 - options_.zeroMeanFraction) * count; ++j)
     offsets[j] =
-        (scaledMean.array() *
-         (controls.middleCols(j * horizon, horizon) - 0.5 * state.mean).array())
-            .sum();
+        -(scaledMean.array() *
+          (controls.middleCols(j * horizon, horizon) - 0.5 * state.mean).array())
+             .sum();
   return offsets;
 }
 

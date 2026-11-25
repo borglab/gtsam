@@ -208,11 +208,12 @@ always reserves the first candidate for the physical incumbent.
 ### MPPI-Generic weighting conventions
 
 For diagonal covariance, `likelihoodCoefficients` enables the Gaussian
-likelihood-cost convention used by MPPI-Generic and inherited by its colored,
-NLN, and smooth samplers. For each sampled control $u$, nominal control $m$,
-and configured standard deviation $s$, the additive log offset sums
-$c\,m(u-m/2)/s^2$ over coordinates and time. The zero-centered fraction
-uses $m=0$. Set $c$ to the upstream control-cost coefficient times
+likelihood-cost convention from the MPPI papers (MPPI-Generic Eq. 15,
+Tube-MPPI Eq. 11, and SMPPI Alg. 1) across the Gaussian, colored, NLN, and
+smooth samplers. For each sampled control $u$, nominal control $m$, and
+configured standard deviation $s$, the additive log offset sums
+$-c\,m(u-m/2)/s^2$ over coordinates and time (note that MPPI-Generic commit
+`90718a59` flipped this sign in code). The zero-centered fraction uses $m=0$. Set $c$ to the upstream control-cost coefficient times
 $(1-\alpha)$. To compare with an upstream horizon-averaged score, scale the
 graph cost and the coefficients by the same horizon normalization and match
 the scoring indices. An empty coefficient vector gives graph-only weighting.
