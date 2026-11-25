@@ -738,8 +738,8 @@ virtual class LocalOrientedPlane3Factor : gtsam::NoiseModelFactor {
 //*************************************************************************
 // tg_eqf (TG-EqF biased INS filter)
 //*************************************************************************
-#include <gtsam_unstable/tg_eqf/TGGeometry.h>
-#include <gtsam_unstable/tg_eqf/TGEqF.h>
+#include <gtsam_unstable/navigation/TGGeometry.h>
+#include <gtsam_unstable/navigation/TGEqF.h>
 namespace tgeqf {
 
 class State {

@@ -17,7 +17,7 @@
 #include <gtsam_unstable/examples/scenario_harness/ScenarioHarness.h>
 #include <gtsam_unstable/examples/scenario_harness/ScenarioMain.h>
 #include <gtsam_unstable/examples/scenario_harness/TrajectoryCsv.h>
-#include <gtsam_unstable/tg_eqf/TGEqF.h>
+#include <gtsam_unstable/navigation/TGEqF.h>
 
 #include <ostream>
 #include <string>
