@@ -84,6 +84,14 @@ TwoFrameGroup increment(const TwoFrameGroup& X, const ImuInput& u, double dt) {
   return TwoFrameGroup::Expmap(lift(X, u) * dt);
 }
 
+TwoFrameGroup::Jacobian transitionJacobian(const TwoFrameGroup& X,
+                                           const ImuInput& u, double dt) {
+  TwoFrameGroup::Jacobian Jr;
+  const TwoFrameGroup U =
+      gtsam::traits<TwoFrameGroup>::Expmap(lift(X, u) * dt, Jr);
+  return U.inverse().AdjointMap() + Jr * liftJacobian(X, u) * dt;
+}
+
 Vector3 BodyVelocityOutput::predict(const TwoFrameGroup& xi) {
   return xi.R.unrotate(xi.v);
 }
@@ -138,14 +146,11 @@ ImuInput makeInput(const Vector3& omega, const Vector3& accel,
   return u;
 }
 
-// F = Ad_{U^-1} (I + Df dt), Df = d lift / d eps (bias->navigation coupling).
+// X_next = X * U with the exact discrete-step Jacobian F.
 void transition(const TwoFrameGroup& X, const ImuInput& u, double dt,
                 TwoFrameGroup& X_next, TfgInEKF::Covariance& F) {
-  const TwoFrameGroup U = increment(X, u, dt);
-  const TfgInEKF::Covariance Df = liftJacobian(X, u);
-  F = (U.inverse().AdjointMap() * (TfgInEKF::Covariance::Identity() + Df * dt))
-          .eval();
-  X_next = X * U;
+  X_next = X * increment(X, u, dt);
+  F = transitionJacobian(X, u, dt);
 }
 }  // namespace
 

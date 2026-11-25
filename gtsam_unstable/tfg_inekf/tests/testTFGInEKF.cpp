@@ -301,10 +301,11 @@ TEST(TfgInEKF, PositionUpdateMovesBiasEstimate) {
   ekf.update_position(Eigen::Vector3d(0.0, 0.0, 0.0), Cov3::Identity() * 1e-3);
 
   // Gain rows for the bias are no longer identically zero, so the estimate
-  // moves.
+  // moves. One 10 ms step from a diagonal prior only builds an O(dt^2)
+  // nav-bias correlation, so the move is small (~6e-7) but non-zero.
   EXPECT((ekf.bias_gyro() - bg_before).norm() +
              (ekf.bias_accel() - ba_before).norm() >
-         1e-6);
+         1e-9);
 }
 
 // ---------------------------------------------------------------------------
@@ -719,6 +720,71 @@ TEST(TfgInEKF, PositionUpdateAppliesCovarianceReset) {
 }
 
 }  // namespace covariance_reset
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace transition_jacobian {
+
+using Vector15 = TwoFrameGroup::TangentVector;
+
+// The discrete step the filter propagates the mean with.
+TwoFrameGroup step(const TwoFrameGroup& X, const ImuInput& u, double dt) {
+  return X * increment(X, u, dt);
+}
+
+// transitionJacobian is the exact derivative of the implemented discrete step,
+// not a first-order-in-dt approximation: checked at a large dt with fast
+// rotation and non-zero biases, where the O(dt^2) term is ~1e-2.
+TEST(TfgInEKF, TransitionJacobianMatchesFiniteDifference) {
+  const TwoFrameGroup X = TwoFrameGroup::FromState(
+      Rot3::RzRyRx(0.3, -0.2, 0.5), Eigen::Vector3d(0.5, -0.2, 0.1),
+      Eigen::Vector3d(1.0, 2.0, -3.0), Eigen::Vector3d(0.05, -0.04, 0.03),
+      Eigen::Vector3d(0.1, 0.2, -0.1));
+  ImuInput u;
+  u.omega = Eigen::Vector3d(0.6, -0.4, 0.8);
+  u.accel = Eigen::Vector3d(0.3, -0.2, 9.9);
+  u.g_vec = kTestGravity;
+  const double dt = 0.2;
+
+  const TwoFrameGroup X_next = step(X, u, dt);
+  Cov15 numerical;
+  const double h = 1e-6;
+  for (int j = 0; j < 15; ++j) {
+    Vector15 delta = Vector15::Zero();
+    delta(j) = h;
+    const Vector15 plus = traits<TwoFrameGroup>::Local(
+        X_next, step(traits<TwoFrameGroup>::Retract(X, delta), u, dt));
+    const Vector15 minus = traits<TwoFrameGroup>::Local(
+        X_next, step(traits<TwoFrameGroup>::Retract(X, -delta), u, dt));
+    numerical.col(j) = (plus - minus) / (2 * h);
+  }
+
+  EXPECT(assert_equal((Matrix)numerical, (Matrix)transitionJacobian(X, u, dt),
+                      1e-7));
+}
+
+// propagate() uses that Jacobian: with no process noise, P1 = F P0 F^T.
+TEST(TfgInEKF, PropagateUsesTransitionJacobian) {
+  const TwoFrameGroup X0 = TwoFrameGroup::FromState(
+      Rot3::Rz(0.4), Eigen::Vector3d(0.2, 0.1, 0.0), Eigen::Vector3d::Zero(),
+      Eigen::Vector3d(0.02, 0.01, -0.03), Eigen::Vector3d(0.05, 0.0, 0.1));
+  Cov15 P0 = Cov15::Identity() * 0.01;
+  P0.block<3, 3>(0, 9) = P0.block<3, 3>(9, 0) = Cov3::Identity() * 0.002;
+  ImuInput u;
+  u.omega = Eigen::Vector3d(0.3, -0.2, 0.5);
+  u.accel = Eigen::Vector3d(0.1, 0.0, 9.8);
+  u.g_vec = kTestGravity;
+  const double dt = 0.1;
+
+  TfgInEKF ekf(X0, P0);
+  ekf.propagate(u.omega, u.accel, u.g_vec, Cov15::Zero(), dt);
+
+  const Cov15 F = transitionJacobian(X0, u, dt);
+  EXPECT(assert_equal((Matrix)(F * P0 * F.transpose()),
+                      (Matrix)ekf.covariance(), 1e-12));
+}
+
+}  // namespace transition_jacobian
 /* ************************************************************************* */
 
 /* ************************************************************************* */

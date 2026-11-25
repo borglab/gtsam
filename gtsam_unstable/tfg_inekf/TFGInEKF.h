@@ -49,6 +49,18 @@ GTSAM_UNSTABLE_EXPORT TwoFrameGroup::Jacobian inputNoiseCov(
 GTSAM_UNSTABLE_EXPORT TwoFrameGroup increment(const TwoFrameGroup& X,
                                               const ImuInput& u, double dt);
 
+/**
+ * Exact transition Jacobian of the discrete step X_next = X * increment(X, u,
+ * dt) in the right chart, F = d Local(X_next, X(eps)_next) / d eps at eps = 0.
+ *
+ * Perturbing X by Expmap(eps) moves both the left factor and the lift, so
+ *   F = Ad_{U^-1} + J_r(lift(X, u) dt) Df dt,
+ * with U the increment, J_r the right Jacobian of the group exponential, and
+ * Df = liftJacobian(X, u). No truncation in dt beyond the step itself.
+ */
+GTSAM_UNSTABLE_EXPORT TwoFrameGroup::Jacobian transitionJacobian(
+    const TwoFrameGroup& X, const ImuInput& u, double dt);
+
 /// DVL body-frame velocity output (natively equivariant).
 struct GTSAM_UNSTABLE_EXPORT BodyVelocityOutput {
   static constexpr int dim = 3;
