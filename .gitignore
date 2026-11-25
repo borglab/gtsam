@@ -38,14 +38,6 @@ timing/results/bayes_tree_covariance/
 timing/**/benchmark_logs/
 timing/cuda_sparse/results/
 
-# TG-EqF docs and outputs
-gtsam_unstable/tg_eqf/docs
-gtsam_unstable/tfg_inekf/docs
-gtsam_unstable/mekf/docs
-*.png
-*.csv
-.antigravitycli
-
 # Local development docs/artifacts
 docs/*
 timing/pypose_ba/*.json
