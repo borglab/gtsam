@@ -205,6 +205,18 @@ Matrix DDPTracking::optimize(const Vector& initial, const Matrix& targetStates,
       }
     }
     if (!accepted) {
+      if (damping > 1e-9) {
+        double finalDamping = 1e-9;
+        auto finalSweep = backward(states, controls, targetStates,
+                                   targetControls, transition, q_, r_,
+                                   terminal_, finalDamping);
+        while (finalSweep.gains.empty() && finalDamping < 1e12) {
+          finalDamping = std::max(1e-6, 10 * finalDamping);
+          finalSweep = backward(states, controls, targetStates, targetControls,
+                                transition, q_, r_, terminal_, finalDamping);
+        }
+        if (!finalSweep.gains.empty()) sweep = std::move(finalSweep);
+      }
       states_ = std::move(states);
       gains_ = std::move(sweep.gains);
       return controls;

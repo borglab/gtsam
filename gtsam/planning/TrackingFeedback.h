@@ -37,8 +37,11 @@ class GTSAM_EXPORT DDPTracking {
   DDPTracking(const Matrix& statePrecision, const Matrix& controlPrecision,
               const Matrix& terminalPrecision);
   /** Fit H controls and H gains to H+1 target states from the actual initial
-   * state. Optional componentwise control limits are applied during every
-   * forward rollout, including the initialization.
+   * state. Optional componentwise control limits are applied by clamping
+   * during every forward rollout, including the initialization. Note that this
+   * is a forward-rollout projection rather than a box-constrained backward
+   * pass, so active bounds can cause the search to stall at a non-stationary
+   * point.
    */
   Matrix optimize(const Vector& initial, const Matrix& targetStates,
                   const Matrix& targetControls, const Transition& transition,
