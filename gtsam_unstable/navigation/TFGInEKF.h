@@ -1,12 +1,30 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file TFGInEKF.h
+ * @brief TFG-InEKF: invariant EKF for biased inertial navigation on the
+ *        two-frames group.
+ * @author Arihant Lunawat
+ *
+ * Built on InvariantEKF<TwoFrameGroup>. The process model (lift) and
+ * measurement outputs live here; the group and its action are in
+ * TFGGeometry.h.
+ */
+
 #pragma once
 #include <gtsam/navigation/InvariantEKF.h>
 #include <gtsam_unstable/navigation/TFGGeometry.h>
 
 #include <Eigen/Dense>
-
-// TFG-InEKF: biased INS on G_TF via InvariantEKF<TwoFrameGroup>. The process
-// model (lift) and measurement outputs live here; the group and its action
-// are in TFGGeometry.h.
 
 namespace tfg {
 

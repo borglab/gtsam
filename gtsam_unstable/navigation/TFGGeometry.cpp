@@ -1,3 +1,20 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file TFGGeometry.cpp
+ * @brief Two-frames group operations, exponential map and Jacobians.
+ * @author Arihant Lunawat
+ */
+
 #include <gtsam/geometry/SO3.h>
 #include <gtsam_unstable/navigation/TFGGeometry.h>
 

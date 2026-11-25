@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file TGEqF.h
+ * @brief Tangent-group equivariant filter (TG-EqF) for biased inertial
+ *        navigation, with position, DVL body-velocity and depth outputs.
+ * @author Arihant Lunawat
+ */
+
 #pragma once
 #include <gtsam/base/OptionalJacobian.h>
 #include <gtsam/navigation/EquivariantFilter.h>

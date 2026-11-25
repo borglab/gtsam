@@ -1,3 +1,21 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file TGGeometry.h
+ * @brief TG-EqF state manifold, symmetry group and group action: the
+ *        tangent group of SE_2(3) acting on the biased INS state.
+ * @author Arihant Lunawat
+ */
+
 #pragma once
 #include <gtsam/base/GroupAction.h>
 #include <gtsam/base/Lie.h>

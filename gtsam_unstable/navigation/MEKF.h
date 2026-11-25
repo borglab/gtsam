@@ -1,13 +1,29 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file MEKF.h
+ * @brief Multiplicative EKF (MEKF) baseline for biased inertial navigation.
+ * @author Arihant Lunawat
+ *
+ * State-dependent F (finite-diff); naive position/DVL updates vs geometric
+ * filters. The process model (Dynamics) and measurement outputs live here;
+ * the state manifold is in MEKFGeometry.h.
+ */
+
 #pragma once
 #include <gtsam/navigation/ManifoldEKF.h>
 #include <gtsam_unstable/navigation/MEKFGeometry.h>
 
 #include <Eigen/Dense>
-
-// MultiplicativeEKF: baseline MEKF for biased INS.
-// State-dependent F (finite-diff); naive position/DVL updates vs geometric
-// filters. The process model (Dynamics) and measurement outputs live here;
-// the state manifold is in MEKFGeometry.h.
 
 namespace mekf {
 

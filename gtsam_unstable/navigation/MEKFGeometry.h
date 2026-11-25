@@ -1,16 +1,33 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file MEKFGeometry.h
+ * @brief MEKF state manifold SO(3) x R^12 and its retraction.
+ * @author Arihant Lunawat
+ *
+ * MekfState: xi = [R, v, p, b_gyro, b_accel] on SO(3) x R^12 (dim 15).
+ *
+ * Error convention (body/right multiplicative, additive on vectors):
+ *     R_true = R_hat * Exp(d_theta),  v = v_hat + d_v, ...
+ * Matches TG-EqF and TFG-InEKF so NEES/error metrics are comparable.
+ * Tangent block order: R, v, p, b_gyro, b_accel.
+ */
+
 #pragma once
 #include <gtsam/base/Lie.h>
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam_unstable/dllexport.h>
 
 #include <Eigen/Dense>
-
-// MekfState: xi = [R, v, p, b_gyro, b_accel] on SO(3) x R^12 (dim 15).
-//
-// Error convention (body/right multiplicative, additive on vectors):
-//     R_true = R_hat * Exp(d_theta),  v = v_hat + d_v, ...
-// Matches tg_eqf and tfg_inekf so NEES/error metrics are comparable.
-// Tangent block order: R, v, p, b_gyro, b_accel.
 
 namespace mekf {
 

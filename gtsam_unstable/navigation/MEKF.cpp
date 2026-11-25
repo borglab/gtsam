@@ -1,14 +1,31 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file MEKF.cpp
+ * @brief MEKF strapdown propagation, measurement outputs and updates.
+ * @author Arihant Lunawat
+ *
+ * Strapdown mean (forward Euler):
+ *   R+ = R * Exp((omega - b_gyro) dt)
+ *   v+ = v + (R (accel - b_accel) + g) dt   (g = u.g_vec, caller's frame)
+ *   p+ = p + v dt
+ * F: finite-diff of discrete map in local coords, re-evaluated each step.
+ *
+ * Attitude correction via Retract, followed by the posterior-mean covariance
+ * reset P <- B P B^T, B = resetJacobian(eta).
+ */
+
 #include <gtsam/base/Matrix.h>
 #include <gtsam_unstable/navigation/MEKF.h>
-
-// Strapdown mean (forward Euler):
-//   R+ = R * Exp((omega - b_gyro) dt)
-//   v+ = v + (R (accel - b_accel) + g) dt   (g = u.g_vec, caller's frame)
-//   p+ = p + v dt
-// F: finite-diff of discrete map in local coords, re-evaluated each step.
-//
-// Attitude correction via Retract, followed by the posterior-mean covariance
-// reset P <- B P B^T, B = resetJacobian(eta).
 
 namespace mekf {
 

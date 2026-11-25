@@ -1,3 +1,24 @@
+/* ----------------------------------------------------------------------------
+
+ * GTSAM Copyright 2010, Georgia Tech Research Corporation,
+ * Atlanta, Georgia 30332-0415
+ * All Rights Reserved
+ * Authors: Frank Dellaert, et al. (see THANKS for the full author list)
+
+ * See LICENSE for the license information
+
+ * -------------------------------------------------------------------------- */
+
+/**
+ * @file TFGGeometry.h
+ * @brief The two-frames group SO(3) x R^12, the state space of the
+ *        TFG-InEKF.
+ * @author Arihant Lunawat
+ *
+ * The two-frames group G_TF = SO(3) x R^12 has dimension 15 and acts on
+ * itself by right multiplication.
+ */
+
 #pragma once
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Matrix.h>
@@ -6,9 +27,6 @@
 #include <gtsam_unstable/dllexport.h>
 
 #include <Eigen/Dense>
-
-// Two-Frames Group G_TF = SO(3) x R^12 (dim 15), and its natural right
-// action on itself (the state space of the TFG-InEKF).
 
 namespace tfg {
 
