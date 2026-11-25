@@ -53,9 +53,7 @@ MODULE_INCLUDE_EXCEPTIONS = {
     ("gtsam/discrete/DecisionTreeFactor.cpp", "gtsam/hybrid/HybridValues.h"),
     ("gtsam/discrete/DiscreteConditional.cpp", "gtsam/hybrid/HybridValues.h"),
     ("gtsam/discrete/DiscreteFactor.cpp", "gtsam/hybrid/HybridValues.h"),
-    ("gtsam/discrete/TableDistribution.cpp", "gtsam/hybrid/HybridValues.h"),
     ("gtsam/discrete/TableFactor.cpp", "gtsam/hybrid/HybridValues.h"),
-    ("gtsam/geometry/Gal3.cpp", "gtsam/nonlinear/expressions.h"),
     ("gtsam/geometry/Similarity2.cpp", "gtsam/slam/KarcherMeanFactor-inl.h"),
     ("gtsam/geometry/Similarity3.cpp", "gtsam/slam/KarcherMeanFactor-inl.h"),
     ("gtsam/geometry/triangulation.cpp", "gtsam/nonlinear/LevenbergMarquardtOptimizer.h"),
@@ -67,7 +65,6 @@ MODULE_INCLUDE_EXCEPTIONS = {
     ("gtsam/inference/graph.h", "gtsam/nonlinear/Values.h"),
     ("gtsam/linear/GaussianConditional.cpp", "gtsam/hybrid/HybridValues.h"),
     ("gtsam/linear/GaussianFactor.cpp", "gtsam/hybrid/HybridValues.h"),
-    ("gtsam/linear/MultifrontalClique.h", "gtsam/nonlinear/LMDampingParams.h"),
     # Default Graphviz layout recognizes concrete pose values.
     ("gtsam/nonlinear/GraphvizFormatting.cpp", "gtsam/geometry/Pose2.h"),
     ("gtsam/nonlinear/GraphvizFormatting.cpp", "gtsam/geometry/Pose3.h"),
@@ -75,8 +72,6 @@ MODULE_INCLUDE_EXCEPTIONS = {
     ("gtsam/nonlinear/NonlinearFactor.cpp", "gtsam/hybrid/HybridValues.h"),
     ("gtsam/nonlinear/NonlinearFactor.h", "gtsam/hybrid/HybridValues.h"),
     ("gtsam/nonlinear/NonlinearMultifrontalSolver.cpp", "gtsam/constrained/NonlinearEqualityConstraint.h"),
-    ("gtsam/nonlinear/NonlinearFactorGraph.cpp", "gtsam/geometry/Pose2.h"),
-    ("gtsam/nonlinear/NonlinearFactorGraph.cpp", "gtsam/geometry/Pose3.h"),
     ("gtsam/nonlinear/NonlinearFactorGraph.h", "gtsam/geometry/Point2.h"),
     ("gtsam/nonlinear/utilities.h", "gtsam/geometry/Point2.h"),
     ("gtsam/nonlinear/utilities.h", "gtsam/geometry/Point3.h"),
@@ -87,7 +82,6 @@ MODULE_INCLUDE_EXCEPTIONS = {
     ("gtsam/nonlinear/utilities.h", "gtsam/slam/ProjectionFactor.h"),
     ("gtsam/slam/EssentialMatrixConstraint.h", "gtsam/sfm/EssentialMatrixConstraint.h"),
     ("gtsam/slam/EssentialMatrixFactor.h", "gtsam/sfm/EssentialMatrixFactor.h"),
-    ("gtsam/slam/dataset.h", "gtsam/sfm/BinaryMeasurement.h"),
 }
 NON_LIBRARY_DIRS = {"doc", "examples", "tests", "timing", "wrap"}
 

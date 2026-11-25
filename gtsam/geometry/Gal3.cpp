@@ -34,7 +34,6 @@
 #include <gtsam/geometry/Kernel.h>
 #include <gtsam/geometry/SO3.h>
 #include <gtsam/geometry/concepts.h>
-#include <gtsam/nonlinear/expressions.h>
 
 #include <cmath>
 #include <functional>

@@ -17,8 +17,6 @@
  * @author  Christian Potthast
  */
 
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
