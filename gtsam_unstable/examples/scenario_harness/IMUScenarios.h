@@ -31,7 +31,6 @@
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/navigation/Scenario.h>
-#include <gtsam_unstable/examples/scenario_harness/SamoaWaypoints.h>
 
 #include <algorithm>
 #include <cmath>
@@ -56,11 +55,6 @@ inline constexpr double kSplinePathDuration =
     40.0;  // WaypointSpline: warped-time seconds to traverse the waypoint list
            // (u:0->1). Sized > the default 30 s --duration so a default run
            // never reaches the final-waypoint clamp; see SplineScenario.
-
-inline constexpr double kSamoaPathDuration =
-    300.0;  // SamoaSurvey: warped-time seconds to traverse the real-trajectory
-            // waypoint list, matching the ~300 s of real data they were
-            // extracted from (see SamoaWaypoints.h).
 
 // Every scenario is required to start at rest (v=0, a=0) so filters can be
 // initialized at the scenario's true initial belief, offset by the configured
@@ -452,26 +446,6 @@ inline SplineScenario waypointSpline(
     const std::vector<gtsam::Vector3>& waypoints = defaultSplineWaypoints(),
     double pathDuration = kSplinePathDuration) {
   return SplineScenario(waypoints, {}, pathDuration);
-}
-
-/// Samoa survey: a waypoint spline through the first 300 s of a real AUV
-/// survey trajectory (see SamoaWaypoints.h), spun up from rest via the shared
-/// evalRamp profile like every other scenario. The waypoints are generated
-/// already moved into the inertial frame -- first waypoint at the origin,
-/// initial direction of travel along nav +x, gravity axis untouched -- so
-/// this starts at rest at the origin like every other factory. Real attitude
-/// (samoaSurveyAttitudes()) drives omega_b, so this exercises the gyro
-/// channel too, not just translation. The waypoints are spaced uniformly in
-/// TIME (one every ~0.2 s of the source data), not by arc length, so this
-/// uses KnotParameterization::Uniform -- chord-length knots would compress
-/// slow stretches of the real trajectory (e.g. turns) in u, distorting the
-/// rates SplineScenario derives from du/dt. Fixed duration: past the last
-/// waypoint the path clamps and holds at rest (SplineScenario), so a longer
-/// --duration run just idles after 300 s.
-inline SplineScenario samoaSurvey() {
-  return SplineScenario(samoaSurveyWaypoints(), samoaSurveyAttitudes(),
-                        kSamoaPathDuration, kRampDuration,
-                        SplineScenario::KnotParameterization::Uniform);
 }
 
 /// Typical navigation: rest -> cruise, straight legs with two occasional

@@ -2,7 +2,7 @@
  * @file  MEKFScenarioExample.cpp
  * @brief MEKF on a simulated IMU trajectory with optional position, DVL and
  *        depth aiding. Pick the trajectory with --scenario (Vertical,
- *        TypicalNavigation, WaypointSpline or SamoaSurvey).
+ *        TypicalNavigation or WaypointSpline).
  *
  * The run loop, CLI, IMU simulation, CSV format and error reporting are shared
  * with the other filter examples (scenario_harness/FilterScenarioRunner.h); only

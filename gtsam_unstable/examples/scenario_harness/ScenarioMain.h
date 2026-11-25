@@ -35,14 +35,13 @@ std::unique_ptr<gtsam::Scenario> own(ConcreteScenario scenario) {
 }
 
 /// Every trajectory the examples can run.
-inline const std::array<ScenarioEntry, 4>& scenarioTable() {
-  static const std::array<ScenarioEntry, 4> table{{
+inline const std::array<ScenarioEntry, 3>& scenarioTable() {
+  static const std::array<ScenarioEntry, 3> table{{
       {"Vertical", "vertical", [] { return own(vertical()); }},
       {"TypicalNavigation", "typical_navigation",
        [] { return own(typicalNavigation()); }},
       {"WaypointSpline", "waypoint_spline",
        [] { return own(waypointSpline()); }},
-      {"SamoaSurvey", "samoa_survey", [] { return own(samoaSurvey()); }},
   }};
   return table;
 }
