@@ -7,8 +7,8 @@
 //   p+ = p + v dt
 // F: finite-diff of discrete map in local coords, re-evaluated each step.
 //
-// Attitude correction via Retract; MekfState has no Retract Jacobian, so
-// covariance transport on the correction is skipped.
+// Attitude correction via Retract, followed by the posterior-mean covariance
+// reset P <- B P B^T, B = resetJacobian(eta).
 
 namespace mekf {
 
@@ -95,7 +95,7 @@ void MultiplicativeEKF::update_position(const Vector3& pi,
                                         const Covariance3& R_pos) {
   const Vector3 prediction = PositionOutput::predict(this->state());
   const PositionOutput::Jacobian H = PositionOutput::jacobian();
-  this->updateWithVector(prediction, H, pi, R_pos);
+  updateWithReset(prediction, H, pi, R_pos);
 }
 
 void MultiplicativeEKF::update_dvl(const Vector3& z_dvl,
@@ -103,7 +103,7 @@ void MultiplicativeEKF::update_dvl(const Vector3& z_dvl,
   const Vector3 prediction = BodyVelocityOutput::predict(this->state());
   const BodyVelocityOutput::Jacobian H =
       BodyVelocityOutput::jacobian(this->state());
-  this->updateWithVector(prediction, H, z_dvl, R_dvl);
+  updateWithReset(prediction, H, z_dvl, R_dvl);
 }
 
 void MultiplicativeEKF::update_depth(double z_depth, const Covariance1& R_depth,
@@ -117,6 +117,25 @@ void MultiplicativeEKF::update_depth(double z_depth, const Covariance1& R_depth,
   R_pseudo(2, 2) = R_depth(0, 0);
 
   update_position(pseudo_position, R_pseudo);
+}
+
+MultiplicativeEKF::Jacobian MultiplicativeEKF::resetJacobian(
+    const TangentVector& eta) {
+  Jacobian B = Jacobian::Identity();
+  B.block<3, 3>(0, 0) = gtsam::Rot3::ExpmapDerivative(eta.head<3>());
+  return B;
+}
+
+void MultiplicativeEKF::updateWithReset(const gtsam::Vector& prediction,
+                                        const gtsam::Matrix& H,
+                                        const gtsam::Vector& z,
+                                        const gtsam::Matrix& R) {
+  const MekfState prior = this->state();
+  this->updateWithVector(prediction, H, z, R, /*performReset=*/false);
+  const TangentVector eta =
+      gtsam::traits<MekfState>::Local(prior, this->state());
+  const Jacobian B = resetJacobian(eta);
+  this->P_ = B * this->P_ * B.transpose();
 }
 
 MultiplicativeEKF::TangentVector MultiplicativeEKF::errorStateVector(

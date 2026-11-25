@@ -129,6 +129,23 @@ class GTSAM_UNSTABLE_EXPORT MultiplicativeEKF
   Vector3 position() const;
   Vector3 bias_gyro() const;
   Vector3 bias_accel() const;
+
+  /**
+   * Covariance reset Jacobian for a correction eta applied by Retract.
+   *
+   * The posterior error e ~ N(eta, P) satisfies X_true = Retract(X, e); after
+   * the correction the error is e' = Local(Retract(X, eta), X_true), whose
+   * derivative at e = eta is diag(J_r(eta_theta), I_12), J_r the SO(3) right
+   * Jacobian. This is the posterior-mean reset, the same convention as
+   * TGEqF::resetMatrix.
+   */
+  static Jacobian resetJacobian(const TangentVector& eta);
+
+ private:
+  /// Kalman update in the current chart followed by the covariance reset
+  /// P <- B P B^T with B = resetJacobian(eta).
+  void updateWithReset(const gtsam::Vector& prediction, const gtsam::Matrix& H,
+                       const gtsam::Vector& z, const gtsam::Matrix& R);
 };
 
 }  // namespace mekf

@@ -328,6 +328,82 @@ TEST(Mekf, AccelNoiseIsRotatedIntoNavigationFrame) {
 /* ************************************************************************* */
 
 /* ************************************************************************* */
+namespace covariance_reset {
+
+using Vector15 = MekfState::TangentVector;
+
+MekfState rotatedState() {
+  return MekfState(
+      Rot3::RzRyRx(0.3, -0.2, 0.5), Eigen::Vector3d(0.5, -0.2, 0.1),
+      Eigen::Vector3d(1.0, 2.0, -3.0), Eigen::Vector3d(0.01, -0.02, 0.03),
+      Eigen::Vector3d(0.1, 0.0, -0.1));
+}
+
+// Prior with attitude-position correlation, so a position fix also corrects
+// attitude and exercises the reset.
+Cov15 correlatedPrior() {
+  Cov15 P0 = Cov15::Identity() * 0.01;
+  P0.block<3, 3>(6, 6) = Cov3::Identity() * 1.0;
+  P0.block<3, 3>(0, 6) = Cov3::Identity() * 0.05;
+  P0.block<3, 3>(6, 0) = Cov3::Identity() * 0.05;
+  return P0;
+}
+
+// resetJacobian(eta) is the derivative of e -> Local(Retract(X, eta),
+// Retract(X, e)) at the posterior mean e = eta.
+TEST(Mekf, ResetJacobianMatchesNumericalDerivative) {
+  const MekfState X = rotatedState();
+  Vector15 eta = Vector15::Zero();
+  eta.head<3>() = Eigen::Vector3d(0.2, -0.1, 0.3);
+  eta.segment<3>(6) = Eigen::Vector3d(0.5, 0.4, -0.3);
+
+  const MekfState X_plus = traits<MekfState>::Retract(X, eta);
+  Cov15 numerical;
+  const double h = 1e-6;
+  for (int j = 0; j < 15; ++j) {
+    Vector15 step = Vector15::Zero();
+    step(j) = h;
+    const Vector15 plus = traits<MekfState>::Local(
+        X_plus, traits<MekfState>::Retract(X, eta + step));
+    const Vector15 minus = traits<MekfState>::Local(
+        X_plus, traits<MekfState>::Retract(X, eta - step));
+    numerical.col(j) = (plus - minus) / (2 * h);
+  }
+
+  EXPECT(assert_equal((Matrix)numerical,
+                      (Matrix)MultiplicativeEKF::resetJacobian(eta), 1e-8));
+}
+
+// A position update transports the Joseph-updated covariance by the reset
+// Jacobian of the applied correction, unlike the untransported base update.
+TEST(Mekf, PositionUpdateAppliesCovarianceReset) {
+  const MekfState X0 = rotatedState();
+  const Cov15 P0 = correlatedPrior();
+  const Eigen::Vector3d fix(1.6, 1.5, -2.6);
+  const Cov3 R_pos = Cov3::Identity() * 0.01;
+
+  MultiplicativeEKF ekf(X0, P0);
+  ekf.update_position(fix, R_pos);
+
+  gtsam::ManifoldEKF<MekfState> plain(X0, P0);
+  plain.updateWithVector(PositionOutput::predict(X0),
+                         PositionOutput::jacobian(), fix, R_pos,
+                         /*performReset=*/false);
+
+  const Vector15 eta = traits<MekfState>::Local(X0, plain.state());
+  EXPECT(eta.head<3>().norm() > 1e-3);  // the fix corrected attitude
+
+  const Cov15 B = MultiplicativeEKF::resetJacobian(eta);
+  const Cov15 expected = B * plain.covariance() * B.transpose();
+  EXPECT(traits<MekfState>::Equals(plain.state(), ekf.state(), 1e-12));
+  EXPECT(assert_equal((Matrix)expected, (Matrix)ekf.covariance(), 1e-12));
+  EXPECT((plain.covariance() - ekf.covariance()).norm() > 1e-6);
+}
+
+}  // namespace covariance_reset
+/* ************************************************************************* */
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);
