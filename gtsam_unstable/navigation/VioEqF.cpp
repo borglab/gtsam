@@ -10,12 +10,12 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file EqVIOFilter.cpp
+ * @file VioEqF.cpp
  * @brief Standalone equivariant VIO filter.
  * @author Rohan Bansal
  */
 
-#include <gtsam_unstable/navigation/EqVIOFilter.h>
+#include <gtsam_unstable/navigation/VioEqF.h>
 
 #include <algorithm>
 #include <cassert>
@@ -41,7 +41,7 @@ inline int landmarkOffset(size_t landmarkIndex) {
  *
  * The base `EquivariantFilter` storage is initialized directly.
  */
-EqVIOFilter::EqVIOFilter(const EqVIOFilterParams& params)
+VioEqF::VioEqF(const VioEqFParams& params)
     : Base(State(), defaultCovariance(0), makeVioGroupIdentity()),
       params_(params) {
   State xi0;
@@ -55,9 +55,8 @@ EqVIOFilter::EqVIOFilter(const EqVIOFilterParams& params)
  * Landmark keys are part of the runtime bookkeeping, so seeded landmark states
  * must provide a matching external key ordering.
  */
-EqVIOFilter::EqVIOFilter(const State& xi_ref, const Matrix& Sigma,
-                         const KeyVector& landmarkKeys,
-                         const EqVIOFilterParams& params)
+VioEqF::VioEqF(const State& xi_ref, const Matrix& Sigma,
+               const KeyVector& landmarkKeys, const VioEqFParams& params)
     : Base(State(), defaultCovariance(0), makeVioGroupIdentity()),
       params_(params) {
   resetReferenceAndGroup(xi_ref, Sigma, makeVioGroupIdentity(xi_ref.n()));
@@ -71,7 +70,7 @@ EqVIOFilter::EqVIOFilter(const State& xi_ref, const Matrix& Sigma,
  * This method sets bias and velocity to nominal zeros and computes the shortest
  * rotation mapping measured acceleration to world +Z.
  */
-void EqVIOFilter::initializeFromIMU(const IMUInput& imu) {
+void VioEqF::initializeFromIMU(const IMUInput& imu) {
   State xi_ref = referenceState();
   xi_ref.bias = Bias::Identity();
   xi_ref.kinematics = Se23::Identity();
@@ -96,7 +95,7 @@ void EqVIOFilter::initializeFromIMU(const IMUInput& imu) {
 /**
  * @brief Propagate mean/covariance jointly over one IMU hold interval.
  */
-void EqVIOFilter::predict(const IMUInput& imu, double dt) {
+void VioEqF::predict(const IMUInput& imu, double dt) {
   if (!initialized_ || dt <= 0.0) {
     return;
   }
@@ -121,13 +120,13 @@ void EqVIOFilter::predict(const IMUInput& imu, double dt) {
  * 4. Perform EKF-like correction,
  * 5. Remove numerically invalid landmarks.
  */
-void EqVIOFilter::update(const VisionMeasurement& measurement,
-                         const std::shared_ptr<const CameraModel>& camera,
-                         const Matrix& R) {
+void VioEqF::update(const VisionMeasurement& measurement,
+                    const std::shared_ptr<const CameraModel>& camera,
+                    const Matrix& R) {
   const int fullDim = 2 * dense(measurement.size());
   if (fullDim == 0 || R.rows() != fullDim || R.cols() != fullDim) {
-    throw std::invalid_argument("EqVIOFilter::update: measurement covariance "
-                                "must be 2M x 2M");
+    throw std::invalid_argument(
+        "VioEqF::update: measurement covariance must be 2M x 2M");
   }
 
   if (!initialized_) {
@@ -165,13 +164,13 @@ void EqVIOFilter::update(const VisionMeasurement& measurement,
 }
 
 /// Identity covariance helper sized for current sensor + landmark dimensions.
-Matrix EqVIOFilter::defaultCovariance(size_t nLandmarks) {
+Matrix VioEqF::defaultCovariance(size_t nLandmarks) {
   const int d = static_cast<int>(stateDim(nLandmarks));
   return Matrix::Identity(d, d);
 }
 
 /// Build block-diagonal process covariance from scalar per-component variances.
-Matrix EqVIOFilter::stateProcessNoise(size_t nLandmarks) const {
+Matrix VioEqF::stateProcessNoise(size_t nLandmarks) const {
   const int d = static_cast<int>(stateDim(nLandmarks));
   Matrix Q = Matrix::Identity(d, d);
   Q.block<3, 3>(0, 0) *= params_.biasOmegaProcessVariance;
@@ -194,14 +193,12 @@ Matrix EqVIOFilter::stateProcessNoise(size_t nLandmarks) const {
  * The supplied covariance must exactly match the current measurement
  * dimension.
  */
-void EqVIOFilter::innovationUpdate(
-    const VisionMeasurement& measurement,
-    const std::shared_ptr<const CameraModel>& camera,
-    const Matrix& measurementCovariance) {
+void VioEqF::innovationUpdate(const VisionMeasurement& measurement,
+                              const std::shared_ptr<const CameraModel>& camera,
+                              const Matrix& measurementCovariance) {
   if (measurement.empty()) return;
   if (!camera) {
-    throw std::invalid_argument(
-        "EqVIOFilter::innovationUpdate: camera is null");
+    throw std::invalid_argument("VioEqF::innovationUpdate: camera is null");
   }
 
   VisionMeasurement filteredMeasurement;
@@ -211,7 +208,7 @@ void EqVIOFilter::innovationUpdate(
     const auto it = landmarkIndexByKey_.find(key);
     if (it == landmarkIndexByKey_.end()) {
       throw std::invalid_argument(
-          "EqVIOFilter::innovationUpdate: measurement key not in filter state");
+          "VioEqF::innovationUpdate: measurement key not in filter state");
     }
     try {
       estimatedMeasurement[key] = camera->project2(estimate.cameraLandmarks[it->second]);
@@ -245,17 +242,17 @@ void EqVIOFilter::innovationUpdate(
 /**
  * @brief Validate/store landmark keys for the current state dimension.
  */
-void EqVIOFilter::setLandmarkKeys(const KeyVector& landmarkKeys) {
+void VioEqF::setLandmarkKeys(const KeyVector& landmarkKeys) {
   if (landmarkKeys.size() != referenceState().n()) {
     throw std::invalid_argument(
-        "EqVIOFilter::setLandmarkKeys: key count must match landmark count");
+        "VioEqF::setLandmarkKeys: key count must match landmark count");
   }
 
   KeySet uniqueKeys;
   for (Key key : landmarkKeys) {
     if (!uniqueKeys.insert(key).second) {
       throw std::invalid_argument(
-          "EqVIOFilter::setLandmarkKeys: duplicate landmark key");
+          "VioEqF::setLandmarkKeys: duplicate landmark key");
     }
   }
 
@@ -265,7 +262,7 @@ void EqVIOFilter::setLandmarkKeys(const KeyVector& landmarkKeys) {
 }
 
 /// Refresh the O(1) lookup table aligned with `landmarkKeys_`.
-void EqVIOFilter::rebuildLandmarkIndex() {
+void VioEqF::rebuildLandmarkIndex() {
   landmarkIndexByKey_.clear();
   for (size_t i = 0; i < landmarkKeys_.size(); ++i) {
     landmarkIndexByKey_[landmarkKeys_[i]] = i;
@@ -279,12 +276,11 @@ void EqVIOFilter::rebuildLandmarkIndex() {
  * pruned from the current measurement/update, and new landmarks are inserted in
  * one structure rebuild.
  */
-void EqVIOFilter::reconcileLandmarks(
+void VioEqF::reconcileLandmarks(
     VisionMeasurement& measurement,
     const std::shared_ptr<const CameraModel>& camera) {
   if (!camera && !measurement.empty()) {
-    throw std::invalid_argument(
-        "EqVIOFilter::reconcileLandmarks: camera is null");
+    throw std::invalid_argument("VioEqF::reconcileLandmarks: camera is null");
   }
 
   KeySet observedKeys;
@@ -342,7 +338,7 @@ void EqVIOFilter::reconcileLandmarks(
  * This keeps the example/runtime path cheap and avoids using a partial
  * innovation covariance proxy for gating.
  */
-KeyVector EqVIOFilter::detectOutliers(
+KeyVector VioEqF::detectOutliers(
     VisionMeasurement& measurement,
     const std::shared_ptr<const CameraModel>& camera) const {
   const size_t maxOutliers = static_cast<size_t>(
@@ -391,7 +387,7 @@ KeyVector EqVIOFilter::detectOutliers(
 }
 
 /// Return keys whose landmark-group scale has become numerically invalid.
-KeyVector EqVIOFilter::invalidLandmarkKeys() const {
+KeyVector VioEqF::invalidLandmarkKeys() const {
   const LandmarkGroup& Q = std::get<3>(decompose(groupEstimate()));
   KeyVector invalidKeys;
   invalidKeys.reserve(Q.size());
@@ -411,7 +407,7 @@ KeyVector EqVIOFilter::invalidLandmarkKeys() const {
  * observed landmarks enter with identity group transform and diagonal initial
  * covariance.
  */
-void EqVIOFilter::applyLandmarkStructureChange(
+void VioEqF::applyLandmarkStructureChange(
     const std::vector<size_t>& retainedIndices,
     const std::vector<std::pair<Key, Point3>>& newLandmarks) {
   const State& currentReference = referenceState();
@@ -457,8 +453,8 @@ void EqVIOFilter::applyLandmarkStructureChange(
 }
 
 /// Rebuild covariance after a batch landmark add/remove operation.
-Matrix EqVIOFilter::rebuildCovariance(
-    const std::vector<size_t>& retainedIndices, size_t newLandmarkCount) const {
+Matrix VioEqF::rebuildCovariance(const std::vector<size_t>& retainedIndices,
+                                 size_t newLandmarkCount) const {
   const Matrix& currentCovariance = errorCovariance();
   const int newLandmarkBlockCount = dense(newLandmarkCount);
   const int newDimension =

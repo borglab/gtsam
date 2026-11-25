@@ -10,12 +10,12 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file EqVIOSymmetry.cpp
+ * @file VioEqFSymmetry.cpp
  * @brief EqVIO symmetry actions and lift helpers.
  * @author Rohan Bansal
  */
 
-#include <gtsam_unstable/navigation/EqVIOSymmetry.h>
+#include <gtsam_unstable/navigation/VioEqFSymmetry.h>
 
 #include <algorithm>
 #include <functional>
