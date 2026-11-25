@@ -5,17 +5,17 @@
  *        TypicalNavigation, WaypointSpline or SamoaSurvey).
  *
  * The run loop, CLI, IMU simulation, CSV format and error reporting are shared
- * with the other filter examples (examples_common/FilterScenarioRunner.h); only
+ * with the other filter examples (scenario_harness/FilterScenarioRunner.h); only
  * what is MEKF-specific lives here.
  */
 
 #include <gtsam/navigation/NavState.h>
 #include <gtsam/navigation/Scenario.h>
-#include <gtsam_unstable/examples_common/FilterScenarioRunner.h>
-#include <gtsam_unstable/examples_common/ImuProcessNoise.h>
-#include <gtsam_unstable/examples_common/ScenarioHarness.h>
-#include <gtsam_unstable/examples_common/ScenarioMain.h>
-#include <gtsam_unstable/examples_common/TrajectoryCsv.h>
+#include <gtsam_unstable/examples/scenario_harness/FilterScenarioRunner.h>
+#include <gtsam_unstable/examples/scenario_harness/ImuProcessNoise.h>
+#include <gtsam_unstable/examples/scenario_harness/ScenarioHarness.h>
+#include <gtsam_unstable/examples/scenario_harness/ScenarioMain.h>
+#include <gtsam_unstable/examples/scenario_harness/TrajectoryCsv.h>
 #include <gtsam_unstable/mekf/MEKF.h>
 
 #include <ostream>
@@ -28,7 +28,7 @@ using imu_scenarios::parseRunOptions;
 using imu_scenarios::RunOptions;
 using imu_scenarios::RunSummary;
 
-/// Satisfies the adapter contract in examples_common/FilterScenarioRunner.h.
+/// Satisfies the adapter contract in scenario_harness/FilterScenarioRunner.h.
 class ScenarioAdapter {
  public:
   static constexpr int kDim = MekfState::dimension;

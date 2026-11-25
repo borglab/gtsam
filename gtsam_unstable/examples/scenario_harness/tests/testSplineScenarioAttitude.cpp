@@ -10,7 +10,7 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/geometry/Rot3.h>
-#include <gtsam_unstable/examples_common/IMUScenarios.h>
+#include <gtsam_unstable/examples/scenario_harness/IMUScenarios.h>
 
 using namespace gtsam;
 using namespace imu_scenarios;

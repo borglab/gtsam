@@ -31,7 +31,7 @@
 
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam/navigation/Scenario.h>
-#include <gtsam_unstable/examples_common/SamoaWaypoints.h>
+#include <gtsam_unstable/examples/scenario_harness/SamoaWaypoints.h>
 
 #include <algorithm>
 #include <cmath>

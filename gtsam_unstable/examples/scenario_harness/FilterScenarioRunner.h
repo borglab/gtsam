@@ -4,9 +4,9 @@
  *
  * The loop, the RNG draw order and the logged quantities are identical for
  * every filter; only construction, propagation and the update calls differ.
- * Those live in a small per-filter adapter (see <filter>/examples/
- * <Filter>ScenarioExample.cpp), which stays next to its filter so this header
- * remains filter-agnostic.
+ * Those live in a small per-filter adapter (see
+ * gtsam_unstable/examples/<Filter>ScenarioExample.cpp), so this header remains
+ * filter-agnostic.
  *
  * Adapter contract:
  * @code
@@ -37,8 +37,8 @@
 #include <gtsam/navigation/PreintegrationParams.h>
 #include <gtsam/navigation/Scenario.h>
 #include <gtsam/navigation/ScenarioRunner.h>
-#include <gtsam_unstable/examples_common/IMUScenarios.h>
-#include <gtsam_unstable/examples_common/ScenarioHarness.h>
+#include <gtsam_unstable/examples/scenario_harness/IMUScenarios.h>
+#include <gtsam_unstable/examples/scenario_harness/ScenarioHarness.h>
 
 #include <cmath>
 #include <cstddef>

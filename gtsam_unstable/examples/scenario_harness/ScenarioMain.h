@@ -8,8 +8,8 @@
  */
 #pragma once
 
-#include <gtsam_unstable/examples_common/IMUScenarios.h>
-#include <gtsam_unstable/examples_common/ScenarioHarness.h>
+#include <gtsam_unstable/examples/scenario_harness/IMUScenarios.h>
+#include <gtsam_unstable/examples/scenario_harness/ScenarioHarness.h>
 
 #include <array>
 #include <exception>

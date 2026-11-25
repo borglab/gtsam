@@ -10,7 +10,7 @@ spaced in TIME (dt = duration / (waypoints - 1)) so the output replays at
 the real speed and turn rate, rigidly transforms it so the first waypoint
 is at the origin and the first yaw is exactly zero (gravity axis left
 alone), and writes the result as a
-gtsam_unstable/examples_common/SamoaWaypoints.h header in the same style as
+gtsam_unstable/examples/scenario_harness/SamoaWaypoints.h header in the same style as
 IMUScenarios.h's defaultSplineWaypoints().
 
 Usage:
