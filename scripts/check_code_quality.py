@@ -44,6 +44,7 @@ MODULE_DEPENDENCIES = {
 
 # Existing upward includes. Keep each exception scoped to one file and header.
 MODULE_INCLUDE_EXCEPTIONS = {
+    # Version-gated 4.3 compatibility paths for the Kruskal header move.
     ("gtsam/base/kruskal-inl.h", "gtsam/inference/kruskal-inl.h"),
     ("gtsam/base/kruskal.h", "gtsam/inference/kruskal.h"),
     ("gtsam/base/numericalDerivative.h", "gtsam/nonlinear/Values.h"),
