@@ -11,6 +11,8 @@ endif()
 
 gtsamAddExamplesGlob("*.cpp" "${excluded_examples}" "gtsam_unstable" ${GTSAM_BUILD_EXAMPLES_ALWAYS})
 
+add_subdirectory(mppi)
+
 # Tests for the trajectory-example harness shared by the *ScenarioExample
 # executables above.
 add_subdirectory(scenario_harness/tests)

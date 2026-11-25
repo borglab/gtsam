@@ -1,0 +1,1105 @@
+"""Generate standalone interactive HTML explainer with embedded notebook data."""
+
+import json
+from pathlib import Path
+
+_HTML_TEMPLATE = r"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kalman Filtering and Smoothing by Elimination</title>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff;
+    --surface: #f8fafc;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --muted: #475569;
+    --blue: #3363aa;
+    --orange: #ca641e;
+    --teal: #007e73;
+    --red: #d62728;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: var(--sans);
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.5;
+  }
+  .page {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 28px 24px 56px;
+  }
+  header {
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 18px;
+    margin-bottom: 24px;
+  }
+  h1 {
+    margin: 0 0 8px;
+    font-size: 1.85rem;
+    letter-spacing: -0.02em;
+  }
+  .subtitle {
+    margin: 0 0 14px;
+    color: var(--muted);
+    max-width: 82ch;
+  }
+  .takeaways {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin: 14px 0 16px;
+  }
+  @media (max-width: 860px) {
+    .takeaways { grid-template-columns: 1fr; }
+  }
+  .takeaway {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--blue);
+    border-radius: 6px;
+    padding: 10px 13px;
+    font-size: 0.92rem;
+  }
+  .takeaway strong {
+    display: block;
+    font-size: 0.95rem;
+    margin-bottom: 2px;
+    color: var(--text);
+  }
+  .takeaway span { color: var(--muted); font-size: 0.87rem; }
+  .nav-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+  .nav-pills a {
+    text-decoration: none;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 5px 13px;
+    font-size: 0.88rem;
+  }
+  .nav-pills a:hover { border-color: var(--blue); color: var(--blue); }
+  section {
+    margin: 28px 0 38px;
+    padding-top: 8px;
+  }
+  h2 {
+    margin: 0 0 6px;
+    font-size: 1.32rem;
+    letter-spacing: -0.01em;
+  }
+  .lead {
+    margin: 0 0 14px;
+    color: var(--muted);
+    max-width: 86ch;
+    font-size: 0.96rem;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 18px;
+    align-items: center;
+    margin-bottom: 14px;
+    padding: 10px 14px;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.9rem;
+  }
+  .controls label {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+  }
+  .controls input[type="range"] { width: 135px; accent-color: var(--blue); }
+  button {
+    font-family: inherit;
+    font-size: 0.84rem;
+    font-weight: 600;
+    padding: 6px 11px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: #ffffff;
+    color: var(--text);
+    cursor: pointer;
+  }
+  button.primary {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: #ffffff;
+  }
+  button.active {
+    background: var(--text);
+    border-color: var(--text);
+    color: #ffffff;
+  }
+  .seg { display: inline-flex; }
+  .seg button { border-radius: 0; border-left: 0; }
+  .seg button:first-child { border-radius: 6px 0 0 6px; border-left: 1px solid var(--border); }
+  .seg button:last-child { border-radius: 0 6px 6px 0; }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1.3fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  .grid-eq {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    align-items: start;
+  }
+  @media (max-width: 920px) {
+    .grid-2, .grid-eq { grid-template-columns: 1fr; }
+  }
+  .plot-box {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 6px;
+    min-height: 400px;
+  }
+  .diagram-panel {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+  }
+  .diagram-panel h3 {
+    margin: 0 0 6px;
+    font-size: 0.92rem;
+    color: var(--text);
+  }
+  .stage-box {
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 8px 10px 6px;
+    margin-bottom: 10px;
+    background: #ffffff;
+    transition: border-color 0.15s, background-color 0.15s;
+  }
+  .stage-box.active {
+    border-color: var(--blue);
+    background: #f8fbff;
+  }
+  .stage-box.active-pred {
+    border-color: var(--orange);
+    background: #fffaf5;
+  }
+  .stage-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 4px;
+    display: flex;
+    justify-content: space-between;
+  }
+  .stage-box.active .stage-label { color: var(--blue); }
+  .stage-box.active-pred .stage-label { color: var(--orange); }
+  .cap {
+    margin: 6px 0 0;
+    font-size: 0.84rem;
+    color: var(--muted);
+  }
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .metric {
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+  }
+  .metric .k {
+    font-size: 0.76rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .metric .v {
+    font-family: var(--mono);
+    font-size: 0.98rem;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  th, td {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  th { background: var(--surface); font-weight: 600; }
+  tr:last-child td { border-bottom: 0; }
+  td.num, th.num { text-align: right; font-family: var(--mono); }
+  footer {
+    margin-top: 36px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 0.84rem;
+    color: var(--muted);
+  }
+  code { font-family: var(--mono); font-size: 0.88em; }
+  svg.gm { width: 100%; height: auto; display: block; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Kalman Filtering and Smoothing by Elimination</h1>
+    <p class="subtitle">
+      The Kalman filter is a staple of robotics state estimation, usually taught through matrix equations for prediction and Kalman gain, yet its structure is far more intuitive when viewed as variable elimination on a factor graph.
+      This interactive companion to <a href="https://borglab.github.io/gtsam/kalmanfilteringandsmoothing"><code>KalmanFilteringAndSmoothing.ipynb</code></a> uses the exact GTSAM and NumPy data from the notebook to show how one graphical operation unifies filtering, fixed-lag smoothing, and nonlinear estimation.
+    </p>
+    <div class="takeaways">
+      <div class="takeaway">
+        <strong>1. Kalman filter = two elimination steps</strong>
+        <span>Eliminate <i>x</i><sub>k&minus;1</sub> to form the predictive prior on <i>x</i><sub>k</sub>; eliminate <i>x</i><sub>k</sub> to fuse it with <i>z</i><sub>k</sub>.</span>
+      </div>
+      <div class="takeaway">
+        <strong>2. Fixed-lag smoother = more states kept</strong>
+        <span>Keep older Bayes-net conditionals intact, run the same two eliminations at the newest end, and drop the oldest leaf.</span>
+      </div>
+      <div class="takeaway">
+        <strong>3. Nonlinearity = linearize once or repeatedly</strong>
+        <span>Linearize factors once at the prediction (EKF), iterate on the current update (IEKF), or relinearize the active window (nonlinear FLS).</span>
+      </div>
+    </div>
+    <div class="nav-pills">
+      <a href="#kf">1. Two-Stage KF Elimination</a>
+      <a href="#fls">2. Linear Fixed-Lag Snake</a>
+      <a href="#nonlinear">3. Nonlinear EKF, IEKF &amp; FLS</a>
+      <a href="#summary">4. Summary</a>
+    </div>
+  </header>
+
+  <section id="kf">
+    <h2>1. A Kalman Filter Is Two Elimination Steps</h2>
+    <p class="lead">
+      Viewed as a factor graph, the textbook predict&ndash;update matrix equations reduce to two sequential variable-elimination steps on a two-state fragment of 2D <code>Point2</code> positions.
+      <strong>Stage 1</strong> eliminates <i>x</i><sub>k&minus;1</sub>, leaving <strong>two unary factors on <i>x</i><sub>k</sub></strong>: the predictive prior <i>p</i><sup>&minus;</sup> and the measurement <i>z</i><sub>k</sub>.
+      <strong>Stage 2</strong> eliminates <i>x</i><sub>k</sub>, fusing those two factors into the updated posterior <i>p</i>(<i>x</i><sub>k</sub> | <i>z</i><sub>1:k</sub>)&mdash;the exact Kalman gain update.
+    </p>
+    <div class="card">
+      <div class="controls">
+        <button id="kf-play" class="primary">Play</button>
+        <label>Step <i>k</i> = <span id="kf-k-val">1</span>
+          <input id="kf-k" type="range" min="1" max="12" value="1">
+        </label>
+        <div class="seg" role="group" aria-label="Elimination stage">
+          <button id="stage-0">0. Two-state graph</button>
+          <button id="stage-1">1. Eliminate x<sub>k&minus;1</sub> (Predict)</button>
+          <button id="stage-2" class="active">2. Eliminate x<sub>k</sub> (Update)</button>
+        </div>
+        <label>&sigma;<sub>q</sub> <span id="sq-val">0.09</span>
+          <input id="sq-slider" type="range" min="0.02" max="0.30" step="0.01" value="0.09">
+        </label>
+        <label>&sigma;<sub>r</sub> <span id="sr-val">0.18</span>
+          <input id="sr-slider" type="range" min="0.05" max="0.60" step="0.01" value="0.18">
+        </label>
+        <button id="kf-reset">Reset Q, R</button>
+      </div>
+      <div class="grid-2">
+        <div id="kf-plot" class="plot-box"></div>
+        <div class="diagram-panel">
+          <div id="kf-box-0" class="stage-box">
+            <div class="stage-label"><span>Stage 0: Two-state factor graph</span><span id="kf-s0-tag"></span></div>
+            <svg id="kf-fg-svg" class="gm" viewBox="0 0 360 112"></svg>
+          </div>
+          <div id="kf-box-1" class="stage-box">
+            <div class="stage-label"><span>Stage 1: Eliminate x<sub>k&minus;1</sub> &rarr; two factors on x<sub>k</sub></span><span>Predict</span></div>
+            <svg id="kf-mid-svg" class="gm" viewBox="0 0 360 102"></svg>
+          </div>
+          <div id="kf-box-2" class="stage-box">
+            <div class="stage-label"><span>Stage 2: Eliminate x<sub>k</sub> &rarr; posterior root</span><span>Update</span></div>
+            <svg id="kf-bn-svg" class="gm" viewBox="0 0 360 78"></svg>
+          </div>
+          <p id="kf-stage-cap" class="cap"></p>
+        </div>
+      </div>
+      <div class="metrics" id="kf-metrics"></div>
+    </div>
+  </section>
+
+  <section id="fls">
+    <h2>2. A Fixed-Lag Smoother Just Keeps More States</h2>
+    <p class="lead">
+      Extending a Kalman filter to a fixed-lag smoother requires no new matrix derivations&mdash;only keeping a longer chain Bayes net before dropping the oldest leaf.
+      In steady state, <strong>Stage 0</strong> liquifies only the newest root <i>p</i>(<i>x</i><sub>k&minus;1</sub>) into a factor and attaches <i>u</i> and <i>z</i><sub>k</sub>; <strong>Stage 1</strong> eliminates <i>x</i><sub>k&minus;1</sub> (leaving <i>p</i><sup>&minus;</sup> and <i>z</i><sub>k</sub> on <i>x</i><sub>k</sub>); and <strong>Stage 2</strong> eliminates <i>x</i><sub>k</sub> to update the root and drops the oldest leaf <i>x</i><sub>k&minus;4</sub>.
+    </p>
+    <div class="card">
+      <div class="controls">
+        <button id="fls-play" class="primary">Play</button>
+        <label>Step <i>k</i> = <span id="fls-k-val">6</span>
+          <input id="fls-k" type="range" min="4" max="24" value="6">
+        </label>
+        <div class="seg" role="group" aria-label="FLS stage">
+          <button id="fls-stage-0">0. Liquify root + add x<sub>k</sub></button>
+          <button id="fls-stage-1">1. Eliminate x<sub>k&minus;1</sub> (Predict)</button>
+          <button id="fls-stage-2" class="active">2. Eliminate x<sub>k</sub> &amp; drop leaf</button>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div id="fls-plot" class="plot-box"></div>
+        <div class="diagram-panel">
+          <div id="fls-box-0" class="stage-box">
+            <div class="stage-label"><span id="fls-s0-title">Stage 0: Keep Bayes net; liquify root &amp; add u, z<sub>k</sub></span><span>Liquify</span></div>
+            <svg id="fls-s0-svg" class="gm" viewBox="0 0 430 112"></svg>
+          </div>
+          <div id="fls-box-1" class="stage-box">
+            <div class="stage-label"><span id="fls-s1-title">Stage 1: Eliminate x<sub>k&minus;1</sub> &rarr; two factors on x<sub>k</sub></span><span>Predict</span></div>
+            <svg id="fls-fg-svg" class="gm" viewBox="0 0 430 112"></svg>
+          </div>
+          <div id="fls-box-2" class="stage-box">
+            <div class="stage-label"><span id="fls-s2-title">Stage 2: Eliminate x<sub>k</sub> &rarr; update root &amp; drop oldest leaf</span><span>Update + Drop</span></div>
+            <svg id="fls-bn-svg" class="gm" viewBox="0 0 430 74"></svg>
+          </div>
+          <p id="fls-stage-cap" class="cap"></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="nonlinear">
+    <h2>3. Nonlinearity: Linearize Factors Once or Several Times</h2>
+    <p class="lead">
+      Real robotics sensors such as range beacons are nonlinear, so the factor graph must be linearized around an operating point before elimination.
+      An <strong>EKF</strong> linearizes each range factor once at the predicted mean, an <strong>Iterated EKF</strong> relinearizes it several times against that same prediction, and GTSAM's <strong>Batch / Incremental Fixed-Lag Smoothers</strong> relinearize both motion and range factors together across the 4-state window.
+    </p>
+    <div class="card">
+      <div class="controls">
+        <button id="nl-play" class="primary">Play Trajectory</button>
+        <label>Step <i>k</i> = <span id="nl-k-val">48</span>
+          <input id="nl-k" type="range" min="1" max="48" value="48">
+        </label>
+        <span style="width: 1px; height: 22px; background: var(--border);"></span>
+        <button id="iekf-play" class="primary">Play Step 1</button>
+        <label>Gauss&ndash;Newton iteration = <span id="iekf-it-val">1</span>
+          <input id="iekf-it" type="range" min="0" max="7" value="1">
+        </label>
+        <span id="iekf-status" style="color: var(--muted); font-family: var(--mono); font-size: 0.85rem;"></span>
+      </div>
+      <div class="grid-eq">
+        <div id="nl-traj-plot" class="plot-box"></div>
+        <div id="nl-step1-plot" class="plot-box"></div>
+      </div>
+      <div style="margin-top: 14px;">
+        <table id="nl-rmse-table">
+          <thead>
+            <tr>
+              <th>Estimator</th>
+              <th class="num">First 8 steps RMSE (m)</th>
+              <th class="num">All steps RMSE (m)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="summary">
+    <h2>4. What Changes Across Estimators</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Estimator</th>
+          <th>States kept after update</th>
+          <th>How factors are handled</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Kalman filter</td>
+          <td>1 state (<i>x</i><sub>k</sub>)</td>
+          <td>Two exact elimination steps: eliminate <i>x</i><sub>k&minus;1</sub> (predict), then eliminate <i>x</i><sub>k</sub> (update)</td>
+        </tr>
+        <tr>
+          <td>Linear fixed-lag smoother</td>
+          <td><i>L</i> + 1 states</td>
+          <td>Keep older Bayes net conditionals; liquify only the newest root, run the same two eliminations at the end, and drop the oldest leaf</td>
+        </tr>
+        <tr>
+          <td>EKF / Iterated EKF</td>
+          <td>1 state (<i>x</i><sub>k</sub>)</td>
+          <td>Linearize nonlinear measurement once (EKF) or repeatedly (IEKF) against the fixed prediction</td>
+        </tr>
+        <tr>
+          <td>Nonlinear fixed-lag smoother</td>
+          <td><i>L</i> + 1 states</td>
+          <td>Relinearize active motion and measurement factors together; summarize expired states at the window boundary</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    Data payload embedded directly from <code>KalmanFilteringAndSmoothing.ipynb</code>.
+    Interactive charts load Plotly 2.35.2 from CDN and require an internet connection.
+  </footer>
+</div>
+
+<script id="kalman-data" type="application/json">__PAYLOAD__</script>
+<script>
+const D = JSON.parse(document.getElementById("kalman-data").textContent);
+
+const CONFIDENCE_95_2D = Math.sqrt(5.991464547107979); // sqrt(chi2_{2, 0.95})
+
+function ellipsePoints(mean, cov, scale = CONFIDENCE_95_2D, n = 60) {
+  const l00 = Math.sqrt(Math.max(cov[0][0], 1e-12));
+  const l10 = cov[1][0] / l00;
+  const l11 = Math.sqrt(Math.max(cov[1][1] - l10 * l10, 1e-12));
+  const xs = [], ys = [];
+  for (let i = 0; i <= n; i++) {
+    const a = (2 * Math.PI * i) / n;
+    const ca = Math.cos(a), sa = Math.sin(a);
+    xs.push(mean[0] + scale * (l00 * ca));
+    ys.push(mean[1] + scale * (l10 * ca + l11 * sa));
+  }
+  return { x: xs, y: ys };
+}
+
+function runLinearKF(sq, sr) {
+  const N = D.linear.truth.length;
+  const u = D.linear.u;
+  const q = sq * sq, r = sr * sr;
+  let m = [...D.linear.m0];
+  let P = D.linear.P0.map(row => [...row]);
+  const means = [m], covs = [P], pMeans = [null], pCovs = [null], gains = [null];
+  for (let k = 1; k < N; k++) {
+    const mp = [m[0] + u[0], m[1] + u[1]];
+    const Pp = [[P[0][0] + q, P[0][1]], [P[1][0], P[1][1] + q]];
+    pMeans.push(mp);
+    pCovs.push(Pp);
+    const s00 = Pp[0][0] + r, s01 = Pp[0][1], s11 = Pp[1][1] + r;
+    const det = s00 * s11 - s01 * s01;
+    const inv00 = s11 / det, inv01 = -s01 / det, inv11 = s00 / det;
+    const K = [
+      [Pp[0][0] * inv00 + Pp[0][1] * inv01, Pp[0][0] * inv01 + Pp[0][1] * inv11],
+      [Pp[1][0] * inv00 + Pp[1][1] * inv01, Pp[1][0] * inv01 + Pp[1][1] * inv11],
+    ];
+    const z = D.linear.measurements[k];
+    const inn = [z[0] - mp[0], z[1] - mp[1]];
+    m = [mp[0] + K[0][0] * inn[0] + K[0][1] * inn[1], mp[1] + K[1][0] * inn[0] + K[1][1] * inn[1]];
+    const I_K = [[1 - K[0][0], -K[0][1]], [-K[1][0], 1 - K[1][1]]];
+    P = [
+      [I_K[0][0] * Pp[0][0] + I_K[0][1] * Pp[1][0], I_K[0][0] * Pp[0][1] + I_K[0][1] * Pp[1][1]],
+      [I_K[1][0] * Pp[0][0] + I_K[1][1] * Pp[1][0], I_K[1][0] * Pp[0][1] + I_K[1][1] * Pp[1][1]],
+    ];
+    means.push(m);
+    covs.push(P);
+    gains.push(K);
+  }
+  return { means, covs, pMeans, pCovs, gains };
+}
+
+function drawKfStages(k, stage) {
+  document.getElementById("kf-box-0").className = "stage-box" + (stage === 0 ? " active" : "");
+  document.getElementById("kf-box-1").className = "stage-box" + (stage === 1 ? " active-pred" : "");
+  document.getElementById("kf-box-2").className = "stage-box" + (stage === 2 ? " active" : "");
+
+  // Stage 0: Full 2-state factor graph
+  document.getElementById("kf-fg-svg").innerHTML = `
+    <line x1="95" y1="78" x2="95" y2="30" stroke="#1f2933" stroke-width="1.8"/>
+    <line x1="95" y1="78" x2="265" y2="78" stroke="#1f2933" stroke-width="1.8"/>
+    <line x1="265" y1="78" x2="265" y2="30" stroke="#1f2933" stroke-width="1.8"/>
+    <rect x="88" y="23" width="14" height="14" fill="#111827"/>
+    <rect x="173" y="71" width="14" height="14" fill="#111827"/>
+    <rect x="258" y="23" width="14" height="14" fill="#111827"/>
+    <text x="95" y="16" text-anchor="middle" font-size="12" font-style="italic">p</text>
+    <text x="180" y="64" text-anchor="middle" font-size="12" font-style="italic">u</text>
+    <text x="265" y="16" text-anchor="middle" font-size="12" font-style="italic">z<tspan dy="3" font-size="9" font-style="normal">${k}</tspan></text>
+    <circle cx="95" cy="78" r="20" fill="#ffffff" stroke="#1f2933" stroke-width="2"/>
+    <circle cx="265" cy="78" r="20" fill="#ffffff" stroke="#1f2933" stroke-width="2"/>
+    <text x="95" y="82" text-anchor="middle" font-size="13" font-style="italic">x<tspan dy="3" font-size="9" font-style="normal">${k - 1}</tspan></text>
+    <text x="265" y="82" text-anchor="middle" font-size="13" font-style="italic">x<tspan dy="3" font-size="9" font-style="normal">${k}</tspan></text>
+  `;
+
+  // Stage 1: After eliminating x_{k-1} -> conditional p(x_{k-1}|x_k) + TWO unary factors on x_k (p^- and z_k)
+  document.getElementById("kf-mid-svg").innerHTML = `
+    <defs><marker id="arr-m" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 10 5 L 0 9 z" fill="#1f2933"/></marker></defs>
+    <line x1="242" y1="68" x2="118" y2="68" stroke="#1f2933" stroke-width="2.2" marker-end="url(#arr-m)"/>
+    <line x1="265" y1="68" x2="215" y2="28" stroke="#ca641e" stroke-width="2.2"/>
+    <line x1="265" y1="68" x2="315" y2="28" stroke="#1f2933" stroke-width="1.8"/>
+    <rect x="208" y="21" width="14" height="14" fill="#ca641e"/>
+    <rect x="308" y="21" width="14" height="14" fill="#111827"/>
+    <text x="215" y="15" text-anchor="middle" font-size="12" font-style="italic" fill="#ca641e">p<tspan dy="-4" font-size="9" font-style="normal">&minus;</tspan></text>
+    <text x="315" y="15" text-anchor="middle" font-size="12" font-style="italic">z<tspan dy="3" font-size="9" font-style="normal">${k}</tspan></text>
+    <circle cx="95" cy="68" r="20" fill="#ffffff" stroke="#1f2933" stroke-width="2.3"/>
+    <circle cx="265" cy="68" r="20" fill="#fff7ed" stroke="#ca641e" stroke-width="2.3"/>
+    <text x="95" y="72" text-anchor="middle" font-size="13" font-style="italic" font-weight="600" fill="#0f172a">x<tspan dy="3" font-size="9" font-style="normal">${k - 1}</tspan></text>
+    <text x="265" y="72" text-anchor="middle" font-size="13" font-style="italic">x<tspan dy="3" font-size="9" font-style="normal">${k}</tspan></text>
+    <text x="95" y="98" text-anchor="middle" font-size="10" fill="#0f172a">p(x${k - 1} | x${k})</text>
+    <text x="265" y="98" text-anchor="middle" font-size="10" fill="#ca641e">2 factors on x${k}</text>
+  `;
+
+  // Stage 2: After eliminating x_k -> completed 2-node Bayes net with posterior root p(x_k | z_{1:k}); x_{k-1} conditional dropped
+  document.getElementById("kf-bn-svg").innerHTML = `
+    <defs><marker id="arr-b" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 10 5 L 0 9 z" fill="#94a3b8"/></marker></defs>
+    <line x1="242" y1="32" x2="118" y2="32" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="4,3" marker-end="url(#arr-b)"/>
+    <circle cx="95" cy="32" r="19" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.6" stroke-dasharray="4,3"/>
+    <circle cx="265" cy="32" r="20" fill="#eff6ff" stroke="#3363aa" stroke-width="2.4"/>
+    <text x="95" y="36" text-anchor="middle" font-size="13" font-style="italic" fill="#64748b">x<tspan dy="3" font-size="9" font-style="normal">${k - 1}</tspan></text>
+    <text x="265" y="36" text-anchor="middle" font-size="13" font-style="italic">x<tspan dy="3" font-size="9" font-style="normal">${k}</tspan></text>
+    <text x="95" y="68" text-anchor="middle" font-size="10.5" fill="#64748b">p(x${k - 1} | x${k}) dropped</text>
+    <text x="265" y="68" text-anchor="middle" font-size="10.5" fill="#3363aa">p(x${k} | z1:${k}) posterior</text>
+  `;
+
+  const caps = [
+    `Stage 0: Start with prior p on x${k - 1}, motion factor u, and measurement z${k} on x${k}.`,
+    `Stage 1 (Predict): Eliminating x${k - 1} extracts p(x${k - 1} | x${k}) and leaves two unary factors on x${k}: predictive prior p⁻ (orange) and measurement z${k}.`,
+    `Stage 2 (Update): Eliminating x${k} fuses p⁻ and z${k} into the posterior density p(x${k} | z1:${k})—identical to the Kalman gain update.`,
+  ];
+  document.getElementById("kf-stage-cap").textContent = caps[stage];
+}
+
+// Section 1 state
+let kfStage = 2;
+let kfTimer = null;
+const kfKInput = document.getElementById("kf-k");
+const sqInput = document.getElementById("sq-slider");
+const srInput = document.getElementById("sr-slider");
+
+function setKfStage(s) {
+  kfStage = s;
+  [0, 1, 2].forEach(i => {
+    document.getElementById(`stage-${i}`).classList.toggle("active", i === s);
+  });
+  renderKF();
+}
+
+function renderKF() {
+  const k = parseInt(kfKInput.value, 10);
+  const sq = parseFloat(sqInput.value);
+  const sr = parseFloat(srInput.value);
+  document.getElementById("kf-k-val").textContent = k;
+  document.getElementById("sq-val").textContent = sq.toFixed(2);
+  document.getElementById("sr-val").textContent = sr.toFixed(2);
+  const isDefault = Math.abs(sq - D.linear.sigma_q) < 1e-6 && Math.abs(sr - D.linear.sigma_r) < 1e-6;
+  const sim = runLinearKF(sq, sr);
+
+  const nVis = Math.max(k + 1, 7);
+  const traces = [
+    {
+      x: D.linear.truth.slice(0, nVis).map(p => p[0]),
+      y: D.linear.truth.slice(0, nVis).map(p => p[1]),
+      mode: "lines+markers",
+      name: "Ground truth",
+      marker: { size: 5 },
+      line: { color: "#263544", dash: "dot" },
+    },
+    {
+      x: D.linear.measurements.slice(1, k + 1).map(p => p[0]),
+      y: D.linear.measurements.slice(1, k + 1).map(p => p[1]),
+      mode: "markers",
+      name: "Measurements",
+      marker: { color: "#d62728", size: 7, symbol: "x" },
+    },
+  ];
+
+  // Prior / past posteriors up to k-1
+  const tx = [], ty = [];
+  for (let j = 0; j < k; j++) {
+    const e = ellipsePoints(sim.means[j], sim.covs[j]);
+    tx.push(...e.x, null);
+    ty.push(...e.y, null);
+  }
+  traces.push({
+    x: tx, y: ty, mode: "lines", name: "Prior / past (95%)",
+    line: { color: "#94a3b8", width: 1.4, dash: "dot" },
+  });
+
+  if (kfStage >= 1) {
+    const pe = ellipsePoints(sim.pMeans[k], sim.pCovs[k]);
+    traces.push({
+      x: pe.x, y: pe.y, mode: "lines", name: "Predictive p⁻ (95%)",
+      line: { color: "#ca641e", width: 2.2, dash: "dash" },
+    });
+    traces.push({
+      x: [sim.pMeans[k][0]], y: [sim.pMeans[k][1]], mode: "markers",
+      name: "Predicted mean", showlegend: false,
+      marker: { color: "#ca641e", size: 8, symbol: "circle-open", line: { width: 2 } },
+    });
+  }
+
+  if (kfStage === 2) {
+    const qe = ellipsePoints(sim.means[k], sim.covs[k]);
+    traces.push({
+      x: qe.x, y: qe.y, mode: "lines", fill: "toself",
+      fillcolor: "rgba(51, 99, 170, 0.14)",
+      name: "Posterior (95%)", line: { color: "#3363aa", width: 2.4 },
+    });
+    traces.push({
+      x: sim.means.slice(0, k + 1).map(p => p[0]),
+      y: sim.means.slice(0, k + 1).map(p => p[1]),
+      mode: "lines+markers", name: "Posterior path", showlegend: false,
+      marker: { color: "#3363aa", size: 6 }, line: { color: "#3363aa", width: 1.6 },
+    });
+  }
+
+  Plotly.react("kf-plot", traces, {
+    margin: { l: 48, r: 16, t: 18, b: 44 },
+    xaxis: { title: "x (m)", range: [-0.8, 2.8] },
+    yaxis: { title: "y (m)", range: [-0.8, 1.8], scaleanchor: "x", scaleratio: 1 },
+    template: "plotly_white",
+    legend: { orientation: "h", y: -0.2 },
+    height: 410,
+  }, { displayModeBar: false });
+
+  drawKfStages(k, kfStage);
+
+  const K = sim.gains[k];
+  const rmsPred = Math.sqrt(sim.pCovs[k][0][0] + sim.pCovs[k][1][1]);
+  const rmsPost = Math.sqrt(sim.covs[k][0][0] + sim.covs[k][1][1]);
+  document.getElementById("kf-metrics").innerHTML = `
+    <div class="metric"><div class="k">Kalman gain diag(K<sub>${k}</sub>)</div><div class="v">${K[0][0].toFixed(3)}</div></div>
+    <div class="metric"><div class="k">Stage 1: Predict RMS &sigma;</div><div class="v">${rmsPred.toFixed(3)} m</div></div>
+    <div class="metric"><div class="k">Stage 2: Update RMS &sigma;</div><div class="v">${rmsPost.toFixed(3)} m</div></div>
+    <div class="metric"><div class="k">GTSAM vs KF max diff</div><div class="v">${isDefault ? D.linear.max_mean_diff.toExponential(2) : "custom Q, R"}</div></div>
+  `;
+}
+
+document.getElementById("stage-0").onclick = () => setKfStage(0);
+document.getElementById("stage-1").onclick = () => setKfStage(1);
+document.getElementById("stage-2").onclick = () => setKfStage(2);
+kfKInput.oninput = renderKF;
+sqInput.oninput = renderKF;
+srInput.oninput = renderKF;
+document.getElementById("kf-reset").onclick = () => {
+  sqInput.value = D.linear.sigma_q;
+  srInput.value = D.linear.sigma_r;
+  renderKF();
+};
+document.getElementById("kf-play").onclick = (e) => {
+  if (kfTimer) {
+    clearInterval(kfTimer); kfTimer = null; e.target.textContent = "Play"; return;
+  }
+  e.target.textContent = "Pause";
+  kfTimer = setInterval(() => {
+    if (kfStage < 2) {
+      setKfStage(kfStage + 1);
+    } else {
+      const next = parseInt(kfKInput.value, 10) + 1;
+      kfKInput.value = next > 12 ? 1 : next;
+      setKfStage(1);
+    }
+  }, 850);
+};
+
+// Section 2: Fixed-lag marginals snake (same 3-stage progression as KF)
+let flsStage = 2;
+let flsTimer = null;
+const flsKInput = document.getElementById("fls-k");
+
+function setFlsStage(s) {
+  flsStage = s;
+  [0, 1, 2].forEach(i => {
+    document.getElementById(`fls-stage-${i}`).classList.toggle("active", i === s);
+  });
+  renderFLS();
+}
+
+function drawFlsDiagrams(indices, stage) {
+  const dropped = indices[0] - 1;
+  const kPrev = indices[indices.length - 2];
+  const kCurr = indices[indices.length - 1];
+  const allIdx = [dropped, ...indices]; // 5 nodes: x_{k-4}, x_{k-3}, x_{k-2}, x_{k-1}, x_k
+  const xs5 = [40, 128, 216, 304, 392];
+
+  document.getElementById("fls-box-0").className = "stage-box" + (stage === 0 ? " active" : "");
+  document.getElementById("fls-box-1").className = "stage-box" + (stage === 1 ? " active-pred" : "");
+  document.getElementById("fls-box-2").className = "stage-box" + (stage === 2 ? " active" : "");
+  document.getElementById("fls-s0-title").innerHTML =
+    `Stage 0: Keep Bayes net; liquify root p(x<sub>${kPrev}</sub>) &amp; add u, z<sub>${kCurr}</sub>`;
+  document.getElementById("fls-s1-title").innerHTML =
+    `Stage 1: Eliminate x<sub>${kPrev}</sub> &rarr; two factors on x<sub>${kCurr}</sub>`;
+  document.getElementById("fls-s2-title").innerHTML =
+    `Stage 2: Eliminate x<sub>${kCurr}</sub> &rarr; update root &amp; drop leaf x<sub>${dropped}</sub>`;
+
+  // Stage 0: Untouched Bayes net chain x_{k-4} <- x_{k-3} <- x_{k-2} <- x_{k-1},
+  // with ONLY root p(x_{k-1}) liquified into unary factor p + motion u + measurement z_k on x_k!
+  let e0 = `<defs><marker id="arr-s0" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 10 5 L 0 9 z" fill="#1f2933"/></marker></defs>`;
+  let q0 = "", n0 = "";
+  for (let i = 0; i < 3; i++) {
+    e0 += `<line x1="${xs5[i + 1] - 20}" y1="78" x2="${xs5[i] + 22}" y2="78" stroke="#1f2933" stroke-width="1.8" marker-end="url(#arr-s0)"/>`;
+  }
+  // Liquified factor p on x_{k-1}, motion u between x_{k-1} and x_k, measurement z_k on x_k
+  e0 += `<line x1="${xs5[3]}" y1="78" x2="${xs5[3]}" y2="28" stroke="#1f2933" stroke-width="1.7"/>`;
+  e0 += `<line x1="${xs5[3]}" y1="78" x2="${xs5[4]}" y2="78" stroke="#1f2933" stroke-width="1.8"/>`;
+  e0 += `<line x1="${xs5[4]}" y1="78" x2="${xs5[4]}" y2="28" stroke="#1f2933" stroke-width="1.7"/>`;
+  q0 += `<rect x="${xs5[3] - 6}" y="22" width="12" height="12" fill="#111827"/>`;
+  q0 += `<rect x="${(xs5[3] + xs5[4]) / 2 - 5}" y="73" width="10" height="10" fill="#111827"/>`;
+  q0 += `<rect x="${xs5[4] - 6}" y="22" width="12" height="12" fill="#111827"/>`;
+  n0 += `<text x="${xs5[3]}" y="15" text-anchor="middle" font-size="11.5" font-style="italic">p</text>`;
+  n0 += `<text x="${(xs5[3] + xs5[4]) / 2}" y="100" text-anchor="middle" font-size="11" font-style="italic">u</text>`;
+  n0 += `<text x="${xs5[4]}" y="15" text-anchor="middle" font-size="11.5" font-style="italic">z<tspan dy="3" font-size="8.5" font-style="normal">${kCurr}</tspan></text>`;
+  for (let i = 0; i < 5; i++) {
+    const x = xs5[i], idx = allIdx[i];
+    const inActivePair = i >= 3;
+    n0 += `<circle cx="${x}" cy="78" r="18" fill="${inActivePair ? "#ffffff" : "#f8fafc"}" stroke="#1f2933" stroke-width="${inActivePair ? 2.1 : 1.7}"/>`;
+    n0 += `<text x="${x}" y="82" text-anchor="middle" font-size="12" font-style="italic">x<tspan dy="3" font-size="8.5" font-style="normal">${idx}</tspan></text>`;
+  }
+  document.getElementById("fls-s0-svg").innerHTML = e0 + q0 + n0;
+
+  // Stage 1: Eliminate x_{k-1} ONLY -> chain extends with bold x_{k-1} <- x_k + TWO unary factors on x_k (p^- and z_k)
+  let e1 = `<defs><marker id="arr-s1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 10 5 L 0 9 z" fill="#1f2933"/></marker></defs>`;
+  let q1 = "", n1 = "";
+  for (let i = 0; i < 4; i++) {
+    const bold = i === 3;
+    e1 += `<line x1="${xs5[i + 1] - 20}" y1="78" x2="${xs5[i] + 22}" y2="78" stroke="#1f2933" stroke-width="${bold ? 2.3 : 1.7}" marker-end="url(#arr-s1)"/>`;
+  }
+  // Two unary factors on x_k: orange p^- and black z_k
+  e1 += `<line x1="${xs5[4]}" y1="78" x2="${xs5[4] - 22}" y2="28" stroke="#ca641e" stroke-width="2.1"/>`;
+  e1 += `<line x1="${xs5[4]}" y1="78" x2="${xs5[4] + 22}" y2="28" stroke="#1f2933" stroke-width="1.7"/>`;
+  q1 += `<rect x="${xs5[4] - 28}" y="22" width="12" height="12" fill="#ca641e"/>`;
+  q1 += `<rect x="${xs5[4] + 16}" y="22" width="12" height="12" fill="#111827"/>`;
+  n1 += `<text x="${xs5[4] - 22}" y="15" text-anchor="middle" font-size="11.5" font-style="italic" fill="#ca641e">p<tspan dy="-3" font-size="8.5" font-style="normal">&minus;</tspan></text>`;
+  n1 += `<text x="${xs5[4] + 22}" y="15" text-anchor="middle" font-size="11.5" font-style="italic">z<tspan dy="3" font-size="8.5" font-style="normal">${kCurr}</tspan></text>`;
+  for (let i = 0; i < 5; i++) {
+    const x = xs5[i], idx = allIdx[i];
+    const isHead = i === 4;
+    const isElim = i === 3;
+    const stroke = isHead ? "#ca641e" : "#1f2933";
+    const fill = isHead ? "#fff7ed" : "#ffffff";
+    n1 += `<circle cx="${x}" cy="78" r="18" fill="${fill}" stroke="${stroke}" stroke-width="${isHead || isElim ? 2.3 : 1.7}"/>`;
+    n1 += `<text x="${x}" y="82" text-anchor="middle" font-size="12" font-style="italic" font-weight="${isElim ? 600 : 400}">x<tspan dy="3" font-size="8.5" font-style="normal">${idx}</tspan></text>`;
+  }
+  document.getElementById("fls-fg-svg").innerHTML = e1 + q1 + n1;
+
+  // Stage 2: Eliminate x_k -> posterior root p(x_k) + marginalize by simply dropping the oldest leaf x_{k-4}
+  let b = `<defs><marker id="arr2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M 0 1 L 10 5 L 0 9 z" fill="#1f2933"/></marker><marker id="arr-drop" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 1 L 10 5 L 0 9 z" fill="#94a3b8"/></marker></defs>`;
+  b += `<line x1="${xs5[1] - 20}" y1="32" x2="${xs5[0] + 22}" y2="32" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arr-drop)"/>`;
+  b += `<circle cx="${xs5[0]}" cy="32" r="17" fill="#f8fafc" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+  b += `<text x="${xs5[0]}" y="36" text-anchor="middle" font-size="11.5" font-style="italic" fill="#64748b">x<tspan dy="3" font-size="8.5" font-style="normal">${dropped}</tspan></text>`;
+  for (let i = 0; i < indices.length; i++) {
+    const x = xs5[i + 1], idx = indices[i];
+    const isHead = i === indices.length - 1;
+    if (i > 0) {
+      b += `<line x1="${x - 20}" y1="32" x2="${xs5[i] + 22}" y2="32" stroke="#1f2933" stroke-width="1.8" marker-end="url(#arr2)"/>`;
+    }
+    b += `<circle cx="${x}" cy="32" r="18" fill="${isHead ? "#eff6ff" : "#ffffff"}" stroke="${isHead ? "#3363aa" : "#1f2933"}" stroke-width="${isHead ? 2.4 : 1.8}"/>`;
+    b += `<text x="${x}" y="36" text-anchor="middle" font-size="12" font-style="italic">x<tspan dy="3" font-size="8.5" font-style="normal">${idx}</tspan></text>`;
+  }
+  b += `<text x="${xs5[0]}" y="66" text-anchor="middle" font-size="10" fill="#64748b">leaf dropped</text>`;
+  b += `<text x="${xs5[4]}" y="66" text-anchor="middle" font-size="10" fill="#3363aa">posterior root</text>`;
+  b += `<text x="${xs5[2]}" y="66" text-anchor="middle" font-size="10" fill="#475569">untouched conditionals</text>`;
+  document.getElementById("fls-bn-svg").innerHTML = b;
+
+  const caps = [
+    `Stage 0: Keep the existing Bayes net conditionals; liquify only the root p(x${kPrev}) into factor p and attach u and z${kCurr}.`,
+    `Stage 1 (Predict): Eliminate x${kPrev} only—this extends the chain with p(x${kPrev} | x${kCurr}) and leaves p⁻ and z${kCurr} on x${kCurr}.`,
+    `Stage 2 (Update + Drop): Eliminate x${kCurr} to fuse p⁻ and z${kCurr} into the new root, then drop the oldest leaf x${dropped}.`,
+  ];
+  document.getElementById("fls-stage-cap").textContent = caps[stage];
+}
+
+function renderFLS() {
+  const k = parseInt(flsKInput.value, 10);
+  document.getElementById("fls-k-val").textContent = k;
+  const snap = D.fls.snapshots[String(k)];
+  const indices = snap.indices, means = snap.means, covs = snap.covs;
+  const first = indices[0];
+
+  const traces = [
+    {
+      x: D.linear.truth.slice(0, k + 2).map(p => p[0]),
+      y: D.linear.truth.slice(0, k + 2).map(p => p[1]),
+      mode: "lines", name: "Ground truth",
+      line: { color: "#263544", dash: "dot", width: 1.5 },
+    },
+    {
+      x: D.linear.measurements.slice(1, k + 1).map(p => p[0]),
+      y: D.linear.measurements.slice(1, k + 1).map(p => p[1]),
+      mode: "markers", name: "Measurements (≤ k)",
+      marker: { color: "#d62728", size: 6, symbol: "x" },
+    },
+  ];
+
+  if (first > 0) {
+    const ox = [], oy = [];
+    for (let j = 0; j < first; j++) {
+      const e = ellipsePoints(D.fls.lagged[j], D.fls.lagged_cov[j]);
+      ox.push(...e.x, null); oy.push(...e.y, null);
+    }
+    traces.push({
+      x: ox, y: oy, mode: "lines", name: "Marginalized (95%)",
+      line: { color: "#94a3b8", dash: "dot", width: 1.3 },
+    });
+    traces.push({
+      x: D.fls.lagged.slice(0, first).map(p => p[0]),
+      y: D.fls.lagged.slice(0, first).map(p => p[1]),
+      mode: "markers", showlegend: false,
+      marker: { color: "#94a3b8", size: 5 },
+    });
+  }
+
+  const sx = [], sy = [];
+  for (let i = 0; i < indices.length; i++) {
+    const e = ellipsePoints(means[i], covs[i]);
+    sx.push(...e.x, null); sy.push(...e.y, null);
+  }
+  traces.push({
+    x: sx, y: sy, mode: "lines", fill: "toself",
+    fillcolor: "rgba(51, 99, 170, 0.14)", name: "Active window (95%)",
+    line: { color: "#3363aa", width: 2.0 },
+  });
+  traces.push({
+    x: means.map(p => p[0]), y: means.map(p => p[1]),
+    text: indices.map(j => `x${j}`), textposition: "top center",
+    mode: "lines+markers+text", showlegend: false,
+    marker: { color: "#3363aa", size: 6 }, line: { color: "#3363aa", width: 2.0 },
+  });
+
+  const he = ellipsePoints(means[means.length - 1], covs[covs.length - 1]);
+  traces.push({
+    x: he.x, y: he.y, mode: "lines", name: `Head x${k} (95%)`,
+    line: { color: "#ca641e", width: 2.4 },
+  });
+
+  const cx = means[means.length - 1][0], cy = means[means.length - 1][1];
+  Plotly.react("fls-plot", traces, {
+    margin: { l: 48, r: 16, t: 18, b: 44 },
+    xaxis: { title: "x (m)", range: [cx - 2.0, cx + 0.9] },
+    yaxis: { title: "y (m)", range: [cy - 1.1, cy + 1.1], scaleanchor: "x", scaleratio: 1 },
+    template: "plotly_white",
+    legend: { orientation: "h", y: -0.2 },
+    height: 410,
+  }, { displayModeBar: false });
+
+  drawFlsDiagrams(indices, flsStage);
+}
+
+document.getElementById("fls-stage-0").onclick = () => setFlsStage(0);
+document.getElementById("fls-stage-1").onclick = () => setFlsStage(1);
+document.getElementById("fls-stage-2").onclick = () => setFlsStage(2);
+flsKInput.oninput = renderFLS;
+document.getElementById("fls-play").onclick = (e) => {
+  if (flsTimer) {
+    clearInterval(flsTimer); flsTimer = null; e.target.textContent = "Play"; return;
+  }
+  e.target.textContent = "Pause";
+  flsTimer = setInterval(() => {
+    if (flsStage < 2) {
+      setFlsStage(flsStage + 1);
+    } else {
+      const next = parseInt(flsKInput.value, 10) + 1;
+      flsKInput.value = next > 24 ? 4 : next;
+      setFlsStage(1);
+    }
+  }, 850);
+};
+
+// Section 3: Nonlinear EKF, IEKF, Fixed-Lag Smoothers
+let nlTimer = null;
+let iekfTimer = null;
+const nlKInput = document.getElementById("nl-k");
+const iekfInput = document.getElementById("iekf-it");
+nlKInput.max = D.nonlinear.truth.length - 1;
+nlKInput.value = D.nonlinear.truth.length - 1;
+iekfInput.max = D.nonlinear.first_trace.length - 1;
+
+const _nlAllX = [
+  ...D.nonlinear.truth.map(p => p[0]),
+  ...D.nonlinear.ekf.map(p => p[0]),
+  ...D.nonlinear.beacons.map(b => b[0]),
+];
+const _nlAllY = [
+  ...D.nonlinear.truth.map(p => p[1]),
+  ...D.nonlinear.ekf.map(p => p[1]),
+  ...D.nonlinear.beacons.map(b => b[1]),
+];
+const _nlXRange = [Math.min(..._nlAllX) - 0.8, Math.max(..._nlAllX) + 0.8];
+const _nlYRange = [Math.min(..._nlAllY) - 0.8, Math.max(..._nlAllY) + 0.8];
+
+function renderNonlinearTable() {
+  const tbody = document.querySelector("#nl-rmse-table tbody");
+  tbody.innerHTML = D.nonlinear.rmse_rows.map(r => `
+    <tr>
+      <td>${r.label}</td>
+      <td class="num">${r.first8.toFixed(3)}</td>
+      <td class="num">${r.all.toFixed(3)}</td>
+    </tr>
+  `).join("");
+}
+
+function renderNonlinearTraj() {
+  const nl = D.nonlinear;
+  const k = parseInt(nlKInput.value, 10);
+  document.getElementById("nl-k-val").textContent = k;
+  const n = k + 1;
+
+  const series = [
+    { name: "Truth", data: nl.truth, color: "#263544", dash: "dot", width: 2 },
+    { name: "Dead reckoning", data: nl.dead_reckoning, color: "#94a3b8", dash: "dash", width: 1.5, visible: "legendonly" },
+    { name: "EKF", data: nl.ekf, color: "#ca641e", width: 2 },
+    { name: "Iterated EKF", data: nl.iekf, color: "#e09f3e", width: 2 },
+    { name: `Batch FLS (${D.fls.lag + 1} states)`, data: nl.batch_fls, color: "#3363aa", width: 2.3 },
+    { name: `Incremental FLS (${D.fls.lag + 1} states)`, data: nl.inc_fls, color: "#007e73", width: 2 },
+  ];
+
+  const traces = [];
+  for (const s of series) {
+    traces.push({
+      x: s.data.slice(0, n).map(p => p[0]),
+      y: s.data.slice(0, n).map(p => p[1]),
+      mode: "lines",
+      name: s.name,
+      legendgroup: s.name,
+      visible: s.visible || true,
+      line: { color: s.color, dash: s.dash || "solid", width: s.width },
+    });
+    traces.push({
+      x: [s.data[k][0]],
+      y: [s.data[k][1]],
+      mode: "markers",
+      name: s.name,
+      legendgroup: s.name,
+      showlegend: false,
+      visible: s.visible || true,
+      marker: { color: s.color, size: 7 },
+    });
+  }
+  traces.push({
+    x: nl.beacons.map(b => b[0]), y: nl.beacons.map(b => b[1]),
+    mode: "markers", name: "Beacons",
+    marker: { symbol: "diamond", size: 9, color: "#0f172a" },
+  });
+
+  Plotly.react("nl-traj-plot", traces, {
+    title: { text: `Circular trajectory estimates (step k = ${k})`, font: { size: 14 } },
+    margin: { l: 48, r: 16, t: 36, b: 50 },
+    xaxis: { title: "x (m)", range: _nlXRange },
+    yaxis: { title: "y (m)", range: _nlYRange, scaleanchor: "x", scaleratio: 1 },
+    template: "plotly_white",
+    legend: { orientation: "h", y: -0.22 },
+    height: 400,
+  }, { displayModeBar: false });
+}
+
+nlKInput.oninput = renderNonlinearTraj;
+document.getElementById("nl-play").onclick = (e) => {
+  if (nlTimer) {
+    clearInterval(nlTimer); nlTimer = null; e.target.textContent = "Play Trajectory"; return;
+  }
+  if (parseInt(nlKInput.value, 10) >= parseInt(nlKInput.max, 10)) {
+    nlKInput.value = 1;
+    renderNonlinearTraj();
+  }
+  e.target.textContent = "Pause";
+  nlTimer = setInterval(() => {
+    const next = parseInt(nlKInput.value, 10) + 1;
+    nlKInput.value = next > parseInt(nlKInput.max, 10) ? 1 : next;
+    renderNonlinearTraj();
+  }, 180);
+};
+
+function renderIekfStep() {
+  const nl = D.nonlinear;
+  const it = parseInt(iekfInput.value, 10);
+  document.getElementById("iekf-it-val").textContent = it;
+  const tag = it === 0 ? "prior prediction" : it === 1 ? "EKF stops here" : "IEKF iterate";
+  document.getElementById("iekf-status").textContent =
+    `objective = ${nl.first_objectives[it].toFixed(2)} (${tag})`;
+
+  const traces = [];
+  const angles = Array.from({ length: 121 }, (_, i) => (2 * Math.PI * i) / 120);
+  nl.beacons.forEach((b, idx) => {
+    const r = nl.first_z[idx];
+    traces.push({
+      x: angles.map(a => b[0] + r * Math.cos(a)),
+      y: angles.map(a => b[1] + r * Math.sin(a)),
+      mode: "lines",
+      name: idx === 0 ? "Measured range circles" : "",
+      showlegend: idx === 0,
+      line: { color: "#94a3b8", dash: "dot", width: 1.5 },
+    });
+  });
+
+  traces.push({
+    x: [nl.truth[1][0]], y: [nl.truth[1][1]],
+    mode: "markers", name: "True x1",
+    marker: { color: "#263544", size: 9, symbol: "star" },
+  });
+  traces.push({
+    x: nl.first_trace.slice(0, it + 1).map(p => p[0]),
+    y: nl.first_trace.slice(0, it + 1).map(p => p[1]),
+    mode: "lines+markers", name: "Gauss–Newton path",
+    marker: { color: "#3363aa", size: 7 },
+    line: { color: "#3363aa", width: 2 },
+  });
+  traces.push({
+    x: [nl.first_trace[it][0]], y: [nl.first_trace[it][1]],
+    mode: "markers", name: `Iterate ${it}`,
+    marker: { color: "#ca641e", size: 11, symbol: "circle" },
+  });
+
+  Plotly.react("nl-step1-plot", traces, {
+    title: { text: "First range update: relinearizing into the circle intersection", font: { size: 13 } },
+    margin: { l: 48, r: 16, t: 36, b: 50 },
+    xaxis: { title: "x (m)", range: [-3.2, 2.5] },
+    yaxis: { title: "y (m)", range: [-3.2, 2.5], scaleanchor: "x", scaleratio: 1 },
+    template: "plotly_white",
+    legend: { orientation: "h", y: -0.22 },
+    height: 400,
+  }, { displayModeBar: false });
+}
+
+iekfInput.oninput = renderIekfStep;
+document.getElementById("iekf-play").onclick = (e) => {
+  if (iekfTimer) {
+    clearInterval(iekfTimer); iekfTimer = null; e.target.textContent = "Play Step 1"; return;
+  }
+  e.target.textContent = "Pause";
+  iekfTimer = setInterval(() => {
+    const next = parseInt(iekfInput.value, 10) + 1;
+    iekfInput.value = next > parseInt(iekfInput.max, 10) ? 0 : next;
+    renderIekfStep();
+  }, 700);
+};
+
+renderKF();
+renderFLS();
+renderNonlinearTable();
+renderNonlinearTraj();
+renderIekfStep();
+</script>
+</body>
+</html>
+"""
+
+
+def export_html(output_path, payload):
+    """Write standalone interactive HTML with embedded JSON payload."""
+    encoded = json.dumps(payload, separators=(",", ":")).replace("</", "<\\/")
+    html = _HTML_TEMPLATE.replace("__PAYLOAD__", encoded)
+    Path(output_path).write_text(html, encoding="utf-8")

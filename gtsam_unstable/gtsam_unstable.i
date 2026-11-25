@@ -41,6 +41,8 @@ class gtsam::VectorValues;
 class gtsam::KeyList;
 class gtsam::KeySet;
 class gtsam::KeyVector;
+class gtsam::VectorField;
+class gtsam::Pose2Transition;
 class gtsam::LevenbergMarquardtParams;
 class gtsam::ISAM2Params;
 class gtsam::GaussianDensity;
@@ -908,5 +910,31 @@ class TGEqF {
 };
 
 }  // namespace tgeqf
+
+// Dynamics models and factors for the point-mass and unicycle examples.
+#include <gtsam_unstable/planning/dynamics/models/PointMass.h>
+class PointMass {
+  PointMass(double dt);
+  static gtsam::Vector dynamics(const gtsam::Vector& state, const gtsam::Vector& control);
+  @pybind_lambda
+  gtsam::Vector predict(const gtsam::Vector& state, const gtsam::Vector& control) const;
+};
+virtual class PointMassDynamicsFactor : gtsam::NoiseModelFactor {
+  PointMassDynamicsFactor(gtsam::Key stateKey, gtsam::Key controlKey, gtsam::Key nextStateKey,
+                          const gtsam::PointMass* dynamics, const gtsam::noiseModel::Base* noiseModel);
+};
+#include <gtsam_unstable/planning/dynamics/models/Unicycle.h>
+class Unicycle {
+  Unicycle(double dt);
+  @pybind_lambda
+  gtsam::Pose2 predict(const gtsam::Pose2& state, const gtsam::Vector2& control) const;
+};
+virtual class UnicycleDynamicsFactor : gtsam::NoiseModelFactor {
+  UnicycleDynamicsFactor(gtsam::Key stateKey, gtsam::Key controlKey, gtsam::Key nextStateKey,
+                         const gtsam::Unicycle* dynamics, const gtsam::noiseModel::Base* noiseModel);
+};
+#include <gtsam_unstable/planning/wrap/ModelBindings.h>
+gtsam::VectorField pointMassVectorField();
+gtsam::Pose2Transition unicycleTransition(const gtsam::Unicycle& model);
 
 } //\namespace gtsam

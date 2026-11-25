@@ -13,7 +13,7 @@ Author: Frank Dellaert
 import unittest
 
 import numpy as np
-from gtsam.examples import SFMdata
+from gtsam.utils import SFMdata
 from numpy.testing import assert_almost_equal
 
 import gtsam

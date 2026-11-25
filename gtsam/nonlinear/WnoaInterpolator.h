@@ -103,7 +103,7 @@ typedef std::map<Key, Matrix> InterpCovarianceMap;
  * @tparam PoseType Pose group/type (e.g., Pose2, Pose3, or a vector-space pose)
  */
 template <typename PoseType>
-class GTSAM_EXPORT Interpolator {
+class Interpolator {
  protected:
   static constexpr int dim = traits<PoseType>::dimension;
   using VelocityType = typename traits<PoseType>::TangentVector;

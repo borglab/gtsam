@@ -19,3 +19,7 @@ ordering library
       gtsam/3rdparty/metis/LICENSE.txt
 - Spectra v1.1.0: Sparse Eigenvalue Computation Toolkit as a Redesigned ARPACK.
     - Licenced under MPL2, provided at https://github.com/yixuan/spectra
+- Cephes: Cephes Mathematical Function Library, trimmed down to the files
+  required for the `igami` function, with exported functions renamed
+    - Included in gtsam/3rdparty/cephes
+    - Licenced under MIT, provided in gtsam/3rdparty/cephes/LICENSE.txt

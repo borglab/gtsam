@@ -37,24 +37,37 @@ project:
       - file: ./gtsam/constrained/constrained.md
         children:
         - pattern: ./gtsam/constrained/doc/*.{md,ipynb}
+      - file: ./gtsam/certifiable/certifiable.md
+        children:
+        - pattern: ./gtsam/certifiable/doc/*.ipynb
       - file: ./gtsam/symbolic/symbolic.md
         children:
         - pattern: ./gtsam/symbolic/doc/*
       - file: ./gtsam/navigation/navigation.md
         children:
         - pattern: ./gtsam/navigation/doc/*.{md,ipynb}
+      - file: ./gtsam/planning/doc/PlanningOverview.md
+        title: Planning
+        children:
+        - file: ./gtsam/planning/doc/SamplingPlanner.ipynb
+        - file: ./gtsam/planning/doc/SamplingSearch.ipynb
+        - file: ./gtsam/planning/doc/MPPI.ipynb
+        - file: ./gtsam_unstable/planning/README.md
+          title: Dynamics factors (unstable)
+          children:
+          - file: ./gtsam_unstable/planning/doc/MPPIWithDynamicsFactors.ipynb
       - file: ./gtsam/sfm/sfm.md
         children:
         - pattern: ./gtsam/sfm/doc/*
+      - title: SAM Factors
+        children:
+        - pattern: ./gtsam/sam/doc/*.ipynb
       - file: ./gtsam/slam/slam.md
         children:
         - pattern: ./gtsam/slam/doc/*
       - file: ./gtsam/discrete/discrete.md
         children:
         - pattern: ./gtsam/discrete/doc/*
-      - file: ./gtsam/hybrid/hybrid.md
-        children:
-        - pattern: ./gtsam/hybrid/doc/*
       - file: ./gtsam_unstable/slam/README.md
         children:
         - pattern: ./gtsam_unstable/slam/doc/*.ipynb
@@ -69,6 +82,8 @@ project:
       - title: Linear
         children:
         - pattern: ./python/gtsam/examples/linear/*.ipynb
+        - title: Kalman Filtering and Smoothing (Interactive)
+          url: https://borglab.github.io/gtsam/KalmanFilteringAndSmoothing.html
       - title: Discrete
         children:
         - pattern: ./python/gtsam/examples/discrete/*.ipynb
@@ -87,6 +102,14 @@ project:
       - title: Navigation
         children:
         - pattern: ./python/gtsam/examples/navigation/*.ipynb
+      - title: Planning
+        file: ./gtsam_unstable/examples/mppi/README.md
+        children:
+        - file: ./python/gtsam_unstable/examples/planning/PointMassMPPITrajectoryOptimizationExample.ipynb
+        - file: ./python/gtsam_unstable/examples/planning/UnicycleMPPITrajectoryOptimizationExample.ipynb
+        - file: ./python/gtsam_unstable/examples/planning/UnicycleMPPIMPCExample.ipynb
+        - file: ./python/gtsam_unstable/examples/planning/SamplingPlannerLQR.ipynb
+        - file: ./python/gtsam_unstable/examples/planning/UnicycleSamplingExample.ipynb
       - title: Structure from Motion
         children:
         - pattern: ./python/gtsam/examples/sfm/*.ipynb
