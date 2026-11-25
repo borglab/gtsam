@@ -29,13 +29,13 @@ class TestResult;
 class TestRegistry
 {
 public:
-  static void addTest (Test *test);
+  static void addTest (Test *test) noexcept;
   static int runAllTests (TestResult& result);
 
 private:
 
-  static TestRegistry&  instance ();
-  void          add (Test *test);
+  static TestRegistry&  instance () noexcept;
+  void          add (Test *test) noexcept;
   int           run (TestResult& result);
 
 

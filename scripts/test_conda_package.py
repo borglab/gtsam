@@ -20,6 +20,7 @@ def main() -> int:
     print(f"Installed-package Python: {sys.version}", flush=True)
     print(f"Installed-package prefix: {prefix}", flush=True)
     with TemporaryDirectory(prefix="gtsam-conda-test-") as directory, chdir(directory):
+        test_directories = []
         for name in ("gtsam", "gtsam_unstable"):
             for module_name in (name, f"{name}.{name}"):
                 module = importlib.import_module(module_name)
@@ -33,11 +34,19 @@ def main() -> int:
                     raise RuntimeError(f"{module_name} is not an extension: {location}")
                 print(f"{module_name}: {location}", flush=True)
 
+                if module_name == name:
+                    tests = (location.parent / "tests").resolve()
+                    if not tests.is_dir():
+                        raise RuntimeError(f"Installed test directory is missing: {tests}")
+                    if not tests.is_relative_to(prefix):
+                        raise RuntimeError(f"Tests found outside {prefix}: {tests}")
+                    test_directories.append(str(tests))
+                    print(f"{module_name} tests: {tests}", flush=True)
+
         import pytest
 
         return pytest.main([
-            "-v", "--import-mode=importlib", "--pyargs",
-            "gtsam.tests", "gtsam_unstable.tests",
+            "-v", "--import-mode=importlib", *test_directories,
         ])
 
 

@@ -22,6 +22,8 @@
 #include <vector>
 #include <list>
 #include <memory>
+#include <string>
+#include <utility>
 
 using namespace gtsam;
 
@@ -146,6 +148,25 @@ TEST(treeTraversal, CloneForest)
   EXPECT(assert_container_equality(preOrderModifiedExpected, preOrder2ModActual));
 }
 
+/* ************************************************************************* */
+namespace forest_printing {
+
+// Pass each node and its indentation to a caller-supplied printer in preorder.
+TEST(treeTraversal, PrintForestWith) {
+  const TestForest forest = makeTestForest();
+  std::vector<std::pair<int, std::string>> printed;
+  treeTraversal::printForestWith(
+      forest, "root", [&](const TestNode& node, const std::string& prefix) {
+        printed.emplace_back(node.data, prefix);
+      });
+
+  const std::vector<std::pair<int, std::string>> expected{
+      {0, "root-"}, {2, "root| -"}, {3, "root| -"},
+      {4, "root| | -"}, {1, "root-"}};
+  CHECK(printed == expected);
+}
+
+}  // namespace forest_printing
 /* ************************************************************************* */
 int main() {
   TestResult tr;

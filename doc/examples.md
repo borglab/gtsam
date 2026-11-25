@@ -1,8 +1,7 @@
 # Examples
 
 These interactive Python notebooks are organized by GTSAM module, matching the
-folders under `python/gtsam/examples/`. Choose a module below to explore its
-examples.
+folders under `python/gtsam/examples/` and `python/gtsam_unstable/examples/`.
 
 Notebooks with an <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
 button near the top can be opened in Colab, where you can run and edit them in

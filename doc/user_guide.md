@@ -6,3 +6,8 @@ For troubleshooting singular, indefinite, or poorly conditioned factor graphs, s
 
 To differentiate through GTSAM, for example to learn parameters of factors, see [Gradients](../gtsam/nonlinear/doc/Gradients.ipynb).
 For an end-to-end neural network example, see [Learning odometry corrections with PyTorch](../python/gtsam/examples/nonlinear/GradientsPyTorchExample.ipynb).
+
+:::{toc}
+:context: children
+:depth: 1
+:::

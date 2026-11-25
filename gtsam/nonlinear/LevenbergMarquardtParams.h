@@ -21,7 +21,7 @@
 #pragma once
 
 #include <gtsam/nonlinear/NonlinearOptimizerParams.h>
-#include <gtsam/nonlinear/LMDampingParams.h>
+#include <gtsam/linear/LMDampingParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 
 namespace gtsam {

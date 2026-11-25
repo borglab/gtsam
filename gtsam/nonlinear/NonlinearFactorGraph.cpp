@@ -17,8 +17,6 @@
  * @author  Christian Potthast
  */
 
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/symbolic/SymbolicFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
@@ -34,10 +32,7 @@
 #  include <tbb/blocked_range.h>
 #endif
 
-#include <algorithm>
 #include <cmath>
-#include <fstream>
-#include <set>
 
 using namespace std;
 
@@ -97,74 +92,6 @@ void NonlinearFactorGraph::printErrors(const Values& values, const std::string& 
 /* ************************************************************************* */
 bool NonlinearFactorGraph::equals(const NonlinearFactorGraph& other, double tol) const {
   return Base::equals(other, tol);
-}
-
-/* ************************************************************************* */
-void NonlinearFactorGraph::dot(std::ostream& os, const Values& values,
-                               const KeyFormatter& keyFormatter,
-                               const GraphvizFormatting& writer) const {
-  writer.graphPreamble(&os);
-
-  // Find bounds (imperative)
-  KeySet keys = this->keys();
-  Vector2 min = writer.findBounds(values, keys);
-
-  // Create nodes for each variable in the graph
-  for (Key key : keys) {
-    auto position = writer.variablePos(values, min, key);
-    writer.drawVariable(key, keyFormatter, position, &os);
-  }
-  os << "\n";
-
-  if (writer.mergeSimilarFactors) {
-    // Remove duplicate factors
-    std::set<KeyVector> structure;
-    for (const sharedFactor& factor : factors_) {
-      if (factor) {
-        KeyVector factorKeys = factor->keys();
-        std::sort(factorKeys.begin(), factorKeys.end());
-        structure.insert(factorKeys);
-      }
-    }
-
-    // Create factors and variable connections
-    size_t i = 0;
-    for (const KeyVector& factorKeys : structure) {
-      writer.processFactor(i++, factorKeys, keyFormatter, {}, &os);
-    }
-  } else {
-    // Create factors and variable connections
-    for (size_t i = 0; i < size(); ++i) {
-      const NonlinearFactor::shared_ptr& factor = at(i);
-      if (factor) {
-        const KeyVector& factorKeys = factor->keys();
-        writer.processFactor(i, factorKeys, keyFormatter,
-                             writer.factorPos(min, i), &os);
-      }
-    }
-  }
-
-  os << "}\n";
-  std::flush(os);
-}
-
-/* ************************************************************************* */
-std::string NonlinearFactorGraph::dot(const Values& values,
-                                      const KeyFormatter& keyFormatter,
-                                      const GraphvizFormatting& writer) const {
-  std::stringstream ss;
-  dot(ss, values, keyFormatter, writer);
-  return ss.str();
-}
-
-/* ************************************************************************* */
-void NonlinearFactorGraph::saveGraph(const std::string& filename,
-                                     const Values& values,
-                                     const KeyFormatter& keyFormatter,
-                                     const GraphvizFormatting& writer) const {
-  std::ofstream of(filename);
-  dot(of, values, keyFormatter, writer);
-  of.close();
 }
 
 /* ************************************************************************* */

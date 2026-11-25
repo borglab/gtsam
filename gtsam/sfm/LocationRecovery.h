@@ -22,7 +22,7 @@
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/sfm/BinaryMeasurement.h>
+#include <gtsam/sam/BinaryMeasurement.h>
 
 #include <random>
 #include <set>

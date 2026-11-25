@@ -20,10 +20,10 @@
 #ifndef TESTHARNESS_H
 #define TESTHARNESS_H
 
-#include "Test.h"
-#include "TestResult.h"
-#include "Failure.h"
-#include "TestRegistry.h"
+#include "Test.h"  // IWYU pragma: export
+#include "TestResult.h"  // IWYU pragma: export
+#include "Failure.h"  // IWYU pragma: export
+#include "TestRegistry.h"  // IWYU pragma: export
 
 #endif
 

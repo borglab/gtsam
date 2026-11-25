@@ -16,23 +16,40 @@
  */
 
 #include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/Manifold.h>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/Testable.h>
+#include <gtsam/base/Vector.h>
 #include <gtsam/base/numericalDerivative.h>
+#include <gtsam/base/types.h>
+#include <gtsam/geometry/Point3.h>
+#include <gtsam/geometry/Pose3.h>
+#include <gtsam/inference/Key.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/GaussNewtonOptimizer.h>
 #include <gtsam/nonlinear/LevenbergMarquardtOptimizer.h>
-#include <gtsam/constrained/NonlinearEquality.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
+#include <gtsam/nonlinear/PriorFactor.h>
 #include <gtsam/nonlinear/Values.h>
 #include <gtsam/nonlinear/WnoaFactor.h>
 #include <gtsam/nonlinear/WnoaFactorGraph.h>
 #include <gtsam/nonlinear/WnoaInterpFactor.h>
 #include <gtsam/nonlinear/WnoaInterpolator.h>
+#include <gtsam/nonlinear/WnoaStateData.h>
 #include <gtsam/slam/BetweenFactor.h>
 
-#include <Eigen/Eigenvalues>
+#include <Eigen/Eigenvalues>  // IWYU pragma: keep (SelfAdjointEigenSolver)
+
+#include <algorithm>
+#include <cstddef>
+#include <iostream>
+#include <memory>
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 using namespace std;
 using namespace gtsam;
@@ -84,28 +101,6 @@ const WnoaInterpFactorFixture& fixture() {
   return kFixture;
 }
 
-const Vector Q_p3 = fixture().Q_p3;
-const Vector Q_se3 = fixture().Q_se3;
-const double timestep = fixture().timestep;
-
-const Vector3 v0_p3 = fixture().v0_p3;
-const Point3 p0_p3 = fixture().p0_p3;
-const Point3 p1_p3 = fixture().p1_p3;
-const Vector3 v1_p3 = fixture().v1_p3;
-const Point3 p2_p3 = fixture().p2_p3;
-const Vector3 v2_p3 = fixture().v2_p3;
-
-const Pose3 p0_se3 = fixture().p0_se3;
-const Vector6 v0_se3 = fixture().v0_se3;
-const Pose3 p1_se3 = fixture().p1_se3;
-const Pose3 p2_se3 = fixture().p2_se3;
-const Vector6 v2_se3 = fixture().v2_se3;
-const Pose3 p3_se3 = fixture().p3_se3;
-const Pose3 p4_se3 = fixture().p4_se3;
-
-const set<StateData> estimatedStates = fixture().estimatedStates;
-const set<StateData> interpolatedStates = fixture().interpolatedStates;
-
 }  // namespace
 
 // STATE DATA TESTS
@@ -152,13 +147,15 @@ TEST(StateData, UnorderedSet) {
 
 // Constructor test
 TEST(WnoaInterp, Constructor) {
+  const auto& data = fixture();
   // Create a factor
   const auto model = noiseModel::Isotropic::Sigma(3, 1.0);
-  const auto prior = std::make_shared<PriorFactor<Point3>>(P(1), p0_p3, model);
+  const auto prior =
+      std::make_shared<PriorFactor<Point3>>(P(1), data.p0_p3, model);
 
   // wrap factor
-  const auto factor = WnoaInterpFactor<Point3>(prior, estimatedStates,
-                                               interpolatedStates, Q_p3);
+  const auto factor = WnoaInterpFactor<Point3>(
+      prior, data.estimatedStates, data.interpolatedStates, data.Q_p3);
   // get factor keys
   KeyVector outer_keys = factor.keys();
   // Make sure keys defined properly
@@ -170,30 +167,32 @@ TEST(WnoaInterp, Constructor) {
 }
 
 TEST(WnoaInterp, Print) {
+  const auto& data = fixture();
   // Create a factor
   Point3 priorValue(0.5, 0.0, 0.0);
   auto model = noiseModel::Isotropic::Sigma(3, 1.0);
   auto prior = std::make_shared<PriorFactor<Point3>>(P(1), priorValue, model);
 
   // Construct factor
-  const auto factor = WnoaInterpFactor<Point3>(prior, estimatedStates,
-                                               interpolatedStates, Q_p3);
+  const auto factor = WnoaInterpFactor<Point3>(
+      prior, data.estimatedStates, data.interpolatedStates, data.Q_p3);
 
   factor.print();
   cout << endl;
 }
 
 TEST(WnoaInterp, EvalErrorP3Unary) {
+  const auto& data = fixture();
   // SAME POSE CASE
   // Create a prior factor and interpolated version
   const auto model = noiseModel::Isotropic::Sigma(3, 1.0);
   // prior at first pose
-  auto prior = std::make_shared<PriorFactor<Point3>>(P(1), p0_p3, model);
+  auto prior = std::make_shared<PriorFactor<Point3>>(P(1), data.p0_p3, model);
   auto factor = std::make_shared<WnoaInterpFactor<Point3>>(
-      prior, estimatedStates, interpolatedStates, Q_p3);
+      prior, data.estimatedStates, data.interpolatedStates, data.Q_p3);
   Values values;
-  values.insert(P(0), p0_p3);
-  values.insert(P(2), p0_p3);
+  values.insert(P(0), data.p0_p3);
+  values.insert(P(2), data.p0_p3);
   values.insert(V(0), Vector3::Zero().eval());  // zero vel
   values.insert(V(2), Vector3::Zero().eval());
   // compute residuals
@@ -204,11 +203,11 @@ TEST(WnoaInterp, EvalErrorP3Unary) {
 
   // DIFFERENT POSE, ZERO VELOCITY
   // prior at pose 1 (between 0 and 2)
-  prior = std::make_shared<PriorFactor<Point3>>(P(1), p1_p3, model);
-  factor = std::make_shared<WnoaInterpFactor<Point3>>(prior, estimatedStates,
-                                                      interpolatedStates, Q_p3);
-  values.update(P(0), p0_p3);
-  values.update(P(2), p2_p3);
+  prior = std::make_shared<PriorFactor<Point3>>(P(1), data.p1_p3, model);
+  factor = std::make_shared<WnoaInterpFactor<Point3>>(
+      prior, data.estimatedStates, data.interpolatedStates, data.Q_p3);
+  values.update(P(0), data.p0_p3);
+  values.update(P(2), data.p2_p3);
   values.update(V(0), Vector3::Zero().eval());
   values.update(V(2), Vector3::Zero().eval());
   // Evaluate
@@ -218,13 +217,13 @@ TEST(WnoaInterp, EvalErrorP3Unary) {
 
   // DIFFERENT POSE, WITH VELOCITY
   // prior at pose 1 (between 0 and 2)
-  prior = std::make_shared<PriorFactor<Point3>>(P(1), p1_p3, model);
-  factor = std::make_shared<WnoaInterpFactor<Point3>>(prior, estimatedStates,
-                                                      interpolatedStates, Q_p3);
-  values.update(P(0), p0_p3);
-  values.update(P(2), p2_p3);
-  values.update(V(0), v0_p3);
-  values.update(V(2), v0_p3);
+  prior = std::make_shared<PriorFactor<Point3>>(P(1), data.p1_p3, model);
+  factor = std::make_shared<WnoaInterpFactor<Point3>>(
+      prior, data.estimatedStates, data.interpolatedStates, data.Q_p3);
+  values.update(P(0), data.p0_p3);
+  values.update(P(2), data.p2_p3);
+  values.update(V(0), data.v0_p3);
+  values.update(V(2), data.v0_p3);
   // Evaluate
   residual1 = factor->unwhitenedError(values);
   CHECK(assert_equal(residual1, res_actual, 1e-12));
@@ -233,107 +232,115 @@ TEST(WnoaInterp, EvalErrorP3Unary) {
 
 /* *********************************************************************** */
 TEST(WnoaInterp, EvalErrorSE3UnaryPose) {
+  const auto& data = fixture();
   // Model
   const auto model = noiseModel::Isotropic::Sigma(6, 1.0);
   const auto prior_pose =
-      std::make_shared<PriorFactor<Pose3>>(P(1), p1_se3, model);
+      std::make_shared<PriorFactor<Pose3>>(P(1), data.p1_se3, model);
   // Construct factor for interpolated pose and velocity
-  const auto factor_pose = WnoaInterpFactor<Pose3>(prior_pose, estimatedStates,
-                                                   interpolatedStates, Q_se3);
+  const auto factor_pose = WnoaInterpFactor<Pose3>(
+      prior_pose, data.estimatedStates, data.interpolatedStates, data.Q_se3);
 
   // Set up values
   Values values;
-  values.insert(P(0), p0_se3);
-  values.insert(P(2), p2_se3);
-  values.insert(V(0), v0_se3);
-  values.insert(V(2), v2_se3);
+  values.insert(P(0), data.p0_se3);
+  values.insert(P(2), data.p2_se3);
+  values.insert(V(0), data.v0_se3);
+  values.insert(V(2), data.v2_se3);
 
   // Check pose residuals
   const auto res_zero = Vector6::Zero();
   auto residual = factor_pose.unwhitenedError(values);  // new
   CHECK(assert_equal(residual, res_zero, 1e-12));
-  residual = prior_pose->evaluateError(p1_se3);  // original
+  residual = prior_pose->evaluateError(data.p1_se3);  // original
   CHECK(assert_equal(residual, res_zero, 1e-12));
 }
 
 /* *********************************************************************** */
 
 TEST(WnoaInterp, EvalErrorSE3BetweenPose) {
+  const auto& data = fixture();
   // Model
   const auto model = noiseModel::Isotropic::Sigma(6, 1.0);
   // construct relative pose
-  const Pose3 p01_se3 = p0_se3.inverse().compose(p1_se3);
+  const Pose3 p01_se3 = data.p0_se3.inverse().compose(data.p1_se3);
   const auto between_factor =
       std::make_shared<BetweenFactor<Pose3>>(P(0), P(1), p01_se3, model);
   // Construct factor for interpolated pose and velocity
   // NOTE: we set the noise model to be fixed to avoid Jacobian computations.
-  const auto factor = WnoaInterpFactor<Pose3>(between_factor, estimatedStates,
-                                              interpolatedStates, Q_se3, true);
+  const auto factor =
+      WnoaInterpFactor<Pose3>(between_factor, data.estimatedStates,
+                              data.interpolatedStates, data.Q_se3, true);
 
   // Set up values
   Values values;
-  values.insert(P(0), p0_se3);
-  values.insert(P(2), p2_se3);
-  values.insert(V(0), v0_se3);
-  values.insert(V(2), v2_se3);
+  values.insert(P(0), data.p0_se3);
+  values.insert(P(2), data.p2_se3);
+  values.insert(V(0), data.v0_se3);
+  values.insert(V(2), data.v2_se3);
 
   // Check pose residuals
 
-  auto res_btwn = between_factor->evaluateError(p0_se3, p1_se3);  // original
+  auto res_btwn =
+      between_factor->evaluateError(data.p0_se3, data.p1_se3);    // original
   auto res_interp = factor.unwhitenedError(values);               // new
   CHECK(assert_equal(res_btwn, res_interp, 1e-12));
 }
 /* *********************************************************************** */
 TEST(WnoaInterp, EvalErrorSE3BtwnInterp) {
+  const auto& data = fixture();
   // Same as between above, but using two interpolated states with different
   // boundaries
   set<StateData> estimatedStates = {StateData(P(0), V(0), 0.0),
-                                    StateData(P(2), V(2), 2 * timestep),
-                                    StateData(P(4), V(4), 4 * timestep)};
-  set<StateData> interpolatedStates = {StateData(P(1), V(1), timestep),
-                                       StateData(P(3), V(3), 3 * timestep)};
-  const Pose3 p3_se3 = p0_se3.expmap(3 * timestep * v0_se3);
-  const Pose3 p4_se3 = p0_se3.expmap(4 * timestep * v0_se3);
-  Vector6 v2_se3 = v0_se3;
+                                    StateData(P(2), V(2), 2 * data.timestep),
+                                    StateData(P(4), V(4), 4 * data.timestep)};
+  set<StateData> interpolatedStates = {
+      StateData(P(1), V(1), data.timestep),
+      StateData(P(3), V(3), 3 * data.timestep)};
+  const Pose3 p3_se3 = data.p0_se3.expmap(3 * data.timestep * data.v0_se3);
+  const Pose3 p4_se3 = data.p0_se3.expmap(4 * data.timestep * data.v0_se3);
+  Vector6 v2_se3 = data.v0_se3;
   // Model
   const auto model = noiseModel::Isotropic::Sigma(6, 1.0);
   const auto between_factor = std::make_shared<BetweenFactor<Pose3>>(
       P(1), P(3), Pose3::Identity(), model);
   // Construct factor for interpolated pose and velocity
   const auto factor = WnoaInterpFactor<Pose3>(between_factor, estimatedStates,
-                                              interpolatedStates, Q_se3);
+                                              interpolatedStates, data.Q_se3);
 
   // Set up values
   Values values;
-  values.insert(P(0), p0_se3);
-  values.insert(P(2), p2_se3);
+  values.insert(P(0), data.p0_se3);
+  values.insert(P(2), data.p2_se3);
   values.insert(P(4), p4_se3);
-  values.insert(V(0), v0_se3);
+  values.insert(V(0), data.v0_se3);
   values.insert(V(2), v2_se3);
-  values.insert(V(4), v0_se3);
+  values.insert(V(4), data.v0_se3);
 
   // Check that residual is the same when we interpolate
-  auto res_btwn = between_factor->evaluateError(p1_se3, p3_se3);  // original
+  auto res_btwn =
+      between_factor->evaluateError(data.p1_se3, p3_se3);         // original
   auto res_btwn_interp = factor.unwhitenedError(values);          // new
   // Check that residuals match between
   CHECK(assert_equal(res_btwn, res_btwn_interp, 1e-12));
 }
 /* *********************************************************************** */
 TEST(WnoaInterp, JacobianPoint3UnaryPose) {
+  const auto& data = fixture();
   // Model
   const auto model = noiseModel::Isotropic::Sigma(3, 1.0);
   const auto prior_factor =
-      std::make_shared<PriorFactor<Point3>>(P(1), p1_p3, model);
+      std::make_shared<PriorFactor<Point3>>(P(1), data.p1_p3, model);
   // Construct factor for interpolated pose and velocity
-  const auto factor = WnoaInterpFactor<Point3>(prior_factor, estimatedStates,
-                                               interpolatedStates, Q_p3);
+  const auto factor = WnoaInterpFactor<Point3>(
+      prior_factor, data.estimatedStates, data.interpolatedStates, data.Q_p3);
 
   // Set up values
   Values values;
-  values.insert(P(0), p0_p3);
-  values.insert(P(2), p2_p3);
-  values.insert(V(0), v0_p3);
-  values.insert(V(2), v2_p3);
+  values.insert(P(0), data.p0_p3);
+  values.insert(P(2), data.p2_p3);
+  values.insert(V(0), data.v0_p3);
+  values.insert(V(2), data.v2_p3);
 
   // Create container for Jacobians
   vector<Matrix> H(factor.keys().size());
@@ -360,16 +367,16 @@ TEST(WnoaInterp, JacobianPoint3UnaryPose) {
   double delta = 1e-6;
   Matrix J_p0_num =
       numericalDerivative41<Vector, Point3, Vector3, Point3, Vector3>(
-          f, p0_p3, v0_p3, p2_p3, v2_p3, delta);
+          f, data.p0_p3, data.v0_p3, data.p2_p3, data.v2_p3, delta);
   Matrix J_v0_num =
       numericalDerivative42<Vector, Point3, Vector3, Point3, Vector3>(
-          f, p0_p3, v0_p3, p2_p3, v2_p3, delta);
+          f, data.p0_p3, data.v0_p3, data.p2_p3, data.v2_p3, delta);
   Matrix J_p2_num =
       numericalDerivative43<Vector, Point3, Vector3, Point3, Vector3>(
-          f, p0_p3, v0_p3, p2_p3, v2_p3, delta);
+          f, data.p0_p3, data.v0_p3, data.p2_p3, data.v2_p3, delta);
   Matrix J_v2_num =
       numericalDerivative44<Vector, Point3, Vector3, Point3, Vector3>(
-          f, p0_p3, v0_p3, p2_p3, v2_p3, delta);
+          f, data.p0_p3, data.v0_p3, data.p2_p3, data.v2_p3, delta);
 
   double tol = 1e-4;
   EXPECT(assert_equal(Jacs[P(0)], J_p0_num, tol));
@@ -420,23 +427,26 @@ typename WnoaInterpFactor<PoseType>::PassedInterpData makePassedInterpData(
 }
 
 TEST(WnoaInterp, PassedInterpDataPoint3Unary) {
+  const auto& data = fixture();
   // Model
   const auto model = noiseModel::Isotropic::Sigma(3, 1.0);
   const auto prior_factor =
-      std::make_shared<PriorFactor<Point3>>(P(1), p1_p3, model);
-  const auto factor = WnoaInterpFactor<Point3>(prior_factor, estimatedStates,
-                                               interpolatedStates, Q_p3);
-  const auto factor_fixed = WnoaInterpFactor<Point3>(
-      prior_factor, estimatedStates, interpolatedStates, Q_p3, true);
+      std::make_shared<PriorFactor<Point3>>(P(1), data.p1_p3, model);
+  const auto factor = WnoaInterpFactor<Point3>(
+      prior_factor, data.estimatedStates, data.interpolatedStates, data.Q_p3);
+  const auto factor_fixed =
+      WnoaInterpFactor<Point3>(prior_factor, data.estimatedStates,
+                               data.interpolatedStates, data.Q_p3, true);
 
   // Set up values
   Values values;
-  values.insert(P(0), p0_p3);
-  values.insert(P(2), p2_p3);
-  values.insert(V(0), v0_p3);
-  values.insert(V(2), v2_p3);
+  values.insert(P(0), data.p0_p3);
+  values.insert(P(2), data.p2_p3);
+  values.insert(V(0), data.v0_p3);
+  values.insert(V(2), data.v2_p3);
 
-  auto passed_interp_data = makePassedInterpData(factor, values, Vector3(Q_p3));
+  auto passed_interp_data =
+      makePassedInterpData(factor, values, Vector3(data.Q_p3));
 
   // Check error overload parity
   DOUBLES_EQUAL(factor.error(values), factor.error(values, &passed_interp_data),
@@ -463,30 +473,32 @@ TEST(WnoaInterp, PassedInterpDataPoint3Unary) {
 }
 
 TEST(WnoaInterp, CachedGraphMatchesPlainLoopPoint3) {
+  const auto& data = fixture();
   const auto model = noiseModel::Isotropic::Sigma(3, 1.0);
   const auto prior_pose =
-      std::make_shared<PriorFactor<Point3>>(P(1), p1_p3, model);
+      std::make_shared<PriorFactor<Point3>>(P(1), data.p1_p3, model);
   const auto prior_vel =
-      std::make_shared<PriorFactor<Vector3>>(V(1), v1_p3, model);
+      std::make_shared<PriorFactor<Vector3>>(V(1), data.v1_p3, model);
 
   NonlinearFactorGraph graph;
   graph.add(prior_pose);
   graph.add(prior_vel);
 
-  const set<StateData> estimatedStates = {StateData(P(0), V(0), 0.0),
-                                          StateData(P(2), V(2), 2 * timestep)};
-  const set<StateData> interpolatedStates = {StateData(P(1), V(1), timestep)};
+  const set<StateData> estimatedStates = {
+      StateData(P(0), V(0), 0.0), StateData(P(2), V(2), 2 * data.timestep)};
+  const set<StateData> interpolatedStates = {
+      StateData(P(1), V(1), data.timestep)};
 
   Values values;
-  values.insert(P(0), p0_p3);
-  values.insert(P(2), p2_p3);
-  values.insert(V(0), v0_p3);
-  values.insert(V(2), v2_p3);
+  values.insert(P(0), data.p0_p3);
+  values.insert(P(2), data.p2_p3);
+  values.insert(V(0), data.v0_p3);
+  values.insert(V(2), data.v2_p3);
 
   for (const bool fixed_noise : {false, true}) {
     WnoaFactorGraph<Point3> wnoa_graph =
         interpolateFactorGraph<Point3, WnoaFactorGraph<Point3>>(
-            graph, estimatedStates, interpolatedStates, Q_p3, fixed_noise);
+            graph, estimatedStates, interpolatedStates, data.Q_p3, fixed_noise);
     NonlinearFactorGraph plain_loop_graph(wnoa_graph);
 
     DOUBLES_EQUAL(plain_loop_graph.error(values), wnoa_graph.error(values),
@@ -500,20 +512,21 @@ TEST(WnoaInterp, CachedGraphMatchesPlainLoopPoint3) {
 
 /* *********************************************************************** */
 TEST(WnoaInterp, JacobianSE3UnaryPose) {
+  const auto& data = fixture();
   // Model
   const auto model = noiseModel::Isotropic::Sigma(6, 1.0);
   const auto prior_factor =
-      std::make_shared<PriorFactor<Pose3>>(P(1), p1_se3, model);
+      std::make_shared<PriorFactor<Pose3>>(P(1), data.p1_se3, model);
   // Construct factor for interpolated pose and velocity
-  const auto factor = WnoaInterpFactor<Pose3>(prior_factor, estimatedStates,
-                                              interpolatedStates, Q_se3);
+  const auto factor = WnoaInterpFactor<Pose3>(
+      prior_factor, data.estimatedStates, data.interpolatedStates, data.Q_se3);
 
   // Set up values
   Values values;
-  values.insert(P(0), p0_se3);
-  values.insert(P(2), p2_se3);
-  values.insert(V(0), v0_se3);
-  values.insert(V(2), v2_se3);
+  values.insert(P(0), data.p0_se3);
+  values.insert(P(2), data.p2_se3);
+  values.insert(V(0), data.v0_se3);
+  values.insert(V(2), data.v2_se3);
 
   // Create container for Jacobians
   vector<Matrix> H(factor.keys().size());
@@ -540,16 +553,16 @@ TEST(WnoaInterp, JacobianSE3UnaryPose) {
   double delta = 1e-6;
   Matrix J_p0_num =
       numericalDerivative41<Vector, Pose3, Vector6, Pose3, Vector6>(
-          f, p0_se3, v0_se3, p2_se3, v2_se3, delta);
+          f, data.p0_se3, data.v0_se3, data.p2_se3, data.v2_se3, delta);
   Matrix J_v0_num =
       numericalDerivative42<Vector, Pose3, Vector6, Pose3, Vector6>(
-          f, p0_se3, v0_se3, p2_se3, v2_se3, delta);
+          f, data.p0_se3, data.v0_se3, data.p2_se3, data.v2_se3, delta);
   Matrix J_p2_num =
       numericalDerivative43<Vector, Pose3, Vector6, Pose3, Vector6>(
-          f, p0_se3, v0_se3, p2_se3, v2_se3, delta);
+          f, data.p0_se3, data.v0_se3, data.p2_se3, data.v2_se3, delta);
   Matrix J_v2_num =
       numericalDerivative44<Vector, Pose3, Vector6, Pose3, Vector6>(
-          f, p0_se3, v0_se3, p2_se3, v2_se3, delta);
+          f, data.p0_se3, data.v0_se3, data.p2_se3, data.v2_se3, delta);
 
   double tol = 1e-3;
   EXPECT(assert_equal(Jacs[P(0)], J_p0_num, tol));
@@ -559,23 +572,26 @@ TEST(WnoaInterp, JacobianSE3UnaryPose) {
 }
 /* *********************************************************************** */
 TEST(WnoaInterp, PrecomputeLambdaPsiUnarySe3) {
+  const auto& data = fixture();
   // Model
   const auto model = noiseModel::Isotropic::Sigma(6, 1.0);
   const auto prior_factor =
-      std::make_shared<PriorFactor<Pose3>>(P(1), p1_se3, model);
+      std::make_shared<PriorFactor<Pose3>>(P(1), data.p1_se3, model);
   // Construct factor for interpolated pose and velocity
   const auto factor = WnoaInterpFactor<Pose3>(
-      prior_factor, estimatedStates, interpolatedStates, Q_se3, false, false);
+      prior_factor, data.estimatedStates, data.interpolatedStates, data.Q_se3,
+      false, false);
   // factor with precomputed interpolation matrices
-  const auto factor_alt = WnoaInterpFactor<Pose3>(
-      prior_factor, estimatedStates, interpolatedStates, Q_se3, false, true);
+  const auto factor_alt =
+      WnoaInterpFactor<Pose3>(prior_factor, data.estimatedStates,
+                              data.interpolatedStates, data.Q_se3, false, true);
 
   // Set up values
   Values values;
-  values.insert(P(0), p0_se3);
-  values.insert(P(2), p2_se3);
-  values.insert(V(0), v0_se3);
-  values.insert(V(2), v2_se3);
+  values.insert(P(0), data.p0_se3);
+  values.insert(P(2), data.p2_se3);
+  values.insert(V(0), data.v0_se3);
+  values.insert(V(2), data.v2_se3);
 
   // Create container for Jacobians
   vector<Matrix> H(factor.keys().size());
@@ -596,39 +612,42 @@ TEST(WnoaInterp, PrecomputeLambdaPsiUnarySe3) {
 /* *********************************************************************** */
 
 TEST(WnoaInterp, Interpolator) {
+  const auto& data = fixture();
   // Create Interpolator
-  Interpolator<Pose3> interpolator(Q_se3);
+  Interpolator<Pose3> interpolator(data.Q_se3);
 
   // Get analytic Jacobians
   vector<Matrix> H(8);
   interpolator.interpolatePoseAndVelocity(
-      TimestampedPoseVelocity<Pose3>(p0_se3, v0_se3, 0.0),
-      TimestampedPoseVelocity<Pose3>(p2_se3, v2_se3, 2 * timestep), timestep,
-      &H);
+      TimestampedPoseVelocity<Pose3>(data.p0_se3, data.v0_se3, 0.0),
+      TimestampedPoseVelocity<Pose3>(data.p2_se3, data.v2_se3,
+                                     2 * data.timestep),
+      data.timestep, &H);
 
   // define lambda function for derivatives
   auto f = [&](auto& p0, auto& v0, auto& p2, auto& v2) {
     auto [pose, vel] = interpolator.interpolatePoseAndVelocity(
         TimestampedPoseVelocity<Pose3>(p0, v0, 0.0),
-        TimestampedPoseVelocity<Pose3>(p2, v2, 2 * timestep), timestep);
+        TimestampedPoseVelocity<Pose3>(p2, v2, 2 * data.timestep),
+        data.timestep);
 
-    return p1_se3.logmap(pose);
+    return data.p1_se3.logmap(pose);
   };
 
   // Compute numerical derivatives
   double delta = 1e-6;
   Matrix J_p0_num =
       numericalDerivative41<Vector, Pose3, Vector6, Pose3, Vector6>(
-          f, p0_se3, v0_se3, p2_se3, v2_se3, delta);
+          f, data.p0_se3, data.v0_se3, data.p2_se3, data.v2_se3, delta);
   Matrix J_v0_num =
       numericalDerivative42<Vector, Pose3, Vector6, Pose3, Vector6>(
-          f, p0_se3, v0_se3, p2_se3, v2_se3, delta);
+          f, data.p0_se3, data.v0_se3, data.p2_se3, data.v2_se3, delta);
   Matrix J_p2_num =
       numericalDerivative43<Vector, Pose3, Vector6, Pose3, Vector6>(
-          f, p0_se3, v0_se3, p2_se3, v2_se3, delta);
+          f, data.p0_se3, data.v0_se3, data.p2_se3, data.v2_se3, delta);
   Matrix J_v2_num =
       numericalDerivative44<Vector, Pose3, Vector6, Pose3, Vector6>(
-          f, p0_se3, v0_se3, p2_se3, v2_se3, delta);
+          f, data.p0_se3, data.v0_se3, data.p2_se3, data.v2_se3, delta);
 
   double tol = 1e-3;
   EXPECT(assert_equal(H[0], J_p0_num, tol));
@@ -639,23 +658,25 @@ TEST(WnoaInterp, Interpolator) {
 
 /* *********************************************************************** */
 TEST(WnoaInterp, NoiseModelSE3Unary) {
+  const auto& data = fixture();
   // Model
   const auto model = noiseModel::Isotropic::Sigma(6, 1.0);
   const auto prior_factor =
-      std::make_shared<PriorFactor<Pose3>>(P(1), p1_se3, model);
+      std::make_shared<PriorFactor<Pose3>>(P(1), data.p1_se3, model);
   auto cov_prior = model->covariance();
   // Factor with changing measurement noise
-  const auto factor = WnoaInterpFactor<Pose3>(prior_factor, estimatedStates,
-                                              interpolatedStates, Q_se3);
+  const auto factor = WnoaInterpFactor<Pose3>(
+      prior_factor, data.estimatedStates, data.interpolatedStates, data.Q_se3);
   // Factor with fixed meas noise
-  const auto factor_fixed = WnoaInterpFactor<Pose3>(
-      prior_factor, estimatedStates, interpolatedStates, Q_se3, true);
+  const auto factor_fixed =
+      WnoaInterpFactor<Pose3>(prior_factor, data.estimatedStates,
+                              data.interpolatedStates, data.Q_se3, true);
   // Set up values
   Values values;
-  values.insert(P(0), p0_se3);
-  values.insert(P(2), p2_se3);
-  values.insert(V(0), v0_se3);
-  values.insert(V(2), v2_se3);
+  values.insert(P(0), data.p0_se3);
+  values.insert(P(2), data.p2_se3);
+  values.insert(V(0), data.v0_se3);
+  values.insert(V(2), data.v2_se3);
   // Call error functions
   auto cov = factor.noiseModel(values)->covariance();
   auto cov_fixed = factor_fixed.noiseModel(values)->covariance();
@@ -666,16 +687,18 @@ TEST(WnoaInterp, NoiseModelSE3Unary) {
 /* *********************************************************************** */
 
 TEST(WnoaInterp, NoiseModelSE3Btwn) {
+  const auto& data = fixture();
   // Same as between above, but using two interpolated states with different
   // boundaries
   set<StateData> estimatedStates = {StateData(P(0), V(0), 0.0),
-                                    StateData(P(2), V(2), 2 * timestep),
-                                    StateData(P(4), V(4), 4 * timestep)};
-  set<StateData> interpolatedStates = {StateData(P(1), V(1), timestep),
-                                       StateData(P(3), V(3), 3 * timestep)};
-  const Pose3 p3_se3 = p0_se3.expmap(3 * timestep * v0_se3);
-  const Pose3 p4_se3 = p0_se3.expmap(4 * timestep * v0_se3);
-  Vector6 v2_se3 = v0_se3;
+                                    StateData(P(2), V(2), 2 * data.timestep),
+                                    StateData(P(4), V(4), 4 * data.timestep)};
+  set<StateData> interpolatedStates = {
+      StateData(P(1), V(1), data.timestep),
+      StateData(P(3), V(3), 3 * data.timestep)};
+  const Pose3 p3_se3 = data.p0_se3.expmap(3 * data.timestep * data.v0_se3);
+  const Pose3 p4_se3 = data.p0_se3.expmap(4 * data.timestep * data.v0_se3);
+  Vector6 v2_se3 = data.v0_se3;
   // Model
   const auto model = noiseModel::Isotropic::Sigma(6, 1.0);
   const auto cov_inner = model->covariance();
@@ -683,17 +706,17 @@ TEST(WnoaInterp, NoiseModelSE3Btwn) {
       P(1), P(3), Pose3::Identity(), model);
   // Construct factor for interpolated pose and velocity
   const auto factor = WnoaInterpFactor<Pose3>(between_factor, estimatedStates,
-                                              interpolatedStates, Q_se3);
+                                              interpolatedStates, data.Q_se3);
   const auto factor_fixed = WnoaInterpFactor<Pose3>(
-      between_factor, estimatedStates, interpolatedStates, Q_se3, true);
+      between_factor, estimatedStates, interpolatedStates, data.Q_se3, true);
   // Set up values
   Values values;
-  values.insert(P(0), p0_se3);
-  values.insert(P(2), p2_se3);
+  values.insert(P(0), data.p0_se3);
+  values.insert(P(2), data.p2_se3);
   values.insert(P(4), p4_se3);
-  values.insert(V(0), v0_se3);
+  values.insert(V(0), data.v0_se3);
   values.insert(V(2), v2_se3);
-  values.insert(V(4), v0_se3);
+  values.insert(V(4), data.v0_se3);
 
   // Call error functions
   auto cov = factor.noiseModel(values)->covariance();
@@ -706,16 +729,18 @@ TEST(WnoaInterp, NoiseModelSE3Btwn) {
 /* *********************************************************************** */
 
 TEST(WnoaInterp, NoiseModelP3Btwn) {
+  const auto& data = fixture();
   // Same as between above, but using two interpolated states with different
   // boundaries
   set<StateData> estimatedStates = {StateData(P(0), V(0), 0.0),
-                                    StateData(P(2), V(2), 2 * timestep),
-                                    StateData(P(4), V(4), 4 * timestep)};
-  set<StateData> interpolatedStates = {StateData(P(1), V(1), timestep),
-                                       StateData(P(3), V(3), 3 * timestep)};
+                                    StateData(P(2), V(2), 2 * data.timestep),
+                                    StateData(P(4), V(4), 4 * data.timestep)};
+  set<StateData> interpolatedStates = {
+      StateData(P(1), V(1), data.timestep),
+      StateData(P(3), V(3), 3 * data.timestep)};
   // const Point3 p3_p3 = p0_p3 + 3 * timestep * v0_p3;
-  const Point3 p4_p3 = p0_p3 + 4 * timestep * v0_p3;
-  Vector3 v2_p3 = v0_p3;
+  const Point3 p4_p3 = data.p0_p3 + 4 * data.timestep * data.v0_p3;
+  Vector3 v2_p3 = data.v0_p3;
   // Model
   const auto model = noiseModel::Isotropic::Sigma(3, 1.0);
   const auto cov_inner = model->covariance();
@@ -723,16 +748,16 @@ TEST(WnoaInterp, NoiseModelP3Btwn) {
       P(1), P(3), Point3::Identity(), model);
   // Construct factor for interpolated pose and velocity
   const auto factor = WnoaInterpFactor<Point3>(between_factor, estimatedStates,
-                                               interpolatedStates, Q_p3);
+                                               interpolatedStates, data.Q_p3);
 
   // Set up values
   Values values;
-  values.insert(P(0), p0_p3);
-  values.insert(P(2), p2_p3);
+  values.insert(P(0), data.p0_p3);
+  values.insert(P(2), data.p2_p3);
   values.insert(P(4), p4_p3);
-  values.insert(V(0), v0_p3);
+  values.insert(V(0), data.v0_p3);
   values.insert(V(2), v2_p3);
-  values.insert(V(4), v0_p3);
+  values.insert(V(4), data.v0_p3);
 
   // Get modified noise model
   auto cov = factor.noiseModel(values)->covariance();
@@ -740,43 +765,45 @@ TEST(WnoaInterp, NoiseModelP3Btwn) {
   Matrix cov_diff = cov - cov_inner;
   // verify same as 2x interpolated conditional covariance
   // Note: Jacobians for Point3 are identity
-  auto interpolator = Interpolator<Point3>(Q_p3);
+  auto interpolator = Interpolator<Point3>(data.Q_p3);
   auto Sigma_tau = interpolator.computeConditionalCov(
-      TimestampedPoseVelocity<Point3>(p0_p3, v0_p3, 0.0),
-      TimestampedPoseVelocity<Point3>(p2_p3, v2_p3, 2 * timestep),
-      TimestampedPoseVelocity<Point3>(p1_p3, v1_p3, timestep));
+      TimestampedPoseVelocity<Point3>(data.p0_p3, data.v0_p3, 0.0),
+      TimestampedPoseVelocity<Point3>(data.p2_p3, v2_p3, 2 * data.timestep),
+      TimestampedPoseVelocity<Point3>(data.p1_p3, data.v1_p3, data.timestep));
   EXPECT(assert_equal(cov_diff, 2 * Sigma_tau.block<3, 3>(0, 0)));
 }
 
 /* *********************************************************************** */
 
 TEST(WnoaInterp, LinearizeSE3Btwn) {
+  const auto& data = fixture();
   // Same as between above, but using two interpolated states with different
   // boundaries
   set<StateData> estimatedStates = {StateData(P(0), V(0), 0.0),
-                                    StateData(P(2), V(2), 2 * timestep),
-                                    StateData(P(4), V(4), 4 * timestep)};
-  set<StateData> interpolatedStates = {StateData(P(1), V(1), timestep),
-                                       StateData(P(3), V(3), 3 * timestep)};
-  const Pose3 p3_se3 = p0_se3.expmap(3 * timestep * v0_se3);
-  const Pose3 p4_se3 = p0_se3.expmap(4 * timestep * v0_se3);
-  Vector6 v2_se3 = v0_se3;
+                                    StateData(P(2), V(2), 2 * data.timestep),
+                                    StateData(P(4), V(4), 4 * data.timestep)};
+  set<StateData> interpolatedStates = {
+      StateData(P(1), V(1), data.timestep),
+      StateData(P(3), V(3), 3 * data.timestep)};
+  const Pose3 p3_se3 = data.p0_se3.expmap(3 * data.timestep * data.v0_se3);
+  const Pose3 p4_se3 = data.p0_se3.expmap(4 * data.timestep * data.v0_se3);
+  Vector6 v2_se3 = data.v0_se3;
   // Model
   const auto model = noiseModel::Isotropic::Sigma(6, 1.0);
   const auto between_factor = std::make_shared<BetweenFactor<Pose3>>(
-      P(1), P(3), p1_se3.inverse() * p3_se3, model);
+      P(1), P(3), data.p1_se3.inverse() * p3_se3, model);
   // Construct factor for interpolated pose and velocity
   const auto factor = WnoaInterpFactor<Pose3>(between_factor, estimatedStates,
-                                              interpolatedStates, Q_se3);
+                                              interpolatedStates, data.Q_se3);
 
   // Set up values
   Values values;
-  values.insert(P(0), p0_se3);
-  values.insert(P(2), p2_se3);
+  values.insert(P(0), data.p0_se3);
+  values.insert(P(2), data.p2_se3);
   values.insert(P(4), p4_se3);
-  values.insert(V(0), v0_se3);
+  values.insert(V(0), data.v0_se3);
   values.insert(V(2), v2_se3);
-  values.insert(V(4), v0_se3);
+  values.insert(V(4), data.v0_se3);
 
   // Call Linearize function
   auto lin_factor =
@@ -788,6 +815,7 @@ TEST(WnoaInterp, LinearizeSE3Btwn) {
 /* *********************************************************************** */
 
 TEST(WnoaInterp, SE3OptimTest) {
+  const auto& data = fixture();
   // Define optimization:
   //       unary
   //         |
@@ -795,46 +823,47 @@ TEST(WnoaInterp, SE3OptimTest) {
   //  e      i      e       i       e
   //          --- between ---
   set<StateData> estimatedStates = {StateData(P(0), V(0), 0.0),
-                                    StateData(P(2), V(2), 2 * timestep),
-                                    StateData(P(4), V(4), 4 * timestep)};
-  set<StateData> interpolatedStates = {StateData(P(1), V(1), timestep),
-                                       StateData(P(3), V(3), 3 * timestep)};
-  const Pose3 p3_se3 = p0_se3.expmap(3 * timestep * v0_se3);
-  const Pose3 p4_se3 = p0_se3.expmap(4 * timestep * v0_se3);
+                                    StateData(P(2), V(2), 2 * data.timestep),
+                                    StateData(P(4), V(4), 4 * data.timestep)};
+  set<StateData> interpolatedStates = {
+      StateData(P(1), V(1), data.timestep),
+      StateData(P(3), V(3), 3 * data.timestep)};
+  const Pose3 p3_se3 = data.p0_se3.expmap(3 * data.timestep * data.v0_se3);
+  const Pose3 p4_se3 = data.p0_se3.expmap(4 * data.timestep * data.v0_se3);
   // Define nominal factors
   const auto model = noiseModel::Isotropic::Sigma(6, 1.0);
   const auto between_factor = std::make_shared<BetweenFactor<Pose3>>(
-      P(1), P(3), p1_se3.inverse() * p3_se3, model);
+      P(1), P(3), data.p1_se3.inverse() * p3_se3, model);
   const auto prior_pose_factor =
-      std::make_shared<PriorFactor<Pose3>>(P(1), p1_se3, model);
+      std::make_shared<PriorFactor<Pose3>>(P(1), data.p1_se3, model);
   const auto prior_vel_factor =
-      std::make_shared<PriorFactor<Vector6>>(V(1), v0_se3, model);
+      std::make_shared<PriorFactor<Vector6>>(V(1), data.v0_se3, model);
 
   // Define graph
   NonlinearFactorGraph graph;
 
   // Construct interpolated factors
   graph.add(WnoaInterpFactor<Pose3>(prior_pose_factor, estimatedStates,
-                                    interpolatedStates, Q_se3));
+                                    interpolatedStates, data.Q_se3));
   graph.add(WnoaInterpFactor<Pose3>(prior_vel_factor, estimatedStates,
-                                    interpolatedStates, Q_se3));
+                                    interpolatedStates, data.Q_se3));
   graph.add(WnoaInterpFactor<Pose3>(between_factor, estimatedStates,
-                                    interpolatedStates, Q_se3));
+                                    interpolatedStates, data.Q_se3));
 
   // Add WNOA factors
-  graph.add(
-      WnoaMotionFactor<Pose3>(P(0), V(0), P(2), V(2), 2 * timestep, Q_se3));
-  graph.add(
-      WnoaMotionFactor<Pose3>(P(2), V(2), P(4), V(4), 2 * timestep, Q_se3));
+  graph.add(WnoaMotionFactor<Pose3>(P(0), V(0), P(2), V(2), 2 * data.timestep,
+                                    data.Q_se3));
+  graph.add(WnoaMotionFactor<Pose3>(P(2), V(2), P(4), V(4), 2 * data.timestep,
+                                    data.Q_se3));
 
   // Set up values at ground truth solution
   Values values;
-  values.insert(P(0), p0_se3);
-  values.insert(P(2), p2_se3);
+  values.insert(P(0), data.p0_se3);
+  values.insert(P(2), data.p2_se3);
   values.insert(P(4), p4_se3);
-  values.insert(V(0), v0_se3);  // Same velocity for all points
-  values.insert(V(2), v0_se3);
-  values.insert(V(4), v0_se3);
+  values.insert(V(0), data.v0_se3);  // Same velocity for all points
+  values.insert(V(2), data.v0_se3);
+  values.insert(V(4), data.v0_se3);
 
   // Set up optimizer
   GaussNewtonOptimizer optimizer(graph, values);
@@ -850,19 +879,19 @@ TEST(WnoaInterp, SE3OptimTest) {
   // perturb solution and converge again
   Values values_pert;
   values_pert.insert(
-      P(0), p0_se3.expmap(Vector6(0.001, 0.001, 0.001, 0.1, 0.1, 0.1)));
+      P(0), data.p0_se3.expmap(Vector6(0.001, 0.001, 0.001, 0.1, 0.1, 0.1)));
 
   values_pert.insert(
-      P(2), p2_se3.expmap(Vector6(0.001, 0.001, 0.001, 0.1, 0.1, 0.1)));
+      P(2), data.p2_se3.expmap(Vector6(0.001, 0.001, 0.001, 0.1, 0.1, 0.1)));
 
   values_pert.insert(
       P(4), p4_se3.expmap(Vector6(0.001, 0.001, 0.001, 0.1, 0.1, 0.1)));
-  values_pert.insert(V(0), v0_se3 + Vector6(1.0, 1.0, 1.0, 1.0, 1.0, 1.0) *
+  values_pert.insert(V(0), data.v0_se3 + Vector6(1.0, 1.0, 1.0, 1.0, 1.0, 1.0) *
                                         0.1);  // Same velocity for all points
   values_pert.insert(V(2),
-                     v0_se3 + Vector6(1.0, 1.0, 1.0, 1.0, 1.0, 1.0) * 0.1);
+                     data.v0_se3 + Vector6(1.0, 1.0, 1.0, 1.0, 1.0, 1.0) * 0.1);
   values_pert.insert(V(4),
-                     v0_se3 + Vector6(1.0, 1.0, 1.0, 1.0, 1.0, 1.0) * 0.1);
+                     data.v0_se3 + Vector6(1.0, 1.0, 1.0, 1.0, 1.0, 1.0) * 0.1);
 
   // Set up optimizer
   GaussNewtonOptimizer optimizer2(graph, values_pert);
@@ -872,14 +901,15 @@ TEST(WnoaInterp, SE3OptimTest) {
 }
 
 TEST(WnoaInterp, SE3UpdateInterpValues) {
+  const auto& data = fixture();
   // Define nominal factors
   const auto model = noiseModel::Isotropic::Sigma(6, 1.0);
   const auto between_factor = std::make_shared<BetweenFactor<Pose3>>(
-      P(1), P(3), p1_se3.inverse() * p3_se3, model);
+      P(1), P(3), data.p1_se3.inverse() * data.p3_se3, model);
   const auto prior_pose_factor =
-      std::make_shared<PriorFactor<Pose3>>(P(1), p1_se3, model);
+      std::make_shared<PriorFactor<Pose3>>(P(1), data.p1_se3, model);
   const auto prior_vel_factor =
-      std::make_shared<PriorFactor<Vector6>>(V(1), v0_se3, model);
+      std::make_shared<PriorFactor<Vector6>>(V(1), data.v0_se3, model);
 
   // Generate original graph
   NonlinearFactorGraph graph;
@@ -889,27 +919,29 @@ TEST(WnoaInterp, SE3UpdateInterpValues) {
 
   // Interpolate the graph
   set<StateData> estimatedStatesShuffled = {
-      StateData(P(0), V(0), 0.0), StateData(P(4), V(4), 4 * timestep),
-      StateData(P(2), V(2), 2 * timestep)};
+      StateData(P(0), V(0), 0.0), StateData(P(4), V(4), 4 * data.timestep),
+      StateData(P(2), V(2), 2 * data.timestep)};
   set<StateData> interpolatedStatesShuffled = {
-      StateData(P(3), V(3), 3 * timestep), StateData(P(1), V(1), timestep)};
+      StateData(P(3), V(3), 3 * data.timestep),
+      StateData(P(1), V(1), data.timestep)};
   NonlinearFactorGraph new_graph =
       interpolateFactorGraph<Pose3, NonlinearFactorGraph>(
-          graph, estimatedStatesShuffled, interpolatedStatesShuffled, Q_se3);
+          graph, estimatedStatesShuffled, interpolatedStatesShuffled,
+          data.Q_se3);
 
   // Ground truth values for estimated states
   Values values;
-  values.insert(P(0), p0_se3);
-  values.insert(P(2), p2_se3);
-  values.insert(P(4), p4_se3);
-  values.insert(V(0), v0_se3);
-  values.insert(V(2), v0_se3);
-  values.insert(V(4), v0_se3);
+  values.insert(P(0), data.p0_se3);
+  values.insert(P(2), data.p2_se3);
+  values.insert(P(4), data.p4_se3);
+  values.insert(V(0), data.v0_se3);
+  values.insert(V(2), data.v0_se3);
+  values.insert(V(4), data.v0_se3);
 
   auto covariance_map = std::make_shared<InterpCovarianceMap>();
   Values result_interp = updateInterpValues<Pose3>(
       new_graph, values, estimatedStatesShuffled, interpolatedStatesShuffled,
-      Q_se3, covariance_map);
+      data.Q_se3, covariance_map);
 
   auto is_positive_semidefinite = [](const Matrix& covariance) {
     const Matrix symmetric = 0.5 * (covariance + covariance.transpose());
@@ -941,21 +973,22 @@ TEST(WnoaInterp, SE3UpdateInterpValues) {
   auto v3_se3_est = result_interp.at<Vector6>(V(3));
   auto v1_se3_est = result_interp.at<Vector6>(V(1));
 
-  EXPECT(assert_equal(p3_se3, p3_se3_est, 1e-6));
-  EXPECT(assert_equal(p1_se3, p1_se3_est, 1e-6));
-  EXPECT(assert_equal(v0_se3, v3_se3_est, 1e-12));
-  EXPECT(assert_equal(v0_se3, v1_se3_est, 1e-12));
+  EXPECT(assert_equal(data.p3_se3, p3_se3_est, 1e-6));
+  EXPECT(assert_equal(data.p1_se3, p1_se3_est, 1e-6));
+  EXPECT(assert_equal(data.v0_se3, v3_se3_est, 1e-12));
+  EXPECT(assert_equal(data.v0_se3, v1_se3_est, 1e-12));
 }
 
 TEST(WnoaInterp, SE3UpdateInterpValuesWnoaGraph) {
+  const auto& data = fixture();
   // Define nominal factors
   const auto model = noiseModel::Isotropic::Sigma(6, 1.0);
   const auto between_factor = std::make_shared<BetweenFactor<Pose3>>(
-      P(1), P(3), p1_se3.inverse() * p3_se3, model);
+      P(1), P(3), data.p1_se3.inverse() * data.p3_se3, model);
   const auto prior_pose_factor =
-      std::make_shared<PriorFactor<Pose3>>(P(1), p1_se3, model);
+      std::make_shared<PriorFactor<Pose3>>(P(1), data.p1_se3, model);
   const auto prior_vel_factor =
-      std::make_shared<PriorFactor<Vector6>>(V(1), v0_se3, model);
+      std::make_shared<PriorFactor<Vector6>>(V(1), data.v0_se3, model);
 
   // Generate original graph
   NonlinearFactorGraph graph;
@@ -965,27 +998,29 @@ TEST(WnoaInterp, SE3UpdateInterpValuesWnoaGraph) {
 
   // Interpolate the graph
   set<StateData> estimatedStatesShuffled = {
-      StateData(P(0), V(0), 0.0), StateData(P(4), V(4), 4 * timestep),
-      StateData(P(2), V(2), 2 * timestep)};
+      StateData(P(0), V(0), 0.0), StateData(P(4), V(4), 4 * data.timestep),
+      StateData(P(2), V(2), 2 * data.timestep)};
   set<StateData> interpolatedStatesShuffled = {
-      StateData(P(3), V(3), 3 * timestep), StateData(P(1), V(1), timestep)};
+      StateData(P(3), V(3), 3 * data.timestep),
+      StateData(P(1), V(1), data.timestep)};
   WnoaFactorGraph<Pose3> new_graph =
       interpolateFactorGraph<Pose3, WnoaFactorGraph<Pose3>>(
-          graph, estimatedStatesShuffled, interpolatedStatesShuffled, Q_se3);
+          graph, estimatedStatesShuffled, interpolatedStatesShuffled,
+          data.Q_se3);
 
   // Ground truth values for estimated states
   Values values;
-  values.insert(P(0), p0_se3);
-  values.insert(P(2), p2_se3);
-  values.insert(P(4), p4_se3);
-  values.insert(V(0), v0_se3);
-  values.insert(V(2), v0_se3);
-  values.insert(V(4), v0_se3);
+  values.insert(P(0), data.p0_se3);
+  values.insert(P(2), data.p2_se3);
+  values.insert(P(4), data.p4_se3);
+  values.insert(V(0), data.v0_se3);
+  values.insert(V(2), data.v0_se3);
+  values.insert(V(4), data.v0_se3);
 
   auto covariance_map = std::make_shared<InterpCovarianceMap>();
   Values result_interp = updateInterpValues<Pose3>(
       new_graph, values, estimatedStatesShuffled, interpolatedStatesShuffled,
-      Q_se3, covariance_map);
+      data.Q_se3, covariance_map);
 
   auto is_positive_semidefinite = [](const Matrix& covariance) {
     const Matrix symmetric = 0.5 * (covariance + covariance.transpose());
@@ -1017,13 +1052,14 @@ TEST(WnoaInterp, SE3UpdateInterpValuesWnoaGraph) {
   auto v3_se3_est = result_interp.at<Vector6>(V(3));
   auto v1_se3_est = result_interp.at<Vector6>(V(1));
 
-  EXPECT(assert_equal(p3_se3, p3_se3_est, 1e-6));
-  EXPECT(assert_equal(p1_se3, p1_se3_est, 1e-6));
-  EXPECT(assert_equal(v0_se3, v3_se3_est, 1e-12));
-  EXPECT(assert_equal(v0_se3, v1_se3_est, 1e-12));
+  EXPECT(assert_equal(data.p3_se3, p3_se3_est, 1e-6));
+  EXPECT(assert_equal(data.p1_se3, p1_se3_est, 1e-6));
+  EXPECT(assert_equal(data.v0_se3, v3_se3_est, 1e-12));
+  EXPECT(assert_equal(data.v0_se3, v1_se3_est, 1e-12));
 }
 
 TEST(WnoaInterp, SE3InterpGraph) {
+  const auto& data = fixture();
   // Test automatic interpolation
   // Define optimization:
   //       unary
@@ -1035,11 +1071,11 @@ TEST(WnoaInterp, SE3InterpGraph) {
   // Define nominal factors
   const auto model = noiseModel::Isotropic::Sigma(6, 1.0);
   const auto between_factor = std::make_shared<BetweenFactor<Pose3>>(
-      P(1), P(3), p1_se3.inverse() * p3_se3, model);
+      P(1), P(3), data.p1_se3.inverse() * data.p3_se3, model);
   const auto prior_pose_factor =
-      std::make_shared<PriorFactor<Pose3>>(P(1), p1_se3, model);
+      std::make_shared<PriorFactor<Pose3>>(P(1), data.p1_se3, model);
   const auto prior_vel_factor =
-      std::make_shared<PriorFactor<Vector6>>(V(1), v0_se3, model);
+      std::make_shared<PriorFactor<Vector6>>(V(1), data.v0_se3, model);
 
   // Generate original graph
   NonlinearFactorGraph graph;
@@ -1049,22 +1085,24 @@ TEST(WnoaInterp, SE3InterpGraph) {
 
   // Interpolate the graph
   set<StateData> estimatedStatesShuffled = {
-      StateData(P(0), V(0), 0.0), StateData(P(4), V(4), 4 * timestep),
-      StateData(P(2), V(2), 2 * timestep)};
+      StateData(P(0), V(0), 0.0), StateData(P(4), V(4), 4 * data.timestep),
+      StateData(P(2), V(2), 2 * data.timestep)};
   set<StateData> interpolatedStatesShuffled = {
-      StateData(P(3), V(3), 3 * timestep), StateData(P(1), V(1), timestep)};
+      StateData(P(3), V(3), 3 * data.timestep),
+      StateData(P(1), V(1), data.timestep)};
   NonlinearFactorGraph new_graph =
       interpolateFactorGraph<Pose3, NonlinearFactorGraph>(
-          graph, estimatedStatesShuffled, interpolatedStatesShuffled, Q_se3);
+          graph, estimatedStatesShuffled, interpolatedStatesShuffled,
+          data.Q_se3);
 
   // Set up values at ground truth solution
   Values values;
-  values.insert(P(0), p0_se3);
-  values.insert(P(2), p2_se3);
-  values.insert(P(4), p4_se3);
-  values.insert(V(0), v0_se3);  // Same velocity for all points
-  values.insert(V(2), v0_se3);
-  values.insert(V(4), v0_se3);
+  values.insert(P(0), data.p0_se3);
+  values.insert(P(2), data.p2_se3);
+  values.insert(P(4), data.p4_se3);
+  values.insert(V(0), data.v0_se3);  // Same velocity for all points
+  values.insert(V(2), data.v0_se3);
+  values.insert(V(4), data.v0_se3);
   // Set up optimizer
   GaussNewtonOptimizer optimizer(new_graph, values);
   // We expect the initial to be zero because config is the ground truth
@@ -1079,18 +1117,18 @@ TEST(WnoaInterp, SE3InterpGraph) {
   // perturb solution and converge again
   Values values_pert;
   values_pert.insert(
-      P(0), p0_se3.expmap(Vector6(0.001, 0.001, 0.001, 0.1, 0.1, 0.1)));
+      P(0), data.p0_se3.expmap(Vector6(0.001, 0.001, 0.001, 0.1, 0.1, 0.1)));
   values_pert.insert(
-      P(2), p2_se3.expmap(Vector6(0.001, 0.001, 0.001, 0.1, 0.1, 0.1)));
+      P(2), data.p2_se3.expmap(Vector6(0.001, 0.001, 0.001, 0.1, 0.1, 0.1)));
   values_pert.insert(
-      P(4), p4_se3.expmap(Vector6(0.001, 0.001, 0.001, 0.1, 0.1, 0.1)));
+      P(4), data.p4_se3.expmap(Vector6(0.001, 0.001, 0.001, 0.1, 0.1, 0.1)));
   values_pert.insert(V(0),
-                     v0_se3 + Vector6(1.0, 1.0, 1.0, 1.0, 1.0, 1.0) * 0.1);
+                     data.v0_se3 + Vector6(1.0, 1.0, 1.0, 1.0, 1.0, 1.0) * 0.1);
   // Same velocity for all points
   values_pert.insert(V(2),
-                     v0_se3 + Vector6(1.0, 1.0, 1.0, 1.0, 1.0, 1.0) * 0.1);
+                     data.v0_se3 + Vector6(1.0, 1.0, 1.0, 1.0, 1.0, 1.0) * 0.1);
   values_pert.insert(V(4),
-                     v0_se3 + Vector6(1.0, 1.0, 1.0, 1.0, 1.0, 1.0) * 0.1);
+                     data.v0_se3 + Vector6(1.0, 1.0, 1.0, 1.0, 1.0, 1.0) * 0.1);
   // Set up optimizer
   GaussNewtonOptimizer optimizer2(new_graph, values_pert);
   // Check that we converge to solution
@@ -1099,6 +1137,7 @@ TEST(WnoaInterp, SE3InterpGraph) {
 }
 
 TEST(WnoaInterp, SE3InterpWnoaGraph) {
+  const auto& data = fixture();
   // Test automatic interpolation with WnoaFactorGraph
   // Note: this test is similar to SE3InterpGraph, but uses WnoaFactorGraph
   // which has different linearization behavior. This ensures that interpolation
@@ -1113,11 +1152,11 @@ TEST(WnoaInterp, SE3InterpWnoaGraph) {
   // Define nominal factors
   const auto model = noiseModel::Isotropic::Sigma(6, 1.0);
   const auto between_factor = std::make_shared<BetweenFactor<Pose3>>(
-      P(1), P(3), p1_se3.inverse() * p3_se3, model);
+      P(1), P(3), data.p1_se3.inverse() * data.p3_se3, model);
   const auto prior_pose_factor =
-      std::make_shared<PriorFactor<Pose3>>(P(1), p1_se3, model);
+      std::make_shared<PriorFactor<Pose3>>(P(1), data.p1_se3, model);
   const auto prior_vel_factor =
-      std::make_shared<PriorFactor<Vector6>>(V(1), v0_se3, model);
+      std::make_shared<PriorFactor<Vector6>>(V(1), data.v0_se3, model);
 
   // Generate original graph
   NonlinearFactorGraph graph;
@@ -1127,22 +1166,24 @@ TEST(WnoaInterp, SE3InterpWnoaGraph) {
 
   // Interpolate the graph
   set<StateData> estimatedStatesShuffled = {
-      StateData(P(0), V(0), 0.0), StateData(P(4), V(4), 4 * timestep),
-      StateData(P(2), V(2), 2 * timestep)};
+      StateData(P(0), V(0), 0.0), StateData(P(4), V(4), 4 * data.timestep),
+      StateData(P(2), V(2), 2 * data.timestep)};
   set<StateData> interpolatedStatesShuffled = {
-      StateData(P(3), V(3), 3 * timestep), StateData(P(1), V(1), timestep)};
+      StateData(P(3), V(3), 3 * data.timestep),
+      StateData(P(1), V(1), data.timestep)};
   WnoaFactorGraph<Pose3> new_graph =
       interpolateFactorGraph<Pose3, WnoaFactorGraph<Pose3>>(
-          graph, estimatedStatesShuffled, interpolatedStatesShuffled, Q_se3);
+          graph, estimatedStatesShuffled, interpolatedStatesShuffled,
+          data.Q_se3);
 
   // Set up values at ground truth solution
   Values values;
-  values.insert(P(0), p0_se3);
-  values.insert(P(2), p2_se3);
-  values.insert(P(4), p4_se3);
-  values.insert(V(0), v0_se3);  // Same velocity for all points
-  values.insert(V(2), v0_se3);
-  values.insert(V(4), v0_se3);
+  values.insert(P(0), data.p0_se3);
+  values.insert(P(2), data.p2_se3);
+  values.insert(P(4), data.p4_se3);
+  values.insert(V(0), data.v0_se3);  // Same velocity for all points
+  values.insert(V(2), data.v0_se3);
+  values.insert(V(4), data.v0_se3);
   // Set up optimizer
   LevenbergMarquardtOptimizer optimizer(new_graph, values);
   // We expect the initial to be zero because config is the ground truth
@@ -1157,18 +1198,18 @@ TEST(WnoaInterp, SE3InterpWnoaGraph) {
   // perturb solution and converge again
   Values values_pert;
   values_pert.insert(
-      P(0), p0_se3.expmap(Vector6(0.001, 0.001, 0.001, 0.1, 0.1, 0.1)));
+      P(0), data.p0_se3.expmap(Vector6(0.001, 0.001, 0.001, 0.1, 0.1, 0.1)));
   values_pert.insert(
-      P(2), p2_se3.expmap(Vector6(0.001, 0.001, 0.001, 0.1, 0.1, 0.1)));
+      P(2), data.p2_se3.expmap(Vector6(0.001, 0.001, 0.001, 0.1, 0.1, 0.1)));
   values_pert.insert(
-      P(4), p4_se3.expmap(Vector6(0.001, 0.001, 0.001, 0.1, 0.1, 0.1)));
+      P(4), data.p4_se3.expmap(Vector6(0.001, 0.001, 0.001, 0.1, 0.1, 0.1)));
   values_pert.insert(V(0),
-                     v0_se3 + Vector6(1.0, 1.0, 1.0, 1.0, 1.0, 1.0) * 0.1);
+                     data.v0_se3 + Vector6(1.0, 1.0, 1.0, 1.0, 1.0, 1.0) * 0.1);
   // Same velocity for all points
   values_pert.insert(V(2),
-                     v0_se3 + Vector6(1.0, 1.0, 1.0, 1.0, 1.0, 1.0) * 0.1);
+                     data.v0_se3 + Vector6(1.0, 1.0, 1.0, 1.0, 1.0, 1.0) * 0.1);
   values_pert.insert(V(4),
-                     v0_se3 + Vector6(1.0, 1.0, 1.0, 1.0, 1.0, 1.0) * 0.1);
+                     data.v0_se3 + Vector6(1.0, 1.0, 1.0, 1.0, 1.0, 1.0) * 0.1);
   // Set up optimizer
   GaussNewtonOptimizer optimizer2(new_graph, values_pert);
   // Check that we converge to solution

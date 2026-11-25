@@ -18,7 +18,7 @@
 #include "TestResult.h"
 #include "TestRegistry.h"
 
-void TestRegistry::addTest (Test *test)
+void TestRegistry::addTest (Test *test) noexcept
 {
   instance ().add (test);
 }
@@ -30,14 +30,14 @@ int TestRegistry::runAllTests (TestResult& result)
 }
 
 
-TestRegistry& TestRegistry::instance ()
+TestRegistry& TestRegistry::instance () noexcept
 {
   static TestRegistry registry;
   return registry;
 }
 
 
-void TestRegistry::add (Test *test)
+void TestRegistry::add (Test *test) noexcept
 {
   if (tests == 0) {
     test->setNext(0);

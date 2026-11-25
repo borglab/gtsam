@@ -11,6 +11,7 @@ set (gtsam_unstable_subdirs
     dynamics
     nonlinear
     slam
+    planning
 )
 
 if(GTSAM_SUPPORT_NESTED_DISSECTION) # Only build partition if metis is built
@@ -73,6 +74,7 @@ set(gtsam_unstable_srcs
     ${dynamics_srcs}
     ${nonlinear_srcs}
     ${slam_srcs}
+    ${planning_srcs}
 )
 
 if(GTSAM_SUPPORT_NESTED_DISSECTION) # Only build partition if metis is built

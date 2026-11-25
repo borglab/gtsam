@@ -24,11 +24,6 @@
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/VectorSpace.h>
 #include <gtsam/base/timing.h>
-#include <gtsam/geometry/Point1.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/inference/Key.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/Values.h>
@@ -803,8 +798,8 @@ class WnoaInterpFactor : public NoiseModelFactor {
            "derivative");
 
     // Initialize new covariance with the existing measurement covariance
-    int err_dim = noise_model_ptr->dim();
     Matrix noise_cov = noise_model_ptr->covariance();
+    const Eigen::Index err_dim = noise_cov.rows();
 
     // Use cached mapping from inner keys to indices for Jacobian lookup
     // Compute the covariance update based on interpolated states

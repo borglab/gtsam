@@ -19,7 +19,7 @@
 #pragma once
 
 #include <gtsam/linear/MultifrontalSolver.h>
-#include <gtsam/nonlinear/LMDampingParams.h>
+#include <gtsam/linear/LMDampingParams.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
 

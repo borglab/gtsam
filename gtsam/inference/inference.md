@@ -12,6 +12,10 @@ The `inference` module provides the foundational classes and algorithms for prob
 -   [FactorGraph](doc/FactorGraph.ipynb): Base class representing a collection of factors.
 -   [Conditional](doc/Conditional.ipynb): Abstract base class for conditional distributions/densities resulting from elimination ( $P(\text{Frontals} | \text{Parents})$ ).
 
+## Graph Algorithms
+
+-   [Kruskal's algorithm](kruskal.h) computes a minimum spanning tree from the binary factors and their weights.
+
 ## Elimination Algorithms & Control
 
 -   [Ordering](doc/Ordering.ipynb): Specifies the order in which variables are eliminated, crucial for efficiency.

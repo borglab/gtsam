@@ -189,6 +189,7 @@ class Interpolator {
    * The function computes the interpolated pose and velocity at the requested
    * time using the provided bordering (optional) timestamped states. When a
    * border is missing, boundary or extrapolation logic is used.
+   * Throws std::invalid_argument when both borders are missing.
    *
    * This is the main workhorse function for interpolated factors, but is also
    * used after the fact to compute interpolated values and covariances given a
