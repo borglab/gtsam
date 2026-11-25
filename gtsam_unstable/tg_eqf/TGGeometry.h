@@ -4,6 +4,7 @@
 #include <gtsam/base/TangentLieGroup.h>
 #include <gtsam/geometry/ExtendedPose3.h>
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam_unstable/dllexport.h>
 
 #include <Eigen/Dense>
 
@@ -16,7 +17,7 @@ using TGElement = gtsam::TangentLieGroup<gtsam::ExtendedPose3<2>>;
 
 /// Biased INS manifold state xi = (T, b), T = [R, v, p] in SE_2(3) and
 /// b = [b_w; b_a; b_v] in R^9 (dim 18).
-struct State {
+struct GTSAM_UNSTABLE_EXPORT State {
   gtsam::ExtendedPose3<2> T;
   Vector9 b = Vector9::Zero();
 
@@ -47,7 +48,7 @@ struct State {
 namespace gtsam {
 
 template <>
-struct traits<tgeqf::State> {
+struct GTSAM_UNSTABLE_EXPORT traits<tgeqf::State> {
   using ManifoldType = tgeqf::State;
   using TangentVector = tgeqf::State::TangentVector;
   using Jacobian = tgeqf::State::Jacobian;
@@ -95,7 +96,7 @@ struct TGSymmetry {
   static constexpr ActionType type = ActionType::Right;
 
   /// Maps G -> M by acting on a fixed reference state (orbit functor).
-  struct Orbit {
+  struct GTSAM_UNSTABLE_EXPORT Orbit {
     State xi_ref;
 
     explicit Orbit(const State& xi_ref);
@@ -105,7 +106,7 @@ struct TGSymmetry {
   };
 
   /// Maps M -> M by acting with a fixed X (diffeomorphism functor).
-  struct Diffeomorphism {
+  struct GTSAM_UNSTABLE_EXPORT Diffeomorphism {
     TGElement X;
 
     explicit Diffeomorphism(const TGElement& X);
@@ -116,11 +117,12 @@ struct TGSymmetry {
 };
 
 /// Standalone right group action phi(X, xi).
-State phi(const TGElement& X, const State& xi);
+GTSAM_UNSTABLE_EXPORT State phi(const TGElement& X, const State& xi);
 
 /// The unique X with phi(X, xi_ref) == xi_est. Initializes an EqF whose
 /// origin is fixed at xi_ref but whose estimate starts at xi_est.
-TGElement phiInverse(const State& xi_ref, const State& xi_est);
+GTSAM_UNSTABLE_EXPORT TGElement phiInverse(const State& xi_ref,
+                                           const State& xi_est);
 
 }  // namespace tgeqf
 }  // namespace gtsam

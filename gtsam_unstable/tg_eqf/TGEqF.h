@@ -9,7 +9,7 @@ namespace gtsam {
 namespace tgeqf {
 
 /// Extended input u in R^21.
-struct Input {
+struct GTSAM_UNSTABLE_EXPORT Input {
   Vector3 w = Vector3::Zero();
   Vector3 a = Vector3::Zero();
   Vector3 v = Vector3::Zero();  // virtual input \nu
@@ -36,7 +36,7 @@ struct Input {
  *   Lambda_1.v = nu - b_v + R^T v
  *   Lambda_2   = ad_b[Lambda_1] - tau
  */
-struct Lift {
+struct GTSAM_UNSTABLE_EXPORT Lift {
   Input u;
 
   explicit Lift(const Input& u);
@@ -47,7 +47,7 @@ struct Lift {
 };
 
 /// Input orbit psi_u : G -> L.
-struct InputOrbit {
+struct GTSAM_UNSTABLE_EXPORT InputOrbit {
   Input u;
 
   explicit InputOrbit(const Input& u);
@@ -62,7 +62,7 @@ struct InputOrbit {
  * pass to TGEqF::updateWithReset() unchanged. The measurement arrives in the
  * true state's body frame; pull it back with inverse_output_action() first.
  */
-struct DVLMeasurement {
+struct GTSAM_UNSTABLE_EXPORT DVLMeasurement {
   /// Output matrix in error coordinates, d(output)/d(eps) at eps = 0.
   using Jacobian = Eigen::Matrix<double, 3, 18>;
 
@@ -106,7 +106,7 @@ struct DVLMeasurement {
  * Jacobians below are already in error coordinates at the reference state --
  * pass to TGEqF::updateWithReset() unchanged.
  */
-struct PositionMeasurement {
+struct GTSAM_UNSTABLE_EXPORT PositionMeasurement {
   /// Output matrix in error coordinates, d(output)/d(eps) at eps = 0.
   using Jacobian = Eigen::Matrix<double, 3, 18>;
 
@@ -139,7 +139,7 @@ struct PositionMeasurement {
  * depends on the unmeasured rotation: no output action can reproduce it,
  * hence no C* (and no output_action/predictAtOrigin) here.
  */
-struct DepthMeasurement {
+struct GTSAM_UNSTABLE_EXPORT DepthMeasurement {
   /// Output matrix in error coordinates, d(output)/d(eps) at eps = 0.
   using Jacobian = Eigen::Matrix<double, 1, 18>;
 
@@ -180,7 +180,8 @@ struct ImuNoise {
  * output matrix C* built at that reference state and hands it to
  * updateWithReset().
  */
-class TGEqF : public gtsam::EquivariantFilter<State, TGSymmetry> {
+class GTSAM_UNSTABLE_EXPORT TGEqF
+    : public gtsam::EquivariantFilter<State, TGSymmetry> {
  public:
   using Base = gtsam::EquivariantFilter<State, TGSymmetry>;
   using Covariance18 = Eigen::Matrix<double, 18, 18>;
