@@ -36,6 +36,7 @@ inline constexpr double kGravity = 9.81;
 inline Eigen::Vector3d navGravity() { return {0.0, 0.0, kGravity}; }
 
 struct RunOptions {
+  std::string scenario;  // trajectory to run, by name (see ScenarioMain.h)
   double duration = 30.0;
   double dt = 0.01;
   std::string output_path;
@@ -137,7 +138,9 @@ inline RunOptions parseRunOptions(int argc, char* argv[],
       return argv[++i];
     };
 
-    if (arg == "--output") {
+    if (arg == "--scenario") {
+      opts.scenario = value();
+    } else if (arg == "--output") {
       opts.output_path = value();
     } else if (arg == "--duration") {
       opts.duration = std::stod(value());

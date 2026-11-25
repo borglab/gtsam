@@ -1,19 +1,20 @@
 /**
- * @file  MEKFScenarioExample.h
- * @brief MEKF adapter for the shared trajectory-example runner. See
- *        mekf/README.md.
+ * @file  MEKFScenarioExample.cpp
+ * @brief MEKF on a simulated IMU trajectory with optional position, DVL and
+ *        depth aiding. Pick the trajectory with --scenario (Vertical,
+ *        TypicalNavigation, WaypointSpline or SamoaSurvey).
  *
  * The run loop, CLI, IMU simulation, CSV format and error reporting are shared
  * with the other filter examples (examples_common/FilterScenarioRunner.h); only
  * what is MEKF-specific lives here.
  */
-#pragma once
 
 #include <gtsam/navigation/NavState.h>
 #include <gtsam/navigation/Scenario.h>
 #include <gtsam_unstable/examples_common/FilterScenarioRunner.h>
 #include <gtsam_unstable/examples_common/ImuProcessNoise.h>
 #include <gtsam_unstable/examples_common/ScenarioHarness.h>
+#include <gtsam_unstable/examples_common/ScenarioMain.h>
 #include <gtsam_unstable/examples_common/TrajectoryCsv.h>
 #include <gtsam_unstable/mekf/MEKF.h>
 
@@ -43,10 +44,9 @@ class ScenarioAdapter {
                         : imu_scenarios::CovarianceFormat::BlockDiagonal) {}
 
   std::string csvHeader() const {
-    return imu_scenarios::trajectoryCsvHeader({"v", "p", "bg", "ba"},
-                                              {"v", "p", "bg", "ba"},
-                                              {"R", "v", "p", "bg", "ba"},
-                                              cov_format_);
+    return imu_scenarios::trajectoryCsvHeader(
+        {"v", "p", "bg", "ba"}, {"v", "p", "bg", "ba"},
+        {"R", "v", "p", "bg", "ba"}, cov_format_);
   }
 
   /// Start at the perturbed initial belief, biases included. Every MEKF state
@@ -123,3 +123,8 @@ inline RunSummary runScenario(const gtsam::Scenario& scenario,
 }
 
 }  // namespace mekf::examples
+
+int main(int argc, char* argv[]) {
+  return imu_scenarios::exampleMain(argc, argv, "MEKFScenarioExample", "mekf",
+                                    mekf::examples::runScenario);
+}

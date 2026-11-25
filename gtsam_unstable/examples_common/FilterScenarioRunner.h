@@ -5,7 +5,7 @@
  * The loop, the RNG draw order and the logged quantities are identical for
  * every filter; only construction, propagation and the update calls differ.
  * Those live in a small per-filter adapter (see <filter>/examples/
- * <Filter>ScenarioExample.h), which stays next to its filter so this header
+ * <Filter>ScenarioExample.cpp), which stays next to its filter so this header
  * remains filter-agnostic.
  *
  * Adapter contract:
