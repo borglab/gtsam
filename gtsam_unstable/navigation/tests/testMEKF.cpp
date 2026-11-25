@@ -8,6 +8,7 @@
  */
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam_unstable/navigation/MEKF.h>
 
 #include <functional>
@@ -298,6 +299,59 @@ TEST(MEKF, DepthUpdateHorizontalVarianceIsRespected) {
   pinned.updateDepth(z_depth, depthNoise(0.01), /*horizontal_variance=*/1e-6);
 
   EXPECT((inflated.position() - pinned.position()).norm() > 1e-3);
+}
+
+// The direct depth Jacobian is the derivative of p_z along the Retract chart:
+// e_3^T on the additive position block.
+TEST(MEKF, DepthOutputJacobianMatchesNumericalDerivative) {
+  using Vector15 = MEKFState::TangentVector;
+  const MEKFState X = offsetState();
+  const std::function<double(const Vector15&)> h = [&](const Vector15& eps) {
+    return DepthOutput::predict(traits<MEKFState>::Retract(X, eps));
+  };
+  const Matrix expected =
+      numericalDerivative11<double, Vector15>(h, Vector15::Zero());
+  EXPECT(assert_equal(expected, (Matrix)DepthOutput::jacobian(), 1e-8));
+}
+
+// With an uncorrelated prior the direct update moves z alone. The reset only
+// touches attitude, which this update leaves uncorrected, so the horizontal
+// estimate and covariance are exactly unchanged.
+TEST(MEKF, DirectDepthUpdateLeavesUncorrelatedHorizontalUntouched) {
+  MEKF ekf(offsetState(), Cov15::Identity() * 0.01);
+
+  const Eigen::Vector3d before = ekf.position();
+  const Cov15 P_before = ekf.covariance();
+  const double z_depth = before.z() - 0.8;
+  ekf.updateDepthDirect(z_depth, depthNoise(0.01));
+  const Cov15 P_after = ekf.covariance();
+
+  EXPECT(std::abs(ekf.position().z() - z_depth) < 0.1);
+  EXPECT_DOUBLES_EQUAL(before.x(), ekf.position().x(), 1e-12);
+  EXPECT_DOUBLES_EQUAL(before.y(), ekf.position().y(), 1e-12);
+  EXPECT(P_after(8, 8) < P_before(8, 8));
+  EXPECT(assert_equal((Matrix)P_before.block<2, 2>(6, 6),
+                      (Matrix)P_after.block<2, 2>(6, 6), 1e-12));
+}
+
+// With the horizontal axes stripped of weight, the pseudo-position update
+// reduces to the scalar model, so the two coincide as the horizontal variance
+// grows. The tolerance is loose because the neglected terms fall off only as
+// 1/sigma_xy^2.
+TEST(MEKF, DirectDepthUpdateMatchesThePseudoPositionUpdateInTheInflatedLimit) {
+  MEKF via_pseudo(offsetState(), Cov15::Identity() * 0.01);
+  MEKF via_direct(offsetState(), Cov15::Identity() * 0.01);
+
+  const double z_depth = -2.0;
+  const double sigma_z = 0.02;
+  via_pseudo.updateDepth(z_depth, depthNoise(sigma_z),
+                         /*horizontal_variance=*/1e12);
+  via_direct.updateDepthDirect(z_depth, depthNoise(sigma_z));
+
+  EXPECT(
+      traits<MEKFState>::Equals(via_pseudo.state(), via_direct.state(), 1e-7));
+  EXPECT(assert_equal((Matrix)via_pseudo.covariance(),
+                      (Matrix)via_direct.covariance(), 1e-7));
 }
 
 }  // namespace depth_update

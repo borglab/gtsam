@@ -66,6 +66,15 @@ struct GTSAM_UNSTABLE_EXPORT PositionOutput {
   static Jacobian jacobian();
 };
 
+/// Direct depth output: h(xi) = e_3^T p, the world-frame z position.
+struct GTSAM_UNSTABLE_EXPORT DepthOutput {
+  using Jacobian = Eigen::Matrix<double, 1, 15>;
+
+  static double predict(const MEKFState& X);
+  /// e_3^T on the additive position block, zero elsewhere.
+  static Jacobian jacobian();
+};
+
 /// Continuous-time IMU noise PSDs, per-axis (diagonal, not isotropic). Same
 /// convention as tfg::ImuNoise / gtsam::tgeqf::ImuNoise.
 struct ImuNoise {
@@ -137,6 +146,19 @@ class GTSAM_UNSTABLE_EXPORT MEKF : public gtsam::ManifoldEKF<MEKFState> {
    */
   void updateDepth(double z_depth, const Covariance1& R_depth,
                    double horizontal_variance = kDefaultHorizontalVariance);
+
+  /**
+   * Pressure-sensor depth update through the scalar model h(xi) = e_3^T p
+   * (see DepthOutput).
+   *
+   * Unlike updateDepth(), no horizontal pseudo-measurement is formed: the
+   * Jacobian has no horizontal component, so x and y move only through their
+   * prior correlation with z.
+   *
+   * @param z_depth  Measured world-frame z position.
+   * @param R_depth  Variance of z_depth, as a 1x1 matrix.
+   */
+  void updateDepthDirect(double z_depth, const Covariance1& R_depth);
 
   /// Error state eps = Local(estimate, X_true) in the filter's local chart
   /// (right/body multiplicative attitude, additive vectors), i.e. the chart

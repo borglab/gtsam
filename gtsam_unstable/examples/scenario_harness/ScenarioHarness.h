@@ -90,13 +90,15 @@ struct RunOptions {
 
   double aiding_start_time = 0.0;  // delay before aiding updates start (s)
 
+  // The depth output model for all three filters: the pseudo-position update
+  // (the default) or the direct scalar one.
+  bool depth_direct = false;
+
   // TG-EqF only: the covariance transport (reset) step after each measurement
-  // update, the depth output model -- equivariant pseudo-position (the
-  // default) or the direct scalar one -- and the DVL output matrix: the
-  // equivariant C* (default) or the naive chart derivative C0, for the
-  // velocity-model ablation. Other filter adapters ignore all three.
+  // update, and the DVL output matrix: the equivariant C* (default) or the
+  // naive chart derivative C0, for the velocity-model ablation. Other filter
+  // adapters ignore both.
   bool tg_eqf_reset_step = true;
-  bool tg_eqf_depth_direct = false;
   bool tg_eqf_dvl_c0 = false;
 
   // Applies to all three filter adapters, unlike the two options above.
@@ -195,9 +197,9 @@ inline RunOptions parseRunOptions(int argc, char* argv[],
     } else if (arg == "--depth-model") {
       const std::string model = value();
       if (model == "pseudo") {
-        opts.tg_eqf_depth_direct = false;
+        opts.depth_direct = false;
       } else if (model == "direct") {
-        opts.tg_eqf_depth_direct = true;
+        opts.depth_direct = true;
       } else {
         throw std::runtime_error("--depth-model requires 'pseudo' or 'direct'");
       }

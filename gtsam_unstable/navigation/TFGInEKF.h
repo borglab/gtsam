@@ -121,6 +121,20 @@ struct GTSAM_UNSTABLE_EXPORT PositionOutput {
                            Variant variant = Variant::C0);
 };
 
+/// Direct depth output h(xi) = e_3^T p, the world-frame z position. It is not
+/// equivariant, so it has no output action.
+struct GTSAM_UNSTABLE_EXPORT DepthOutput {
+  using Jacobian = Eigen::Matrix<double, 1, 15>;
+
+  /// World-frame z position of xi.
+  static double predict(const TwoFrameGroup& xi);
+
+  /// Output Jacobian for chart xi(eps) = xi_hat * Expmap(eps). Since
+  /// p(eps) = p + R J_l(eps_theta) eps_p, it is e_3^T R on the position block
+  /// and zero elsewhere.
+  static Jacobian jacobian(const TwoFrameGroup& xi_hat);
+};
+
 class GTSAM_UNSTABLE_EXPORT TFGInEKF
     : public gtsam::InvariantEKF<TwoFrameGroup> {
  public:
@@ -178,6 +192,19 @@ class GTSAM_UNSTABLE_EXPORT TFGInEKF
   void updateDepth(double z_depth, const Covariance1& R_depth,
                    double horizontal_variance = kDefaultHorizontalVariance,
                    bool use_cstar = false);
+
+  /**
+   * Pressure-sensor depth update through the scalar model h(xi) = e_3^T p
+   * (see DepthOutput).
+   *
+   * Unlike updateDepth(), no horizontal pseudo-measurement is formed: the
+   * Jacobian has no horizontal component, so x and y move only through their
+   * prior correlation with z.
+   *
+   * @param z_depth  Measured world-frame z position.
+   * @param R_depth  Variance of z_depth, as a 1x1 matrix.
+   */
+  void updateDepthDirect(double z_depth, const Covariance1& R_depth);
 
   /// Error state eps = Local(estimate, X_true) in the group's local chart, i.e.
   /// the chart covariance() lives in. Block order R, v, p, bg, ba.

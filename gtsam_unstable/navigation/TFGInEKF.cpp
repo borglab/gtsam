@@ -149,6 +149,14 @@ PositionOutput::Jacobian PositionOutput::jacobian(const TwoFrameGroup& xi_hat,
   return C;
 }
 
+double DepthOutput::predict(const TwoFrameGroup& xi) { return xi.p.z(); }
+
+DepthOutput::Jacobian DepthOutput::jacobian(const TwoFrameGroup& xi_hat) {
+  Jacobian C = Jacobian::Zero();
+  C.block<1, 3>(0, 6) = xi_hat.R.matrix().row(2);
+  return C;
+}
+
 TFGInEKF::TFGInEKF(const TwoFrameGroup& X0, const Covariance& P0)
     : Base(X0, P0) {}
 
@@ -228,6 +236,13 @@ void TFGInEKF::updateDepth(double z_depth, const Covariance1& R_depth,
   R_pseudo(2, 2) = R_depth(0, 0);
 
   updatePosition(pseudo_position, R_pseudo, use_cstar);
+}
+
+void TFGInEKF::updateDepthDirect(double z_depth, const Covariance1& R_depth) {
+  const TwoFrameGroup& X = this->state();
+  const Vector1 prediction{DepthOutput::predict(X)};
+  const Vector1 z{z_depth};
+  updateWithReset(prediction, DepthOutput::jacobian(X), z, R_depth);
 }
 
 TFGInEKF::Jacobian TFGInEKF::resetJacobian(const TangentVector& eta) {

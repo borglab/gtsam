@@ -39,6 +39,7 @@ class ScenarioAdapter {
       : noise_(imu_scenarios::toFilterImuNoise<ImuNoise>(
             imu_scenarios::resolvedProcessNoise(opts))),
         gravity_(imu_scenarios::navGravity()),
+        depth_direct_(opts.depth_direct),
         cov_format_(opts.log_full_covariance
                         ? imu_scenarios::CovarianceFormat::FullUpperTriangle
                         : imu_scenarios::CovarianceFormat::BlockDiagonal) {}
@@ -81,7 +82,11 @@ class ScenarioAdapter {
 
   void updateDepth(Filter& filter,
                    const imu_scenarios::DepthMeasurement& z) const {
-    filter.updateDepth(z.depth, z.covariance);
+    if (depth_direct_) {
+      filter.updateDepthDirect(z.depth, z.covariance);
+    } else {
+      filter.updateDepth(z.depth, z.covariance);
+    }
   }
 
   /// Truth, estimate, tangent error and covariance, all in the group's local
@@ -112,6 +117,7 @@ class ScenarioAdapter {
  private:
   ImuNoise noise_;
   Eigen::Vector3d gravity_;
+  bool depth_direct_;
   imu_scenarios::CovarianceFormat cov_format_;
 };
 

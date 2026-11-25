@@ -5,6 +5,7 @@
  */
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/navigation/Scenario.h>
 #include <gtsam_unstable/navigation/TFGInEKF.h>
 
@@ -640,6 +641,63 @@ TEST(TFGInEKF, DepthUpdateHorizontalVarianceIsRespected) {
   pinned.updateDepth(z_depth, depthNoise(0.01), /*horizontal_variance=*/1e-6);
 
   EXPECT((inflated.position() - pinned.position()).norm() > 1e-3);
+}
+
+// The direct depth Jacobian is the derivative of p_z along the right-retract
+// chart, e_3^T R on the position block, checked at a tilted state.
+TEST(TFGInEKF, DepthOutputJacobianMatchesNumericalDerivative) {
+  using Vector15 = TwoFrameGroup::TangentVector;
+  const TwoFrameGroup X = tiltedState();
+  const std::function<double(const Vector15&)> h = [&](const Vector15& eps) {
+    return DepthOutput::predict(traits<TwoFrameGroup>::Retract(X, eps));
+  };
+  const Matrix expected =
+      numericalDerivative11<double, Vector15>(h, Vector15::Zero());
+  EXPECT(assert_equal(expected, (Matrix)DepthOutput::jacobian(X), 1e-8));
+}
+
+// With an uncorrelated prior the direct update moves z alone and adds no
+// horizontal information. The reset may still grow the x and y variances, as
+// for the pseudo-measurement above.
+TEST(TFGInEKF, DirectDepthUpdateAddsNoHorizontalInformation) {
+  TFGInEKF ekf(TwoFrameGroup::Identity(), Cov15::Identity() * 0.01);
+
+  const Eigen::Vector3d before = ekf.position();
+  const Cov15 P_before = ekf.covariance();
+  const double z_depth = -0.8;
+  ekf.updateDepthDirect(z_depth, depthNoise(0.01));
+  const Cov15 P_after = ekf.covariance();
+
+  EXPECT(std::abs(ekf.position().z() - z_depth) < 0.1);
+  EXPECT_DOUBLES_EQUAL(before.x(), ekf.position().x(), 1e-12);
+  EXPECT_DOUBLES_EQUAL(before.y(), ekf.position().y(), 1e-12);
+  EXPECT(P_after(8, 8) < P_before(8, 8));
+  EXPECT(P_after(6, 6) >= P_before(6, 6) - 1e-12);
+  EXPECT(P_after(7, 7) >= P_before(7, 7) - 1e-12);
+  EXPECT(minEig(P_after) > 0.0);
+}
+
+// Stripped of horizontal weight, the pseudo-position update reduces to the
+// scalar model: its world-z row is e_3^T R C, whose attitude part vanishes
+// because a^T [a]_x = 0 for a = R^T e_3. The two updates therefore coincide
+// as the horizontal variance grows, even at a tilted state. The variance stays
+// at 1e6 because the body-frame noise R^T diag(h, h, sigma_z^2) R mixes h into
+// the z entry, so a much larger h would round sigma_z^2 away.
+TEST(TFGInEKF,
+     DirectDepthUpdateMatchesThePseudoPositionUpdateInTheInflatedLimit) {
+  TFGInEKF via_pseudo(tiltedState(), Cov15::Identity() * 0.01);
+  TFGInEKF via_direct(tiltedState(), Cov15::Identity() * 0.01);
+
+  const double z_depth = -2.0;
+  const double sigma_z = 0.02;
+  via_pseudo.updateDepth(z_depth, depthNoise(sigma_z),
+                         /*horizontal_variance=*/1e6);
+  via_direct.updateDepthDirect(z_depth, depthNoise(sigma_z));
+
+  EXPECT(traits<TwoFrameGroup>::Equals(via_pseudo.state(), via_direct.state(),
+                                       1e-7));
+  EXPECT(assert_equal((Matrix)via_pseudo.covariance(),
+                      (Matrix)via_direct.covariance(), 1e-7));
 }
 
 }  // namespace depth_update

@@ -44,7 +44,7 @@ class ScenarioAdapter {
             imu_scenarios::resolvedProcessNoise(opts))),
         gravity_(imu_scenarios::navGravity()),
         reset_step_(opts.tg_eqf_reset_step),
-        depth_direct_(opts.tg_eqf_depth_direct),
+        depth_direct_(opts.depth_direct),
         dvl_c0_(opts.tg_eqf_dvl_c0),
         cov_format_(opts.log_full_covariance
                         ? imu_scenarios::CovarianceFormat::FullUpperTriangle

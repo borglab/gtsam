@@ -81,6 +81,14 @@ PositionOutput::Jacobian PositionOutput::jacobian() {
   return H;
 }
 
+double DepthOutput::predict(const MEKFState& X) { return X.p.z(); }
+
+DepthOutput::Jacobian DepthOutput::jacobian() {
+  Jacobian H = Jacobian::Zero();
+  H(0, 8) = 1.0;
+  return H;
+}
+
 MEKF::MEKF(const MEKFState& X0, const Covariance& P0) : Base(X0, P0) {}
 
 void MEKF::propagate(const Vector3& omega, const Vector3& accel,
@@ -130,6 +138,12 @@ void MEKF::updateDepth(double z_depth, const Covariance1& R_depth,
   R_pseudo(2, 2) = R_depth(0, 0);
 
   updatePosition(pseudo_position, R_pseudo);
+}
+
+void MEKF::updateDepthDirect(double z_depth, const Covariance1& R_depth) {
+  const Vector1 prediction{DepthOutput::predict(this->state())};
+  const Vector1 z{z_depth};
+  updateWithReset(prediction, DepthOutput::jacobian(), z, R_depth);
 }
 
 MEKF::Jacobian MEKF::resetJacobian(const TangentVector& eta) {
