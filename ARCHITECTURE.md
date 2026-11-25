@@ -38,13 +38,17 @@ by following the dependencies in this table. For example,
 `nonlinear` can include `linear`, `symbolic`, `inference`, and `base`
 directly. `hybrid` can use both the discrete and nonlinear stacks.
 
-Arrows point from an including module to its immediate dependencies. Modules
-that share a label have the same immediate dependencies.
+Arrows point from an including module to its immediate dependencies. SfM,
+SAM, SLAM, and navigation form the application tier, with arrows showing
+their dependencies within that tier.
 
 ```mermaid
 flowchart TD
-    SFM["sfm, navigation"] --> SLAM["slam"]
-    SLAM --> SAM["sam"]
+    subgraph APP["Application tier"]
+        SFM["sfm"] --> SLAM["slam"]
+        NAV["navigation"] --> SLAM
+        SLAM --> SAM["sam"]
+    end
     SAM --> CON["constrained"]
     CERT["certifiable"] --> CON
     CON --> NL["nonlinear"]
