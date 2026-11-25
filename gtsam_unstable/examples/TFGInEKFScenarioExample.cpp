@@ -71,9 +71,11 @@ class ScenarioAdapter {
     filter.propagate(imu.omega, imu.accel, gravity_, noise_, dt);
   }
 
+  /// Position and depth pseudo-position updates use the C* output Jacobian,
+  /// as TG-EqF does, so the comparison isolates the choice of symmetry.
   void updatePosition(Filter& filter,
                       const imu_scenarios::PositionMeasurement& z) const {
-    filter.updatePosition(z.position, z.covariance);
+    filter.updatePosition(z.position, z.covariance, /*use_cstar=*/true);
   }
 
   void updateDvl(Filter& filter, const imu_scenarios::DvlMeasurement& z) const {
@@ -85,7 +87,9 @@ class ScenarioAdapter {
     if (depth_direct_) {
       filter.updateDepthDirect(z.depth, z.covariance);
     } else {
-      filter.updateDepth(z.depth, z.covariance);
+      filter.updateDepth(z.depth, z.covariance,
+                         imu_scenarios::kDepthHorizontalVariance,
+                         /*use_cstar=*/true);
     }
   }
 

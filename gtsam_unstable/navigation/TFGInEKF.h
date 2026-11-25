@@ -145,7 +145,7 @@ class GTSAM_UNSTABLE_EXPORT TFGInEKF
 
   /// Default variance (m^2) given to the pseudo-measured horizontal axes of a
   /// depth update, large enough that the update leaves x and y untouched.
-  static constexpr double kDefaultHorizontalVariance = 1e3;
+  static constexpr double kDefaultHorizontalVariance = 1e6;
 
   /// @param X0 initial group state (TwoFrameGroup::FromState for physical
   /// coords)

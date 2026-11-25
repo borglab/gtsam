@@ -93,7 +93,7 @@ class GTSAM_UNSTABLE_EXPORT MEKF : public gtsam::ManifoldEKF<MEKFState> {
 
   /// Default variance (m^2) given to the pseudo-measured horizontal axes of a
   /// depth update, large enough that the update leaves x and y untouched.
-  static constexpr double kDefaultHorizontalVariance = 1e3;
+  static constexpr double kDefaultHorizontalVariance = 1e6;
 
   MEKF(const MEKFState& X0, const Covariance& P0);
 

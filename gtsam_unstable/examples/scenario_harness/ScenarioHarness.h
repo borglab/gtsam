@@ -345,6 +345,11 @@ struct DepthMeasurement {
   Eigen::Matrix<double, 1, 1> covariance;
 };
 
+/// Variance (m^2) of the pseudo-measured horizontal axes in every filter's
+/// depth pseudo-position update, so that the filters compare on the same
+/// measurement model.
+constexpr double kDepthHorizontalVariance = 1e6;
+
 /// IMU signals handed to a filter: corrupted by bias and white noise.
 struct ImuMeasurement {
   Eigen::Vector3d omega;

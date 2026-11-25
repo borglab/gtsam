@@ -112,7 +112,8 @@ class ScenarioAdapter {
     if (depth_direct_) {
       filter.updateDepthDirect(z.depth, z.covariance);
     } else {
-      filter.updateDepth(z.depth, z.covariance);
+      filter.updateDepth(z.depth, z.covariance,
+                         imu_scenarios::kDepthHorizontalVariance);
     }
   }
 
