@@ -183,14 +183,17 @@ class GTSAM_EXPORT PiecewiseLinearProposal : protected ColoredNoiseProposal {
   std::optional<MotionPrimitiveOptions> mixture_;
 };
 
+/// Smooth-MPPI proposal state, carrying physical controls and derivative mean.
+struct SmoothControlProposalState : ControlDistribution {
+  Matrix derivativeMean;
+};
+
 /// Smooth-MPPI samples in action-derivative coordinates and scores physical
 /// controls.
 class GTSAM_EXPORT SmoothControlProposal : protected GaussianProposal {
  public:
   using GaussianProposal::GaussianProposal;
-  struct State : GaussianProposal::State {
-    Matrix derivativeMean;
-  };
+  using State = SmoothControlProposalState;
   struct Batch : ControlBatch {
     Matrix derivatives;
   };

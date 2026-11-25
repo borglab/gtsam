@@ -86,10 +86,16 @@ class PiecewiseLinearProposal {
   gtsam::ControlDistribution initialize(const gtsam::Matrix& nominal) const;
 };
 
+class SmoothControlProposalState : gtsam::ControlDistribution {
+  gtsam::Matrix derivativeMean;
+};
+
 class SmoothControlProposal {
   SmoothControlProposal(const gtsam::Matrix& covariance, size_t samples, size_t seed = 42);
   SmoothControlProposal(const gtsam::Matrix& covariance, size_t samples, size_t seed,
                         gtsam::GaussianProposalOptions options);
+  @pybind_lambda
+  gtsam::SmoothControlProposalState initialize(const gtsam::Matrix& nominal) const;
 };
 
 #include <gtsam/planning/SamplingAlgorithms.h>
@@ -147,6 +153,12 @@ gtsam::Matrix smoothControlTrajectory(const gtsam::Matrix& controls, const gtsam
 class DDPTracking {
   DDPTracking(const gtsam::Matrix& statePrecision, const gtsam::Matrix& controlPrecision,
               const gtsam::Matrix& terminalPrecision);
+  gtsam::Matrix optimize(const gtsam::Vector& initial, const gtsam::Matrix& targetStates,
+                         const gtsam::Matrix& targetControls,
+                         const gtsam::DDPTracking::Transition& transition,
+                         size_t iterations,
+                         const gtsam::Vector& lower = gtsam::Vector(),
+                         const gtsam::Vector& upper = gtsam::Vector());
   // A subsequent solve can resize or replace the stored trajectory and gains.
   @pybind_lambda
   gtsam::Matrix states() const;
