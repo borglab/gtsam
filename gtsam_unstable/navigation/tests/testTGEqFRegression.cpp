@@ -95,7 +95,7 @@ static RegressionResult runBiasedImu30s(bool with_position_updates) {
     ekf.propagate(omega_meas, accel_meas, g, Qc, dt);
     t += dt;
     if (with_position_updates && (k + 1) % gnss_decim == 0) {
-      ekf.update_position(scenario.navState(t).position(), R_pos);
+      ekf.updatePosition(scenario.navState(t).position(), R_pos);
     }
   }
 
@@ -104,8 +104,8 @@ static RegressionResult runBiasedImu30s(bool with_position_updates) {
   r.pos_err = Vector3(gt_end.position()) - ekf.position();
   r.vel_err = Vector3(gt_end.velocity()) - ekf.velocity();
   r.att_err = gtsam::Rot3::Logmap(gt_end.attitude().between(ekf.attitude()));
-  r.bg_est = ekf.bias_gyro();
-  r.ba_est = ekf.bias_accel();
+  r.bg_est = ekf.biasGyro();
+  r.ba_est = ekf.biasAccel();
   r.bg_err = r.bg_est - true_bg;
   r.ba_err = r.ba_est - true_ba;
   // Origin-chart covariance: canonical [att,vel,pos,b_w,b_a,b_v] block order.

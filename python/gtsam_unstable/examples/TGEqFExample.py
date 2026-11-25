@@ -54,12 +54,12 @@ def main():
     # 5. Position update: a GNSS-like fix pulls the estimate toward a known
     # world-frame position.
     R_pos = 0.01 * np.eye(3)
-    filt.update_position(np.array([0.1, -0.05, 0.0]), R_pos)
+    filt.updatePosition(np.array([0.1, -0.05, 0.0]), R_pos)
 
     # 6. DVL update: a body-frame velocity measurement pulls the estimate
     # toward the (still at-rest) true body velocity.
     R_dvl = 0.001 * np.eye(3)
-    filt.update_dvl(np.array([0.0, 0.0, 0.0]), R_dvl)
+    filt.updateDvl(np.array([0.0, 0.0, 0.0]), R_dvl)
 
     print("\nAfter position + DVL updates:")
     print("  attitude:", filt.attitude())

@@ -7,7 +7,7 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam_unstable/navigation/TFGInEKF.h>  // BodyVelocityOutput, phi
 
-using namespace tfg;
+using namespace gtsam::tfg;
 using namespace gtsam;
 
 static constexpr double kTol = 1e-9;
@@ -39,7 +39,7 @@ TEST(BodyVelocityOutput, PredictValue) {
 }
 
 // ---------------------------------------------------------------------------
-// output_action + equivariance:  h_d(xi * X) == psi_d(X, h_d(xi))
+// outputAction + equivariance:  h_d(xi * X) == psi_d(X, h_d(xi))
 // ---------------------------------------------------------------------------
 
 TEST(BodyVelocityOutput, OutputEquivariance) {
@@ -51,7 +51,7 @@ TEST(BodyVelocityOutput, OutputEquivariance) {
 
   Eigen::Vector3d lhs = BodyVelocityOutput::predict(phi(X, xi));
   Eigen::Vector3d rhs =
-      BodyVelocityOutput::output_action(X, BodyVelocityOutput::predict(xi));
+      BodyVelocityOutput::outputAction(X, BodyVelocityOutput::predict(xi));
   EXPECT(veq(lhs, rhs, kTolL));
 }
 

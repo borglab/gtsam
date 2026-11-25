@@ -21,7 +21,7 @@
 #include <ostream>
 #include <string>
 
-namespace tfg::examples {
+namespace gtsam::tfg::examples {
 
 // Run configuration and reporting are shared with the other filter examples.
 using imu_scenarios::parseRunOptions;
@@ -32,7 +32,7 @@ using imu_scenarios::RunSummary;
 class ScenarioAdapter {
  public:
   static constexpr int kDim = TwoFrameGroup::dim;
-  using Filter = TfgInEKF;
+  using Filter = TFGInEKF;
   using TrueState = TwoFrameGroup;
 
   explicit ScenarioAdapter(const RunOptions& opts)
@@ -72,16 +72,16 @@ class ScenarioAdapter {
 
   void updatePosition(Filter& filter,
                       const imu_scenarios::PositionMeasurement& z) const {
-    filter.update_position(z.position, z.covariance);
+    filter.updatePosition(z.position, z.covariance);
   }
 
   void updateDvl(Filter& filter, const imu_scenarios::DvlMeasurement& z) const {
-    filter.update_dvl(z.body_velocity, z.covariance);
+    filter.updateDvl(z.body_velocity, z.covariance);
   }
 
   void updateDepth(Filter& filter,
                    const imu_scenarios::DepthMeasurement& z) const {
-    filter.update_depth(z.depth, z.covariance);
+    filter.updateDepth(z.depth, z.covariance);
   }
 
   /// Truth, estimate, tangent error and covariance, all in the group's local
@@ -93,13 +93,13 @@ class ScenarioAdapter {
     row.quat(X_true.R)
         .v3(X_true.v)
         .v3(X_true.p)
-        .v3(X_true.bias_omega())
-        .v3(X_true.bias_accel());
+        .v3(X_true.biasOmega())
+        .v3(X_true.biasAccel());
     row.quat(X_hat.R)
         .v3(X_hat.v)
         .v3(X_hat.p)
-        .v3(X_hat.bias_omega())
-        .v3(X_hat.bias_accel());
+        .v3(X_hat.biasOmega())
+        .v3(X_hat.biasAccel());
     row.tangent<kDim>(filter.errorStateVector(X_true));
     if (cov_format_ == imu_scenarios::CovarianceFormat::FullUpperTriangle) {
       row.covarianceFullUpper<kDim>(filter.covariance());
@@ -122,9 +122,10 @@ inline RunSummary runScenario(const gtsam::Scenario& scenario,
                                           scenario_name);
 }
 
-}  // namespace tfg::examples
+}  // namespace gtsam::tfg::examples
 
 int main(int argc, char* argv[]) {
   return imu_scenarios::exampleMain(argc, argv, "TFGInEKFScenarioExample",
-                                    "tfg_inekf", tfg::examples::runScenario);
+                                    "tfg_inekf",
+                                    gtsam::tfg::examples::runScenario);
 }

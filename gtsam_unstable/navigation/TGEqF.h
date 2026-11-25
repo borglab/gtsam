@@ -40,7 +40,7 @@ struct GTSAM_UNSTABLE_EXPORT Input {
   using Vector21 = Eigen::Matrix<double, 21, 1>;
 
   Vector21 vector() const;
-  static Input from_vector(const Vector21& v);
+  static Input fromVector(const Vector21& v);
 };
 
 /**
@@ -78,7 +78,7 @@ struct GTSAM_UNSTABLE_EXPORT InputOrbit {
  *
  * Jacobians below are already in error coordinates at the reference state --
  * pass to TGEqF::updateWithReset() unchanged. The measurement arrives in the
- * true state's body frame; pull it back with inverse_output_action() first.
+ * true state's body frame; pull it back with inverseOutputAction() first.
  */
 struct GTSAM_UNSTABLE_EXPORT DVLMeasurement {
   /// Output matrix in error coordinates, d(output)/d(eps) at eps = 0.
@@ -93,7 +93,7 @@ struct GTSAM_UNSTABLE_EXPORT DVLMeasurement {
    * state error. C* below is what the filter actually uses; C0 is the
    * baseline the accuracy tests compare it against.
    */
-  static Jacobian jacobian_C0(const State& xi_ref);
+  static Jacobian jacobianC0(const State& xi_ref);
 
   /**
    * Equivariant output matrix, C* = [ 0.5 (y0 + y_tilde)^  I_3  0  0 ], with
@@ -104,22 +104,22 @@ struct GTSAM_UNSTABLE_EXPORT DVLMeasurement {
    * y0 alone makes the linearization error third order rather than second --
    * this is the matrix the filter uses.
    */
-  static Jacobian jacobian_Cstar(const State& xi_ref, const TGElement& g,
-                                 const Vector3& z_dvl);
+  static Jacobian jacobianCstar(const State& xi_ref, const TGElement& g,
+                                const Vector3& z_dvl);
 
   /// Output group action psi_X(y) = R_X^T y + R_X^T v_X.
-  static Vector3 output_action(const TGElement& X, const Vector3& y);
+  static Vector3 outputAction(const TGElement& X, const Vector3& y);
 
   /// Inverse output action psi_X^{-1}(y) = R_X y - v_X; carries a measurement
   /// from the true state's body frame to the origin output space.
-  static Vector3 inverse_output_action(const TGElement& X, const Vector3& y);
+  static Vector3 inverseOutputAction(const TGElement& X, const Vector3& y);
 };
 
 /**
  * Equivariant global position measurement h'(xi) = R^T(pi - p). Used for a
  * direct position fix (e.g. USBL) and, with the estimated horizontal
  * position, as the pseudo-position stand-in for the depth update (see
- * TGEqF::update_depth).
+ * TGEqF::updateDepth).
  *
  * Jacobians below are already in error coordinates at the reference state --
  * pass to TGEqF::updateWithReset() unchanged.
@@ -137,17 +137,17 @@ struct GTSAM_UNSTABLE_EXPORT PositionMeasurement {
                                  const Vector3& pi);
 
   /// Origin-chart Jacobian, C0 = [ y0^  0  -I_3  0 ], y0 = R0^T(pi - p0). Same
-  /// rationale as DVLMeasurement::jacobian_C0, reading p instead of v.
-  static Jacobian jacobian_C0(const State& xi_ref, const Vector3& pi);
+  /// rationale as DVLMeasurement::jacobianC0, reading p instead of v.
+  static Jacobian jacobianC0(const State& xi_ref, const Vector3& pi);
 
   /// Equivariant output matrix, C* = [ 0.5 (y0 + p_X)^  0  -I_3  0 ], with
   /// p_X = g.p the transported measurement. Same rationale as
-  /// DVLMeasurement::jacobian_Cstar, reading p instead of v.
-  static Jacobian jacobian_Cstar(const State& xi_ref, const TGElement& g,
-                                 const Vector3& pi);
+  /// DVLMeasurement::jacobianCstar, reading p instead of v.
+  static Jacobian jacobianCstar(const State& xi_ref, const TGElement& g,
+                                const Vector3& pi);
 
   /// Output group action psi_X(y) = R_X^T (y - p_X).
-  static Vector3 output_action(const TGElement& X, const Vector3& y);
+  static Vector3 outputAction(const TGElement& X, const Vector3& y);
 };
 
 /**
@@ -155,7 +155,7 @@ struct GTSAM_UNSTABLE_EXPORT PositionMeasurement {
  *
  * p -> p + R p_A under the state action, so h(phi(X,xi)) = h(xi) + e_3^T R p_A
  * depends on the unmeasured rotation: no output action can reproduce it,
- * hence no C* (and no output_action/predictAtOrigin) here.
+ * hence no C* (and no outputAction/predictAtOrigin) here.
  */
 struct GTSAM_UNSTABLE_EXPORT DepthMeasurement {
   /// Output matrix in error coordinates, d(output)/d(eps) at eps = 0.
@@ -172,7 +172,7 @@ struct GTSAM_UNSTABLE_EXPORT DepthMeasurement {
    * composed map is h(phi(Expmap_G(eps) g, xi_ref)); its position slot is
    * R0 (Exp_SO3(eps_R) g.p + J_l(eps_R) eps_p) + p0, giving the two blocks.
    */
-  static Jacobian jacobian_C(const State& xi_ref, const TGElement& g);
+  static Jacobian jacobianC(const State& xi_ref, const TGElement& g);
 };
 
 /**
@@ -227,7 +227,7 @@ class GTSAM_UNSTABLE_EXPORT TGEqF
 
   /**
    * Construct at the identity origin (xi_ref = identity). This is the
-   * interface examples should use, matching TfgInEKF and MEKF.
+   * interface examples should use, matching TFGInEKF and MEKF.
    *
    * @param X0  Initial group estimate; state is X0.
    * @param P0  Initial covariance of X0, expressed in the tangent chart at X0.
@@ -251,13 +251,13 @@ class GTSAM_UNSTABLE_EXPORT TGEqF
                  const TGElement& X0 = TGElement::Identity());
 
   // Enable/disable covariance reset after each update.
-  void set_reset_step(bool enable) { reset_step_ = enable; }
+  void setResetStep(bool enable) { reset_step_ = enable; }
 
-  /// DVL Jacobian update_dvl() uses. Cstar (default) is the equivariant,
+  /// DVL Jacobian updateDvl() uses. Cstar (default) is the equivariant,
   /// third-order matrix the filter is designed around; C0 is the naive,
   /// second-order chart derivative, kept for ablation comparisons.
   enum class DvlJacobian { Cstar, C0 };
-  void set_dvl_jacobian(DvlJacobian mode) { dvl_jacobian_ = mode; }
+  void setDvlJacobian(DvlJacobian mode) { dvl_jacobian_ = mode; }
 
   /// Reset transport J(delta_xi, delta_x); P <- J P J^T. Exposed for testing.
   MatrixM resetMatrix(const TangentVector& delta_xi,
@@ -284,14 +284,14 @@ class GTSAM_UNSTABLE_EXPORT TGEqF
 
   /// Fixed-origin input lift orbit_jacobian0_ * G; reduces to G itself since
   /// orbit_jacobian0_ is always I_18. For testing.
-  MatrixM input_lift() const { return input_lift_; }
+  MatrixM inputLift() const { return input_lift_; }
 
   // DVL body-velocity update via h(xi) = R^T v, using the output matrix
-  // selected by set_dvl_jacobian() (the equivariant C* by default).
-  void update_dvl(const Vector3& z_dvl, const Covariance3& R_dvl);
+  // selected by setDvlJacobian() (the equivariant C* by default).
+  void updateDvl(const Vector3& z_dvl, const Covariance3& R_dvl);
 
   // Position update via h'(xi) = R^T(pi - p), using the equivariant C*.
-  void update_position(const Vector3& pi, const Covariance3& R_pos);
+  void updatePosition(const Vector3& pi, const Covariance3& R_pos);
 
   /**
    * Pressure-sensor depth update from the world-frame z position using the
@@ -299,7 +299,7 @@ class GTSAM_UNSTABLE_EXPORT TGEqF
    *
    * The depth is stacked onto the estimated horizontal position to form the
    * pseudo-position p_tilde = [p_x, p_y, z_depth]^T, which is fed through
-   * update_position() with the horizontal variance inflated so only the
+   * updatePosition() with the horizontal variance inflated so only the
    * vertical direction is corrected. This is the depth
    * pseudo-measurement construction of E. R. Potokar, K. Norman, and
    * J. G. Mangelson, "Invariant Extended Kalman Filtering for Underwater
@@ -311,8 +311,8 @@ class GTSAM_UNSTABLE_EXPORT TGEqF
    * @param horizontal_variance  Variance assigned to the pseudo-measured x and
    *                             y axes.
    */
-  void update_depth(double z_depth, const Covariance1& R_depth,
-                    double horizontal_variance = kDefaultHorizontalVariance);
+  void updateDepth(double z_depth, const Covariance1& R_depth,
+                   double horizontal_variance = kDefaultHorizontalVariance);
 
   /**
    * Pressure-sensor depth update through the non-equivariant scalar model
@@ -321,7 +321,7 @@ class GTSAM_UNSTABLE_EXPORT TGEqF
    * @param z_depth  Measured world-frame z position.
    * @param R_depth  Variance of z_depth, as a 1x1 matrix.
    */
-  void update_depth_direct(double z_depth, const Covariance1& R_depth);
+  void updateDepthDirect(double z_depth, const Covariance1& R_depth);
 
   // Error state and vector in the fixed-origin chart.
   State errorState(const State& xi_true) const;
@@ -331,11 +331,11 @@ class GTSAM_UNSTABLE_EXPORT TGEqF
   gtsam::Rot3 attitude() const;
   Vector3 velocity() const;
   Vector3 position() const;
-  Vector3 bias_gyro() const;
-  Vector3 bias_accel() const;
-  Vector3 bias_vel() const;
+  Vector3 biasGyro() const;
+  Vector3 biasAccel() const;
+  Vector3 biasVel() const;
 
-  ExtendedPose3<2> extended_pose() const;
+  ExtendedPose3<2> extendedPose() const;
   Vector9 biases() const;
 
  private:

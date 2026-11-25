@@ -1,5 +1,5 @@
 /**
- * @file  testMekfDynamics.cpp
+ * @file  testMEKFDynamics.cpp
  * @brief Unit tests for strapdown propagation + finite-difference Jacobian F.
  *
  * Tangent block order: R, v, p, b_gyro, b_accel.
@@ -8,7 +8,7 @@
 #include <gtsam/base/TestableAssertions.h>
 #include <gtsam_unstable/navigation/MEKF.h>
 
-using namespace mekf;
+using namespace gtsam::mekf;
 using namespace gtsam;
 
 static constexpr double kTol = 1e-9;
@@ -45,9 +45,9 @@ static ImuInput gravityInput() {
 
 // Gravity comes from the input, not a baked-in constant: flipping g_vec flips
 // the velocity increment, which is what makes the filter frame-agnostic.
-TEST(MekfDynamics, PropagateUsesInputGravity) {
+TEST(MEKFDynamics, PropagateUsesInputGravity) {
   const double dt = 0.1;
-  const MekfState X = MekfState::identity();
+  const MEKFState X = MEKFState::identity();
   ImuInput up = gravityInput();  // g = (0, 0, -9.81)
   ImuInput un = gravityInput();
   un.g_vec = -kTestGravity;  // g = (0, 0, +9.81), i.e. a Z-down frame
@@ -60,66 +60,66 @@ TEST(MekfDynamics, PropagateUsesInputGravity) {
 // ---------------------------------------------------------------------------
 
 // Level hover: gravity cancelled, no rotation -> state held (only p tracks v).
-TEST(MekfDynamics, PropagateHoverHoldsState) {
-  MekfState X = MekfState::identity();
+TEST(MEKFDynamics, PropagateHoverHoldsState) {
+  MEKFState X = MEKFState::identity();
   ImuInput u = gravityInput();
   u.omega = Eigen::Vector3d::Zero();
   u.accel = kHoverAccel;
-  MekfState Xn = propagateMean(X, u, 0.1);
+  MEKFState Xn = propagateMean(X, u, 0.1);
   EXPECT(Xn.R.equals(Rot3::Identity(), kTol));
   EXPECT(veq(Xn.v, Eigen::Vector3d::Zero()));
   EXPECT(veq(Xn.p, Eigen::Vector3d::Zero()));
 }
 
 // Constant velocity: position integrates v (Euler: p+ = p + v dt).
-TEST(MekfDynamics, PropagateConstantVelocityIntegratesPosition) {
+TEST(MEKFDynamics, PropagateConstantVelocityIntegratesPosition) {
   const double dt = 0.1;
-  MekfState X(Rot3::Identity(), Eigen::Vector3d(1, 0, 0),
+  MEKFState X(Rot3::Identity(), Eigen::Vector3d(1, 0, 0),
               Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
               Eigen::Vector3d::Zero());
   ImuInput u = gravityInput();
   u.accel = kHoverAccel;  // cancel gravity -> zero linear acceleration
-  MekfState Xn = propagateMean(X, u, dt);
+  MEKFState Xn = propagateMean(X, u, dt);
   EXPECT(veq(Xn.v, Eigen::Vector3d(1, 0, 0)));
   EXPECT(veq(Xn.p, Eigen::Vector3d(0.1, 0, 0)));
 }
 
 // Attitude integrates the bias-corrected gyro: R+ = R Exp((omega - b_gyro) dt).
-TEST(MekfDynamics, PropagateAttitudeUsesGyroBias) {
+TEST(MEKFDynamics, PropagateAttitudeUsesGyroBias) {
   const double dt = 0.1;
   const Eigen::Vector3d bg(0, 0, 0.2);
-  MekfState X(Rot3::Rz(0.3), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
+  MEKFState X(Rot3::Rz(0.3), Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
               bg, Eigen::Vector3d::Zero());
   ImuInput u = gravityInput();
   u.omega = Eigen::Vector3d(0, 0, 0.5);
   u.accel = kHoverAccel;
-  MekfState Xn = propagateMean(X, u, dt);
+  MEKFState Xn = propagateMean(X, u, dt);
   const Eigen::Vector3d expected_corr(0, 0, 0.3);  // 0.5 - 0.2
   EXPECT(Xn.R.equals(X.R * Rot3::Expmap(expected_corr * dt), kTol));
 }
 
 // Velocity integrates the bias-corrected, rotated specific force + gravity.
-TEST(MekfDynamics, PropagateVelocityUsesAccelBias) {
+TEST(MEKFDynamics, PropagateVelocityUsesAccelBias) {
   const double dt = 0.1;
   const Eigen::Vector3d ba(0, 0, 1.0);
-  MekfState X(Rot3::Identity(), Eigen::Vector3d::Zero(),
+  MEKFState X(Rot3::Identity(), Eigen::Vector3d::Zero(),
               Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), ba);
   ImuInput u = gravityInput();
   u.accel = kHoverAccel;  // (0,0,9.81); corrected = (0,0,8.81)
-  MekfState Xn = propagateMean(X, u, dt);
+  MEKFState Xn = propagateMean(X, u, dt);
   // a_n = R(accel - ba) + g = (0,0,8.81) + (0,0,-9.81) = (0,0,-1)
   EXPECT(veq(Xn.v, Eigen::Vector3d(0, 0, -0.1)));
 }
 
 // Biases are constant through propagation.
-TEST(MekfDynamics, PropagateBiasesUnchanged) {
+TEST(MEKFDynamics, PropagateBiasesUnchanged) {
   const Eigen::Vector3d bg(0.01, -0.02, 0.03), ba(-0.1, 0.2, 0.0);
-  MekfState X(Rot3::Ry(0.2), Eigen::Vector3d(1, 2, 3), Eigen::Vector3d(4, 5, 6),
+  MEKFState X(Rot3::Ry(0.2), Eigen::Vector3d(1, 2, 3), Eigen::Vector3d(4, 5, 6),
               bg, ba);
   ImuInput u = gravityInput();
   u.omega = Eigen::Vector3d(0.1, 0.2, 0.3);
   u.accel = Eigen::Vector3d(0.5, 0.0, 9.0);
-  MekfState Xn = propagateMean(X, u, 0.05);
+  MEKFState Xn = propagateMean(X, u, 0.05);
   EXPECT(veq(Xn.b_gyro, bg));
   EXPECT(veq(Xn.b_accel, ba));
 }
@@ -129,8 +129,8 @@ TEST(MekfDynamics, PropagateBiasesUnchanged) {
 // ---------------------------------------------------------------------------
 
 // Build a representative excited state + input for Jacobian tests.
-static MekfState exampleState() {
-  return MekfState(
+static MEKFState exampleState() {
+  return MEKFState(
       Rot3::Rz(0.4) * Rot3::Rx(0.2), Eigen::Vector3d(1.0, -0.5, 0.3),
       Eigen::Vector3d(2.0, 1.0, -1.0), Eigen::Vector3d(0.01, -0.02, 0.03),
       Eigen::Vector3d(-0.05, 0.1, 0.0));
@@ -145,12 +145,12 @@ static ImuInput exampleInput() {
 // First-order consistency: for a small perturbation delta,
 //   Local(Xn_ref, propagateMean(Retract(X, delta))) ~ F * delta
 // to within O(||delta||^2).
-TEST(MekfDynamics, JacobianFirstOrderConsistency) {
+TEST(MEKFDynamics, JacobianFirstOrderConsistency) {
   const double dt = 0.01;
-  const MekfState X = exampleState();
+  const MEKFState X = exampleState();
   const ImuInput u = exampleInput();
   const Mat15 F = transitionJacobian(X, u, dt);
-  const MekfState Xn_ref = propagateMean(X, u, dt);
+  const MEKFState Xn_ref = propagateMean(X, u, dt);
 
   // A few independent small directions (norm ~1e-4 -> O(1e-8) truncation).
   for (int trial = 0; trial < 5; ++trial) {
@@ -160,9 +160,9 @@ TEST(MekfDynamics, JacobianFirstOrderConsistency) {
     }
     delta *= 1e-4;
 
-    const MekfState Xp = traits<MekfState>::Retract(X, delta);
+    const MEKFState Xp = traits<MEKFState>::Retract(X, delta);
     const Tangent actual =
-        traits<MekfState>::Local(Xn_ref, propagateMean(Xp, u, dt));
+        traits<MEKFState>::Local(Xn_ref, propagateMean(Xp, u, dt));
     const Tangent predicted = F * delta;
     EXPECT(assert_equal((Vector)actual, (Vector)predicted, 1e-9));
   }
@@ -171,9 +171,9 @@ TEST(MekfDynamics, JacobianFirstOrderConsistency) {
 // Known-exact blocks of F (independent of finite-difference noise):
 //   position row: d(dp+)/d(dp) = I,   d(dp+)/d(dv) = I*dt
 //   bias rows are identity (biases are static, decoupled).
-TEST(MekfDynamics, JacobianKnownBlocks) {
+TEST(MEKFDynamics, JacobianKnownBlocks) {
   const double dt = 0.02;
-  const MekfState X = exampleState();
+  const MEKFState X = exampleState();
   const ImuInput u = exampleInput();
   const Mat15 F = transitionJacobian(X, u, dt);
   const Eigen::Matrix3d I3 = Eigen::Matrix3d::Identity();
@@ -190,12 +190,12 @@ TEST(MekfDynamics, JacobianKnownBlocks) {
 
 // Velocity-from-accel-bias block is -R*dt -> state dependent (varies with R).
 // This is the hallmark MEKF property: F depends on the current estimate.
-TEST(MekfDynamics, JacobianStateDependent) {
+TEST(MEKFDynamics, JacobianStateDependent) {
   const double dt = 0.02;
   const ImuInput u = exampleInput();
 
-  MekfState X1 = exampleState();
-  MekfState X2 = exampleState();
+  MEKFState X1 = exampleState();
+  MEKFState X2 = exampleState();
   X2.R = Rot3::Ry(1.1) * X2.R;  // different attitude only
 
   const Mat15 F1 = transitionJacobian(X1, u, dt);

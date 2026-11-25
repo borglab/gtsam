@@ -75,23 +75,23 @@ TEST(BodyVelocityOutput, IsARightAction) {
   const TGElement X = fixture::makeX(), Y = fixture::makeY();
 
   EXPECT(
-      fixture::veq(y, DVLMeasurement::output_action(TGElement::Identity(), y)));
+      fixture::veq(y, DVLMeasurement::outputAction(TGElement::Identity(), y)));
   EXPECT(fixture::veq(
-      DVLMeasurement::output_action(X * Y, y),
-      DVLMeasurement::output_action(Y, DVLMeasurement::output_action(X, y)),
+      DVLMeasurement::outputAction(X * Y, y),
+      DVLMeasurement::outputAction(Y, DVLMeasurement::outputAction(X, y)),
       fixture::kTolL));
 }
 
-// inverse_output_action is psi_{X^-1}, which for a group action is psi_X^-1.
+// inverseOutputAction is psi_{X^-1}, which for a group action is psi_X^-1.
 // It exists only to skip building the fiber part of X.inverse().
 TEST(BodyVelocityOutput, InverseActionIsTheActionOfTheInverse) {
   const Vector3 y(0.3, -0.1, 0.2);
   const TGElement X = fixture::makeX();
 
-  EXPECT(fixture::veq(DVLMeasurement::output_action(X.inverse(), y),
-                      DVLMeasurement::inverse_output_action(X, y)));
-  EXPECT(fixture::veq(y, DVLMeasurement::inverse_output_action(
-                             X, DVLMeasurement::output_action(X, y))));
+  EXPECT(fixture::veq(DVLMeasurement::outputAction(X.inverse(), y),
+                      DVLMeasurement::inverseOutputAction(X, y)));
+  EXPECT(fixture::veq(y, DVLMeasurement::inverseOutputAction(
+                             X, DVLMeasurement::outputAction(X, y))));
 }
 
 // Output equivariance h(phi(X, xi)) = psi_X(h(xi)). Without it the origin-chart
@@ -107,7 +107,7 @@ TEST(BodyVelocityOutput, IsEquivariant) {
        {TGElement::Identity(), fixture::makeX(), TGElement::Expmap(logX)}) {
     EXPECT(fixture::veq(
         DVLMeasurement::predict(phi(X, xi)),
-        DVLMeasurement::output_action(X, DVLMeasurement::predict(xi)),
+        DVLMeasurement::outputAction(X, DVLMeasurement::predict(xi)),
         fixture::kTolL));
   }
 }
@@ -125,8 +125,8 @@ TEST(BodyVelocityOutput, C0MatchesNumerical) {
       numericalDerivative11<Vector3, State>(
           [](const State& x) { return DVLMeasurement::predict(x); }, xi_ref);
 
-  EXPECT(assert_equal((Matrix)DVLMeasurement::jacobian_C0(xi_ref),
-                      (Matrix)H_num, 1e-5));
+  EXPECT(assert_equal((Matrix)DVLMeasurement::jacobianC0(xi_ref), (Matrix)H_num,
+                      1e-5));
 }
 
 // At convergence the transported measurement is the origin output itself, so
@@ -137,8 +137,8 @@ TEST(BodyVelocityOutput, CstarMeetsC0AtConvergence) {
   const TGElement g = fixture::makeX();
   const Vector3 z = DVLMeasurement::predict(phi(g, xi_ref));
 
-  EXPECT(assert_equal((Matrix)DVLMeasurement::jacobian_C0(xi_ref),
-                      (Matrix)DVLMeasurement::jacobian_Cstar(xi_ref, g, z),
+  EXPECT(assert_equal((Matrix)DVLMeasurement::jacobianC0(xi_ref),
+                      (Matrix)DVLMeasurement::jacobianCstar(xi_ref, g, z),
                       fixture::kTol));
 }
 
@@ -159,7 +159,7 @@ Vector3 measurementAt(const fixture::Tangent& eps) {
 /**
  * The residual the filter linearizes, as a function of the error.
  *
- * TGEqF::update_dvl compares predict(xi_ref) against psi_X^{-1}(z), so an
+ * TGEqF::updateDvl compares predict(xi_ref) against psi_X^{-1}(z), so an
  * output matrix C is correct to the extent that
  *
  *   C eps  ~=  psi_X^{-1}(z(eps)) - predict(xi_ref),
@@ -169,17 +169,17 @@ Vector3 measurementAt(const fixture::Tangent& eps) {
  * Jacobian rather than the Jacobian of the output map alone.
  */
 Vector3 residual(const fixture::Tangent& eps) {
-  return DVLMeasurement::inverse_output_action(kG, measurementAt(eps)) -
+  return DVLMeasurement::inverseOutputAction(kG, measurementAt(eps)) -
          DVLMeasurement::predict(kXiRef);
 }
 
 double errorC0(const fixture::Tangent& eps) {
-  return (residual(eps) - DVLMeasurement::jacobian_C0(kXiRef) * eps).norm();
+  return (residual(eps) - DVLMeasurement::jacobianC0(kXiRef) * eps).norm();
 }
 
 double errorCstar(const fixture::Tangent& eps) {
   return (residual(eps) -
-          DVLMeasurement::jacobian_Cstar(kXiRef, kG, measurementAt(eps)) * eps)
+          DVLMeasurement::jacobianCstar(kXiRef, kG, measurementAt(eps)) * eps)
       .norm();
 }
 

@@ -52,6 +52,7 @@ Matrix3 leftJacobianInverse(const Vector3& phi) {
 
 }  // namespace
 
+namespace gtsam {
 namespace tfg {
 
 TwoFrameGroup::TwoFrameGroup()
@@ -74,8 +75,8 @@ TwoFrameGroup TwoFrameGroup::FromState(const Rot3& R, const Vector3& v,
   return TwoFrameGroup(R, v, p, -(R * b_omega), -(R * b_accel));
 }
 
-Vector3 TwoFrameGroup::bias_omega() const { return R.unrotate(-gamma_omega); }
-Vector3 TwoFrameGroup::bias_accel() const { return R.unrotate(-gamma_accel); }
+Vector3 TwoFrameGroup::biasOmega() const { return R.unrotate(-gamma_omega); }
+Vector3 TwoFrameGroup::biasAccel() const { return R.unrotate(-gamma_accel); }
 
 TwoFrameGroup TwoFrameGroup::operator*(const TwoFrameGroup& Y) const {
   return TwoFrameGroup(R * Y.R, v + R * Y.v, p + R * Y.p,
@@ -139,8 +140,6 @@ TwoFrameGroup phi(const TwoFrameGroup& X, const TwoFrameGroup& xi) {
 }
 
 }  // namespace tfg
-
-namespace gtsam {
 
 using G = tfg::TwoFrameGroup;
 using T = traits<G>;

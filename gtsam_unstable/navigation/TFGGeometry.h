@@ -28,10 +28,8 @@
 
 #include <Eigen/Dense>
 
+namespace gtsam {
 namespace tfg {
-
-using gtsam::Rot3;
-using gtsam::Vector3;
 
 /// Lie algebra g_TF as a 15-vector.
 using Tangent = gtsam::Vector15;
@@ -59,8 +57,8 @@ class GTSAM_UNSTABLE_EXPORT TwoFrameGroup {
                                  const Vector3& b_accel);
 
   /// Physical biases b = R^{-1} (-gamma).
-  Vector3 bias_omega() const;
-  Vector3 bias_accel() const;
+  Vector3 biasOmega() const;
+  Vector3 biasAccel() const;
 
   static TwoFrameGroup Identity();
   TwoFrameGroup operator*(const TwoFrameGroup& Y) const;
@@ -77,8 +75,6 @@ class GTSAM_UNSTABLE_EXPORT TwoFrameGroup {
 };
 
 }  // namespace tfg
-
-namespace gtsam {
 
 template <>
 struct GTSAM_UNSTABLE_EXPORT traits<tfg::TwoFrameGroup> {
@@ -127,8 +123,6 @@ struct GTSAM_UNSTABLE_EXPORT traits<tfg::TwoFrameGroup> {
 template <>
 struct traits<const tfg::TwoFrameGroup> : traits<tfg::TwoFrameGroup> {};
 
-}  // namespace gtsam
-
 namespace tfg {
 
 /// Right group action phi(X, xi) = xi * X. The InEKF operates directly on
@@ -137,3 +131,4 @@ GTSAM_UNSTABLE_EXPORT TwoFrameGroup phi(const TwoFrameGroup& X,
                                         const TwoFrameGroup& xi);
 
 }  // namespace tfg
+}  // namespace gtsam

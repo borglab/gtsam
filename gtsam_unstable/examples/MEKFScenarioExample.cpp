@@ -21,7 +21,7 @@
 #include <ostream>
 #include <string>
 
-namespace mekf::examples {
+namespace gtsam::mekf::examples {
 
 // Run configuration and reporting are shared with the other filter examples.
 using imu_scenarios::parseRunOptions;
@@ -31,9 +31,9 @@ using imu_scenarios::RunSummary;
 /// Satisfies the adapter contract in scenario_harness/FilterScenarioRunner.h.
 class ScenarioAdapter {
  public:
-  static constexpr int kDim = MekfState::dimension;
-  using Filter = MultiplicativeEKF;
-  using TrueState = MekfState;
+  static constexpr int kDim = MEKFState::dimension;
+  using Filter = MEKF;
+  using TrueState = MEKFState;
 
   explicit ScenarioAdapter(const RunOptions& opts)
       : noise_(imu_scenarios::toFilterImuNoise<ImuNoise>(
@@ -53,7 +53,7 @@ class ScenarioAdapter {
   /// is physical, so P0 is used as given.
   Filter makeFilter(const imu_scenarios::InitialEstimate& initial,
                     const imu_scenarios::PhysicalStateCovariance& P0) const {
-    const MekfState X0(initial.nav.attitude(), initial.nav.velocity(),
+    const MEKFState X0(initial.nav.attitude(), initial.nav.velocity(),
                        initial.nav.position(), initial.bias_gyro,
                        initial.bias_accel);
     return Filter(X0, P0);
@@ -61,7 +61,7 @@ class ScenarioAdapter {
 
   TrueState trueState(const gtsam::NavState& gt, const Eigen::Vector3d& true_bg,
                       const Eigen::Vector3d& true_ba) const {
-    return MekfState(gt.attitude(), gt.velocity(), gt.position(), true_bg,
+    return MEKFState(gt.attitude(), gt.velocity(), gt.position(), true_bg,
                      true_ba);
   }
 
@@ -72,23 +72,23 @@ class ScenarioAdapter {
 
   void updatePosition(Filter& filter,
                       const imu_scenarios::PositionMeasurement& z) const {
-    filter.update_position(z.position, z.covariance);
+    filter.updatePosition(z.position, z.covariance);
   }
 
   void updateDvl(Filter& filter, const imu_scenarios::DvlMeasurement& z) const {
-    filter.update_dvl(z.body_velocity, z.covariance);
+    filter.updateDvl(z.body_velocity, z.covariance);
   }
 
   void updateDepth(Filter& filter,
                    const imu_scenarios::DepthMeasurement& z) const {
-    filter.update_depth(z.depth, z.covariance);
+    filter.updateDepth(z.depth, z.covariance);
   }
 
   /// Truth, estimate, tangent error and covariance, all in the MEKF's local
   /// chart (right/body multiplicative attitude, additive vectors).
   void writeCsvRow(std::ostream& out, double t, const TrueState& X_true,
                    const Filter& filter) const {
-    const MekfState& X_hat = filter.state();
+    const MEKFState& X_hat = filter.state();
     imu_scenarios::CsvRow row(out, t);
     row.quat(X_true.R)
         .v3(X_true.v)
@@ -122,9 +122,9 @@ inline RunSummary runScenario(const gtsam::Scenario& scenario,
                                           scenario_name);
 }
 
-}  // namespace mekf::examples
+}  // namespace gtsam::mekf::examples
 
 int main(int argc, char* argv[]) {
   return imu_scenarios::exampleMain(argc, argv, "MEKFScenarioExample", "mekf",
-                                    mekf::examples::runScenario);
+                                    gtsam::mekf::examples::runScenario);
 }

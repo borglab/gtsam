@@ -26,6 +26,7 @@
 
 #include <Eigen/Dense>
 
+namespace gtsam {
 namespace tfg {
 
 /// Lifted IMU input for InvariantEKF::predict (biases are in the state).
@@ -88,7 +89,7 @@ struct GTSAM_UNSTABLE_EXPORT BodyVelocityOutput {
   static Vector3 predict(const TwoFrameGroup& xi);
 
   /// Output action psi_d(X, y) = R_X^T y + R_X^T v_X; for equivariance checks.
-  static Vector3 output_action(const TwoFrameGroup& X, const Vector3& y);
+  static Vector3 outputAction(const TwoFrameGroup& X, const Vector3& y);
 
   /// Output Jacobian H = [ y_hat^  I  0  0 ] in the right-retract chart.
   /// d_v block is identity (velocity perturbed in rotated frame, not R^T).
@@ -109,7 +110,7 @@ struct GTSAM_UNSTABLE_EXPORT PositionOutput {
   static Vector3 predict(const TwoFrameGroup& xi, const Vector3& pi);
 
   /// Output action rho_X(y) = R_X^T (y - p_X); for equivariance checks.
-  static Vector3 output_action(const TwoFrameGroup& X, const Vector3& y);
+  static Vector3 outputAction(const TwoFrameGroup& X, const Vector3& y);
 
   /// Output Jacobian for chart xi(eps) = xi_hat * Expmap(eps).
   /// Right-retract chart: noise-free residual y_hat = J_l(eps_theta) eps_p.
@@ -120,7 +121,7 @@ struct GTSAM_UNSTABLE_EXPORT PositionOutput {
                            Variant variant = Variant::C0);
 };
 
-class GTSAM_UNSTABLE_EXPORT TfgInEKF
+class GTSAM_UNSTABLE_EXPORT TFGInEKF
     : public gtsam::InvariantEKF<TwoFrameGroup> {
  public:
   using Base = gtsam::InvariantEKF<TwoFrameGroup>;
@@ -135,7 +136,7 @@ class GTSAM_UNSTABLE_EXPORT TfgInEKF
   /// @param X0 initial group state (TwoFrameGroup::FromState for physical
   /// coords)
   /// @param P0 initial 15-dim tangent covariance.
-  TfgInEKF(const TwoFrameGroup& X0, const Covariance& P0);
+  TFGInEKF(const TwoFrameGroup& X0, const Covariance& P0);
 
   /// IMU predict with lifted tangent process noise Qc (scaled by dt).
   /// @param g_vec  Global-frame gravity vector; its sign fixes the frame
@@ -148,11 +149,11 @@ class GTSAM_UNSTABLE_EXPORT TfgInEKF
                  const Vector3& g_vec, const ImuNoise& noise, double dt);
 
   /// Position update: h = R^T(pi - p).
-  void update_position(const Vector3& pi, const Covariance3& R_pos,
-                       bool use_cstar = false);
+  void updatePosition(const Vector3& pi, const Covariance3& R_pos,
+                      bool use_cstar = false);
 
   /// DVL update: h_d = R^T v; R_dvl in body frame.
-  void update_dvl(const Vector3& z_dvl, const Covariance3& R_dvl);
+  void updateDvl(const Vector3& z_dvl, const Covariance3& R_dvl);
 
   /**
    * Pressure-sensor depth update from the world-frame z position.
@@ -172,11 +173,11 @@ class GTSAM_UNSTABLE_EXPORT TfgInEKF
    * @param R_depth              Variance of z_depth, as a 1x1 matrix.
    * @param horizontal_variance  Variance assigned to the pseudo-measured x and
    *                             y axes.
-   * @param use_cstar            Forwarded to update_position.
+   * @param use_cstar            Forwarded to updatePosition.
    */
-  void update_depth(double z_depth, const Covariance1& R_depth,
-                    double horizontal_variance = kDefaultHorizontalVariance,
-                    bool use_cstar = false);
+  void updateDepth(double z_depth, const Covariance1& R_depth,
+                   double horizontal_variance = kDefaultHorizontalVariance,
+                   bool use_cstar = false);
 
   /// Error state eps = Local(estimate, X_true) in the group's local chart, i.e.
   /// the chart covariance() lives in. Block order R, v, p, bg, ba.
@@ -186,8 +187,8 @@ class GTSAM_UNSTABLE_EXPORT TfgInEKF
   gtsam::Rot3 attitude() const;
   Vector3 velocity() const;
   Vector3 position() const;
-  Vector3 bias_gyro() const;
-  Vector3 bias_accel() const;
+  Vector3 biasGyro() const;
+  Vector3 biasAccel() const;
 
   /**
    * Covariance reset Jacobian for a correction eta applied as X * Expmap(eta).
@@ -208,3 +209,4 @@ class GTSAM_UNSTABLE_EXPORT TfgInEKF
 };
 
 }  // namespace tfg
+}  // namespace gtsam

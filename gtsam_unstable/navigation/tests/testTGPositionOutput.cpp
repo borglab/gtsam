@@ -76,10 +76,10 @@ TEST(PositionOutput, IsARightAction) {
   const TGElement X = fixture::makeX(), Y = fixture::makeY();
 
   EXPECT(fixture::veq(
-      y, PositionMeasurement::output_action(TGElement::Identity(), y)));
-  EXPECT(fixture::veq(PositionMeasurement::output_action(X * Y, y),
-                      PositionMeasurement::output_action(
-                          Y, PositionMeasurement::output_action(X, y)),
+      y, PositionMeasurement::outputAction(TGElement::Identity(), y)));
+  EXPECT(fixture::veq(PositionMeasurement::outputAction(X * Y, y),
+                      PositionMeasurement::outputAction(
+                          Y, PositionMeasurement::outputAction(X, y)),
                       fixture::kTolL));
 }
 
@@ -95,7 +95,7 @@ TEST(PositionOutput, IsEquivariant) {
   for (const TGElement& X :
        {TGElement::Identity(), fixture::makeX(), TGElement::Expmap(logX)}) {
     EXPECT(fixture::veq(PositionMeasurement::predict(phi(X, xi), fixture::kPi),
-                        PositionMeasurement::output_action(
+                        PositionMeasurement::outputAction(
                             X, PositionMeasurement::predict(xi, fixture::kPi)),
                         fixture::kTolL));
   }
@@ -119,7 +119,7 @@ TEST(PositionOutput, C0MatchesNumerical) {
           xi_ref);
 
   EXPECT(assert_equal(
-      (Matrix)PositionMeasurement::jacobian_C0(xi_ref, fixture::kPi),
+      (Matrix)PositionMeasurement::jacobianC0(xi_ref, fixture::kPi),
       (Matrix)H_num, 1e-5));
 }
 
@@ -136,8 +136,8 @@ TEST(PositionOutput, CstarMeetsC0AtConvergence) {
   EXPECT(fixture::veq(fixture::kPi, phi(g, xi_ref).T.x(1)));
 
   EXPECT(assert_equal(
-      (Matrix)PositionMeasurement::jacobian_C0(xi_ref, fixture::kPi),
-      (Matrix)PositionMeasurement::jacobian_Cstar(xi_ref, g, fixture::kPi),
+      (Matrix)PositionMeasurement::jacobianC0(xi_ref, fixture::kPi),
+      (Matrix)PositionMeasurement::jacobianCstar(xi_ref, g, fixture::kPi),
       fixture::kTol));
 }
 
@@ -158,7 +158,7 @@ Vector3 measurementAt(const fixture::Tangent& eps) {
 /**
  * The residual the filter linearizes, as a function of the error.
  *
- * TGEqF::update_position feeds prediction = R0^T(pi - p_hat) against z = 0, so
+ * TGEqF::updatePosition feeds prediction = R0^T(pi - p_hat) against z = 0, so
  * an output matrix C is correct to the extent that
  *
  *   C eps  ~=  R0^T (p_hat - pi(eps)),
@@ -174,13 +174,13 @@ Vector3 residual(const fixture::Tangent& eps) {
 
 double errorC0(const fixture::Tangent& eps) {
   return (residual(eps) -
-          PositionMeasurement::jacobian_C0(kXiRef, measurementAt(eps)) * eps)
+          PositionMeasurement::jacobianC0(kXiRef, measurementAt(eps)) * eps)
       .norm();
 }
 
 double errorCstar(const fixture::Tangent& eps) {
   return (residual(eps) -
-          PositionMeasurement::jacobian_Cstar(kXiRef, kG, measurementAt(eps)) *
+          PositionMeasurement::jacobianCstar(kXiRef, kG, measurementAt(eps)) *
               eps)
       .norm();
 }

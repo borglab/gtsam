@@ -25,6 +25,7 @@
 
 #include <Eigen/Dense>
 
+namespace gtsam {
 namespace mekf {
 
 struct ImuInput {
@@ -37,12 +38,12 @@ struct ImuInput {
   Vector3 g_vec = Vector3::Zero();
 };
 
-GTSAM_UNSTABLE_EXPORT MekfState propagateMean(const MekfState& X,
+GTSAM_UNSTABLE_EXPORT MEKFState propagateMean(const MEKFState& X,
                                               const ImuInput& u, double dt);
 
 /// Finite-difference transition Jacobian F (state-dependent, recomputed each
 /// step).
-GTSAM_UNSTABLE_EXPORT MekfState::Jacobian transitionJacobian(const MekfState& X,
+GTSAM_UNSTABLE_EXPORT MEKFState::Jacobian transitionJacobian(const MEKFState& X,
                                                              const ImuInput& u,
                                                              double dt);
 
@@ -53,15 +54,15 @@ GTSAM_UNSTABLE_EXPORT MekfState::Jacobian transitionJacobian(const MekfState& X,
 struct GTSAM_UNSTABLE_EXPORT BodyVelocityOutput {
   using Jacobian = Eigen::Matrix<double, 3, 15>;
 
-  static Vector3 predict(const MekfState& X);
-  static Jacobian jacobian(const MekfState& X);
+  static Vector3 predict(const MEKFState& X);
+  static Jacobian jacobian(const MEKFState& X);
 };
 
 /// Direct global position output: h(xi) = p.
 struct GTSAM_UNSTABLE_EXPORT PositionOutput {
   using Jacobian = Eigen::Matrix<double, 3, 15>;
 
-  static Vector3 predict(const MekfState& X);
+  static Vector3 predict(const MEKFState& X);
   static Jacobian jacobian();
 };
 
@@ -74,10 +75,9 @@ struct ImuNoise {
   Vector3 accel_rw = Vector3::Zero();
 };
 
-class GTSAM_UNSTABLE_EXPORT MultiplicativeEKF
-    : public gtsam::ManifoldEKF<MekfState> {
+class GTSAM_UNSTABLE_EXPORT MEKF : public gtsam::ManifoldEKF<MEKFState> {
  public:
-  using Base = gtsam::ManifoldEKF<MekfState>;
+  using Base = gtsam::ManifoldEKF<MEKFState>;
   using Covariance = Eigen::Matrix<double, 15, 15>;
   using Covariance3 = Eigen::Matrix<double, 3, 3>;
   using Covariance1 = Eigen::Matrix<double, 1, 1>;
@@ -86,7 +86,7 @@ class GTSAM_UNSTABLE_EXPORT MultiplicativeEKF
   /// depth update, large enough that the update leaves x and y untouched.
   static constexpr double kDefaultHorizontalVariance = 1e3;
 
-  MultiplicativeEKF(const MekfState& X0, const Covariance& P0);
+  MEKF(const MEKFState& X0, const Covariance& P0);
 
   /**
    * Strapdown predict + finite-diff F; P <- F P F^T + Qc dt.
@@ -112,10 +112,10 @@ class GTSAM_UNSTABLE_EXPORT MultiplicativeEKF
                  const Vector3& g_vec, const ImuNoise& noise, double dt);
 
   /// GNSS position update (h = p, world-frame R_pos).
-  void update_position(const Vector3& pi, const Covariance3& R_pos);
+  void updatePosition(const Vector3& pi, const Covariance3& R_pos);
 
   /// DVL update (h = R^T v, state-dependent H, body-frame R_dvl).
-  void update_dvl(const Vector3& z_dvl, const Covariance3& R_dvl);
+  void updateDvl(const Vector3& z_dvl, const Covariance3& R_dvl);
 
   /**
    * Pressure-sensor depth update from the world-frame z position.
@@ -135,19 +135,19 @@ class GTSAM_UNSTABLE_EXPORT MultiplicativeEKF
    * @param horizontal_variance  Variance assigned to the pseudo-measured x and
    *                             y axes.
    */
-  void update_depth(double z_depth, const Covariance1& R_depth,
-                    double horizontal_variance = kDefaultHorizontalVariance);
+  void updateDepth(double z_depth, const Covariance1& R_depth,
+                   double horizontal_variance = kDefaultHorizontalVariance);
 
   /// Error state eps = Local(estimate, X_true) in the filter's local chart
   /// (right/body multiplicative attitude, additive vectors), i.e. the chart
   /// covariance() lives in. Block order R, v, p, bg, ba.
-  TangentVector errorStateVector(const MekfState& X_true) const;
+  TangentVector errorStateVector(const MEKFState& X_true) const;
 
   gtsam::Rot3 attitude() const;
   Vector3 velocity() const;
   Vector3 position() const;
-  Vector3 bias_gyro() const;
-  Vector3 bias_accel() const;
+  Vector3 biasGyro() const;
+  Vector3 biasAccel() const;
 
   /**
    * Covariance reset Jacobian for a correction eta applied by Retract.
@@ -168,3 +168,4 @@ class GTSAM_UNSTABLE_EXPORT MultiplicativeEKF
 };
 
 }  // namespace mekf
+}  // namespace gtsam

@@ -64,8 +64,8 @@ TEST(DepthOutput, CMatchesNumericalAtTheOrigin) {
       [](const State& xi) { return DepthMeasurement::predict(xi); }, xi_ref);
 
   EXPECT(assert_equal(
-      (Matrix)DepthMeasurement::jacobian_C(xi_ref, TGElement::Identity()),
-      H_num, 1e-5));
+      (Matrix)DepthMeasurement::jacobianC(xi_ref, TGElement::Identity()), H_num,
+      1e-5));
 }
 
 // C is an honest first derivative, so it is checked directly. The
@@ -77,7 +77,7 @@ TEST(DepthOutput, CMatchesNumericalAtANonIdentityEstimate) {
     const Matrix H_num = numericalDerivative11<double, State>(
         [&X](const State& e) { return DepthMeasurement::predict(phi(X, e)); },
         xi_ref);
-    EXPECT(assert_equal((Matrix)DepthMeasurement::jacobian_C(xi_ref, X), H_num,
+    EXPECT(assert_equal((Matrix)DepthMeasurement::jacobianC(xi_ref, X), H_num,
                         1e-5));
   };
 
@@ -137,7 +137,7 @@ double residual(const fixture::Tangent& eps) {
 
 double errorC(const fixture::Tangent& eps) {
   return std::abs(residual(eps) -
-                  (DepthMeasurement::jacobian_C(kXiRef, kG) * eps)(0));
+                  (DepthMeasurement::jacobianC(kXiRef, kG) * eps)(0));
 }
 
 /// Ratio of the linearization error at half amplitude to that at full: ~1/4

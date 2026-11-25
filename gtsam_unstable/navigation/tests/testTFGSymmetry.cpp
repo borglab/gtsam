@@ -8,7 +8,7 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam_unstable/navigation/TFGInEKF.h>
 
-using namespace tfg;
+using namespace gtsam::tfg;
 using namespace gtsam;
 
 static constexpr double kTol = 1e-9;
@@ -230,8 +230,8 @@ TEST(Lift, PredictStepMatchesWorldDynamics) {
   EXPECT(veq(X1.v, v1_ref, 1e-7));
   EXPECT(veq(X1.p, p1_ref, 1e-7));
   // Biases unchanged (tau = 0)
-  EXPECT(veq(X1.bias_omega(), bw, 1e-7));
-  EXPECT(veq(X1.bias_accel(), ba, 1e-7));
+  EXPECT(veq(X1.biasOmega(), bw, 1e-7));
+  EXPECT(veq(X1.biasAccel(), ba, 1e-7));
 }
 
 // Bias evolves by random-walk only:  with tau != 0, b changes by tau*dt.
@@ -247,8 +247,8 @@ TEST(Lift, BiasRandomWalkPropagation) {
   const double dt = 1e-5;
 
   auto X1 = X * increment(X, u, dt);
-  EXPECT(veq(X1.bias_omega(), bw + u.tau_omega * dt, 1e-7));
-  EXPECT(veq(X1.bias_accel(), ba + u.tau_accel * dt, 1e-7));
+  EXPECT(veq(X1.biasOmega(), bw + u.tau_omega * dt, 1e-7));
+  EXPECT(veq(X1.biasAccel(), ba + u.tau_accel * dt, 1e-7));
 }
 
 // ---------------------------------------------------------------------------

@@ -19,15 +19,14 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam_unstable/navigation/TFGInEKF.h>
 
+namespace gtsam {
 namespace tfg {
-
-using gtsam::Matrix3;
 
 static inline Matrix3 skew(const Vector3& x) { return gtsam::skewSymmetric(x); }
 
 Tangent lift(const TwoFrameGroup& X, const ImuInput& u) {
-  const Vector3 b_omega = X.bias_omega();
-  const Vector3 b_accel = X.bias_accel();
+  const Vector3 b_omega = X.biasOmega();
+  const Vector3 b_accel = X.biasAccel();
   const Vector3 gyro_err = u.omega - b_omega;
 
   Tangent xi;
@@ -48,8 +47,8 @@ Tangent lift(const TwoFrameGroup& X, const ImuInput& u) {
 //                        Df[g_a, g_w] = b_a^     Df[g_a   , g_a] =  w_hat^
 TwoFrameGroup::Jacobian liftJacobian(const TwoFrameGroup& X,
                                      const ImuInput& u) {
-  const Vector3 b_omega = X.bias_omega();
-  const Vector3 b_accel = X.bias_accel();
+  const Vector3 b_omega = X.biasOmega();
+  const Vector3 b_accel = X.biasAccel();
   const Vector3 w_hat = u.omega - b_omega;
   const Vector3 Rt_g = X.R.unrotate(u.g_vec);
   const Vector3 Rt_v = X.R.unrotate(X.v);
@@ -77,8 +76,8 @@ TwoFrameGroup::Jacobian inputNoiseCov(const TwoFrameGroup& X,
                                       const ImuNoise& noise, double dt) {
   using InputNoiseJacobian = Eigen::Matrix<double, 15, 12>;
 
-  const Vector3 b_omega = X.bias_omega();
-  const Vector3 b_accel = X.bias_accel();
+  const Vector3 b_omega = X.biasOmega();
+  const Vector3 b_accel = X.biasAccel();
   const Matrix3 I3 = Matrix3::Identity();
 
   InputNoiseJacobian B = InputNoiseJacobian::Zero();
@@ -114,8 +113,8 @@ Vector3 BodyVelocityOutput::predict(const TwoFrameGroup& xi) {
   return xi.R.unrotate(xi.v);
 }
 
-Vector3 BodyVelocityOutput::output_action(const TwoFrameGroup& X,
-                                          const Vector3& y) {
+Vector3 BodyVelocityOutput::outputAction(const TwoFrameGroup& X,
+                                         const Vector3& y) {
   return X.R.unrotate(y) + X.R.unrotate(X.v);
 }
 
@@ -133,8 +132,7 @@ Vector3 PositionOutput::predict(const TwoFrameGroup& xi, const Vector3& pi) {
   return xi.R.unrotate(pi - xi.p);
 }
 
-Vector3 PositionOutput::output_action(const TwoFrameGroup& X,
-                                      const Vector3& y) {
+Vector3 PositionOutput::outputAction(const TwoFrameGroup& X, const Vector3& y) {
   return X.R.unrotate(y - X.p);
 }
 
@@ -151,7 +149,7 @@ PositionOutput::Jacobian PositionOutput::jacobian(const TwoFrameGroup& xi_hat,
   return C;
 }
 
-TfgInEKF::TfgInEKF(const TwoFrameGroup& X0, const Covariance& P0)
+TFGInEKF::TFGInEKF(const TwoFrameGroup& X0, const Covariance& P0)
     : Base(X0, P0) {}
 
 namespace {
@@ -166,13 +164,13 @@ ImuInput makeInput(const Vector3& omega, const Vector3& accel,
 
 // X_next = X * U with the exact discrete-step Jacobian F.
 void transition(const TwoFrameGroup& X, const ImuInput& u, double dt,
-                TwoFrameGroup& X_next, TfgInEKF::Covariance& F) {
+                TwoFrameGroup& X_next, TFGInEKF::Covariance& F) {
   X_next = X * increment(X, u, dt);
   F = transitionJacobian(X, u, dt);
 }
 }  // namespace
 
-void TfgInEKF::propagate(const Vector3& omega, const Vector3& accel,
+void TFGInEKF::propagate(const Vector3& omega, const Vector3& accel,
                          const Vector3& g_vec, const Covariance& Qc,
                          double dt) {
   const ImuInput u = makeInput(omega, accel, g_vec);
@@ -182,7 +180,7 @@ void TfgInEKF::propagate(const Vector3& omega, const Vector3& accel,
   this->gtsam::ManifoldEKF<TwoFrameGroup>::predict(X_next, F, Qc * dt);
 }
 
-void TfgInEKF::propagate(const Vector3& omega, const Vector3& accel,
+void TFGInEKF::propagate(const Vector3& omega, const Vector3& accel,
                          const Vector3& g_vec, const ImuNoise& noise,
                          double dt) {
   const ImuInput u = makeInput(omega, accel, g_vec);
@@ -193,8 +191,8 @@ void TfgInEKF::propagate(const Vector3& omega, const Vector3& accel,
   this->gtsam::ManifoldEKF<TwoFrameGroup>::predict(X_next, F, Qd);
 }
 
-void TfgInEKF::update_position(const Vector3& pi, const Covariance3& R_pos,
-                               bool use_cstar) {
+void TFGInEKF::updatePosition(const Vector3& pi, const Covariance3& R_pos,
+                              bool use_cstar) {
   const TwoFrameGroup& X = this->state();
 
   const auto variant =
@@ -209,7 +207,7 @@ void TfgInEKF::update_position(const Vector3& pi, const Covariance3& R_pos,
   updateWithReset(prediction, H, z, R_meas);
 }
 
-void TfgInEKF::update_dvl(const Vector3& z_dvl, const Covariance3& R_dvl) {
+void TFGInEKF::updateDvl(const Vector3& z_dvl, const Covariance3& R_dvl) {
   const TwoFrameGroup& X = this->state();
 
   // Body-frame residual; R_dvl used directly (no R^T(.)R rotation).
@@ -219,8 +217,8 @@ void TfgInEKF::update_dvl(const Vector3& z_dvl, const Covariance3& R_dvl) {
   updateWithReset(prediction, H, z_dvl, R_dvl);
 }
 
-void TfgInEKF::update_depth(double z_depth, const Covariance1& R_depth,
-                            double horizontal_variance, bool use_cstar) {
+void TFGInEKF::updateDepth(double z_depth, const Covariance1& R_depth,
+                           double horizontal_variance, bool use_cstar) {
   Vector3 pseudo_position = position();
   pseudo_position.z() = z_depth;
 
@@ -229,16 +227,16 @@ void TfgInEKF::update_depth(double z_depth, const Covariance1& R_depth,
   R_pseudo(1, 1) = horizontal_variance;
   R_pseudo(2, 2) = R_depth(0, 0);
 
-  update_position(pseudo_position, R_pseudo, use_cstar);
+  updatePosition(pseudo_position, R_pseudo, use_cstar);
 }
 
-TfgInEKF::Jacobian TfgInEKF::resetJacobian(const TangentVector& eta) {
+TFGInEKF::Jacobian TFGInEKF::resetJacobian(const TangentVector& eta) {
   Jacobian B;
   gtsam::traits<TwoFrameGroup>::Expmap(eta, B);
   return B;
 }
 
-void TfgInEKF::updateWithReset(const gtsam::Vector& prediction,
+void TFGInEKF::updateWithReset(const gtsam::Vector& prediction,
                                const gtsam::Matrix& H, const gtsam::Vector& z,
                                const gtsam::Matrix& R) {
   const TwoFrameGroup prior = this->state();
@@ -249,15 +247,16 @@ void TfgInEKF::updateWithReset(const gtsam::Vector& prediction,
   this->P_ = B * this->P_ * B.transpose();
 }
 
-TfgInEKF::TangentVector TfgInEKF::errorStateVector(
+TFGInEKF::TangentVector TFGInEKF::errorStateVector(
     const TwoFrameGroup& X_true) const {
   return gtsam::traits<TwoFrameGroup>::Local(this->state(), X_true);
 }
 
-gtsam::Rot3 TfgInEKF::attitude() const { return this->state().R; }
-Vector3 TfgInEKF::velocity() const { return this->state().v; }
-Vector3 TfgInEKF::position() const { return this->state().p; }
-Vector3 TfgInEKF::bias_gyro() const { return this->state().bias_omega(); }
-Vector3 TfgInEKF::bias_accel() const { return this->state().bias_accel(); }
+gtsam::Rot3 TFGInEKF::attitude() const { return this->state().R; }
+Vector3 TFGInEKF::velocity() const { return this->state().v; }
+Vector3 TFGInEKF::position() const { return this->state().p; }
+Vector3 TFGInEKF::biasGyro() const { return this->state().biasOmega(); }
+Vector3 TFGInEKF::biasAccel() const { return this->state().biasAccel(); }
 
 }  // namespace tfg
+}  // namespace gtsam

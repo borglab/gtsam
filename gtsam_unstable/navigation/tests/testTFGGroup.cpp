@@ -7,7 +7,7 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam_unstable/navigation/TFGGeometry.h>
 
-using namespace tfg;
+using namespace gtsam::tfg;
 using namespace gtsam;
 
 static constexpr double kTol = 1e-9;
@@ -103,8 +103,8 @@ TEST(TwoFrameGroup, FromStateBiasRoundTrip) {
   EXPECT(X.R.equals(R, kTol));
   EXPECT(veq(X.v, v));
   EXPECT(veq(X.p, p));
-  EXPECT(veq(X.bias_omega(), bw, kTolL));
-  EXPECT(veq(X.bias_accel(), ba, kTolL));
+  EXPECT(veq(X.biasOmega(), bw, kTolL));
+  EXPECT(veq(X.biasAccel(), ba, kTolL));
 }
 
 // ---------------------------------------------------------------------------

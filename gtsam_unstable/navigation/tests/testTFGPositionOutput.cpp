@@ -7,7 +7,7 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam_unstable/navigation/TFGInEKF.h>  // PositionOutput, phi
 
-using namespace tfg;
+using namespace gtsam::tfg;
 using namespace gtsam;
 
 static constexpr double kTol = 1e-9;
@@ -48,7 +48,7 @@ TEST(PositionOutput, PredictZeroWhenConsistent) {
 }
 
 // ---------------------------------------------------------------------------
-// output_action + equivariance:  h(xi * X) == rho_X(h(xi))   (Eq. 35)
+// outputAction + equivariance:  h(xi * X) == rho_X(h(xi))   (Eq. 35)
 // ---------------------------------------------------------------------------
 
 TEST(PositionOutput, OutputEquivariance) {
@@ -61,7 +61,7 @@ TEST(PositionOutput, OutputEquivariance) {
 
   Eigen::Vector3d lhs = PositionOutput::predict(phi(X, xi), pi);
   Eigen::Vector3d rhs =
-      PositionOutput::output_action(X, PositionOutput::predict(xi, pi));
+      PositionOutput::outputAction(X, PositionOutput::predict(xi, pi));
   EXPECT(veq(lhs, rhs, kTolL));
 }
 

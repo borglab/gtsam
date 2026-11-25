@@ -794,7 +794,7 @@ class Input {
   gtsam::Vector3 tau_v;
   gtsam::Vector3 g_vec;
   gtsam::tgeqf::Input::Vector21 vector() const;
-  static gtsam::tgeqf::Input from_vector(
+  static gtsam::tgeqf::Input fromVector(
       const gtsam::tgeqf::Input::Vector21& v);
 };
 
@@ -817,31 +817,31 @@ class PositionMeasurement {
   static gtsam::Vector3 predictAtOrigin(const gtsam::tgeqf::State& xi_ref,
                                         const gtsam::tgeqf::TGElement& g,
                                         const gtsam::Vector3& pi);
-  static gtsam::tgeqf::PositionMeasurement::Jacobian jacobian_C0(
+  static gtsam::tgeqf::PositionMeasurement::Jacobian jacobianC0(
       const gtsam::tgeqf::State& xi_ref, const gtsam::Vector3& pi);
-  static gtsam::tgeqf::PositionMeasurement::Jacobian jacobian_Cstar(
+  static gtsam::tgeqf::PositionMeasurement::Jacobian jacobianCstar(
       const gtsam::tgeqf::State& xi_ref, const gtsam::tgeqf::TGElement& g,
       const gtsam::Vector3& pi);
-  static gtsam::Vector3 output_action(const gtsam::tgeqf::TGElement& X,
-                                      const gtsam::Vector3& y);
+  static gtsam::Vector3 outputAction(const gtsam::tgeqf::TGElement& X,
+                                     const gtsam::Vector3& y);
 };
 
 class DVLMeasurement {
   static gtsam::Vector3 predict(const gtsam::tgeqf::State& xi);
-  static gtsam::tgeqf::DVLMeasurement::Jacobian jacobian_C0(
+  static gtsam::tgeqf::DVLMeasurement::Jacobian jacobianC0(
       const gtsam::tgeqf::State& xi_ref);
-  static gtsam::tgeqf::DVLMeasurement::Jacobian jacobian_Cstar(
+  static gtsam::tgeqf::DVLMeasurement::Jacobian jacobianCstar(
       const gtsam::tgeqf::State& xi_ref, const gtsam::tgeqf::TGElement& g,
       const gtsam::Vector3& z_dvl);
-  static gtsam::Vector3 output_action(const gtsam::tgeqf::TGElement& X,
-                                      const gtsam::Vector3& y);
-  static gtsam::Vector3 inverse_output_action(const gtsam::tgeqf::TGElement& X,
-                                              const gtsam::Vector3& y);
+  static gtsam::Vector3 outputAction(const gtsam::tgeqf::TGElement& X,
+                                     const gtsam::Vector3& y);
+  static gtsam::Vector3 inverseOutputAction(const gtsam::tgeqf::TGElement& X,
+                                            const gtsam::Vector3& y);
 };
 
 class DepthMeasurement {
   static double predict(const gtsam::tgeqf::State& xi);
-  static gtsam::tgeqf::DepthMeasurement::Jacobian jacobian_C(
+  static gtsam::tgeqf::DepthMeasurement::Jacobian jacobianC(
       const gtsam::tgeqf::State& xi_ref, const gtsam::tgeqf::TGElement& g);
 };
 
@@ -863,7 +863,7 @@ class TGEqF {
         const gtsam::tgeqf::TGEqF::Covariance18& Sigma0,
         const gtsam::tgeqf::TGElement& X0);
 
-  void set_reset_step(bool enable);
+  void setResetStep(bool enable);
 
   gtsam::tgeqf::TGEqF::MatrixM resetMatrix(
       const gtsam::tgeqf::TGEqF::TangentVector& delta_xi,
@@ -878,15 +878,15 @@ class TGEqF {
   gtsam::tgeqf::TGEqF::Covariance18 inputNoiseCov(
       const gtsam::tgeqf::ImuNoise& noise) const;
 
-  void update_dvl(const gtsam::Vector3& z_dvl,
-                  const gtsam::tgeqf::TGEqF::Covariance3& R_dvl);
-  void update_position(const gtsam::Vector3& pi,
-                       const gtsam::tgeqf::TGEqF::Covariance3& R_pos);
-  void update_depth(double z_depth,
-                    const gtsam::tgeqf::TGEqF::Covariance1& R_depth,
-                    double horizontal_variance);
-  void update_depth_direct(double z_depth,
-                           const gtsam::tgeqf::TGEqF::Covariance1& R_depth);
+  void updateDvl(const gtsam::Vector3& z_dvl,
+                 const gtsam::tgeqf::TGEqF::Covariance3& R_dvl);
+  void updatePosition(const gtsam::Vector3& pi,
+                      const gtsam::tgeqf::TGEqF::Covariance3& R_pos);
+  void updateDepth(double z_depth,
+                   const gtsam::tgeqf::TGEqF::Covariance1& R_depth,
+                   double horizontal_variance);
+  void updateDepthDirect(double z_depth,
+                         const gtsam::tgeqf::TGEqF::Covariance1& R_depth);
 
   gtsam::tgeqf::State errorState(const gtsam::tgeqf::State& xi_true) const;
   gtsam::tgeqf::TGEqF::TangentVector errorStateVector(
@@ -895,10 +895,10 @@ class TGEqF {
   gtsam::Rot3 attitude() const;
   gtsam::Vector3 velocity() const;
   gtsam::Vector3 position() const;
-  gtsam::Vector3 bias_gyro() const;
-  gtsam::Vector3 bias_accel() const;
-  gtsam::Vector3 bias_vel() const;
-  gtsam::ExtendedPose3<2> extended_pose() const;
+  gtsam::Vector3 biasGyro() const;
+  gtsam::Vector3 biasAccel() const;
+  gtsam::Vector3 biasVel() const;
+  gtsam::ExtendedPose3<2> extendedPose() const;
   gtsam::Vector9 biases() const;
 
   // Inherited from gtsam::EquivariantFilter<State, TGSymmetry>.

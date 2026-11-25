@@ -10,7 +10,7 @@
 
 #include <functional>
 
-using namespace tfg;
+using namespace gtsam::tfg;
 using namespace gtsam;
 
 static constexpr double kTol = 1e-9;
@@ -37,12 +37,12 @@ static double minEig(const Eigen::MatrixXd& M) {
 // Construction
 // ---------------------------------------------------------------------------
 
-TEST(TfgInEKF, ConstructorStoresStateAndCovariance) {
+TEST(TFGInEKF, ConstructorStoresStateAndCovariance) {
   auto X0 = TwoFrameGroup::FromState(
       Rot3::Rz(0.2), Eigen::Vector3d(0.1, 0, 0), Eigen::Vector3d(1, 2, 3),
       Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
   Cov15 P0 = Cov15::Identity() * 0.5;
-  TfgInEKF ekf(X0, P0);
+  TFGInEKF ekf(X0, P0);
 
   EXPECT(traits<TwoFrameGroup>::Equals(ekf.state(), X0, kTol));
   EXPECT(assert_equal((Matrix)P0, (Matrix)ekf.covariance(), kTol));
@@ -53,10 +53,10 @@ TEST(TfgInEKF, ConstructorStoresStateAndCovariance) {
 // Predict: covariance stays symmetric PSD; state mean follows the dynamics.
 // ---------------------------------------------------------------------------
 
-TEST(TfgInEKF, PredictKeepsCovarianceSymmetricPSD) {
+TEST(TFGInEKF, PredictKeepsCovarianceSymmetricPSD) {
   auto X0 = TwoFrameGroup::Identity();
   Cov15 P0 = Cov15::Identity() * 0.1;
-  TfgInEKF ekf(X0, P0);
+  TFGInEKF ekf(X0, P0);
 
   Cov15 Qc = Cov15::Identity() * 1e-3;
   ekf.propagate(Eigen::Vector3d(0.05, -0.02, 0.1),
@@ -68,12 +68,12 @@ TEST(TfgInEKF, PredictKeepsCovarianceSymmetricPSD) {
 }
 
 // Mean prediction matches the world-frame dynamics (Eq. 3) over one step.
-TEST(TfgInEKF, PredictMeanFollowsDynamics) {
+TEST(TFGInEKF, PredictMeanFollowsDynamics) {
   Rot3 R0 = Rot3::Rz(0.3);
   Eigen::Vector3d v0(0.2, -0.1, 0.0), p0(1.0, 0.0, -1.0);
   auto X0 = TwoFrameGroup::FromState(R0, v0, p0, Eigen::Vector3d::Zero(),
                                      Eigen::Vector3d::Zero());
-  TfgInEKF ekf(X0, Cov15::Identity() * 0.01);
+  TFGInEKF ekf(X0, Cov15::Identity() * 0.01);
 
   const Eigen::Vector3d omega(0.0, 0.0, 0.1), accel(0.0, 0.0, 0.0);
   const double dt = 1e-4;
@@ -94,14 +94,14 @@ TEST(TfgInEKF, PredictMeanFollowsDynamics) {
 // ---------------------------------------------------------------------------
 
 // A position measurement reduces the position-block covariance.
-TEST(TfgInEKF, UpdateReducesPositionCovariance) {
+TEST(TFGInEKF, UpdateReducesPositionCovariance) {
   auto X0 = TwoFrameGroup::Identity();
   Cov15 P0 = Cov15::Identity() * 0.1;
   P0.block<3, 3>(6, 6) = Cov3::Identity() * 4.0;  // large position uncertainty
-  TfgInEKF ekf(X0, P0);
+  TFGInEKF ekf(X0, P0);
 
   const double trace_before = ekf.covariance().block<3, 3>(6, 6).trace();
-  ekf.update_position(Eigen::Vector3d(0.5, -0.3, 0.2), Cov3::Identity() * 0.01);
+  ekf.updatePosition(Eigen::Vector3d(0.5, -0.3, 0.2), Cov3::Identity() * 0.01);
   const double trace_after = ekf.covariance().block<3, 3>(6, 6).trace();
 
   EXPECT(trace_after < trace_before);
@@ -110,17 +110,17 @@ TEST(TfgInEKF, UpdateReducesPositionCovariance) {
 
 // A single accurate update pulls a wrong position estimate toward the
 // measurement (here R = I so the position block is directly observed).
-TEST(TfgInEKF, UpdateCorrectsPosition) {
+TEST(TFGInEKF, UpdateCorrectsPosition) {
   auto X0 = TwoFrameGroup::FromState(
       Rot3::Identity(), Eigen::Vector3d::Zero(),
       Eigen::Vector3d(1.0, -1.0, 0.5),  // wrong position
       Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
   Cov15 P0 = Cov15::Identity() * 1e-4;
   P0.block<3, 3>(6, 6) = Cov3::Identity() * 1.0;  // trust measurement more
-  TfgInEKF ekf(X0, P0);
+  TFGInEKF ekf(X0, P0);
 
   const Eigen::Vector3d truth(0.0, 0.0, 0.0);
-  ekf.update_position(truth, Cov3::Identity() * 1e-4);
+  ekf.updatePosition(truth, Cov3::Identity() * 1e-4);
 
   // Estimate should move substantially toward truth.
   EXPECT(ekf.position().norm() < 0.1);
@@ -131,14 +131,14 @@ TEST(TfgInEKF, UpdateCorrectsPosition) {
 // ---------------------------------------------------------------------------
 
 // A DVL measurement reduces the velocity-block covariance.
-TEST(TfgInEKF, UpdateDvlReducesVelocityCovariance) {
+TEST(TFGInEKF, UpdateDvlReducesVelocityCovariance) {
   auto X0 = TwoFrameGroup::Identity();
   Cov15 P0 = Cov15::Identity() * 0.1;
   P0.block<3, 3>(3, 3) = Cov3::Identity() * 4.0;  // large velocity uncertainty
-  TfgInEKF ekf(X0, P0);
+  TFGInEKF ekf(X0, P0);
 
   const double trace_before = ekf.covariance().block<3, 3>(3, 3).trace();
-  ekf.update_dvl(Eigen::Vector3d(0.3, -0.1, 0.0), Cov3::Identity() * 0.01);
+  ekf.updateDvl(Eigen::Vector3d(0.3, -0.1, 0.0), Cov3::Identity() * 0.01);
   const double trace_after = ekf.covariance().block<3, 3>(3, 3).trace();
 
   EXPECT(trace_after < trace_before);
@@ -147,7 +147,7 @@ TEST(TfgInEKF, UpdateDvlReducesVelocityCovariance) {
 
 // A single accurate DVL update pulls a wrong velocity estimate toward truth.
 // The DVL reports the body-frame velocity consistent with truth_v: R^T truth_v.
-TEST(TfgInEKF, UpdateDvlCorrectsVelocity) {
+TEST(TFGInEKF, UpdateDvlCorrectsVelocity) {
   const Rot3 R0 = Rot3::Rz(0.5);
   const Eigen::Vector3d truth_v = R0 * Eigen::Vector3d(0.2, -0.1, 0.05);
   auto X0 = TwoFrameGroup::FromState(
@@ -156,10 +156,10 @@ TEST(TfgInEKF, UpdateDvlCorrectsVelocity) {
       Eigen::Vector3d::Zero());
   Cov15 P0 = Cov15::Identity() * 1e-4;
   P0.block<3, 3>(3, 3) = Cov3::Identity() * 1.0;  // trust the DVL more
-  TfgInEKF ekf(X0, P0);
+  TFGInEKF ekf(X0, P0);
 
   const Eigen::Vector3d z_dvl = R0.unrotate(truth_v);
-  ekf.update_dvl(z_dvl, Cov3::Identity() * 1e-4);
+  ekf.updateDvl(z_dvl, Cov3::Identity() * 1e-4);
 
   const double err_before = (Eigen::Vector3d(1.0, 1.0, -1.0) - truth_v).norm();
   const double err_after = (ekf.velocity() - truth_v).norm();
@@ -180,7 +180,7 @@ TEST(TfgInEKF, UpdateDvlCorrectsVelocity) {
 // residual rather than exactly zero — tightened by the equivariant C* (B.35);
 // see CstarConvergesFromLargeError below. We therefore assert strong error
 // reduction, clean velocity convergence, and covariance shrink.
-TEST(TfgInEKF, StaticConvergence) {
+TEST(TFGInEKF, StaticConvergence) {
   const Eigen::Vector3d g(0.0, 0.0, -9.81);
   const Eigen::Vector3d accel_static = -g;  // specific force when static
   const Eigen::Vector3d omega(0.0, 0.0, 0.0);
@@ -194,7 +194,7 @@ TEST(TfgInEKF, StaticConvergence) {
   Cov15 P0 = Cov15::Identity() * 1e-4;             // confident attitude + bias
   P0.block<3, 3>(3, 3) = Cov3::Identity() * 0.25;  // velocity uncertainty
   P0.block<3, 3>(6, 6) = Cov3::Identity() * 1.0;   // position uncertainty
-  TfgInEKF ekf(X0, P0);
+  TFGInEKF ekf(X0, P0);
 
   Cov15 Qc = Cov15::Identity() * 1e-6;
   Cov3 R_pos = Cov3::Identity() * (0.05 * 0.05);
@@ -208,7 +208,7 @@ TEST(TfgInEKF, StaticConvergence) {
       // Pin to C0: this test exercises the C0 coupling path. C* deliberately
       // zeroes the position->attitude coupling for a level vehicle, so it does
       // not drive horizontal velocity through the gravity feedback loop here.
-      ekf.update_position(truth_pos, R_pos, /*use_cstar=*/false);
+      ekf.updatePosition(truth_pos, R_pos, /*use_cstar=*/false);
   }
 
   // Strong error reduction (> 60%) and clean velocity convergence.
@@ -232,7 +232,7 @@ TEST(TfgInEKF, StaticConvergence) {
 // convergent, consistent filter even from a large initial error.
 // ---------------------------------------------------------------------------
 
-TEST(TfgInEKF, CstarConvergesFromLargeError) {
+TEST(TFGInEKF, CstarConvergesFromLargeError) {
   const Eigen::Vector3d g(0.0, 0.0, -9.81);
   const Eigen::Vector3d accel_static = -g;
   const Eigen::Vector3d omega = Eigen::Vector3d::Zero();
@@ -244,14 +244,14 @@ TEST(TfgInEKF, CstarConvergesFromLargeError) {
                                      Eigen::Vector3d::Zero());
   Cov15 P0 = Cov15::Identity() * 0.05;
   P0.block<3, 3>(6, 6) = Cov3::Identity() * 2.0;
-  TfgInEKF ekf(X0, P0);
+  TFGInEKF ekf(X0, P0);
 
   Cov15 Qc = Cov15::Identity() * 1e-6;
   Cov3 R_pos = Cov3::Identity() * (0.05 * 0.05);
   const double dt = 0.01;
   for (int k = 0; k < 500; ++k) {
     ekf.propagate(omega, accel_static, kTestGravity, Qc, dt);
-    if (k % 10 == 0) ekf.update_position(truth_pos, R_pos, /*use_cstar=*/true);
+    if (k % 10 == 0) ekf.updatePosition(truth_pos, R_pos, /*use_cstar=*/true);
   }
   EXPECT((ekf.position() - truth_pos).norm() < 0.01);
   EXPECT(minEig(ekf.covariance()) > 0.0);
@@ -264,12 +264,12 @@ TEST(TfgInEKF, CstarConvergesFromLargeError) {
 // identically zero and biases were unobservable.
 // ---------------------------------------------------------------------------
 
-TEST(TfgInEKF, PredictBuildsNavBiasCrossCovariance) {
+TEST(TFGInEKF, PredictBuildsNavBiasCrossCovariance) {
   auto X0 = TwoFrameGroup::FromState(
       Rot3::Rz(0.2), Eigen::Vector3d(0.3, -0.1, 0.0),
       Eigen::Vector3d(1.0, 0.5, -0.2), Eigen::Vector3d(0.01, -0.02, 0.0),
       Eigen::Vector3d(0.0, 0.03, -0.01));
-  TfgInEKF ekf(X0, Cov15::Identity() * 0.1);  // diagonal: zero cross-cov
+  TFGInEKF ekf(X0, Cov15::Identity() * 0.1);  // diagonal: zero cross-cov
 
   ekf.propagate(Eigen::Vector3d(0.05, -0.02, 0.1),
                 Eigen::Vector3d(0.0, 0.0, 9.81), kTestGravity,
@@ -284,29 +284,29 @@ TEST(TfgInEKF, PredictBuildsNavBiasCrossCovariance) {
   EXPECT(vel_ba > 1e-9);
 }
 
-TEST(TfgInEKF, PositionUpdateMovesBiasEstimate) {
+TEST(TFGInEKF, PositionUpdateMovesBiasEstimate) {
   auto X0 = TwoFrameGroup::FromState(
       Rot3::Rz(0.2), Eigen::Vector3d(0.3, -0.1, 0.0),
       Eigen::Vector3d(1.0, 0.5, -0.2), Eigen::Vector3d::Zero(),
       Eigen::Vector3d::Zero());
   Cov15 P0 = Cov15::Identity() * 0.1;
   P0.block<3, 3>(6, 6) = Cov3::Identity() * 2.0;  // loose position
-  TfgInEKF ekf(X0, P0);
+  TFGInEKF ekf(X0, P0);
 
   // One propagate to couple bias into the nav covariance, then a position fix.
   ekf.propagate(Eigen::Vector3d(0.05, -0.02, 0.1),
                 Eigen::Vector3d(0.0, 0.0, 9.81), kTestGravity,
                 Cov15::Identity() * 1e-5, 0.01);
-  const Eigen::Vector3d bg_before = ekf.bias_gyro();
-  const Eigen::Vector3d ba_before = ekf.bias_accel();
+  const Eigen::Vector3d bg_before = ekf.biasGyro();
+  const Eigen::Vector3d ba_before = ekf.biasAccel();
 
-  ekf.update_position(Eigen::Vector3d(0.0, 0.0, 0.0), Cov3::Identity() * 1e-3);
+  ekf.updatePosition(Eigen::Vector3d(0.0, 0.0, 0.0), Cov3::Identity() * 1e-3);
 
   // Gain rows for the bias are no longer identically zero, so the estimate
   // moves. One 10 ms step from a diagonal prior only builds an O(dt^2)
   // nav-bias correlation, so the move is small (~6e-7) but non-zero.
-  EXPECT((ekf.bias_gyro() - bg_before).norm() +
-             (ekf.bias_accel() - ba_before).norm() >
+  EXPECT((ekf.biasGyro() - bg_before).norm() +
+             (ekf.biasAccel() - ba_before).norm() >
          1e-9);
 }
 
@@ -331,19 +331,19 @@ static double runStaticErrShifted(const Eigen::Vector3d& offset,
       Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
   Cov15 P0 = Cov15::Identity() * 0.05;
   P0.block<3, 3>(6, 6) = Cov3::Identity() * 2.0;
-  TfgInEKF ekf(X0, P0);
+  TFGInEKF ekf(X0, P0);
 
   Cov15 Qc = Cov15::Identity() * 1e-6;
   Cov3 R_pos = Cov3::Identity() * (0.05 * 0.05);
   const double dt = 0.01;
   for (int k = 0; k < 500; ++k) {
     ekf.propagate(omega, accel_static, kTestGravity, Qc, dt);
-    if (k % 10 == 0) ekf.update_position(truth_pos, R_pos, use_cstar);
+    if (k % 10 == 0) ekf.updatePosition(truth_pos, R_pos, use_cstar);
   }
   return (ekf.position() - truth_pos).norm();
 }
 
-TEST(TfgInEKF, CstarTranslationInvariance) {
+TEST(TFGInEKF, CstarTranslationInvariance) {
   const double err0 = runStaticErrShifted(Eigen::Vector3d::Zero(), true);
   const double errS =
       runStaticErrShifted(Eigen::Vector3d(500.0, -300.0, 100.0), true);
@@ -356,7 +356,7 @@ TEST(TfgInEKF, CstarTranslationInvariance) {
 // B).
 // ---------------------------------------------------------------------------
 
-TEST(TfgInEKF, InputNoiseCouplesIntoBiasRows) {
+TEST(TFGInEKF, InputNoiseCouplesIntoBiasRows) {
   auto X = TwoFrameGroup::FromState(
       Rot3::Rz(0.3), Eigen::Vector3d(0.2, 0.0, -0.1),
       Eigen::Vector3d(0.5, -0.5, 0.1), Eigen::Vector3d(0.02, -0.01, 0.0),
@@ -421,7 +421,7 @@ static RegressionResult runBiasedImu30s(bool with_position_updates) {
   P0.block<3, 3>(6, 6) = Cov3::Identity() * 1e-2;    // position
   P0.block<3, 3>(9, 9) = Cov3::Identity() * 1e-3;    // gyro bias
   P0.block<3, 3>(12, 12) = Cov3::Identity() * 1e-2;  // accel bias
-  TfgInEKF ekf(X0, P0);
+  TFGInEKF ekf(X0, P0);
 
   tfg::ImuNoise noise;
   noise.gyro = Eigen::Vector3d::Constant(1e-6);   // (0.001 rad/s/sqrt(Hz))^2
@@ -440,7 +440,7 @@ static RegressionResult runBiasedImu30s(bool with_position_updates) {
     ekf.propagate(omega_meas, accel_meas, kTestGravity, noise, dt);
     t += dt;
     if (with_position_updates && (k + 1) % gnss_decim == 0)
-      ekf.update_position(scenario.navState(t).position(), R_pos);
+      ekf.updatePosition(scenario.navState(t).position(), R_pos);
   }
 
   const gtsam::NavState gt_end = scenario.navState(duration);
@@ -448,8 +448,8 @@ static RegressionResult runBiasedImu30s(bool with_position_updates) {
   r.pos_err = Eigen::Vector3d(gt_end.position()) - ekf.position();
   r.vel_err = Eigen::Vector3d(gt_end.velocity()) - ekf.velocity();
   r.att_err = gtsam::Rot3::Logmap(gt_end.attitude().between(ekf.attitude()));
-  r.bg_est = ekf.bias_gyro();
-  r.ba_est = ekf.bias_accel();
+  r.bg_est = ekf.biasGyro();
+  r.ba_est = ekf.biasAccel();
   r.bg_err = r.bg_est - true_bg;
   r.ba_err = r.ba_est - true_ba;
   const Cov15 P = ekf.covariance();
@@ -472,7 +472,7 @@ static void printRegression(const std::string& tag, const RegressionResult& r) {
       r.min_eig);
 }
 
-TEST(TfgInEKF, Regression30sBiasedImuWithPositionUpdates) {
+TEST(TFGInEKF, Regression30sBiasedImuWithPositionUpdates) {
   const RegressionResult r = runBiasedImu30s(/*with_position_updates=*/true);
   printRegression("aided", r);
 
@@ -500,7 +500,7 @@ TEST(TfgInEKF, Regression30sBiasedImuWithPositionUpdates) {
   EXPECT(r.bg_cov_trace < 0.1 * 3e-3);
 }
 
-TEST(TfgInEKF, Regression30sAidedVsImuOnly) {
+TEST(TFGInEKF, Regression30sAidedVsImuOnly) {
   const RegressionResult aided =
       runBiasedImu30s(/*with_position_updates=*/true);
   const RegressionResult imu_only =
@@ -526,7 +526,7 @@ TEST(TfgInEKF, Regression30sAidedVsImuOnly) {
 /* ************************************************************************* */
 namespace depth_update {
 
-using Cov1 = TfgInEKF::Covariance1;
+using Cov1 = TFGInEKF::Covariance1;
 
 // 1x1 depth noise matrix from a stddev in metres.
 Cov1 depthNoise(double sigma) {
@@ -546,22 +546,22 @@ TwoFrameGroup tiltedState() {
 
 // A single depth update pulls the vertical estimate most of the way to the
 // measurement when the depth noise is much tighter than the prior.
-TEST(TfgInEKF, DepthUpdateCorrectsVerticalPosition) {
-  TfgInEKF ekf(TwoFrameGroup::Identity(), Cov15::Identity() * 0.01);
+TEST(TFGInEKF, DepthUpdateCorrectsVerticalPosition) {
+  TFGInEKF ekf(TwoFrameGroup::Identity(), Cov15::Identity() * 0.01);
 
   const double z_depth = -0.8;
-  ekf.update_depth(z_depth, depthNoise(0.01));
+  ekf.updateDepth(z_depth, depthNoise(0.01));
 
   EXPECT(std::abs(ekf.position().z() - z_depth) < 0.1);
 }
 
 // The inflated horizontal variance keeps a depth update off the x and y axes
 // when the prior is uncorrelated.
-TEST(TfgInEKF, DepthUpdateLeavesHorizontalNearlyUnchanged) {
-  TfgInEKF ekf(TwoFrameGroup::Identity(), Cov15::Identity() * 0.01);
+TEST(TFGInEKF, DepthUpdateLeavesHorizontalNearlyUnchanged) {
+  TFGInEKF ekf(TwoFrameGroup::Identity(), Cov15::Identity() * 0.01);
 
   const Eigen::Vector3d before = ekf.position();
-  ekf.update_depth(-0.8, depthNoise(0.01));
+  ekf.updateDepth(-0.8, depthNoise(0.01));
   const Eigen::Vector3d delta = ekf.position() - before;
 
   EXPECT(std::abs(delta.z()) > 0.5);
@@ -573,11 +573,11 @@ TEST(TfgInEKF, DepthUpdateLeavesHorizontalNearlyUnchanged) {
 // gain no information. The covariance reset may still grow them: in the group
 // chart the position error couples to attitude through the correction eta_p,
 // so a large vertical correction transports attitude variance onto x and y.
-TEST(TfgInEKF, DepthUpdateShrinksVerticalCovariance) {
-  TfgInEKF ekf(TwoFrameGroup::Identity(), Cov15::Identity() * 0.01);
+TEST(TFGInEKF, DepthUpdateShrinksVerticalCovariance) {
+  TFGInEKF ekf(TwoFrameGroup::Identity(), Cov15::Identity() * 0.01);
 
   const Cov15 before = ekf.covariance();
-  ekf.update_depth(-0.8, depthNoise(0.01));
+  ekf.updateDepth(-0.8, depthNoise(0.01));
   const Cov15 after = ekf.covariance();
 
   const double drop_z = before(8, 8) - after(8, 8);
@@ -587,23 +587,23 @@ TEST(TfgInEKF, DepthUpdateShrinksVerticalCovariance) {
   EXPECT(minEig(after) > 0.0);
 }
 
-// update_depth is exactly the pseudo-position update it documents. Checked at a
+// updateDepth is exactly the pseudo-position update it documents. Checked at a
 // tilted state, where the R^T(.)R noise transport is not a no-op.
-TEST(TfgInEKF, DepthUpdateMatchesEquivalentPositionUpdate) {
-  TfgInEKF via_depth(tiltedState(), Cov15::Identity() * 0.01);
-  TfgInEKF via_position(tiltedState(), Cov15::Identity() * 0.01);
+TEST(TFGInEKF, DepthUpdateMatchesEquivalentPositionUpdate) {
+  TFGInEKF via_depth(tiltedState(), Cov15::Identity() * 0.01);
+  TFGInEKF via_position(tiltedState(), Cov15::Identity() * 0.01);
 
   const double z_depth = -2.0;
   const double sigma_z = 0.02;
-  via_depth.update_depth(z_depth, depthNoise(sigma_z));
+  via_depth.updateDepth(z_depth, depthNoise(sigma_z));
 
   Cov3 R_pseudo = Cov3::Zero();
-  R_pseudo(0, 0) = TfgInEKF::kDefaultHorizontalVariance;
-  R_pseudo(1, 1) = TfgInEKF::kDefaultHorizontalVariance;
+  R_pseudo(0, 0) = TFGInEKF::kDefaultHorizontalVariance;
+  R_pseudo(1, 1) = TFGInEKF::kDefaultHorizontalVariance;
   R_pseudo(2, 2) = sigma_z * sigma_z;
   Eigen::Vector3d pseudo = via_position.position();
   pseudo.z() = z_depth;
-  via_position.update_position(pseudo, R_pseudo);
+  via_position.updatePosition(pseudo, R_pseudo);
 
   EXPECT(traits<TwoFrameGroup>::Equals(via_position.state(), via_depth.state(),
                                        1e-12));
@@ -614,12 +614,12 @@ TEST(TfgInEKF, DepthUpdateMatchesEquivalentPositionUpdate) {
 // At a tilted state with a metre-sized vertical offset the update still moves
 // the estimate toward the measured depth; one update against a decimetre prior
 // cannot close the gap, so only a strict decrease is asserted.
-TEST(TfgInEKF, DepthUpdateAtTiltedStateReducesVerticalError) {
-  TfgInEKF ekf(tiltedState(), Cov15::Identity() * 0.01);
+TEST(TFGInEKF, DepthUpdateAtTiltedStateReducesVerticalError) {
+  TFGInEKF ekf(tiltedState(), Cov15::Identity() * 0.01);
 
   const double z_depth = ekf.position().z() + 1.0;
   const double err_before = std::abs(ekf.position().z() - z_depth);
-  ekf.update_depth(z_depth, depthNoise(0.01));
+  ekf.updateDepth(z_depth, depthNoise(0.01));
   const double err_after = std::abs(ekf.position().z() - z_depth);
 
   EXPECT(err_after < 0.95 * err_before);
@@ -627,17 +627,17 @@ TEST(TfgInEKF, DepthUpdateAtTiltedStateReducesVerticalError) {
 
 // The horizontal-variance argument is live: shrinking it changes the correction
 // a correlated prior produces, so the default is not silently ignored.
-TEST(TfgInEKF, DepthUpdateHorizontalVarianceIsRespected) {
+TEST(TFGInEKF, DepthUpdateHorizontalVarianceIsRespected) {
   // Correlate p_x with p_z; the block [[0.01, 0.008], [0.008, 0.01]] is SPD.
   Cov15 P0 = Cov15::Identity() * 0.01;
   P0(6, 8) = P0(8, 6) = 0.008;
 
-  TfgInEKF inflated(TwoFrameGroup::Identity(), P0);
-  TfgInEKF pinned(TwoFrameGroup::Identity(), P0);
+  TFGInEKF inflated(TwoFrameGroup::Identity(), P0);
+  TFGInEKF pinned(TwoFrameGroup::Identity(), P0);
 
   const double z_depth = -0.8;
-  inflated.update_depth(z_depth, depthNoise(0.01));
-  pinned.update_depth(z_depth, depthNoise(0.01), /*horizontal_variance=*/1e-6);
+  inflated.updateDepth(z_depth, depthNoise(0.01));
+  pinned.updateDepth(z_depth, depthNoise(0.01), /*horizontal_variance=*/1e-6);
 
   EXPECT((inflated.position() - pinned.position()).norm() > 1e-3);
 }
@@ -669,7 +669,7 @@ Cov15 correlatedPrior() {
 
 // resetJacobian(eta) is the derivative of e -> Local(X * Expmap(eta),
 // X * Expmap(e)) at the posterior mean e = eta.
-TEST(TfgInEKF, ResetJacobianMatchesNumericalDerivative) {
+TEST(TFGInEKF, ResetJacobianMatchesNumericalDerivative) {
   const TwoFrameGroup X = rotatedState();
   Vector15 eta;
   eta << 0.2, -0.1, 0.3, 0.1, 0.2, -0.1, 0.5, 0.4, -0.3, 0.01, -0.02, 0.03,
@@ -688,7 +688,7 @@ TEST(TfgInEKF, ResetJacobianMatchesNumericalDerivative) {
     numerical.col(j) = (plus - minus) / (2 * h);
   }
 
-  EXPECT(assert_equal((Matrix)numerical, (Matrix)TfgInEKF::resetJacobian(eta),
+  EXPECT(assert_equal((Matrix)numerical, (Matrix)TFGInEKF::resetJacobian(eta),
                       1e-8));
 }
 
@@ -703,23 +703,23 @@ struct ResetCheck {
 };
 
 ResetCheck resetCheck(
-    const std::function<void(TfgInEKF&)>& update,
+    const std::function<void(TFGInEKF&)>& update,
     const std::function<void(gtsam::InvariantEKF<TwoFrameGroup>&)>&
         baseUpdate) {
   const TwoFrameGroup X0 = rotatedState();
-  TfgInEKF ekf(X0, correlatedPrior());
+  TFGInEKF ekf(X0, correlatedPrior());
   update(ekf);
   gtsam::InvariantEKF<TwoFrameGroup> base(X0, correlatedPrior());
   baseUpdate(base);
 
   const Vector15 eta = traits<TwoFrameGroup>::Local(X0, base.state());
-  const Cov15 B = TfgInEKF::resetJacobian(eta);
+  const Cov15 B = TFGInEKF::resetJacobian(eta);
   return {traits<TwoFrameGroup>::Equals(base.state(), ekf.state(), 1e-12), eta,
           base.covariance(), B * base.covariance() * B.transpose(),
           ekf.covariance()};
 }
 
-/// update_position without the reset: body-frame residual and rotated noise.
+/// updatePosition without the reset: body-frame residual and rotated noise.
 void basePositionUpdate(gtsam::InvariantEKF<TwoFrameGroup>& base,
                         const Vector3& pi, const Cov3& R_pos) {
   const TwoFrameGroup X = base.state();
@@ -731,11 +731,11 @@ void basePositionUpdate(gtsam::InvariantEKF<TwoFrameGroup>& base,
 
 // A position update transports the Joseph-updated covariance by the reset
 // Jacobian of the applied correction, unlike the untransported base update.
-TEST(TfgInEKF, PositionUpdateAppliesCovarianceReset) {
+TEST(TFGInEKF, PositionUpdateAppliesCovarianceReset) {
   const Eigen::Vector3d fix(1.6, 1.5, -2.6);
   const Cov3 R_pos = Cov3::Identity() * 0.01;
   const ResetCheck c =
-      resetCheck([&](TfgInEKF& ekf) { ekf.update_position(fix, R_pos); },
+      resetCheck([&](TFGInEKF& ekf) { ekf.updatePosition(fix, R_pos); },
                  [&](gtsam::InvariantEKF<TwoFrameGroup>& base) {
                    basePositionUpdate(base, fix, R_pos);
                  });
@@ -747,11 +747,11 @@ TEST(TfgInEKF, PositionUpdateAppliesCovarianceReset) {
 }
 
 // The DVL update applies the same reset.
-TEST(TfgInEKF, DvlUpdateAppliesCovarianceReset) {
+TEST(TFGInEKF, DvlUpdateAppliesCovarianceReset) {
   const Eigen::Vector3d z_dvl(0.8, -0.5, 0.3);
   const Cov3 R_dvl = Cov3::Identity() * 0.01;
   const ResetCheck c = resetCheck(
-      [&](TfgInEKF& ekf) { ekf.update_dvl(z_dvl, R_dvl); },
+      [&](TFGInEKF& ekf) { ekf.updateDvl(z_dvl, R_dvl); },
       [&](gtsam::InvariantEKF<TwoFrameGroup>& base) {
         base.updateWithVector(BodyVelocityOutput::predict(base.state()),
                               BodyVelocityOutput::jacobian(base.state()), z_dvl,
@@ -765,18 +765,18 @@ TEST(TfgInEKF, DvlUpdateAppliesCovarianceReset) {
 }
 
 // The depth update, a pseudo-position update, applies the same reset.
-TEST(TfgInEKF, DepthUpdateAppliesCovarianceReset) {
+TEST(TFGInEKF, DepthUpdateAppliesCovarianceReset) {
   const double z_depth = -2.6;
-  TfgInEKF::Covariance1 R_depth;
+  TFGInEKF::Covariance1 R_depth;
   R_depth(0, 0) = 0.01;
   const ResetCheck c = resetCheck(
-      [&](TfgInEKF& ekf) { ekf.update_depth(z_depth, R_depth); },
+      [&](TFGInEKF& ekf) { ekf.updateDepth(z_depth, R_depth); },
       [&](gtsam::InvariantEKF<TwoFrameGroup>& base) {
         Eigen::Vector3d pseudo_position = base.state().p;
         pseudo_position.z() = z_depth;
         const Cov3 R_pseudo =
-            Eigen::Vector3d(TfgInEKF::kDefaultHorizontalVariance,
-                            TfgInEKF::kDefaultHorizontalVariance, R_depth(0, 0))
+            Eigen::Vector3d(TFGInEKF::kDefaultHorizontalVariance,
+                            TFGInEKF::kDefaultHorizontalVariance, R_depth(0, 0))
                 .asDiagonal();
         basePositionUpdate(base, pseudo_position, R_pseudo);
       });
@@ -803,7 +803,7 @@ TwoFrameGroup step(const TwoFrameGroup& X, const ImuInput& u, double dt) {
 // transitionJacobian is the exact derivative of the implemented discrete step,
 // not a first-order-in-dt approximation: checked at a large dt with fast
 // rotation and non-zero biases, where the O(dt^2) term is ~1e-2.
-TEST(TfgInEKF, TransitionJacobianMatchesFiniteDifference) {
+TEST(TFGInEKF, TransitionJacobianMatchesFiniteDifference) {
   const TwoFrameGroup X = TwoFrameGroup::FromState(
       Rot3::RzRyRx(0.3, -0.2, 0.5), Eigen::Vector3d(0.5, -0.2, 0.1),
       Eigen::Vector3d(1.0, 2.0, -3.0), Eigen::Vector3d(0.05, -0.04, 0.03),
@@ -832,7 +832,7 @@ TEST(TfgInEKF, TransitionJacobianMatchesFiniteDifference) {
 }
 
 // propagate() uses that Jacobian: with no process noise, P1 = F P0 F^T.
-TEST(TfgInEKF, PropagateUsesTransitionJacobian) {
+TEST(TFGInEKF, PropagateUsesTransitionJacobian) {
   const TwoFrameGroup X0 = TwoFrameGroup::FromState(
       Rot3::Rz(0.4), Eigen::Vector3d(0.2, 0.1, 0.0), Eigen::Vector3d::Zero(),
       Eigen::Vector3d(0.02, 0.01, -0.03), Eigen::Vector3d(0.05, 0.0, 0.1));
@@ -844,7 +844,7 @@ TEST(TfgInEKF, PropagateUsesTransitionJacobian) {
   u.g_vec = kTestGravity;
   const double dt = 0.1;
 
-  TfgInEKF ekf(X0, P0);
+  TFGInEKF ekf(X0, P0);
   ekf.propagate(u.omega, u.accel, u.g_vec, Cov15::Zero(), dt);
 
   const Cov15 F = transitionJacobian(X0, u, dt);

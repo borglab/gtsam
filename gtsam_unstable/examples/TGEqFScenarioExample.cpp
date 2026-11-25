@@ -74,9 +74,9 @@ class ScenarioAdapter {
     // b_v stays zero: the virtual bias has no physical truth to perturb.
     Filter filter(phiInverse(State::identity(), xi_hat0),
                   Filter::initialCovariance(P0));
-    filter.set_reset_step(reset_step_);
-    filter.set_dvl_jacobian(dvl_c0_ ? Filter::DvlJacobian::C0
-                                    : Filter::DvlJacobian::Cstar);
+    filter.setResetStep(reset_step_);
+    filter.setDvlJacobian(dvl_c0_ ? Filter::DvlJacobian::C0
+                                  : Filter::DvlJacobian::Cstar);
     return filter;
   }
 
@@ -100,19 +100,19 @@ class ScenarioAdapter {
 
   void updatePosition(Filter& filter,
                       const imu_scenarios::PositionMeasurement& z) const {
-    filter.update_position(z.position, z.covariance);
+    filter.updatePosition(z.position, z.covariance);
   }
 
   void updateDvl(Filter& filter, const imu_scenarios::DvlMeasurement& z) const {
-    filter.update_dvl(z.body_velocity, z.covariance);
+    filter.updateDvl(z.body_velocity, z.covariance);
   }
 
   void updateDepth(Filter& filter,
                    const imu_scenarios::DepthMeasurement& z) const {
     if (depth_direct_) {
-      filter.update_depth_direct(z.depth, z.covariance);
+      filter.updateDepthDirect(z.depth, z.covariance);
     } else {
-      filter.update_depth(z.depth, z.covariance);
+      filter.updateDepth(z.depth, z.covariance);
     }
   }
 
