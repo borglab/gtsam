@@ -151,12 +151,12 @@ Vector GaussianProposal::logWeightOffsets(const State& state,
   return offsets;
 }
 
-ControlBatch GaussianProposal::sample(const State& state, const Values&, double,
-                                      bool incumbent) const {
+ControlBatch GaussianProposal::sampleImpl(const State& state, const Values&,
+                                          double, bool incumbent) const {
   if (!state.stddev.size()) {
     auto initialized = initialize(state.mean);
     initialized.iteration = state.iteration;
-    return sample(initialized, {}, 1., incumbent);
+    return sampleImpl(initialized, {}, 1., incumbent);
   }
   ControlBatch batch;
   batch.controls = drawControls(state, incumbent);
@@ -170,8 +170,8 @@ void GaussianProposal::update(State& state, const ControlBatch& batch,
   ++state.iteration;
 }
 
-void GaussianProposal::fit(State& state, const ControlBatch& batch,
-                           const Vector& weights, double minStddev) const {
+void GaussianProposal::fitImpl(State& state, const ControlBatch& batch,
+                               const Vector& weights, double minStddev) const {
   if (!(minStddev > 0.) || !std::isfinite(minStddev))
     throw std::invalid_argument("Expected a positive finite spread floor.");
   update(state, batch, weights);
@@ -273,15 +273,27 @@ PiecewiseLinearProposal::PiecewiseLinearProposal(
         "Invalid motion primitive mixture or sample count.");
 }
 
-ControlBatch PiecewiseLinearProposal::sample(const State& state,
-                                             const Values& initial, double dt,
-                                             bool incumbent) const {
-  if (!mixture_) return GaussianProposal::sample(state, initial, dt, incumbent);
+std::unique_ptr<GaussianProposal> PiecewiseLinearProposal::clone() const {
+  return std::make_unique<PiecewiseLinearProposal>(*this);
+}
+
+void PiecewiseLinearProposal::fitImpl(State&, const ControlBatch&,
+                                      const Vector&, double) const {
+  throw std::invalid_argument(
+      "PiecewiseLinearProposal does not support spread-fitting rules.");
+}
+
+ControlBatch PiecewiseLinearProposal::sampleImpl(const State& state,
+                                                 const Values& initial,
+                                                 double dt,
+                                                 bool incumbent) const {
+  if (!mixture_)
+    return GaussianProposal::sampleImpl(state, initial, dt, incumbent);
   const auto& p = *mixture_;
   if (!state.stddev.size()) {
     auto initialized = initialize(state.mean);
     initialized.iteration = state.iteration;
-    return sample(initialized, initial, dt, incumbent);
+    return sampleImpl(initialized, initial, dt, incumbent);
   }
   const Eigen::Index horizon = state.mean.cols(), count = noise_.numSamples();
   if (!horizon || state.mean.rows() != p.amplitude.size() ||

@@ -73,6 +73,17 @@ State nextState(const DiscreteTransition<Step>& model, const State& state,
   return model.step(state, control);
 }
 
+/// Dispatch includeIncumbent dynamically for SamplingAlgorithm subclasses and
+/// statically for custom duck-typed C++ rules.
+template <class Algorithm>
+bool algorithmIncludesIncumbent(const Algorithm& algorithm) {
+  if constexpr (std::is_base_of_v<SamplingAlgorithm, Algorithm>) {
+    return algorithm.includesIncumbent();
+  } else {
+    return Algorithm::includeIncumbent;
+  }
+}
+
 }  // namespace internal
 
 /**
@@ -302,8 +313,8 @@ class SamplingPlanner {
         search.mean.cols() != static_cast<Eigen::Index>(controlKeys_.size()))
       throw std::invalid_argument(
           "Search state must match the planner horizon.");
-    auto batch =
-        proposal.sample(search, initial, dt_, algorithm.includeIncumbent);
+    auto batch = proposal.sample(
+        search, initial, dt_, internal::algorithmIncludesIncumbent(algorithm));
     if (batch.controls.rows() != search.mean.rows() || !batch.controls.cols() ||
         batch.controls.cols() % controlKeys_.size())
       throw std::invalid_argument(

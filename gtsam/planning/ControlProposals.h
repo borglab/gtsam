@@ -70,7 +70,9 @@ class GTSAM_EXPORT GaussianProposal {
   /// Draw a batch. Predictive sampling reserves the first slot for the
   /// incumbent.
   ControlBatch sample(const State& state, const Values& initial, double dt,
-                      bool includeIncumbent = false) const;
+                      bool includeIncumbent = false) const {
+    return sampleImpl(state, initial, dt, includeIncumbent);
+  }
 
   /// Replace the nominal controls with a weighted mean and advance one
   /// iteration.
@@ -79,9 +81,18 @@ class GTSAM_EXPORT GaussianProposal {
 
   /// Fit weighted marginal means and spreads, retaining the correlation model.
   void fit(State& state, const ControlBatch& batch, const Vector& weights,
-           double minStddev) const;
+           double minStddev) const {
+    fitImpl(state, batch, weights, minStddev);
+  }
 
  protected:
+  /// Polymorphic sampling implementation used by GaussianProposal::sample.
+  virtual ControlBatch sampleImpl(const State& state, const Values& initial,
+                                  double dt, bool includeIncumbent) const;
+  /// Polymorphic fit implementation used by GaussianProposal::fit.
+  virtual void fitImpl(State& state, const ControlBatch& batch,
+                       const Vector& weights, double minStddev) const;
+
   /// Generate unit-marginal perturbations for the complete horizon.
   virtual Matrix drawNoise(Eigen::Index horizon) const;
 
@@ -152,11 +163,8 @@ struct MotionPrimitiveOptions {
 
 /// Piecewise-linear Gaussian perturbations, or a mixture of bounded motion
 /// primitives.
-class GTSAM_EXPORT PiecewiseLinearProposal : protected ColoredNoiseProposal {
+class GTSAM_EXPORT PiecewiseLinearProposal : public ColoredNoiseProposal {
  public:
-  using GaussianProposal::initialize;
-  using GaussianProposal::State;
-  using GaussianProposal::update;
   /// Draw up to this many segments with random interior knots on the time grid.
   PiecewiseLinearProposal(const Matrix& covariance, size_t samples,
                           size_t segments, std::uint64_t seed = 42,
@@ -167,14 +175,15 @@ class GTSAM_EXPORT PiecewiseLinearProposal : protected ColoredNoiseProposal {
                           size_t segments, MotionPrimitiveOptions mixture,
                           std::uint64_t seed = 42,
                           GaussianProposalOptions options = {});
-  /// Draw complete controls, reserving the incumbent and zero in mixture mode.
-  ControlBatch sample(const State& state, const Values& initial, double dt,
-                      bool includeIncumbent) const;
-  /// Fitting a distribution over knot locations and values requires a custom
-  /// fit rule.
-  void fit(State&, const ControlBatch&, const Vector&, double) const = delete;
+  std::unique_ptr<GaussianProposal> clone() const override;
 
  protected:
+  /// Draw complete controls, reserving the incumbent and zero in mixture mode.
+  ControlBatch sampleImpl(const State& state, const Values& initial, double dt,
+                          bool includeIncumbent) const override;
+  /// Fitting a distribution over knot locations and values is not supported.
+  void fitImpl(State&, const ControlBatch&, const Vector&,
+               double) const override;
   Matrix drawNoise(Eigen::Index horizon) const override;
 
  private:

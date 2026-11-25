@@ -12,7 +12,7 @@ namespace gtsam {
 
 /// Fit a proposal to the lowest-cost finite elites with exponential cost
 /// weights.
-class GTSAM_EXPORT EliteMPPI {
+class GTSAM_EXPORT EliteMPPI : public SamplingAlgorithm {
  public:
   static constexpr bool includeIncumbent = false;
 
@@ -20,9 +20,15 @@ class GTSAM_EXPORT EliteMPPI {
   explicit EliteMPPI(size_t elites, double inverseTemperature = 1.0,
                      double minStddev = 1e-3);
 
+  bool fitsSpread() const override { return true; }
+  double minStddev() const override { return minStddev_; }
+
   /// Normalized Boltzmann weights restricted to the elites ranked by trajectory
   /// cost.
   Vector weights(const Vector& costs) const;
+  Vector computeWeights(const Vector& costs, const Vector& = {}) const override {
+    return weights(costs);
+  }
 
   /// Fit the proposal in its native sampling coordinates and return the
   /// weights.

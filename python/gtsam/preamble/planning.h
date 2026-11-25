@@ -3,7 +3,6 @@
 #pragma once
 
 #include <gtsam/geometry/Pose3.h>
-#include <gtsam/planning/EliteMPPI.h>
 #include <gtsam/planning/MPPITracking.h>
 
 namespace gtsam::python {
@@ -20,37 +19,26 @@ struct PythonStep {
   }
 };
 
-/// Bind a search rule and a proposal to a Python dynamics callable.
-template <class Dynamics, class Proposal, class Rule, class Planner>
+/// Bind polymorphic SamplingAlgorithm search overloads for a proposal type.
+template <class Dynamics, class Proposal, class Planner>
 void bindSearch(py::class_<Planner, std::shared_ptr<Planner>>& cls) {
   using Release = py::call_guard<py::gil_scoped_release>;
   cls.def(
          "iterate",
          [](const Planner& planner, const NonlinearFactorGraph& cost,
             const Values& initial, const Dynamics& dynamics,
-            const Proposal& proposal, const Rule& rule,
+            const Proposal& proposal, const SamplingAlgorithm& rule,
             typename Proposal::State& search) {
            planner.iterate(cost, initial, dynamics, proposal, rule, search);
          },
          py::arg("cost"), py::arg("initial"), py::arg("dynamics"),
          py::arg("proposal"), py::arg("algorithm"), py::arg("search"),
          Release())
-      .def("optimize", &Planner::template optimize<Dynamics, Proposal, Rule>,
+      .def("optimize",
+           &Planner::template optimize<Dynamics, Proposal, SamplingAlgorithm>,
            py::arg("cost"), py::arg("initial"), py::arg("dynamics"),
            py::arg("proposal"), py::arg("algorithm"), py::arg("iterations"),
            Release());
-}
-
-/// Register the update rules supported by this proposal.
-template <class Dynamics, class Proposal, class Planner>
-void bindSearchRules(py::class_<Planner, std::shared_ptr<Planner>>& cls) {
-  bindSearch<Dynamics, Proposal, MPPI>(cls);
-  bindSearch<Dynamics, Proposal, TsallisMPPI>(cls);
-  bindSearch<Dynamics, Proposal, PredictiveSampling>(cls);
-  if constexpr (!std::is_same_v<Proposal, PiecewiseLinearProposal>) {
-    bindSearch<Dynamics, Proposal, CEM>(cls);
-    bindSearch<Dynamics, Proposal, EliteMPPI>(cls);
-  }
 }
 
 /// Release the GIL around rollouts. Python callbacks reacquire it at
@@ -63,9 +51,9 @@ void bindPythonDynamics(py::class_<Planner, std::shared_ptr<Planner>>& cls) {
       .def("rolloutAndScore", &Planner::template rolloutAndScore<Dynamics>,
            py::arg("cost"), py::arg("initial"), py::arg("controls"),
            py::arg("dynamics"), Release());
-  bindSearchRules<Dynamics, GaussianProposal>(cls);
-  bindSearchRules<Dynamics, SmoothControlProposal>(cls);
-  bindSearchRules<Dynamics, PiecewiseLinearProposal>(cls);
+  // Colored, normal-lognormal, and piecewise-linear proposals use GaussianProposal.
+  bindSearch<Dynamics, GaussianProposal>(cls);
+  bindSearch<Dynamics, SmoothControlProposal>(cls);
 }
 
 template <class State, class Control>
@@ -137,9 +125,8 @@ void bindTrackingCallbacks(py::module_& module) {
            py::arg("stopThreshold"), py::arg("stoppingControls"),
            py::arg("tsallisCutoff") = 0.0, py::arg("tsallisShape") = 2.0,
            py::arg("mixture") = MotionPrimitiveOptions{}, Release());
-  // Colored and normal-lognormal proposals use the Gaussian base binding.
+  // Colored, normal-lognormal, and piecewise-linear proposals use GaussianProposal.
   bindTrackingProposal<State, Dynamics, Feedback, GaussianProposal>(cls);
   bindTrackingProposal<State, Dynamics, Feedback, SmoothControlProposal>(cls);
-  bindTrackingProposal<State, Dynamics, Feedback, PiecewiseLinearProposal>(cls);
 }
 }  // namespace gtsam::python

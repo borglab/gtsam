@@ -24,24 +24,19 @@ GTSAM_EXPORT Matrix smoothControlTrajectory(const Matrix& controls,
                                             const Matrix& history);
 
 /// Truncated Tsallis weighting from the MPPI-Generic colored controller.
-class GTSAM_EXPORT TsallisMPPI {
+class GTSAM_EXPORT TsallisMPPI : public SamplingAlgorithm {
  public:
   static constexpr bool includeIncumbent = false;
   /// Set the positive cost cutoff and shape exponent r > 1.
   TsallisMPPI(double cutoff, double shape, double inverseTemperature = 1.0);
   /// Normalize [1 - (cost-min)/cutoff]_+ raised to 1/(shape-1).
   Vector weights(const Vector& costs) const;
-  /// Apply weights to a proposal using likelihood costs in graph-cost units.
-  template <class Proposal, class Search, class Batch>
-  void apply(const Proposal& proposal, Search& state, const Batch& batch,
-             const Vector& costs) const {
-    if (batch.logWeightOffsets.size() &&
-        batch.logWeightOffsets.size() != costs.size())
+  Vector computeWeights(const Vector& costs,
+                        const Vector& logWeightOffsets = {}) const override {
+    if (logWeightOffsets.size() && logWeightOffsets.size() != costs.size())
       throw std::invalid_argument("Expected one log offset per trajectory.");
-    Vector adjusted = costs;
-    if (batch.logWeightOffsets.size())
-      adjusted -= batch.logWeightOffsets / beta_;
-    proposal.update(state, batch, weights(adjusted));
+    if (logWeightOffsets.size()) return weights(costs - logWeightOffsets / beta_);
+    return weights(costs);
   }
 
  private:
