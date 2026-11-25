@@ -1,6 +1,7 @@
 #pragma once
 #include <gtsam/base/Lie.h>
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam_unstable/dllexport.h>
 
 #include <Eigen/Dense>
 
@@ -16,7 +17,7 @@ namespace mekf {
 using gtsam::Rot3;
 using gtsam::Vector3;
 
-struct MekfState {
+struct GTSAM_UNSTABLE_EXPORT MekfState {
   Rot3 R;
   Vector3 v;
   Vector3 p;
@@ -41,7 +42,7 @@ struct MekfState {
 namespace gtsam {
 
 template <>
-struct traits<mekf::MekfState> {
+struct GTSAM_UNSTABLE_EXPORT traits<mekf::MekfState> {
   using ManifoldType = mekf::MekfState;
   using TangentVector = mekf::MekfState::TangentVector;
   using Jacobian = mekf::MekfState::Jacobian;

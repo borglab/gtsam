@@ -21,18 +21,20 @@ struct ImuInput {
   Vector3 g_vec = Vector3::Zero();
 };
 
-MekfState propagateMean(const MekfState& X, const ImuInput& u, double dt);
+GTSAM_UNSTABLE_EXPORT MekfState propagateMean(const MekfState& X,
+                                              const ImuInput& u, double dt);
 
 /// Finite-difference transition Jacobian F (state-dependent, recomputed each
 /// step).
-MekfState::Jacobian transitionJacobian(const MekfState& X, const ImuInput& u,
-                                       double dt);
+GTSAM_UNSTABLE_EXPORT MekfState::Jacobian transitionJacobian(const MekfState& X,
+                                                             const ImuInput& u,
+                                                             double dt);
 
 /// Body-frame velocity output: h(xi) = R^T v.
 /// Jacobian w.r.t. tangent under R_true = R_hat * Exp(d_theta):
 ///   d(R^T v)/d(d_theta) = [R^T v]^x,  d(R^T v)/d(d_v) = R^T
 ///   H = [ [R^T v]^x | R^T | 0 | 0 | 0 ]
-struct BodyVelocityOutput {
+struct GTSAM_UNSTABLE_EXPORT BodyVelocityOutput {
   using Jacobian = Eigen::Matrix<double, 3, 15>;
 
   static Vector3 predict(const MekfState& X);
@@ -40,7 +42,7 @@ struct BodyVelocityOutput {
 };
 
 /// Direct global position output: h(xi) = p.
-struct PositionOutput {
+struct GTSAM_UNSTABLE_EXPORT PositionOutput {
   using Jacobian = Eigen::Matrix<double, 3, 15>;
 
   static Vector3 predict(const MekfState& X);
@@ -56,7 +58,8 @@ struct ImuNoise {
   Vector3 accel_rw = Vector3::Zero();
 };
 
-class MultiplicativeEKF : public gtsam::ManifoldEKF<MekfState> {
+class GTSAM_UNSTABLE_EXPORT MultiplicativeEKF
+    : public gtsam::ManifoldEKF<MekfState> {
  public:
   using Base = gtsam::ManifoldEKF<MekfState>;
   using Covariance = Eigen::Matrix<double, 15, 15>;

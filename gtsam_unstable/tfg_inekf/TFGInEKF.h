@@ -32,23 +32,25 @@ struct ImuNoise {
 };
 
 /// Equivariant lift Lambda(X, u).
-Tangent lift(const TwoFrameGroup& X, const ImuInput& u);
+GTSAM_UNSTABLE_EXPORT Tangent lift(const TwoFrameGroup& X, const ImuInput& u);
 
 /// Df = d lift(X * Expmap(eps), u) / d eps at eps = 0 (bias->navigation
 /// coupling).
-TwoFrameGroup::Jacobian liftJacobian(const TwoFrameGroup& X, const ImuInput& u);
+GTSAM_UNSTABLE_EXPORT TwoFrameGroup::Jacobian liftJacobian(
+    const TwoFrameGroup& X, const ImuInput& u);
 
 /// Qd = B diag(sigma^2) B^T dt; B maps (n_omega, n_accel, tau_w, tau_a) into
 /// lift. Non-zero blocks: B[theta,n_w]=I, B[v,n_a]=I, B[g_w,n_w]=b_w^,
 /// B[g_w,tau_w]=-I, B[g_a,n_w]=b_a^, B[g_a,tau_a]=-I.
-TwoFrameGroup::Jacobian inputNoiseCov(const TwoFrameGroup& X,
-                                      const ImuNoise& noise, double dt);
+GTSAM_UNSTABLE_EXPORT TwoFrameGroup::Jacobian inputNoiseCov(
+    const TwoFrameGroup& X, const ImuNoise& noise, double dt);
 
 /// Group increment U = Expmap(lift(X,u) * dt) for InvariantEKF::predict.
-TwoFrameGroup increment(const TwoFrameGroup& X, const ImuInput& u, double dt);
+GTSAM_UNSTABLE_EXPORT TwoFrameGroup increment(const TwoFrameGroup& X,
+                                              const ImuInput& u, double dt);
 
 /// DVL body-frame velocity output (natively equivariant).
-struct BodyVelocityOutput {
+struct GTSAM_UNSTABLE_EXPORT BodyVelocityOutput {
   static constexpr int dim = 3;
   using Jacobian = Eigen::Matrix<double, 3, 15>;
 
@@ -64,7 +66,7 @@ struct BodyVelocityOutput {
 };
 
 /// Position output (equivariant body-frame residual).
-struct PositionOutput {
+struct GTSAM_UNSTABLE_EXPORT PositionOutput {
   static constexpr int dim = 3;
   using Jacobian = Eigen::Matrix<double, 3, 15>;
 
@@ -88,7 +90,8 @@ struct PositionOutput {
                            Variant variant = Variant::C0);
 };
 
-class TfgInEKF : public gtsam::InvariantEKF<TwoFrameGroup> {
+class GTSAM_UNSTABLE_EXPORT TfgInEKF
+    : public gtsam::InvariantEKF<TwoFrameGroup> {
  public:
   using Base = gtsam::InvariantEKF<TwoFrameGroup>;
   using Covariance = Eigen::Matrix<double, 15, 15>;

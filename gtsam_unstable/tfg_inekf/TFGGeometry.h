@@ -3,6 +3,7 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/Vector.h>
 #include <gtsam/geometry/Rot3.h>
+#include <gtsam_unstable/dllexport.h>
 
 #include <Eigen/Dense>
 
@@ -17,7 +18,7 @@ using gtsam::Vector3;
 /// Lie algebra g_TF as a 15-vector.
 using Tangent = gtsam::Vector15;
 
-class TwoFrameGroup {
+class GTSAM_UNSTABLE_EXPORT TwoFrameGroup {
  public:
   static constexpr int dim = 15;
   using TangentVector = Tangent;
@@ -62,7 +63,7 @@ class TwoFrameGroup {
 namespace gtsam {
 
 template <>
-struct traits<tfg::TwoFrameGroup> {
+struct GTSAM_UNSTABLE_EXPORT traits<tfg::TwoFrameGroup> {
   using ManifoldType = tfg::TwoFrameGroup;
   using TangentVector = tfg::Tangent;
   using Jacobian = tfg::TwoFrameGroup::Jacobian;
@@ -114,6 +115,7 @@ namespace tfg {
 
 /// Right group action phi(X, xi) = xi * X. The InEKF operates directly on
 /// TwoFrameGroup, so this is only needed for equivariance checks.
-TwoFrameGroup phi(const TwoFrameGroup& X, const TwoFrameGroup& xi);
+GTSAM_UNSTABLE_EXPORT TwoFrameGroup phi(const TwoFrameGroup& X,
+                                        const TwoFrameGroup& xi);
 
 }  // namespace tfg
