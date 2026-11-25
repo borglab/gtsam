@@ -82,19 +82,12 @@ void MultiplicativeEKF::propagate(const Vector3& omega, const Vector3& accel,
 void MultiplicativeEKF::propagate(const Vector3& omega, const Vector3& accel,
                                   const Vector3& g_vec, const ImuNoise& noise,
                                   double dt) {
+  const gtsam::Matrix3 R = this->state().R.matrix();
   Covariance Qc = Covariance::Zero();
-  if ((noise.gyro.array() > 0.0).any()) {
-    Qc.block<3, 3>(0, 0) = noise.gyro.asDiagonal();
-  }
-  if ((noise.accel.array() > 0.0).any()) {
-    Qc.block<3, 3>(3, 3) = noise.accel.asDiagonal();
-  }
-  if ((noise.gyro_rw.array() > 0.0).any()) {
-    Qc.block<3, 3>(9, 9) = noise.gyro_rw.asDiagonal();
-  }
-  if ((noise.accel_rw.array() > 0.0).any()) {
-    Qc.block<3, 3>(12, 12) = noise.accel_rw.asDiagonal();
-  }
+  Qc.block<3, 3>(0, 0) = noise.gyro.asDiagonal();
+  Qc.block<3, 3>(3, 3) = R * noise.accel.asDiagonal() * R.transpose();
+  Qc.block<3, 3>(9, 9) = noise.gyro_rw.asDiagonal();
+  Qc.block<3, 3>(12, 12) = noise.accel_rw.asDiagonal();
   propagate(omega, accel, g_vec, Qc, dt);
 }
 

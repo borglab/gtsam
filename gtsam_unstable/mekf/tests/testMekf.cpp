@@ -302,6 +302,32 @@ TEST(Mekf, DepthUpdateHorizontalVarianceIsRespected) {
 /* ************************************************************************* */
 
 /* ************************************************************************* */
+namespace noise_frame {
+
+// Body-frame accelerometer noise lands on the rotated world velocity axes: a
+// 90 degree yaw swaps the x and y variances. P0 = 0 isolates Q, since
+// F P0 F^T vanishes.
+TEST(Mekf, AccelNoiseIsRotatedIntoNavigationFrame) {
+  const MekfState X0(Rot3::Rz(M_PI / 2), Eigen::Vector3d::Zero(),
+                     Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
+                     Eigen::Vector3d::Zero());
+  MultiplicativeEKF ekf(X0, Cov15::Zero());
+
+  ImuNoise noise;
+  noise.accel = Eigen::Vector3d(1e-2, 1e-4, 1e-6);
+  const double dt = 0.1;
+  ekf.propagate(Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), kTestGravity,
+                noise, dt);
+
+  const Cov3 expected = Eigen::Vector3d(1e-4, 1e-2, 1e-6).asDiagonal() * dt;
+  EXPECT(assert_equal((Matrix)expected,
+                      (Matrix)ekf.covariance().block<3, 3>(3, 3), 1e-15));
+}
+
+}  // namespace noise_frame
+/* ************************************************************************* */
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

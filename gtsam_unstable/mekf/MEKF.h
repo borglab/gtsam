@@ -72,13 +72,26 @@ class GTSAM_UNSTABLE_EXPORT MultiplicativeEKF
 
   MultiplicativeEKF(const MekfState& X0, const Covariance& P0);
 
-  /// Strapdown predict + finite-diff F; P <- F P F^T + Qc dt.
-  /// @param g_vec  Nav-frame gravity vector; its sign fixes the frame
-  ///               convention (Z-down/NED: +g on z).
+  /**
+   * Strapdown predict + finite-diff F; P <- F P F^T + Qc dt.
+   *
+   * Qc is the process-noise PSD already expressed in the filter's tangent
+   * chart (block order R, v, p, bg, ba), so its velocity block is in the
+   * navigation frame. Use the ImuNoise overload to supply raw IMU PSDs.
+   *
+   * @param g_vec  Nav-frame gravity vector; its sign fixes the frame
+   *               convention (Z-down/NED: +g on z).
+   */
   void propagate(const Vector3& omega, const Vector3& accel,
                  const Vector3& g_vec, const Covariance& Qc, double dt);
 
-  /// Same predict with diagonal Qc from ImuNoise PSDs.
+  /**
+   * Same predict with Qc built from body-frame IMU PSDs.
+   *
+   * Gyro noise enters the right-multiplicative attitude chart unrotated, but
+   * accelerometer noise enters the world-frame velocity as R n_a, so the
+   * velocity block is R diag(accel) R^T, evaluated at the pre-step attitude.
+   */
   void propagate(const Vector3& omega, const Vector3& accel,
                  const Vector3& g_vec, const ImuNoise& noise, double dt);
 
