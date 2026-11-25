@@ -183,7 +183,7 @@ void TfgInEKF::update_position(const Vector3& pi, const Covariance3& R_pos,
   const Matrix3 Rm = X.R.matrix();
   const Covariance3 R_meas = Rm.transpose() * R_pos * Rm;
 
-  this->updateWithVector(prediction, H, z, R_meas);
+  updateWithReset(prediction, H, z, R_meas);
 }
 
 void TfgInEKF::update_dvl(const Vector3& z_dvl, const Covariance3& R_dvl) {
@@ -193,7 +193,7 @@ void TfgInEKF::update_dvl(const Vector3& z_dvl, const Covariance3& R_dvl) {
   const Vector3 prediction = BodyVelocityOutput::predict(X);
   const BodyVelocityOutput::Jacobian H = BodyVelocityOutput::jacobian(X);
 
-  this->updateWithVector(prediction, H, z_dvl, R_dvl);
+  updateWithReset(prediction, H, z_dvl, R_dvl);
 }
 
 void TfgInEKF::update_depth(double z_depth, const Covariance1& R_depth,
@@ -207,6 +207,23 @@ void TfgInEKF::update_depth(double z_depth, const Covariance1& R_depth,
   R_pseudo(2, 2) = R_depth(0, 0);
 
   update_position(pseudo_position, R_pseudo, use_cstar);
+}
+
+TfgInEKF::Jacobian TfgInEKF::resetJacobian(const TangentVector& eta) {
+  Jacobian B;
+  gtsam::traits<TwoFrameGroup>::Expmap(eta, B);
+  return B;
+}
+
+void TfgInEKF::updateWithReset(const gtsam::Vector& prediction,
+                               const gtsam::Matrix& H, const gtsam::Vector& z,
+                               const gtsam::Matrix& R) {
+  const TwoFrameGroup prior = this->state();
+  this->updateWithVector(prediction, H, z, R, /*performReset=*/false);
+  const TangentVector eta =
+      gtsam::traits<TwoFrameGroup>::Local(prior, this->state());
+  const Jacobian B = resetJacobian(eta);
+  this->P_ = B * this->P_ * B.transpose();
 }
 
 TfgInEKF::TangentVector TfgInEKF::errorStateVector(

@@ -566,8 +566,10 @@ TEST(TfgInEKF, DepthUpdateLeavesHorizontalNearlyUnchanged) {
   EXPECT(std::abs(delta.y()) < 0.02);
 }
 
-// Only the vertical position covariance is informed; the horizontal blocks stay
-// essentially where they were.
+// Only the vertical position covariance is informed; the horizontal variances
+// gain no information. The covariance reset may still grow them: in the group
+// chart the position error couples to attitude through the correction eta_p,
+// so a large vertical correction transports attitude variance onto x and y.
 TEST(TfgInEKF, DepthUpdateShrinksVerticalCovariance) {
   TfgInEKF ekf(TwoFrameGroup::Identity(), Cov15::Identity() * 0.01);
 
@@ -577,8 +579,8 @@ TEST(TfgInEKF, DepthUpdateShrinksVerticalCovariance) {
 
   const double drop_z = before(8, 8) - after(8, 8);
   EXPECT(drop_z > 0.0);
-  EXPECT(std::abs(before(6, 6) - after(6, 6)) < 0.1 * drop_z);
-  EXPECT(std::abs(before(7, 7) - after(7, 7)) < 0.1 * drop_z);
+  EXPECT(after(6, 6) > before(6, 6) - 0.1 * drop_z);
+  EXPECT(after(7, 7) > before(7, 7) - 0.1 * drop_z);
   EXPECT(minEig(after) > 0.0);
 }
 
@@ -638,6 +640,85 @@ TEST(TfgInEKF, DepthUpdateHorizontalVarianceIsRespected) {
 }
 
 }  // namespace depth_update
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace covariance_reset {
+
+using Vector15 = TwoFrameGroup::TangentVector;
+
+TwoFrameGroup rotatedState() {
+  return TwoFrameGroup::FromState(
+      Rot3::RzRyRx(0.3, -0.2, 0.5), Eigen::Vector3d(0.5, -0.2, 0.1),
+      Eigen::Vector3d(1.0, 2.0, -3.0), Eigen::Vector3d(0.01, -0.02, 0.03),
+      Eigen::Vector3d(0.1, 0.0, -0.1));
+}
+
+// Prior with attitude-position correlation, so a position fix also corrects
+// attitude and exercises the reset.
+Cov15 correlatedPrior() {
+  Cov15 P0 = Cov15::Identity() * 0.01;
+  P0.block<3, 3>(6, 6) = Cov3::Identity() * 1.0;
+  P0.block<3, 3>(0, 6) = Cov3::Identity() * 0.05;
+  P0.block<3, 3>(6, 0) = Cov3::Identity() * 0.05;
+  return P0;
+}
+
+// resetJacobian(eta) is the derivative of e -> Local(X * Expmap(eta),
+// X * Expmap(e)) at the posterior mean e = eta.
+TEST(TfgInEKF, ResetJacobianMatchesNumericalDerivative) {
+  const TwoFrameGroup X = rotatedState();
+  Vector15 eta;
+  eta << 0.2, -0.1, 0.3, 0.1, 0.2, -0.1, 0.5, 0.4, -0.3, 0.01, -0.02, 0.03,
+      0.05, -0.04, 0.02;
+
+  const TwoFrameGroup X_plus = traits<TwoFrameGroup>::Retract(X, eta);
+  Cov15 numerical;
+  const double h = 1e-6;
+  for (int j = 0; j < 15; ++j) {
+    Vector15 step = Vector15::Zero();
+    step(j) = h;
+    const Vector15 plus = traits<TwoFrameGroup>::Local(
+        X_plus, traits<TwoFrameGroup>::Retract(X, eta + step));
+    const Vector15 minus = traits<TwoFrameGroup>::Local(
+        X_plus, traits<TwoFrameGroup>::Retract(X, eta - step));
+    numerical.col(j) = (plus - minus) / (2 * h);
+  }
+
+  EXPECT(assert_equal((Matrix)numerical, (Matrix)TfgInEKF::resetJacobian(eta),
+                      1e-8));
+}
+
+// A position update transports the Joseph-updated covariance by the reset
+// Jacobian of the applied correction, unlike the untransported base update.
+TEST(TfgInEKF, PositionUpdateAppliesCovarianceReset) {
+  const TwoFrameGroup X0 = rotatedState();
+  const Cov15 P0 = correlatedPrior();
+  const Eigen::Vector3d fix(1.6, 1.5, -2.6);
+  const Cov3 R_pos = Cov3::Identity() * 0.01;
+
+  TfgInEKF ekf(X0, P0);
+  ekf.update_position(fix, R_pos);
+
+  // Same update without the reset, mirroring update_position's body-frame
+  // residual and rotated noise.
+  const Matrix3 R0 = X0.R.matrix();
+  gtsam::InvariantEKF<TwoFrameGroup> plain(X0, P0);
+  plain.updateWithVector(PositionOutput::predict(X0, fix),
+                         PositionOutput::jacobian(X0, fix), Vector3::Zero(),
+                         R0.transpose() * R_pos * R0, /*performReset=*/false);
+
+  const Vector15 eta = traits<TwoFrameGroup>::Local(X0, plain.state());
+  EXPECT(eta.head<3>().norm() > 1e-3);  // the fix corrected attitude
+
+  const Cov15 B = TfgInEKF::resetJacobian(eta);
+  const Cov15 expected = B * plain.covariance() * B.transpose();
+  EXPECT(traits<TwoFrameGroup>::Equals(plain.state(), ekf.state(), 1e-12));
+  EXPECT(assert_equal((Matrix)expected, (Matrix)ekf.covariance(), 1e-12));
+  EXPECT((plain.covariance() - ekf.covariance()).norm() > 1e-6);
+}
+
+}  // namespace covariance_reset
 /* ************************************************************************* */
 
 /* ************************************************************************* */
