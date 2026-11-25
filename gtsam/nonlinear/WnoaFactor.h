@@ -22,11 +22,7 @@
 #include <gtsam/base/Lie.h>
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/VectorSpace.h>
-#include <gtsam/geometry/Point1.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Pose3.h>
+#include <gtsam/nonlinear/NoiseModelFactorN.h>
 #include <gtsam/nonlinear/NonlinearFactor.h>
 #include <gtsam/nonlinear/WnoaStateData.h>
 
@@ -80,9 +76,6 @@ class WnoaMotionFactor
   typedef WnoaMotionFactor This;
 
   double deltaT_;  ///< Time between the two states
-
-  inline static const MatrixN kIdentity = MatrixN::Identity();
-  inline static const MatrixN kZero = MatrixN::Zero();
 
   /**
    * @brief Compute relative pose/velocity terms shared by WNOA error/Jacobians.
@@ -241,26 +234,26 @@ class WnoaMotionFactor
     // Compute Final Jacobians
     if (Hp1) {
       // Derivative of error wrt pose p1
-      Hp1->resize(2 * dim, dim);
+      Hp1->resize(Eigen::Index{2} * dim, dim);
       Hp1->template block<dim, dim>(0, 0) = dxi_dT1;
       Hp1->template block<dim, dim>(dim, 0) = dvErr_dxi * dxi_dT1;
     }
     if (Hv1) {
       // Derivative of error wrt velocity v1
-      Hv1->resize(2 * dim, dim);
-      Hv1->template block<dim, dim>(0, 0) = -deltaT_ * kIdentity;
-      Hv1->template block<dim, dim>(dim, 0) = -kIdentity;
+      Hv1->resize(Eigen::Index{2} * dim, dim);
+      Hv1->template block<dim, dim>(0, 0) = -deltaT_ * MatrixN::Identity();
+      Hv1->template block<dim, dim>(dim, 0) = -MatrixN::Identity();
     }
     if (Hp2) {
       // Derivative of error wrt pose p2
-      Hp2->resize(2 * dim, dim);
+      Hp2->resize(Eigen::Index{2} * dim, dim);
       Hp2->template block<dim, dim>(0, 0) = dxi_dT2;
       Hp2->template block<dim, dim>(dim, 0) = dvErr_dxi * dxi_dT2;
     }
     if (Hv2) {
       // Derivative of error wrt velocity v2
-      Hv2->resize(2 * dim, dim);
-      Hv2->template block<dim, dim>(0, 0) = kZero;
+      Hv2->resize(Eigen::Index{2} * dim, dim);
+      Hv2->template block<dim, dim>(0, 0).setZero();
       Hv2->template block<dim, dim>(dim, 0) = invJr;
     }
 
@@ -347,10 +340,10 @@ class WnoaMotionFactor
   static Matrix2N TransitionFunction(double deltaT) {
     // Construct the transition matrix for the WNOA factor
     Matrix2N F;
-    F.template topLeftCorner<dim, dim>() = kIdentity;
-    F.template topRightCorner<dim, dim>() = deltaT * kIdentity;
-    F.template bottomLeftCorner<dim, dim>() = kZero;
-    F.template bottomRightCorner<dim, dim>() = kIdentity;
+    F.template topLeftCorner<dim, dim>().setIdentity();
+    F.template topRightCorner<dim, dim>() = deltaT * MatrixN::Identity();
+    F.template bottomLeftCorner<dim, dim>().setZero();
+    F.template bottomRightCorner<dim, dim>().setIdentity();
     return F;
   }
 
@@ -384,9 +377,9 @@ class WnoaMotionFactor
     Matrix2N F;
     // first column is pose, second column is velocity
     F.template topLeftCorner<dim, dim>() = dxi_dT1;
-    F.template topRightCorner<dim, dim>() = -deltaT * kIdentity;
+    F.template topRightCorner<dim, dim>() = -deltaT * MatrixN::Identity();
     F.template bottomLeftCorner<dim, dim>() = dvErr_dxi * dxi_dT1;
-    F.template bottomRightCorner<dim, dim>() = -kIdentity;
+    F.template bottomRightCorner<dim, dim>() = -MatrixN::Identity();
     return F;
   }
 
@@ -420,7 +413,7 @@ class WnoaMotionFactor
     Matrix2N E;
     // First column is pose, second column is velocity
     E.template topLeftCorner<dim, dim>() = dxi_dT2;
-    E.template topRightCorner<dim, dim>() = kZero;
+    E.template topRightCorner<dim, dim>().setZero();
     E.template bottomLeftCorner<dim, dim>() = dvErr_dxi * dxi_dT2;
     E.template bottomRightCorner<dim, dim>() = invJr;
     return -E;

@@ -10,6 +10,9 @@
 
 #include "WnoaInterpolator.h"
 
+#include <limits>
+#include <stdexcept>
+
 namespace {
     /** Assign a fixed-size block so Eigen uses compile-time extents. Avoids GCC -Werror=
         array bounds false positives in the SSE vectorizer when a fixed-size source is assigned
@@ -73,8 +76,9 @@ Interpolator<PoseType>::interpolatePoseAndVelocity(
     const std::shared_ptr<const LambdaPsiMats>& LambdaPsiPreComp,
     const std::shared_ptr<const LocalStateVecs>& localStateVecsPreComp,
     const std::shared_ptr<const StateJacobians>& stateJacobiansPreComp) const {
-  assert((tPoseVel_k.has_value() || tPoseVel_kp1.has_value()) &&
-         "At least one TimestampedPoseVel must be defined");
+  if (!tPoseVel_k && !tPoseVel_kp1) {
+    throw std::invalid_argument("Interpolation requires at least one state");
+  }
   // second point not defined, extrap from first
   if (!tPoseVel_kp1.has_value()) {
     const auto& [poseVel, t] = tPoseVel_k.value();
@@ -293,9 +297,7 @@ void Interpolator<PoseType>::formLocalStateAndJacobians_(
     const std::shared_ptr<const StateJacobians>& stateJacobiansPreComp,
     VectorN* xi_dot_k, VectorN* xi_kp1, VectorN* xi_dot_kp1,
     StateJacobians* jacs) const {
-  const auto& [poseVel_k, _t_k] = tPoseVel_k;
-  const auto& [_T_k, varpi_k] = poseVel_k;
-  *xi_dot_k = varpi_k;
+  *xi_dot_k = tPoseVel_k.poseVel.vel;
 
   const bool needComputedState =
       !localStateVecsPreComp || (jacs && !stateJacobiansPreComp);
@@ -713,18 +715,26 @@ template <typename PoseType>
 Matrix Interpolator<PoseType>::ConstructMatrixFromJointMarginal(
     const JointMarginal& blockMatrix, const KeyVector& keyVector,
     size_t blockSize) {
-  size_t n = keyVector.size();
-  Matrix M(n * blockSize, n * blockSize);
+  const size_t n = keyVector.size();
+  const auto maxIndex =
+      static_cast<size_t>(std::numeric_limits<Eigen::Index>::max());
+  if (blockSize > maxIndex || (blockSize != 0 && n > maxIndex / blockSize)) {
+    throw std::length_error("Joint marginal exceeds Eigen's index range");
+  }
+  const auto blockDim = static_cast<Eigen::Index>(blockSize);
+  const auto matrixDim = static_cast<Eigen::Index>(n * blockSize);
+  Matrix M(matrixDim, matrixDim);
 
   for (size_t i = 0; i < n; ++i) {
     for (size_t j = 0; j <= i;
          ++j) {  // symmetric block matrix: j <= i to avoid repeats
       auto block = blockMatrix(keyVector[i], keyVector[j]);  // query block
       // fill in both (i, j) and (j, i) blocks
-      M.block(i * blockSize, j * blockSize, blockSize, blockSize) = block;
+      const auto row = static_cast<Eigen::Index>(i * blockSize);
+      const auto col = static_cast<Eigen::Index>(j * blockSize);
+      M.block(row, col, blockDim, blockDim) = block;
       if (i != j) {
-        M.block(j * blockSize, i * blockSize, blockSize, blockSize) =
-            block.transpose();
+        M.block(col, row, blockDim, blockDim) = block.transpose();
       }
     }
   }

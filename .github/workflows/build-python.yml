@@ -40,26 +40,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Check paths of changed files to see if any are non-ignored.
-  check-paths:
+  select-matrix:
+    name: Select build matrix
     runs-on: ubuntu-latest
     outputs:
-      should_run: ${{ steps.filter.outputs.relevant_changes }}
       build_matrix: ${{ steps.matrix.outputs.build_matrix }}
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-
-      - name: Check modified files
-        id: filter
-        uses: dorny/paths-filter@v4
-        with:
-          filters: |
-            relevant_changes:
-              - '!**.md'
-              - '!**.ipynb' 
-              - '!myst.yml'
-
       - name: Configure build matrix
         id: matrix
         shell: bash
@@ -79,15 +65,15 @@ jobs:
 
   fast-compile:
     name: Fast compile (${{ matrix.name }})
-    needs: check-paths
-    if: github.event_name == 'pull_request' && needs.check-paths.outputs.should_run == 'true'
+    needs: select-matrix
+    if: github.event_name == 'pull_request'
     runs-on: ${{ matrix.os }}
     env:
       SCCACHE_BASEDIRS: ${{ github.workspace }}
       SCCACHE_GHA_ENABLED: ON
     strategy:
       fail-fast: true
-      matrix: ${{ fromJSON(needs.check-paths.outputs.build_matrix) }}
+      matrix: ${{ fromJSON(needs.select-matrix.outputs.build_matrix) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -158,13 +144,8 @@ jobs:
   build:
     # On PRs, create all existing required contexts even if the fast gate fails.
     # Their first step reports the gate failure; expensive setup never starts.
-    needs: [check-paths, fast-compile]
-    if: >-
-      always() &&
-      (github.event_name == 'workflow_dispatch' ||
-       github.event_name == 'workflow_call' ||
-       github.event_name == 'push' ||
-       needs.check-paths.outputs.should_run == 'true')
+    needs: [select-matrix, fast-compile]
+    if: always() && needs.select-matrix.result == 'success'
 
     name: ${{ matrix.name }} ${{ matrix.build_type }} Python ${{ matrix.python_version }}
     runs-on: ${{ matrix.os }}
@@ -184,7 +165,7 @@ jobs:
       fail-fast: >-
         ${{ github.event_name != 'pull_request' ||
             needs.fast-compile.result == 'success' }}
-      matrix: ${{ fromJSON(needs.check-paths.outputs.build_matrix) }}
+      matrix: ${{ fromJSON(needs.select-matrix.outputs.build_matrix) }}
 
     steps:
       - name: Require successful fast compilation

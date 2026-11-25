@@ -22,6 +22,7 @@
 
 #include <gtsam/base/Testable.h>
 #include <gtsam/base/FastVector.h>
+#include <gtsam/inference/Key.h>
 
 class EliminationTreeTester; // for unit tests, see testEliminationTree
 

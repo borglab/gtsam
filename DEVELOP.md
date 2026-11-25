@@ -1,5 +1,42 @@
 # Information for Developers
 
+See [GTSAM architecture](ARCHITECTURE.md) for the module map, extension points,
+and [include direction diagram](ARCHITECTURE.md#include-direction-between-modules).
+
+## Opt-in local Clang-Tidy
+
+Pull request CI uses [the repository's Clang-Tidy configuration](.clang-tidy)
+to check changed lines in C++ source files listed in the Linux compilation
+database. To opt in locally on Linux or macOS, configure a Makefiles or Ninja
+build with `-DCMAKE_EXPORT_COMPILE_COMMANDS=ON` and put Clang-Tidy on your `PATH`.
+The following setup uses the CI tool version and CMake feature options.
+
+```sh
+cmake -S . -B build-tidy -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+  -DGTSAM_BUILD_TESTS=ON -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON \
+  -DGTSAM_BUILD_UNSTABLE=ON -DGTSAM_WITH_TBB=OFF \
+  -DGTSAM_USE_BOOST_FEATURES=OFF -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF \
+  -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF
+python3 -m venv build-tidy/venv
+. build-tidy/venv/bin/activate
+python -m pip install clang-tidy==23.1.4
+```
+
+Run `clang-tidy -p build-tidy path/to/file.cpp` to inspect a translation unit.
+For a pre-commit check, run the following command from the repository root.
+It checks changed lines in tracked C++ sources against the merge base with
+`origin/develop`. Stage new files first so Git includes them in the diff.
+
+```bash
+set -o pipefail
+git diff --merge-base origin/develop --no-ext-diff --no-color --unified=0 \
+  --diff-filter=AMR -- ':(glob)**/*.cpp' \
+  ':(exclude)gtsam/3rdparty' ':(exclude)wrap' ':(exclude)CppUnitLite' |
+  clang-tidy-diff.py -p1 -path build-tidy -j 2 -quiet \
+    -regex '.*\.cpp' -only-check-in-db -warnings-as-errors '*'
+```
+
 ## Coding Conventions
 
 * Classes and types use `UpperCamelCase`; methods and functions use `lowerCamelCase`.

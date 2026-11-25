@@ -1,0 +1,62 @@
+name: Code quality
+
+on:
+  pull_request:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-checks:
+    name: GTSAM source conventions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Test quality checker
+        run: python3 -m unittest discover -s scripts -p test_code_quality.py
+      - name: Check source conventions
+        run: python3 scripts/check_code_quality.py
+
+  clang-tidy:
+    name: Clang-Tidy (changed C++ lines)
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 2
+      - name: Find changed C++ sources
+        id: diff
+        run: |
+          # Compare the PR merge commit with its base parent.
+          git diff --no-ext-diff --no-color --unified=0 --diff-filter=AMR \
+            HEAD^1 HEAD -- ':(glob)**/*.cpp' \
+            ':(exclude)gtsam/3rdparty' ':(exclude)wrap' \
+            ':(exclude)CppUnitLite' > "$RUNNER_TEMP/clang-tidy.diff"
+          if [[ -s "$RUNNER_TEMP/clang-tidy.diff" ]]; then
+            echo 'has_changes=true' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Install Clang-Tidy
+        if: steps.diff.outputs.has_changes == 'true'
+        run: |
+          python3 -m venv "$RUNNER_TEMP/clang-tidy"
+          "$RUNNER_TEMP/clang-tidy/bin/pip" install clang-tidy==23.1.4
+          echo "$RUNNER_TEMP/clang-tidy/bin" >> "$GITHUB_PATH"
+      - name: Generate compilation database
+        if: steps.diff.outputs.has_changes == 'true'
+        run: >-
+          cmake -S . -B build-tidy -DCMAKE_BUILD_TYPE=Release
+          -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+          -DGTSAM_BUILD_TESTS=ON -DGTSAM_BUILD_EXAMPLES_ALWAYS=ON
+          -DGTSAM_BUILD_UNSTABLE=ON -DGTSAM_WITH_TBB=OFF
+          -DGTSAM_USE_BOOST_FEATURES=OFF -DGTSAM_ENABLE_BOOST_SERIALIZATION=OFF
+          -DGTSAM_ALLOW_DEPRECATED_SINCE_V43=OFF
+      - name: Check changed lines
+        if: steps.diff.outputs.has_changes == 'true'
+        run: |
+          clang-tidy-diff.py -p1 -path build-tidy -j 2 -quiet \
+            -regex '.*\.cpp' -only-check-in-db -warnings-as-errors '*' \
+            < "$RUNNER_TEMP/clang-tidy.diff"

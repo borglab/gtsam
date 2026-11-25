@@ -27,7 +27,7 @@
 #include <gtsam/linear/MultifrontalParameters.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/linear/internal/BatchHessianMapping.h>
-#include <gtsam/nonlinear/LMDampingParams.h>
+#include <gtsam/linear/LMDampingParams.h>
 #include <gtsam/symbolic/SymbolicFactor.h>
 
 #include <cstdint>

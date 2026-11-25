@@ -21,7 +21,7 @@
 
 #include <gtsam/base/FastList.h>
 #include <gtsam/base/FastVector.h>
-#include <gtsam/inference/Key.h>
+#include <gtsam/base/types.h>
 #include <gtsam/config.h> // for GTSAM_USE_TBB
 
 #include <stack>
@@ -30,6 +30,7 @@
 #include <memory>
 #include <functional>
 #include <cassert>
+#include <utility>
 
 namespace gtsam {
 
@@ -253,30 +254,25 @@ FastVector<std::shared_ptr<typename FOREST::Node> > CloneForest(
 }
 
 /* ************************************************************************* */
-/** Traversal function for PrintForest */
-namespace {
-struct PrintForestVisitorPre {
-  const KeyFormatter& formatter;
-  PrintForestVisitorPre(const KeyFormatter& formatter) :
-      formatter(formatter) {
-  }
-  template<typename NODE> std::string operator()(
-      const std::shared_ptr<NODE>& node, const std::string& parentString) {
-    // Print the current node
-    node->print(parentString + "-", formatter);
-    // Increment the indentation
-    return parentString + "| ";
-  }
-};
+/// Visit nodes in preorder, calling printNode with each node and its prefix.
+template <class FOREST, class PrintNode>
+void printForestWith(const FOREST& forest, std::string prefix,
+                     PrintNode&& printNode) {
+  auto visitor = [&](const auto& node, const std::string& parentPrefix) {
+    printNode(*node, parentPrefix + "-");
+    return parentPrefix + "| ";
+  };
+  DepthFirstForest(forest, prefix, visitor);
 }
 
-/** Print a tree, prefixing each line with \c str, and formatting keys using \c keyFormatter.
- *  To print each node, this function calls the \c print function of the tree nodes. */
+/// Print a forest whose nodes accept a key formatter in their print method.
 template<class FOREST>
 void PrintForest(const FOREST& forest, std::string str,
-    const KeyFormatter& keyFormatter) {
-  PrintForestVisitorPre visitor(keyFormatter);
-  DepthFirstForest(forest, str, visitor);
+                 const std::function<std::string(Key)>& keyFormatter) {
+  printForestWith(forest, std::move(str),
+                  [&](auto& node, const std::string& prefix) {
+                    node.print(prefix, keyFormatter);
+                  });
 }
 }  // namespace treeTraversal
 
