@@ -38,6 +38,30 @@ by following the dependencies in this table. For example,
 `nonlinear` can include `linear`, `symbolic`, `inference`, and `base`
 directly. `hybrid` can use both the discrete and nonlinear stacks.
 
+Arrows point from an including module to its immediate dependencies. Modules
+that share a label have the same immediate dependencies.
+
+```mermaid
+flowchart TD
+    SFM["sfm, navigation"] --> SLAM["slam"]
+    SLAM --> SAM["sam"]
+    SAM --> CON["constrained"]
+    CERT["certifiable"] --> CON
+    CON --> NL["nonlinear"]
+    CON --> GEO["geometry"]
+    BP["basis, planning"] --> NL
+    BP --> GEO
+    HYB["hybrid"] --> NL
+    HYB --> GEO
+    HYB --> DIS["discrete"]
+    NL --> LIN["linear"]
+    LIN --> SYM["symbolic"]
+    SYM --> INF["inference"]
+    GEO --> INF
+    DIS --> INF
+    INF --> BASE["base"]
+```
+
 | Including module | Immediate dependencies |
 | --- | --- |
 | `base` | None |
