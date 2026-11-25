@@ -92,11 +92,12 @@ benchmarks, documentation, and wrapper glue can compose modules freely within
 the other stable/experimental boundaries described below.
 
 Nonlinear factors should use manifold traits for operations on their value
-types. WNOA templates follow this pattern. Concrete geometry types are included
-by their callers and by the source files that provide exported WNOA graph and
-interpolator instantiations. The existing Graphviz layout recognizes concrete
-poses to place nodes. A future layout interface could accept a position
-callback, with a SLAM adapter providing the existing pose and point handling.
+types. The generic WNOA graph and interpolator live in `nonlinear`. Their
+explicit instantiations live in `sam`, which can include both the templates
+and the concrete geometry types. The existing Graphviz layout recognizes
+concrete poses to place nodes. A future layout interface could accept a
+position callback, with a SLAM adapter providing the existing pose and point
+handling.
 
 ## Estimation and optimization
 

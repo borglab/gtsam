@@ -10,20 +10,16 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  WnoaFactorGraph.cpp
+ *  @file  WnoaFactorGraph-inl.h
  *  @brief Factor graph that handles computation of interpolated states for WNOA
  *  @author Sven Lilge
  */
 
+#pragma once
+
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/types.h>
 #include <gtsam/config.h>  // IWYU pragma: keep (GTSAM_USE_TBB)
-#include <gtsam/dllexport.h>
-#include <gtsam/geometry/Point1.h>
-#include <gtsam/geometry/Point2.h>
-#include <gtsam/geometry/Point3.h>
-#include <gtsam/geometry/Pose2.h>
-#include <gtsam/geometry/Pose3.h>
 #include <gtsam/linear/GaussianFactor.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
@@ -529,10 +525,4 @@ Values WnoaFactorGraph<PoseType>::getInterpolatedValues(
 #endif
 }
 
-// Explicit template instantiation
-template class GTSAM_EXPORT WnoaFactorGraph<Point1>;
-template class GTSAM_EXPORT WnoaFactorGraph<Point2>;
-template class GTSAM_EXPORT WnoaFactorGraph<Point3>;
-template class GTSAM_EXPORT WnoaFactorGraph<Pose2>;
-template class GTSAM_EXPORT WnoaFactorGraph<Pose3>;
 }  // namespace gtsam
