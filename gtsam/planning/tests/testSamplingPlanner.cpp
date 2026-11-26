@@ -288,6 +288,17 @@ class CheckedPrior : public PriorFactor<Vector1> {
   bool sendable_, requireCaller_;
 };
 
+// The tracking score evaluates even sendable factors on the caller and skips empty slots.
+TEST(SamplingPlanner, SequentialTrajectoryError) {
+  Values path;
+  path.insert(X(1), Vector1{0.});
+  NonlinearFactorGraph graph;
+  const auto prior = std::make_shared<CheckedPrior>(true, true);
+  for (size_t k = 0; k < 600; ++k) graph.push_back(prior);
+  graph.remove(17);
+  EXPECT_DOUBLES_EQUAL(599 * 0.5, internal::sequentialError(graph, path), 0.);
+}
+
 // Repeated factor instances and non-sendable callbacks retain thread affinity,
 // including when a graph is large enough for nested graph-level TBB scheduling.
 TEST(SamplingPlanner, CandidateScoringThreadAffinity) {

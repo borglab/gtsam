@@ -101,7 +101,8 @@ TrackingControlLaw solveConditionals(const GaussianBayesNet& policy) {
   TrackingControlLaw law{Matrix(controlDim, horizon),
                          std::vector<Matrix>(horizon)};
   for (size_t k = 0; k < horizon; ++k) {
-    policy[k]->affineMean(law.feedforward.col(k), law.gains[k]);
+    policy[k]->affineMean(law.feedforward.col(static_cast<Eigen::Index>(k)),
+                          law.gains[k]);
   }
   return law;
 }

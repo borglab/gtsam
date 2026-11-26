@@ -290,8 +290,8 @@ class GTSAM_EXPORT MPPITracking {
         double effort = 0;
         auto tracked = track(planner, actual, path, feedforward, dynamics,
                              feedback, &feedbackPrecision, &effort);
-        const double nom = graph.error(path);
-        const double act = graph.error(tracked);
+        const double nom = internal::sequentialError(graph, path);
+        const double act = internal::sequentialError(graph, tracked);
         nominalCosts[j] =
             0.5 * nom + 0.5 * std::max(nom, std::min(act + effort, threshold));
         actualCosts[j] = act;
@@ -448,7 +448,7 @@ class GTSAM_EXPORT MPPITracking {
     Values path = initial;
     for (Eigen::Index i = 0; i < result.size(); ++i) {
       planner.rolloutCandidateInPlace(path, batch, i, dynamics);
-      result[i] = graph.error(path);
+      result[i] = internal::sequentialError(graph, path);
     }
     if (batch.logWeightOffsets.size()) result -= batch.logWeightOffsets / beta_;
     return result;

@@ -24,6 +24,15 @@
 
 namespace gtsam::internal {
 
+/// Sum one rollout's costs in graph order on the calling thread.
+inline double sequentialError(const NonlinearFactorGraph& graph,
+                              const Values& values) {
+  double error = 0.0;
+  for (const auto& factor : graph)
+    if (factor) error += factor->error(values);
+  return error;
+}
+
 /// A non-sendable factor must be evaluated on the thread that called the
 /// planner.
 inline bool allFactorsSendable(const NonlinearFactorGraph& graph) {

@@ -394,7 +394,7 @@ void HessianFactor::addUnaryPriorShift(const_iterator variable,
                                       const Matrix& precision,
                                       const Vector& displacement) {
   const Vector eta = precision * displacement;
-  info_.updateOffDiagonalBlock(variable - begin(), size(), eta);
+  info_.updateOffDiagonalBlock(variable - begin(), info_.nBlocks() - 1, eta);
   constantTerm() += displacement.dot(eta);
 }
 

@@ -256,9 +256,9 @@ previous solution into the next solve.
 | `tube` | Optimizes from the measured and nominal initial states with common disturbances, selects the reference, and applies tracking feedback. |
 | `robust` | Chooses a nominal starting point by sampled free energy, then scores coupled nominal and feedback-controlled rollouts. |
 
-`tube`, `robust`, and `primitives` score each trajectory with
-`graph.error(values)`. On large graphs, TBB can evaluate sendable factors
-in parallel. Python custom factors run on the calling thread.
+`tube`, `robust`, and `primitives` evaluate each trajectory’s cost factors in
+graph order. Summing them serially avoids parallel scheduling overhead for each
+sample and keeps Python custom factors on the calling thread.
 
 When the best primitive exceeds a positive stopping threshold, `primitives` returns
 the supplied stopping controls in both plans. This decision skips the competing
