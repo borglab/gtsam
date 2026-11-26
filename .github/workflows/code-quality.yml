@@ -1,9 +1,11 @@
 name: Code quality
 
 on:
-  pull_request:
-  push:
-    branches: [develop]
+  workflow_call:
+    outputs:
+      build_changes:
+        description: Changes include files covered by the CI build matrix
+        value: ${{ jobs.clang-tidy.outputs.build_changes }}
   workflow_dispatch:
 
 permissions:
@@ -22,18 +24,35 @@ jobs:
 
   clang-tidy:
     name: Clang-Tidy (changed C++ lines)
-    if: github.event_name == 'pull_request'
+    outputs:
+      build_changes: ${{ steps.diff.outputs.build_changes }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
         with:
           fetch-depth: 2
-      - name: Find changed C++ sources
+      - name: Identify build and Clang-Tidy changes
         id: diff
+        env:
+          PUSH_BASE: ${{ github.event.before }}
         run: |
-          # Compare the PR merge commit with its base parent.
+          # PR checkout is a merge commit. For a multi-commit push, compare the
+          # whole push. Manual and nightly runs check the tip against its parent.
+          base=HEAD^1
+          if [[ "$GITHUB_EVENT_NAME" == push && "$PUSH_BASE" != 0000000000000000000000000000000000000000 ]]; then
+            base=$PUSH_BASE
+            if ! git cat-file -e "$base^{commit}"; then
+              git fetch --no-tags --depth=1 origin "$base"
+            fi
+          fi
+          git diff --name-only --no-renames "$base" HEAD -- . \
+            ':(exclude,glob)**/*.md' ':(exclude,glob)**/*.ipynb' ':(exclude,top)myst.yml' \
+            > "$RUNNER_TEMP/build-changes"
+          if [[ -s "$RUNNER_TEMP/build-changes" ]]; then
+            echo 'build_changes=true' >> "$GITHUB_OUTPUT"
+          fi
           git diff --no-ext-diff --no-color --unified=0 --diff-filter=AMR \
-            HEAD^1 HEAD -- ':(glob)**/*.cpp' \
+            "$base" HEAD -- ':(glob)**/*.cpp' \
             ':(exclude)gtsam/3rdparty' ':(exclude)wrap' \
             ':(exclude)CppUnitLite' > "$RUNNER_TEMP/clang-tidy.diff"
           if [[ -s "$RUNNER_TEMP/clang-tidy.diff" ]]; then
