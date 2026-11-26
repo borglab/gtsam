@@ -487,9 +487,9 @@ typedef gtsam::WnoaMotionFactor<gtsam::AugmentedPoint<3>>
 #include <gtsam/nonlinear/WnoaInterpFactor.h>
 template <POSE>
 virtual class WnoaInterpFactor : gtsam::NoiseModelFactor {
-  WnoaInterpFactor(const gtsam::NoiseModelFactor::shared_ptr inner_factor,
-                   const std::set<gtsam::StateData> estimated_states,
-                   const std::set<gtsam::StateData> interp_states,
+  WnoaInterpFactor(gtsam::NoiseModelFactor* inner_factor,
+                   const gtsam::StateDataSet estimated_states,
+                   const gtsam::StateDataSet interp_states,
                    const gtsam::Vector q_psd_diag,
                    const bool fixed_noise_model = false,
                    const bool precomp_interp_mats = true);
@@ -507,15 +507,15 @@ typedef gtsam::WnoaInterpFactor<gtsam::AugmentedPoint<3>>
 template <POSE = {gtsam::AugmentedPoint2, gtsam::AugmentedPoint3}>
 gtsam::NonlinearFactorGraph interpolateFactorGraph(
     const gtsam::NonlinearFactorGraph& graph,
-    const std::set<gtsam::StateData>& estimated_states,
-    const std::set<gtsam::StateData>& interp_states, gtsam::Vector q_psd_diag,
+    const gtsam::StateDataSet& estimated_states,
+    const gtsam::StateDataSet& interp_states, gtsam::Vector q_psd_diag,
     bool fixed_noise = false);
 
 template <POSE = {gtsam::AugmentedPoint2, gtsam::AugmentedPoint3}>
 gtsam::Values updateInterpValues(
     const gtsam::NonlinearFactorGraph& interp_graph,
-    const gtsam::Values& values, const std::set<gtsam::StateData>& estim_states,
-    const std::set<gtsam::StateData>& interp_states,
+    const gtsam::Values& values, const gtsam::StateDataSet& estim_states,
+    const gtsam::StateDataSet& interp_states,
     const gtsam::Vector q_psd_diag);
 
 //*************************************************************************

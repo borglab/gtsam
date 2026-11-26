@@ -6,7 +6,7 @@
 %
 % See LICENSE for the license information
 %
-% @brief Tests WNOA motion and interpolation factors with unstable AugmentedPoint3 positions.
+% @brief Tests WNOA motion and interpolation factors with unstable AugmentedPoint positions.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 function testWnoaAugmentedPoint()
@@ -20,8 +20,9 @@ assert(exist('gtsam_unstable_wrapper', 'file') == 3, ...
 
 testMotion();
 testInterpolatedRange();
+testGraphHelpers2D();
 testRangeOnlyOptimization();
-fprintf('WNOA AugmentedPoint3 MATLAB tests passed (3 tests).\n');
+fprintf('WNOA AugmentedPoint MATLAB tests passed (4 tests).\n');
 end
 
 function testMotion()
@@ -59,8 +60,9 @@ right = gtsam.StateData(uint64(3), uint64(4), 1.0);
 noise = gtsam.noiseModel.Isotropic.Sigma(1, 0.1);
 inner = gtsam.KnownLandmarkSquaredRangeFactorAugmentedPoint3( ...
     uint64(5), [2; 0; 0], 1.5, noise);
-factor = gtsam.MatlabWnoaInterpFactorAugmentedPoint3( ...
-    inner, left, mid, right, 0.1 * ones(3, 1), true, true);
+factor = gtsam.WnoaInterpFactorAugmentedPoint3( ...
+    inner, stateSet(left, right), stateSet(mid), 0.1 * ones(3, 1), true, true);
+clear inner  % The native interpolator owns the wrapped factor.
 
 kv = factor.keys();
 keys = zeros(1, double(kv.size()), 'uint64');
@@ -80,6 +82,28 @@ assert(abs(factor.error(values) - expected) < 1e-7, ...
 fprintf('  Interpolated range residual and keys: passed\n');
 end
 
+function testGraphHelpers2D()
+left = gtsam.StateData(uint64(1), uint64(2), 0.0);
+mid = gtsam.StateData(uint64(5), uint64(6), 0.5);
+right = gtsam.StateData(uint64(3), uint64(4), 1.0);
+knots = stateSet(right, left, left);
+queries = stateSet(mid);
+assert(knots.size() == 2, 'StateDataSet did not deduplicate the states.');
+
+noise = gtsam.noiseModel.Isotropic.Sigma(1, 0.1);
+inner = gtsam.KnownLandmarkSquaredRangeFactorAugmentedPoint2( ...
+    uint64(5), [2; 0], 1.5, noise);
+graph = gtsam.NonlinearFactorGraph();
+graph.add(inner);
+q = 0.1 * ones(2, 1);
+wrapped = gtsam.interpolateFactorGraphAugmentedPoint2(graph, knots, queries, q, true);
+assert(wrapped.size() == 2, 'Expected one motion and one measurement factor.');
+
+factor = gtsam.WnoaInterpFactorAugmentedPoint2(inner, knots, queries, q, true);
+assert(factor.keys().size() == 4, 'The 2D factor must depend on both knots.');
+fprintf('  2D interpolation and graph helpers: passed\n');
+end
+
 function testRangeOnlyOptimization()
 p0 = [0.6; -0.2; 0.7];
 v = [0.35; 0.10; -0.15];
@@ -93,6 +117,7 @@ for i = 1:3
     states{i} = gtsam.StateData(uint64(2*i - 1), uint64(2*i), i - 1);
 end
 
+knots = stateSet(states{:});
 graph = gtsam.NonlinearFactorGraph();
 for i = 1:2
     graph.add(gtsam.WnoaMotionFactorAugmentedPoint3( ...
@@ -113,21 +138,15 @@ times = [0.25, 0.75, 1.25, 1.75];
 for i = 1:numel(times)
     t = times(i);
     mid = gtsam.StateData(uint64(100 + i), uint64(200 + i), t);
-    if t < 1
-        left = states{1};
-        right = states{2};
-    else
-        left = states{2};
-        right = states{3};
-    end
+    queries = stateSet(mid);
     position = p0 + t * v;
     for j = 1:size(landmarks, 2)
         landmark = landmarks(:, j);
         measured = norm(position - landmark);
         inner = gtsam.KnownLandmarkSquaredRangeFactorAugmentedPoint3( ...
             uint64(100 + i), landmark, measured, rangeNoise);
-        graph.add(gtsam.MatlabWnoaInterpFactorAugmentedPoint3( ...
-            inner, left, mid, right, q, true, true));
+        graph.add(gtsam.WnoaInterpFactorAugmentedPoint3( ...
+            inner, knots, queries, q, true, true));
     end
 end
 
@@ -154,6 +173,12 @@ for i = 1:3
     assert(norm(velocity - v) < 1e-2, ...
         'Recovered knot velocity is inaccurate.');
 end
+mid = gtsam.StateData(uint64(101), uint64(201), times(1));
+expanded = gtsam.updateInterpValuesAugmentedPoint3( ...
+    graph, result, knots, stateSet(mid), q);
+point = gtsam.atAugmentedPoint3(mid.pose, expanded);
+assert(norm(point.vector() - (p0 + times(1)*v)) < 1e-2, ...
+    'Queried intermediate position is inaccurate.');
 fprintf('  Range-only optimization: passed (final error %.3g)\n', finalError);
 end
 
@@ -161,4 +186,11 @@ function insertState(values, positionKey, velocityKey, position, velocity)
 gtsam.insertAugmentedPoint3(positionKey, ...
     gtsam.AugmentedPoint3(position), values);
 values.insertPoint3(velocityKey, velocity);
+end
+
+function result = stateSet(varargin)
+result = gtsam.StateDataSet();
+for i = 1:numel(varargin)
+    result.insert(varargin{i});
+end
 end

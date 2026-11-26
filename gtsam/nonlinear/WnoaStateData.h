@@ -24,6 +24,7 @@
 
 #include <functional>
 #include <limits>
+#include <set>
 
 namespace gtsam {
 
@@ -98,6 +99,9 @@ struct GTSAM_EXPORT StateData {
     return (this->pose == other.pose) && (this->velocity == other.velocity);
   }
 };
+
+/// Chronologically ordered states for WNOA interpolation.
+using StateDataSet = std::set<StateData>;
 
 }  // namespace gtsam
 

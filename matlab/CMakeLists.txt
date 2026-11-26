@@ -95,6 +95,7 @@ set(interface_files
     ${GTSAM_SOURCE_DIR}/gtsam/planning/planning.i
     # matlab/custom.i lives outside the main gtsam/ tree, see comment below.
     ${GTSAM_SOURCE_DIR}/matlab/custom.i
+    ${GTSAM_SOURCE_DIR}/matlab/wnoa.i
 )
 if(GTSAM_USE_MOSEK)
   list(APPEND interface_files
@@ -122,16 +123,8 @@ if(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)
     list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
   endif()
 
-  # Include the MATLAB-only WNOA adapter in the unstable wrapper.
-  set(unstable_matlab_interface_files
-      ${GTSAM_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i
-      ${GTSAM_SOURCE_DIR}/matlab/wnoa_unstable.i)
-
-  # The fourth argument adds matlab/ to the include path for
-  # MatlabWnoaInterpFactor.h.
-  matlab_wrap("${unstable_matlab_interface_files}" "gtsam_unstable"
-              "${GTSAM_ADDITIONAL_LIBRARIES}" "${GTSAM_SOURCE_DIR}/matlab"
-              "${mexFlags}" "${ignore}" "${GTSAM_ENABLE_BOOST_SERIALIZATION}")
+  matlab_wrap(${GTSAM_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i "gtsam_unstable"
+              "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}" "${ignore}" "${GTSAM_ENABLE_BOOST_SERIALIZATION}")
   set_target_properties(
     gtsam_unstable_matlab_wrapper
     PROPERTIES BUILD_RPATH
