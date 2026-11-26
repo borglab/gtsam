@@ -223,52 +223,59 @@ TEST(ManifoldEKF_Pose2, FixedMotionCovarianceMonteCarlo) {
 /* ************************************************************************* */
 namespace rotation_measurement_update {
 
-const Rot3 initialState;
-const Matrix3 priorCovariance = Vector3{4e-4, 1e-4, 1.8e-3}.asDiagonal();
-const Matrix13 measurementJacobian{{0.0, 0.0, 1.0}};
-const Matrix1 measurementCovariance{{1.8e-3}};
-const double measurement = 0.4;
-const Vector3 correction{0.0, 0.0, 0.2};
-const Matrix3 posteriorCovariance = Vector3{4e-4, 1e-4, 9e-4}.asDiagonal();
-const Rot3 updatedState = traits<Rot3>::Retract(initialState, correction);
+struct Fixture {
+  const Rot3 initialState;
+  const Matrix3 priorCovariance = Vector3{4e-4, 1e-4, 1.8e-3}.asDiagonal();
+  const Matrix13 measurementJacobian{{0.0, 0.0, 1.0}};
+  const Matrix1 measurementCovariance{{1.8e-3}};
+  const double measurement = 0.4;
+  const Vector3 correction{0.0, 0.0, 0.2};
+  const Matrix3 posteriorCovariance = Vector3{4e-4, 1e-4, 9e-4}.asDiagonal();
+  const Rot3 updatedState = traits<Rot3>::Retract(initialState, correction);
 
-// Differentiate the remaining old-chart error in the configured new chart.
-Matrix3 recenteredCovariance() {
-  auto recenteredError = [](const Vector3& error) -> Vector3 {
-    return traits<Rot3>::Local(
-        updatedState, traits<Rot3>::Retract(initialState, correction + error));
-  };
-  const Matrix3 B = numericalDerivative11<Vector3, Vector3>(
-      recenteredError, Vector3::Zero());
-  return B * posteriorCovariance * B.transpose();
-}
+  // Differentiate the remaining old-chart error in the configured new chart.
+  Matrix3 recenteredCovariance() const {
+    auto recenteredError = [this](const Vector3& error) -> Vector3 {
+      return traits<Rot3>::Local(
+          updatedState, traits<Rot3>::Retract(initialState, correction + error));
+    };
+    const Matrix3 B = numericalDerivative11<Vector3, Vector3>(
+        recenteredError, Vector3::Zero());
+    return B * posteriorCovariance * B.transpose();
+  }
+};
 
 // Verifies update transports posterior errors through the increment derivative.
 TEST(ManifoldEKF_Rot3, UpdateRecentersPosteriorCovariance) {
-  ManifoldEKF<Rot3> ekf(initialState, priorCovariance);
-  ekf.update(0.0, measurementJacobian, measurement, measurementCovariance);
+  const Fixture data;
+  ManifoldEKF<Rot3> ekf(data.initialState, data.priorCovariance);
+  ekf.update(0.0, data.measurementJacobian, data.measurement,
+             data.measurementCovariance);
 
-  EXPECT(assert_equal(updatedState, ekf.state(), 1e-12));
-  EXPECT(assert_equal(recenteredCovariance(), ekf.covariance(), 1e-10));
+  EXPECT(assert_equal(data.updatedState, ekf.state(), 1e-12));
+  EXPECT(assert_equal(data.recenteredCovariance(), ekf.covariance(), 1e-10));
 }
 
 // Verifies the inherited vector bridge also recenters posterior covariance.
 TEST(ManifoldEKF_Rot3, InheritedVectorUpdateRecentersPosteriorCovariance) {
-  LieGroupEKF<Rot3> ekf(initialState, priorCovariance);
-  ekf.updateWithVector(Vector1{0.0}, measurementJacobian, Vector1{measurement},
-                       measurementCovariance);
+  const Fixture data;
+  LieGroupEKF<Rot3> ekf(data.initialState, data.priorCovariance);
+  ekf.updateWithVector(Vector1{0.0}, data.measurementJacobian,
+                       Vector1{data.measurement}, data.measurementCovariance);
 
-  EXPECT(assert_equal(updatedState, ekf.state(), 1e-12));
-  EXPECT(assert_equal(recenteredCovariance(), ekf.covariance(), 1e-10));
+  EXPECT(assert_equal(data.updatedState, ekf.state(), 1e-12));
+  EXPECT(assert_equal(data.recenteredCovariance(), ekf.covariance(), 1e-10));
 }
 
 // Verifies opting out of transport still applies the same state correction.
 TEST(ManifoldEKF_Rot3, UpdateWithoutResetKeepsPosteriorCovariance) {
-  ManifoldEKF<Rot3> ekf(initialState, priorCovariance);
-  ekf.update(0.0, measurementJacobian, measurement, measurementCovariance, false);
+  const Fixture data;
+  ManifoldEKF<Rot3> ekf(data.initialState, data.priorCovariance);
+  ekf.update(0.0, data.measurementJacobian, data.measurement,
+             data.measurementCovariance, false);
 
-  EXPECT(assert_equal(updatedState, ekf.state(), 1e-12));
-  EXPECT(assert_equal(posteriorCovariance, ekf.covariance(), 1e-12));
+  EXPECT(assert_equal(data.updatedState, ekf.state(), 1e-12));
+  EXPECT(assert_equal(data.posteriorCovariance, ekf.covariance(), 1e-12));
 }
 
 }  // namespace rotation_measurement_update
@@ -307,14 +314,15 @@ namespace starting_state_jacobian_only {
 
 // Verifies update does not substitute H1 when H2 is unavailable.
 TEST(ManifoldEKF, UpdateWithoutIncrementJacobian) {
-  using namespace rotation_measurement_update;
+  const rotation_measurement_update::Fixture data;
   const State initial{Pose2(0.2, -0.4, 0.3)};
-  ManifoldEKF<State> ekf(initial, priorCovariance);
-  ekf.update(0.0, measurementJacobian, measurement, measurementCovariance);
+  ManifoldEKF<State> ekf(initial, data.priorCovariance);
+  ekf.update(0.0, data.measurementJacobian, data.measurement,
+             data.measurementCovariance);
 
-  EXPECT(assert_equal(initial.pose.retract(correction), ekf.state().pose,
+  EXPECT(assert_equal(initial.pose.retract(data.correction), ekf.state().pose,
                       1e-12));
-  EXPECT(assert_equal(posteriorCovariance, ekf.covariance(), 1e-12));
+  EXPECT(assert_equal(data.posteriorCovariance, ekf.covariance(), 1e-12));
 }
 
 }  // namespace starting_state_jacobian_only
