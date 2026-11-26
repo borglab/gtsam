@@ -63,14 +63,15 @@ GTSAM_EXPORT StageKeyMap buildStageKeyMap(const KeyVector& stateKeys,
 
 /** Eliminate one deterministic transition and its control in a single stage.
  * Pull the incoming separator on X(k+1) through dx' = A dx + B du, add the
- * local costs and optional DDP curvature, then eliminate U(k). Return the
- * conditional P(du | dx) and leave the separator on X(k) in the stage factor.
+ * local costs and optional dynamics curvature (in state, control order), then
+ * eliminate U(k). Return P(du | dx) and leave the separator on X(k) in the
+ * stage factor.
  * A null conditional signals an indefinite control block.
  */
 GTSAM_EXPORT GaussianConditional::shared_ptr eliminateControlStage(
     const Matrix& A, const Matrix& B, HessianFactor& stage, double damping,
     const HessianFactor& valueToGo,
-    const HessianFactor* dynamicsCurvature = nullptr);
+    const Matrix* dynamicsCurvature = nullptr);
 
 /** Eliminate controls from the last stage to the first. Each conditional
  * depends on its stage state; the remaining factor becomes the preceding

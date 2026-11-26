@@ -281,6 +281,14 @@ namespace gtsam {
       return info_.aboveDiagonalRange(0, size(), size(), size() + 1);
     }
 
+    /** Add the linear and constant terms of a unary quadratic centered at
+     * displacement, given its cached precision G. The caller has already
+     * accumulated G into this variable's diagonal block. Adds G * displacement
+     * to the variable's linear term and displacement' * G * displacement to f.
+     */
+    void addUnaryPriorShift(const_iterator variable, const Matrix& precision,
+                            const Vector& displacement);
+
     /// Return underlying information matrix.
     const SymmetricBlockMatrix& info() const { return info_; }
 

@@ -199,6 +199,14 @@ namespace gtsam {
     */
     VectorValues solve(const VectorValues& parents) const;
 
+    /** Coefficients of the conditional mean, intercept + slope * parents.
+     * Rows and columns follow the frontal and parent key order, respectively.
+     * Supply an intercept vector (or column view) with R().rows() entries.
+     * The slope matrix is resized, with zero columns for a root conditional.
+     * Requires a nonsingular frontal block.
+     */
+    void affineMean(Eigen::Ref<Vector> intercept, Matrix& slope) const;
+
     VectorValues solveOtherRHS(const VectorValues& parents, const VectorValues& rhs) const;
 
     /** Performs transpose backsubstition in place on values */

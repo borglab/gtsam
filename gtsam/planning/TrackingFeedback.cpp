@@ -59,9 +59,10 @@ StageKeyMap buildStageKeyMap(const KeyVector& stateKeys,
   return keyMap;
 }
 
-GaussianConditional::shared_ptr eliminateControlStage(
-    const Matrix& A, const Matrix& B, HessianFactor& stage, double damping,
-    const HessianFactor& valueToGo, const HessianFactor* dynamicsCurvature) {
+/// Add the successor's quadratic cost in the stage ordering [control, state].
+static void accumulateSuccessorCost(
+    HessianFactor& stage, const Matrix& A, const Matrix& B,
+    const HessianFactor& valueToGo, const Matrix* dynamicsCurvature) {
   // Substitute the linearized transition into the separator factor on X(k+1).
   Matrix F(A.rows(), B.cols() + A.cols());
   F << B, A;
@@ -69,7 +70,21 @@ GaussianConditional::shared_ptr eliminateControlStage(
   stage.info().updateDiagonalBlockAt(0, (F.transpose() * projected).eval());
   stage.linearTerm().noalias() += F.transpose() * valueToGo.linearTerm();
   stage.constantTerm() += valueToGo.constantTerm();
-  if (dynamicsCurvature) dynamicsCurvature->updateHessian(&stage);
+  if (dynamicsCurvature) {
+    // Dynamics derivatives use [x, u]. The stage eliminates u first.
+    const auto n = A.cols(), m = B.cols();
+    stage.info().updateDiagonalBlock(
+        0, dynamicsCurvature->bottomRightCorner(m, m));
+    stage.info().updateOffDiagonalBlock(
+        0, 1, dynamicsCurvature->bottomLeftCorner(m, n));
+    stage.info().updateDiagonalBlock(1, dynamicsCurvature->topLeftCorner(n, n));
+  }
+}
+
+GaussianConditional::shared_ptr eliminateControlStage(
+    const Matrix& A, const Matrix& B, HessianFactor& stage, double damping,
+    const HessianFactor& valueToGo, const Matrix* dynamicsCurvature) {
+  accumulateSuccessorCost(stage, A, B, valueToGo, dynamicsCurvature);
   if (damping > 0.0)
     stage.info().addToDiagonalBlock(0, Vector::Constant(B.cols(), damping));
 
@@ -86,13 +101,7 @@ TrackingControlLaw solveConditionals(const GaussianBayesNet& policy) {
   TrackingControlLaw law{Matrix(controlDim, horizon),
                          std::vector<Matrix>(horizon)};
   for (size_t k = 0; k < horizon; ++k) {
-    const auto& conditional = *policy[k];
-    const auto R = conditional.R().triangularView<Eigen::Upper>();
-    auto feedforward = law.feedforward.col(k);
-    feedforward = conditional.d();
-    R.solveInPlace(feedforward);
-    law.gains[k] = -conditional.S();
-    R.solveInPlace(law.gains[k]);
+    policy[k]->affineMean(law.feedforward.col(k), law.gains[k]);
   }
   return law;
 }

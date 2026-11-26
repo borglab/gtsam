@@ -21,6 +21,16 @@ using namespace gtsam;
 using symbol_shorthand::U;
 using symbol_shorthand::X;
 
+// A candidate view writes to its own time columns in the packed batch.
+TEST(ControlBatch, TrajectoryView) {
+  ControlBatch batch{Matrix::Zero(2, 6), {}};
+  const Matrix controls{{1., 2.}, {3., 4.}};
+  controlTrajectory(batch.controls, 1, 2) = controls;
+  const auto& packed = batch.controls;
+  EXPECT(assert_equal(controls, Matrix(controlTrajectory(packed, 1, 2))));
+  EXPECT(packed.leftCols(2).isZero() && packed.rightCols(2).isZero());
+}
+
 // A field in the moving tangent basis of S² is evaluated again at each state.
 TEST(SamplingPlanner, SphereRollout) {
   const Unit3 start(1, 0, 0);

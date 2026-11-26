@@ -679,5 +679,21 @@ TEST(HessianFactor, updateHessianWithColumnRangeOnlyUpdatesSpecifiedBlocks) {
 }
 
 /* ************************************************************************* */
+// A shifted unary prior adds its linear and constant terms at the selected key.
+TEST(HessianFactor, AddUnaryPriorShift) {
+  const Matrix2 G{{2., 1.}, {1., 3.}};
+  const Vector2 mean{2., -1.};
+  HessianFactor joint(9, 4, Matrix1::Identity(), Matrix12::Zero(),
+                      Vector1{0.}, G, Vector2::Zero(), 2.);
+  joint.addUnaryPriorShift(joint.begin() + 1, G, mean);
+  const Vector2 x{1., 5.};
+  VectorValues values;
+  values.insert(9, Vector1{3.});
+  values.insert(4, x);
+  EXPECT_DOUBLES_EQUAL(0.5 * (9. + (x - mean).dot(G * (x - mean)) + 2.),
+                       joint.error(values), 1e-12);
+}
+
+/* ************************************************************************* */
 int main() { TestResult tr; return TestRegistry::runAllTests(tr);}
 /* ************************************************************************* */

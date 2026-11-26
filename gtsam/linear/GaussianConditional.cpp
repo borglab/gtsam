@@ -216,6 +216,17 @@ namespace gtsam {
   }
 
   /* ************************************************************************* */
+  void GaussianConditional::affineMean(Eigen::Ref<Vector> intercept,
+                                       Matrix& slope) const {
+    const auto triangular = R().triangularView<Eigen::Upper>();
+    if (intercept.size() != triangular.rows())
+      throw std::invalid_argument("Conditional intercept has the wrong dimension.");
+    intercept = d();
+    triangular.solveInPlace(intercept);
+    slope = -S();
+    if (slope.cols()) triangular.solveInPlace(slope);
+  }
+
   VectorValues GaussianConditional::solve(const VectorValues& x) const {
     // Concatenate all vector values that correspond to parent variables
     const Vector xS = x.vector(KeyVector(beginParents(), endParents()));

@@ -9,6 +9,7 @@
 #include <gtsam/base/Manifold.h>
 #include <gtsam/base/Matrix.h>
 #include <gtsam/base/OptionalJacobian.h>
+#include <gtsam/base/numericalDerivative.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
@@ -146,13 +147,13 @@ class ILQRTracking : public internal::TrackingProblem<State, Control> {
         Vector eps = Vector::Constant(n, 1e-5);
         if constexpr (std::is_same_v<State, Vector>)
           eps = 1e-5 * (1.0 + x.array().abs());
-        *Hx = centralJacobian(next, eps, [&](const Vector& dx) {
+        *Hx = numericalDerivativeAt(next, eps, [&](const Vector& dx) {
           return transition(traits<State>::Retract(x, dx), u);
         });
       }
       if (Hu) {
         const Vector eps = 1e-5 * (1.0 + u.array().abs());
-        *Hu = centralJacobian(
+        *Hu = numericalDerivativeAt(
             next, eps, [&](const Vector& du) { return transition(x, u + du); });
       }
       return next;
@@ -167,44 +168,14 @@ class ILQRTracking : public internal::TrackingProblem<State, Control> {
   Values optimize(const NonlinearFactorGraph& cost, const Values& initial,
                   const VectorField& vectorField, double dt, size_t iterations,
                   const Vector& lower = {}, const Vector& upper = {}) {
-    if (!vectorField || !std::isfinite(dt) || !(dt > 0.0))
-      throw std::invalid_argument(
-          "Expected a valid vector field and positive finite dt.");
-    const Transition discrete = [&vectorField, dt](const State& x,
-                                                   const Control& u) -> State {
-      const Vector xi = vectorField(x, u);
-      if (static_cast<size_t>(xi.size()) != traits<State>::GetDimension(x))
-        throw std::invalid_argument(
-            "Vector field returned the wrong tangent dimension.");
-      return traits<State>::Retract(x, dt * xi);
-    };
-    return optimize(cost, initial, discrete, iterations, lower, upper);
+    return optimize(cost, initial, Base::discretize(vectorField, dt),
+                    iterations, lower, upper);
   }
 
  private:
   /// Start regularization at 1e-4 and increase it tenfold on retries.
   static double increaseDamping(double damping) {
     return damping == 0.0 ? 1e-4 : 10.0 * damping;
-  }
-
-  /// Central-difference columns in tangent coordinates about the predicted
-  /// state.
-  template <class Perturb>
-  static Matrix centralJacobian(const State& next, const Vector& eps,
-                                const Perturb& perturb) {
-    Matrix J(traits<State>::GetDimension(next), eps.size());
-    Vector delta = Vector::Zero(eps.size());
-    for (Eigen::Index i = 0; i < eps.size(); ++i) {
-      delta[i] = eps[i];
-      const State plus = perturb(delta);
-      delta[i] = -eps[i];
-      const State minus = perturb(delta);
-      J.col(i) = (traits<State>::Local(next, plus) -
-                  traits<State>::Local(next, minus)) /
-                 (2.0 * eps[i]);
-      delta[i] = 0.0;
-    }
-    return J;
   }
 
   /// Linearize the transition and stage factors about the same nominal

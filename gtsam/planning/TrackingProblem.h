@@ -7,12 +7,14 @@
 #pragma once
 
 #include <gtsam/planning/CandidateScoring.h>
+#include <gtsam/planning/PlanningDynamics.h>
 #include <gtsam/planning/TrackingFeedback.h>
 
 #include <array>
 #include <cmath>
 #include <functional>
 #include <type_traits>
+#include <unordered_map>
 #include <utility>
 #include <vector>
 
@@ -69,6 +71,16 @@ class TrackingProblem {
       : stateKeys_(std::move(stateKeys)),
         controlKeys_(std::move(controlKeys)),
         keyMap_(buildStageKeyMap(stateKeys_, controlKeys_)) {}
+
+  /// Adapt a continuous vector field to the discrete transition used by a solve.
+  static Transition discretize(const VectorField& field, double dt) {
+    if (!field || !std::isfinite(dt) || !(dt > 0.0))
+      throw std::invalid_argument(
+          "Expected a valid vector field and positive finite dt.");
+    return [&field, dt](const State& state, const Control& control) {
+      return internal::nextState(field, state, control, dt);
+    };
+  }
 
   /// Collect the typed controls from the initial trajectory.
   Matrix initialControls(const Values& initial, const Vector& lower,
@@ -207,15 +219,16 @@ class TrackingObjective {
       quadratic_.stageFactors.emplace_back(KeyVector{us[k], xs[k]},
                                            std::move(info));
     }
+    PrecisionIndices indices;
     for (const auto& factor : graph) {
       if (!factor) continue;
       if (factor->size() == 1) {
         const auto it = stages.find(factor->front());
         if (it != stages.end()) {
           const auto [k, isControl] = it->second;
-          if (isControl ? cachePrior(*factor, k, 0, m, controlPriors_)
+          if (isControl ? cachePrior(*factor, k, 0, m, indices, controlPriors_)
                         : cachePrior(*factor, k, k < us.size() ? 1 : 0, n,
-                                     statePriors_))
+                                     indices, statePriors_))
             continue;
         }
       }
@@ -247,9 +260,11 @@ class TrackingObjective {
                                  const Matrix& controls) const {
     auto result = quadratic_;
     for (const auto& prior : statePriors_)
-      prior.recenter(states[prior.stage], stageFactor(result, prior.stage));
+      prior.recenter(states[prior.stage], precisions_[prior.precisionIndex],
+                     stageFactor(result, prior.stage));
     for (const auto& prior : controlPriors_)
       prior.recenter(Control(controls.col(prior.stage)),
+                     precisions_[prior.precisionIndex],
                      result.stageFactors[prior.stage]);
     if (nonlinear_.empty()) return result;
     const Values values = trajectoryValues(states, controls);
@@ -266,13 +281,12 @@ class TrackingObjective {
   struct QuadraticPrior {
     size_t stage, block;
     const T& mean;
-    Matrix precision;
+    size_t precisionIndex;
 
-    void recenter(const T& x, HessianFactor& joint) const {
-      const Vector delta = traits<T>::Local(x, mean);
-      const Vector eta = precision * delta;
-      joint.info().updateOffDiagonalBlock(block, joint.size(), eta);
-      joint.constantTerm() += delta.dot(eta);
+    void recenter(const T& x, const Matrix& precision,
+                  HessianFactor& joint) const {
+      joint.addUnaryPriorShift(joint.begin() + block, precision,
+                               traits<T>::Local(x, mean));
     }
   };
 
@@ -281,9 +295,12 @@ class TrackingObjective {
                                               : costs.stageFactors[stage];
   }
 
+  using PrecisionIndices =
+      std::unordered_map<const noiseModel::Gaussian*, size_t>;
+
   template <class T>
   bool cachePrior(const NonlinearFactor& factor, size_t stage, size_t block,
-                  Eigen::Index dimension,
+                  Eigen::Index dimension, PrecisionIndices& indices,
                   std::vector<QuadraticPrior<T>>& priors) {
     if constexpr (std::is_base_of_v<vector_space_tag,
                                     typename traits<T>::structure_category>) {
@@ -294,10 +311,14 @@ class TrackingObjective {
         if (model && !model->isConstrained() &&
             model->dim() == size_t(dimension) &&
             traits<T>::GetDimension(prior.prior()) == size_t(dimension)) {
-          priors.push_back({stage, block, prior.prior(), model->information()});
+          const auto [it, inserted] =
+              indices.try_emplace(model, precisions_.size());
+          if (inserted) precisions_.push_back(model->information());
+          const size_t index = it->second;
+          priors.push_back({stage, block, prior.prior(), index});
           stageFactor(quadratic_, stage)
               .info()
-              .updateDiagonalBlock(block, priors.back().precision);
+              .updateDiagonalBlock(block, precisions_[index]);
           return true;
         }
       }
@@ -329,6 +350,7 @@ class TrackingObjective {
   const KeyVector& controlKeys_;
   const StageKeyMap& stages_;
   TrajectoryCosts<State, Control> scoring_;
+  std::vector<Matrix> precisions_;  ///< One precision per shared Gaussian model.
   std::vector<QuadraticPrior<State>> statePriors_;
   std::vector<QuadraticPrior<Control>> controlPriors_;
   StageLinearizedCosts quadratic_;

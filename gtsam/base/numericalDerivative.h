@@ -161,6 +161,34 @@ typename Eigen::Matrix<double, N, 1> numericalGradient(double (&h)(const X&),
 }
 
 /**
+ * Differentiate a perturbation function about a known output on a manifold.
+ * perturb(dx) evaluates the function at an input displaced by tangent vector
+ * dx, and center is its value at zero. Each column uses two evaluations at
+ * the corresponding nonzero step size. Steps may have runtime dimension.
+ */
+template <class Y, class Steps, class Perturb>
+Eigen::Matrix<double, traits<Y>::dimension, Steps::RowsAtCompileTime>
+numericalDerivativeAt(const Y& center, const Eigen::MatrixBase<Steps>& steps,
+                      const Perturb& perturb) {
+  constexpr int N = Steps::RowsAtCompileTime;
+  static_assert(Steps::ColsAtCompileTime == 1, "Expected a vector of steps.");
+  Eigen::Matrix<double, traits<Y>::dimension, N> jacobian(
+      traits<Y>::GetDimension(center), steps.size());
+  using Tangent = Eigen::Matrix<double, N, 1>;
+  Tangent dx = Tangent::Zero(steps.size());
+  for (Eigen::Index j = 0; j < steps.size(); ++j) {
+    const double step = steps[j];
+    dx[j] = step;
+    const auto plus = traits<Y>::Local(center, perturb(dx));
+    dx[j] = -step;
+    const auto minus = traits<Y>::Local(center, perturb(dx));
+    jacobian.col(j) = (plus - minus) / (2.0 * step);
+    dx[j] = 0.;
+  }
+  return jacobian;
+}
+
+/**
  * @brief New-style numerical derivatives using manifold_traits
  * @brief Computes numerical derivative in argument 1 of unary function
  * @param h unary function yielding m-vector

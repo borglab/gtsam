@@ -93,18 +93,8 @@ class DDPTracking : public internal::TrackingProblem<State, Control> {
   Values optimize(const NonlinearFactorGraph& cost, const Values& initial,
                   const VectorField& vectorField, double dt, size_t iterations,
                   const Vector& lower = {}, const Vector& upper = {}) {
-    if (!vectorField || !std::isfinite(dt) || !(dt > 0.0))
-      throw std::invalid_argument(
-          "Expected a valid vector field and positive finite dt.");
-    const Transition discrete = [&vectorField, dt](const State& x,
-                                                   const Control& u) -> State {
-      const Vector xi = vectorField(x, u);
-      if (static_cast<size_t>(xi.size()) != traits<State>::GetDimension(x))
-        throw std::invalid_argument(
-            "Vector field returned the wrong tangent dimension.");
-      return traits<State>::Retract(x, dt * xi);
-    };
-    return optimize(cost, initial, discrete, iterations, lower, upper);
+    return optimize(cost, initial, Base::discretize(vectorField, dt),
+                    iterations, lower, upper);
   }
 
  private:
@@ -181,14 +171,9 @@ class DDPTracking : public internal::TrackingProblem<State, Control> {
               nominal.states[k], nominal.controls.col(k), nominal.states[k + 1],
               transition, -valueToGo.linearTerm());
           const auto n = dynamics.jacobian.rows(), m = nominal.controls.rows();
-          const auto& H = dynamics.curvature;
-          const HessianFactor curvature(
-              stage.front(), stage.back(), H.bottomRightCorner(m, m),
-              H.bottomLeftCorner(m, n), Vector::Zero(m), H.topLeftCorner(n, n),
-              Vector::Zero(n), 0.0);
           return internal::eliminateControlStage(
               dynamics.jacobian.leftCols(n), dynamics.jacobian.rightCols(m),
-              stage, damping, valueToGo, &curvature);
+              stage, damping, valueToGo, &dynamics.curvature);
         });
   }
 };
