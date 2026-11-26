@@ -133,10 +133,10 @@ TEST(TrackingFeedback, DDPFinalGainUndamped) {
     Vector2 dx = Vector2::Zero();
     dx[i] = eps;
     DDPTracking plus(q, r, terminal), minus(q, r, terminal);
-    const double uPlus =
-        plus.optimize(x0 + dx, targetStates, targetControls, pendulum, 50)(0, 0);
-    const double uMinus =
-        minus.optimize(x0 - dx, targetStates, targetControls, pendulum, 50)(0, 0);
+    const double uPlus = plus.optimize(x0 + dx, targetStates, targetControls,
+                                       pendulum, 50)(0, 0);
+    const double uMinus = minus.optimize(x0 - dx, targetStates, targetControls,
+                                         pendulum, 50)(0, 0);
     const double fd = (uPlus - uMinus) / (2 * eps);
     EXPECT_DOUBLES_EQUAL(fd, k0(0, i), 1e-3);
   }
@@ -152,12 +152,19 @@ const auto dynamics = [](const Vector1&, const Vector1& u) { return u; };
 const auto feedback = [](size_t, const Vector1& x, const Vector1& ref,
                          const Vector1&) { return Vector1(ref - x); };
 
+// Shared builders for the 2-step scalar tracking fixtures below.
+Planner makePlanner(double dt = 1.) { return Planner(states, inputs, dt); }
+MPPITracking makeTracking(size_t samples = 16) {
+  return MPPITracking(Matrix1::Identity(), samples, 1.);
+}
+
 Values initial(double start) {
   Values values;
   for (Key key : states) values.insert(key, Vector1{start});
   for (Key key : inputs) values.insert(key, Vector1{0.});
   return values;
 }
+
 NonlinearFactorGraph cost() {
   NonlinearFactorGraph graph;
   graph.addPrior(states.front(), Vector1{0.}, noiseModel::Unit::Create(1));
@@ -167,12 +174,16 @@ NonlinearFactorGraph cost() {
 // Tube uses the measured system when its baseline improves and otherwise tracks
 // the old tube.
 TEST(MPPITracking, Tube) {
-  Planner planner(states, inputs, 1.);
-  MPPITracking tracking(Matrix1::Identity(), 16, 1.);
+  const auto planner = makePlanner();
+  const auto tracking = makeTracking();
+
+  // Measured start (1) beats nominal (4) -> switches to candidate 0.
   auto result = tracking.tube(planner, cost(), initial(4.), initial(1.),
                               dynamics, feedback, 0., 1);
   EXPECT_LONGS_EQUAL(0, result.candidate);
   EXPECT(assert_equal(Vector1{1.}, result.nominal.at<Vector1>(0)));
+
+  // Nominal start (1) beats measured (4) -> keeps candidate 1 and tracks it.
   auto old = tracking.tube(planner, cost(), initial(1.), initial(4.), dynamics,
                            feedback, 0., 1);
   EXPECT_LONGS_EQUAL(1, old.candidate);
@@ -182,18 +193,20 @@ TEST(MPPITracking, Tube) {
 // Passing a non-Gaussian proposal through its base preserves both coupled
 // branches and advances the caller's proposal by one batch per iteration.
 TEST(MPPITracking, TubeReplaysDynamicGaussianType) {
-  Planner planner(states, inputs, 1.);
-  MPPITracking tracking(Matrix1::Identity(), 16, 1.);
+  const auto planner = makePlanner();
+  const auto tracking = makeTracking();
   NormalLognormalProposal heavyTails(Matrix1::Identity(), 7, 0.8, 42);
   const GaussianProposal& distribution = heavyTails;
   NormalLognormalProposal independent = heavyTails;
+
   auto result = tracking.tube(planner, cost(), initial(1.), initial(1.),
                               dynamics, feedback, distribution, -1., 2);
-  SamplingPlanner<Vector1, Vector1> openLoop(states, inputs, 1.);
   auto expected =
-      openLoop.optimize(cost(), initial(1.), dynamics, independent, MPPI(), 2);
+      planner.optimize(cost(), initial(1.), dynamics, independent, MPPI(), 2);
   EXPECT_LONGS_EQUAL(1, result.candidate);
   EXPECT(assert_equal(expected, result.nominal, 1e-10));
+
+  // Verify the caller's RNG stream advanced identically to the open-loop run.
   auto search = heavyTails.initialize(Matrix::Zero(1, 2));
   EXPECT(assert_equal(heavyTails.sample(search, {}, 1., false).controls,
                       independent.sample(search, {}, 1., false).controls));
@@ -216,9 +229,10 @@ struct ConditionedProposal : GaussianProposal {
 // Tube replay preserves a concrete proposal's sampling and update operations.
 // A context-dependent count mismatch would leave some innovations unpaired.
 TEST(MPPITracking, TubeCustomProposal) {
-  Planner planner(states, inputs, 1.);
-  MPPITracking tracking(Matrix1::Identity(), 4, 1.);
+  const auto planner = makePlanner();
+  const auto tracking = makeTracking(4);
   ConditionedProposal proposal(Matrix1::Identity(), 4);
+
   auto result = tracking.tube(planner, cost(), initial(0.), initial(0.),
                               dynamics, feedback, proposal, -1., 1);
   for (Key key : inputs)
@@ -243,16 +257,18 @@ struct StateFeedbackProposal : GaussianProposal {
 // Tube realizes a policy from each branch's state. Robust reuses controls
 // realized on the nominal path for the actual trajectory's feedforward term.
 TEST(MPPITracking, StateFeedbackProposal) {
-  Planner planner(states, inputs, 1.);
-  MPPITracking tracking(Matrix1::Identity(), 4, 1.);
+  const auto planner = makePlanner();
+  const auto tracking = makeTracking(4);
   StateFeedbackProposal proposal(Matrix1::Identity(), 1);
   const auto zeroFeedback = [](size_t, const Vector1&, const Vector1&,
                                const Vector1&) { return Vector1::Zero(); };
+
   auto tube = tracking.tube(planner, cost(), initial(2.), initial(4.), dynamics,
                             zeroFeedback, proposal, 20., 1);
   EXPECT_LONGS_EQUAL(0, tube.candidate);
   EXPECT(assert_equal(Vector1{-2.}, tube.nominal.at<Vector1>(inputs[0])));
   EXPECT(assert_equal(Vector1{-1.}, tube.nominal.at<Vector1>(inputs[1])));
+
   auto robust =
       tracking.robust(planner, cost(), initial(2.), initial(4.), dynamics,
                       zeroFeedback, proposal, 1., 3, 0, 1, Matrix1::Zero());
@@ -265,27 +281,28 @@ TEST(MPPITracking, StateFeedbackProposal) {
 // Derivative-coordinate batches retain their native state across Tube
 // iterations.
 TEST(MPPITracking, TubeSmoothProposal) {
-  Planner planner(states, inputs, 0.2);
-  MPPITracking tracking(Matrix1::Identity(), 16, 1.);
+  const auto planner = makePlanner(0.2);
+  const auto tracking = makeTracking();
   SmoothControlProposal smooth(Matrix1::Identity(), 8, 37);
   SmoothControlProposal independent = smooth;
+
   auto result = tracking.tube(planner, cost(), initial(0.), initial(0.),
                               dynamics, feedback, smooth, -1., 3);
-  SamplingPlanner<Vector1, Vector1> openLoop(states, inputs, .2);
   auto expected =
-      openLoop.optimize(cost(), initial(0.), dynamics, independent, MPPI(), 3);
+      planner.optimize(cost(), initial(0.), dynamics, independent, MPPI(), 3);
   EXPECT(assert_equal(expected, result.nominal, 1e-10));
 }
 
 TEST(MPPITracking, Robust) {
-  Planner planner(states, inputs, 1.);
-  MPPITracking tracking(Matrix1::Identity(), 16, 1.);
+  const auto planner = makePlanner();
+  const auto tracking = makeTracking();
   Values previous = initial(0.);
   previous.update(1, Vector1{1.});
+
+  // Candidate starts are 0, 0.5, 1, 2, 3; the last free energy < 1 is at 1.
   auto result =
       tracking.robust(planner, cost(), previous, initial(3.), dynamics,
                       feedback, 1., 5, 1, 2, Matrix1::Identity());
-  // Candidate starts are 0, 0.5, 1, 2, 3. The last free energy below 1 is at 1.
   EXPECT_LONGS_EQUAL(2, result.candidate);
   EXPECT(assert_equal(Vector1{1.}, result.nominal.at<Vector1>(0)));
   EXPECT(assert_equal(Vector1{3.}, result.actual.at<Vector1>(0)));
@@ -297,16 +314,18 @@ TEST(MPPITracking, Robust) {
 
 // An unsafe best primitive activates the caller-specified stopping trajectory.
 TEST(MPPITracking, Primitives) {
-  Planner planner(states, inputs, 1.);
-  MPPITracking tracking(Matrix1::Identity(), 16, 1.);
+  const auto planner = makePlanner();
+  const auto tracking = makeTracking();
+
+  // High cost exceeds stopThreshold -> returns the stopping controls.
   auto result =
       tracking.primitives(planner, cost(), initial(4.), initial(4.), dynamics,
                           1, 2., 0., 2, 1, 1., Matrix::Zero(1, 2));
   EXPECT_LONGS_EQUAL(1, result.candidate);
   EXPECT(assert_equal(Vector1{0.}, result.nominal.at<Vector1>(3)));
   EXPECT(assert_equal(Vector1{0.}, result.nominal.at<Vector1>(4)));
-  // Both baseline costs are identical; positive hysteresis selects colored
-  // MPPI.
+
+  // Equal baselines with positive hysteresis favor colored MPPI (candidate 0).
   result = tracking.primitives(planner, cost(), initial(0.), initial(0.),
                                dynamics, 1, 2., 0.1, 1, 1, 0., {});
   EXPECT_LONGS_EQUAL(0, result.candidate);
@@ -315,9 +334,10 @@ TEST(MPPITracking, Primitives) {
 
 // A stopping command takes priority over the filter used for normal planning.
 TEST(MPPITracking, StopWithSmoothing) {
-  Planner planner(states, inputs, 1.);
-  MPPITracking tracking(Matrix1::Identity(), 4, 1.);
+  const auto planner = makePlanner();
+  auto tracking = makeTracking(4);
   tracking.setControlHistory(Matrix{{10., 10.}});
+
   const auto result =
       tracking.primitives(planner, cost(), initial(4.), initial(4.), dynamics,
                           1, 0., 0., 1, 1, 1., Matrix::Zero(1, 2));
@@ -330,13 +350,14 @@ TEST(MPPITracking, StopWithSmoothing) {
 
 // If every sample is infeasible, return the supplied stop in both branches.
 TEST(MPPITracking, StopWithInfiniteCosts) {
-  Planner planner(states, inputs, 1.);
-  MPPITracking tracking(Matrix1::Identity(), 4, 1.);
+  const auto planner = makePlanner();
+  const auto tracking = makeTracking(4);
   auto infeasible = cost();
   infeasible.addPrior(states.front(), Vector1{1e200},
                       noiseModel::Unit::Create(1));
   const auto start = initial(0.);
   EXPECT(std::isinf(infeasible.error(start)));
+
   try {
     const auto result =
         tracking.primitives(planner, infeasible, start, start, dynamics, 1, 0.,

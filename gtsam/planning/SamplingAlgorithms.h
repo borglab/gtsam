@@ -83,7 +83,8 @@ class GTSAM_EXPORT PredictiveSampling : public SamplingAlgorithm {
   bool includesIncumbent() const override { return true; }
   /// Return a one-hot vector selecting the first minimum-cost sequence.
   Vector weights(const Vector& costs) const;
-  Vector computeWeights(const Vector& costs, const Vector& = {}) const override {
+  Vector computeWeights(const Vector& costs,
+                        const Vector& = {}) const override {
     return weights(costs);
   }
 };
@@ -98,7 +99,8 @@ class GTSAM_EXPORT CEM : public SamplingAlgorithm {
   double minStddev() const override { return minStddev_; }
   /// Return uniform weights on the lowest-cost finite elites.
   Vector weights(const Vector& costs) const;
-  Vector computeWeights(const Vector& costs, const Vector& = {}) const override {
+  Vector computeWeights(const Vector& costs,
+                        const Vector& = {}) const override {
     return weights(costs);
   }
 

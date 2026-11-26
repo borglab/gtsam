@@ -8,14 +8,19 @@
 #include <gtsam/planning/MPPITracking.h>
 
 namespace gtsam {
+
 Matrix smoothControlTrajectory(const Matrix& controls, const Matrix& history) {
   if (!controls.rows() || !controls.cols() || !controls.allFinite() ||
       history.rows() != controls.rows() || history.cols() != 2 ||
       !history.allFinite())
     throw std::invalid_argument(
         "Expected a trajectory and its two preceding controls.");
+
+  // Pad left with the two preceding controls and right by repeating the end.
   Matrix extended(controls.rows(), controls.cols() + 4);
   extended << history, controls, controls.rightCols(1), controls.rightCols(1);
+
+  // Convolve each step with the 5-point quadratic Savitzky-Golay kernel.
   const Vector5 coefficients = Vector5{-3., 12., 17., 12., -3.} / 35.;
   Matrix smoothed(controls.rows(), controls.cols());
   for (Eigen::Index k = 0; k < controls.cols(); ++k)
@@ -30,12 +35,16 @@ TsallisMPPI::TsallisMPPI(double cutoff, double shape, double inverseTemperature)
     throw std::invalid_argument(
         "Tsallis MPPI requires a positive cutoff and r > 1.");
 }
+
 Vector TsallisMPPI::weights(const Vector& costs) const {
   if (!costs.size() || costs.hasNaN() || !std::isfinite(costs.minCoeff()))
     throw std::domain_error("Expected a finite minimum trajectory cost.");
+
+  // Truncate costs beyond min + cutoff to zero before normalizing.
   Vector weights = (1.0 - (costs.array() - costs.minCoeff()) / cutoff_)
                        .max(0.0)
                        .pow(1.0 / (shape_ - 1.0));
   return weights / weights.sum();
 }
+
 }  // namespace gtsam

@@ -26,7 +26,8 @@ class GTSAM_EXPORT EliteMPPI : public SamplingAlgorithm {
   /// Normalized Boltzmann weights restricted to the elites ranked by trajectory
   /// cost.
   Vector weights(const Vector& costs) const;
-  Vector computeWeights(const Vector& costs, const Vector& = {}) const override {
+  Vector computeWeights(const Vector& costs,
+                        const Vector& = {}) const override {
     return weights(costs);
   }
 

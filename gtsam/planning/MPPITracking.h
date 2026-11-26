@@ -35,7 +35,8 @@ class GTSAM_EXPORT TsallisMPPI : public SamplingAlgorithm {
                         const Vector& logWeightOffsets = {}) const override {
     if (logWeightOffsets.size() && logWeightOffsets.size() != costs.size())
       throw std::invalid_argument("Expected one log offset per trajectory.");
-    if (logWeightOffsets.size()) return weights(costs - logWeightOffsets / beta_);
+    if (logWeightOffsets.size())
+      return weights(costs - logWeightOffsets / beta_);
     return weights(costs);
   }
 
@@ -55,9 +56,9 @@ struct MPPIPlans {
 
 /**
  * Sampling configuration and random streams for MPPI-Generic tracking (ACDSLab,
- * revision abcd1ab). Each operation takes an existing SamplingPlanner. The caller carries
- * nominal/actual plans between measurement times. Graph error determines
- * trajectory cost, including factors on nonadjacent time steps.
+ * revision abcd1ab). Each operation takes an existing SamplingPlanner. The
+ * caller carries nominal/actual plans between measurement times. Graph error
+ * determines trajectory cost, including factors on nonadjacent time steps.
  */
 class GTSAM_EXPORT MPPITracking {
  public:

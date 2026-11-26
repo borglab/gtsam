@@ -109,8 +109,8 @@ Matrix GaussianProposal::drawControls(const State& state,
       state.stddev.cols() != horizon || !state.stddev.allFinite() ||
       (state.stddev.array() < 0.).any())
     throw std::invalid_argument("Proposal state has inconsistent dimensions.");
-  // Use the original sampler directly for a fixed Gaussian. This preserves
-  // seeded controls bit for bit and avoids normalizing and rescaling each draw.
+
+  // Fast path: fixed white Gaussian preserves seeded draws bit for bit.
   if (typeid(*this) == typeid(GaussianProposal) && options_.decay == 1.0 &&
       options_.zeroMeanFraction == 0.0 &&
       (state.stddev.colwise() - initialStddev_).isZero(0.0)) {
@@ -119,11 +119,15 @@ Matrix GaussianProposal::drawControls(const State& state,
       controls.leftCols(horizon) = state.mean;
     return controls;
   }
+
+  // Draw unit-marginal noise and verify batch shape.
   Matrix controls = drawNoise(horizon);
   if (controls.rows() != state.mean.rows() ||
       controls.cols() != count * horizon)
     throw std::invalid_argument(
         "Noise draws must match the control dimension and batch size.");
+
+  // Apply decayed per-step spread and center the non-zero-mean fraction.
   const Matrix scale = state.stddev * std::pow(options_.decay, state.iteration);
   const double meanCutoff =
       (1.0 - options_.zeroMeanFraction) * static_cast<double>(count);
@@ -132,6 +136,8 @@ Matrix GaussianProposal::drawControls(const State& state,
     sample.array() *= scale.array();
     if (static_cast<double>(j) < meanCutoff) sample += state.mean;
   }
+
+  // Reserve candidate 0 for the nominal plan when requested.
   if (includeIncumbent || options_.includeNominal)
     controls.leftCols(horizon) = state.mean;
   return controls;
@@ -198,12 +204,16 @@ ColoredNoiseProposal::ColoredNoiseProposal(const Matrix& covariance,
 Matrix ColoredNoiseProposal::drawNoise(Eigen::Index horizon) const {
   Matrix noise = GaussianProposal::drawNoise(horizon);
   if (horizon == 1 || exponent_ == 0) return noise;
+
+  // Build 1/f^(exponent/2) amplitude weights normalized to unit marginal power.
   Vector gain(horizon);
   for (Eigen::Index k = 0; k < horizon; ++k) {
     const auto frequency = std::max<Eigen::Index>(1, std::min(k, horizon - k));
     gain[k] = std::pow(frequency, -0.5 * exponent_);
   }
   gain *= std::sqrt(static_cast<double>(horizon) / gain.squaredNorm());
+
+  // Shape each candidate channel independently in the frequency domain.
   Eigen::FFT<double> fft;
   Eigen::VectorXcd spectrum;
   Vector series(horizon);
@@ -295,12 +305,14 @@ ControlBatch PiecewiseLinearProposal::sampleImpl(const State& state,
                                                  bool incumbent) const {
   if (!mixture_)
     return GaussianProposal::sampleImpl(state, initial, dt, incumbent);
+
   const auto& p = *mixture_;
   if (!state.stddev.size()) {
     auto initialized = initialize(state.mean);
     initialized.iteration = state.iteration;
     return sampleImpl(initialized, initial, dt, incumbent);
   }
+
   const Eigen::Index horizon = state.mean.cols(),
                      count = static_cast<Eigen::Index>(noise_.numSamples());
   if (!horizon || state.mean.rows() != p.amplitude.size() ||
@@ -309,29 +321,38 @@ ControlBatch PiecewiseLinearProposal::sampleImpl(const State& state,
       p.fixedPrefix > static_cast<size_t>(horizon))
     throw std::invalid_argument(
         "Invalid motion primitive horizon or fixed prefix.");
+
   const auto prefix = static_cast<Eigen::Index>(p.fixedPrefix);
   const double horizonD = static_cast<double>(horizon);
   const double countD = static_cast<double>(count);
   Matrix controls(state.mean.rows(), count * horizon);
+
+  // Pre-generate colored perturbations only when that mixture slice is active.
   Matrix colored;
   if (p.coloredFraction > 0) colored = ColoredNoiseProposal::drawNoise(horizon);
   std::poisson_distribution<size_t> switches(0.5 *
                                              static_cast<double>(segments_));
   std::uniform_real_distribution<double> uniform(0., 1.);
+
   for (Eigen::Index j = 0; j < count; ++j) {
     auto sample = controls.middleCols(j * horizon, horizon);
     if (j == 0) {
+      // Slot 0 always preserves the incumbent trajectory.
       sample = state.mean;
     } else if (j == 1) {
+      // Slot 1 reserves an all-zero braking/idle primitive.
       sample.setZero();
     } else if (static_cast<double>(j) < p.coloredFraction * countD) {
+      // Colored perturbations around the incumbent.
       sample = state.mean.array() +
                p.coloredScale * state.stddev.array() *
                    colored.middleCols(j * horizon, horizon).array();
     } else {
+      // Bounded piecewise-linear primitives (either shifted or absolute).
       const bool shifted = static_cast<double>(j) <
                            (p.coloredFraction + p.shiftedFraction) * countD;
       for (Eigen::Index row = 0; row < sample.rows(); ++row) {
+        // Sample sorted interior switch times in (start, 1).
         const size_t knots = std::min(segments_, switches(knotGenerator_));
         const double start = static_cast<double>(prefix) / horizonD;
         std::vector<double> times{start};
@@ -341,6 +362,8 @@ ControlBatch PiecewiseLinearProposal::sampleImpl(const State& state,
         }
         std::sort(times.begin(), times.end());
         times.push_back(1.);
+
+        // Interpolate uniform knot values across each time segment.
         auto level = [&] {
           return p.amplitude[row] * (2 * uniform(knotGenerator_) - 1);
         };
@@ -364,8 +387,10 @@ ControlBatch PiecewiseLinearProposal::sampleImpl(const State& state,
         }
       }
     }
+    // Lock the requested prefix to the incumbent controls.
     sample.leftCols(prefix) = state.mean.leftCols(prefix);
   }
+
   Vector offsets = logWeightOffsets(state, controls);
   return {std::move(controls), std::move(offsets)};
 }
@@ -373,6 +398,8 @@ ControlBatch PiecewiseLinearProposal::sampleImpl(const State& state,
 Matrix PiecewiseLinearProposal::drawNoise(Eigen::Index horizon) const {
   Matrix noise = GaussianProposal::drawNoise(horizon);
   if (static_cast<size_t>(horizon - 1) <= segments_) return noise;
+
+  // Pick random interior knots per candidate and linearly interpolate noise.
   std::vector<Eigen::Index> interior(horizon - 2);
   for (Eigen::Index j = 0; j < noise.cols(); j += horizon) {
     std::iota(interior.begin(), interior.end(), 1);

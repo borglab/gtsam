@@ -51,7 +51,8 @@ void bindPythonDynamics(py::class_<Planner, std::shared_ptr<Planner>>& cls) {
       .def("rolloutAndScore", &Planner::template rolloutAndScore<Dynamics>,
            py::arg("cost"), py::arg("initial"), py::arg("controls"),
            py::arg("dynamics"), Release());
-  // Colored, normal-lognormal, and piecewise-linear proposals use GaussianProposal.
+  // Colored, normal-lognormal, and piecewise-linear proposals use
+  // GaussianProposal.
   bindSearch<Dynamics, GaussianProposal>(cls);
   bindSearch<Dynamics, SmoothControlProposal>(cls);
 }
@@ -125,7 +126,8 @@ void bindTrackingCallbacks(py::module_& module) {
            py::arg("stopThreshold"), py::arg("stoppingControls"),
            py::arg("tsallisCutoff") = 0.0, py::arg("tsallisShape") = 2.0,
            py::arg("mixture") = MotionPrimitiveOptions{}, Release());
-  // Colored, normal-lognormal, and piecewise-linear proposals use GaussianProposal.
+  // Colored, normal-lognormal, and piecewise-linear proposals use
+  // GaussianProposal.
   bindTrackingProposal<State, Dynamics, Feedback, GaussianProposal>(cls);
   bindTrackingProposal<State, Dynamics, Feedback, SmoothControlProposal>(cls);
 }

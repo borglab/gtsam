@@ -16,6 +16,7 @@ EliteMPPI::EliteMPPI(size_t elites, double inverseTemperature, double minStddev)
       minStddev_(minStddev) {}
 
 Vector EliteMPPI::weights(const Vector& costs) const {
+  // Mask non-elite candidates to +infinity before Boltzmann weighting.
   const Vector elites = selection_.weights(costs);
   const Vector masked =
       (elites.array() > 0.)

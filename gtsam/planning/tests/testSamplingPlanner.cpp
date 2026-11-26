@@ -305,18 +305,31 @@ TEST(SamplingPlanner, CandidateScoringThreadAffinity) {
 /* ************************************************************************* */
 namespace configurable_proposals {
 
+// Shared 2-step scalar integrator helpers to avoid repeating test setup.
+const auto integrator = [](const Vector1&, const Vector1& u) { return u; };
+
+Values integratorValues(double x0, double u0 = 0., double u1 = 0.) {
+  Values values;
+  values.insert(X(0), Vector1{x0});
+  values.insert(U(0), Vector1{u0});
+  values.insert(U(1), Vector1{u1});
+  return values;
+}
+
+NonlinearFactorGraph terminalPriorGraph(double target) {
+  NonlinearFactorGraph graph;
+  graph.addPrior(X(2), Vector1{target}, noiseModel::Unit::Create(1));
+  return graph;
+}
+
 // Repeated iterate calls and optimize use the same draws, retained state and
 // manifold rollout for each supported proposal and search pairing.
 TEST(SamplingPlanner, IndependentProposalsAndAlgorithms) {
   const SamplingPlanner<Vector1, Vector1> planner({X(0), X(1), X(2)},
                                                   {U(0), U(1)}, 0.5);
-  Values initial;
-  initial.insert(X(0), Vector1{0.});
-  initial.insert(U(0), Vector1{0.});
-  initial.insert(U(1), Vector1{0.});
-  NonlinearFactorGraph graph;
-  graph.addPrior(X(2), Vector1{1.}, noiseModel::Unit::Create(1));
-  const auto dynamics = [](const Vector1&, const Vector1& u) { return u; };
+  const Values initial = integratorValues(0.);
+  const NonlinearFactorGraph graph = terminalPriorGraph(1.);
+  const auto& dynamics = integrator;
   const auto compare = [&](auto proposal, const auto& algorithm) {
     auto sameSeed = proposal;
     const auto plan =
@@ -507,14 +520,9 @@ TEST(SamplingPlanner, FeedbackCandidate) {
   FeedbackProposal proposal(Matrix1::Identity(), 2);
   const SamplingPlanner<Vector1, Vector1> planner({X(0), X(1), X(2)},
                                                   {U(0), U(1)}, 1.);
-  Values initial;
-  initial.insert(X(0), Vector1{4.});
-  initial.insert(U(0), Vector1{0.});
-  initial.insert(U(1), Vector1{0.});
-  NonlinearFactorGraph graph;
-  graph.addPrior(X(2), Vector1{0.}, noiseModel::Unit::Create(1));
-  const auto dynamics = [](const Vector1&, const Vector1& u) { return u; };
-  const auto plan = planner.optimize(graph, initial, dynamics, proposal,
+  const Values initial = integratorValues(4.);
+  const NonlinearFactorGraph graph = terminalPriorGraph(0.);
+  const auto plan = planner.optimize(graph, initial, integrator, proposal,
                                      PredictiveSampling(), 1);
   EXPECT(assert_equal(Vector1{-2.}, plan.at<Vector1>(U(0))));
   EXPECT(assert_equal(Vector1{-1.}, plan.at<Vector1>(U(1))));

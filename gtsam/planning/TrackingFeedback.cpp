@@ -42,6 +42,7 @@ Sweep backward(const Matrix& states, const Matrix& controls, const Matrix& goal,
   Vector gradient = terminal * (states.col(h) - goal.col(h));
   Matrix curvature = terminal;
   Sweep sweep{Matrix::Zero(m, h), std::vector<Matrix>(h)};
+
   for (Eigen::Index k = h - 1; k >= 0; --k) {
     Vector z(d);
     z << states.col(k), controls.col(k);
@@ -52,6 +53,8 @@ Sweep backward(const Matrix& states, const Matrix& controls, const Matrix& goal,
         throw std::domain_error("Invalid DDP transition.");
       return next;
     };
+
+    // Central-difference Jacobian and value-gradient Hessian contraction.
     const Vector center = states.col(k + 1);
     Matrix jacobian(n, d), hessian = Matrix::Zero(d, d);
     for (Eigen::Index i = 0; i < d; ++i) {
@@ -70,12 +73,16 @@ Sweep backward(const Matrix& states, const Matrix& controls, const Matrix& goal,
             gradient.dot(mixed) / (4 * delta[i] * delta[j]);
       }
     }
+
+    // Assemble the local quadratic Q-function at step k.
     hessian += jacobian.transpose() * curvature * jacobian;
     hessian.topLeftCorner(n, n) += q;
     hessian.bottomRightCorner(m, m) += r;
     Vector first = jacobian.transpose() * gradient;
     first.head(n) += q * (states.col(k) - goal.col(k));
     first.tail(m) += r * (controls.col(k) - reference.col(k));
+
+    // Factor damped Q_uu and solve for feedback gain and feedforward step.
     Matrix uu = hessian.bottomRightCorner(m, m);
     uu.diagonal().array() += damping;
     Eigen::LLT<Matrix> factor(uu);
@@ -83,6 +90,8 @@ Sweep backward(const Matrix& states, const Matrix& controls, const Matrix& goal,
     const Matrix ux = hessian.bottomLeftCorner(m, n);
     Matrix gain = factor.solve(-ux);
     Vector du = factor.solve(-first.tail(m));
+
+    // Back up value gradient and symmetrized curvature to step k.
     gradient = first.head(n) + gain.transpose() * first.tail(m) +
                ux.transpose() * du +
                gain.transpose() * hessian.bottomRightCorner(m, m) * du;
@@ -174,20 +183,30 @@ Matrix DDPTracking::optimize(const Vector& initial, const Matrix& targetStates,
            ((dx.array() * (q_ * dx).array()).sum() +
             (du.array() * (r_ * du).array()).sum() + end.dot(terminal_ * end));
   };
+  // Evaluate the initial clamped nominal trajectory.
   Matrix states = rollout(controls, {}, nullptr, 0);
   if (!states.allFinite())
     throw std::domain_error("Nonfinite initial DDP rollout.");
   double objective = cost(states, controls), damping = 1e-9;
-  for (size_t i = 0;; ++i) {
+
+  // Run a damped backward sweep, increasing regularization until Q_uu is PD.
+  auto solveBackward = [&](double& reg) {  // NOLINT
     auto sweep = backward(states, controls, targetStates, targetControls,
-                          transition, q_, r_, terminal_, damping);
-    while (sweep.gains.empty() && damping < 1e12) {
-      damping = std::max(1e-6, 10 * damping);
+                          transition, q_, r_, terminal_, reg);
+    while (sweep.gains.empty() && reg < 1e12) {
+      reg = std::max(1e-6, 10 * reg);
       sweep = backward(states, controls, targetStates, targetControls,
-                       transition, q_, r_, terminal_, damping);
+                       transition, q_, r_, terminal_, reg);
     }
+    return sweep;
+  };
+
+  for (size_t i = 0;; ++i) {
+    auto sweep = solveBackward(damping);
     if (sweep.gains.empty())
       throw std::domain_error("DDP control Hessian remained indefinite.");
+
+    // Backtracking line search along the feedforward/feedback policy.
     bool accepted = false;
     if (i < iterations && sweep.feedforward.norm() > 1e-10) {
       for (double alpha = 1; alpha >= 1. / 128; alpha *= 0.5) {
@@ -204,17 +223,13 @@ Matrix DDPTracking::optimize(const Vector& initial, const Matrix& targetStates,
         }
       }
     }
+
     if (!accepted) {
+      // Recompute final gains from minimum damping so they are not biased by
+      // leftover Levenberg regularization from earlier iterations.
       if (damping > 1e-9) {
         double finalDamping = 1e-9;
-        auto finalSweep = backward(states, controls, targetStates,
-                                   targetControls, transition, q_, r_,
-                                   terminal_, finalDamping);
-        while (finalSweep.gains.empty() && finalDamping < 1e12) {
-          finalDamping = std::max(1e-6, 10 * finalDamping);
-          finalSweep = backward(states, controls, targetStates, targetControls,
-                                transition, q_, r_, terminal_, finalDamping);
-        }
+        auto finalSweep = solveBackward(finalDamping);
         if (!finalSweep.gains.empty()) sweep = std::move(finalSweep);
       }
       states_ = std::move(states);

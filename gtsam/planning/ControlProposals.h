@@ -25,7 +25,7 @@ struct ControlBatch {
 
 /// Gaussian proposal state for one solve.
 struct ControlDistribution {
-  Matrix mean;  ///< Nominal physical controls.
+  Matrix mean;      ///< Nominal physical controls.
   Matrix stddev{};  ///< Marginal spread per coordinate and time.
   size_t iteration = 0;
 };
@@ -48,7 +48,8 @@ class GTSAM_EXPORT GaussianProposal {
 
   /// Continue drawing from an existing sampler at its current RNG position.
   explicit GaussianProposal(GaussianNoiseSampler sampler)
-      : noise_(std::move(sampler)), initialStddev_(noise_.standardDeviations()) {}
+      : noise_(std::move(sampler)),
+        initialStddev_(noise_.standardDeviations()) {}
 
   const GaussianNoiseSampler& sampler() const { return noise_; }
 
