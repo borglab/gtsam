@@ -278,10 +278,14 @@ auto plans = tracking.tube(planner, graph, nominal, actual, dynamics, feedback,
                           proposal, threshold, iterations);
 ```
 
-`DDPTracking` computes time-varying feedback gains from a discrete
-Euclidean transition and quadratic tracking costs. `contractionFeedback`
-computes a minimum-norm control correction for a constant contraction
-metric. The [tracking API](../TrackingFeedback.h) and [controller API](../MPPITracking.h)
+`ILQRTracking<M>` and `DDPTracking<M>` compute time-varying tangent-space
+feedback gains on any GTSAM `Manifold` `M` (defaulting to `Vector`) from a
+discrete transition, an analytic `OptionalJacobian` transition, or a
+continuous-time `(vectorField, dt)` model; `ILQRTracking` eliminates each
+stage via `HessianFactor::eliminateCholesky`. `contractionFeedback` computes
+a minimum-norm control correction for a constant contraction metric. The
+[iLQR API](../ILQRTracking.h), [DDP API](../DDPTracking.h),
+[tracking API](../TrackingFeedback.h), and [controller API](../MPPITracking.h)
 give the input conventions.
 
 Two utilities expose the cost and filtering conventions used by these controllers.
