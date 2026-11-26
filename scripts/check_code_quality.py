@@ -148,6 +148,11 @@ def check_source(path, source):
                     "Stable code cannot include gtsam_unstable. Move reusable "
                     "functionality into gtsam or keep the caller experimental."
                 )
+            elif check_modules and "tests" in PurePosixPath(include).parts:
+                message = (
+                    "Library code cannot include tests/ headers. Only tests "
+                    "and timing benchmarks may reuse headers under tests/."
+                )
             elif check_modules:
                 message = check_module_include(path, include, module, allowed)
         elif identifier == "GTSAM_UNSTABLE_EXPORT" and stable:

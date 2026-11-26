@@ -203,6 +203,11 @@ algorithms in the library and use examples to demonstrate their use.
   [numericalDerivative.h](gtsam/base/numericalDerivative.h),
   [chartTesting.h](gtsam/base/chartTesting.h), and
   [factorTesting.h](gtsam/nonlinear/factorTesting.h) where applicable.
+- Shared test fixtures, reference baselines, and synthetic scenarios reused
+  across unit tests and `timing/` benchmarks belong in headers under the owning
+  module's `tests/` directory (for example,
+  `gtsam/planning/tests/ReferenceDDPTracking.h`). Both `tests/` and `timing/`
+  may include `tests/` headers; library code must not.
 
 ## Automated quality checks
 
