@@ -51,6 +51,7 @@ project:
         children:
         - file: ./gtsam/planning/doc/SamplingPlanner.ipynb
         - file: ./gtsam/planning/doc/SamplingSearch.ipynb
+        - file: ./gtsam/planning/doc/MPPITracking.ipynb
         - file: ./gtsam/planning/doc/MPPI.ipynb
         - file: ./gtsam_unstable/planning/README.md
           title: Dynamics factors (unstable)
@@ -108,6 +109,9 @@ project:
         - file: ./python/gtsam_unstable/examples/planning/PointMassMPPITrajectoryOptimizationExample.ipynb
         - file: ./python/gtsam_unstable/examples/planning/UnicycleMPPITrajectoryOptimizationExample.ipynb
         - file: ./python/gtsam_unstable/examples/planning/UnicycleMPPIMPCExample.ipynb
+        - file: ./python/gtsam_unstable/examples/planning/CartPoleMPPI.ipynb
+        - file: ./python/gtsam_unstable/examples/planning/DoubleIntegratorCoRL.ipynb
+        - file: ./python/gtsam_unstable/examples/planning/DoubleIntegratorMPPI.ipynb
         - file: ./python/gtsam_unstable/examples/planning/SamplingPlannerLQR.ipynb
         - file: ./python/gtsam_unstable/examples/planning/UnicycleSamplingExample.ipynb
       - title: Structure from Motion

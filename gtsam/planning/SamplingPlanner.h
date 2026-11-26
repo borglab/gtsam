@@ -73,6 +73,17 @@ State nextState(const DiscreteTransition<Step>& model, const State& state,
   return model.step(state, control);
 }
 
+/// Dispatch includeIncumbent dynamically for SamplingAlgorithm subclasses and
+/// statically for custom duck-typed C++ rules.
+template <class Algorithm>
+bool algorithmIncludesIncumbent(const Algorithm& algorithm) {
+  if constexpr (std::is_base_of_v<SamplingAlgorithm, Algorithm>) {
+    return algorithm.includesIncumbent();
+  } else {
+    return Algorithm::includeIncumbent;
+  }
+}
+
 }  // namespace internal
 
 /**
@@ -129,6 +140,15 @@ class SamplingPlanner {
     Values result = initial;
     writeRollout(result, states, controls);
     return result;
+  }
+
+  /// Roll out a feedback policy policy(k, x) from the measured initial state.
+  template <class Policy, class VectorField>
+  Values rolloutPolicy(const Values& initial, const Policy& policy,
+                       const VectorField& field) const {
+    Values values = initial;
+    rolloutPolicyInPlace(values, policy, field);
+    return values;
   }
 
   /// Extract the nominal controls from initial in horizon order.
@@ -188,6 +208,32 @@ class SamplingPlanner {
   }
 
  private:
+  friend class MPPITracking;
+
+  /// Realize one proposal candidate, recording controls produced by feedback.
+  template <class Batch, class VectorField>
+  void rolloutCandidateInPlace(Values& values, Batch& batch, Eigen::Index j,
+                               const VectorField& field) const {
+    const Eigen::Index horizon = controlKeys_.size();
+    if constexpr (std::is_invocable_v<const Batch&, Eigen::Index, size_t,
+                                      const State&>) {
+      rolloutPolicyInPlace(
+          values,
+          [&](size_t k, const State& x) {
+            const Control control = std::as_const(batch)(j, k, x);
+            if (control.size() != batch.controls.rows())
+              throw std::invalid_argument(
+                  "Feedback returned the wrong control dimension.");
+            batch.controls.col(j * horizon + k) = control;
+            return control;
+          },
+          field);
+    } else {
+      rolloutControlsInPlace(
+          values, batch.controls.middleCols(j * horizon, horizon), field);
+    }
+  }
+
   /// Whether a matrix row count describes a control of this planner.
   static bool validControlDimension(Eigen::Index rows) {
     return rows > 0 && (ControlDim == Eigen::Dynamic || rows == ControlDim);
@@ -219,6 +265,17 @@ class SamplingPlanner {
   Vector score(const Costs& costs, const Values& initial,
                const Matrix& controls, const Dynamics& dynamics,
                bool parallelScoring) const {
+    return scoreRollouts(costs, initial, controls,
+                         internal::sendableDynamics(dynamics), parallelScoring,
+                         [&](size_t, auto& states, const auto& candidate) {
+                           rolloutStates(states, candidate, dynamics);
+                         });
+  }
+
+  template <class Rollout>
+  Vector scoreRollouts(const Costs& costs, const Values& initial,
+                       const Matrix& controls, bool sendableDynamics,
+                       bool parallelScoring, const Rollout& rollout) const {
     const Eigen::Index horizon = controlKeys_.size();
     if (!validControlDimension(controls.rows()) || controls.cols() % horizon)
       throw std::invalid_argument(
@@ -232,11 +289,10 @@ class SamplingPlanner {
                            initial.at<State>(stateKeys_.front())),
         costs.needsValues() ? initial : Values{}};
     return internal::scoreCandidates(
-        controls.cols() / horizon, start, internal::sendableDynamics(dynamics),
-        parallelScoring,
+        controls.cols() / horizon, start, sendableDynamics, parallelScoring,
         [&](size_t i, Trajectory& trajectory) {
           const auto candidate = controls.middleCols(i * horizon, horizon);
-          rolloutStates(trajectory.states, candidate, dynamics);
+          rollout(i, trajectory.states, candidate);
           if (costs.needsValues())
             writeRollout(trajectory.values, trajectory.states, candidate);
         },
@@ -257,14 +313,58 @@ class SamplingPlanner {
         search.mean.cols() != static_cast<Eigen::Index>(controlKeys_.size()))
       throw std::invalid_argument(
           "Search state must match the planner horizon.");
-    auto batch =
-        proposal.sample(search, initial, dt_, algorithm.includeIncumbent);
-    if (batch.controls.rows() != search.mean.rows() || !batch.controls.cols())
+    auto batch = proposal.sample(
+        search, initial, dt_, internal::algorithmIncludesIncumbent(algorithm));
+    if (batch.controls.rows() != search.mean.rows() || !batch.controls.cols() ||
+        batch.controls.cols() % controlKeys_.size())
       throw std::invalid_argument(
           "Incompatible proposal batch for this nominal plan.");
-    const Vector errors =
-        score(costs, initial, batch.controls, dynamics, parallelScoring);
+    Vector errors;
+    if constexpr (std::is_invocable_v<const decltype(batch)&, Eigen::Index,
+                                      size_t, const State&>) {
+      errors = scoreRollouts(
+          costs, initial, batch.controls, internal::sendableDynamics(dynamics),
+          parallelScoring, [&](size_t j, auto& states, const auto&) {
+            const size_t horizon = controlKeys_.size();
+            for (size_t k = 0; k < horizon; ++k) {
+              const Control u = std::as_const(batch)(j, k, states[k]);
+              if (u.size() != batch.controls.rows())
+                throw std::invalid_argument(
+                    "Feedback returned the wrong control dimension.");
+              batch.controls.col(j * horizon + k) = u;
+              states[k + 1] = internal::nextState(dynamics, states[k], u, dt_);
+            }
+          });
+    } else {
+      errors = score(costs, initial, batch.controls, dynamics, parallelScoring);
+    }
     algorithm.apply(proposal, search, batch, errors);
+  }
+
+  template <class VectorField>
+  void rolloutControlsInPlace(Values& values,
+                              const Eigen::Ref<const Matrix>& controls,
+                              const VectorField& field) const {
+    if (!validControlDimension(controls.rows()) ||
+        controls.cols() != static_cast<Eigen::Index>(controlKeys_.size()))
+      throw std::invalid_argument(
+          "Expected one control column per planning step.");
+    rolloutPolicyInPlace(
+        values,
+        [&](size_t k, const State&) -> Control { return controls.col(k); },
+        field);
+  }
+
+  template <class Policy, class VectorField>
+  void rolloutPolicyInPlace(Values& values, const Policy& policy,
+                            const VectorField& field) const {
+    State state = values.at<State>(stateKeys_.front());
+    for (size_t k = 0; k < controlKeys_.size(); ++k) {
+      const Control control = policy(k, state);
+      state = internal::nextState(field, state, control, dt_);
+      values.insert_or_assign(controlKeys_[k], control);
+      values.insert_or_assign(stateKeys_[k + 1], state);
+    }
   }
 
   KeyVector stateKeys_;

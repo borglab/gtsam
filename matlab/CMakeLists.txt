@@ -58,11 +58,12 @@ if(NOT GTSAM_SHARED_LIB)
   list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
 endif()
 
-# ignoring the non-concrete types (type aliases)
+# ignoring the non-concrete types (type aliases) and Python-callback-only types
 set(ignore
     gtsam::Point2
     gtsam::Point3
-    gtsam::CustomFactor)
+    gtsam::CustomFactor
+    gtsam::DDPTracking)
 
 if (APPLE OR WIN32)
   list(APPEND ignore gtsam::Symbol)

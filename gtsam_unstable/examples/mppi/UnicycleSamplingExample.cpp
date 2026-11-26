@@ -52,17 +52,22 @@ int main(int argc, char** argv) {
             << cost.error(
                    planner.rollout(initial, Matrix::Zero(2, horizon), field))
             << '\n';
-  const auto run = [&](const char* name, const auto& algorithm) {
-    GaussianProposal proposal(Matrix2::Identity(), samples);
+  const auto run = [&](const char* name, const auto& algorithm,
+                       const Matrix2& covariance) {
+    GaussianProposal proposal(covariance, samples);
     const Values plan =
         planner.optimize(cost, initial, field, proposal, algorithm, iterations);
     const Pose2 pose = plan.at<Pose2>(states.back());
     std::cout << name << " cost: " << cost.error(plan)
               << ", final pose: " << pose << '\n';
   };
-  // All three start with independent unit-variance noise and seed 42.
-  if (choice == "cem" || choice == "all") run("CEM", CEM(32));
-  if (choice == "mppi" || choice == "all") run("MPPI", MPPI());
+  // MPPI uses separate exploration scales for speed and yaw rate.
+  const Matrix2 mppiCovariance =
+      Vector2{0.346, 0.243}.array().square().matrix().asDiagonal();
+  if (choice == "cem" || choice == "all")
+    run("CEM", CEM(32), Matrix2::Identity());
+  if (choice == "mppi" || choice == "all")
+    run("MPPI", MPPI(1.0), mppiCovariance);
   if (choice == "predictive" || choice == "all")
-    run("Predictive sampling", PredictiveSampling());
+    run("Predictive sampling", PredictiveSampling(), Matrix2::Identity());
 }
