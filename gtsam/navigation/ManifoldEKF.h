@@ -144,13 +144,18 @@ class ManifoldEKF {
    * Measurement update: Corrects the state and covariance using a
    * pre-calculated predicted measurement and its Jacobian.
    *
+   * The correction and Joseph-form covariance are expressed in the old state's
+   * chart. The retraction's increment Jacobian (H2) maps the remaining error
+   * into the chart at the corrected state. If H2 is unavailable, only the state
+   * is retracted and the Joseph-form covariance is kept unchanged.
+   *
    * @tparam Measurement type of the measurement space.
    * @param prediction Predicted measurement.
    * @param H Jacobian of the measurement function h.
    * @param z Observed measurement.
    * @param R Measurement noise covariance.
-   * @param performReset If true (default), performs a reset (transport) after
-   * update; otherwise, just retracts the state.
+   * @param performReset If true (default), transport covariance using H2 when
+   * available; otherwise, just retract the state.
    */
   template <typename Measurement>
   void update(
@@ -178,11 +183,17 @@ class ManifoldEKF {
     // --- Update covariance in the tangent space at the current state
     this->JosephUpdate(K, H, R);
 
-    // Update state using retract/ transport or just retract
-    if (performReset)
-      reset(delta_xi);
-    else
-      X_ = traits<M>::Retract(X_, delta_xi);
+    // Recenter posterior errors by differentiating the correction, not X_.
+    if constexpr (HasRetractIncrementJacobian<M>::value) {
+      if (performReset) {
+        Jacobian B;
+        if constexpr (Dim == Eigen::Dynamic) B.resize(n_, n_);
+        X_ = traits<M>::Retract(X_, delta_xi, {}, &B);
+        P_ = B * P_ * B.transpose();
+        return;
+      }
+    }
+    X_ = traits<M>::Retract(X_, delta_xi);
   }
 
   /**
@@ -235,8 +246,10 @@ class ManifoldEKF {
    * transport the covariance from the old tangent space to the new tangent
    * space.
    *
-   * If the retract supports a Jacobian argument, we compute B and update
-   * P <- B P B^T. Otherwise, we leave the covariance unchanged.
+   * If the retract supports a starting-state Jacobian (H1), we compute B and
+   * update P <- B P B^T. This propagates starting-state uncertainty through a
+   * fixed perturbation, unlike measurement-update recentering, which uses H2.
+   * Otherwise, we leave the covariance unchanged.
    */
   void reset(const TangentVector& eta) {
     if constexpr (HasRetractJacobian<M>::value) {
@@ -287,6 +300,16 @@ class ManifoldEKF {
   size_t n_;      ///< Runtime tangent space dimension of M.
 
  private:
+  // Detection helper: check whether Retract provides the increment Jacobian H2.
+  template <typename T, typename = void>
+  struct HasRetractIncrementJacobian : std::false_type {};
+  template <typename T>
+  struct HasRetractIncrementJacobian<
+      T, std::void_t<decltype(traits<T>::Retract(
+             std::declval<const T&>(),
+             std::declval<const typename traits<T>::TangentVector&>(), {},
+             (Jacobian*)nullptr))>> : std::true_type {};
+
   // Detection helper: check if traits<T>::Retract(x, v, Jacobian*) is valid.
   template <typename T, typename = void>
   struct HasRetractJacobian : std::false_type {};

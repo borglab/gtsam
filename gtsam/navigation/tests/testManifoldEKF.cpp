@@ -20,7 +20,9 @@
 #include <gtsam/base/numericalDerivative.h>
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Unit3.h>
+#include <gtsam/navigation/LieGroupEKF.h>
 #include <gtsam/navigation/ManifoldEKF.h>
 
 #include <Eigen/Cholesky>
@@ -160,7 +162,8 @@ const Vector3 eta = Vector3{15, -5, 30} * 1e-2;
 }  // namespace pose2_manifold_ekf_example
 
 //==============================================================================
-TEST(ManifoldEKF_Pose2, ResetUsesRetractJacobian) {
+// Verifies that a fixed motion propagates starting-state uncertainty with H1.
+TEST(ManifoldEKF_Pose2, ResetUsesStartingStateJacobian) {
   using namespace pose2_manifold_ekf_example;
   ManifoldEKF<Pose2> ekf(X0, P0);
 
@@ -176,10 +179,11 @@ TEST(ManifoldEKF_Pose2, ResetUsesRetractJacobian) {
 }
 
 //==============================================================================
-TEST(ManifoldEKF_Pose2, ResetCovarianceMonteCarlo) {
+// Compares standalone reset with uncertain starting poses under a fixed motion.
+TEST(ManifoldEKF_Pose2, FixedMotionCovarianceMonteCarlo) {
   Pose2 X0(0.2, -0.4, 0.3);
   Matrix3 P0 = Matrix3{{20, 3, -1}, {3, 25, 2}, {-1, 2, 15}} * 1e-5;
-  Vector3 eta{1e-3, -8e-4, 1.2e-3};
+  Vector3 eta{0.3, -0.2, 0.4};
   ManifoldEKF<Pose2> ekf(X0, P0);
 
   Matrix3 B;
@@ -211,8 +215,110 @@ TEST(ManifoldEKF_Pose2, ResetCovarianceMonteCarlo) {
 
   ekf.reset(eta);
   EXPECT(assert_equal(expected_covariance, ekf.covariance(), 1e-9));
-  EXPECT(assert_equal(expected_covariance, sample_covariance, 1e-2));
+  EXPECT((expected_covariance - sample_covariance).norm() /
+             expected_covariance.norm() <
+         0.03);
 }
+
+/* ************************************************************************* */
+namespace rotation_measurement_update {
+
+const Rot3 initialState;
+const Matrix3 priorCovariance = Vector3{4e-4, 1e-4, 1.8e-3}.asDiagonal();
+const Matrix13 measurementJacobian{{0.0, 0.0, 1.0}};
+const Matrix1 measurementCovariance{{1.8e-3}};
+const double measurement = 0.4;
+const Vector3 correction{0.0, 0.0, 0.2};
+const Matrix3 posteriorCovariance = Vector3{4e-4, 1e-4, 9e-4}.asDiagonal();
+const Rot3 updatedState = traits<Rot3>::Retract(initialState, correction);
+
+// Differentiate the remaining old-chart error in the configured new chart.
+Matrix3 recenteredCovariance() {
+  auto recenteredError = [](const Vector3& error) -> Vector3 {
+    return traits<Rot3>::Local(
+        updatedState, traits<Rot3>::Retract(initialState, correction + error));
+  };
+  const Matrix3 B = numericalDerivative11<Vector3, Vector3>(
+      recenteredError, Vector3::Zero());
+  return B * posteriorCovariance * B.transpose();
+}
+
+// Verifies update transports posterior errors through the increment derivative.
+TEST(ManifoldEKF_Rot3, UpdateRecentersPosteriorCovariance) {
+  ManifoldEKF<Rot3> ekf(initialState, priorCovariance);
+  ekf.update(0.0, measurementJacobian, measurement, measurementCovariance);
+
+  EXPECT(assert_equal(updatedState, ekf.state(), 1e-12));
+  EXPECT(assert_equal(recenteredCovariance(), ekf.covariance(), 1e-10));
+}
+
+// Verifies the inherited vector bridge also recenters posterior covariance.
+TEST(ManifoldEKF_Rot3, InheritedVectorUpdateRecentersPosteriorCovariance) {
+  LieGroupEKF<Rot3> ekf(initialState, priorCovariance);
+  ekf.updateWithVector(Vector1{0.0}, measurementJacobian, Vector1{measurement},
+                       measurementCovariance);
+
+  EXPECT(assert_equal(updatedState, ekf.state(), 1e-12));
+  EXPECT(assert_equal(recenteredCovariance(), ekf.covariance(), 1e-10));
+}
+
+// Verifies opting out of transport still applies the same state correction.
+TEST(ManifoldEKF_Rot3, UpdateWithoutResetKeepsPosteriorCovariance) {
+  ManifoldEKF<Rot3> ekf(initialState, priorCovariance);
+  ekf.update(0.0, measurementJacobian, measurement, measurementCovariance, false);
+
+  EXPECT(assert_equal(updatedState, ekf.state(), 1e-12));
+  EXPECT(assert_equal(posteriorCovariance, ekf.covariance(), 1e-12));
+}
+
+}  // namespace rotation_measurement_update
+/* ************************************************************************* */
+
+namespace starting_state_jacobian_only {
+struct State {
+  Pose2 pose;
+};
+}  // namespace starting_state_jacobian_only
+
+namespace gtsam {
+// A manifold whose traits provide H1 but no increment Jacobian H2.
+template <>
+struct traits<starting_state_jacobian_only::State> {
+  static constexpr int dimension = 3;
+  using ManifoldType = starting_state_jacobian_only::State;
+  using TangentVector = Vector3;
+  using structure_category = manifold_tag;
+
+  static size_t GetDimension(const ManifoldType&) { return dimension; }
+
+  static ManifoldType Retract(const ManifoldType& origin, const Vector3& v,
+                             OptionalJacobian<3, 3> H1 = {}) {
+    return {traits<Pose2>::Retract(origin.pose, v, H1)};
+  }
+
+  static Vector3 Local(const ManifoldType& origin, const ManifoldType& other) {
+    return traits<Pose2>::Local(origin.pose, other.pose);
+  }
+};
+}  // namespace gtsam
+
+/* ************************************************************************* */
+namespace starting_state_jacobian_only {
+
+// Verifies update does not substitute H1 when H2 is unavailable.
+TEST(ManifoldEKF, UpdateWithoutIncrementJacobian) {
+  using namespace rotation_measurement_update;
+  const State initial{Pose2(0.2, -0.4, 0.3)};
+  ManifoldEKF<State> ekf(initial, priorCovariance);
+  ekf.update(0.0, measurementJacobian, measurement, measurementCovariance);
+
+  EXPECT(assert_equal(initial.pose.retract(correction), ekf.state().pose,
+                      1e-12));
+  EXPECT(assert_equal(posteriorCovariance, ekf.covariance(), 1e-12));
+}
+
+}  // namespace starting_state_jacobian_only
+/* ************************************************************************* */
 
 //==============================================================================
 // Define simple dynamics and measurement for a 2x2 Matrix state
