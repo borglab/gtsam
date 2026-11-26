@@ -4,85 +4,47 @@
  * @author Frank Dellaert
  * @author Akash Ratheesh
  */
-#include <gtsam/inference/Ordering.h>
-#include <gtsam/inference/Symbol.h>
-#include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/linear/HessianFactor.h>
-#include <gtsam/linear/linearExceptions.h>
 #include <gtsam/planning/ILQRTracking.h>
+
+#include <utility>
 
 namespace gtsam {
 namespace internal {
 
-using symbol_shorthand::U;
-using symbol_shorthand::X;
+TrackingSweep backwardILQR(const StageLinearizedCosts& costs,
+                           const KeyVector& stateKeys,
+                           const KeyVector& controlKeys,
+                           const ILQRLinearization& lin, double damping) {
+  const size_t horizon = controlKeys.size();
+  const Eigen::Index h = static_cast<Eigen::Index>(horizon);
+  const Eigen::Index m = lin.B.front().cols();
+  TrackingSweep sweep{GaussianBayesNet(), Matrix::Zero(m, h),
+                      std::vector<Matrix>(horizon)};
+  std::vector<GaussianConditional::shared_ptr> conditionals(horizon);
 
-TrackingSweep backwardILQR(const Matrix& stateErrors,
-                           const Matrix& controlErrors,
-                           const Vector& terminalError,
-                           const ILQRLinearization& lin, const Matrix& q,
-                           const Matrix& r, const Matrix& terminal,
-                           double damping,
-                           const std::vector<Matrix>& errorJacobians) {
-  const Eigen::Index m = controlErrors.rows(), h = controlErrors.cols();
-  const bool hasChartJac = !errorJacobians.empty();
-  TrackingSweep sweep{Matrix::Zero(m, h),
-                      std::vector<Matrix>(static_cast<size_t>(h))};
-
-  // Terminal cost-to-go in GTSAM HessianFactor convention (g = -grad V(0)).
-  Matrix Vxx;
-  Vector vx;
-  if (hasChartJac) {
-    const Matrix& Ch = errorJacobians[static_cast<size_t>(h)];
-    Vxx = Ch.transpose() * terminal * Ch;
-    vx = -Ch.transpose() * terminal * terminalError;
-  } else {
-    Vxx = terminal;
-    vx = -terminal * terminalError;
-  }
+  HessianFactor valueToGo = costs.terminalFactor;
 
   for (Eigen::Index k = h - 1; k >= 0; --k) {
     const auto idx = static_cast<size_t>(k);
-    const Matrix& A = lin.A[idx];
-    const Matrix& B = lin.B[idx];
+    HessianFactor stageFactor = pullBackDynamics(
+        stateKeys[idx], controlKeys[idx], lin.A[idx], lin.B[idx], valueToGo);
 
-    // Pull cost-to-go back through dx_{k+1} = A dx_k + B du_k and add stage
-    // costs.
-    const Matrix VxxA = Vxx * A;
-    const Matrix VxxB = Vxx * B;
-    Matrix Guu = r + B.transpose() * VxxB;
-    if (damping > 0.0) Guu.diagonal().array() += damping;
-    const Matrix Gux = B.transpose() * VxxA;
-    Matrix Gxx;
-    Vector gx;
-    if (hasChartJac) {
-      const Matrix& Ck = errorJacobians[idx];
-      Gxx = Ck.transpose() * q * Ck + A.transpose() * VxxA;
-      gx = -Ck.transpose() * q * stateErrors.col(k) + A.transpose() * vx;
-    } else {
-      Gxx = q + A.transpose() * VxxA;
-      gx = -q * stateErrors.col(k) + A.transpose() * vx;
-    }
-    const Vector gu = -r * controlErrors.col(k) + B.transpose() * vx;
+    for (const auto& factor : costs.stageFactors[idx])
+      factor->updateHessian(stageFactor.keys(), &stageFactor.info());
+    if (damping > 0.0)
+      stageFactor.info().updateDiagonalBlock(0,
+                                             damping * Matrix::Identity(m, m));
 
-    // Eliminate U(k) via GTSAM's HessianFactor::eliminateCholesky to obtain
-    // P(du_k | dx_k) and the exact Schur-complement HessianFactor on X(k).
-    HessianFactor stageFactor(U(idx), X(idx), Guu, Gux, gu, Gxx, gx, 0.0);
-    GaussianConditional::shared_ptr conditional;
-    try {
-      conditional = stageFactor.eliminateCholesky(Ordering{U(idx)});
-    } catch (const IndeterminateSystemException&) {
-      return {};
-    }
-
-    const auto R = conditional->R().triangularView<Eigen::Upper>();
-    sweep.feedforward.col(k) = R.solve(conditional->d());
-    sweep.gains[idx] = -R.solve(conditional->S());
-
-    // Remaining Schur-complement factor on X(k) becomes the next cost-to-go.
-    Vxx = stageFactor.information();
-    vx = stageFactor.linearTerm();
+    auto [conditional, nextValueToGo] =
+        eliminateControlFactor(std::move(stageFactor), controlKeys[idx]);
+    if (!conditional) return {};
+    extractControlLaw(*conditional, sweep.feedforward.col(k), sweep.gains[idx]);
+    conditionals[idx] = std::move(conditional);
+    valueToGo = std::move(nextValueToGo);
   }
+
+  sweep.policy.reserve(horizon);
+  for (auto& cond : conditionals) sweep.policy.push_back(std::move(cond));
   return sweep;
 }
 

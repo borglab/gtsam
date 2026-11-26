@@ -161,24 +161,28 @@ gtsam::Vector contractionFeedback(const gtsam::Vector& error, const gtsam::Matri
 
 template<M={gtsam::Vector, gtsam::Pose2, gtsam::Pose3, gtsam::Rot3, gtsam::Unit3}>
 class ILQRTracking {
-  ILQRTracking(const gtsam::Matrix& statePrecision,
-               const gtsam::Matrix& controlPrecision,
-               const gtsam::Matrix& terminalPrecision);
-  gtsam::Matrix optimize(const M& initial, const std::vector<M>& targetStates,
-                         const gtsam::Matrix& targetControls,
+  ILQRTracking(gtsam::KeyVector stateKeys, gtsam::KeyVector controlKeys);
+  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost,
+                         const gtsam::Values& initial,
                          const gtsam::This::Transition& transition,
                          size_t iterations,
                          const gtsam::Vector& lower = gtsam::Vector(),
                          const gtsam::Vector& upper = gtsam::Vector());
-  gtsam::Matrix optimize(const M& initial, const std::vector<M>& targetStates,
-                         const gtsam::Matrix& targetControls,
+  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost,
+                         const gtsam::Values& initial,
                          const gtsam::This::VectorField& vectorField,
                          double dt, size_t iterations,
                          const gtsam::Vector& lower = gtsam::Vector(),
                          const gtsam::Vector& upper = gtsam::Vector());
   // A subsequent solve can resize or replace the stored trajectory and gains.
   @pybind_lambda
+  gtsam::KeyVector stateKeys() const;
+  @pybind_lambda
+  gtsam::KeyVector controlKeys() const;
+  @pybind_lambda
   std::vector<M> states() const;
+  @pybind_lambda
+  gtsam::GaussianBayesNet policy() const;
   @pybind_lambda
   gtsam::Matrix gain(size_t step) const;
 };
@@ -187,24 +191,28 @@ class ILQRTracking {
 
 template<M={gtsam::Vector, gtsam::Pose2, gtsam::Pose3, gtsam::Rot3, gtsam::Unit3}>
 class DDPTracking {
-  DDPTracking(const gtsam::Matrix& statePrecision,
-              const gtsam::Matrix& controlPrecision,
-              const gtsam::Matrix& terminalPrecision);
-  gtsam::Matrix optimize(const M& initial, const std::vector<M>& targetStates,
-                         const gtsam::Matrix& targetControls,
+  DDPTracking(gtsam::KeyVector stateKeys, gtsam::KeyVector controlKeys);
+  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost,
+                         const gtsam::Values& initial,
                          const gtsam::This::Transition& transition,
                          size_t iterations,
                          const gtsam::Vector& lower = gtsam::Vector(),
                          const gtsam::Vector& upper = gtsam::Vector());
-  gtsam::Matrix optimize(const M& initial, const std::vector<M>& targetStates,
-                         const gtsam::Matrix& targetControls,
+  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost,
+                         const gtsam::Values& initial,
                          const gtsam::This::VectorField& vectorField,
                          double dt, size_t iterations,
                          const gtsam::Vector& lower = gtsam::Vector(),
                          const gtsam::Vector& upper = gtsam::Vector());
   // A subsequent solve can resize or replace the stored trajectory and gains.
   @pybind_lambda
+  gtsam::KeyVector stateKeys() const;
+  @pybind_lambda
+  gtsam::KeyVector controlKeys() const;
+  @pybind_lambda
   std::vector<M> states() const;
+  @pybind_lambda
+  gtsam::GaussianBayesNet policy() const;
   @pybind_lambda
   gtsam::Matrix gain(size_t step) const;
 };

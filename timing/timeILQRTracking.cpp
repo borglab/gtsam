@@ -414,9 +414,49 @@ class QpTrackingVariant {
   Backend backend_;
 };
 
+std::tuple<KeyVector, KeyVector, NonlinearFactorGraph, Values> buildCaseGraph(
+    const BenchmarkCase& c) {
+  const auto h = static_cast<size_t>(c.targetControls.cols());
+  KeyVector xKeys, uKeys;
+  xKeys.reserve(h + 1);
+  uKeys.reserve(h);
+  NonlinearFactorGraph graph;
+  Values initial;
+  initial.insert(X(0), c.x0);
+  const auto qNoise = noiseModel::Diagonal::Precisions(c.q.diagonal());
+  const auto rNoise = noiseModel::Diagonal::Precisions(c.r.diagonal());
+  const auto termNoise =
+      noiseModel::Diagonal::Precisions(c.terminal.diagonal());
+  for (size_t k = 0; k < h; ++k) {
+    const auto col = static_cast<Eigen::Index>(k);
+    xKeys.push_back(X(k));
+    uKeys.push_back(U(k));
+    initial.insert(U(k), Vector(c.targetControls.col(col)));
+    graph.addPrior(X(k), Vector(c.targetStates.col(col)), qNoise);
+    graph.addPrior(U(k), Vector(c.targetControls.col(col)), rNoise);
+  }
+  xKeys.push_back(X(h));
+  graph.addPrior(X(h), Vector(c.targetStates.col(static_cast<Eigen::Index>(h))),
+                 termNoise);
+  return {std::move(xKeys), std::move(uKeys), std::move(graph),
+          std::move(initial)};
+}
+
+Matrix extractControls(const Values& vals, const KeyVector& uKeys,
+                       Eigen::Index m) {
+  Matrix out(m, static_cast<Eigen::Index>(uKeys.size()));
+  for (size_t k = 0; k < uKeys.size(); ++k)
+    out.col(static_cast<Eigen::Index>(k)) = vals.at<Vector>(uKeys[k]);
+  return out;
+}
+
 void runCase(const BenchmarkCase& c, size_t warmups, size_t repetitions) {
-  ILQRTracking<> ilqrAna(c.q, c.r, c.terminal);
-  ILQRTracking<> ilqrFd(c.q, c.r, c.terminal);
+  KeyVector xKeys, uKeys;
+  NonlinearFactorGraph graph;
+  Values initial;
+  std::tie(xKeys, uKeys, graph, initial) = buildCaseGraph(c);
+  ILQRTracking<> ilqrAna(xKeys, uKeys);
+  ILQRTracking<> ilqrFd(xKeys, uKeys);
   FactorGraphILQRVariant ilqrPref(
       c.q, c.r, c.terminal, FactorGraphILQRVariant::Mode::kPreferCholeskyHard);
   FactorGraphILQRVariant ilqrCholSoft(
@@ -425,19 +465,19 @@ void runCase(const BenchmarkCase& c, size_t warmups, size_t repetitions) {
                              ActiveSetSolverParams::QpSubproblemSolver::Sparse);
   QpTrackingVariant qpDense(c.q, c.r, c.terminal,
                             ActiveSetSolverParams::QpSubproblemSolver::Dense);
-  DDPTracking<> ddp(c.q, c.r, c.terminal);
+  DDPTracking<> ddp(xKeys, uKeys);
 
-  Matrix uAna, uFd, uPref, uChol, uQpSp, uQpDn, uDdp;
+  Values planAna, planFd, planDdp;
+  Matrix uPref, uChol, uQpSp, uQpDn;
   const auto anaSamples = timing::measureMilliseconds(
       [&] {
-        uAna = ilqrAna.optimize(c.x0, c.targetStates, c.targetControls,
-                                c.linearizedTransition, c.iterations);
+        planAna = ilqrAna.optimize(graph, initial, c.linearizedTransition,
+                                   c.iterations);
       },
       warmups, repetitions);
   const auto fdSamples = timing::measureMilliseconds(
       [&] {
-        uFd = ilqrFd.optimize(c.x0, c.targetStates, c.targetControls,
-                              c.transition, c.iterations);
+        planFd = ilqrFd.optimize(graph, initial, c.transition, c.iterations);
       },
       warmups, repetitions);
   const auto prefSamples = timing::measureMilliseconds(
@@ -466,8 +506,7 @@ void runCase(const BenchmarkCase& c, size_t warmups, size_t repetitions) {
       warmups, repetitions);
   const auto ddpSamples = timing::measureMilliseconds(
       [&] {
-        uDdp = ddp.optimize(c.x0, c.targetStates, c.targetControls,
-                            c.transition, c.iterations);
+        planDdp = ddp.optimize(graph, initial, c.transition, c.iterations);
       },
       warmups, repetitions);
 
@@ -476,6 +515,8 @@ void runCase(const BenchmarkCase& c, size_t warmups, size_t repetitions) {
         .median;
   };
 
+  const Matrix uAna = extractControls(planAna, uKeys, c.targetControls.rows());
+  const Matrix uDdp = extractControls(planDdp, uKeys, c.targetControls.rows());
   const double tAna = med(anaSamples);
   const double tDdp = med(ddpSamples);
   std::cout << "| " << std::left << std::setw(34) << c.name << " | "
@@ -560,12 +601,18 @@ int main(int argc, char* argv[]) {
                      targetStates, targetControls, pendulum, pendulumLin, 50});
 
     // Build a feasible nonlinear reference trajectory for Tube/Robust tracking.
-    DDPTracking<> refSolver(q, r, terminal);
-    const Matrix uRef =
-        refSolver.optimize(x0, targetStates, targetControls, pendulum, 50);
+    const auto [refXKeys, refUKeys, refGraph, refInit] =
+        buildCaseGraph(cases.back());
+    DDPTracking<> refSolver(refXKeys, refUKeys);
+    const Values refPlan = refSolver.optimize(refGraph, refInit, pendulum, 50);
+    Matrix refStates(2, h + 1);
+    for (size_t k = 0; k <= static_cast<size_t>(h); ++k)
+      refStates.col(static_cast<Eigen::Index>(k)) =
+          refPlan.at<Vector>(refXKeys[k]);
+    const Matrix uRef = extractControls(refPlan, refUKeys, 1);
     cases.push_back({"Pendulum tracking (n=2,m=1,H=25)", q, r, terminal,
-                     x0 + Vector2(0.05, -0.05), refSolver.stateMatrix(), uRef,
-                     pendulum, pendulumLin, 20});
+                     x0 + Vector2(0.05, -0.05), refStates, uRef, pendulum,
+                     pendulumLin, 20});
   }
 
   // 3. Nonlinear cart-pole tracking (CartPoleMPPI.ipynb dynamics,

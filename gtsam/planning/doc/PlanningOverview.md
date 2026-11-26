@@ -278,15 +278,16 @@ auto plans = tracking.tube(planner, graph, nominal, actual, dynamics, feedback,
                           proposal, threshold, iterations);
 ```
 
-`ILQRTracking<M>` and `DDPTracking<M>` compute time-varying tangent-space
-feedback gains on any GTSAM `Manifold` `M` (defaulting to `Vector`) from a
-discrete transition, an analytic `OptionalJacobian` transition, or a
-continuous-time `(vectorField, dt)` model; `ILQRTracking` eliminates each
-stage via `HessianFactor::eliminateCholesky`. `contractionFeedback` computes
-a minimum-norm control correction for a constant contraction metric. The
-[iLQR API](../ILQRTracking.h), [DDP API](../DDPTracking.h),
-[tracking API](../TrackingFeedback.h), and [controller API](../MPPITracking.h)
-give the input conventions.
+`ILQRTracking<M>` and `DDPTracking<M>` optimize `NonlinearFactorGraph`
+objectives on any GTSAM `Manifold` `M` (defaulting to `Vector`) using the same
+`(stateKeys, controlKeys)` and `Values` interface as `SamplingPlanner`. Each
+iteration linearizes the cost graph and dynamics in local tangent coordinates
+and eliminates each stage via `HessianFactor::eliminateCholesky` into a
+`GaussianBayesNet` policy `policy()` (with pre-extracted feedback gains
+`gain(k)`). `contractionFeedback` computes a minimum-norm control correction
+for a constant contraction metric. The [iLQR API](../ILQRTracking.h),
+[DDP API](../DDPTracking.h), [tracking API](../TrackingFeedback.h), and
+[controller API](../MPPITracking.h) give the input conventions.
 
 Two utilities expose the cost and filtering conventions used by these controllers.
 `valueAtRisk` and `conditionalValueAtRisk` reduce a vector of scenario costs
