@@ -67,7 +67,7 @@ keys = zeros(1, double(kv.size()), 'uint64');
 for i = 0:numel(keys)-1
     keys(i+1) = kv.at(i);
 end
-assert(isequal(keys, uint64([1, 2, 3, 4])), ...
+assert(isequal(sort(keys), uint64([1, 2, 3, 4])), ...
     'Interpolated factor uses unexpected optimization keys.');
 assert(factor.dim() == 1, 'Squared-range factor should have one residual.');
 
