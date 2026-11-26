@@ -49,22 +49,27 @@ using Point = AugmentedPoint<3>;
 
 // Anisotropic power spectral density, so that each axis is weighted
 // differently.
-const Vector3 kPsd(0.2, 0.5, 1.5);
+Vector3 fixturePsd() { return {0.2, 0.5, 1.5}; }
 
 // Knots of one interval, deliberately not starting at t = 0.
 const double kT0 = 1.0, kT1 = 1.4, kDt = kT1 - kT0;
-const StateData kLeft(P(0), V(0), kT0), kRight(P(1), V(1), kT1);
-const Vector3 kP0(1.0, -2.0, 3.0), kV0(0.5, -0.25, 0.75);
-const Vector3 kP1(1.3, -1.7, 2.8), kV1(0.25, 0.1, 0.5);
+StateData fixtureLeft() { return {P(0), V(0), kT0}; }
+StateData fixtureRight() { return {P(1), V(1), kT1}; }
+Vector3 fixtureP0() { return {1.0, -2.0, 3.0}; }
+Vector3 fixtureV0() { return {0.5, -0.25, 0.75}; }
+Vector3 fixtureP1() { return {1.3, -1.7, 2.8}; }
+Vector3 fixtureV1() { return {0.25, 0.1, 0.5}; }
 
 // Knot values with positions stored as AugmentedPoint<3>.
-Values knotValues(const Vector3& p0 = kP0, const Vector3& v0 = kV0,
-                  const Vector3& p1 = kP1, const Vector3& v1 = kV1) {
+Values knotValues(const Vector3& p0 = fixtureP0(),
+                  const Vector3& v0 = fixtureV0(),
+                  const Vector3& p1 = fixtureP1(),
+                  const Vector3& v1 = fixtureV1()) {
   Values values;
-  values.insert(kLeft.pose, Point(p0));
-  values.insert(kLeft.velocity, v0);
-  values.insert(kRight.pose, Point(p1));
-  values.insert(kRight.velocity, v1);
+  values.insert(fixtureLeft().pose, Point(p0));
+  values.insert(fixtureLeft().velocity, v0);
+  values.insert(fixtureRight().pose, Point(p1));
+  values.insert(fixtureRight().velocity, v1);
   return values;
 }
 
@@ -108,8 +113,8 @@ std::shared_ptr<KnownLandmarkSquaredRangeFactor<Point>> rangeFactor(
 Interpolator<Point>::PoseVel interpolate(const Interpolator<Point>& interpolator,
                                          double t) {
   return interpolator.interpolatePoseAndVelocity(
-      TimestampedPoseVelocity<Point>(Point(kP0), kV0, kT0),
-      TimestampedPoseVelocity<Point>(Point(kP1), kV1, kT1), t);
+      TimestampedPoseVelocity<Point>(Point(fixtureP0()), fixtureV0(), kT0),
+      TimestampedPoseVelocity<Point>(Point(fixtureP1()), fixtureV1(), kT1), t);
 }
 
 // Calls the explicitly instantiated Interpolator<AugmentedPoint<N>> at an
@@ -118,9 +123,9 @@ template <int N>
 double instantiationError() {
   using PointN = AugmentedPoint<N>;
   using VectorN = Eigen::Matrix<double, N, 1>;
-  const VectorN p0 = kP0.head<N>(), v0 = kV0.head<N>();
-  const VectorN p1 = kP1.head<N>(), v1 = kV1.head<N>();
-  const Interpolator<PointN> interpolator(kPsd.head<N>());
+  const VectorN p0 = fixtureP0().head<N>(), v0 = fixtureV0().head<N>();
+  const VectorN p1 = fixtureP1().head<N>(), v1 = fixtureV1().head<N>();
+  const Interpolator<PointN> interpolator(fixturePsd().head<N>());
   const auto [pose, vel] = interpolator.interpolatePoseAndVelocity(
       TimestampedPoseVelocity<PointN>(PointN(p0), v0, kT0),
       TimestampedPoseVelocity<PointN>(PointN(p1), v1, kT1), kT0 + 0.15);
@@ -146,11 +151,14 @@ TEST(WnoaAugmentedPoint, InterpolatorInstantiations) {
 // Verifies that a motion factor built from StateData uses its keys and time
 // step, and that a constant-velocity trajectory has zero residual and error.
 TEST(WnoaAugmentedPoint, MotionFromStateData) {
-  const WnoaMotionFactor<Point> factor(kLeft, kRight, kPsd);
+  const WnoaMotionFactor<Point> factor(fixtureLeft(), fixtureRight(),
+                                       fixturePsd());
   EXPECT(factor.keys() ==
-         KeyVector({kLeft.pose, kLeft.velocity, kRight.pose, kRight.velocity}));
+         KeyVector({fixtureLeft().pose, fixtureLeft().velocity,
+                    fixtureRight().pose, fixtureRight().velocity}));
 
-  const Values values = knotValues(kP0, kV0, kP0 + kDt * kV0, kV0);
+  const Values values = knotValues(
+      fixtureP0(), fixtureV0(), fixtureP0() + kDt * fixtureV0(), fixtureV0());
   EXPECT(assert_equal(Vector(Vector6::Zero()), factor.unwhitenedError(values),
                       1e-12));
   EXPECT_DOUBLES_EQUAL(0.0, factor.error(values), 1e-12);
@@ -170,44 +178,52 @@ TEST(WnoaAugmentedPoint, MotionFromStateData) {
 // Verifies the residual [p1 - p0 - dt v0; v1 - v0] for perturbed positions and
 // velocities, and the error 1/2 r' Q^-1 r with the WNOA process covariance Q.
 TEST(WnoaAugmentedPoint, MotionPerturbedResidual) {
-  const WnoaMotionFactor<Point> factor(kLeft, kRight, kPsd);
+  const WnoaMotionFactor<Point> factor(fixtureLeft(), fixtureRight(),
+                                       fixturePsd());
   const Vector3 dp(0.03, -0.02, 0.05), dv(-0.1, 0.2, 0.05);
-  const Values values = knotValues(kP0, kV0, kP0 + kDt * kV0 + dp, kV0 + dv);
+  const Values values =
+      knotValues(fixtureP0(), fixtureV0(), fixtureP0() + kDt * fixtureV0() + dp,
+                 fixtureV0() + dv);
 
   Vector6 expected;
   expected << dp, dv;
   EXPECT(assert_equal(Vector(expected), factor.unwhitenedError(values), 1e-12));
   const double expectedError =
-      0.5 * expected.dot(wnoaCovariance(kDt, kPsd).ldlt().solve(expected));
+      0.5 *
+      expected.dot(wnoaCovariance(kDt, fixturePsd()).ldlt().solve(expected));
   EXPECT_DOUBLES_EQUAL(expectedError, factor.error(values),
                        1e-9 * expectedError);
 }
 
 // Verifies the analytical motion Jacobians against numerical derivatives.
 TEST(WnoaAugmentedPoint, MotionJacobians) {
-  const WnoaMotionFactor<Point> factor(kLeft, kRight, kPsd);
+  const WnoaMotionFactor<Point> factor(fixtureLeft(), fixtureRight(),
+                                       fixturePsd());
   EXPECT_CORRECT_FACTOR_JACOBIANS(factor, knotValues(), 1e-7, 1e-5);
 }
 
 // Verifies that AugmentedPoint<3> and Point3 positions give the same motion
 // residual, error and Jacobians.
 TEST(WnoaAugmentedPoint, MotionMatchesPoint3) {
-  const WnoaMotionFactor<Point> augmented(kLeft, kRight, kPsd);
-  const WnoaMotionFactor<Point3> plain(kLeft, kRight, kPsd);
+  const WnoaMotionFactor<Point> augmented(fixtureLeft(), fixtureRight(),
+                                          fixturePsd());
+  const WnoaMotionFactor<Point3> plain(fixtureLeft(), fixtureRight(),
+                                       fixturePsd());
   std::vector<Matrix> Ha(4), Hp(4);
-  const Vector ea =
-      augmented.evaluateError(Point(kP0), kV0, Point(kP1), kV1, Ha[0], Ha[1],
-                              Ha[2], Ha[3]);
+  const Vector ea = augmented.evaluateError(Point(fixtureP0()), fixtureV0(),
+                                            Point(fixtureP1()), fixtureV1(),
+                                            Ha[0], Ha[1], Ha[2], Ha[3]);
   const Vector ep =
-      plain.evaluateError(kP0, kV0, kP1, kV1, Hp[0], Hp[1], Hp[2], Hp[3]);
+      plain.evaluateError(fixtureP0(), fixtureV0(), fixtureP1(), fixtureV1(),
+                          Hp[0], Hp[1], Hp[2], Hp[3]);
   EXPECT(assert_equal(ep, ea, 1e-12));
   for (size_t i = 0; i < 4; ++i) EXPECT(assert_equal(Hp[i], Ha[i], 1e-12));
 
   Values plainValues;
-  plainValues.insert(kLeft.pose, kP0);
-  plainValues.insert(kLeft.velocity, kV0);
-  plainValues.insert(kRight.pose, kP1);
-  plainValues.insert(kRight.velocity, kV1);
+  plainValues.insert(fixtureLeft().pose, fixtureP0());
+  plainValues.insert(fixtureLeft().velocity, fixtureV0());
+  plainValues.insert(fixtureRight().pose, fixtureP1());
+  plainValues.insert(fixtureRight().velocity, fixtureV1());
   EXPECT_DOUBLES_EQUAL(plain.error(plainValues), augmented.error(knotValues()),
                        1e-12);
 }
@@ -221,10 +237,11 @@ using namespace wnoa_fixture;
 // Verifies that interpolated positions and velocities equal the WNOA
 // conditional mean (cubic Hermite interpolation) at interior times.
 TEST(WnoaAugmentedPoint, InterpolationMatchesConditionalMean) {
-  const Interpolator<Point> interpolator(kPsd);
+  const Interpolator<Point> interpolator(fixturePsd());
   for (double s : {0.05, 0.1, 0.2, 0.3, 0.37}) {
     const auto [pose, vel] = interpolate(interpolator, kT0 + s);
-    const auto [position, velocity] = conditionalMean(s, kP0, kV0, kP1, kV1);
+    const auto [position, velocity] =
+        conditionalMean(s, fixtureP0(), fixtureV0(), fixtureP1(), fixtureV1());
     EXPECT(assert_equal(position, pose.vector(), 1e-12));
     EXPECT(assert_equal(velocity, vel, 1e-12));
   }
@@ -233,12 +250,13 @@ TEST(WnoaAugmentedPoint, InterpolationMatchesConditionalMean) {
 // Verifies the analytical interpolation Jacobians with respect to both knot
 // positions and velocities against numerical derivatives.
 TEST(WnoaAugmentedPoint, InterpolationJacobians) {
-  const Interpolator<Point> interpolator(kPsd);
+  const Interpolator<Point> interpolator(fixturePsd());
   const double tau = kT0 + 0.13;
   std::vector<Matrix> H(8);
   (void)interpolator.interpolatePoseAndVelocity(
-      TimestampedPoseVelocity<Point>(Point(kP0), kV0, kT0),
-      TimestampedPoseVelocity<Point>(Point(kP1), kV1, kT1), tau, &H);
+      TimestampedPoseVelocity<Point>(Point(fixtureP0()), fixtureV0(), kT0),
+      TimestampedPoseVelocity<Point>(Point(fixtureP1()), fixtureV1(), kT1), tau,
+      &H);
 
   // Interpolated [position; velocity] as a function of the knot states.
   auto state = [&](const Point& p0, const Vector3& v0, const Point& p1,
@@ -250,16 +268,16 @@ TEST(WnoaAugmentedPoint, InterpolationJacobians) {
     result << pose.vector(), vel;
     return result;
   };
-  const Point p0(kP0), p1(kP1);
+  const Point p0(fixtureP0()), p1(fixtureP1());
   const std::array<Matrix, 4> numerical = {
       numericalDerivative41<Vector6, Point, Vector3, Point, Vector3>(
-          state, p0, kV0, p1, kV1),
+          state, p0, fixtureV0(), p1, fixtureV1()),
       numericalDerivative42<Vector6, Point, Vector3, Point, Vector3>(
-          state, p0, kV0, p1, kV1),
+          state, p0, fixtureV0(), p1, fixtureV1()),
       numericalDerivative43<Vector6, Point, Vector3, Point, Vector3>(
-          state, p0, kV0, p1, kV1),
+          state, p0, fixtureV0(), p1, fixtureV1()),
       numericalDerivative44<Vector6, Point, Vector3, Point, Vector3>(
-          state, p0, kV0, p1, kV1)};
+          state, p0, fixtureV0(), p1, fixtureV1())};
   // H holds the four position blocks, then the four velocity blocks.
   for (size_t i = 0; i < 4; ++i) {
     EXPECT(assert_equal(Matrix(numerical[i].topRows<3>()), H[i], 1e-7));
@@ -270,46 +288,48 @@ TEST(WnoaAugmentedPoint, InterpolationJacobians) {
 // Verifies that interpolation returns the knots exactly at the interval
 // endpoints and is continuous next to them.
 TEST(WnoaAugmentedPoint, InterpolationAtEndpoints) {
-  const Interpolator<Point> interpolator(kPsd);
+  const Interpolator<Point> interpolator(fixturePsd());
   const auto left = interpolate(interpolator, kT0);
   const auto right = interpolate(interpolator, kT1);
-  EXPECT(assert_equal(kP0, left.pose.vector(), 1e-12));
-  EXPECT(assert_equal(kV0, left.vel, 1e-12));
-  EXPECT(assert_equal(kP1, right.pose.vector(), 1e-12));
-  EXPECT(assert_equal(kV1, right.vel, 1e-12));
+  EXPECT(assert_equal(fixtureP0(), left.pose.vector(), 1e-12));
+  EXPECT(assert_equal(fixtureV0(), left.vel, 1e-12));
+  EXPECT(assert_equal(fixtureP1(), right.pose.vector(), 1e-12));
+  EXPECT(assert_equal(fixtureV1(), right.vel, 1e-12));
 
   const auto nearLeft = interpolate(interpolator, kT0 + 1e-9);
   const auto nearRight = interpolate(interpolator, kT1 - 1e-9);
-  EXPECT(assert_equal(kP0, nearLeft.pose.vector(), 1e-8));
-  EXPECT(assert_equal(kV0, nearLeft.vel, 1e-6));
-  EXPECT(assert_equal(kP1, nearRight.pose.vector(), 1e-8));
-  EXPECT(assert_equal(kV1, nearRight.vel, 1e-6));
+  EXPECT(assert_equal(fixtureP0(), nearLeft.pose.vector(), 1e-8));
+  EXPECT(assert_equal(fixtureV0(), nearLeft.vel, 1e-6));
+  EXPECT(assert_equal(fixtureP1(), nearRight.pose.vector(), 1e-8));
+  EXPECT(assert_equal(fixtureV1(), nearRight.vel, 1e-6));
 }
 
 // Verifies the existing forward WNOA prediction from a single state: the
 // prior mean keeps the velocity constant.
 TEST(WnoaAugmentedPoint, ForwardPrediction) {
-  const Interpolator<Point> interpolator(kPsd);
+  const Interpolator<Point> interpolator(fixturePsd());
   const auto [pose, vel] = interpolator.interpolatePoseAndVelocity(
-      TimestampedPoseVelocity<Point>(Point(kP1), kV1, kT1), std::nullopt,
-      kT1 + 0.3);
-  EXPECT(assert_equal(Vector3(kP1 + 0.3 * kV1), pose.vector(), 1e-12));
-  EXPECT(assert_equal(kV1, vel, 1e-12));
+      TimestampedPoseVelocity<Point>(Point(fixtureP1()), fixtureV1(), kT1),
+      std::nullopt, kT1 + 0.3);
+  EXPECT(assert_equal(Vector3(fixtureP1() + 0.3 * fixtureV1()), pose.vector(),
+                      1e-12));
+  EXPECT(assert_equal(fixtureV1(), vel, 1e-12));
 }
 
 // Verifies that AugmentedPoint<3> and Point3 interpolation give the same
 // states and Jacobians.
 TEST(WnoaAugmentedPoint, InterpolationMatchesPoint3) {
-  const Interpolator<Point> augmented(kPsd);
-  const Interpolator<Point3> plain(kPsd);
+  const Interpolator<Point> augmented(fixturePsd());
+  const Interpolator<Point3> plain(fixturePsd());
   const double tau = kT0 + 0.22;
   std::vector<Matrix> Ha(8), Hp(8);
   const auto a = augmented.interpolatePoseAndVelocity(
-      TimestampedPoseVelocity<Point>(Point(kP0), kV0, kT0),
-      TimestampedPoseVelocity<Point>(Point(kP1), kV1, kT1), tau, &Ha);
+      TimestampedPoseVelocity<Point>(Point(fixtureP0()), fixtureV0(), kT0),
+      TimestampedPoseVelocity<Point>(Point(fixtureP1()), fixtureV1(), kT1), tau,
+      &Ha);
   const auto p = plain.interpolatePoseAndVelocity(
-      TimestampedPoseVelocity<Point3>(kP0, kV0, kT0),
-      TimestampedPoseVelocity<Point3>(kP1, kV1, kT1), tau, &Hp);
+      TimestampedPoseVelocity<Point3>(fixtureP0(), fixtureV0(), kT0),
+      TimestampedPoseVelocity<Point3>(fixtureP1(), fixtureV1(), kT1), tau, &Hp);
   EXPECT(assert_equal(Vector3(p.pose), a.pose.vector(), 1e-12));
   EXPECT(assert_equal(p.vel, a.vel, 1e-12));
   for (size_t i = 0; i < 8; ++i) EXPECT(assert_equal(Hp[i], Ha[i], 1e-12));
@@ -322,30 +342,34 @@ namespace interpolated_range_fixture {
 using namespace wnoa_fixture;
 
 const double kTau = kT0 + 0.13, kSigma = 0.1, kRange = 2.5;
-const Vector3 kLandmark(2.0, 0.5, -1.0);
-const StateData kMiddle(P(2), V(2), kTau);
+Vector3 fixtureLandmark() { return {2.0, 0.5, -1.0}; }
+StateData middleKnot() { return {P(2), V(2), kTau}; }
 
 // Interpolated squared-range factor between the fixture knots.
 WnoaInterpFactor<Point> interpolatedRange(bool fixedNoise) {
   return WnoaInterpFactor<Point>(
-      rangeFactor(kMiddle.pose, kLandmark, kRange, kSigma), {kLeft, kRight},
-      {kMiddle}, kPsd, fixedNoise);
+      rangeFactor(middleKnot().pose, fixtureLandmark(), kRange, kSigma),
+      {fixtureLeft(), fixtureRight()}, {middleKnot()}, fixturePsd(),
+      fixedNoise);
 }
 
 // Squared-range residual at the conditional-mean position.
 double expectedResidual() {
-  const Vector3 q = conditionalMean(kTau - kT0, kP0, kV0, kP1, kV1).first;
-  return (q - kLandmark).squaredNorm() - kRange * kRange;
+  const Vector3 q = conditionalMean(kTau - kT0, fixtureP0(), fixtureV0(),
+                                    fixtureP1(), fixtureV1())
+                        .first;
+  return (q - fixtureLandmark()).squaredNorm() - kRange * kRange;
 }
 
 // Position variance of the WNOA conditional distribution at offset s, per
 // axis: Q(s) - Q(s) Phi' Q(dt)^-1 Phi Q(s), with Phi the transition from s to
 // the right knot.
 Vector3 conditionalPositionVariance(double s) {
+  const Vector3 psd = fixturePsd();
   Vector3 variance;
   for (int i = 0; i < 3; ++i) {
     auto Q = [&](double h) -> Matrix2 {
-      return kPsd(i) * Matrix2{{h * h * h / 3, h * h / 2}, {h * h / 2, h}};
+      return psd(i) * Matrix2{{h * h * h / 3, h * h / 2}, {h * h / 2, h}};
     };
     const Matrix2 Phi{{1.0, kDt - s}, {0.0, 1.0}};
     const Matrix2 P =
@@ -361,7 +385,8 @@ TEST(WnoaAugmentedPoint, InterpolatedSquaredRange) {
   const WnoaInterpFactor<Point> factor = interpolatedRange(true);
   const KeyVector& keys = factor.keys();
   EXPECT(KeySet(keys.begin(), keys.end()) ==
-         KeySet({kLeft.pose, kLeft.velocity, kRight.pose, kRight.velocity}));
+         KeySet({fixtureLeft().pose, fixtureLeft().velocity,
+                 fixtureRight().pose, fixtureRight().velocity}));
 
   const Values values = knotValues();
   const double residual = expectedResidual();
@@ -414,8 +439,10 @@ TEST(WnoaAugmentedPoint, InterpolationNoiseModes) {
                       fixed.noiseModel(values)->covariance(), 1e-12));
 
   const WnoaInterpFactor<Point> inflated = interpolatedRange(false);
-  const Vector3 q = conditionalMean(kTau - kT0, kP0, kV0, kP1, kV1).first;
-  const Vector3 J = 2 * (q - kLandmark);
+  const Vector3 q = conditionalMean(kTau - kT0, fixtureP0(), fixtureV0(),
+                                    fixtureP1(), fixtureV1())
+                        .first;
+  const Vector3 J = 2 * (q - fixtureLandmark());
   const double variance =
       kSigma * kSigma +
       J.cwiseProduct(J).dot(conditionalPositionVariance(kTau - kT0));
@@ -432,16 +459,17 @@ TEST(WnoaAugmentedPoint, InterpolationNoiseModes) {
 // factors give the same error in both noise modes.
 TEST(WnoaAugmentedPoint, InterpolatedSquaredRangeMatchesPoint3) {
   Values plainValues;
-  plainValues.insert(kLeft.pose, kP0);
-  plainValues.insert(kLeft.velocity, kV0);
-  plainValues.insert(kRight.pose, kP1);
-  plainValues.insert(kRight.velocity, kV1);
+  plainValues.insert(fixtureLeft().pose, fixtureP0());
+  plainValues.insert(fixtureLeft().velocity, fixtureV0());
+  plainValues.insert(fixtureRight().pose, fixtureP1());
+  plainValues.insert(fixtureRight().velocity, fixtureV1());
   for (bool fixedNoise : {true, false}) {
     const WnoaInterpFactor<Point3> plain(
         std::make_shared<KnownLandmarkSquaredRangeFactor<Vector3>>(
-            kMiddle.pose, kLandmark, kRange,
+            middleKnot().pose, fixtureLandmark(), kRange,
             noiseModel::Isotropic::Sigma(1, kSigma)),
-        {kLeft, kRight}, {kMiddle}, kPsd, fixedNoise);
+        {fixtureLeft(), fixtureRight()}, {middleKnot()}, fixturePsd(),
+        fixedNoise);
     EXPECT_DOUBLES_EQUAL(plain.error(plainValues),
                          interpolatedRange(fixedNoise).error(knotValues()),
                          1e-9);
@@ -454,8 +482,8 @@ TEST(WnoaAugmentedPoint, RejectsTimesOutsideKnots) {
   auto factorAt = [](double t) {
     const StateData outside(P(3), V(3), t);
     return WnoaInterpFactor<Point>(
-        rangeFactor(outside.pose, kLandmark, kRange, kSigma), {kLeft, kRight},
-        {outside}, kPsd, true);
+        rangeFactor(outside.pose, fixtureLandmark(), kRange, kSigma),
+        {fixtureLeft(), fixtureRight()}, {outside}, fixturePsd(), true);
   };
   CHECK_EXCEPTION(factorAt(kT0 - 0.1), std::runtime_error);
   CHECK_EXCEPTION(factorAt(kT1 + 0.1), std::runtime_error);
