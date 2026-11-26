@@ -6,6 +6,11 @@
  */
 #include <CppUnitLite/TestHarness.h>
 #include <gtsam/base/TestableAssertions.h>
+#include <gtsam/geometry/Pose2.h>
+#include <gtsam/geometry/Rot3.h>
+#include <gtsam/geometry/Unit3.h>
+#include <gtsam/planning/DDPTracking.h>
+#include <gtsam/planning/ILQRTracking.h>
 #include <gtsam/planning/MPPITracking.h>
 #include <gtsam/planning/TrackingFeedback.h>
 #include <gtsam/slam/PriorFactor.h>
@@ -89,27 +94,60 @@ TEST(TrackingFeedback, Contraction) {
 }
 
 // A one-step linear-quadratic problem has a closed-form optimal input and gain.
-TEST(TrackingFeedback, DDP) {
-  DDPTracking solver(Matrix1::Zero(), Matrix1::Identity(),
-                     Matrix1::Identity() * 3.);
+TEST(TrackingFeedback, ILQR) {
+  ILQRTracking<> solver(Matrix1::Zero(), Matrix1::Identity(),
+                        Matrix1::Identity() * 3.);
   const Matrix x{{0., 2.}}, u{{0.}};
   Matrix controls = solver.optimize(
       Vector1{0.}, x, u,
       [](const Vector& x, const Vector& u) -> Vector { return x + u; }, 2);
   EXPECT_DOUBLES_EQUAL(1.5, controls(0, 0), 1e-6);
-  EXPECT_DOUBLES_EQUAL(1.5, solver.states()(0, 1), 1e-6);
+  EXPECT_DOUBLES_EQUAL(1.5, solver.states()[1][0], 1e-6);
   EXPECT_DOUBLES_EQUAL(-0.75, solver.gain(0)(0, 0), 1e-6);
+
+  // Control bounds clamp during forward rollout.
   controls = solver.optimize(
       Vector1{0.}, x, u,
       [](const Vector& x, const Vector& u) -> Vector { return x + u; }, 2,
       Vector1{-0.5}, Vector1{0.5});
   EXPECT_DOUBLES_EQUAL(0.5, controls(0, 0), 1e-10);
-  EXPECT_DOUBLES_EQUAL(0.5, solver.states()(0, 1), 1e-10);
+  EXPECT_DOUBLES_EQUAL(0.5, solver.states()[1][0], 1e-10);
 }
 
-// The final backward sweep resets damping to the minimum so gain(0) matches
-// the exact local sensitivity du0*/dx0 even when earlier iterations damped.
-TEST(TrackingFeedback, DDPFinalGainUndamped) {
+// On a linear system (zero dynamics Hessian), factor-graph ILQRTracking matches
+// full second-order DDP exactly across the horizon.
+TEST(TrackingFeedback, ILQRMatchesDDPOnLinearSystem) {
+  const double dt = 0.02;
+  const auto doubleIntegrator = [dt](const Vector& x,
+                                     const Vector& u) -> Vector {
+    return Vector4(x[0] + dt * x[2], x[1] + dt * x[3], x[2] + dt * u[0],
+                   x[3] + dt * u[1]);
+  };
+  const Eigen::Index h = 10;
+  const Matrix q = dt * Vector4(500., 500., 100., 100.).asDiagonal();
+  const Matrix r = dt * Matrix2::Identity();
+  const Matrix terminal = Matrix4::Identity();
+  const Vector4 x0(0.3, -0.2, 0.5, -0.4);
+  const Matrix targetStates = Matrix::Zero(4, h + 1);
+  const Matrix targetControls = Matrix::Zero(2, h);
+
+  ILQRTracking<> ilqr(q, r, terminal);
+  DDPTracking<> ddp(q, r, terminal);
+  const Matrix uIlqr =
+      ilqr.optimize(x0, targetStates, targetControls, doubleIntegrator, 5);
+  const Matrix uDdp =
+      ddp.optimize(x0, targetStates, targetControls, doubleIntegrator, 5);
+
+  EXPECT(assert_equal(uDdp, uIlqr, 1e-5));
+  EXPECT(assert_equal(ddp.stateMatrix(), ilqr.stateMatrix(), 1e-5));
+  for (size_t k = 0; k < static_cast<size_t>(h); ++k)
+    EXPECT(assert_equal(ddp.gain(k), ilqr.gain(k), 1e-5));
+}
+
+// On a nonlinear pendulum swing-up, factor-graph ILQRTracking (first-order
+// dynamics) converges to the same optimum as full second-order DDP without
+// significant deviation, while avoiding O((n+m)^2) Hessian finite differences.
+TEST(TrackingFeedback, ILQRMatchesDDPOnNonlinearPendulum) {
   const double dt = 0.05;
   const auto pendulum = [dt](const Vector& x, const Vector& u) -> Vector {
     return Vector2(x[0] + dt * x[1],
@@ -122,23 +160,186 @@ TEST(TrackingFeedback, DDPFinalGainUndamped) {
   const Matrix q = Vector2(2., 0.2).asDiagonal();
   const Matrix r = Matrix1::Identity() * 0.1;
   const Matrix terminal = Vector2(20., 2.).asDiagonal();
-  DDPTracking solver(q, r, terminal);
   const Vector2 x0(0.2, 0.0);
-  const Matrix uStar =
-      solver.optimize(x0, targetStates, targetControls, pendulum, 50);
-  const Matrix k0 = solver.gain(0);
-  // Compare gain(0) against finite differences of the re-solved optimum.
-  const double eps = 1e-4;
-  for (int i = 0; i < 2; ++i) {
-    Vector2 dx = Vector2::Zero();
-    dx[i] = eps;
-    DDPTracking plus(q, r, terminal), minus(q, r, terminal);
-    const double uPlus = plus.optimize(x0 + dx, targetStates, targetControls,
-                                       pendulum, 50)(0, 0);
-    const double uMinus = minus.optimize(x0 - dx, targetStates, targetControls,
-                                         pendulum, 50)(0, 0);
-    const double fd = (uPlus - uMinus) / (2 * eps);
-    EXPECT_DOUBLES_EQUAL(fd, k0(0, i), 1e-3);
+
+  ILQRTracking<> ilqr(q, r, terminal);
+  DDPTracking<> ddp(q, r, terminal);
+  const Matrix uIlqr =
+      ilqr.optimize(x0, targetStates, targetControls, pendulum, 50);
+  const Matrix uDdp =
+      ddp.optimize(x0, targetStates, targetControls, pendulum, 50);
+
+  // On the large-residual swing-up, iLQR and full DDP converge to the same
+  // optimal controls and state trajectory (their gains differ only by the
+  // second-order V_x^T f_{xx} term, which vanishes along a feasible reference).
+  EXPECT(assert_equal(uDdp, uIlqr, 1e-2));
+  EXPECT(assert_equal(ddp.stateMatrix(), ilqr.stateMatrix(), 1e-2));
+
+  // Tracking the feasible nonlinear reference from a perturbed initial state
+  // (the Tube/Robust-MPPI tracking regime): controls, states, and gains agree.
+  const Vector2 perturbed = x0 + Vector2(0.05, -0.05);
+  ILQRTracking<> trackIlqr(q, r, terminal);
+  DDPTracking<> trackDdp(q, r, terminal);
+  const Matrix uTrackIlqr =
+      trackIlqr.optimize(perturbed, ddp.states(), uDdp, pendulum, 50);
+  const Matrix uTrackDdp =
+      trackDdp.optimize(perturbed, ddp.states(), uDdp, pendulum, 50);
+  EXPECT(assert_equal(uTrackDdp, uTrackIlqr, 1e-2));
+  EXPECT(assert_equal(trackDdp.stateMatrix(), trackIlqr.stateMatrix(), 1e-2));
+  EXPECT(assert_equal(trackDdp.gain(0), trackIlqr.gain(0), 1e-1));
+}
+
+// Analytic OptionalJacobian transitions match finite-difference ILQRTracking
+// and continuous (vectorField, dt) overloads match discrete Euler steps.
+TEST(TrackingFeedback, AnalyticJacobiansAndVectorField) {
+  const double dt = 0.05;
+  const Eigen::Index h = 25;
+  const auto field = [](const Vector& x, const Vector& u) -> Vector {
+    return Vector2(x[1], -9.81 * std::sin(x[0]) + u[0]);
+  };
+  const auto discrete = [dt](const Vector& x, const Vector& u) -> Vector {
+    return Vector2(x[0] + dt * x[1],
+                   x[1] + dt * (-9.81 * std::sin(x[0]) + u[0]));
+  };
+  const ILQRTracking<>::LinearizedTransition analytic =
+      [dt](const Vector& x, const Vector& u, ILQRTracking<>::OptionalMatrix Hx,
+           ILQRTracking<>::OptionalMatrix Hu) -> Vector {
+    if (Hx) {
+      *Hx = Matrix2{{1.0, dt}, {-dt * 9.81 * std::cos(x[0]), 1.0}};
+    }
+    if (Hu) {
+      *Hu = Vector2(0.0, dt);
+    }
+    return Vector2(x[0] + dt * x[1],
+                   x[1] + dt * (-9.81 * std::sin(x[0]) + u[0]));
+  };
+  Matrix targetStates = Matrix::Zero(2, h + 1);
+  targetStates.row(0).setConstant(M_PI);
+  const Matrix targetControls = Matrix::Zero(1, h);
+  const Matrix q = Vector2(2., 0.2).asDiagonal();
+  const Matrix r = Matrix1::Identity() * 0.1;
+  const Matrix terminal = Vector2(20., 2.).asDiagonal();
+  const Vector2 x0(0.2, 0.0);
+
+  ILQRTracking<> ilqrFd(q, r, terminal), ilqrAna(q, r, terminal),
+      ilqrCont(q, r, terminal);
+  const Matrix uFd =
+      ilqrFd.optimize(x0, targetStates, targetControls, discrete, 50);
+  const Matrix uAna =
+      ilqrAna.optimize(x0, targetStates, targetControls, analytic, 50);
+  const Matrix uCont =
+      ilqrCont.optimize(x0, targetStates, targetControls, field, dt, 50);
+  EXPECT(assert_equal(uFd, uAna, 1e-4));
+  EXPECT(assert_equal(ilqrFd.gain(0), ilqrAna.gain(0), 1e-3));
+  EXPECT(assert_equal(uFd, uCont, 1e-8));
+
+  DDPTracking<> ddpDisc(q, r, terminal), ddpCont(q, r, terminal);
+  const Matrix uDdpDisc =
+      ddpDisc.optimize(x0, targetStates, targetControls, discrete, 50);
+  const Matrix uDdpCont =
+      ddpCont.optimize(x0, targetStates, targetControls, field, dt, 50);
+  EXPECT(assert_equal(uDdpDisc, uDdpCont, 1e-8));
+}
+
+// ILQRTracking<Pose2> and DDPTracking<Pose2> track a Pose2 unicycle
+// reference using local tangent coordinates, matching analytic OptionalJacobian
+// and discrete / continuous interfaces.
+TEST(TrackingFeedback, ManifoldPose2Tracking) {
+  const double dt = 0.1;
+  const size_t h = 20;
+  const auto field = [](const Pose2&, const Vector& u) -> Vector {
+    return Vector3(u[0], 0.0, u[1]);
+  };
+  const auto discreteExpmap = [dt](const Pose2& x, const Vector& u) -> Pose2 {
+    return x.compose(Pose2::Expmap(Vector3(dt * u[0], 0.0, dt * u[1])));
+  };
+  const ILQRTracking<Pose2>::LinearizedTransition analytic =
+      [dt](const Pose2& x, const Vector& u,
+           ILQRTracking<Pose2>::OptionalMatrix Hx,
+           ILQRTracking<Pose2>::OptionalMatrix Hu) -> Pose2 {
+    const Vector3 xi(dt * u[0], 0.0, dt * u[1]);
+    Matrix3 Dexp;
+    const Pose2 delta = Pose2::Expmap(xi, Hu ? &Dexp : nullptr);
+    Matrix3 H1, H2;
+    const Pose2 next = x.compose(delta, Hx ? &H1 : nullptr, Hu ? &H2 : nullptr);
+    if (Hx) *Hx = H1;
+    if (Hu) {
+      Matrix32 Dxi = Matrix32::Zero();
+      Dxi(0, 0) = dt;
+      Dxi(2, 1) = dt;
+      *Hu = H2 * Dexp * Dxi;
+    }
+    return next;
+  };
+
+  // Build a feasible reference curve on SE(2) from constant forward + yaw.
+  Matrix uRef = Matrix::Zero(2, static_cast<Eigen::Index>(h));
+  uRef.row(0).setConstant(1.0);
+  uRef.row(1).setConstant(0.4);
+  std::vector<Pose2> xRef(h + 1);
+  xRef[0] = Pose2(0.0, 0.0, 0.0);
+  for (size_t k = 0; k < h; ++k)
+    xRef[k + 1] =
+        discreteExpmap(xRef[k], uRef.col(static_cast<Eigen::Index>(k)));
+
+  const Pose2 x0(0.0, -0.15, 0.1);
+  const Matrix q = Vector3(5.0, 5.0, 2.0).asDiagonal();
+  const Matrix r = Vector2(0.2, 0.2).asDiagonal();
+  const Matrix terminal = Vector3(20.0, 20.0, 10.0).asDiagonal();
+
+  ILQRTracking<Pose2> ilqrAna(q, r, terminal), ilqrFd(q, r, terminal),
+      ilqrCont(q, r, terminal);
+  DDPTracking<Pose2> ddpDisc(q, r, terminal);
+  const Matrix uAna = ilqrAna.optimize(x0, xRef, uRef, analytic, 25);
+  const Matrix uFd = ilqrFd.optimize(x0, xRef, uRef, discreteExpmap, 25);
+  const Matrix uDdp = ddpDisc.optimize(x0, xRef, uRef, discreteExpmap, 25);
+  const Matrix uCont = ilqrCont.optimize(x0, xRef, uRef, field, dt, 25);
+
+  EXPECT(assert_equal(uAna, uFd, 1e-5));
+  EXPECT(assert_equal(uDdp, uAna, 1e-3));
+  EXPECT(assert_equal(ilqrAna.gain(0), ilqrFd.gain(0), 1e-4));
+  // Tracking reduces terminal SE(2) error well below the open-loop baseline.
+  EXPECT(traits<Pose2>::Local(xRef.back(), ilqrAna.states().back()).norm() <
+         0.05);
+  EXPECT(traits<Pose2>::Local(xRef.back(), ilqrCont.states().back()).norm() <
+         0.05);
+  EXPECT(uCont.allFinite());
+}
+
+// ILQRTracking works on non-Lie-group manifolds (Unit3 on S^2) and 3D
+// rotations (Rot3 on SO(3)).
+TEST(TrackingFeedback, ManifoldUnit3AndRot3Tracking) {
+  // Unit3 tracking in the moving tangent plane of S^2.
+  {
+    const double dt = 0.1;
+    const size_t h = 15;
+    const auto field = [](const Unit3&, const Vector& u) -> Vector {
+      return Vector2(u[0], u[1]);
+    };
+    const Unit3 start(1.0, 0.0, 0.0);
+    const Unit3 goal(1.0, 0.3, -0.2);
+    std::vector<Unit3> targets(h + 1, goal);
+    const Matrix uInit = Matrix::Zero(2, static_cast<Eigen::Index>(h));
+    ILQRTracking<Unit3> solver(Matrix2::Identity(), 0.05 * Matrix2::Identity(),
+                               100.0 * Matrix2::Identity());
+    solver.optimize(start, targets, uInit, field, dt, 20);
+    EXPECT(traits<Unit3>::Local(goal, solver.states().back()).norm() < 0.02);
+  }
+
+  // Rot3 attitude tracking on SO(3).
+  {
+    const double dt = 0.1;
+    const size_t h = 15;
+    const auto field = [](const Rot3&, const Vector& omega) -> Vector {
+      return omega;
+    };
+    const Rot3 goal = Rot3::Ypr(0.4, -0.2, 0.3);
+    std::vector<Rot3> targets(h + 1, goal);
+    const Matrix uInit = Matrix::Zero(3, static_cast<Eigen::Index>(h));
+    ILQRTracking<Rot3> solver(Matrix3::Identity(), 0.05 * Matrix3::Identity(),
+                              100.0 * Matrix3::Identity());
+    solver.optimize(Rot3::Identity(), targets, uInit, field, dt, 20);
+    EXPECT(traits<Rot3>::Local(goal, solver.states().back()).norm() < 0.02);
   }
 }
 }  // namespace tracking

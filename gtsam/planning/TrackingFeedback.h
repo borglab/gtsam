@@ -5,9 +5,9 @@
  * @author Akash Ratheesh
  */
 #pragma once
+
 #include <gtsam/base/Matrix.h>
 
-#include <functional>
 #include <vector>
 
 namespace gtsam {
@@ -24,37 +24,21 @@ GTSAM_EXPORT Vector contractionFeedback(const Vector& error,
                                         const Vector& driftDifference,
                                         double rate);
 
-/**
- * Differential dynamic programming for Euclidean trajectory tracking with a
- * supplied discrete transition. Central differences provide first and second
- * dynamics derivatives. The backward sweep computes feedforward corrections
- * and a time-varying feedback gain. The forward pass searches step lengths.
- */
-class GTSAM_EXPORT DDPTracking {
- public:
-  using Transition = std::function<Vector(const Vector&, const Vector&)>;
-  /// Supply running state/control and terminal state precision matrices.
-  DDPTracking(const Matrix& statePrecision, const Matrix& controlPrecision,
-              const Matrix& terminalPrecision);
-  /** Fit H controls and H gains to H+1 target states from the actual initial
-   * state. Optional componentwise control limits are applied by clamping
-   * during every forward rollout, including the initialization. Note that this
-   * is a forward-rollout projection rather than a box-constrained backward
-   * pass, so active bounds can cause the search to stall at a non-stationary
-   * point.
-   */
-  Matrix optimize(const Vector& initial, const Matrix& targetStates,
-                  const Matrix& targetControls, const Transition& transition,
-                  size_t iterations, const Vector& lower = {},
-                  const Vector& upper = {});
-  /// Optimized state trajectory with columns ordered in time.
-  const Matrix& states() const { return states_; }
-  /// Gain multiplying actual minus reference state at a given step.
-  const Matrix& gain(size_t step) const { return gains_.at(step); }
+namespace internal {
 
- private:
-  Matrix q_, r_, terminal_, states_;
-  std::vector<Matrix> gains_;
+struct TrackingSweep {
+  Matrix feedforward;
+  std::vector<Matrix> gains;
 };
 
+/// Verify that a precision matrix is finite, symmetric, and PSD (or PD).
+GTSAM_EXPORT void checkTrackingPrecision(const Matrix& precision,
+                                         bool definite);
+
+/// Validate optional componentwise control limits.
+GTSAM_EXPORT void validateControlLimits(Eigen::Index controlDim,
+                                        const Vector& lower,
+                                        const Vector& upper);
+
+}  // namespace internal
 }  // namespace gtsam
