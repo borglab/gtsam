@@ -102,7 +102,8 @@ Matrix GaussianProposal::drawNoise(Eigen::Index horizon) const {
 
 Matrix GaussianProposal::drawControls(const State& state,
                                       bool includeIncumbent) const {
-  const Eigen::Index horizon = state.mean.cols(), count = noise_.numSamples();
+  const Eigen::Index horizon = state.mean.cols(),
+                     count = static_cast<Eigen::Index>(noise_.numSamples());
   if (!horizon || state.mean.rows() != initialStddev_.size() ||
       state.stddev.rows() != state.mean.rows() ||
       state.stddev.cols() != horizon || !state.stddev.allFinite() ||
@@ -124,10 +125,12 @@ Matrix GaussianProposal::drawControls(const State& state,
     throw std::invalid_argument(
         "Noise draws must match the control dimension and batch size.");
   const Matrix scale = state.stddev * std::pow(options_.decay, state.iteration);
+  const double meanCutoff =
+      (1.0 - options_.zeroMeanFraction) * static_cast<double>(count);
   for (Eigen::Index j = 0; j < count; ++j) {
     auto sample = controls.middleCols(j * horizon, horizon);
     sample.array() *= scale.array();
-    if (j < (1.0 - options_.zeroMeanFraction) * count) sample += state.mean;
+    if (static_cast<double>(j) < meanCutoff) sample += state.mean;
   }
   if (includeIncumbent || options_.includeNominal)
     controls.leftCols(horizon) = state.mean;
@@ -143,10 +146,13 @@ Vector GaussianProposal::logWeightOffsets(const State& state,
   const Matrix scaledMean =
       (options_.likelihoodCoefficients.asDiagonal() * state.mean).array() /
       state.stddev.array().square();
-  for (Eigen::Index j = 0; j < (1.0 - options_.zeroMeanFraction) * count; ++j)
+  const double meanCutoff =
+      (1.0 - options_.zeroMeanFraction) * static_cast<double>(count);
+  for (Eigen::Index j = 0; static_cast<double>(j) < meanCutoff; ++j)
     offsets[j] =
         -(scaledMean.array() *
-          (controls.middleCols(j * horizon, horizon) - 0.5 * state.mean).array())
+          (controls.middleCols(j * horizon, horizon) - 0.5 * state.mean)
+              .array())
              .sum();
   return offsets;
 }
@@ -197,7 +203,7 @@ Matrix ColoredNoiseProposal::drawNoise(Eigen::Index horizon) const {
     const auto frequency = std::max<Eigen::Index>(1, std::min(k, horizon - k));
     gain[k] = std::pow(frequency, -0.5 * exponent_);
   }
-  gain *= std::sqrt(horizon / gain.squaredNorm());
+  gain *= std::sqrt(static_cast<double>(horizon) / gain.squaredNorm());
   Eigen::FFT<double> fft;
   Eigen::VectorXcd spectrum;
   Vector series(horizon);
@@ -295,7 +301,8 @@ ControlBatch PiecewiseLinearProposal::sampleImpl(const State& state,
     initialized.iteration = state.iteration;
     return sampleImpl(initialized, initial, dt, incumbent);
   }
-  const Eigen::Index horizon = state.mean.cols(), count = noise_.numSamples();
+  const Eigen::Index horizon = state.mean.cols(),
+                     count = static_cast<Eigen::Index>(noise_.numSamples());
   if (!horizon || state.mean.rows() != p.amplitude.size() ||
       state.stddev.rows() != state.mean.rows() ||
       state.stddev.cols() != horizon ||
@@ -303,10 +310,13 @@ ControlBatch PiecewiseLinearProposal::sampleImpl(const State& state,
     throw std::invalid_argument(
         "Invalid motion primitive horizon or fixed prefix.");
   const auto prefix = static_cast<Eigen::Index>(p.fixedPrefix);
+  const double horizonD = static_cast<double>(horizon);
+  const double countD = static_cast<double>(count);
   Matrix controls(state.mean.rows(), count * horizon);
   Matrix colored;
   if (p.coloredFraction > 0) colored = ColoredNoiseProposal::drawNoise(horizon);
-  std::poisson_distribution<size_t> switches(0.5 * segments_);
+  std::poisson_distribution<size_t> switches(0.5 *
+                                             static_cast<double>(segments_));
   std::uniform_real_distribution<double> uniform(0., 1.);
   for (Eigen::Index j = 0; j < count; ++j) {
     auto sample = controls.middleCols(j * horizon, horizon);
@@ -314,15 +324,16 @@ ControlBatch PiecewiseLinearProposal::sampleImpl(const State& state,
       sample = state.mean;
     } else if (j == 1) {
       sample.setZero();
-    } else if (j < p.coloredFraction * count) {
+    } else if (static_cast<double>(j) < p.coloredFraction * countD) {
       sample = state.mean.array() +
                p.coloredScale * state.stddev.array() *
                    colored.middleCols(j * horizon, horizon).array();
     } else {
-      const bool shifted = j < (p.coloredFraction + p.shiftedFraction) * count;
+      const bool shifted = static_cast<double>(j) <
+                           (p.coloredFraction + p.shiftedFraction) * countD;
       for (Eigen::Index row = 0; row < sample.rows(); ++row) {
         const size_t knots = std::min(segments_, switches(knotGenerator_));
-        const double start = static_cast<double>(prefix) / horizon;
+        const double start = static_cast<double>(prefix) / horizonD;
         std::vector<double> times{start};
         for (size_t i = 0; i < knots; ++i) {
           const double time = uniform(knotGenerator_);
@@ -339,7 +350,7 @@ ControlBatch PiecewiseLinearProposal::sampleImpl(const State& state,
         double right = level();
         size_t edge = 0;
         for (Eigen::Index k = prefix; k < horizon; ++k) {
-          const double t = static_cast<double>(k) / horizon;
+          const double t = static_cast<double>(k) / horizonD;
           while (t >= times[edge + 1]) {
             ++edge;
             left = right;
@@ -366,12 +377,14 @@ Matrix PiecewiseLinearProposal::drawNoise(Eigen::Index horizon) const {
   for (Eigen::Index j = 0; j < noise.cols(); j += horizon) {
     std::iota(interior.begin(), interior.end(), 1);
     std::shuffle(interior.begin(), interior.end(), knotGenerator_);
-    std::sort(interior.begin(), interior.begin() + segments_ - 1);
+    std::sort(interior.begin(),
+              interior.begin() + static_cast<std::ptrdiff_t>(segments_ - 1));
     Eigen::Index left = 0;
     for (size_t i = 0; i < segments_; ++i) {
       const Eigen::Index right = i + 1 == segments_ ? horizon - 1 : interior[i];
       for (Eigen::Index k = left + 1; k < right; ++k) {
-        const double t = static_cast<double>(k - left) / (right - left);
+        const double t =
+            static_cast<double>(k - left) / static_cast<double>(right - left);
         noise.col(j + k) =
             (1.0 - t) * noise.col(j + left) + t * noise.col(j + right);
       }
@@ -402,7 +415,8 @@ SmoothControlProposal::Batch SmoothControlProposal::sample(
   if (incumbent || includesNominal())
     batch.derivatives.leftCols(state.mean.cols()).setZero();
   batch.controls =
-      state.mean.replicate(1, noise_.numSamples()) + dt * batch.derivatives;
+      state.mean.replicate(1, static_cast<Eigen::Index>(noise_.numSamples())) +
+      dt * batch.derivatives;
   batch.logWeightOffsets = logWeightOffsets(state, batch.controls);
   return batch;
 }

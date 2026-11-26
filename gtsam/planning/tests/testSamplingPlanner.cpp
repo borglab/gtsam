@@ -372,7 +372,7 @@ TEST(SamplingPlanner, GaussianLikelihoodUpdate) {
   EXPECT(assert_equal((Matrix{{1., 2., 2., 0., -1., 1.}}), batch.controls));
   EXPECT(assert_equal(Vector3(-1.25, 0.25, 0.75), batch.logWeightOffsets));
   const Vector3 costs{0.25, 0.25, 2.};
-  for (int j = 0; j < 3; ++j)
+  for (Eigen::Index j = 0; j < 3; ++j)
     EXPECT_DOUBLES_EQUAL(
         costs[j],
         graph.error(planner.rollout(
@@ -418,7 +418,7 @@ TEST(ControlProposals, SpectralColor) {
   const Matrix raw = white.sample(state, {}, 1., false).controls;
   const auto energy = [](const Matrix& samples) {
     double total = 0.;
-    for (int j = 0; j < 128; ++j)
+    for (Eigen::Index j = 0; j < 128; ++j)
       total +=
           (samples.middleCols(31 * j + 1, 30) - samples.middleCols(31 * j, 30))
               .squaredNorm();
@@ -451,7 +451,7 @@ TEST(ControlProposals, PiecewiseLinear) {
   const auto batch =
       proposal.sample(proposal.initialize(nominal), {}, 1., true);
   EXPECT(assert_equal(nominal, Matrix(batch.controls.leftCols(12))));
-  for (int j = 1; j < 8; ++j) {
+  for (Eigen::Index j = 1; j < 8; ++j) {
     const auto u = batch.controls.middleCols(12 * j, 12);
     EXPECT_LONGS_EQUAL(
         1, ((u.leftCols(10) - 2 * u.middleCols(1, 10) + u.rightCols(10))
@@ -492,7 +492,7 @@ struct FeedbackProposal : GaussianProposal {
   using GaussianProposal::GaussianProposal;
   struct Batch : ControlBatch {
     Vector1 operator()(Eigen::Index j, size_t k, const Vector1& x) const {
-      if (j == 0) return controls.col(k);
+      if (j == 0) return controls.col(static_cast<Eigen::Index>(k));
       return Vector1{-0.5 * x.x()};
     }
   };

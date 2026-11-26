@@ -63,14 +63,14 @@ double empiricalRisk(Vector costs, double alpha, bool averageTail) {
     throw std::invalid_argument(
         "Expected finite scenario costs and a quantile in [0, 1].");
   std::sort(costs.data(), costs.data() + costs.size());
-  const double index = alpha * (costs.size() - 1);
+  const double index = alpha * static_cast<double>(costs.size() - 1);
   const auto lower = static_cast<Eigen::Index>(std::floor(index));
   const auto upper = static_cast<Eigen::Index>(std::ceil(index));
-  const double fraction = index - lower;
+  const double fraction = index - static_cast<double>(lower);
   const double quantile =
       (1. - fraction) * costs[lower] + fraction * costs[upper];
   if (!averageTail) return quantile;
-  const double weight = 1. / (1 + costs.size() - upper);
+  const double weight = 1. / static_cast<double>(1 + costs.size() - upper);
   return weight * quantile + (weight * costs.tail(costs.size() - upper)).sum();
 }
 
