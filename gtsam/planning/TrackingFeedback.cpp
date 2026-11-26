@@ -209,7 +209,8 @@ Matrix DDPTracking::optimize(const Vector& initial, const Matrix& targetStates,
     // Backtracking line search along the feedforward/feedback policy.
     bool accepted = false;
     if (i < iterations && sweep.feedforward.norm() > 1e-10) {
-      for (double alpha = 1; alpha >= 1. / 128; alpha *= 0.5) {
+      for (int step = 0; step < 8; ++step) {
+        const double alpha = std::ldexp(1.0, -step);
         Matrix trial = controls;
         Matrix x = rollout(trial, states, &sweep, alpha);
         const double value = cost(x, trial);

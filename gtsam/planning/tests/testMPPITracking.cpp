@@ -146,28 +146,31 @@ TEST(TrackingFeedback, DDPFinalGainUndamped) {
 
 /* ************************************************************************* */
 namespace controllers {
-const KeyVector states{0, 1, 2}, inputs{3, 4};
 using Planner = SamplingPlanner<Vector1, Vector1>;
-const auto dynamics = [](const Vector1&, const Vector1& u) { return u; };
-const auto feedback = [](size_t, const Vector1& x, const Vector1& ref,
-                         const Vector1&) { return Vector1(ref - x); };
+
+KeyVector states() { return {0, 1, 2}; }
+KeyVector inputs() { return {3, 4}; }
+Vector1 dynamics(const Vector1&, const Vector1& u) { return u; }
+Vector1 feedback(size_t, const Vector1& x, const Vector1& ref, const Vector1&) {
+  return Vector1(ref - x);
+}
 
 // Shared builders for the 2-step scalar tracking fixtures below.
-Planner makePlanner(double dt = 1.) { return Planner(states, inputs, dt); }
+Planner makePlanner(double dt = 1.) { return Planner(states(), inputs(), dt); }
 MPPITracking makeTracking(size_t samples = 16) {
   return MPPITracking(Matrix1::Identity(), samples, 1.);
 }
 
 Values initial(double start) {
   Values values;
-  for (Key key : states) values.insert(key, Vector1{start});
-  for (Key key : inputs) values.insert(key, Vector1{0.});
+  for (Key key : states()) values.insert(key, Vector1{start});
+  for (Key key : inputs()) values.insert(key, Vector1{0.});
   return values;
 }
 
 NonlinearFactorGraph cost() {
   NonlinearFactorGraph graph;
-  graph.addPrior(states.front(), Vector1{0.}, noiseModel::Unit::Create(1));
+  graph.addPrior(states().front(), Vector1{0.}, noiseModel::Unit::Create(1));
   return graph;
 }
 
@@ -216,7 +219,7 @@ struct ConditionedProposal : GaussianProposal {
   using GaussianProposal::GaussianProposal;
   ControlBatch sample(const State& state, const Values& initial, double,
                       bool) const {
-    const auto count = initial.at<Vector1>(states[0])[0] < 1. ? 2 : 1;
+    const auto count = initial.at<Vector1>(states()[0])[0] < 1. ? 2 : 1;
     return {Matrix::Constant(1, count * state.mean.cols(), 3.), {}};
   }
   void update(State& state, const ControlBatch& batch,
@@ -235,7 +238,7 @@ TEST(MPPITracking, TubeCustomProposal) {
 
   auto result = tracking.tube(planner, cost(), initial(0.), initial(0.),
                               dynamics, feedback, proposal, -1., 1);
-  for (Key key : inputs)
+  for (Key key : inputs())
     EXPECT(assert_equal(Vector1{4.}, result.nominal.at<Vector1>(key)));
   CHECK_EXCEPTION(tracking.tube(planner, cost(), initial(0.), initial(2.),
                                 dynamics, feedback, proposal, 0., 1),
@@ -266,16 +269,17 @@ TEST(MPPITracking, StateFeedbackProposal) {
   auto tube = tracking.tube(planner, cost(), initial(2.), initial(4.), dynamics,
                             zeroFeedback, proposal, 20., 1);
   EXPECT_LONGS_EQUAL(0, tube.candidate);
-  EXPECT(assert_equal(Vector1{-2.}, tube.nominal.at<Vector1>(inputs[0])));
-  EXPECT(assert_equal(Vector1{-1.}, tube.nominal.at<Vector1>(inputs[1])));
+  EXPECT(assert_equal(Vector1{-2.}, tube.nominal.at<Vector1>(inputs()[0])));
+  EXPECT(assert_equal(Vector1{-1.}, tube.nominal.at<Vector1>(inputs()[1])));
 
   auto robust =
       tracking.robust(planner, cost(), initial(2.), initial(4.), dynamics,
                       zeroFeedback, proposal, 1., 3, 0, 1, Matrix1::Zero());
   EXPECT_LONGS_EQUAL(0, robust.candidate);
-  EXPECT(assert_equal(Vector1{-1.}, robust.actual.at<Vector1>(inputs[0])));
-  EXPECT(assert_equal(Vector1{-0.5}, robust.actual.at<Vector1>(inputs[1])));
-  EXPECT(assert_equal(Vector1{2.5}, robust.actual.at<Vector1>(states.back())));
+  EXPECT(assert_equal(Vector1{-1.}, robust.actual.at<Vector1>(inputs()[0])));
+  EXPECT(assert_equal(Vector1{-0.5}, robust.actual.at<Vector1>(inputs()[1])));
+  EXPECT(
+      assert_equal(Vector1{2.5}, robust.actual.at<Vector1>(states().back())));
 }
 
 // Derivative-coordinate batches retain their native state across Tube
@@ -342,7 +346,7 @@ TEST(MPPITracking, StopWithSmoothing) {
       tracking.primitives(planner, cost(), initial(4.), initial(4.), dynamics,
                           1, 0., 0., 1, 1, 1., Matrix::Zero(1, 2));
   EXPECT_LONGS_EQUAL(1, result.candidate);
-  for (Key key : inputs) {
+  for (Key key : inputs()) {
     EXPECT(assert_equal(Vector1{0.}, result.nominal.at<Vector1>(key)));
     EXPECT(assert_equal(Vector1{0.}, result.actual.at<Vector1>(key)));
   }
@@ -353,7 +357,7 @@ TEST(MPPITracking, StopWithInfiniteCosts) {
   const auto planner = makePlanner();
   const auto tracking = makeTracking(4);
   auto infeasible = cost();
-  infeasible.addPrior(states.front(), Vector1{1e200},
+  infeasible.addPrior(states().front(), Vector1{1e200},
                       noiseModel::Unit::Create(1));
   const auto start = initial(0.);
   EXPECT(std::isinf(infeasible.error(start)));
@@ -362,8 +366,8 @@ TEST(MPPITracking, StopWithInfiniteCosts) {
     const auto result =
         tracking.primitives(planner, infeasible, start, start, dynamics, 1, 0.,
                             0., 1, 1, 1., Matrix{{-1., 0.}});
-    EXPECT(assert_equal(Vector1{-1.}, result.nominal.at<Vector1>(inputs[0])));
-    EXPECT(assert_equal(Vector1{0.}, result.nominal.at<Vector1>(inputs[1])));
+    EXPECT(assert_equal(Vector1{-1.}, result.nominal.at<Vector1>(inputs()[0])));
+    EXPECT(assert_equal(Vector1{0.}, result.nominal.at<Vector1>(inputs()[1])));
     EXPECT(assert_equal(result.nominal, result.actual));
   } catch (const std::domain_error&) {
     FAIL(
