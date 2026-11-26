@@ -59,72 +59,28 @@ StageKeyMap buildStageKeyMap(const KeyVector& stateKeys,
   return keyMap;
 }
 
-StageLinearizedCosts linearizeStageCosts(const NonlinearFactorGraph& cost,
-                                         const Values& values,
-                                         const KeyVector& stateKeys,
-                                         const KeyVector& controlKeys,
-                                         const StageKeyMap& keyMap,
-                                         Eigen::Index stateDim) {
-  const size_t h = controlKeys.size();
-  StageLinearizedCosts out{
-      std::vector<GaussianFactorGraph>(h),
-      HessianFactor(stateKeys[h], Matrix::Zero(stateDim, stateDim),
-                    Vector::Zero(stateDim), 0.0)};
+GaussianConditional::shared_ptr eliminateControlStage(
+    const Matrix& A, const Matrix& B, const HessianFactor& stageCost,
+    double damping, HessianFactor& valueToGo,
+    const HessianFactor* dynamicsCurvature) {
+  // Substitute the linearized transition into the separator factor on X(k+1).
+  HessianFactor joint(stageCost);  // keys [U(k), X(k)]
+  Matrix F(A.rows(), B.cols() + A.cols());
+  F << B, A;
+  const Matrix projected = valueToGo.informationView() * F;
+  joint.info().updateDiagonalBlockAt(0, (F.transpose() * projected).eval());
+  joint.linearTerm().noalias() += F.transpose() * valueToGo.linearTerm();
+  joint.constantTerm() += valueToGo.constantTerm();
+  if (dynamicsCurvature) dynamicsCurvature->updateHessian(&joint);
+  if (damping > 0.0)
+    joint.info().addToDiagonalBlock(0, Vector::Constant(B.cols(), damping));
 
-  const auto linearCost = cost.linearize(values);
-  for (const auto& factor : *linearCost) {
-    if (!factor || factor->empty()) continue;
-    const auto& keys = factor->keys();
-    if (keys.size() == 1) {
-      const auto it = keyMap.find(keys[0]);
-      if (it == keyMap.end())
-        throw std::invalid_argument(
-            "NonlinearFactorGraph contains a key outside state/control keys.");
-      const auto [stage, isControl] = it->second;
-      if (!isControl && stage == h)
-        factor->updateHessian(out.terminalFactor.keys(),
-                              &out.terminalFactor.info());
-      else
-        out.stageFactors[stage].push_back(factor);
-    } else if (keys.size() == 2) {
-      const auto it0 = keyMap.find(keys[0]);
-      const auto it1 = keyMap.find(keys[1]);
-      if (it0 == keyMap.end() || it1 == keyMap.end() ||
-          it0->second.first != it1->second.first ||
-          it0->second.second == it1->second.second)
-        throw std::invalid_argument(
-            "Chain trajectory optimizer requires unary stage/terminal factors "
-            "or binary (X(k), U(k)) factors.");
-      out.stageFactors[it0->second.first].push_back(factor);
-    } else {
-      throw std::invalid_argument(
-          "Chain trajectory optimizer supports unary stage/terminal factors "
-          "and binary (X(k), U(k)) factors.");
-    }
-  }
-  return out;
-}
-
-HessianFactor pullBackDynamics(Key stateKey, Key controlKey, const Matrix& A,
-                               const Matrix& B,
-                               const HessianFactor& nextValueToGo) {
-  const Matrix Vxx = nextValueToGo.information();
-  const Vector vx = nextValueToGo.linearTerm();
-  const Matrix VxxA = Vxx * A;
-  const Matrix VxxB = Vxx * B;
-  return HessianFactor(controlKey, stateKey, B.transpose() * VxxB,
-                       B.transpose() * VxxA, B.transpose() * vx,
-                       A.transpose() * VxxA, A.transpose() * vx,
-                       nextValueToGo.constantTerm());
-}
-
-std::pair<GaussianConditional::shared_ptr, HessianFactor>
-eliminateControlFactor(HessianFactor stageFactor, Key controlKey) {
   try {
-    auto conditional = stageFactor.eliminateCholesky(Ordering{controlKey});
-    return {std::move(conditional), std::move(stageFactor)};
+    auto conditional = joint.eliminateCholesky(Ordering{joint.front()});
+    valueToGo = std::move(joint);
+    return conditional;
   } catch (const IndeterminateSystemException&) {
-    return {nullptr, HessianFactor()};
+    return nullptr;
   }
 }
 

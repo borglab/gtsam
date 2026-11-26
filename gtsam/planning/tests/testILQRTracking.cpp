@@ -10,7 +10,9 @@
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/inference/Symbol.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/planning/ILQRTracking.h>
+#include <gtsam/slam/BetweenFactor.h>
 
 #include <cmath>
 #include <vector>
@@ -67,6 +69,48 @@ TEST(ILQRTracking, OneStepLinearQuadraticAndBounds) {
   plan = solver.optimize(graph, initial, step, 2, Vector1{-0.5}, Vector1{0.5});
   EXPECT_DOUBLES_EQUAL(0.5, plan.at<Vector>(U(0))[0], 1e-10);
   EXPECT_DOUBLES_EQUAL(0.5, plan.at<Vector>(X(1))[0], 1e-10);
+}
+
+// Cached correlated priors and ordinary factors must agree with the original
+// graph at each new nominal trajectory, including the Gaussian constant term.
+TEST(ILQRTracking, MixedCostGraphMatchesDirectLinearization) {
+  const KeyVector xs{X(0), X(1)}, us{U(0)};
+  const auto stages = internal::buildStageKeyMap(xs, us);
+  const auto gaussian =
+      noiseModel::Gaussian::Information(Matrix2{{3, 1}, {1, 2}});
+  const auto robust = noiseModel::Robust::Create(
+      noiseModel::mEstimator::Huber::Create(0.5), gaussian);
+  NonlinearFactorGraph graph;
+  graph.addPrior(U(0), Vector2{1, 2}, gaussian);
+  graph.addPrior(U(0), Vector2{-1, 3}, gaussian);
+  graph.addPrior(X(1), Vector2{2, -1}, gaussian);
+  graph.addPrior(X(1), Vector2{-2, 1}, robust);
+  graph.emplace_shared<BetweenFactor<Vector2>>(X(0), U(0), Vector2{1, -1},
+                                               gaussian);
+  graph.push_back(NonlinearFactor::shared_ptr{});
+
+  Values initial;
+  initial.insert(X(0), Vector2{1, 1});
+  initial.insert(42, 1.25);
+  internal::TrackingObjective<Vector2, Vector2> cost(graph, initial, xs, us,
+                                                     stages, 2, 2);
+  VectorValues delta;
+  delta.insert(X(0), Vector2{0.1, 0.2});
+  delta.insert(U(0), Vector2{-0.3, 0.4});
+  delta.insert(X(1), Vector2{0.5, -0.6});
+  for (double offset : {0.0, 2.0}) {
+    const std::vector<Vector2> states{{1, 1}, {offset, -2}};
+    const Vector2 control{offset, 3};
+    const Values values = cost.trajectoryValues(states, control);
+    EXPECT_DOUBLES_EQUAL(1.25, values.at<double>(42), 0.0);
+    EXPECT_DOUBLES_EQUAL(graph.error(values), cost.error(states, control),
+                         1e-10);
+    const auto local = cost.linearize(states, control);
+    EXPECT_DOUBLES_EQUAL(graph.linearize(values)->error(delta),
+                         local.stageFactors.front().error(delta) +
+                             local.terminalFactor.error(delta),
+                         1e-10);
+  }
 }
 
 // Analytic OptionalJacobian transitions match finite-difference ILQRTracking
@@ -143,23 +187,23 @@ KeyVector controlKeys(size_t horizon) {
   return keys;
 }
 
-// ILQRTracking<Pose2> tracks a Pose2 unicycle reference using a
+// ILQRTracking<Pose2, Vector2> tracks a Pose2 unicycle reference using a
 // NonlinearFactorGraph objective, matching analytic OptionalJacobian, FD
 // discrete, and continuous (vectorField, dt) interfaces.
 TEST(ILQRTracking, ManifoldPose2Tracking) {
   const double dt = 0.1;
   const size_t h = 20;
   const auto xKeys = stateKeys(h), uKeys = controlKeys(h);
-  const auto field = [](const Pose2&, const Vector& u) -> Vector {
+  const auto field = [](const Pose2&, const Vector2& u) -> Vector {
     return Vector3(u[0], 0.0, u[1]);
   };
-  const auto discreteExpmap = [dt](const Pose2& x, const Vector& u) -> Pose2 {
+  const auto discreteExpmap = [dt](const Pose2& x, const Vector2& u) -> Pose2 {
     return x.compose(Pose2::Expmap(Vector3(dt * u[0], 0.0, dt * u[1])));
   };
-  const ILQRTracking<Pose2>::LinearizedTransition analytic =
-      [dt](const Pose2& x, const Vector& u,
-           ILQRTracking<Pose2>::OptionalMatrix Hx,
-           ILQRTracking<Pose2>::OptionalMatrix Hu) -> Pose2 {
+  const ILQRTracking<Pose2, Vector2>::LinearizedTransition analytic =
+      [dt](const Pose2& x, const Vector2& u,
+           ILQRTracking<Pose2, Vector2>::OptionalMatrix Hx,
+           ILQRTracking<Pose2, Vector2>::OptionalMatrix Hu) -> Pose2 {
     const Vector3 xi(dt * u[0], 0.0, dt * u[1]);
     Matrix3 Dexp;
     const Pose2 delta = Pose2::Expmap(xi, Hu ? &Dexp : nullptr);
@@ -176,7 +220,7 @@ TEST(ILQRTracking, ManifoldPose2Tracking) {
   };
 
   // Build a feasible reference curve on SE(2) from constant forward + yaw.
-  const Vector uNominal = Vector2(1.0, 0.4);
+  const Vector2 uNominal{1.0, 0.4};
   std::vector<Pose2> xRef(h + 1);
   xRef[0] = Pose2(0.0, 0.0, 0.0);
   for (size_t k = 0; k < h; ++k)
@@ -196,7 +240,7 @@ TEST(ILQRTracking, ManifoldPose2Tracking) {
   }
   graph.addPrior(X(h), xRef[h], termNoise);
 
-  ILQRTracking<Pose2> ilqrAna(xKeys, uKeys), ilqrFd(xKeys, uKeys),
+  ILQRTracking<Pose2, Vector2> ilqrAna(xKeys, uKeys), ilqrFd(xKeys, uKeys),
       ilqrCont(xKeys, uKeys);
   const Values planAna = ilqrAna.optimize(graph, initial, analytic, 25);
   const Values planFd = ilqrFd.optimize(graph, initial, discreteExpmap, 25);
@@ -205,8 +249,8 @@ TEST(ILQRTracking, ManifoldPose2Tracking) {
   EXPECT_LONGS_EQUAL(static_cast<long>(h),
                      static_cast<long>(ilqrAna.policy().size()));
   for (size_t k = 0; k < h; ++k) {
-    EXPECT(
-        assert_equal(planAna.at<Vector>(U(k)), planFd.at<Vector>(U(k)), 1e-5));
+    EXPECT(assert_equal(planAna.atRef<Vector2>(U(k)),
+                        planFd.atRef<Vector2>(U(k)), 1e-5));
     const auto& cond = ilqrAna.policy()[k];
     const Matrix kFromBn =
         -cond->R().triangularView<Eigen::Upper>().solve(cond->S());

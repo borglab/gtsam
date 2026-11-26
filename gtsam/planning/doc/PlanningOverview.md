@@ -278,9 +278,11 @@ auto plans = tracking.tube(planner, graph, nominal, actual, dynamics, feedback,
                           proposal, threshold, iterations);
 ```
 
-`ILQRTracking<M>` and `DDPTracking<M>` optimize `NonlinearFactorGraph`
-objectives on any GTSAM `Manifold` `M` (defaulting to `Vector`) using the same
-`(stateKeys, controlKeys)` and `Values` interface as `SamplingPlanner`. Each
+`ILQRTracking<State, Control>` and `DDPTracking<State, Control>` use the same
+`(stateKeys, controlKeys)` and `Values` interface as `SamplingPlanner`. The state
+can be any GTSAM manifold. The control is a fixed-size or dynamic Eigen column
+vector. Both default to `Vector`. For example, `ILQRTracking<Pose2, Vector2>`
+takes a unicycle transition with a pose and a two-component control. Each
 iteration linearizes the cost graph and dynamics in local tangent coordinates
 and eliminates each stage via `HessianFactor::eliminateCholesky` into a
 `GaussianBayesNet` policy `policy()` (with pre-extracted feedback gains

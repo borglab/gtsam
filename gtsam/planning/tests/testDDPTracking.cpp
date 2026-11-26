@@ -174,10 +174,11 @@ TEST(DDPTracking, ManifoldPose2AndUnit3Tracking) {
     const double dt = 0.1;
     const size_t h = 20;
     const auto xKeys = stateKeys(h), uKeys = controlKeys(h);
-    const auto discreteExpmap = [dt](const Pose2& x, const Vector& u) -> Pose2 {
+    const auto discreteExpmap = [dt](const Pose2& x,
+                                     const Vector2& u) -> Pose2 {
       return x.compose(Pose2::Expmap(Vector3(dt * u[0], 0.0, dt * u[1])));
     };
-    const Vector uNominal = Vector2(1.0, 0.4);
+    const Vector2 uNominal{1.0, 0.4};
     std::vector<Pose2> xRef(h + 1);
     xRef[0] = Pose2(0.0, 0.0, 0.0);
     for (size_t k = 0; k < h; ++k)
@@ -197,13 +198,13 @@ TEST(DDPTracking, ManifoldPose2AndUnit3Tracking) {
     }
     graph.addPrior(X(h), xRef[h], termNoise);
 
-    ILQRTracking<Pose2> ilqr(xKeys, uKeys);
-    DDPTracking<Pose2> ddp(xKeys, uKeys);
+    ILQRTracking<Pose2, Vector2> ilqr(xKeys, uKeys);
+    DDPTracking<Pose2, Vector2> ddp(xKeys, uKeys);
     const Values planIlqr = ilqr.optimize(graph, initial, discreteExpmap, 25);
     const Values planDdp = ddp.optimize(graph, initial, discreteExpmap, 25);
     for (size_t k = 0; k < h; ++k) {
-      EXPECT(assert_equal(planIlqr.at<Vector>(U(k)), planDdp.at<Vector>(U(k)),
-                          1e-3));
+      EXPECT(assert_equal(planIlqr.atRef<Vector2>(U(k)),
+                          planDdp.atRef<Vector2>(U(k)), 1e-3));
     }
     EXPECT_LONGS_EQUAL(static_cast<long>(h),
                        static_cast<long>(ddp.policy().size()));

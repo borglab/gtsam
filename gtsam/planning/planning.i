@@ -159,7 +159,8 @@ gtsam::Vector contractionFeedback(const gtsam::Vector& error, const gtsam::Matri
 
 #include <gtsam/planning/ILQRTracking.h>
 
-template<M={gtsam::Vector, gtsam::Pose2, gtsam::Pose3, gtsam::Rot3, gtsam::Unit3}>
+// Python controls use dynamic vectors (the default Control specialization).
+template<State={gtsam::Vector, gtsam::Pose2, gtsam::Pose3, gtsam::Rot3, gtsam::Unit3}>
 class ILQRTracking {
   ILQRTracking(gtsam::KeyVector stateKeys, gtsam::KeyVector controlKeys);
   gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost,
@@ -180,7 +181,7 @@ class ILQRTracking {
   @pybind_lambda
   gtsam::KeyVector controlKeys() const;
   @pybind_lambda
-  std::vector<M> states() const;
+  std::vector<State> states() const;
   @pybind_lambda
   gtsam::GaussianBayesNet policy() const;
   @pybind_lambda
@@ -189,7 +190,8 @@ class ILQRTracking {
 
 #include <gtsam/planning/DDPTracking.h>
 
-template<M={gtsam::Vector, gtsam::Pose2, gtsam::Pose3, gtsam::Rot3, gtsam::Unit3}>
+// Python controls use dynamic vectors (the default Control specialization).
+template<State={gtsam::Vector, gtsam::Pose2, gtsam::Pose3, gtsam::Rot3, gtsam::Unit3}>
 class DDPTracking {
   DDPTracking(gtsam::KeyVector stateKeys, gtsam::KeyVector controlKeys);
   gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost,
@@ -210,7 +212,7 @@ class DDPTracking {
   @pybind_lambda
   gtsam::KeyVector controlKeys() const;
   @pybind_lambda
-  std::vector<M> states() const;
+  std::vector<State> states() const;
   @pybind_lambda
   gtsam::GaussianBayesNet policy() const;
   @pybind_lambda

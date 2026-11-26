@@ -9,10 +9,7 @@
 #include <gtsam/base/Matrix.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianConditional.h>
-#include <gtsam/linear/GaussianFactorGraph.h>
 #include <gtsam/linear/HessianFactor.h>
-#include <gtsam/nonlinear/NonlinearFactorGraph.h>
-#include <gtsam/nonlinear/Values.h>
 
 #include <unordered_map>
 #include <utility>
@@ -45,7 +42,7 @@ struct TrackingSweep {
 /// Linearized stage/terminal cost factors partitioned by horizon step from a
 /// NonlinearFactorGraph, keeping native GTSAM GaussianFactors.
 struct StageLinearizedCosts {
-  std::vector<GaussianFactorGraph> stageFactors;
+  std::vector<HessianFactor> stageFactors;
   HessianFactor terminalFactor;
 };
 
@@ -63,26 +60,16 @@ GTSAM_EXPORT void validateControlLimits(Eigen::Index controlDim,
 GTSAM_EXPORT StageKeyMap buildStageKeyMap(const KeyVector& stateKeys,
                                           const KeyVector& controlKeys);
 
-/// Linearize a NonlinearFactorGraph at values and partition its stage/terminal
-/// GaussianFactors by time step.
-GTSAM_EXPORT StageLinearizedCosts
-linearizeStageCosts(const NonlinearFactorGraph& cost, const Values& values,
-                    const KeyVector& stateKeys, const KeyVector& controlKeys,
-                    const StageKeyMap& keyMap, Eigen::Index stateDim);
-
-/// Pull a unary cost-to-go HessianFactor on X(k+1) back through linear
-/// dynamics dx_{k+1} = A dx_k + B du_k into a binary HessianFactor on
-/// (controlKey, stateKey).
-GTSAM_EXPORT HessianFactor pullBackDynamics(Key stateKey, Key controlKey,
-                                            const Matrix& A, const Matrix& B,
-                                            const HessianFactor& nextValueToGo);
-
-/// Eliminate controlKey from a binary HessianFactor on (controlKey, stateKey)
-/// via HessianFactor::eliminateCholesky, returning the conditional
-/// P(du_k | dx_k) (or nullptr if indefinite) and the remaining
-/// Schur-complement HessianFactor on stateKey.
-GTSAM_EXPORT std::pair<GaussianConditional::shared_ptr, HessianFactor>
-eliminateControlFactor(HessianFactor stageFactor, Key controlKey);
+/** Eliminate one deterministic transition and its control in a single stage.
+ * Pull the incoming separator on X(k+1) through dx' = A dx + B du, add the
+ * local costs and optional DDP curvature, then eliminate U(k). Return the
+ * conditional P(du | dx) and replace valueToGo with the separator on X(k).
+ * A null conditional signals an indefinite control block.
+ */
+GTSAM_EXPORT GaussianConditional::shared_ptr eliminateControlStage(
+    const Matrix& A, const Matrix& B, const HessianFactor& stageCost,
+    double damping, HessianFactor& valueToGo,
+    const HessianFactor* dynamicsCurvature = nullptr);
 
 /// Extract feedforward step and feedback gain from a GaussianConditional
 /// P(du_k | dx_k) using an upper-triangular solve on R.
