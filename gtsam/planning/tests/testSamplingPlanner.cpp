@@ -189,7 +189,7 @@ TEST(SamplingPlanner, FactoredGaussianMPPI) {
   for (size_t n = 0; n < 2; ++n) {
     const auto batch = reference.sample(expected, initial, 0.25);
     Vector errors(8);
-    for (size_t j = 0; j < 8; ++j) {
+    for (Eigen::Index j = 0; j < 8; ++j) {
       const auto controls = batch.controls.middleCols(2 * j, 2);
       const Values values = planner.rollout(initial, controls, field);
       errors[j] = graph.error(values);
@@ -198,7 +198,7 @@ TEST(SamplingPlanner, FactoredGaussianMPPI) {
                                     graph, initial, batch.controls, field)));
     const Vector weights = (-2. * errors.array()).exp();
     Matrix mean = Matrix::Zero(1, 2);
-    for (size_t j = 0; j < 8; ++j)
+    for (Eigen::Index j = 0; j < 8; ++j)
       mean +=
           (weights[j] / weights.sum()) * batch.controls.middleCols(2 * j, 2);
     expected.mean = mean;
@@ -306,7 +306,7 @@ TEST(SamplingPlanner, CandidateScoringThreadAffinity) {
 namespace configurable_proposals {
 
 // Shared 2-step scalar integrator helpers to avoid repeating test setup.
-const auto integrator = [](const Vector1&, const Vector1& u) { return u; };
+Vector1 integrator(const Vector1&, const Vector1& u) { return u; }
 
 Values integratorValues(double x0, double u0 = 0., double u1 = 0.) {
   Values values;
@@ -329,18 +329,18 @@ TEST(SamplingPlanner, IndependentProposalsAndAlgorithms) {
                                                   {U(0), U(1)}, 0.5);
   const Values initial = integratorValues(0.);
   const NonlinearFactorGraph graph = terminalPriorGraph(1.);
-  const auto& dynamics = integrator;
   const auto compare = [&](auto proposal, const auto& algorithm) {
     auto sameSeed = proposal;
     const auto plan =
-        planner.optimize(graph, initial, dynamics, sameSeed, algorithm, 3);
+        planner.optimize(graph, initial, integrator, sameSeed, algorithm, 3);
     auto search = proposal.initialize(planner.nominalControls(initial));
     for (int i = 0; i < 3; ++i)
-      planner.iterate(graph, initial, dynamics, proposal, algorithm, search);
+      planner.iterate(graph, initial, integrator, proposal, algorithm, search);
     EXPECT_LONGS_EQUAL(3, search.iteration);
-    EXPECT(assert_equal(plan, planner.rollout(initial, search.mean, dynamics)));
-    EXPECT(graph.error(plan) <
-           graph.error(planner.rollout(initial, Matrix::Zero(1, 2), dynamics)));
+    EXPECT(
+        assert_equal(plan, planner.rollout(initial, search.mean, integrator)));
+    EXPECT(graph.error(plan) < graph.error(planner.rollout(
+                                   initial, Matrix::Zero(1, 2), integrator)));
   };
   const auto compareFittable = [&](const auto& proposal) {
     compare(proposal, MPPI());

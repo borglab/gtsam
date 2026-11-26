@@ -120,8 +120,9 @@ Vector CEM::weights(const Vector& costs) const {
         "CEM needs at least as many candidates as elites.");
   std::vector<Eigen::Index> order(costs.size());
   std::iota(order.begin(), order.end(), 0);
-  std::partial_sort(order.begin(), order.begin() + elites_, order.end(),
-                    [&](auto a, auto b) {
+  std::partial_sort(order.begin(),
+                    order.begin() + static_cast<std::ptrdiff_t>(elites_),
+                    order.end(), [&](auto a, auto b) {
                       return costs[a] == costs[b] ? a < b : costs[a] < costs[b];
                     });
   Vector weights = Vector::Zero(costs.size());
