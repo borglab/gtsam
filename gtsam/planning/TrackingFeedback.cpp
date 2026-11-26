@@ -60,35 +60,41 @@ StageKeyMap buildStageKeyMap(const KeyVector& stateKeys,
 }
 
 GaussianConditional::shared_ptr eliminateControlStage(
-    const Matrix& A, const Matrix& B, const HessianFactor& stageCost,
-    double damping, HessianFactor& valueToGo,
-    const HessianFactor* dynamicsCurvature) {
+    const Matrix& A, const Matrix& B, HessianFactor& stage, double damping,
+    const HessianFactor& valueToGo, const HessianFactor* dynamicsCurvature) {
   // Substitute the linearized transition into the separator factor on X(k+1).
-  HessianFactor joint(stageCost);  // keys [U(k), X(k)]
   Matrix F(A.rows(), B.cols() + A.cols());
   F << B, A;
   const Matrix projected = valueToGo.informationView() * F;
-  joint.info().updateDiagonalBlockAt(0, (F.transpose() * projected).eval());
-  joint.linearTerm().noalias() += F.transpose() * valueToGo.linearTerm();
-  joint.constantTerm() += valueToGo.constantTerm();
-  if (dynamicsCurvature) dynamicsCurvature->updateHessian(&joint);
+  stage.info().updateDiagonalBlockAt(0, (F.transpose() * projected).eval());
+  stage.linearTerm().noalias() += F.transpose() * valueToGo.linearTerm();
+  stage.constantTerm() += valueToGo.constantTerm();
+  if (dynamicsCurvature) dynamicsCurvature->updateHessian(&stage);
   if (damping > 0.0)
-    joint.info().addToDiagonalBlock(0, Vector::Constant(B.cols(), damping));
+    stage.info().addToDiagonalBlock(0, Vector::Constant(B.cols(), damping));
 
   try {
-    auto conditional = joint.eliminateCholesky(Ordering{joint.front()});
-    valueToGo = std::move(joint);
-    return conditional;
+    return stage.eliminateCholesky(Ordering{stage.front()});
   } catch (const IndeterminateSystemException&) {
     return nullptr;
   }
 }
 
-void extractControlLaw(const GaussianConditional& conditional,
-                       Eigen::Ref<Vector> feedforward, Matrix& gain) {
-  const auto R = conditional.R().triangularView<Eigen::Upper>();
-  feedforward = R.solve(conditional.d());
-  gain = -R.solve(conditional.S());
+TrackingControlLaw solveConditionals(const GaussianBayesNet& policy) {
+  const auto horizon = policy.size();
+  const auto controlDim = policy.front()->R().rows();
+  TrackingControlLaw law{Matrix(controlDim, horizon),
+                         std::vector<Matrix>(horizon)};
+  for (size_t k = 0; k < horizon; ++k) {
+    const auto& conditional = *policy[k];
+    const auto R = conditional.R().triangularView<Eigen::Upper>();
+    auto feedforward = law.feedforward.col(k);
+    feedforward = conditional.d();
+    R.solveInPlace(feedforward);
+    law.gains[k] = -conditional.S();
+    R.solveInPlace(law.gains[k]);
+  }
+  return law;
 }
 
 }  // namespace internal

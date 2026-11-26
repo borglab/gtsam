@@ -10,12 +10,16 @@
 #include <gtsam/planning/TrackingFeedback.h>
 
 #include <array>
+#include <cmath>
 #include <functional>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
 namespace gtsam::internal {
+
+template <class State, class Control>
+class TrackingObjective;
 
 /** Shared trajectory layout for the two tracking optimizers. State uses
  * manifold coordinates and Control is a fixed or dynamic Eigen column vector,
@@ -28,12 +32,37 @@ class TrackingProblem {
   using Transition = std::function<State(const State&, const Control&)>;
   using VectorField = std::function<Vector(const State&, const Control&)>;
 
+  /// State keys X(0..H).
+  const KeyVector& stateKeys() const { return stateKeys_; }
+
+  /// Control keys U(0..H-1).
+  const KeyVector& controlKeys() const { return controlKeys_; }
+
+  /// Optimized state trajectory on State ordered in time.
+  const std::vector<State>& states() const { return states_; }
+
+  /// Eliminated GaussianBayesNet policy containing conditionals P(du_k | dx_k)
+  /// ordered in time k = 0..H-1.
+  const GaussianBayesNet& policy() const { return policy_; }
+
+  /// Gain multiplying traits<State>::Local(reference, actual) at a given step.
+  const Matrix& gain(size_t step) const { return gains_.at(step); }
+
  protected:
   static_assert(IsManifold<State>::value, "State must be a GTSAM manifold.");
   static_assert(
       std::is_same_v<Control,
                      Eigen::Matrix<double, traits<Control>::dimension, 1>>,
       "Control must be an Eigen column vector.");
+
+  using Objective = TrackingObjective<State, Control>;
+
+  /// A feasible trajectory and its nonlinear objective.
+  struct Trajectory {
+    std::vector<State> states;
+    Matrix controls;
+    double error = 0.0;
+  };
 
   /// Validate the horizon layout once when constructing a tracker.
   TrackingProblem(KeyVector stateKeys, KeyVector controlKeys)
@@ -59,7 +88,7 @@ class TrackingProblem {
   /// Roll out the bounded controls, applying feedback about the nominal states.
   template <class Step>
   void rollout(const State& x0, Matrix& controls,
-               const std::vector<State>* base, const TrackingSweep* sweep,
+               const std::vector<State>* base, const TrackingControlLaw* law,
                double alpha, const Vector& lower, const Vector& upper,
                std::vector<State>& states, const Step& step) const {
     if constexpr (std::is_same_v<State, Vector>) {
@@ -71,9 +100,9 @@ class TrackingProblem {
     states.push_back(x0);
     for (size_t k = 0; k < controlKeys_.size(); ++k) {
       auto u = controls.col(k);
-      if (sweep) {
+      if (law) {
         const Vector dx = traits<State>::Local((*base)[k], states[k]);
-        u += alpha * sweep->feedforward.col(k) + sweep->gains[k] * dx;
+        u += alpha * law->feedforward.col(k) + law->gains[k] * dx;
       }
       if (lower.size()) u = u.cwiseMax(lower);
       if (upper.size()) u = u.cwiseMin(upper);
@@ -88,8 +117,66 @@ class TrackingProblem {
     }
   }
 
+  /// Roll out the initial controls to obtain a feasible linearization point.
+  template <class Step>
+  Trajectory initialTrajectory(const Values& initial, const Vector& lower,
+                               const Vector& upper, const Step& step) const {
+    Trajectory nominal;
+    nominal.controls = initialControls(initial, lower, upper);
+    rollout(initial.at<State>(stateKeys_.front()), nominal.controls, nullptr,
+            nullptr, 0.0, lower, upper, nominal.states, step);
+    return nominal;
+  }
+
+  /// Prepare the cost graph and evaluate the initial trajectory.
+  Objective prepareObjective(const NonlinearFactorGraph& cost,
+                             const Values& initial, Trajectory& nominal) const {
+    Objective objective(cost, initial, stateKeys_, controlKeys_, keyMap_,
+                        traits<State>::GetDimension(nominal.states.front()),
+                        nominal.controls.rows());
+    nominal.error = objective.error(nominal.states, nominal.controls);
+    if (!std::isfinite(nominal.error))
+      throw std::domain_error("Nonfinite initial tracking rollout.");
+    return objective;
+  }
+
+  /** Back-substitute the affine control laws in forward time, using the
+   * nonlinear transition to find each successive state deviation. Reduce the
+   * feedforward step until a bounded rollout decreases the graph error.
+   */
+  template <class Step>
+  bool lineSearch(Trajectory& nominal, const Objective& objective,
+                  const TrackingControlLaw& law, const Step& transition,
+                  const Vector& lower, const Vector& upper) const {
+    Trajectory trial;
+    for (int step = 0; step < 8; ++step) {
+      const double alpha = std::ldexp(1.0, -step);
+      trial.controls = nominal.controls;
+      rollout(nominal.states.front(), trial.controls, &nominal.states, &law,
+              alpha, lower, upper, trial.states, transition);
+      trial.error = objective.error(trial.states, trial.controls);
+      if (std::isfinite(trial.error) && trial.error < nominal.error) {
+        nominal = std::move(trial);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /// Publish the optimized states, gains, and Bayes net together.
+  Values finish(Trajectory&& nominal, const GaussianBayesNet& policy,
+                TrackingControlLaw&& law, const Objective& objective) {
+    states_ = std::move(nominal.states);
+    policy_ = policy;
+    gains_ = std::move(law.gains);
+    return objective.trajectoryValues(states_, nominal.controls);
+  }
+
   KeyVector stateKeys_, controlKeys_;
   StageKeyMap keyMap_;
+  std::vector<State> states_;
+  GaussianBayesNet policy_;
+  std::vector<Matrix> gains_;
 };
 
 /** A stage-local cost graph prepared for repeated linearization. Gaussian

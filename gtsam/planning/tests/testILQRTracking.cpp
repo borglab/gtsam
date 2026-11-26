@@ -11,6 +11,7 @@
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/inference/Symbol.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/planning/DDPTracking.h>
 #include <gtsam/planning/ILQRTracking.h>
 #include <gtsam/slam/BetweenFactor.h>
 
@@ -69,6 +70,56 @@ TEST(ILQRTracking, OneStepLinearQuadraticAndBounds) {
   plan = solver.optimize(graph, initial, step, 2, Vector1{-0.5}, Vector1{0.5});
   EXPECT_DOUBLES_EQUAL(0.5, plan.at<Vector>(U(0))[0], 1e-10);
   EXPECT_DOUBLES_EQUAL(0.5, plan.at<Vector>(X(1))[0], 1e-10);
+}
+
+// A linear trajectory problem can also be solved by sequential QR elimination
+// of the full graph. Both trackers should recover its controls and states in
+// one forward substitution, including feedback from earlier control changes.
+TEST(ILQRTracking, BackSubstitutionMatchesFullGaussianGraph) {
+  const auto xs = stateKeys(3), us = controlKeys(3);
+  const Vector zero = Vector1::Zero();
+  const Matrix identity = Matrix::Identity(1, 1);
+  const auto hard = noiseModel::Constrained::All(1);
+  NonlinearFactorGraph cost;
+  Values nominal;
+  nominal.insert(xs.front(), zero);
+  for (size_t k = 0; k < us.size(); ++k) {
+    nominal.insert(us[k], zero);
+    nominal.insert(xs[k + 1], zero);
+    cost.addPrior(us[k], zero);
+  }
+  cost.addPrior(xs.back(), Vector(Vector1{4.0}));
+
+  auto graph = cost.linearize(nominal);
+  graph->emplace_shared<JacobianFactor>(xs.front(), identity, zero, hard);
+  for (size_t k = 0; k < us.size(); ++k)
+    graph->emplace_shared<JacobianFactor>(xs[k], identity, us[k], identity,
+                                          xs[k + 1], -identity, zero, hard);
+  const Ordering order{X(3), U(2), X(2), U(1), X(1), U(0), X(0)};
+  const VectorValues expected =
+      graph->eliminateSequential(order, EliminateQR)->optimize();
+  const auto step = [](const Vector& x, const Vector& u) -> Vector {
+    return x + u;
+  };
+
+  auto check = [&](auto& tracker) {
+    tracker.optimize(cost, nominal, step, 0);
+    for (size_t k = 0; k < us.size(); ++k) {
+      const VectorValues parent{{xs[k], expected.at(xs[k])}};
+      EXPECT(assert_equal(expected.at(us[k]),
+                          tracker.policy()[k]->solve(parent).at(us[k]), 1e-8));
+    }
+    const Values plan = tracker.optimize(cost, nominal, step, 1);
+    for (size_t k = 0; k < us.size(); ++k) {
+      EXPECT(assert_equal(expected.at(us[k]), plan.at<Vector>(us[k]), 1e-8));
+      EXPECT(assert_equal(expected.at(xs[k + 1]), plan.at<Vector>(xs[k + 1]),
+                          1e-8));
+    }
+  };
+  ILQRTracking<> ilqr(xs, us);
+  DDPTracking<> ddp(xs, us);
+  check(ilqr);
+  check(ddp);
 }
 
 // Cached correlated priors and ordinary factors must agree with the original

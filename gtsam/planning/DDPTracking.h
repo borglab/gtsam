@@ -34,9 +34,7 @@ namespace gtsam {
 template <class State = Vector, class Control = Vector>
 class DDPTracking : public internal::TrackingProblem<State, Control> {
   using Base = internal::TrackingProblem<State, Control>;
-  using Base::controlKeys_;
-  using Base::keyMap_;
-  using Base::stateKeys_;
+  using typename Base::Trajectory;
 
  public:
   using typename Base::Transition;
@@ -54,148 +52,36 @@ class DDPTracking : public internal::TrackingProblem<State, Control> {
                   const Transition& transition, size_t iterations,
                   const Vector& lower = {}, const Vector& upper = {}) {
     if (!transition) throw std::invalid_argument("Invalid DDP transition.");
-    const size_t h = controlKeys_.size();
-    const State x0 = initial.at<State>(stateKeys_.front());
-    const Eigen::Index n =
-        static_cast<Eigen::Index>(traits<State>::GetDimension(x0));
-    Matrix controls = this->initialControls(initial, lower, upper);
-    const Eigen::Index m = controls.rows();
-    const Eigen::Index d = n + m;
-
-    auto rollout = [&](Matrix& u, const std::vector<State>* base,
-                       const internal::TrackingSweep* sweep, double alpha,
-                       std::vector<State>& statesOut) {
-      this->rollout(x0, u, base, sweep, alpha, lower, upper, statesOut,
-                    transition);
-    };
-
-    auto backward = [&](const std::vector<State>& states, const Matrix& u,
-                        const internal::StageLinearizedCosts& stageCosts,
-                        double reg) -> internal::TrackingSweep {
-      const auto horizon = static_cast<Eigen::Index>(h);
-      HessianFactor valueToGo = stageCosts.terminalFactor;
-      internal::TrackingSweep sweep{
-          GaussianBayesNet(), Matrix::Zero(m, horizon), std::vector<Matrix>(h)};
-      sweep.policy.resize(h);
-
-      for (Eigen::Index k = horizon - 1; k >= 0; --k) {
-        const auto idx = static_cast<size_t>(k);
-        const State& xk = states[idx];
-        const Control uk = u.col(k);
-        const State& center = states[idx + 1];
-        Vector delta(d);
-        if constexpr (std::is_same_v<State, Vector>)
-          delta.head(n) = 1e-4 * (1.0 + xk.array().abs());
-        else
-          delta.head(n).setConstant(1e-4);
-        delta.tail(m) = 1e-4 * (1.0 + uk.array().abs());
-
-        // Evaluate local tangent displacement relative to nominal x_{k+1}.
-        auto fLocal = [&](const Vector& dz) -> Vector {
-          const State next = transition(traits<State>::Retract(xk, dz.head(n)),
-                                        uk + dz.tail(m));
-          return traits<State>::Local(center, next);
-        };
-
-        // Central-difference Jacobian (A, B) and second-order value-gradient
-        // contraction (valueGrad = -valueToGo.linearTerm()).
-        const Vector valueGrad = -valueToGo.linearTerm();
-        Matrix jacobian(n, d), secondOrder = Matrix::Zero(d, d);
-        for (Eigen::Index i = 0; i < d; ++i) {
-          Vector shift = Vector::Zero(d);
-          shift[i] = delta[i];
-          const Vector plus = fLocal(shift), minus = fLocal(-shift);
-          jacobian.col(i) = (plus - minus) / (2.0 * delta[i]);
-          secondOrder(i, i) =
-              valueGrad.dot(plus + minus) / (delta[i] * delta[i]);
-          for (Eigen::Index j = 0; j < i; ++j) {
-            Vector cross = Vector::Zero(d);
-            cross[j] = delta[j];
-            const Vector mixed = fLocal(shift + cross) - fLocal(shift - cross) -
-                                 fLocal(-shift + cross) +
-                                 fLocal(-shift - cross);
-            secondOrder(i, j) = secondOrder(j, i) =
-                valueGrad.dot(mixed) / (4.0 * delta[i] * delta[j]);
-          }
-        }
-
-        // Pull valueToGo back through (A, B), combine with the second-order
-        // dynamics HessianFactor and linearized NonlinearFactorGraph stage
-        // cost factors.
-        const HessianFactor curvature(
-            controlKeys_[idx], stateKeys_[idx],
-            secondOrder.bottomRightCorner(m, m),
-            secondOrder.bottomLeftCorner(m, n), Vector::Zero(m),
-            secondOrder.topLeftCorner(n, n), Vector::Zero(n), 0.0);
-        auto conditional = internal::eliminateControlStage(
-            jacobian.leftCols(n), jacobian.rightCols(m),
-            stageCosts.stageFactors[idx], reg, valueToGo, &curvature);
-        if (!conditional) return {};
-        internal::extractControlLaw(*conditional, sweep.feedforward.col(k),
-                                    sweep.gains[idx]);
-        sweep.policy[idx] = std::move(conditional);
-      }
-
-      return sweep;
-    };
-
-    const internal::TrackingObjective<State, Control> trackingCost(
-        cost, initial, stateKeys_, controlKeys_, keyMap_, n, m);
-    std::vector<State> states;
-    rollout(controls, nullptr, nullptr, 0.0, states);
-    double objective = trackingCost.error(states, controls);
-    if (!std::isfinite(objective))
-      throw std::domain_error("Nonfinite initial DDP rollout.");
-    double damping = 1e-9;
-    auto stageCosts = trackingCost.linearize(states, controls);
-
-    auto solveBackward = [&](double& reg) {
-      auto sweep = backward(states, controls, stageCosts, reg);
-      while (sweep.gains.empty() && reg < 1e12) {
-        reg = std::max(1e-6, 10.0 * reg);
-        sweep = backward(states, controls, stageCosts, reg);
-      }
-      return sweep;
-    };
-
+    auto nominal = this->initialTrajectory(initial, lower, upper, transition);
+    const auto objective = this->prepareObjective(cost, initial, nominal);
+    constexpr double minDamping = 1e-9;
+    double damping = minDamping;
     for (size_t i = 0;; ++i) {
-      auto sweep = solveBackward(damping);
-      if (sweep.gains.empty())
+      const auto costs = objective.linearize(nominal.states, nominal.controls);
+      auto eliminate = [&](double reg) {
+        return eliminateSequential(costs, nominal, transition, reg);
+      };
+      auto policy = internal::eliminateWithDamping(damping, 1e12, eliminate,
+                                                   increaseDamping);
+      if (policy.empty())
         throw std::domain_error("DDP control Hessian remained indefinite.");
-
-      bool accepted = false;
-      if (i < iterations && sweep.feedforward.norm() > 1e-10) {
-        for (int step = 0; step < 8; ++step) {
-          const double alpha = std::ldexp(1.0, -step);
-          Matrix trial = controls;
-          std::vector<State> trialStates;
-          rollout(trial, &states, &sweep, alpha, trialStates);
-          const double value = trackingCost.error(trialStates, trial);
-          if (std::isfinite(value) && value < objective) {
-            controls = std::move(trial);
-            states = std::move(trialStates);
-            objective = value;
-            damping = std::max(1e-9, 0.5 * damping);
-            accepted = true;
-            break;
-          }
-        }
-      }
-
-      if (accepted) {
-        stageCosts = trackingCost.linearize(states, controls);
+      auto law = internal::solveConditionals(policy);
+      if (i < iterations && law.feedforward.norm() > 1e-10 &&
+          this->lineSearch(nominal, objective, law, transition, lower, upper)) {
+        damping = std::max(minDamping, 0.5 * damping);
         continue;
       }
-
-      if (damping > 1e-9) {
-        double finalDamping = 1e-9;
-        auto finalSweep = solveBackward(finalDamping);
-        if (!finalSweep.gains.empty()) sweep = std::move(finalSweep);
+      if (damping > minDamping) {
+        double finalDamping = minDamping;
+        auto finalPolicy = internal::eliminateWithDamping(
+            finalDamping, 1e12, eliminate, increaseDamping);
+        if (!finalPolicy.empty()) {
+          policy = std::move(finalPolicy);
+          law = internal::solveConditionals(policy);
+        }
       }
-      states_ = std::move(states);
-      policy_ = std::move(sweep.policy);
-      gains_ = std::move(sweep.gains);
-      return trackingCost.trajectoryValues(states_, controls);
+      return this->finish(std::move(nominal), policy, std::move(law),
+                          objective);
     }
   }
 
@@ -221,26 +107,90 @@ class DDPTracking : public internal::TrackingProblem<State, Control> {
     return optimize(cost, initial, discrete, iterations, lower, upper);
   }
 
-  /// State keys X(0..H).
-  const KeyVector& stateKeys() const { return stateKeys_; }
-
-  /// Control keys U(0..H-1).
-  const KeyVector& controlKeys() const { return controlKeys_; }
-
-  /// Optimized state trajectory on State ordered in time.
-  const std::vector<State>& states() const { return states_; }
-
-  /// Eliminated GaussianBayesNet policy containing conditionals P(du_k | dx_k)
-  /// ordered in time k = 0..H-1.
-  const GaussianBayesNet& policy() const { return policy_; }
-
-  /// Gain multiplying traits<State>::Local(reference, actual) at a given step.
-  const Matrix& gain(size_t step) const { return gains_.at(step); }
-
  private:
-  std::vector<State> states_;
-  GaussianBayesNet policy_;
-  std::vector<Matrix> gains_;
+  /// Increase regularization when a DDP control Hessian is indefinite.
+  static double increaseDamping(double damping) {
+    return std::max(1e-6, 10.0 * damping);
+  }
+
+  /// Jacobian of the transition and its Hessian contracted with the value
+  /// gradient.
+  struct DynamicsDerivatives {
+    Matrix jacobian, curvature;
+  };
+
+  /// Differentiate the dynamics in tangent coordinates at one nominal step.
+  static DynamicsDerivatives linearizeDynamics(const State& xk,
+                                               const Control& uk,
+                                               const State& center,
+                                               const Transition& transition,
+                                               const Vector& valueGrad) {
+    const Eigen::Index n = valueGrad.size(), m = uk.size(), d = n + m;
+    Vector delta(d);
+    if constexpr (std::is_same_v<State, Vector>)
+      delta.head(n) = 1e-4 * (1.0 + xk.array().abs());
+    else
+      delta.head(n).setConstant(1e-4);
+    delta.tail(m) = 1e-4 * (1.0 + uk.array().abs());
+
+    // Evaluate local tangent displacement relative to nominal x_{k+1}.
+    auto fLocal = [&](const Vector& dz) -> Vector {
+      const State next =
+          transition(traits<State>::Retract(xk, dz.head(n)), uk + dz.tail(m));
+      return traits<State>::Local(center, next);
+    };
+
+    // Reuse one perturbation for the diagonal and four-point mixed stencils.
+    Matrix jacobian(n, d), secondOrder(d, d);
+    Vector shift = Vector::Zero(d);
+    for (Eigen::Index i = 0; i < d; ++i) {
+      shift[i] = delta[i];
+      const Vector plus = fLocal(shift);
+      shift[i] = -delta[i];
+      const Vector minus = fLocal(shift);
+      jacobian.col(i) = (plus - minus) / (2.0 * delta[i]);
+      secondOrder(i, i) = valueGrad.dot(plus + minus) / (delta[i] * delta[i]);
+      for (Eigen::Index j = 0; j < i; ++j) {
+        const auto sample = [&](double di, double dj) {
+          shift[i] = di;
+          shift[j] = dj;
+          return fLocal(shift);
+        };
+        const Vector mixed =
+            sample(delta[i], delta[j]) - sample(delta[i], -delta[j]) -
+            sample(-delta[i], delta[j]) + sample(-delta[i], -delta[j]);
+        secondOrder(i, j) = secondOrder(j, i) =
+            valueGrad.dot(mixed) / (4.0 * delta[i] * delta[j]);
+        shift[j] = 0.0;
+      }
+      shift[i] = 0.0;
+    }
+    return {std::move(jacobian), std::move(secondOrder)};
+  }
+
+  /** Reverse-time elimination supplies each stage with the gradient of its
+   * incoming cost-to-go, which weights the second-order dynamics term in DDP.
+   */
+  static GaussianBayesNet eliminateSequential(
+      const internal::StageLinearizedCosts& costs, const Trajectory& nominal,
+      const Transition& transition, double damping) {
+    return internal::eliminateTrackingChain(
+        costs,
+        [&](size_t k, HessianFactor& stage, const HessianFactor& valueToGo) {
+          const auto dynamics = linearizeDynamics(
+              nominal.states[k], nominal.controls.col(k), nominal.states[k + 1],
+              transition, -valueToGo.linearTerm());
+          const auto n = dynamics.jacobian.rows(), m = nominal.controls.rows();
+          const auto& H = dynamics.curvature;
+          const HessianFactor curvature(
+              stage.front(), stage.back(), H.bottomRightCorner(m, m),
+              H.bottomLeftCorner(m, n), Vector::Zero(m), H.topLeftCorner(n, n),
+              Vector::Zero(n), 0.0);
+          return internal::eliminateControlStage(
+              dynamics.jacobian.leftCols(n), dynamics.jacobian.rightCols(m),
+              stage, damping, valueToGo, &curvature);
+        });
+  }
 };
 
 }  // namespace gtsam
