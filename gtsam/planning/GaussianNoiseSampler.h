@@ -62,8 +62,19 @@ class GaussianNoiseSampler {
         numSamples_(numSamples),
         seed_(seed) {}
 
+  /// Copy the next RNG position without duplicating the dense scratch buffers.
+  GaussianNoiseSampler(const GaussianNoiseSampler& other)
+      : cholesky_(other.cholesky_),
+        numSamples_(other.numSamples_),
+        seed_(other.seed_),
+        stepCounter_(other.stepCounter_) {}
+  GaussianNoiseSampler(GaussianNoiseSampler&&) = default;
+
   /// The noise dimension M, or 0 if no covariance is set.
   size_t dim() const { return static_cast<size_t>(cholesky_.rows()); }
+
+  /// Marginal standard deviations of the correlated controls.
+  Vector standardDeviations() const { return cholesky_.rowwise().norm(); }
 
   /// The number of samples K.
   size_t numSamples() const { return numSamples_; }
@@ -232,9 +243,9 @@ class GaussianNoiseSampler {
     return mix(mix(mix(seed) ^ step) ^ sample);
   }
 
-  const Matrix cholesky_;      ///< Cholesky factor L of the covariance.
-  const size_t numSamples_;    ///< Number of samples K.
-  const std::uint64_t seed_;   ///< Seed of the per-sample generators.
+  const Matrix cholesky_;     ///< Cholesky factor L of the covariance.
+  const size_t numSamples_;   ///< Number of samples K.
+  const std::uint64_t seed_;  ///< Seed of the per-sample generators.
 
   mutable std::uint64_t stepCounter_ = 0;  ///< Sampling calls so far.
   mutable Matrix noise_;            ///< Z: standard normal noise, M x (K*H).
