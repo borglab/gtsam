@@ -29,7 +29,7 @@
 #include <gtsam/linear/NoiseModel.h>
 #include <gtsam/nonlinear/NonlinearFactorGraph.h>
 #include <gtsam/nonlinear/Values.h>
-#include <gtsam/sfm/BinaryMeasurement.h>
+#include <gtsam/sam/BinaryMeasurement.h>
 #include <gtsam/slam/BetweenFactor.h>
 
 #include <map>

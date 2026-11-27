@@ -4,6 +4,33 @@ GTSAM is a C++17 library for factor graphs and sensor fusion, with Python and
 MATLAB wrappers. Follow the existing code near your change and keep changes
 focused.
 
+Consult [ARCHITECTURE.md](../ARCHITECTURE.md) before adding functionality to
+identify existing abstractions and appropriate extension points. Run
+`python3 scripts/check_code_quality.py` for the automated source conventions.
+
+For opt-in local Clang-Tidy checks, generate a compilation database with
+`cmake -S . -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=ON`, then run
+`clang-tidy -p build path/to/file.cpp` on the affected translation units.
+See [the local setup and changed-line command](../DEVELOP.md#opt-in-local-clang-tidy)
+for the CI tool version and build options. To avoid discrepancies between local
+runs and CI's `clang-tidy` job:
+
+* Match the CI `clang-tidy` version pinned in `.github/workflows/code-quality.yml`
+  (installed via `pip install clang-tidy==23.1.4` in a venv) rather than an
+  older system or Homebrew LLVM, since newer releases catch additional patterns
+  (for example, `bugprone-float-loop-counter` on multiplicative float loops).
+* Re-run `clang-tidy-diff.py` against the full `origin/develop` merge-base diff
+  **after** the final refactor or `clang-format` pass; any line touched by
+  reformatting or cleanup enters CI's diff filter.
+* Account for Linux `libstdc++` vs. macOS `libc++` differences: CI runs on
+  Ubuntu with GCC `libstdc++`, where `bugprone-throwing-static-initialization`
+  flags namespace-scope dynamic containers (such as `const KeyVector` or
+  `std::vector` with initializer lists) even when macOS `libc++` stays silent.
+  Prefer small factory functions or `constexpr` data over namespace-scope
+  containers, use integer loop counters rather than floating-point induction
+  variables, and prefer plain functions over namespace-scope lambdas captured by
+  reference.
+
 When fixing additional build problems discovered during a task, establish the
 concrete failure and explain why each fix is necessary. Keep independently
 useful API or infrastructure redesigns in separate PRs.

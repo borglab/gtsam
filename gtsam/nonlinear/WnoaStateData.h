@@ -113,7 +113,7 @@ template <>
 struct hash<gtsam::StateData> {
   std::size_t operator()(const gtsam::StateData& p) const noexcept {
     return std::hash<uint64_t>()(p.pose) ^
-           (std::hash<uint64_t>()(p.velocity) << 1);
+           (std::hash<uint64_t>()(p.velocity) << 1u);
   }
 };
 }  // namespace std

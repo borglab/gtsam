@@ -10,6 +10,20 @@ assert(isequal(draw, other.sampleControls(zeros(2, 2))));
 rule = gtsam.MPPI(1.0);
 assert(norm(rule.weights([0; log(2)]) - [2/3; 1/3]) < 1e-12);
 
+% Weighting rules and correlated proposals share the same score convention.
+elite = gtsam.EliteMPPI(2);
+assert(isequal(elite.weights([2; 1; 0]) > 0, [false; true; true]));
+tsallis = gtsam.TsallisMPPI(1, 2, 1);
+assert(norm(tsallis.weights([0; 1; 2]) - [1; 0; 0]) < 1e-12);
+assert(abs(gtsam.valueAtRisk([1; 2; 3], 0.5) - 2) < 1e-12);
+tracking = gtsam.MPPITracking(eye(2), 16, 1, 42);
+tracking.setControlHistory(zeros(2, 2));
+colored = gtsam.ColoredNoiseProposal(eye(2), 8, 1.5, 42);
+state = colored.initialize(zeros(2, 3));
+batch = colored.sample(state, gtsam.Values(), 0.1, true);
+assert(isequal(size(batch.controls), [2 24]));
+assert(isequal(batch.controls(:, 1:3), zeros(2, 3)));
+
 x0 = gtsam.symbol('x', 0);
 x1 = gtsam.symbol('x', 1);
 u0 = gtsam.symbol('u', 0);

@@ -27,13 +27,27 @@ Test::Test (const std::string& testName, const std::string& filename, long lineN
   TestRegistry::addTest (this);
 }
 
+Test::Test(LiteralMetadata metadata, long lineNumber, bool safeCheck) noexcept
+    : next_(nullptr), lineNumber_(lineNumber), safeCheck_(safeCheck),
+      literalName_(metadata.name), literalFilename_(metadata.filename) {
+  TestRegistry::addTest(this);
+}
+
+void Test::initializeMetadata() {
+  if (literalName_) {
+    name_ = literalName_;
+    filename_ = literalFilename_;
+    literalName_ = nullptr;
+    literalFilename_ = nullptr;
+  }
+}
 
 Test *Test::getNext() const
 {
   return next_;
 }
 
-void Test::setNext(Test *test)
+void Test::setNext(Test *test) noexcept
 {
   next_ = test;
 }

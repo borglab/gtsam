@@ -10,30 +10,41 @@
  * -------------------------------------------------------------------------- */
 
 /**
- *  @file  WnoaFactorGraph.cpp
+ *  @file  WnoaFactorGraph-inl.h
  *  @brief Factor graph that handles computation of interpolated states for WNOA
  *  @author Sven Lilge
  */
 
-#include <gtsam/config.h>  // for GTSAM_USE_TBB
-#include <gtsam/nonlinear/WnoaFactorGraph.h>
+#pragma once
 
-#include <Eigen/Core>  // for Eigen::setNbThreads
+#include <gtsam/base/Matrix.h>
+#include <gtsam/base/types.h>
+#include <gtsam/config.h>  // IWYU pragma: keep (GTSAM_USE_TBB)
+#include <gtsam/linear/GaussianFactor.h>
+#include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/nonlinear/Values.h>
+#include <gtsam/nonlinear/WnoaFactorGraph.h>
+#include <gtsam/nonlinear/WnoaInterpFactor.h>
+#include <gtsam/nonlinear/WnoaInterpolator.h>
+#include <gtsam/nonlinear/WnoaStateData.h>
 
 #ifdef GTSAM_USE_TBB
-#include <tbb/concurrent_unordered_map.h>
+#include <tbb/blocked_range.h>
 #include <tbb/enumerable_thread_specific.h>
 #include <tbb/parallel_for.h>
-#include <tbb/parallel_for_each.h>
 #include <tbb/partitioner.h>
+
+#include <thread>
 #endif
 
 #include <algorithm>
 #include <array>
+#include <cstddef>
 #include <memory>
-#include <mutex>
-#include <thread>
+#include <unordered_map>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace gtsam {
 
@@ -85,7 +96,7 @@ class _LinearizeOneFactor {
 template <typename PoseType>
 WnoaFactorGraph<PoseType>::WnoaFactorGraph(
     std::unordered_map<StateData, std::pair<StateData, StateData>> interp_map,
-    const Eigen::Vector<double, dim> q_psd_diag, bool fixed_noise_model)
+    const VectorN q_psd_diag, bool fixed_noise_model)
     : interpolator_(q_psd_diag),
       interp_to_borders_map_(std::move(interp_map)),
       fixed_noise_model_(fixed_noise_model) {
@@ -119,7 +130,7 @@ WnoaFactorGraph<PoseType>::WnoaFactorGraph(
     size_t operator()(const std::pair<StateData, StateData>& p) const noexcept {
       const size_t h1 = std::hash<StateData>{}(p.first);
       const size_t h2 = std::hash<StateData>{}(p.second);
-      return h1 ^ (h2 + 0x9e3779b9 + (h1 << 6) + (h1 >> 2));
+      return h1 ^ (h2 + 0x9e3779b9u + (h1 << 6u) + (h1 >> 2u));
     }
   };
   std::unordered_map<std::pair<StateData, StateData>, std::vector<size_t>,
@@ -514,10 +525,4 @@ Values WnoaFactorGraph<PoseType>::getInterpolatedValues(
 #endif
 }
 
-// Explicit template instantiation
-template class GTSAM_EXPORT WnoaFactorGraph<Point1>;
-template class GTSAM_EXPORT WnoaFactorGraph<Point2>;
-template class GTSAM_EXPORT WnoaFactorGraph<Point3>;
-template class GTSAM_EXPORT WnoaFactorGraph<Pose2>;
-template class GTSAM_EXPORT WnoaFactorGraph<Pose3>;
 }  // namespace gtsam

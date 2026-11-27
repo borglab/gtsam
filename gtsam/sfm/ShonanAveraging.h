@@ -25,7 +25,7 @@
 #include <gtsam/geometry/Rot3.h>
 #include <gtsam/linear/VectorValues.h>
 #include <gtsam/nonlinear/LevenbergMarquardtParams.h>
-#include <gtsam/sfm/BinaryMeasurement.h>
+#include <gtsam/sam/BinaryMeasurement.h>
 #include <gtsam/slam/dataset.h>
 
 #include <Eigen/Sparse>

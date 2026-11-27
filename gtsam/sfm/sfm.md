@@ -197,7 +197,7 @@ The [timing benchmark README](../../timing/README.md#public-sfm-solver-matrix) c
 :::{card} Measurement and transfer factors
 
 - [UnaryMeasurement](doc/UnaryMeasurement.ipynb)
-- [BinaryMeasurement](doc/BinaryMeasurement.ipynb)
+- [BinaryMeasurement](../sam/doc/BinaryMeasurement.ipynb)
 - [EssentialMatrixFactor](doc/EssentialMatrixFactor.ipynb)
 - [EssentialMatrixConstraint](doc/EssentialMatrixConstraint.ipynb)
 - [TransferEdges](doc/TransferEdges.ipynb)

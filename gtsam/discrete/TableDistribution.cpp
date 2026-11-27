@@ -25,7 +25,6 @@
 #include <gtsam/discrete/Ring.h>
 #include <gtsam/discrete/Signature.h>
 #include <gtsam/discrete/TableDistribution.h>
-#include <gtsam/hybrid/HybridValues.h>
 
 #include <algorithm>
 #include <cassert>

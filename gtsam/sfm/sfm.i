@@ -230,7 +230,7 @@ typedef gtsam::UnaryMeasurement<gtsam::Pose3> UnaryMeasurementPose3;
 typedef gtsam::UnaryMeasurement<gtsam::Rot3> UnaryMeasurementRot3;
 typedef gtsam::UnaryMeasurement<gtsam::Point3> UnaryMeasurementPoint3;
 
-#include <gtsam/sfm/BinaryMeasurement.h>
+#include <gtsam/sam/BinaryMeasurement.h>
 template <T>
 class BinaryMeasurement {
   BinaryMeasurement(gtsam::Key key1, gtsam::Key key2, const T& measured,

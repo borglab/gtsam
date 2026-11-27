@@ -20,7 +20,7 @@
 
 #include <gtsam/geometry/Unit3.h>
 #include <gtsam/inference/Key.h>
-#include <gtsam/sfm/BinaryMeasurement.h>
+#include <gtsam/sam/BinaryMeasurement.h>
 
 #include <memory>
 #include <unordered_map>

@@ -10,7 +10,7 @@
  * -------------------------------------------------------------------------- */
 
 /**
- * @file EqVIOState.h
+ * @file VioEqFState.h
  * @brief Dynamic EqVIO manifold state.
  * @author Rohan Bansal
  */
@@ -23,7 +23,7 @@
 #include <gtsam/geometry/Point3.h>
 #include <gtsam/geometry/Pose3.h>
 #include <gtsam_unstable/dllexport.h>
-#include <gtsam_unstable/navigation/EqVIOCommon.h>
+#include <gtsam_unstable/navigation/VioEqFCommon.h>
 
 #include <string>
 #include <vector>

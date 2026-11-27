@@ -56,7 +56,6 @@ These are used in Jacobian and Hessian factors:
 - [sampler.h](sampler.h) - General sampling utilities and random number generation
 
 ## Graph Algorithms
-- [Kruskal.h](Kruskal.h) - Kruskal's algorithm for minimum spanning trees in factor graphs
 - [BTree.h](BTree.h) - Balanced tree implementation for efficient storage and retrieval
 
 ## Type System and Traits
