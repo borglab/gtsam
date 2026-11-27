@@ -100,6 +100,60 @@ class SparseLevenbergMarquardtOptimizer {
   const gtsam::cuda::SparseLevenbergMarquardtResult& result() const;
 };
 
+#include <gtsam/nonlinear/cuda/BatchedFactorGroupHook.h>
+
+class BatchedFactorGroupHook {
+  BatchedFactorGroupHook();
+  BatchedFactorGroupHook(
+      const gtsam::cuda::BatchedFactorGroupStageFunction& stageFunction,
+      const gtsam::cuda::BatchedFactorGroupComputeBatchFunction&
+          computeBatchFunction);
+};
+
+#include <gtsam/nonlinear/cuda/BatchedBlockTridiagonalLevenbergMarquardt.h>
+
+class BatchedBlockTridiagonalLevenbergMarquardtItemResult {
+  BatchedBlockTridiagonalLevenbergMarquardtItemResult();
+
+  double initialError;
+  double finalError;
+  double finalLambda;
+  size_t acceptedIterations;
+  size_t lambdaAttempts;
+  bool converged;
+};
+
+class BatchedBlockTridiagonalLevenbergMarquardtOptimizer {
+  // Two overloads, not one with a defaulted trailing vector-of-custom-type
+  // parameter: pybind's py::arg(...) = {} default-value mechanism cannot
+  // deduce a std::vector<BatchedFactorGroupHook> from a bare {} (confirmed
+  // by a real regression -- the single-constructor-with-default form
+  // compiled silently but made factorGroupHooks a required argument at
+  // the Python level). Matches CustomFactor's own precedent for an
+  // optional trailing callback-ish parameter in this file.
+  BatchedBlockTridiagonalLevenbergMarquardtOptimizer(
+      const std::vector<gtsam::NonlinearFactorGraph>& graphs,
+      const std::vector<gtsam::Values>& initialValues, int numBlocks,
+      int blockDim,
+      const gtsam::LevenbergMarquardtParams& params =
+          gtsam::LevenbergMarquardtParams(),
+      const gtsam::cuda::BatchedSolverOptions& deviceOptions =
+          gtsam::cuda::BatchedSolverOptions());
+  BatchedBlockTridiagonalLevenbergMarquardtOptimizer(
+      const std::vector<gtsam::NonlinearFactorGraph>& graphs,
+      const std::vector<gtsam::Values>& initialValues, int numBlocks,
+      int blockDim, const gtsam::LevenbergMarquardtParams& params,
+      const gtsam::cuda::BatchedSolverOptions& deviceOptions,
+      const std::vector<gtsam::cuda::BatchedFactorGroupHook>&
+          factorGroupHooks);
+
+  const std::vector<gtsam::Values>& optimize();
+  const std::vector<gtsam::Values>& polish(int numSteps);
+  const std::vector<gtsam::Values>& values() const;
+  const std::vector<gtsam::cuda::BatchedBlockTridiagonalLevenbergMarquardtItemResult>&
+  results() const;
+};
+
 }  // namespace cuda
 
 #include <gtsam/nonlinear/GncParams.h>
