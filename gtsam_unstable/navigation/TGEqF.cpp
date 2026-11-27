@@ -278,12 +278,21 @@ TGEqF::MatrixM leftJacobianG(const TGEqF::TangentVector& gamma) {
 }  // namespace
 
 TGEqF::Covariance18 TGEqF::initialCovariance(
-    const Covariance15& Sigma_physical) {
-  Covariance18 Sigma0 = Covariance18::Zero();
-  Sigma0.topLeftCorner<15, 15>() = Sigma_physical;
-  Sigma0.bottomRightCorner<3, 3>() = kVirtualBiasInitialSigma *
-                                     kVirtualBiasInitialSigma *
-                                     Covariance3::Identity();
+    const State& xi_hat0, const Covariance15& Sigma_navigation) {
+  const Matrix3 Rt = xi_hat0.T.rotation().matrix().transpose();
+  Matrix9 N = Matrix9::Zero();
+  for (int block : {0, 3, 6}) {
+    N.block<3, 3>(block, block) = Rt;
+  }
+  Eigen::Matrix<double, 18, 15> J = Eigen::Matrix<double, 18, 15>::Zero();
+  J.topLeftCorner<9, 9>() = N;
+  J.bottomLeftCorner<9, 9>() = ExtendedPose3<2>::adjointMap(xi_hat0.b) * N;
+  J.block<6, 6>(9, 9) = -Matrix6::Identity();
+
+  Covariance18 Sigma0 = J * Sigma_navigation * J.transpose();
+  Sigma0.bottomRightCorner<3, 3>() += kVirtualBiasInitialSigma *
+                                      kVirtualBiasInitialSigma *
+                                      Covariance3::Identity();
   return Sigma0;
 }
 

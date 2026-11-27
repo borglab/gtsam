@@ -160,6 +160,19 @@ DepthOutput::Jacobian DepthOutput::jacobian(const TwoFrameGroup& xi_hat) {
 TFGInEKF::TFGInEKF(const TwoFrameGroup& X0, const Covariance& P0)
     : Base(X0, P0) {}
 
+TFGInEKF::Covariance TFGInEKF::initialCovariance(
+    const TwoFrameGroup& X0, const Covariance& Sigma_navigation) {
+  const Matrix3 Rt = X0.R.matrix().transpose();
+  Jacobian J = Jacobian::Zero();
+  for (int block : {0, 3, 6}) {
+    J.block<3, 3>(block, block) = Rt;
+  }
+  J.block<3, 3>(9, 0) = gtsam::skewSymmetric(X0.biasOmega()) * Rt;
+  J.block<3, 3>(12, 0) = gtsam::skewSymmetric(X0.biasAccel()) * Rt;
+  J.block<6, 6>(9, 9) = -Matrix6::Identity();
+  return J * Sigma_navigation * J.transpose();
+}
+
 namespace {
 ImuInput makeInput(const Vector3& omega, const Vector3& accel,
                    const Vector3& g_vec) {

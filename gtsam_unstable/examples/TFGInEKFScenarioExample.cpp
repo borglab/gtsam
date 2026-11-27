@@ -50,14 +50,15 @@ class ScenarioAdapter {
         {"R", "v", "p", "bg", "ba"}, cov_format_);
   }
 
-  /// Start at the perturbed initial belief, biases included. Every TFG state is
-  /// physical, so P0 is used as given.
+  /// Start at the perturbed initial belief, biases included. P0 is over the
+  /// harness's physical navigation errors; initialCovariance expresses it in
+  /// the group chart at X0, which is body-frame and couples bias to attitude.
   Filter makeFilter(const imu_scenarios::InitialEstimate& initial,
                     const imu_scenarios::PhysicalStateCovariance& P0) const {
     const TwoFrameGroup X0 = TwoFrameGroup::FromState(
         initial.nav.attitude(), initial.nav.velocity(), initial.nav.position(),
         initial.bias_gyro, initial.bias_accel);
-    return Filter(X0, P0);
+    return Filter(X0, Filter::initialCovariance(X0, P0));
   }
 
   TrueState trueState(const gtsam::NavState& gt, const Eigen::Vector3d& true_bg,

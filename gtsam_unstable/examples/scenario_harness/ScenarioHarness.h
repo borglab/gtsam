@@ -55,13 +55,13 @@ struct RunOptions {
   Eigen::Vector3d accel_bias_rw =
       Eigen::Vector3d::Zero();  // accel bias random-walk rate (m/s^2/sqrt(s))
 
-  // Per-channel initial stddevs for the physical state, forming the
-  // block-diagonal P0 and (via sampleInitialEstimate) the matching offset of
-  // the filter's initial belief from the truth, so eps(0) ~ N(0, P0) holds.
-  // Each block gets its own per-axis (x, y, z) stddev rather than one
-  // isotropic value. States a filter estimates without a physical
-  // counterpart (the TG-EqF virtual bias) are not covered here: the filter
-  // initializes those itself.
+  // Per-channel initial stddevs for the physical navigation error (see
+  // PhysicalStateCovariance), forming the block-diagonal P0 and (via
+  // sampleInitialEstimate) the matching offset of the filter's initial belief
+  // from the truth. Each block gets its own per-axis (x, y, z) stddev, on
+  // world axes for attitude, velocity and position. States a filter estimates
+  // without a physical counterpart (the TG-EqF virtual bias) are not covered
+  // here: the filter initializes those itself.
   Eigen::Vector3d init_att_sigma =
       Eigen::Vector3d::Constant(0.1);  // initial attitude stddev (rad)
   Eigen::Vector3d init_vel_sigma =
@@ -253,8 +253,14 @@ inline void validateRunOptions(const RunOptions& opts) {
   }
 }
 
-/// Covariance of the physical state every filter shares, ordered
-/// [attitude, velocity, position, gyro bias, accel bias].
+/// Covariance of the physical navigation error every filter shares, ordered
+/// [dtheta, dv, dp, db_gyro, db_accel]. The error relates the truth to an
+/// estimate (R0, v0, p0, b0) by R = Exp(dtheta) R0, a world-frame rotation,
+/// and v = v0 + dv, p = p0 + dp, b = b0 + db. No filter uses these
+/// coordinates for its own error, so each adapter hands P0 to its filter's
+/// initialCovariance(X0, P0), which expresses it in that filter's chart at
+/// the initial estimate. Only then does eps(0) ~ N(0, P0_filter) hold for the
+/// error the filter reports.
 using PhysicalStateCovariance = Eigen::Matrix<double, 15, 15>;
 
 /// Block-diagonal P0 = diag(sigma^2) over the physical state, matching the
@@ -281,8 +287,9 @@ struct InitialEstimate {
 };
 
 /// Draw one InitialEstimate around the clean initial truth, consuming `rng`.
-/// Attitude gets a world-frame rotation offset; velocity, position and the two
-/// biases get additive offsets, the biases around their true initial values.
+/// Attitude gets a world-frame rotation offset and velocity and position get
+/// additive offsets, matching PhysicalStateCovariance. The bias estimates are
+/// zero-mean draws: the filter has no calibration of the true biases.
 template <typename Rng>
 inline InitialEstimate sampleInitialEstimate(Rng& rng, const RunOptions& opts,
                                              const gtsam::NavState& truth) {

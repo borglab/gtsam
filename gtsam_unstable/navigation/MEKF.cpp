@@ -91,6 +91,13 @@ DepthOutput::Jacobian DepthOutput::jacobian() {
 
 MEKF::MEKF(const MEKFState& X0, const Covariance& P0) : Base(X0, P0) {}
 
+MEKF::Covariance MEKF::initialCovariance(const MEKFState& X0,
+                                         const Covariance& Sigma_navigation) {
+  Jacobian J = Jacobian::Identity();
+  J.block<3, 3>(0, 0) = X0.R.matrix().transpose();
+  return J * Sigma_navigation * J.transpose();
+}
+
 void MEKF::propagate(const Vector3& omega, const Vector3& accel,
                      const Vector3& g_vec, const Covariance& Qc, double dt) {
   ImuInput u;

@@ -855,7 +855,8 @@ class ImuNoise {
 
 class TGEqF {
   static gtsam::tgeqf::TGEqF::Covariance18 initialCovariance(
-      const gtsam::tgeqf::TGEqF::Covariance15& Sigma_physical);
+      const gtsam::tgeqf::State& xi_hat0,
+      const gtsam::tgeqf::TGEqF::Covariance15& Sigma_navigation);
 
   TGEqF(const gtsam::tgeqf::State& xi_ref,
         const gtsam::tgeqf::TGEqF::Covariance18& Sigma0);

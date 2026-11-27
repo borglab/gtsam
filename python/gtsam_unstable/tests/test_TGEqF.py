@@ -47,11 +47,12 @@ class TestTGEqF(GtsamTestCase):
 
     def setUp(self):
         self.xi_ref = tgeqf.State.identity()
-        self.Sigma0 = tgeqf.TGEqF.initialCovariance(physical_covariance())
+        self.Sigma0 = tgeqf.TGEqF.initialCovariance(
+            self.xi_ref, physical_covariance())
         self.filter = tgeqf.TGEqF(self.xi_ref, self.Sigma0)
 
     def test_initial_covariance(self):
-        """initialCovariance appends the virtual-bias block to the 15x15."""
+        """At the identity estimate a diagonal prior keeps its 15x15 block."""
         self.assertEqual(self.Sigma0.shape, (18, 18))
         np.testing.assert_allclose(self.Sigma0[:15, :15], physical_covariance())
         np.testing.assert_allclose(self.Sigma0, self.Sigma0.T)

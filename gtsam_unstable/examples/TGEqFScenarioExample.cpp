@@ -59,8 +59,9 @@ class ScenarioAdapter {
 
   /// Pin the origin xi0 at the manifold identity, so the error dynamics are
   /// always linearized about the same point, and carry the perturbed initial
-  /// belief in the group element: phi(X0, xi0) is that belief. P0 covers the
-  /// physical state only; TGEqF::initialCovariance() adds the virtual-bias
+  /// belief in the group element: phi(X0, xi0) is that belief. P0 is over the
+  /// harness's physical navigation errors; TGEqF::initialCovariance()
+  /// expresses it in State's chart at that belief and adds the virtual-bias
   /// block.
   Filter makeFilter(const imu_scenarios::InitialEstimate& initial,
                     const imu_scenarios::PhysicalStateCovariance& P0) const {
@@ -73,7 +74,7 @@ class ScenarioAdapter {
     xi_hat0.b.segment<3>(3) = initial.bias_accel;
     // b_v stays zero: the virtual bias has no physical truth to perturb.
     Filter filter(phiInverse(State::identity(), xi_hat0),
-                  Filter::initialCovariance(P0));
+                  Filter::initialCovariance(xi_hat0, P0));
     filter.setResetStep(reset_step_);
     filter.setDvlJacobian(dvl_c0_ ? Filter::DvlJacobian::C0
                                   : Filter::DvlJacobian::Cstar);

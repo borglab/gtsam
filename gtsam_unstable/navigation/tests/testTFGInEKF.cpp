@@ -9,6 +9,7 @@
 #include <gtsam/navigation/Scenario.h>
 #include <gtsam_unstable/navigation/TFGInEKF.h>
 
+#include <cmath>
 #include <functional>
 
 using namespace gtsam::tfg;
@@ -913,6 +914,56 @@ TEST(TFGInEKF, PropagateUsesTransitionJacobian) {
 }
 
 }  // namespace transition_jacobian
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace initial_covariance {
+
+using Vector15 = TwoFrameGroup::TangentVector;
+
+// Dense, anisotropic prior sigma_i sigma_j 0.5^|i-j|: with cross-covariances
+// between every pair of blocks, each block of J, including the sign of the bias
+// columns, shows up in J Sigma J^T.
+Cov15 densePrior() {
+  Cov15 Sigma;
+  for (int i = 0; i < 15; ++i) {
+    for (int j = 0; j < 15; ++j) {
+      Sigma(i, j) = 0.01 * (1.0 + 0.2 * i) * (1.0 + 0.2 * j) *
+                    std::pow(0.5, std::abs(i - j));
+    }
+  }
+  return Sigma;
+}
+
+// The truth at navigation error d from X0: R = Exp(dtheta) R0, v = v0 + dv,
+// p = p0 + dp, b = b0 + db.
+TwoFrameGroup perturb(const TwoFrameGroup& X0, const Vector15& d) {
+  return TwoFrameGroup::FromState(
+      Rot3::Expmap(d.segment<3>(0)) * X0.R, X0.v + d.segment<3>(3),
+      X0.p + d.segment<3>(6), X0.biasOmega() + d.segment<3>(9),
+      X0.biasAccel() + d.segment<3>(12));
+}
+
+// initialCovariance is J Sigma J^T for J the derivative of Local(X0, X) with
+// respect to the navigation error, checked at a rotated estimate with large
+// biases so the bias-attitude coupling is visible.
+TEST(TFGInEKF, InitialCovarianceTransportsNavigationErrors) {
+  const TwoFrameGroup X0 = TwoFrameGroup::FromState(
+      Rot3::RzRyRx(0.3, -0.4, 1.9), Eigen::Vector3d(1.0, -0.7, 0.2),
+      Eigen::Vector3d(5.0, 3.0, -2.0), Eigen::Vector3d(0.2, -0.3, 0.15),
+      Eigen::Vector3d(0.5, -0.4, 0.3));
+  const std::function<Vector15(const Vector15&)> local =
+      [&](const Vector15& d) {
+        return traits<TwoFrameGroup>::Local(X0, perturb(X0, d));
+      };
+  const Cov15 J =
+      numericalDerivative11<Vector15, Vector15>(local, Vector15::Zero());
+  EXPECT(assert_equal((Matrix)(J * densePrior() * J.transpose()),
+                      (Matrix)TFGInEKF::initialCovariance(X0, densePrior()),
+                      1e-8));
+}
+
+}  // namespace initial_covariance
 /* ************************************************************************* */
 
 /* ************************************************************************* */

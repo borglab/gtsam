@@ -149,8 +149,29 @@ class GTSAM_UNSTABLE_EXPORT TFGInEKF
 
   /// @param X0 initial group state (TwoFrameGroup::FromState for physical
   /// coords)
-  /// @param P0 initial 15-dim tangent covariance.
+  /// @param P0 initial 15-dim tangent covariance, in the group chart at X0
+  ///           (see initialCovariance for a physical-error prior).
   TFGInEKF(const TwoFrameGroup& X0, const Covariance& P0);
+
+  /**
+   * Express a prior over navigation errors in the group chart at X0, to first
+   * order. The navigation error [dtheta, dv, dp, db_omega, db_accel] relates
+   * the true state to the estimate X0 by R = Exp(dtheta) R0 (a world-frame
+   * rotation), v = v0 + dv, p = p0 + dp and b = b0 + db, so Sigma_navigation is
+   * stated in physical units on world axes. The result is J Sigma J^T, with J
+   * the derivative of Local(X0, X) with respect to that error:
+   *
+   *   J = [ R0^T            0     0     0   0 ]
+   *       [ 0               R0^T  0     0   0 ]
+   *       [ 0               0     R0^T  0   0 ]
+   *       [ [b_omega]x R0^T 0     0    -I   0 ]
+   *       [ [b_accel]x R0^T 0     0     0  -I ]
+   *
+   * The bias rows follow from gamma = -R b: an attitude error rotates the
+   * stored bias.
+   */
+  static Covariance initialCovariance(const TwoFrameGroup& X0,
+                                      const Covariance& Sigma_navigation);
 
   /// IMU predict with lifted tangent process noise Qc (scaled by dt).
   /// @param g_vec  Global-frame gravity vector; its sign fixes the frame

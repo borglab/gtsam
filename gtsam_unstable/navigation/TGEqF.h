@@ -215,22 +215,35 @@ class GTSAM_UNSTABLE_EXPORT TGEqF
   static constexpr double kVirtualBiasInitialSigma = 1e-6;
 
   /**
-   * Initial covariance built from the physical-state block [R,v,p,b_w,b_a];
-   * the virtual-bias block is kVirtualBiasInitialSigma^2 * I, uncorrelated.
+   * Express a prior over navigation errors in State's chart at the initial
+   * estimate xi_hat0, to first order, as the constructors expect. The
+   * navigation error [dtheta, dv, dp, db_w, db_a] relates the true state to
+   * xi_hat0 = (R0, v0, p0, b0) by R = Exp(dtheta) R0 (a world-frame rotation),
+   * v = v0 + dv, p = p0 + dp and b = b0 + db, so Sigma_navigation is stated
+   * in physical units on world axes. The virtual bias b_v has no physical
+   * error; it gets kVirtualBiasInitialSigma^2 * I on top.
    *
-   * v and p are read in State's chart (SE_2(3) logarithm coordinates), so
-   * they're plain global-frame variances only at identity rotation --
-   * otherwise they're resolved in that state's body frame and couple to the
-   * rotation block.
+   * The result is J Sigma J^T, with J the 18x15 derivative of
+   * Local(xi_hat0, xi) with respect to the navigation error:
+   *
+   *   J = [ N              0      ],   N = diag(R0^T, R0^T, R0^T),
+   *       [ ad(b0) N   -I_{9x6}   ]
+   *
+   * where ad(b0) is the SE_2(3) adjoint of the bias b0 = (b_w, b_a, b_v). The
+   * bias rows follow from the action b -> Ad(A^{-1})(b - a): a navigation
+   * error rotates and shears the bias, so b_a also couples to dv through
+   * [b_w]x, and b_v to dtheta and dp.
    */
-  static Covariance18 initialCovariance(const Covariance15& Sigma_physical);
+  static Covariance18 initialCovariance(const State& xi_hat0,
+                                        const Covariance15& Sigma_navigation);
 
   /**
    * Construct at the identity origin (xi_ref = identity). This is the
    * interface examples should use, matching TFGInEKF and MEKF.
    *
    * @param X0  Initial group estimate; state is X0.
-   * @param P0  Initial covariance of X0, expressed in the tangent chart at X0.
+   * @param P0  Initial covariance of X0, expressed in the tangent chart at X0
+   *            (initialCovariance builds it from a physical prior).
    */
   explicit TGEqF(const TGElement& X0, const Covariance18& P0);
 

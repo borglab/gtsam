@@ -15,6 +15,7 @@
 #include <gtsam_unstable/navigation/TGEqF.h>
 
 #include <chrono>
+#include <cmath>
 #include <cstdio>
 #include <functional>
 #include <utility>
@@ -869,6 +870,75 @@ TEST(TGEqF, DirectDepthUpdateDiffersWhenTheHorizontalChannelIsActive) {
 }
 
 }  // namespace depth_update
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace initial_covariance {
+
+using fixture::Vector18;
+using Vector15 = Eigen::Matrix<double, 15, 1>;
+using Cov15 = TGEqF::Covariance15;
+
+// Dense, anisotropic prior sigma_i sigma_j 0.5^|i-j|: with cross-covariances
+// between every pair of blocks, each block of J, including the sign of the bias
+// columns, shows up in J Sigma J^T.
+Cov15 densePrior() {
+  Cov15 Sigma;
+  for (int i = 0; i < 15; ++i) {
+    for (int j = 0; j < 15; ++j) {
+      Sigma(i, j) = 0.01 * (1.0 + 0.2 * i) * (1.0 + 0.2 * j) *
+                    std::pow(0.5, std::abs(i - j));
+    }
+  }
+  return Sigma;
+}
+
+// An estimate with a rotated attitude and large biases, including b_v, so
+// every coupling in ad(b0) is visible.
+State rotatedEstimate() {
+  Eigen::Matrix<double, 3, 2> vp;
+  vp.col(0) = Vector3(1.0, -0.7, 0.2);
+  vp.col(1) = Vector3(5.0, 3.0, -2.0);
+  State xi;
+  xi.T = ExtendedPose3<2>(Rot3::RzRyRx(0.3, -0.4, 1.9), vp);
+  xi.b << 0.2, -0.3, 0.15, 0.5, -0.4, 0.3, 0.1, 0.2, -0.1;
+  return xi;
+}
+
+// The truth at navigation error d from xi0: R = Exp(dtheta) R0, v = v0 + dv,
+// p = p0 + dp, b = b0 + db; b_v has no navigation error.
+State perturb(const State& xi0, const Vector15& d) {
+  Eigen::Matrix<double, 3, 2> vp;
+  vp.col(0) = xi0.T.x(0) + d.segment<3>(3);
+  vp.col(1) = xi0.T.x(1) + d.segment<3>(6);
+  State xi;
+  xi.T = ExtendedPose3<2>(Rot3::Expmap(d.segment<3>(0)) * xi0.T.rotation(), vp);
+  xi.b = xi0.b;
+  xi.b.head<6>() += d.segment<6>(9);
+  return xi;
+}
+
+// initialCovariance is J Sigma J^T for J the 18x15 derivative of
+// Local(xi0, xi) with respect to the navigation error, plus the virtual-bias
+// prior.
+TEST(TGEqF, InitialCovarianceTransportsNavigationErrors) {
+  const State xi0 = rotatedEstimate();
+  const std::function<Vector18(const Vector15&)> local =
+      [&](const Vector15& d) {
+        return traits<State>::Local(xi0, perturb(xi0, d));
+      };
+  const Eigen::Matrix<double, 18, 15> J =
+      numericalDerivative11<Vector18, Vector15>(local, Vector15::Zero());
+  TGEqF::Covariance18 expected = J * densePrior() * J.transpose();
+  expected.bottomRightCorner<3, 3>() += TGEqF::kVirtualBiasInitialSigma *
+                                        TGEqF::kVirtualBiasInitialSigma *
+                                        Eigen::Matrix3d::Identity();
+  EXPECT(assert_equal((Matrix)expected,
+                      (Matrix)TGEqF::initialCovariance(xi0, densePrior()),
+                      1e-8));
+}
+
+}  // namespace initial_covariance
 /* ************************************************************************* */
 
 /* ************************************************************************* */

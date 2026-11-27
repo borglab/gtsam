@@ -50,14 +50,15 @@ class ScenarioAdapter {
         {"R", "v", "p", "bg", "ba"}, cov_format_);
   }
 
-  /// Start at the perturbed initial belief, biases included. Every MEKF state
-  /// is physical, so P0 is used as given.
+  /// Start at the perturbed initial belief, biases included. P0 is over the
+  /// harness's physical navigation errors; initialCovariance re-expresses its
+  /// world-frame attitude block in the MEKF's body-frame attitude chart.
   Filter makeFilter(const imu_scenarios::InitialEstimate& initial,
                     const imu_scenarios::PhysicalStateCovariance& P0) const {
     const MEKFState X0(initial.nav.attitude(), initial.nav.velocity(),
                        initial.nav.position(), initial.bias_gyro,
                        initial.bias_accel);
-    return Filter(X0, P0);
+    return Filter(X0, Filter::initialCovariance(X0, P0));
   }
 
   TrueState trueState(const gtsam::NavState& gt, const Eigen::Vector3d& true_bg,

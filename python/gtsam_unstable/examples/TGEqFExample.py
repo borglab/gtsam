@@ -15,9 +15,11 @@ def main():
     # trivial (see TGEqF's constructor doc).
     xi_ref = tgeqf.State.identity()
 
-    # 2. Initial covariance, ordered [R, v, p, b_w, b_a] (15x15 physical
-    # block); TGEqF.initialCovariance() appends the virtual-bias block to
-    # produce the full 18x18 Sigma0 the filter expects.
+    # 2. Initial covariance over physical navigation errors, ordered
+    # [R, v, p, b_w, b_a] on world axes. TGEqF.initialCovariance() expresses
+    # it in the filter's chart at the initial estimate (here xi_ref) and
+    # appends the virtual-bias block, giving the 18x18 Sigma0 the filter
+    # expects.
     Sigma_physical = np.diag([
         (0.05)**2, (0.05)**2, (0.05)**2,  # attitude, rad
         0.1**2, 0.1**2, 0.1**2,           # velocity, m/s
@@ -25,7 +27,7 @@ def main():
         (1e-3)**2, (1e-3)**2, (1e-3)**2,  # gyro bias, rad/s
         (1e-2)**2, (1e-2)**2, (1e-2)**2,  # accel bias, m/s^2
     ])
-    Sigma0 = tgeqf.TGEqF.initialCovariance(Sigma_physical)
+    Sigma0 = tgeqf.TGEqF.initialCovariance(xi_ref, Sigma_physical)
 
     # 3. Construct the filter at the reference state with X0 = identity, so
     # the initial estimate coincides with xi_ref.

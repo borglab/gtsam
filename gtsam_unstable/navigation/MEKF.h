@@ -95,7 +95,23 @@ class GTSAM_UNSTABLE_EXPORT MEKF : public gtsam::ManifoldEKF<MEKFState> {
   /// depth update, large enough that the update leaves x and y untouched.
   static constexpr double kDefaultHorizontalVariance = 1e6;
 
+  /// @param X0 initial state.
+  /// @param P0 initial covariance in the MEKF chart at X0, whose attitude
+  ///           error is body-frame (see initialCovariance for a physical
+  ///           prior).
   MEKF(const MEKFState& X0, const Covariance& P0);
+
+  /**
+   * Express a prior over navigation errors in the MEKF chart at X0. The
+   * navigation error [dtheta, dv, dp, db_omega, db_accel] relates the true
+   * state to the estimate X0 by R = Exp(dtheta) R0 (a world-frame rotation),
+   * v = v0 + dv, p = p0 + dp and b = b0 + db, so Sigma_navigation is stated in
+   * physical units on world axes. The MEKF chart differs only in its attitude
+   * error, R = R0 Exp(delta), so the result is J Sigma J^T with
+   * J = diag(R0^T, I, I, I, I).
+   */
+  static Covariance initialCovariance(const MEKFState& X0,
+                                      const Covariance& Sigma_navigation);
 
   /**
    * Strapdown predict + finite-diff F; P <- F P F^T + Qc dt.
