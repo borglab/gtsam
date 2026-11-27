@@ -824,21 +824,21 @@ TEST(TFGInEKF, DvlUpdateAppliesCovarianceReset) {
   EXPECT((c.untransported - c.filtered).norm() > 1e-6);
 }
 
-// The depth update, a pseudo-position update, applies the same reset.
+// The scalar depth update applies the same reset. The pseudo-position depth
+// update is checked against updatePosition in the depth_update tests; it is
+// kept out of this check because its 1e6 horizontal and 1e-2 vertical
+// variances make a 1e-12 comparison sensitive to how R^T(.)R is evaluated.
 TEST(TFGInEKF, DepthUpdateAppliesCovarianceReset) {
   const double z_depth = -2.6;
   TFGInEKF::Covariance1 R_depth;
   R_depth(0, 0) = 0.01;
   const ResetCheck c = resetCheck(
-      [&](TFGInEKF& ekf) { ekf.updateDepth(z_depth, R_depth); },
+      [&](TFGInEKF& ekf) { ekf.updateDepthDirect(z_depth, R_depth); },
       [&](gtsam::InvariantEKF<TwoFrameGroup>& base) {
-        Eigen::Vector3d pseudo_position = base.state().p;
-        pseudo_position.z() = z_depth;
-        const Cov3 R_pseudo =
-            Eigen::Vector3d(TFGInEKF::kDefaultHorizontalVariance,
-                            TFGInEKF::kDefaultHorizontalVariance, R_depth(0, 0))
-                .asDiagonal();
-        basePositionUpdate(base, pseudo_position, R_pseudo);
+        const TwoFrameGroup X = base.state();
+        base.updateWithVector(Vector1{DepthOutput::predict(X)},
+                              DepthOutput::jacobian(X), Vector1{z_depth},
+                              R_depth, /*performReset=*/false);
       });
 
   EXPECT(c.same_state);

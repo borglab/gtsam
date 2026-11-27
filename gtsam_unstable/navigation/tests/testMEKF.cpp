@@ -495,23 +495,19 @@ TEST(MEKF, DvlUpdateAppliesCovarianceReset) {
   EXPECT((c.untransported - c.filtered).norm() > 1e-6);
 }
 
-// The depth update, a pseudo-position update, applies the same reset.
+// The scalar depth update applies the same reset. The pseudo-position depth
+// update is checked against updatePosition separately, away from this 1e-12
+// comparison and its 1e6-to-1e-2 spread of noise variances.
 TEST(MEKF, DepthUpdateAppliesCovarianceReset) {
   const double z_depth = -2.6;
   MEKF::Covariance1 R_depth;
   R_depth(0, 0) = 0.01;
   const ResetCheck c = resetCheck(
-      [&](MEKF& ekf) { ekf.updateDepth(z_depth, R_depth); },
+      [&](MEKF& ekf) { ekf.updateDepthDirect(z_depth, R_depth); },
       [&](gtsam::ManifoldEKF<MEKFState>& base) {
-        Eigen::Vector3d pseudo_position = base.state().p;
-        pseudo_position.z() = z_depth;
-        const Cov3 R_pseudo =
-            Eigen::Vector3d(MEKF::kDefaultHorizontalVariance,
-                            MEKF::kDefaultHorizontalVariance, R_depth(0, 0))
-                .asDiagonal();
-        base.updateWithVector(PositionOutput::predict(base.state()),
-                              PositionOutput::jacobian(), pseudo_position,
-                              R_pseudo, /*performReset=*/false);
+        base.updateWithVector(Vector1{DepthOutput::predict(base.state())},
+                              DepthOutput::jacobian(), Vector1{z_depth},
+                              R_depth, /*performReset=*/false);
       });
 
   EXPECT(c.same_state);
