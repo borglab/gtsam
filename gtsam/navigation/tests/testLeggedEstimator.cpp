@@ -466,7 +466,8 @@ TEST(LeggedEstimator, TouchdownFlagReinitializesFootWithoutIntermediateSwing) {
 }
 
 /* ************************************************************************* */
-TEST(LeggedEstimator, HeightPriorChangesInvariantFilterContactUpdate) {
+// Verifies a nearby terrain prior pulls the estimated foot height toward it.
+TEST(LeggedEstimator, HeightPriorPullsFootTowardTerrain) {
   LeggedEstimatorParams params = makeParams();
   params.body_P_imu = Pose3(Rot3(), Point3(0.30, 0.0, 0.15));
   params.footholdInitSigma = 0.5;
@@ -482,6 +483,9 @@ TEST(LeggedEstimator, HeightPriorChangesInvariantFilterContactUpdate) {
       I_3x3 * (params.footholdInitSigma * params.footholdInitSigma);
 
   const ContactMeasurement contact{0, Vector3::Zero(), false};
+  const double terrainHeight = 0.0;
+  const Point3 initializedFoothold = navState0.pose().transformFrom(
+      params.body_P_imu.transformTo(contact.bodyPoint));
 
   LeggedInvariantEKF noPrior(navState0, oneFoot(Vector3::Zero()), P0, params,
                              {"foot"});
@@ -492,12 +496,15 @@ TEST(LeggedEstimator, HeightPriorChangesInvariantFilterContactUpdate) {
 
   LeggedInvariantEKF withPrior(navState0, oneFoot(Vector3::Zero()), P0, params,
                                {"foot"});
-  withPrior.turnHeightPriorOn(10.0);
+  withPrior.turnHeightPriorOn(terrainHeight);
   withPrior.processContacts({contact});
   const double withPriorFootHeight =
       Point3(footholdsFromEstimate(withPrior.estimate()).col(0)).z();
 
-  CHECK(std::abs(withPriorFootHeight - noPriorFootHeight) > 1.0);
+  EXPECT_DOUBLES_EQUAL(initializedFoothold.z(), noPriorFootHeight, 1e-12);
+  CHECK(std::abs(noPriorFootHeight - terrainHeight) > params.heightPriorSigma);
+  EXPECT_DOUBLES_EQUAL(terrainHeight, withPriorFootHeight,
+                      params.heightPriorSigma);
 }
 
 /* ************************************************************************* */
