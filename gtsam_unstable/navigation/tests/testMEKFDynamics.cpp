@@ -27,15 +27,17 @@ static bool meq(const Eigen::MatrixXd& a, const Eigen::MatrixXd& b,
 
 // The dynamics are frame-agnostic -- gravity arrives in ImuInput::g_vec -- so
 // these tests pick a convention of their own: Z-up (ENU), gravity along -z.
-static const Eigen::Vector3d kTestGravity(0.0, 0.0, -9.81);
+static Eigen::Vector3d testGravity() {
+  return Eigen::Vector3d(0.0, 0.0, -9.81);
+}
 
 // Specific force that cancels gravity for a level vehicle (R = I): f = -g.
-static const Eigen::Vector3d kHoverAccel = -kTestGravity;  // (0, 0, 9.81)
+static Eigen::Vector3d hoverAccel() { return -testGravity(); }  // (0, 0, 9.81)
 
 /// A zeroed input carrying the fixture's gravity.
 static ImuInput gravityInput() {
   ImuInput u;
-  u.g_vec = kTestGravity;
+  u.g_vec = testGravity();
   return u;
 }
 
@@ -50,9 +52,9 @@ TEST(MEKFDynamics, PropagateUsesInputGravity) {
   const MEKFState X = MEKFState::identity();
   ImuInput up = gravityInput();  // g = (0, 0, -9.81)
   ImuInput un = gravityInput();
-  un.g_vec = -kTestGravity;  // g = (0, 0, +9.81), i.e. a Z-down frame
-  EXPECT(veq(propagateMean(X, up, dt).v, kTestGravity * dt));
-  EXPECT(veq(propagateMean(X, un, dt).v, -kTestGravity * dt));
+  un.g_vec = -testGravity();  // g = (0, 0, +9.81), i.e. a Z-down frame
+  EXPECT(veq(propagateMean(X, up, dt).v, testGravity() * dt));
+  EXPECT(veq(propagateMean(X, un, dt).v, -testGravity() * dt));
 }
 
 // ---------------------------------------------------------------------------
@@ -64,7 +66,7 @@ TEST(MEKFDynamics, PropagateHoverHoldsState) {
   MEKFState X = MEKFState::identity();
   ImuInput u = gravityInput();
   u.omega = Eigen::Vector3d::Zero();
-  u.accel = kHoverAccel;
+  u.accel = hoverAccel();
   MEKFState Xn = propagateMean(X, u, 0.1);
   EXPECT(Xn.R.equals(Rot3::Identity(), kTol));
   EXPECT(veq(Xn.v, Eigen::Vector3d::Zero()));
@@ -78,7 +80,7 @@ TEST(MEKFDynamics, PropagateConstantVelocityIntegratesPosition) {
               Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
               Eigen::Vector3d::Zero());
   ImuInput u = gravityInput();
-  u.accel = kHoverAccel;  // cancel gravity -> zero linear acceleration
+  u.accel = hoverAccel();  // cancel gravity -> zero linear acceleration
   MEKFState Xn = propagateMean(X, u, dt);
   EXPECT(veq(Xn.v, Eigen::Vector3d(1, 0, 0)));
   EXPECT(veq(Xn.p, Eigen::Vector3d(0.1, 0, 0)));
@@ -92,7 +94,7 @@ TEST(MEKFDynamics, PropagateAttitudeUsesGyroBias) {
               bg, Eigen::Vector3d::Zero());
   ImuInput u = gravityInput();
   u.omega = Eigen::Vector3d(0, 0, 0.5);
-  u.accel = kHoverAccel;
+  u.accel = hoverAccel();
   MEKFState Xn = propagateMean(X, u, dt);
   const Eigen::Vector3d expected_corr(0, 0, 0.3);  // 0.5 - 0.2
   EXPECT(Xn.R.equals(X.R * Rot3::Expmap(expected_corr * dt), kTol));
@@ -105,7 +107,7 @@ TEST(MEKFDynamics, PropagateVelocityUsesAccelBias) {
   MEKFState X(Rot3::Identity(), Eigen::Vector3d::Zero(),
               Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), ba);
   ImuInput u = gravityInput();
-  u.accel = kHoverAccel;  // (0,0,9.81); corrected = (0,0,8.81)
+  u.accel = hoverAccel();  // (0,0,9.81); corrected = (0,0,8.81)
   MEKFState Xn = propagateMean(X, u, dt);
   // a_n = R(accel - ba) + g = (0,0,8.81) + (0,0,-9.81) = (0,0,-1)
   EXPECT(veq(Xn.v, Eigen::Vector3d(0, 0, -0.1)));

@@ -18,7 +18,9 @@ static constexpr double kTol = 1e-9;
 
 // The filter is frame-agnostic -- gravity is a propagate() argument -- so these
 // tests pick a convention of their own: Z-up (ENU), gravity along -z.
-static const Eigen::Vector3d kTestGravity(0.0, 0.0, -9.81);
+static Eigen::Vector3d testGravity() {
+  return Eigen::Vector3d(0.0, 0.0, -9.81);
+}
 
 using Cov15 = Eigen::Matrix<double, 15, 15>;
 using Cov3 = Eigen::Matrix<double, 3, 3>;
@@ -61,7 +63,7 @@ TEST(TFGInEKF, PredictKeepsCovarianceSymmetricPSD) {
 
   Cov15 Qc = Cov15::Identity() * 1e-3;
   ekf.propagate(Eigen::Vector3d(0.05, -0.02, 0.1),
-                Eigen::Vector3d(0.0, 0.0, 9.81), kTestGravity, Qc, 0.01);
+                Eigen::Vector3d(0.0, 0.0, 9.81), testGravity(), Qc, 0.01);
 
   const Cov15 P = ekf.covariance();
   EXPECT(assert_equal((Matrix)P, (Matrix)P.transpose(), 1e-12));  // symmetric
@@ -78,9 +80,9 @@ TEST(TFGInEKF, PredictMeanFollowsDynamics) {
 
   const Eigen::Vector3d omega(0.0, 0.0, 0.1), accel(0.0, 0.0, 0.0);
   const double dt = 1e-4;
-  ekf.propagate(omega, accel, kTestGravity, Cov15::Identity() * 1e-6, dt);
+  ekf.propagate(omega, accel, testGravity(), Cov15::Identity() * 1e-6, dt);
 
-  const Eigen::Vector3d g = kTestGravity;
+  const Eigen::Vector3d g = testGravity();
   Rot3 R1 = R0 * Rot3::Expmap(omega * dt);
   Eigen::Vector3d v1 = v0 + (R0 * accel + g) * dt;
   Eigen::Vector3d p1 = p0 + v0 * dt;
@@ -204,7 +206,7 @@ TEST(TFGInEKF, StaticConvergence) {
   const double pos_trace_before = ekf.covariance().block<3, 3>(6, 6).trace();
 
   for (int k = 0; k < 500; ++k) {
-    ekf.propagate(omega, accel_static, kTestGravity, Qc, dt);
+    ekf.propagate(omega, accel_static, testGravity(), Qc, dt);
     if (k % 10 == 0)  // 10 Hz GNSS
       // Pin to C0: this test exercises the C0 coupling path. C* deliberately
       // zeroes the position->attitude coupling for a level vehicle, so it does
@@ -251,7 +253,7 @@ TEST(TFGInEKF, CstarConvergesFromLargeError) {
   Cov3 R_pos = Cov3::Identity() * (0.05 * 0.05);
   const double dt = 0.01;
   for (int k = 0; k < 500; ++k) {
-    ekf.propagate(omega, accel_static, kTestGravity, Qc, dt);
+    ekf.propagate(omega, accel_static, testGravity(), Qc, dt);
     if (k % 10 == 0) ekf.updatePosition(truth_pos, R_pos, /*use_cstar=*/true);
   }
   EXPECT((ekf.position() - truth_pos).norm() < 0.01);
@@ -273,7 +275,7 @@ TEST(TFGInEKF, PredictBuildsNavBiasCrossCovariance) {
   TFGInEKF ekf(X0, Cov15::Identity() * 0.1);  // diagonal: zero cross-cov
 
   ekf.propagate(Eigen::Vector3d(0.05, -0.02, 0.1),
-                Eigen::Vector3d(0.0, 0.0, 9.81), kTestGravity,
+                Eigen::Vector3d(0.0, 0.0, 9.81), testGravity(),
                 Cov15::Identity() * 1e-6, 0.01);
 
   // Position(6..8) vs gyro-bias(9..11) and velocity(3..5) vs accel-bias(12..14)
@@ -296,7 +298,7 @@ TEST(TFGInEKF, PositionUpdateMovesBiasEstimate) {
 
   // One propagate to couple bias into the nav covariance, then a position fix.
   ekf.propagate(Eigen::Vector3d(0.05, -0.02, 0.1),
-                Eigen::Vector3d(0.0, 0.0, 9.81), kTestGravity,
+                Eigen::Vector3d(0.0, 0.0, 9.81), testGravity(),
                 Cov15::Identity() * 1e-5, 0.01);
   const Eigen::Vector3d bg_before = ekf.biasGyro();
   const Eigen::Vector3d ba_before = ekf.biasAccel();
@@ -338,7 +340,7 @@ static double runStaticErrShifted(const Eigen::Vector3d& offset,
   Cov3 R_pos = Cov3::Identity() * (0.05 * 0.05);
   const double dt = 0.01;
   for (int k = 0; k < 500; ++k) {
-    ekf.propagate(omega, accel_static, kTestGravity, Qc, dt);
+    ekf.propagate(omega, accel_static, testGravity(), Qc, dt);
     if (k % 10 == 0) ekf.updatePosition(truth_pos, R_pos, use_cstar);
   }
   return (ekf.position() - truth_pos).norm();
@@ -409,7 +411,7 @@ static RegressionResult runBiasedImu30s(bool with_position_updates) {
   const double dt = 0.01, duration = 30.0;  // 100 Hz IMU, 30 s
   const int num_steps = static_cast<int>(duration / dt);
   const int gnss_decim = 10;  // 10 Hz position fixes
-  const Eigen::Vector3d g = kTestGravity;
+  const Eigen::Vector3d g = testGravity();
 
   // Init at the true initial state with zero bias estimate.
   const gtsam::NavState gt0 = scenario.navState(0.0);
@@ -438,7 +440,7 @@ static RegressionResult runBiasedImu30s(bool with_position_updates) {
     const Eigen::Vector3d omega_meas = scenario.omega_b(t) + true_bg;
     const Eigen::Vector3d accel_meas =
         gt.attitude().unrotate(scenario.acceleration_n(t) - g) + true_ba;
-    ekf.propagate(omega_meas, accel_meas, kTestGravity, noise, dt);
+    ekf.propagate(omega_meas, accel_meas, testGravity(), noise, dt);
     t += dt;
     if (with_position_updates && (k + 1) % gnss_decim == 0)
       ekf.updatePosition(scenario.navState(t).position(), R_pos);
@@ -869,7 +871,7 @@ TEST(TFGInEKF, TransitionJacobianMatchesFiniteDifference) {
   ImuInput u;
   u.omega = Eigen::Vector3d(0.6, -0.4, 0.8);
   u.accel = Eigen::Vector3d(0.3, -0.2, 9.9);
-  u.g_vec = kTestGravity;
+  u.g_vec = testGravity();
   const double dt = 0.2;
 
   const TwoFrameGroup X_next = step(X, u, dt);
@@ -899,7 +901,7 @@ TEST(TFGInEKF, PropagateUsesTransitionJacobian) {
   ImuInput u;
   u.omega = Eigen::Vector3d(0.3, -0.2, 0.5);
   u.accel = Eigen::Vector3d(0.1, 0.0, 9.8);
-  u.g_vec = kTestGravity;
+  u.g_vec = testGravity();
   const double dt = 0.1;
 
   TFGInEKF ekf(X0, P0);

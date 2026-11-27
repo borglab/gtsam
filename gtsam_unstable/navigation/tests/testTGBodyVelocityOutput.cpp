@@ -148,12 +148,10 @@ TEST(BodyVelocityOutput, CstarMeetsC0AtConvergence) {
 /* ************************************************************************* */
 namespace accuracy {
 
-const State kXiRef = fixture::makeXi();
-const TGElement kG = fixture::makeX();
-
 /// Body velocity the true state at eps reports to the filter.
 Vector3 measurementAt(const fixture::Tangent& eps) {
-  return DVLMeasurement::predict(phi(kG, traits<State>::Retract(kXiRef, eps)));
+  return DVLMeasurement::predict(
+      phi(fixture::makeX(), traits<State>::Retract(fixture::makeXi(), eps)));
 }
 
 /**
@@ -169,17 +167,21 @@ Vector3 measurementAt(const fixture::Tangent& eps) {
  * Jacobian rather than the Jacobian of the output map alone.
  */
 Vector3 residual(const fixture::Tangent& eps) {
-  return DVLMeasurement::inverseOutputAction(kG, measurementAt(eps)) -
-         DVLMeasurement::predict(kXiRef);
+  return DVLMeasurement::inverseOutputAction(fixture::makeX(),
+                                             measurementAt(eps)) -
+         DVLMeasurement::predict(fixture::makeXi());
 }
 
 double errorC0(const fixture::Tangent& eps) {
-  return (residual(eps) - DVLMeasurement::jacobianC0(kXiRef) * eps).norm();
+  return (residual(eps) - DVLMeasurement::jacobianC0(fixture::makeXi()) * eps)
+      .norm();
 }
 
 double errorCstar(const fixture::Tangent& eps) {
-  return (residual(eps) -
-          DVLMeasurement::jacobianCstar(kXiRef, kG, measurementAt(eps)) * eps)
+  return (residual(eps) - DVLMeasurement::jacobianCstar(fixture::makeXi(),
+                                                        fixture::makeX(),
+                                                        measurementAt(eps)) *
+                              eps)
       .norm();
 }
 

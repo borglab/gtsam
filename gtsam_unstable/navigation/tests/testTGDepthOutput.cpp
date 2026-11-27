@@ -119,25 +119,24 @@ TEST(DepthOutput, HasNoEquivariantOutputAction) {
 /* ************************************************************************* */
 namespace accuracy {
 
-const State kXiRef = fixture::makeXi();
-const TGElement kG = fixture::makeX();
-
-/// Depth reading of the true state at eps, xi_true = phi(kG, Retract(xi_ref,
-/// eps)).
+/// Depth reading of the true state at eps,
+/// xi_true = phi(X, Retract(xi_ref, eps)) with the fixture X and xi_ref.
 double measurementAt(const fixture::Tangent& eps) {
   return DepthMeasurement::predict(
-      phi(kG, traits<State>::Retract(kXiRef, eps)));
+      phi(fixture::makeX(), traits<State>::Retract(fixture::makeXi(), eps)));
 }
 
 /// What C linearizes: h(xi_true(eps)) - h(xi_hat). Increasing in p, so the
 /// sign is opposite to testTGPositionOutput.cpp's residual.
 double residual(const fixture::Tangent& eps) {
-  return measurementAt(eps) - DepthMeasurement::predict(phi(kG, kXiRef));
+  return measurementAt(eps) -
+         DepthMeasurement::predict(phi(fixture::makeX(), fixture::makeXi()));
 }
 
 double errorC(const fixture::Tangent& eps) {
-  return std::abs(residual(eps) -
-                  (DepthMeasurement::jacobianC(kXiRef, kG) * eps)(0));
+  return std::abs(residual(eps) - (DepthMeasurement::jacobianC(
+                                       fixture::makeXi(), fixture::makeX()) *
+                                   eps)(0));
 }
 
 /// Ratio of the linearization error at half amplitude to that at full: ~1/4

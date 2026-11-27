@@ -29,7 +29,7 @@ constexpr double kTol = 1e-6;
 
 using Vector18 = Eigen::Matrix<double, 18, 1>;
 
-const Vector3 kGravity(0.0, 0.0, -9.81);
+Vector3 testGravity() { return Vector3(0.0, 0.0, -9.81); }
 
 bool veq(const Vector3& a, const Vector3& b, double tol = kTol) {
   return assert_equal((Vector)a, (Vector)b, tol);
@@ -161,7 +161,7 @@ IntegrationResult runIntegrationComparison() {
   Input u;
   u.w = Vector3(0.7, -0.4, 1.1);
   u.a = Vector3(1.5, -0.8, 0.6);
-  u.g_vec = fixture::kGravity;
+  u.g_vec = fixture::testGravity();
   u.v = Vector3::Zero();
   u.tau_w = Vector3::Zero();
   u.tau_a = Vector3::Zero();
@@ -226,8 +226,8 @@ TEST(TGEqF, PropagateIntegratesPosition) {
 
   const double dt = 0.01;
   const Vector3 p_before = filter.position();
-  filter.propagate(Vector3::Zero(), -fixture::kGravity, fixture::kGravity,
-                   fixture::defaultQc(), dt);
+  filter.propagate(Vector3::Zero(), -fixture::testGravity(),
+                   fixture::testGravity(), fixture::defaultQc(), dt);
 
   EXPECT(fixture::veq(filter.position() - p_before, xi0.T.x(0) * dt, 1e-4));
 }
@@ -243,13 +243,13 @@ TEST(TGEqF, PropagateFeedsZeroVirtualInput) {
   const double dt = 0.05;
 
   TGEqF via_propagate(xi_ref, fixture::defaultSigma());
-  via_propagate.propagate(omega, accel, fixture::kGravity, fixture::defaultQc(),
-                          dt);
+  via_propagate.propagate(omega, accel, fixture::testGravity(),
+                          fixture::defaultQc(), dt);
 
   Input u;
   u.w = omega;
   u.a = accel;
-  u.g_vec = fixture::kGravity;
+  u.g_vec = fixture::testGravity();
   TGEqF via_lift(xi_ref, fixture::defaultSigma());
   via_lift.predict<1>(Lift(u), InputOrbit(u), fixture::defaultQc(), dt);
 
@@ -665,7 +665,7 @@ TEST(TGEqF, InputNoiseCovMatchesTheNumericalLiftDifferential) {
   Input u;
   u.w = omega;
   u.a = accel;
-  u.g_vec = fixture::kGravity;
+  u.g_vec = fixture::testGravity();
   const auto lambda_origin = [&](const Input& uu) {
     return Eigen::Matrix<double, 18, 1>(Dphi0 *
                                         Lift(InputOrbit(uu)(Xhat_inv))(xi_ref));
@@ -719,12 +719,12 @@ TEST(TGEqF, PropagateWithImuNoiseDelegatesToInputNoiseCov) {
 
   TGEqF via_noise(State::identity(), fixture::defaultSigma());
   const double trace_before = via_noise.errorCovariance().trace();
-  via_noise.propagate(omega, accel, fixture::kGravity, nz, dt);
+  via_noise.propagate(omega, accel, fixture::testGravity(), nz, dt);
   EXPECT(via_noise.errorCovariance().trace() > trace_before);
 
   TGEqF via_qc(State::identity(), fixture::defaultSigma());
-  via_qc.propagate(omega, accel, fixture::kGravity, via_qc.inputNoiseCov(nz),
-                   dt);
+  via_qc.propagate(omega, accel, fixture::testGravity(),
+                   via_qc.inputNoiseCov(nz), dt);
 
   EXPECT(assert_equal(via_qc.errorCovariance(), via_noise.errorCovariance(),
                       1e-10));

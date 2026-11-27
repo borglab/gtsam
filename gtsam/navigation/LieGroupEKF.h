@@ -311,7 +311,7 @@ class LieGroupEKF : public ManifoldEKF<G> {
       this->X_ = traits<Matrix>::Retract(this->X_, U);
     } else {
       A_local = traits<G>::Inverse(U).AdjointMap() + J_UX;
-      this->X_ = this->X_.compose(U);
+      this->X_ = traits<G>::Compose(this->X_, U);
     }
     this->P_ = A_local * this->P_ * A_local.transpose() + Q;
   }

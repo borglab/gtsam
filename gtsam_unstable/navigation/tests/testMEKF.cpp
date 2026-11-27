@@ -20,7 +20,9 @@ static constexpr double kTol = 1e-9;
 
 // The filter is frame-agnostic -- gravity is a propagate() argument -- so these
 // tests pick a convention of their own: Z-up (ENU), gravity along -z.
-static const Eigen::Vector3d kTestGravity(0.0, 0.0, -9.81);
+static Eigen::Vector3d testGravity() {
+  return Eigen::Vector3d(0.0, 0.0, -9.81);
+}
 
 using Cov15 = Eigen::Matrix<double, 15, 15>;
 using Cov3 = Eigen::Matrix<double, 3, 3>;
@@ -62,7 +64,7 @@ TEST(MEKF, PredictKeepsCovarianceSymmetricPSD) {
 
   Cov15 Qc = Cov15::Identity() * 1e-3;
   ekf.propagate(Eigen::Vector3d(0.05, -0.02, 0.1),
-                Eigen::Vector3d(0.0, 0.0, 9.81), kTestGravity, Qc, 0.01);
+                Eigen::Vector3d(0.0, 0.0, 9.81), testGravity(), Qc, 0.01);
 
   const Cov15 P = ekf.covariance();
   EXPECT(assert_equal((Matrix)P, (Matrix)P.transpose(), 1e-12));  // symmetric
@@ -79,9 +81,9 @@ TEST(MEKF, PredictMeanFollowsDynamics) {
 
   const Eigen::Vector3d omega(0.0, 0.0, 0.1), accel(0.0, 0.0, 0.0);
   const double dt = 1e-4;
-  ekf.propagate(omega, accel, kTestGravity, Cov15::Identity() * 1e-6, dt);
+  ekf.propagate(omega, accel, testGravity(), Cov15::Identity() * 1e-6, dt);
 
-  const Eigen::Vector3d g = kTestGravity;
+  const Eigen::Vector3d g = testGravity();
   const Rot3 R1 = R0 * Rot3::Expmap(omega * dt);
   const Eigen::Vector3d v1 = v0 + (R0 * accel + g) * dt;
   const Eigen::Vector3d p1 = p0 + v0 * dt;
@@ -96,7 +98,7 @@ TEST(MEKF, PredictInflatesCovariance) {
   MEKF ekf(MEKFState::identity(), Cov15::Identity() * 0.1);
   const double trace_before = ekf.covariance().trace();
   ekf.propagate(Eigen::Vector3d(0.01, 0.02, 0.03),
-                Eigen::Vector3d(0.0, 0.0, 9.81), kTestGravity,
+                Eigen::Vector3d(0.0, 0.0, 9.81), testGravity(),
                 Cov15::Identity() * 1e-2, 0.01);
   EXPECT(ekf.covariance().trace() > trace_before);
 }
@@ -121,8 +123,8 @@ TEST(MEKF, PropagateImuNoiseMatchesDiagonalQc) {
   Qc.block<3, 3>(9, 9) = nz.gyro_rw.asDiagonal();
   Qc.block<3, 3>(12, 12) = nz.accel_rw.asDiagonal();
 
-  f1.propagate(omega, accel, kTestGravity, nz, dt);
-  f2.propagate(omega, accel, kTestGravity, Qc, dt);
+  f1.propagate(omega, accel, testGravity(), nz, dt);
+  f2.propagate(omega, accel, testGravity(), Qc, dt);
 
   EXPECT(traits<MEKFState>::Equals(f1.state(), f2.state(), 1e-12));
   EXPECT(assert_equal((Matrix)f1.covariance(), (Matrix)f2.covariance(), 1e-9));
@@ -372,7 +374,7 @@ TEST(MEKF, AccelNoiseIsRotatedIntoNavigationFrame) {
   ImuNoise noise;
   noise.accel = Eigen::Vector3d(1e-2, 1e-4, 1e-6);
   const double dt = 0.1;
-  ekf.propagate(Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), kTestGravity,
+  ekf.propagate(Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), testGravity(),
                 noise, dt);
 
   const Cov3 expected = Eigen::Vector3d(1e-4, 1e-2, 1e-6).asDiagonal() * dt;

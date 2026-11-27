@@ -23,7 +23,8 @@ constexpr double kTolL = 1e-7;
 
 using Tangent = Eigen::Matrix<double, 18, 1>;
 
-const Vector3 kPi(2.5, -1.0, 1.2);
+/// World-frame position the measurement model is evaluated at.
+Vector3 measuredPosition() { return Vector3(2.5, -1.0, 1.2); }
 
 bool veq(const Vector3& a, const Vector3& b, double tol = kTol) {
   return assert_equal((Vector)a, (Vector)b, tol);
@@ -94,10 +95,11 @@ TEST(PositionOutput, IsEquivariant) {
 
   for (const TGElement& X :
        {TGElement::Identity(), fixture::makeX(), TGElement::Expmap(logX)}) {
-    EXPECT(fixture::veq(PositionMeasurement::predict(phi(X, xi), fixture::kPi),
-                        PositionMeasurement::outputAction(
-                            X, PositionMeasurement::predict(xi, fixture::kPi)),
-                        fixture::kTolL));
+    EXPECT(fixture::veq(
+        PositionMeasurement::predict(phi(X, xi), fixture::measuredPosition()),
+        PositionMeasurement::outputAction(
+            X, PositionMeasurement::predict(xi, fixture::measuredPosition())),
+        fixture::kTolL));
   }
 }
 
@@ -114,13 +116,13 @@ TEST(PositionOutput, C0MatchesNumerical) {
   const Eigen::Matrix<double, 3, 18> H_num =
       numericalDerivative11<Vector3, State>(
           [](const State& x) {
-            return PositionMeasurement::predict(x, fixture::kPi);
+            return PositionMeasurement::predict(x, fixture::measuredPosition());
           },
           xi_ref);
 
-  EXPECT(assert_equal(
-      (Matrix)PositionMeasurement::jacobianC0(xi_ref, fixture::kPi),
-      (Matrix)H_num, 1e-5));
+  EXPECT(assert_equal((Matrix)PositionMeasurement::jacobianC0(
+                          xi_ref, fixture::measuredPosition()),
+                      (Matrix)H_num, 1e-5));
 }
 
 // At convergence the transported measurement is the origin output itself, so
@@ -130,15 +132,17 @@ TEST(PositionOutput, CstarMeetsC0AtConvergence) {
 
   // Group element whose acted position is exactly pi: p_hat = R0 g.p + p0.
   Eigen::Matrix<double, 3, 2> vp = Eigen::Matrix<double, 3, 2>::Zero();
-  vp.col(1) = xi_ref.T.rotation().unrotate(fixture::kPi - xi_ref.T.x(1));
+  vp.col(1) =
+      xi_ref.T.rotation().unrotate(fixture::measuredPosition() - xi_ref.T.x(1));
   const TGElement g(ExtendedPose3<2>(Rot3::Identity(), vp),
                     Eigen::Matrix<double, 9, 1>::Zero());
-  EXPECT(fixture::veq(fixture::kPi, phi(g, xi_ref).T.x(1)));
+  EXPECT(fixture::veq(fixture::measuredPosition(), phi(g, xi_ref).T.x(1)));
 
-  EXPECT(assert_equal(
-      (Matrix)PositionMeasurement::jacobianC0(xi_ref, fixture::kPi),
-      (Matrix)PositionMeasurement::jacobianCstar(xi_ref, g, fixture::kPi),
-      fixture::kTol));
+  EXPECT(assert_equal((Matrix)PositionMeasurement::jacobianC0(
+                          xi_ref, fixture::measuredPosition()),
+                      (Matrix)PositionMeasurement::jacobianCstar(
+                          xi_ref, g, fixture::measuredPosition()),
+                      fixture::kTol));
 }
 
 }  // namespace output_matrix
@@ -147,12 +151,10 @@ TEST(PositionOutput, CstarMeetsC0AtConvergence) {
 /* ************************************************************************* */
 namespace accuracy {
 
-const State kXiRef = fixture::makeXi();
-const TGElement kG = fixture::makeX();
-
 /// Position the true state at eps reports to the filter.
 Vector3 measurementAt(const fixture::Tangent& eps) {
-  return phi(kG, traits<State>::Retract(kXiRef, eps)).T.x(1);
+  return phi(fixture::makeX(), traits<State>::Retract(fixture::makeXi(), eps))
+      .T.x(1);
 }
 
 /**
@@ -168,19 +170,21 @@ Vector3 measurementAt(const fixture::Tangent& eps) {
  * makes this the innovation Jacobian rather than that of the output map alone.
  */
 Vector3 residual(const fixture::Tangent& eps) {
-  return kXiRef.T.rotation().unrotate(phi(kG, kXiRef).T.x(1) -
-                                      measurementAt(eps));
+  return fixture::makeXi().T.rotation().unrotate(
+      phi(fixture::makeX(), fixture::makeXi()).T.x(1) - measurementAt(eps));
 }
 
 double errorC0(const fixture::Tangent& eps) {
-  return (residual(eps) -
-          PositionMeasurement::jacobianC0(kXiRef, measurementAt(eps)) * eps)
+  return (residual(eps) - PositionMeasurement::jacobianC0(fixture::makeXi(),
+                                                          measurementAt(eps)) *
+                              eps)
       .norm();
 }
 
 double errorCstar(const fixture::Tangent& eps) {
   return (residual(eps) -
-          PositionMeasurement::jacobianCstar(kXiRef, kG, measurementAt(eps)) *
+          PositionMeasurement::jacobianCstar(
+              fixture::makeXi(), fixture::makeX(), measurementAt(eps)) *
               eps)
       .norm();
 }
