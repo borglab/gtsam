@@ -51,6 +51,7 @@ at Northeastern
 * Zhexin Xu
 * Hanna Jiamei Zhang
 * David M. Rosen
+* Shaji
 
 Many thanks for your hard work!!!!
 
