@@ -33,6 +33,7 @@
 #include <gtsam/navigation/GalileanImuFactor.h>
 #include <gtsam/navigation/ImuFactor.h>
 #include <gtsam/navigation/ImuFactorWithGravity.h>
+#include <gtsam/navigation/NhcFactor.h>
 #include <gtsam/navigation/PseudorangeFactor.h>
 
 #include <fstream>
@@ -665,6 +666,28 @@ TEST(UndifferencedCarrierPhaseFactor, Serialization) {
 TEST(UndifferencedCarrierPhaseFactorArm, Serialization) {
   UndifferencedCarrierPhaseFactorArm f(0, 1, 2, 3, 4, kUPr, kUSat, kULever, kUmw,
                                        -kUmu, kULam, 1e-4, kUModel);
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+// Round-trips an NhcFactor, including its fixed mounting rotation.
+TEST(NhcFactor, Serialization) {
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
+  NhcFactor f(0, 1, Vector3(0.01, -0.02, 0.05), Vector3(-1.3, 0.1, 0.2), model,
+              Rot3::RzRyRx(0.02, -0.01, 0.03));
+  EXPECT(equalsObj(f));
+  EXPECT(equalsXML(f));
+  EXPECT(equalsBinary(f));
+}
+
+/* ************************************************************************* */
+// Round-trips an NhcFactorCalib.
+TEST(NhcFactorCalib, Serialization) {
+  SharedNoiseModel model = noiseModel::Isotropic::Sigma(2, 0.25);
+  NhcFactorCalib f(0, 1, 2, Vector3(0.01, -0.02, 0.05), Vector3(-1.3, 0.1, 0.2),
+                   model);
   EXPECT(equalsObj(f));
   EXPECT(equalsXML(f));
   EXPECT(equalsBinary(f));
