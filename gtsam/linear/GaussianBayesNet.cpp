@@ -19,6 +19,8 @@
 #include <gtsam/inference/FactorGraph-inst.h>
 #include <gtsam/linear/GaussianBayesNet.h>
 #include <gtsam/linear/GaussianFactorGraph.h>
+#include <gtsam/linear/JacobianFactor.h>
+#include <gtsam/linear/linearExceptions.h>
 
 #include <iterator>
 
@@ -40,6 +42,39 @@ namespace gtsam {
   VectorValues GaussianBayesNet::optimize() const {
     VectorValues solution;  // no missing variables -> create an empty vector
     return optimize(solution);
+  }
+
+  void GaussianBayesNet::checkPivots(const GaussianFactorGraph& eliminated,
+                                     double tolerance) const {
+    // Hard constraints have no information scale, so they do not count.
+    VectorValues originalDiagonal;
+    for (const auto& factor : eliminated) {
+      const auto jacobian = std::dynamic_pointer_cast<JacobianFactor>(factor);
+      if (factor && !(jacobian && jacobian->isConstrained()))
+        factor->hessianDiagonalAdd(originalDiagonal);
+    }
+    for (const auto& conditional : *this) {
+      const SharedDiagonal& model = conditional->get_model();
+      if (model && model->isConstrained()) continue;
+      const auto R = conditional->R();
+      DenseIndex row = 0;
+      for (auto frontal = conditional->beginFrontals();
+           frontal != conditional->endFrontals(); ++frontal) {
+        const auto entry = originalDiagonal.find(*frontal);
+        if (entry == originalDiagonal.end()) {
+          row += conditional->getDim(frontal);
+          continue;
+        }
+        const Vector& diagonal = entry->second;
+        for (DenseIndex i = 0; i < diagonal.size(); ++i, ++row) {
+          const double pivot = model ? R(row, row) / model->sigma(row)
+                                     : R(row, row);
+          // Written so that a NaN pivot is rejected too.
+          if (!(pivot * pivot >= tolerance * diagonal(i)))
+            throw IndeterminateSystemException(*frontal);
+        }
+      }
+    }
   }
 
   VectorValues GaussianBayesNet::optimize(const VectorValues& given) const {
