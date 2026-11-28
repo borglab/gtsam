@@ -54,9 +54,13 @@ project:
         - file: ./gtsam/planning/doc/MPPITracking.ipynb
         - file: ./gtsam/planning/doc/MPPI.ipynb
         - file: ./gtsam_unstable/planning/README.md
-          title: Dynamics factors (unstable)
+          title: Experimental planning
           children:
-          - file: ./gtsam_unstable/planning/doc/MPPIWithDynamicsFactors.ipynb
+          - pattern: ./gtsam_unstable/planning/doc/*.ipynb
+          - title: Seven-task learning results
+            url: https://borglab.github.io/gtsam/KurtzResults.html
+          - title: Reproduce the planning benchmark
+            url: https://github.com/borglab/gtsam-planning-benchmarks#reproduce-the-published-results
       - file: ./gtsam/sfm/sfm.md
         children:
         - pattern: ./gtsam/sfm/doc/*

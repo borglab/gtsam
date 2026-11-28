@@ -13,6 +13,7 @@ on:
       - 'doc/images/gtsam-manifold-optimization-*.png'
       - 'gtsam/constrained/doc/_static/qp-benchmark/**'
       - 'python/gtsam/examples/linear/KalmanFilteringAndSmoothing.html'
+      - 'gtsam_unstable/planning/doc/KurtzResults.html'
       - 'myst.yml'
 env:
   # `BASE_URL` determines the website is served from, including CSS & JS assets
@@ -48,6 +49,7 @@ jobs:
         run: myst build --html
       - name: Copy static site assets
         run: |
+          cp gtsam_unstable/planning/doc/KurtzResults.html _build/html/
           cp doc/images/gtsam-manifold-optimization-dark.png _build/html/
           cp python/gtsam/examples/linear/KalmanFilteringAndSmoothing.html _build/html/
       - name: Upload artifact
