@@ -54,3 +54,4 @@ endif()
 
 add_subdirectory(sfm_ba)
 add_subdirectory(cuda_sparse)
+add_subdirectory(batched_lm)
