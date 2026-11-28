@@ -24,9 +24,9 @@
 
 namespace gtsam::internal {
 
-/// Evaluate one trajectory's factors in graph order on the current thread.
-inline double candidateGraphError(const NonlinearFactorGraph& graph,
-                                  const Values& values) {
+/// Sum one rollout's costs in graph order on the calling thread.
+inline double sequentialError(const NonlinearFactorGraph& graph,
+                              const Values& values) {
   double error = 0.0;
   for (const auto& factor : graph)
     if (factor) error += factor->error(values);

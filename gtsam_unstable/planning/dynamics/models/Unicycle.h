@@ -45,14 +45,11 @@ class Unicycle : public StagDynamicsModel<Pose2, Vector2> {
                 OptionalJacobian<3, 2> H_control = {}) const override {
     const double turn = control(1) * dt;
     const Pose2 increment(control(0) * dt, 0.0, turn);
-    Matrix3 H_increment;
-    const Pose2 next = state.compose(increment, H_state, H_increment);
+    const Pose2 next = state.compose(increment, H_state);
     if (H_control) {
       // d(increment)/d(control), in the increment's tangent space.
-      const Matrix32 dIncrement{{dt * std::cos(turn), 0.0},
-                                {-dt * std::sin(turn), 0.0},
-                                {0.0, dt}};
-      *H_control = H_increment * dIncrement;
+      *H_control = Matrix32{
+          {dt * std::cos(turn), 0.0}, {-dt * std::sin(turn), 0.0}, {0.0, dt}};
     }
     return next;
   }

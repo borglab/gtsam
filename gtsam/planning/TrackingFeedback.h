@@ -5,9 +5,15 @@
  * @author Akash Ratheesh
  */
 #pragma once
-#include <gtsam/base/Matrix.h>
 
-#include <functional>
+#include <gtsam/base/Matrix.h>
+#include <gtsam/linear/GaussianBayesNet.h>
+#include <gtsam/linear/GaussianConditional.h>
+#include <gtsam/linear/HessianFactor.h>
+
+#include <array>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace gtsam {
@@ -24,37 +30,90 @@ GTSAM_EXPORT Vector contractionFeedback(const Vector& error,
                                         const Vector& driftDifference,
                                         double rate);
 
-/**
- * Differential dynamic programming for Euclidean trajectory tracking with a
- * supplied discrete transition. Central differences provide first and second
- * dynamics derivatives. The backward sweep computes feedforward corrections
- * and a time-varying feedback gain. The forward pass searches step lengths.
- */
-class GTSAM_EXPORT DDPTracking {
- public:
-  using Transition = std::function<Vector(const Vector&, const Vector&)>;
-  /// Supply running state/control and terminal state precision matrices.
-  DDPTracking(const Matrix& statePrecision, const Matrix& controlPrecision,
-              const Matrix& terminalPrecision);
-  /** Fit H controls and H gains to H+1 target states from the actual initial
-   * state. Optional componentwise control limits are applied by clamping
-   * during every forward rollout, including the initialization. Note that this
-   * is a forward-rollout projection rather than a box-constrained backward
-   * pass, so active bounds can cause the search to stall at a non-stationary
-   * point.
-   */
-  Matrix optimize(const Vector& initial, const Matrix& targetStates,
-                  const Matrix& targetControls, const Transition& transition,
-                  size_t iterations, const Vector& lower = {},
-                  const Vector& upper = {});
-  /// Optimized state trajectory with columns ordered in time.
-  const Matrix& states() const { return states_; }
-  /// Gain multiplying actual minus reference state at a given step.
-  const Matrix& gain(size_t step) const { return gains_.at(step); }
+namespace internal {
 
- private:
-  Matrix q_, r_, terminal_, states_;
-  std::vector<Matrix> gains_;
+using StageKeyMap = std::unordered_map<Key, std::pair<size_t, bool>>;
+
+/// Affine controls du = feedforward + gain * dx, indexed in forward time.
+struct TrackingControlLaw {
+  Matrix feedforward;
+  std::vector<Matrix> gains;
 };
 
+/// Linearized stage/terminal cost factors partitioned by horizon step from a
+/// NonlinearFactorGraph, keeping native GTSAM GaussianFactors.
+struct StageLinearizedCosts {
+  std::vector<HessianFactor> stageFactors;
+  HessianFactor terminalFactor;
+};
+
+/// Verify that a precision matrix is finite, symmetric, and PSD (or PD).
+GTSAM_EXPORT void checkTrackingPrecision(const Matrix& precision,
+                                         bool definite);
+
+/// Validate optional componentwise control limits.
+GTSAM_EXPORT void validateControlLimits(Eigen::Index controlDim,
+                                        const Vector& lower,
+                                        const Vector& upper);
+
+/// Build a key -> (stageIndex, isControl) lookup table and validate horizon
+/// key counts.
+GTSAM_EXPORT StageKeyMap buildStageKeyMap(const KeyVector& stateKeys,
+                                          const KeyVector& controlKeys);
+
+/** Eliminate one deterministic transition and its control in a single stage.
+ * Pull the incoming separator on X(k+1) through dx' = A dx + B du, add the
+ * local costs and optional dynamics curvature (in state, control order), then
+ * eliminate U(k). Return P(du | dx) and leave the separator on X(k) in the
+ * stage factor.
+ * A null conditional signals an indefinite control block.
+ */
+GTSAM_EXPORT GaussianConditional::shared_ptr eliminateControlStage(
+    const Matrix& A, const Matrix& B, HessianFactor& stage, double damping,
+    const HessianFactor& valueToGo,
+    const Matrix* dynamicsCurvature = nullptr);
+
+/** Eliminate controls from the last stage to the first. Each conditional
+ * depends on its stage state; the remaining factor becomes the preceding
+ * stage's cost-to-go. An empty policy signals an indefinite control block.
+ */
+template <class EliminateStage>
+GaussianBayesNet eliminateTrackingChain(const StageLinearizedCosts& costs,
+                                        const EliminateStage& eliminateStage) {
+  GaussianBayesNet policy;
+  policy.resize(costs.stageFactors.size());
+  // Cholesky leaves the separator in its input factor. Alternating two
+  // stage factors lets the next elimination read it directly.
+  std::array<HessianFactor, 2> work;
+  const HessianFactor* valueToGo = &costs.terminalFactor;
+  for (size_t k = policy.size(); k-- > 0;) {
+    auto& stage = work[k % 2];
+    stage = costs.stageFactors[k];
+    policy[k] = eliminateStage(k, stage, *valueToGo);
+    if (!policy[k]) return {};
+    valueToGo = &stage;
+  }
+  return policy;
+}
+
+/// Retry a failed sequential elimination with increasing control damping.
+template <class Eliminate, class IncreaseDamping>
+GaussianBayesNet eliminateWithDamping(double& damping, double limit,
+                                      const Eliminate& eliminate,
+                                      const IncreaseDamping& increaseDamping) {
+  auto policy = eliminate(damping);
+  while (policy.empty() && damping < limit) {
+    damping = increaseDamping(damping);
+    policy = eliminate(damping);
+  }
+  return policy;
+}
+
+/** Solve each conditional R du = d - S dx for its affine control law. The
+ * forward rollout substitutes successive state deviations into these laws.
+ */
+GTSAM_EXPORT TrackingControlLaw
+solveConditionals(const GaussianBayesNet& policy);
+
+}  // namespace internal
 }  // namespace gtsam

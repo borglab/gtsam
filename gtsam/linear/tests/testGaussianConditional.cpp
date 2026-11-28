@@ -552,6 +552,30 @@ TEST(GaussianConditional, Print) {
 }
 
 /* ************************************************************************* */
+// Recover the same conditional means as keyed back-substitution, including a root.
+TEST(GaussianConditional, AffineMean) {
+  const Matrix2 R{{2., -1.}, {0., 3.}};
+  const Vector2 d{5., 6.};
+  const GaussianConditional conditional(X(0), d, R, Y(1), Vector2{1., -2.},
+                                        Y(0), Matrix2::Identity());
+  VectorValues parents;
+  parents.insert(Y(0), Vector2{4., 5.});
+  parents.insert(Y(1), Vector1{-3.});
+  Vector intercept(2);
+  Matrix slope;
+  conditional.affineMean(intercept, slope);
+  EXPECT(assert_equal(conditional.solve(parents).at(X(0)),
+                      Vector(intercept + slope * Vector3{-3., 4., 5.})));
+  const GaussianConditional root(X(0), d, R);
+  root.affineMean(intercept, slope);
+  EXPECT(assert_equal(root.solve({}).at(X(0)), intercept));
+  EXPECT_LONGS_EQUAL(2, slope.rows());
+  EXPECT_LONGS_EQUAL(0, slope.cols());
+  Vector wrong(1);
+  CHECK_EXCEPTION(root.affineMean(wrong, slope), std::invalid_argument);
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

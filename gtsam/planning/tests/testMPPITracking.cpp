@@ -88,59 +88,6 @@ TEST(TrackingFeedback, Contraction) {
                                        Matrix1::Identity(), Vector1{-2.}, 1.)));
 }
 
-// A one-step linear-quadratic problem has a closed-form optimal input and gain.
-TEST(TrackingFeedback, DDP) {
-  DDPTracking solver(Matrix1::Zero(), Matrix1::Identity(),
-                     Matrix1::Identity() * 3.);
-  const Matrix x{{0., 2.}}, u{{0.}};
-  Matrix controls = solver.optimize(
-      Vector1{0.}, x, u,
-      [](const Vector& x, const Vector& u) -> Vector { return x + u; }, 2);
-  EXPECT_DOUBLES_EQUAL(1.5, controls(0, 0), 1e-6);
-  EXPECT_DOUBLES_EQUAL(1.5, solver.states()(0, 1), 1e-6);
-  EXPECT_DOUBLES_EQUAL(-0.75, solver.gain(0)(0, 0), 1e-6);
-  controls = solver.optimize(
-      Vector1{0.}, x, u,
-      [](const Vector& x, const Vector& u) -> Vector { return x + u; }, 2,
-      Vector1{-0.5}, Vector1{0.5});
-  EXPECT_DOUBLES_EQUAL(0.5, controls(0, 0), 1e-10);
-  EXPECT_DOUBLES_EQUAL(0.5, solver.states()(0, 1), 1e-10);
-}
-
-// The final backward sweep resets damping to the minimum so gain(0) matches
-// the exact local sensitivity du0*/dx0 even when earlier iterations damped.
-TEST(TrackingFeedback, DDPFinalGainUndamped) {
-  const double dt = 0.05;
-  const auto pendulum = [dt](const Vector& x, const Vector& u) -> Vector {
-    return Vector2(x[0] + dt * x[1],
-                   x[1] + dt * (-9.81 * std::sin(x[0]) + u[0]));
-  };
-  const Eigen::Index h = 25;
-  Matrix targetStates = Matrix::Zero(2, h + 1);
-  targetStates.row(0).setConstant(M_PI);
-  const Matrix targetControls = Matrix::Zero(1, h);
-  const Matrix q = Vector2(2., 0.2).asDiagonal();
-  const Matrix r = Matrix1::Identity() * 0.1;
-  const Matrix terminal = Vector2(20., 2.).asDiagonal();
-  DDPTracking solver(q, r, terminal);
-  const Vector2 x0(0.2, 0.0);
-  const Matrix uStar =
-      solver.optimize(x0, targetStates, targetControls, pendulum, 50);
-  const Matrix k0 = solver.gain(0);
-  // Compare gain(0) against finite differences of the re-solved optimum.
-  const double eps = 1e-4;
-  for (int i = 0; i < 2; ++i) {
-    Vector2 dx = Vector2::Zero();
-    dx[i] = eps;
-    DDPTracking plus(q, r, terminal), minus(q, r, terminal);
-    const double uPlus = plus.optimize(x0 + dx, targetStates, targetControls,
-                                       pendulum, 50)(0, 0);
-    const double uMinus = minus.optimize(x0 - dx, targetStates, targetControls,
-                                         pendulum, 50)(0, 0);
-    const double fd = (uPlus - uMinus) / (2 * eps);
-    EXPECT_DOUBLES_EQUAL(fd, k0(0, i), 1e-3);
-  }
-}
 }  // namespace tracking
 /* ************************************************************************* */
 

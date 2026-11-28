@@ -268,6 +268,21 @@ TEST(testNumericalDerivative, numeriDerivative66) {
 }
 
 /* ************************************************************************* */
+// A known center and per-coordinate steps need exactly two evaluations per column.
+TEST(testNumericalDerivative, KnownCenterAndDynamicSteps) {
+  const Vector steps = Vector2{0.01, 0.1};
+  const Vector center = Vector2{1., 2.};
+  size_t calls = 0;
+  const auto f = [&](const Vector& dx) -> Vector {
+    ++calls;
+    return center + Vector2{dx[0] * dx[0] * dx[0], 3. * dx[1]};
+  };
+  const Matrix jacobian = numericalDerivativeAt(center, steps, f);
+  EXPECT_LONGS_EQUAL(4, calls);
+  EXPECT(assert_equal(Matrix2{{0.0001, 0.}, {0., 3.}}, jacobian, 1e-12));
+}
+
+/* ************************************************************************* */
 int main() {
   TestResult tr;
   return TestRegistry::runAllTests(tr);

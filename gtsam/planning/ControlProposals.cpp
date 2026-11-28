@@ -41,7 +41,7 @@ Matrix weightedMean(const Matrix& samples, const Vector& weights,
   // weight before multiplication so it cannot contaminate feasible samples.
   for (Eigen::Index j = 0; j < weights.size(); ++j)
     if (weights[j] != 0)
-      mean += weights[j] * samples.middleCols(j * horizon, horizon);
+      mean += weights[j] * controlTrajectory(samples, j, horizon);
   return mean;
 }
 
@@ -51,7 +51,7 @@ Matrix fittedSpread(const Matrix& samples, const Matrix& mean,
   for (Eigen::Index j = 0; j < weights.size(); ++j) {
     if (weights[j] > 0)
       variance.array() +=
-          weights[j] * (samples.middleCols(j * mean.cols(), mean.cols()) - mean)
+          weights[j] * (controlTrajectory(samples, j, mean.cols()) - mean)
                            .array()
                            .square();
   }
@@ -132,7 +132,7 @@ Matrix GaussianProposal::drawControls(const State& state,
   const double meanCutoff =
       (1.0 - options_.zeroMeanFraction) * static_cast<double>(count);
   for (Eigen::Index j = 0; j < count; ++j) {
-    auto sample = controls.middleCols(j * horizon, horizon);
+    auto sample = controlTrajectory(controls, j, horizon);
     sample.array() *= scale.array();
     if (static_cast<double>(j) < meanCutoff) sample += state.mean;
   }
@@ -157,7 +157,7 @@ Vector GaussianProposal::logWeightOffsets(const State& state,
   for (Eigen::Index j = 0; static_cast<double>(j) < meanCutoff; ++j)
     offsets[j] =
         -(scaledMean.array() *
-          (controls.middleCols(j * horizon, horizon) - 0.5 * state.mean)
+          (controlTrajectory(controls, j, horizon) - 0.5 * state.mean)
               .array())
              .sum();
   return offsets;
@@ -335,7 +335,7 @@ ControlBatch PiecewiseLinearProposal::sampleImpl(const State& state,
   std::uniform_real_distribution<double> uniform(0., 1.);
 
   for (Eigen::Index j = 0; j < count; ++j) {
-    auto sample = controls.middleCols(j * horizon, horizon);
+    auto sample = controlTrajectory(controls, j, horizon);
     if (j == 0) {
       // Slot 0 always preserves the incumbent trajectory.
       sample = state.mean;
@@ -346,7 +346,7 @@ ControlBatch PiecewiseLinearProposal::sampleImpl(const State& state,
       // Colored perturbations around the incumbent.
       sample = state.mean.array() +
                p.coloredScale * state.stddev.array() *
-                   colored.middleCols(j * horizon, horizon).array();
+                   controlTrajectory(colored, j, horizon).array();
     } else {
       // Bounded piecewise-linear primitives (either shifted or absolute).
       const bool shifted = static_cast<double>(j) <

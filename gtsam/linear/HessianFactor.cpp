@@ -390,6 +390,15 @@ std::pair<Matrix, Vector> HessianFactor::jacobian() const {
 }
 
 /* ************************************************************************* */
+void HessianFactor::addUnaryPriorShift(const_iterator variable,
+                                      const Matrix& precision,
+                                      const Vector& displacement) {
+  const Vector eta = precision * displacement;
+  info_.updateOffDiagonalBlock(variable - begin(), info_.nBlocks() - 1, eta);
+  constantTerm() += displacement.dot(eta);
+}
+
+/* ************************************************************************* */
 double HessianFactor::error(const VectorValues& c) const {
   // error 0.5*(f - 2*x'*g + x'*G*x)
   const double f = constantTerm();

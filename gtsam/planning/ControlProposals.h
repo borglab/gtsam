@@ -23,6 +23,16 @@ struct ControlBatch {
   Vector logWeightOffsets{};  ///< Optional additive log weights for MPPI.
 };
 
+/** View one trajectory in a packed control matrix. Candidate j occupies
+ * horizon consecutive columns, in time order. A mutable batch yields a
+ * writable view of the original controls.
+ */
+template <class Controls>
+auto controlTrajectory(Controls& controls, Eigen::Index candidate,
+                       Eigen::Index horizon) {
+  return controls.middleCols(candidate * horizon, horizon);
+}
+
 /// Gaussian proposal state for one solve.
 struct ControlDistribution {
   Matrix mean;      ///< Nominal physical controls.

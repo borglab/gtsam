@@ -256,6 +256,10 @@ previous solution into the next solve.
 | `tube` | Optimizes from the measured and nominal initial states with common disturbances, selects the reference, and applies tracking feedback. |
 | `robust` | Chooses a nominal starting point by sampled free energy, then scores coupled nominal and feedback-controlled rollouts. |
 
+`tube`, `robust`, and `primitives` evaluate each trajectory’s cost factors in
+graph order. Summing them serially avoids parallel scheduling overhead for each
+sample and keeps Python custom factors on the calling thread.
+
 When the best primitive exceeds a positive stopping threshold, `primitives` returns
 the supplied stopping controls in both plans. This decision skips the competing
 colored search and bypasses history smoothing so the commanded stop is exact.
@@ -278,11 +282,31 @@ auto plans = tracking.tube(planner, graph, nominal, actual, dynamics, feedback,
                           proposal, threshold, iterations);
 ```
 
-`DDPTracking` computes time-varying feedback gains from a discrete
-Euclidean transition and quadratic tracking costs. `contractionFeedback`
-computes a minimum-norm control correction for a constant contraction
-metric. The [tracking API](../TrackingFeedback.h) and [controller API](../MPPITracking.h)
-give the input conventions.
+`ILQRTracking<State, Control>` and `DDPTracking<State, Control>` use the same
+`(stateKeys, controlKeys)` and `Values` interface as `SamplingPlanner`. The state
+can be any GTSAM manifold. The control is a fixed-size or dynamic Eigen column
+vector. Both default to `Vector`. For example, `ILQRTracking<Pose2, Vector2>`
+takes a unicycle transition with a pose and a two-component control.
+
+Each iteration has three steps.
+
+1. **Linearize** the cost graph at the nominal trajectory. iLQR also computes
+   the transition Jacobians in local state and control coordinates.
+2. **Eliminate** controls from the last stage to the first. Each elimination
+   produces a Gaussian conditional on the control given the state and passes
+   the remaining state factor to the previous stage. DDP uses the gradient of
+   that incoming factor to weight the second derivatives of the transition.
+3. **Back-substitute** in forward time. For each conditional
+   $R_k\,\delta u_k = d_k - S_k\,\delta x_k$, triangular solves give the
+   feedforward control $R_k^{-1}d_k$ and feedback gain $-R_k^{-1}S_k$.
+   The line search scales the feedforward term, applies the control bounds,
+   and rolls out the nonlinear dynamics to obtain the next state deviation.
+
+`policy()` returns the Gaussian Bayes net and `gain(k)` returns its feedback
+gain at step `k`. `contractionFeedback` computes a minimum-norm control
+correction for a constant contraction metric. The [iLQR API](../ILQRTracking.h),
+[DDP API](../DDPTracking.h), [tracking API](../TrackingFeedback.h), and
+[controller API](../MPPITracking.h) give the input conventions.
 
 Two utilities expose the cost and filtering conventions used by these controllers.
 `valueAtRisk` and `conditionalValueAtRisk` reduce a vector of scenario costs

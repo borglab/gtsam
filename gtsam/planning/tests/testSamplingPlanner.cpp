@@ -21,6 +21,16 @@ using namespace gtsam;
 using symbol_shorthand::U;
 using symbol_shorthand::X;
 
+// A candidate view writes to its own time columns in the packed batch.
+TEST(ControlBatch, TrajectoryView) {
+  ControlBatch batch{Matrix::Zero(2, 6), {}};
+  const Matrix controls{{1., 2.}, {3., 4.}};
+  controlTrajectory(batch.controls, 1, 2) = controls;
+  const auto& packed = batch.controls;
+  EXPECT(assert_equal(controls, Matrix(controlTrajectory(packed, 1, 2))));
+  EXPECT(packed.leftCols(2).isZero() && packed.rightCols(2).isZero());
+}
+
 // A field in the moving tangent basis of S² is evaluated again at each state.
 TEST(SamplingPlanner, SphereRollout) {
   const Unit3 start(1, 0, 0);
@@ -277,6 +287,17 @@ class CheckedPrior : public PriorFactor<Vector1> {
   std::thread::id caller_ = std::this_thread::get_id();
   bool sendable_, requireCaller_;
 };
+
+// The tracking score evaluates even sendable factors on the caller and skips empty slots.
+TEST(SamplingPlanner, SequentialTrajectoryError) {
+  Values path;
+  path.insert(X(1), Vector1{0.});
+  NonlinearFactorGraph graph;
+  const auto prior = std::make_shared<CheckedPrior>(true, true);
+  for (size_t k = 0; k < 600; ++k) graph.push_back(prior);
+  graph.remove(17);
+  EXPECT_DOUBLES_EQUAL(599 * 0.5, internal::sequentialError(graph, path), 0.);
+}
 
 // Repeated factor instances and non-sendable callbacks retain thread affinity,
 // including when a graph is large enough for nested graph-level TBB scheduling.

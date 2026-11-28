@@ -153,25 +153,71 @@ gtsam::Matrix smoothControlTrajectory(const gtsam::Matrix& controls, const gtsam
 
 #include <gtsam/planning/TrackingFeedback.h>
 
-class DDPTracking {
-  DDPTracking(const gtsam::Matrix& statePrecision, const gtsam::Matrix& controlPrecision,
-              const gtsam::Matrix& terminalPrecision);
-  gtsam::Matrix optimize(const gtsam::Vector& initial, const gtsam::Matrix& targetStates,
-                         const gtsam::Matrix& targetControls,
-                         const gtsam::DDPTracking::Transition& transition,
+gtsam::Vector contractionFeedback(const gtsam::Vector& error, const gtsam::Matrix& metric,
+                                  const gtsam::Matrix& inputJacobian,
+                                  const gtsam::Vector& driftDifference, double rate);
+
+#include <gtsam/planning/ILQRTracking.h>
+
+// Python controls use dynamic vectors (the default Control specialization).
+template<State={gtsam::Vector, gtsam::Pose2, gtsam::Pose3, gtsam::Rot3, gtsam::Unit3}>
+class ILQRTracking {
+  ILQRTracking(gtsam::KeyVector stateKeys, gtsam::KeyVector controlKeys);
+  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost,
+                         const gtsam::Values& initial,
+                         const gtsam::This::Transition& transition,
                          size_t iterations,
+                         const gtsam::Vector& lower = gtsam::Vector(),
+                         const gtsam::Vector& upper = gtsam::Vector());
+  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost,
+                         const gtsam::Values& initial,
+                         const gtsam::This::VectorField& vectorField,
+                         double dt, size_t iterations,
                          const gtsam::Vector& lower = gtsam::Vector(),
                          const gtsam::Vector& upper = gtsam::Vector());
   // A subsequent solve can resize or replace the stored trajectory and gains.
   @pybind_lambda
-  gtsam::Matrix states() const;
+  gtsam::KeyVector stateKeys() const;
+  @pybind_lambda
+  gtsam::KeyVector controlKeys() const;
+  @pybind_lambda
+  std::vector<State> states() const;
+  @pybind_lambda
+  gtsam::GaussianBayesNet policy() const;
   @pybind_lambda
   gtsam::Matrix gain(size_t step) const;
 };
 
-gtsam::Vector contractionFeedback(const gtsam::Vector& error, const gtsam::Matrix& metric,
-                                  const gtsam::Matrix& inputJacobian,
-                                  const gtsam::Vector& driftDifference, double rate);
+#include <gtsam/planning/DDPTracking.h>
+
+// Python controls use dynamic vectors (the default Control specialization).
+template<State={gtsam::Vector, gtsam::Pose2, gtsam::Pose3, gtsam::Rot3, gtsam::Unit3}>
+class DDPTracking {
+  DDPTracking(gtsam::KeyVector stateKeys, gtsam::KeyVector controlKeys);
+  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost,
+                         const gtsam::Values& initial,
+                         const gtsam::This::Transition& transition,
+                         size_t iterations,
+                         const gtsam::Vector& lower = gtsam::Vector(),
+                         const gtsam::Vector& upper = gtsam::Vector());
+  gtsam::Values optimize(const gtsam::NonlinearFactorGraph& cost,
+                         const gtsam::Values& initial,
+                         const gtsam::This::VectorField& vectorField,
+                         double dt, size_t iterations,
+                         const gtsam::Vector& lower = gtsam::Vector(),
+                         const gtsam::Vector& upper = gtsam::Vector());
+  // A subsequent solve can resize or replace the stored trajectory and gains.
+  @pybind_lambda
+  gtsam::KeyVector stateKeys() const;
+  @pybind_lambda
+  gtsam::KeyVector controlKeys() const;
+  @pybind_lambda
+  std::vector<State> states() const;
+  @pybind_lambda
+  gtsam::GaussianBayesNet policy() const;
+  @pybind_lambda
+  gtsam::Matrix gain(size_t step) const;
+};
 
 #include <gtsam/planning/EliteMPPI.h>
 

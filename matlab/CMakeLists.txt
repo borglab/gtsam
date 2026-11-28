@@ -63,6 +63,7 @@ set(ignore
     gtsam::Point2
     gtsam::Point3
     gtsam::CustomFactor
+    gtsam::ILQRTracking
     gtsam::DDPTracking)
 
 if (APPLE OR WIN32)

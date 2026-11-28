@@ -1,7 +1,5 @@
 name: PR CI
 
-# Documentation-only changes are excluded at the trigger level, so neither the
-# fast compilation gate nor the Python matrix consumes a runner for those PRs.
 on:
   workflow_call:
     inputs:
@@ -10,13 +8,13 @@ on:
         required: false
         default: nightly-extra
         type: string
+      quality_checked:
+        description: The caller already required the code-quality workflow
+        default: false
+        type: boolean
   push:
     branches:
       - develop
-    paths-ignore:
-      - "**.md"
-      - "**.ipynb"
-      - "myst.yml"
   workflow_dispatch:
     inputs:
       runner:
@@ -28,10 +26,6 @@ on:
           - all
           - windows-2022-msvc
   pull_request:
-    paths-ignore:
-      - "**.md"
-      - "**.ipynb"
-      - "myst.yml"
 
 # Every time you make a push to your PR, it cancel immediately the previous checks,
 # and start a new one. The other runner will be available more quickly to your PR.
@@ -40,7 +34,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  code-quality:
+    if: ${{ !inputs.quality_checked }}
+    uses: ./.github/workflows/code-quality.yml
+
   select-matrix:
+    needs: code-quality
+    # Nightly CI gates all its matrices together. Docs-only PRs and pushes
+    # finish after the two quality checks.
+    if: >-
+      !cancelled() &&
+      ((inputs.quality_checked && needs.code-quality.result == 'skipped') ||
+       (needs.code-quality.result == 'success' &&
+        (github.event_name == 'workflow_dispatch' || needs.code-quality.outputs.build_changes == 'true')))
     name: Select build matrix
     runs-on: ubuntu-latest
     outputs:

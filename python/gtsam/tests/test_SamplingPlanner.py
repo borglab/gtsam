@@ -60,6 +60,40 @@ class TestSamplingPlanner(unittest.TestCase):
                                  gtsam.MPPI(), 1)
                 self.assertEqual(threads, [caller] * 64)
 
+    def test_tracking_graph_error_keeps_python_factor_on_caller(self):
+        """Tracking a large mixed graph evaluates its Python cost on the caller."""
+        caller = threading.get_ident()
+        threads = set()
+
+        def terminal_error(factor, values, jacobians):
+            threads.add(threading.get_ident())
+            return values.atVector(X(1))
+
+        graph = gtsam.NonlinearFactorGraph()
+        graph.add(gtsam.CustomFactor(
+            gtsam.noiseModel.Unit.Create(1), [X(1)], terminal_error))
+        # Cross the parallel graph-error threshold with native, sendable factors.
+        prior = gtsam.PriorFactorVector(
+            U(0), np.zeros(1), gtsam.noiseModel.Isotropic.Sigma(1, 10.))
+        for _ in range(512):
+            graph.add(prior)
+
+        states, controls = [X(0), X(1)], [U(0)]
+        initial = _zero_values(states + controls)
+        planner = gtsam.SamplingPlannerVectorVector(states, controls, 1.)
+        tracking = gtsam.MPPITracking(np.eye(1), 4, 1.)
+        args = (planner, graph, initial, initial, lambda x, u: u)
+        feedback = lambda k, x, ref, u: ref - x
+        for method, extra in (
+            (tracking.tube, (feedback, 0., 1)),
+            (tracking.robust, (feedback, 3., 3, 0, 1, np.eye(1))),
+            (tracking.primitives, (1, 1., 0., 1, 1, 0., np.zeros((1, 1)))),
+        ):
+            with self.subTest(method=method.__name__):
+                threads.clear()
+                method(*args, *extra)
+                self.assertEqual(threads, {caller})
+
     def test_discrete_search_rules(self):
         """Each SamplingAlgorithm rule scores the same explicit discrete transition."""
         planner = gtsam.SamplingPlannerVectorVector([X(0), X(1)], [U(0)], 0.1)
