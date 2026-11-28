@@ -16,6 +16,7 @@
  * @date    Jun 17, 2026
  */
 
+#include <gtsam/base/ThreadsafeException.h>
 #include <gtsam/base/cuda/Context.h>
 #include <gtsam/base/cuda/DeviceArray.h>
 #include <gtsam/base/cuda/Errors.h>
@@ -851,6 +852,20 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
 
   double lambda = params.lambdaInitial;
   double currentFactor = params.lambdaFactor;
+  const auto increaseDampingForRetry =
+      [&](SfmLevenbergMarquardtAttemptProfile& attempt) {
+        const double previousLambda = lambda;
+        gtsam::internal::increaseLevenbergMarquardtLambda(
+            params, &lambda, &currentFactor);
+        attempt.lambdaUpperBoundReached = lambda >= params.lambdaUpperBound;
+        // Adaptive damping may keep lambda unchanged while growing its
+        // multiplier. Fixed damping must increase lambda immediately.
+        const bool canRetry =
+            std::isfinite(lambda) && lambda > 0.0 &&
+            (!params.useFixedLambdaFactor || lambda > previousLambda);
+        if (!canRetry) lambda = previousLambda;
+        return canRetry && !attempt.lambdaUpperBoundReached;
+      };
   DeviceArray<double> dampingDiagonal;
 
   result.setupElapsed = elapsedSince(totalStart);
@@ -898,15 +913,19 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
       attemptProfile.iteration = iterationProfile.iteration;
       attemptProfile.attempt = attemptIndex++;
       attemptProfile.lambda = lambda;
-      bool rejectPcgStep = false;
+      bool rejectStep = false;
 
       if (solverMode == SfmLinearSolverType::DenseSchur) {
         stageStart = detailedProfileStart(detailedProfiling);
-        if (params.dampingParams.diagonalDamping) {
-          denseSchurSolver.solveLinearized(lambda, dampingDiagonal, &delta,
-                                           context.stream());
-        } else {
-          denseSchurSolver.solveLinearized(lambda, &delta, context.stream());
+        try {
+          if (params.dampingParams.diagonalDamping) {
+            denseSchurSolver.solveLinearized(lambda, dampingDiagonal, &delta,
+                                             context.stream());
+          } else {
+            denseSchurSolver.solveLinearized(lambda, &delta, context.stream());
+          }
+        } catch (const gtsam::CholeskyFailed&) {
+          rejectStep = true;
         }
         attemptProfile.denseSchurSolveElapsed =
             detailedElapsedSinceAfterSync(detailedProfiling, stageStart,
@@ -973,9 +992,9 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
         attemptProfile.pcgIterations = stats.lastPcgIterations;
         attemptProfile.pcgConverged = stats.lastPcgConverged;
         attemptProfile.pcgBreakdown = stats.lastPcgBreakdown;
-        rejectPcgStep = classifyPcgLmStep(stats) ==
+        rejectStep = classifyPcgLmStep(stats) ==
                         PcgLmStepDisposition::RejectAndRetry;
-        if (!rejectPcgStep) {
+        if (!rejectStep) {
           if (params.dampingParams.diagonalDamping) {
             sparseSchurProblem.recoverPoints(lambda, dampingDiagonal,
                                              cameraDelta, &delta,
@@ -993,15 +1012,12 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
       }
       ++result.innerIterations;
 
-      if (rejectPcgStep) {
-        reducedSession->invalidateWarmStart();
+      if (rejectStep) {
+        if (reducedSession) reducedSession->invalidateWarmStart();
         stageStart = detailedProfileStart(detailedProfiling);
-        gtsam::internal::increaseLevenbergMarquardtLambda(
-            params, &lambda, &currentFactor);
-        if (lambda >= params.lambdaUpperBound) {
+        if (!increaseDampingForRetry(attemptProfile)) {
           acceptedOrDone = true;
           terminate = true;
-          attemptProfile.lambdaUpperBoundReached = true;
         }
         attemptProfile.lambdaUpdateElapsed =
             detailedElapsedSince(detailedProfiling, stageStart);
@@ -1119,12 +1135,9 @@ SfmLevenbergMarquardtResult optimizeSfmImpl(
         attemptProfile.terminated = terminate;
       } else if (!stopSearchingLambda) {
         stageStart = detailedProfileStart(detailedProfiling);
-        gtsam::internal::increaseLevenbergMarquardtLambda(
-            params, &lambda, &currentFactor);
-        if (lambda >= params.lambdaUpperBound) {
+        if (!increaseDampingForRetry(attemptProfile)) {
           acceptedOrDone = true;
           terminate = true;
-          attemptProfile.lambdaUpperBoundReached = true;
         }
         attemptProfile.lambdaUpdateElapsed =
             detailedElapsedSince(detailedProfiling, stageStart);
