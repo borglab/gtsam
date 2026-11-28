@@ -737,6 +737,180 @@ virtual class LocalOrientedPlane3Factor : gtsam::NoiseModelFactor {
   void serialize() const;
 };
 
+//*************************************************************************
+// tg_eqf (TG-EqF biased INS filter)
+//*************************************************************************
+#include <gtsam_unstable/navigation/TGGeometry.h>
+#include <gtsam_unstable/navigation/TGEqF.h>
+namespace tgeqf {
+
+class State {
+  State();
+  gtsam::ExtendedPose3<2> T;
+  gtsam::Vector9 b;
+  static gtsam::tgeqf::State identity();
+  gtsam::Matrix5 navigationMatrix() const;
+  gtsam::tgeqf::State retract(
+      const gtsam::tgeqf::State::TangentVector& delta) const;
+  gtsam::tgeqf::State::TangentVector localCoordinates(
+      const gtsam::tgeqf::State& other) const;
+};
+
+class TGElement {
+  TGElement();
+  gtsam::ExtendedPose3<2> first;
+  gtsam::Vector9 second;
+  static gtsam::tgeqf::TGElement Identity();
+  gtsam::tgeqf::TGElement operator*(const gtsam::tgeqf::TGElement& Y) const;
+  gtsam::tgeqf::TGElement inverse() const;
+  static gtsam::tgeqf::TGElement Expmap(
+      const gtsam::tgeqf::TGElement::TangentVector& xi,
+      gtsam::tgeqf::TGElement::ChartJacobian H = nullptr);
+  static gtsam::tgeqf::TGElement::TangentVector Logmap(
+      const gtsam::tgeqf::TGElement& X,
+      gtsam::tgeqf::TGElement::ChartJacobian H = nullptr);
+  gtsam::tgeqf::TGElement retract(
+      const gtsam::tgeqf::TGElement::TangentVector& xi,
+      gtsam::tgeqf::TGElement::ChartJacobian H1 = nullptr,
+      gtsam::tgeqf::TGElement::ChartJacobian H2 = nullptr) const;
+  gtsam::tgeqf::TGElement::TangentVector localCoordinates(
+      const gtsam::tgeqf::TGElement& other,
+      gtsam::tgeqf::TGElement::ChartJacobian H1 = nullptr,
+      gtsam::tgeqf::TGElement::ChartJacobian H2 = nullptr) const;
+};
+
+gtsam::tgeqf::State phi(const gtsam::tgeqf::TGElement& X,
+                        const gtsam::tgeqf::State& xi);
+gtsam::tgeqf::TGElement phiInverse(const gtsam::tgeqf::State& xi_ref,
+                                   const gtsam::tgeqf::State& xi_est);
+
+class Input {
+  Input();
+  gtsam::Vector3 w;
+  gtsam::Vector3 a;
+  gtsam::Vector3 v;
+  gtsam::Vector3 tau_w;
+  gtsam::Vector3 tau_a;
+  gtsam::Vector3 tau_v;
+  gtsam::Vector3 g_vec;
+  gtsam::tgeqf::Input::Vector21 vector() const;
+  static gtsam::tgeqf::Input fromVector(
+      const gtsam::tgeqf::Input::Vector21& v);
+};
+
+class Lift {
+  Lift(const gtsam::tgeqf::Input& u);
+
+  gtsam::tgeqf::State::TangentVector operator()(
+      const gtsam::tgeqf::State& xi) const;
+};
+
+class InputOrbit {
+  InputOrbit(const gtsam::tgeqf::Input& u);
+  
+  gtsam::tgeqf::Input operator()(const gtsam::tgeqf::TGElement& X) const;
+};
+
+class PositionMeasurement {
+  static gtsam::Vector3 predict(const gtsam::tgeqf::State& xi,
+                                const gtsam::Vector3& pi);
+  static gtsam::Vector3 predictAtOrigin(const gtsam::tgeqf::State& xi_ref,
+                                        const gtsam::tgeqf::TGElement& g,
+                                        const gtsam::Vector3& pi);
+  static gtsam::tgeqf::PositionMeasurement::Jacobian jacobianC0(
+      const gtsam::tgeqf::State& xi_ref, const gtsam::Vector3& pi);
+  static gtsam::tgeqf::PositionMeasurement::Jacobian jacobianCstar(
+      const gtsam::tgeqf::State& xi_ref, const gtsam::tgeqf::TGElement& g,
+      const gtsam::Vector3& pi);
+  static gtsam::Vector3 outputAction(const gtsam::tgeqf::TGElement& X,
+                                     const gtsam::Vector3& y);
+};
+
+class DVLMeasurement {
+  static gtsam::Vector3 predict(const gtsam::tgeqf::State& xi);
+  static gtsam::tgeqf::DVLMeasurement::Jacobian jacobianC0(
+      const gtsam::tgeqf::State& xi_ref);
+  static gtsam::tgeqf::DVLMeasurement::Jacobian jacobianCstar(
+      const gtsam::tgeqf::State& xi_ref, const gtsam::tgeqf::TGElement& g,
+      const gtsam::Vector3& z_dvl);
+  static gtsam::Vector3 outputAction(const gtsam::tgeqf::TGElement& X,
+                                     const gtsam::Vector3& y);
+  static gtsam::Vector3 inverseOutputAction(const gtsam::tgeqf::TGElement& X,
+                                            const gtsam::Vector3& y);
+};
+
+class DepthMeasurement {
+  static double predict(const gtsam::tgeqf::State& xi);
+  static gtsam::tgeqf::DepthMeasurement::Jacobian jacobianC(
+      const gtsam::tgeqf::State& xi_ref, const gtsam::tgeqf::TGElement& g);
+};
+
+class ImuNoise {
+  ImuNoise();
+  gtsam::Vector3 gyro;
+  gtsam::Vector3 accel;
+  gtsam::Vector3 gyro_rw;
+  gtsam::Vector3 accel_rw;
+};
+
+class TGEqF {
+  static gtsam::tgeqf::TGEqF::Covariance18 initialCovariance(
+      const gtsam::tgeqf::State& xi_hat0,
+      const gtsam::tgeqf::TGEqF::Covariance15& Sigma_navigation);
+
+  TGEqF(const gtsam::tgeqf::State& xi_ref,
+        const gtsam::tgeqf::TGEqF::Covariance18& Sigma0);
+  TGEqF(const gtsam::tgeqf::State& xi_ref,
+        const gtsam::tgeqf::TGEqF::Covariance18& Sigma0,
+        const gtsam::tgeqf::TGElement& X0);
+
+  void setResetStep(bool enable);
+
+  gtsam::tgeqf::TGEqF::MatrixM resetMatrix(
+      const gtsam::tgeqf::TGEqF::TangentVector& delta_xi,
+      const gtsam::tgeqf::TGEqF::TangentVector& delta_x) const;
+
+  void propagate(const gtsam::Vector3& w_meas, const gtsam::Vector3& a_meas,
+                 const gtsam::Vector3& g_vec,
+                 const gtsam::tgeqf::TGEqF::Covariance18& Qc, double dt);
+  void propagate(const gtsam::Vector3& w_meas, const gtsam::Vector3& a_meas,
+                 const gtsam::Vector3& g_vec, const gtsam::tgeqf::ImuNoise& noise,
+                 double dt);
+  gtsam::tgeqf::TGEqF::Covariance18 inputNoiseCov(
+      const gtsam::tgeqf::ImuNoise& noise) const;
+
+  void updateDvl(const gtsam::Vector3& z_dvl,
+                 const gtsam::tgeqf::TGEqF::Covariance3& R_dvl);
+  void updatePosition(const gtsam::Vector3& pi,
+                      const gtsam::tgeqf::TGEqF::Covariance3& R_pos);
+  void updateDepth(double z_depth,
+                   const gtsam::tgeqf::TGEqF::Covariance1& R_depth,
+                   double horizontal_variance);
+  void updateDepthDirect(double z_depth,
+                         const gtsam::tgeqf::TGEqF::Covariance1& R_depth);
+
+  gtsam::tgeqf::State errorState(const gtsam::tgeqf::State& xi_true) const;
+  gtsam::tgeqf::TGEqF::TangentVector errorStateVector(
+      const gtsam::tgeqf::State& xi_true) const;
+
+  gtsam::Rot3 attitude() const;
+  gtsam::Vector3 velocity() const;
+  gtsam::Vector3 position() const;
+  gtsam::Vector3 biasGyro() const;
+  gtsam::Vector3 biasAccel() const;
+  gtsam::Vector3 biasVel() const;
+  gtsam::ExtendedPose3<2> extendedPose() const;
+  gtsam::Vector9 biases() const;
+
+  // Inherited from gtsam::EquivariantFilter<State, TGSymmetry>.
+  const gtsam::tgeqf::State& state() const;
+  gtsam::tgeqf::TGEqF::CovarianceM covariance() const;
+  const gtsam::tgeqf::TGEqF::CovarianceM& errorCovariance() const;
+  const gtsam::tgeqf::TGElement& groupEstimate() const;
+  gtsam::tgeqf::TGEqF::MatrixM actionDifferential() const;
+};
+
+}  // namespace tgeqf
 
 // Dynamics models and factors for the point-mass and unicycle examples.
 #include <gtsam_unstable/planning/dynamics/models/PointMass.h>

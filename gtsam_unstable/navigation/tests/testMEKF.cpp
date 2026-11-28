@@ -1,0 +1,575 @@
+/**
+ * @file  testMEKF.cpp
+ * @brief Integration tests for the MEKF wrapper (predict +
+ * update).
+ *
+ * Tangent block order: R, v, p, b_gyro, b_accel.
+ * Position block lives at indices 6..8.
+ */
+#include <CppUnitLite/TestHarness.h>
+#include <gtsam/base/TestableAssertions.h>
+#include <gtsam/base/numericalDerivative.h>
+#include <gtsam_unstable/navigation/MEKF.h>
+
+#include <cmath>
+#include <functional>
+
+using namespace gtsam::mekf;
+using namespace gtsam;
+
+static constexpr double kTol = 1e-9;
+
+// The filter is frame-agnostic -- gravity is a propagate() argument -- so these
+// tests pick a convention of their own: Z-up (ENU), gravity along -z.
+static Eigen::Vector3d testGravity() {
+  return Eigen::Vector3d(0.0, 0.0, -9.81);
+}
+
+using Cov15 = Eigen::Matrix<double, 15, 15>;
+using Cov3 = Eigen::Matrix<double, 3, 3>;
+
+static bool veq(const Eigen::Vector3d& a, const Eigen::Vector3d& b,
+                double tol = kTol) {
+  return assert_equal((Vector)a, (Vector)b, tol);
+}
+
+// Min eigenvalue of a symmetric matrix (PSD check).
+static double minEig(const Eigen::MatrixXd& M) {
+  Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> es(M);
+  return es.eigenvalues().minCoeff();
+}
+
+// ---------------------------------------------------------------------------
+// Construction
+// ---------------------------------------------------------------------------
+
+TEST(MEKF, ConstructorStoresStateAndCovariance) {
+  MEKFState X0(Rot3::Rz(0.2), Eigen::Vector3d(0.1, 0, 0),
+               Eigen::Vector3d(1, 2, 3), Eigen::Vector3d::Zero(),
+               Eigen::Vector3d::Zero());
+  Cov15 P0 = Cov15::Identity() * 0.5;
+  MEKF ekf(X0, P0);
+
+  EXPECT(traits<MEKFState>::Equals(ekf.state(), X0, kTol));
+  EXPECT(assert_equal((Matrix)P0, (Matrix)ekf.covariance(), kTol));
+  EXPECT(veq(ekf.position(), Eigen::Vector3d(1, 2, 3)));
+  EXPECT(ekf.attitude().equals(Rot3::Rz(0.2), kTol));
+}
+
+// ---------------------------------------------------------------------------
+// Predict
+// ---------------------------------------------------------------------------
+
+TEST(MEKF, PredictKeepsCovarianceSymmetricPSD) {
+  MEKF ekf(MEKFState::identity(), Cov15::Identity() * 0.1);
+
+  Cov15 Qc = Cov15::Identity() * 1e-3;
+  ekf.propagate(Eigen::Vector3d(0.05, -0.02, 0.1),
+                Eigen::Vector3d(0.0, 0.0, 9.81), testGravity(), Qc, 0.01);
+
+  const Cov15 P = ekf.covariance();
+  EXPECT(assert_equal((Matrix)P, (Matrix)P.transpose(), 1e-12));  // symmetric
+  EXPECT(minEig(P) > 0.0);                                        // PSD
+}
+
+// Mean prediction matches the world-frame strapdown step (Eq. 3).
+TEST(MEKF, PredictMeanFollowsDynamics) {
+  const Rot3 R0 = Rot3::Rz(0.3);
+  const Eigen::Vector3d v0(0.2, -0.1, 0.0), p0(1.0, 0.0, -1.0);
+  MEKF ekf(
+      MEKFState(R0, v0, p0, Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero()),
+      Cov15::Identity() * 0.01);
+
+  const Eigen::Vector3d omega(0.0, 0.0, 0.1), accel(0.0, 0.0, 0.0);
+  const double dt = 1e-4;
+  ekf.propagate(omega, accel, testGravity(), Cov15::Identity() * 1e-6, dt);
+
+  const Eigen::Vector3d g = testGravity();
+  const Rot3 R1 = R0 * Rot3::Expmap(omega * dt);
+  const Eigen::Vector3d v1 = v0 + (R0 * accel + g) * dt;
+  const Eigen::Vector3d p1 = p0 + v0 * dt;
+
+  EXPECT(ekf.attitude().equals(R1, 1e-9));
+  EXPECT(veq(ekf.velocity(), v1, 1e-7));
+  EXPECT(veq(ekf.position(), p1, 1e-7));
+}
+
+// Covariance grows when propagating with process noise and no measurement.
+TEST(MEKF, PredictInflatesCovariance) {
+  MEKF ekf(MEKFState::identity(), Cov15::Identity() * 0.1);
+  const double trace_before = ekf.covariance().trace();
+  ekf.propagate(Eigen::Vector3d(0.01, 0.02, 0.03),
+                Eigen::Vector3d(0.0, 0.0, 9.81), testGravity(),
+                Cov15::Identity() * 1e-2, 0.01);
+  EXPECT(ekf.covariance().trace() > trace_before);
+}
+
+// ImuNoise overload must match propagate with the equivalent diagonal Qc.
+TEST(MEKF, PropagateImuNoiseMatchesDiagonalQc) {
+  ImuNoise nz;
+  nz.gyro = Eigen::Vector3d::Constant(1e-4);
+  nz.accel = Eigen::Vector3d::Constant(1e-3);
+  nz.gyro_rw = Eigen::Vector3d::Constant(1e-6);
+  nz.accel_rw = Eigen::Vector3d::Constant(1e-5);
+  const Eigen::Vector3d omega(0.05, -0.02, 0.01);
+  const Eigen::Vector3d accel(0.1, -0.2, 9.85);
+  const double dt = 0.01;
+
+  MEKF f1(MEKFState::identity(), Cov15::Identity() * 0.1);
+  MEKF f2(MEKFState::identity(), Cov15::Identity() * 0.1);
+
+  Cov15 Qc = Cov15::Zero();
+  Qc.block<3, 3>(0, 0) = nz.gyro.asDiagonal();
+  Qc.block<3, 3>(3, 3) = nz.accel.asDiagonal();
+  Qc.block<3, 3>(9, 9) = nz.gyro_rw.asDiagonal();
+  Qc.block<3, 3>(12, 12) = nz.accel_rw.asDiagonal();
+
+  f1.propagate(omega, accel, testGravity(), nz, dt);
+  f2.propagate(omega, accel, testGravity(), Qc, dt);
+
+  EXPECT(traits<MEKFState>::Equals(f1.state(), f2.state(), 1e-12));
+  EXPECT(assert_equal((Matrix)f1.covariance(), (Matrix)f2.covariance(), 1e-9));
+}
+
+// ---------------------------------------------------------------------------
+// Position update
+// ---------------------------------------------------------------------------
+
+// A position measurement reduces the position-block covariance.
+TEST(MEKF, UpdateReducesPositionCovariance) {
+  Cov15 P0 = Cov15::Identity() * 0.1;
+  P0.block<3, 3>(6, 6) = Cov3::Identity() * 4.0;  // large position uncertainty
+  MEKF ekf(MEKFState::identity(), P0);
+
+  const double trace_before = ekf.covariance().block<3, 3>(6, 6).trace();
+  ekf.updatePosition(Eigen::Vector3d(0.5, -0.3, 0.2), Cov3::Identity() * 0.01);
+  const double trace_after = ekf.covariance().block<3, 3>(6, 6).trace();
+
+  EXPECT(trace_after < trace_before);
+  EXPECT(minEig(ekf.covariance()) > 0.0);
+}
+
+// A single accurate update pulls a wrong position estimate toward the fix.
+TEST(MEKF, UpdateCorrectsPosition) {
+  MEKFState X0(Rot3::Identity(), Eigen::Vector3d::Zero(),
+               Eigen::Vector3d(1.0, -1.0, 0.5),  // wrong position
+               Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero());
+  Cov15 P0 = Cov15::Identity() * 1e-4;
+  P0.block<3, 3>(6, 6) = Cov3::Identity() * 1.0;  // trust measurement more
+  MEKF ekf(X0, P0);
+
+  const Eigen::Vector3d truth(0.0, 0.0, 0.0);
+  ekf.updatePosition(truth, Cov3::Identity() * 1e-4);
+
+  // Estimate should move most of the way to the measurement.
+  const double err_before = (Eigen::Vector3d(1.0, -1.0, 0.5) - truth).norm();
+  const double err_after = (ekf.position() - truth).norm();
+  EXPECT(err_after < 0.05 * err_before);
+}
+
+// ---------------------------------------------------------------------------
+// DVL update
+// ---------------------------------------------------------------------------
+
+// A DVL measurement reduces the velocity-block covariance.
+TEST(MEKF, UpdateDvlReducesVelocityCovariance) {
+  Cov15 P0 = Cov15::Identity() * 0.1;
+  P0.block<3, 3>(3, 3) = Cov3::Identity() * 4.0;  // large velocity uncertainty
+  MEKF ekf(MEKFState::identity(), P0);
+
+  const double trace_before = ekf.covariance().block<3, 3>(3, 3).trace();
+  ekf.updateDvl(Eigen::Vector3d(0.3, -0.1, 0.0), Cov3::Identity() * 0.01);
+  const double trace_after = ekf.covariance().block<3, 3>(3, 3).trace();
+
+  EXPECT(trace_after < trace_before);
+  EXPECT(minEig(ekf.covariance()) > 0.0);
+}
+
+// A single accurate DVL update pulls a wrong velocity estimate toward truth.
+TEST(MEKF, UpdateDvlCorrectsVelocity) {
+  const Rot3 R0 = Rot3::Rz(0.5);
+  const Eigen::Vector3d truth_v = R0 * Eigen::Vector3d(0.2, -0.1, 0.05);
+  MEKFState X0(R0, Eigen::Vector3d(1.0, 1.0, -1.0),  // wrong world velocity
+               Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
+               Eigen::Vector3d::Zero());
+  Cov15 P0 = Cov15::Identity() * 1e-4;
+  P0.block<3, 3>(3, 3) = Cov3::Identity() * 1.0;  // trust the DVL more
+  MEKF ekf(X0, P0);
+
+  // DVL reports the body-frame velocity consistent with truth_v: R0^T truth_v.
+  const Eigen::Vector3d z_dvl = R0.unrotate(truth_v);
+  ekf.updateDvl(z_dvl, Cov3::Identity() * 1e-4);
+
+  const double err_before = (Eigen::Vector3d(1.0, 1.0, -1.0) - truth_v).norm();
+  const double err_after = (ekf.velocity() - truth_v).norm();
+  EXPECT(err_after < 0.05 * err_before);
+}
+
+/* ************************************************************************* */
+namespace depth_update {
+
+using Cov1 = MEKF::Covariance1;
+
+// 1x1 depth noise matrix from a stddev in metres.
+Cov1 depthNoise(double sigma) {
+  Cov1 R;
+  R(0, 0) = sigma * sigma;
+  return R;
+}
+
+MEKFState offsetState() {
+  return MEKFState(Rot3::Rx(M_PI / 6), Eigen::Vector3d(0.5, -0.2, 0.1),
+                   Eigen::Vector3d(1.0, 2.0, -3.0), Eigen::Vector3d::Zero(),
+                   Eigen::Vector3d::Zero());
+}
+
+// A single depth update pulls the vertical estimate most of the way to the
+// measurement when the depth noise is much tighter than the prior.
+TEST(MEKF, DepthUpdateCorrectsVerticalPosition) {
+  MEKF ekf(MEKFState::identity(), Cov15::Identity() * 0.01);
+
+  const double z_depth = -0.8;
+  ekf.updateDepth(z_depth, depthNoise(0.01));
+
+  EXPECT(std::abs(ekf.position().z() - z_depth) < 0.1);
+}
+
+// The inflated horizontal variance keeps a depth update off the x and y axes
+// when the prior is uncorrelated.
+TEST(MEKF, DepthUpdateLeavesHorizontalNearlyUnchanged) {
+  MEKF ekf(offsetState(), Cov15::Identity() * 0.01);
+
+  const Eigen::Vector3d before = ekf.position();
+  ekf.updateDepth(before.z() - 0.8, depthNoise(0.01));
+  const Eigen::Vector3d delta = ekf.position() - before;
+
+  EXPECT(std::abs(delta.z()) > 0.5);
+  EXPECT(std::abs(delta.x()) < 0.02);
+  EXPECT(std::abs(delta.y()) < 0.02);
+}
+
+// Only the vertical position covariance is informed; the horizontal blocks stay
+// essentially where they were.
+TEST(MEKF, DepthUpdateShrinksVerticalCovariance) {
+  MEKF ekf(MEKFState::identity(), Cov15::Identity() * 0.01);
+
+  const Cov15 before = ekf.covariance();
+  ekf.updateDepth(-0.8, depthNoise(0.01));
+  const Cov15 after = ekf.covariance();
+
+  const double drop_z = before(8, 8) - after(8, 8);
+  EXPECT(drop_z > 0.0);
+  EXPECT(std::abs(before(6, 6) - after(6, 6)) < 0.1 * drop_z);
+  EXPECT(std::abs(before(7, 7) - after(7, 7)) < 0.1 * drop_z);
+  EXPECT(minEig(after) > 0.0);
+}
+
+// updateDepth is exactly the pseudo-position update it documents.
+TEST(MEKF, DepthUpdateMatchesEquivalentPositionUpdate) {
+  MEKF via_depth(offsetState(), Cov15::Identity() * 0.01);
+  MEKF via_position(offsetState(), Cov15::Identity() * 0.01);
+
+  const double z_depth = -2.0;
+  const double sigma_z = 0.02;
+  via_depth.updateDepth(z_depth, depthNoise(sigma_z));
+
+  Cov3 R_pseudo = Cov3::Zero();
+  R_pseudo(0, 0) = MEKF::kDefaultHorizontalVariance;
+  R_pseudo(1, 1) = MEKF::kDefaultHorizontalVariance;
+  R_pseudo(2, 2) = sigma_z * sigma_z;
+  Eigen::Vector3d pseudo = via_position.position();
+  pseudo.z() = z_depth;
+  via_position.updatePosition(pseudo, R_pseudo);
+
+  EXPECT(traits<MEKFState>::Equals(via_position.state(), via_depth.state(),
+                                   1e-12));
+  EXPECT(assert_equal((Matrix)via_position.covariance(),
+                      (Matrix)via_depth.covariance(), 1e-12));
+}
+
+// The horizontal-variance argument is live: shrinking it changes the correction
+// a correlated prior produces, so the default is not silently ignored.
+TEST(MEKF, DepthUpdateHorizontalVarianceIsRespected) {
+  // Correlate p_x with p_z; the block [[0.01, 0.008], [0.008, 0.01]] is SPD.
+  Cov15 P0 = Cov15::Identity() * 0.01;
+  P0(6, 8) = P0(8, 6) = 0.008;
+
+  MEKF inflated(MEKFState::identity(), P0);
+  MEKF pinned(MEKFState::identity(), P0);
+
+  const double z_depth = -0.8;
+  inflated.updateDepth(z_depth, depthNoise(0.01));
+  pinned.updateDepth(z_depth, depthNoise(0.01), /*horizontal_variance=*/1e-6);
+
+  EXPECT((inflated.position() - pinned.position()).norm() > 1e-3);
+}
+
+// The direct depth Jacobian is the derivative of p_z along the Retract chart:
+// e_3^T on the additive position block.
+TEST(MEKF, DepthOutputJacobianMatchesNumericalDerivative) {
+  using Vector15 = MEKFState::TangentVector;
+  const MEKFState X = offsetState();
+  const std::function<double(const Vector15&)> h = [&](const Vector15& eps) {
+    return DepthOutput::predict(traits<MEKFState>::Retract(X, eps));
+  };
+  const Matrix expected =
+      numericalDerivative11<double, Vector15>(h, Vector15::Zero());
+  EXPECT(assert_equal(expected, (Matrix)DepthOutput::jacobian(), 1e-8));
+}
+
+// With an uncorrelated prior the direct update moves z alone. The reset only
+// touches attitude, which this update leaves uncorrected, so the horizontal
+// estimate and covariance are exactly unchanged.
+TEST(MEKF, DirectDepthUpdateLeavesUncorrelatedHorizontalUntouched) {
+  MEKF ekf(offsetState(), Cov15::Identity() * 0.01);
+
+  const Eigen::Vector3d before = ekf.position();
+  const Cov15 P_before = ekf.covariance();
+  const double z_depth = before.z() - 0.8;
+  ekf.updateDepthDirect(z_depth, depthNoise(0.01));
+  const Cov15 P_after = ekf.covariance();
+
+  EXPECT(std::abs(ekf.position().z() - z_depth) < 0.1);
+  EXPECT_DOUBLES_EQUAL(before.x(), ekf.position().x(), 1e-12);
+  EXPECT_DOUBLES_EQUAL(before.y(), ekf.position().y(), 1e-12);
+  EXPECT(P_after(8, 8) < P_before(8, 8));
+  EXPECT(assert_equal((Matrix)P_before.block<2, 2>(6, 6),
+                      (Matrix)P_after.block<2, 2>(6, 6), 1e-12));
+}
+
+// With the horizontal axes stripped of weight, the pseudo-position update
+// reduces to the scalar model, so the two coincide as the horizontal variance
+// grows. The tolerance is loose because the neglected terms fall off only as
+// 1/sigma_xy^2.
+TEST(MEKF, DirectDepthUpdateMatchesThePseudoPositionUpdateInTheInflatedLimit) {
+  MEKF via_pseudo(offsetState(), Cov15::Identity() * 0.01);
+  MEKF via_direct(offsetState(), Cov15::Identity() * 0.01);
+
+  const double z_depth = -2.0;
+  const double sigma_z = 0.02;
+  via_pseudo.updateDepth(z_depth, depthNoise(sigma_z),
+                         /*horizontal_variance=*/1e12);
+  via_direct.updateDepthDirect(z_depth, depthNoise(sigma_z));
+
+  EXPECT(
+      traits<MEKFState>::Equals(via_pseudo.state(), via_direct.state(), 1e-7));
+  EXPECT(assert_equal((Matrix)via_pseudo.covariance(),
+                      (Matrix)via_direct.covariance(), 1e-7));
+}
+
+}  // namespace depth_update
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace noise_frame {
+
+// Body-frame accelerometer noise lands on the rotated world velocity axes: a
+// 90 degree yaw swaps the x and y variances. P0 = 0 isolates Q, since
+// F P0 F^T vanishes.
+TEST(MEKF, AccelNoiseIsRotatedIntoNavigationFrame) {
+  const MEKFState X0(Rot3::Rz(M_PI / 2), Eigen::Vector3d::Zero(),
+                     Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(),
+                     Eigen::Vector3d::Zero());
+  MEKF ekf(X0, Cov15::Zero());
+
+  ImuNoise noise;
+  noise.accel = Eigen::Vector3d(1e-2, 1e-4, 1e-6);
+  const double dt = 0.1;
+  ekf.propagate(Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero(), testGravity(),
+                noise, dt);
+
+  const Cov3 expected = Eigen::Vector3d(1e-4, 1e-2, 1e-6).asDiagonal() * dt;
+  EXPECT(assert_equal((Matrix)expected,
+                      (Matrix)ekf.covariance().block<3, 3>(3, 3), 1e-15));
+}
+
+}  // namespace noise_frame
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace covariance_reset {
+
+using Vector15 = MEKFState::TangentVector;
+
+MEKFState rotatedState() {
+  return MEKFState(
+      Rot3::RzRyRx(0.3, -0.2, 0.5), Eigen::Vector3d(0.5, -0.2, 0.1),
+      Eigen::Vector3d(1.0, 2.0, -3.0), Eigen::Vector3d(0.01, -0.02, 0.03),
+      Eigen::Vector3d(0.1, 0.0, -0.1));
+}
+
+// Prior with attitude-position correlation, so a position fix also corrects
+// attitude and exercises the reset.
+Cov15 correlatedPrior() {
+  Cov15 P0 = Cov15::Identity() * 0.01;
+  P0.block<3, 3>(6, 6) = Cov3::Identity() * 1.0;
+  P0.block<3, 3>(0, 6) = Cov3::Identity() * 0.05;
+  P0.block<3, 3>(6, 0) = Cov3::Identity() * 0.05;
+  return P0;
+}
+
+// resetJacobian(eta) is the derivative of e -> Local(Retract(X, eta),
+// Retract(X, e)) at the posterior mean e = eta.
+TEST(MEKF, ResetJacobianMatchesNumericalDerivative) {
+  const MEKFState X = rotatedState();
+  Vector15 eta = Vector15::Zero();
+  eta.head<3>() = Eigen::Vector3d(0.2, -0.1, 0.3);
+  eta.segment<3>(6) = Eigen::Vector3d(0.5, 0.4, -0.3);
+
+  const MEKFState X_plus = traits<MEKFState>::Retract(X, eta);
+  Cov15 numerical;
+  const double h = 1e-6;
+  for (int j = 0; j < 15; ++j) {
+    Vector15 step = Vector15::Zero();
+    step(j) = h;
+    const Vector15 plus = traits<MEKFState>::Local(
+        X_plus, traits<MEKFState>::Retract(X, eta + step));
+    const Vector15 minus = traits<MEKFState>::Local(
+        X_plus, traits<MEKFState>::Retract(X, eta - step));
+    numerical.col(j) = (plus - minus) / (2 * h);
+  }
+
+  EXPECT(
+      assert_equal((Matrix)numerical, (Matrix)MEKF::resetJacobian(eta), 1e-8));
+}
+
+/// One measurement update from rotatedState() and correlatedPrior(), run by the
+/// filter and, with the reset skipped, by the base ManifoldEKF.
+struct ResetCheck {
+  bool same_state;      // both reach the same corrected estimate
+  Vector15 eta;         // the correction the update applied
+  Cov15 untransported;  // Joseph-updated covariance, before the reset
+  Cov15 expected;       // its reset transport B P B^T
+  Cov15 filtered;       // the covariance the filter ships
+};
+
+ResetCheck resetCheck(
+    const std::function<void(MEKF&)>& update,
+    const std::function<void(gtsam::ManifoldEKF<MEKFState>&)>& baseUpdate) {
+  const MEKFState X0 = rotatedState();
+  MEKF ekf(X0, correlatedPrior());
+  update(ekf);
+  gtsam::ManifoldEKF<MEKFState> base(X0, correlatedPrior());
+  baseUpdate(base);
+
+  const Vector15 eta = traits<MEKFState>::Local(X0, base.state());
+  const Cov15 B = MEKF::resetJacobian(eta);
+  return {traits<MEKFState>::Equals(base.state(), ekf.state(), 1e-12), eta,
+          base.covariance(), B * base.covariance() * B.transpose(),
+          ekf.covariance()};
+}
+
+// A position update transports the Joseph-updated covariance by the reset
+// Jacobian of the applied correction, unlike the untransported base update.
+TEST(MEKF, PositionUpdateAppliesCovarianceReset) {
+  const Eigen::Vector3d fix(1.6, 1.5, -2.6);
+  const Cov3 R_pos = Cov3::Identity() * 0.01;
+  const ResetCheck c =
+      resetCheck([&](MEKF& ekf) { ekf.updatePosition(fix, R_pos); },
+                 [&](gtsam::ManifoldEKF<MEKFState>& base) {
+                   base.updateWithVector(PositionOutput::predict(base.state()),
+                                         PositionOutput::jacobian(), fix, R_pos,
+                                         /*performReset=*/false);
+                 });
+
+  EXPECT(c.same_state);
+  EXPECT(c.eta.head<3>().norm() > 1e-3);  // the fix corrected attitude
+  EXPECT(assert_equal((Matrix)c.expected, (Matrix)c.filtered, 1e-12));
+  EXPECT((c.untransported - c.filtered).norm() > 1e-6);
+}
+
+// The DVL update applies the same reset.
+TEST(MEKF, DvlUpdateAppliesCovarianceReset) {
+  const Eigen::Vector3d z_dvl(0.8, -0.5, 0.3);
+  const Cov3 R_dvl = Cov3::Identity() * 0.01;
+  const ResetCheck c = resetCheck(
+      [&](MEKF& ekf) { ekf.updateDvl(z_dvl, R_dvl); },
+      [&](gtsam::ManifoldEKF<MEKFState>& base) {
+        base.updateWithVector(BodyVelocityOutput::predict(base.state()),
+                              BodyVelocityOutput::jacobian(base.state()), z_dvl,
+                              R_dvl, /*performReset=*/false);
+      });
+
+  EXPECT(c.same_state);
+  EXPECT(c.eta.head<3>().norm() > 1e-3);
+  EXPECT(assert_equal((Matrix)c.expected, (Matrix)c.filtered, 1e-12));
+  EXPECT((c.untransported - c.filtered).norm() > 1e-6);
+}
+
+// The scalar depth update applies the same reset. The pseudo-position depth
+// update is checked against updatePosition separately, away from this 1e-12
+// comparison and its 1e6-to-1e-2 spread of noise variances.
+TEST(MEKF, DepthUpdateAppliesCovarianceReset) {
+  const double z_depth = -2.6;
+  MEKF::Covariance1 R_depth;
+  R_depth(0, 0) = 0.01;
+  const ResetCheck c = resetCheck(
+      [&](MEKF& ekf) { ekf.updateDepthDirect(z_depth, R_depth); },
+      [&](gtsam::ManifoldEKF<MEKFState>& base) {
+        base.updateWithVector(Vector1{DepthOutput::predict(base.state())},
+                              DepthOutput::jacobian(), Vector1{z_depth},
+                              R_depth, /*performReset=*/false);
+      });
+
+  EXPECT(c.same_state);
+  EXPECT(c.eta.head<3>().norm() > 1e-3);
+  EXPECT(assert_equal((Matrix)c.expected, (Matrix)c.filtered, 1e-12));
+  EXPECT((c.untransported - c.filtered).norm() > 1e-6);
+}
+
+}  // namespace covariance_reset
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+namespace initial_covariance {
+
+using Vector15 = MEKFState::TangentVector;
+
+// Dense, anisotropic prior sigma_i sigma_j 0.5^|i-j|: with cross-covariances
+// between every pair of blocks, each block of J, including the sign of the bias
+// columns, shows up in J Sigma J^T.
+Cov15 densePrior() {
+  Cov15 Sigma;
+  for (int i = 0; i < 15; ++i) {
+    for (int j = 0; j < 15; ++j) {
+      Sigma(i, j) = 0.01 * (1.0 + 0.2 * i) * (1.0 + 0.2 * j) *
+                    std::pow(0.5, std::abs(i - j));
+    }
+  }
+  return Sigma;
+}
+
+// The truth at navigation error d from X0: R = Exp(dtheta) R0, v = v0 + dv,
+// p = p0 + dp, b = b0 + db.
+MEKFState perturb(const MEKFState& X0, const Vector15& d) {
+  return MEKFState(Rot3::Expmap(d.segment<3>(0)) * X0.R, X0.v + d.segment<3>(3),
+                   X0.p + d.segment<3>(6), X0.b_gyro + d.segment<3>(9),
+                   X0.b_accel + d.segment<3>(12));
+}
+
+// initialCovariance is J Sigma J^T for J the derivative of Local(X0, X) with
+// respect to the navigation error: the world-frame attitude error becomes the
+// MEKF's body-frame one at a rotated estimate.
+TEST(MEKF, InitialCovarianceTransportsNavigationErrors) {
+  const MEKFState X0(
+      Rot3::RzRyRx(0.3, -0.4, 1.9), Eigen::Vector3d(1.0, -0.7, 0.2),
+      Eigen::Vector3d(5.0, 3.0, -2.0), Eigen::Vector3d(0.2, -0.3, 0.15),
+      Eigen::Vector3d(0.5, -0.4, 0.3));
+  const std::function<Vector15(const Vector15&)> local =
+      [&](const Vector15& d) {
+        return traits<MEKFState>::Local(X0, perturb(X0, d));
+      };
+  const Cov15 J =
+      numericalDerivative11<Vector15, Vector15>(local, Vector15::Zero());
+  EXPECT(assert_equal((Matrix)(J * densePrior() * J.transpose()),
+                      (Matrix)MEKF::initialCovariance(X0, densePrior()), 1e-8));
+}
+
+}  // namespace initial_covariance
+/* ************************************************************************* */
+
+/* ************************************************************************* */
+int main() {
+  TestResult tr;
+  return TestRegistry::runAllTests(tr);
+}
