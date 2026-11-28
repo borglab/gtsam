@@ -1,6 +1,8 @@
-# Dynamics factors for MPPI planning
+# Experimental planning
 
 By Akash Ratheesh and Frank Dellaert
+
+## Dynamics factors
 
 This part of STAG (sense, think, act with factor graphs) models motion as a
 chain of states and controls. A dynamics factor on `X(k), U(k), X(k+1)`
@@ -32,3 +34,14 @@ MPPI update. [C++ examples](../examples/mppi/README.md)
 The Python guide constructs a unicycle horizon and checks the discrete
 predictions against its dynamics factors.
 [Scoring a unicycle trajectory with dynamics factors](doc/MPPIWithDynamicsFactors.ipynb)
+
+## Learning-based controllers
+
+The learning-based controllers and example-specific dynamics in this directory
+use the sampling and graph-scoring APIs in GTSAM. The two learning guides
+illustrate different uses of an improved control sequence.
+
+- [Generative predictive control](doc/GenerativePredictiveControl.ipynb) trains a conditional flow to generate full control sequences from optimizer targets. GPC+ adds those sequences to the next planning batch.
+- [Policy optimization MPC](doc/PolicyOptimizationMPC.ipynb) learns a transition and reward model, critics, a policy and a prior from replay. The fitted planner distribution supplies targets for the prior.
+
+The seven-task MuJoCo comparison measures closed-loop cost, physical success rates, and the computational cost of training and feedback. The companion repository provides the task definitions, replay audit, and instructions for regenerating the interactive report. [Compact results](doc/KurtzResults.html) · [Reproduce the benchmark](https://github.com/borglab/gtsam-planning-benchmarks#reproduce-the-published-results)

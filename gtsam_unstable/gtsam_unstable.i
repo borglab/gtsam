@@ -26,6 +26,7 @@ virtual class gtsam::imuBias::ConstantBias;
 virtual class gtsam::NonlinearFactor;
 virtual class gtsam::NoiseModelFactor;
 virtual class gtsam::NoiseModelFactorN;
+virtual class gtsam::GaussianProposal;
 virtual class gtsam::GaussianFactor;
 virtual class gtsam::HessianFactor;
 virtual class gtsam::JacobianFactor;
@@ -763,5 +764,115 @@ virtual class UnicycleDynamicsFactor : gtsam::NoiseModelFactor {
 #include <gtsam_unstable/planning/wrap/ModelBindings.h>
 gtsam::VectorField pointMassVectorField();
 gtsam::Pose2Transition unicycleTransition(const gtsam::Unicycle& model);
+
+#include <gtsam_unstable/planning/GenerativePredictiveControl.h>
+
+class GPCTrainingParams {
+  GPCTrainingParams();
+  size_t episodeLength;
+  size_t gaussianSamples;
+  size_t policySamples;
+  double explorationStddev;
+  double warmStart;
+  size_t flowSteps;
+  size_t gradientSteps;
+  size_t batchSize;
+  double learningRate;
+  double cosineWeight;
+  bool useAdamW;
+};
+
+class GenerativePredictiveControl {
+  GenerativePredictiveControl(size_t observationDim, size_t controlDim,
+      size_t horizon, size_t hiddenDim, size_t seed);
+  gtsam::Matrix generate(const gtsam::Vector& observation,
+      const gtsam::Matrix& previous, double warmStart, size_t flowSteps) const;
+  gtsam::Matrix candidates(const gtsam::Vector& observation,
+      const gtsam::Matrix& previous, size_t gaussianSamples, size_t policySamples,
+      double explorationStddev, double warmStart, size_t flowSteps) const;
+  double fit(const gtsam::Matrix& observations, const gtsam::Matrix& previousPlans,
+      const gtsam::Matrix& targets, size_t gradientSteps, size_t batchSize,
+      double learningRate, double cosineWeight);
+  double fitAdamW(const gtsam::Matrix& observations, const gtsam::Matrix& previousPlans,
+      const gtsam::Matrix& targets, size_t gradientSteps, size_t batchSize,
+      double learningRate, double cosineWeight);
+  static gtsam::Vector riskCosts(const gtsam::Matrix& domainCosts, double tailFraction);
+  size_t controlDim() const;
+};
+
+#include <gtsam_unstable/planning/PolicyAugmentedProposal.h>
+virtual class PolicyAugmentedProposal : gtsam::GaussianProposal {
+};
+
+virtual class GPCProposal : gtsam::PolicyAugmentedProposal {
+  GPCProposal(gtsam::GenerativePredictiveControl* policy,
+              const gtsam::Vector& observation, const gtsam::Matrix& covariance,
+              size_t gaussianSamples, size_t policySamples, double warmStart,
+              size_t flowSteps, size_t seed = 42);
+};
+
+#include <gtsam_unstable/planning/PolicyOptimizationMPC.h>
+
+class PolicyOptimizationMPCParams {
+  PolicyOptimizationMPCParams();
+  size_t horizon;
+  size_t samples;
+  size_t policySamples;
+  size_t elites;
+  size_t iterations;
+  size_t hiddenSize;
+  size_t valueBins;
+  size_t replayCapacity;
+  size_t batchSize;
+  size_t updateInterval;
+  size_t reanalyzeInterval;
+  size_t warmupSteps;
+  size_t seed;
+  double temperature;
+  double minStddev;
+  double maxStddev;
+  double discount;
+  double temporalDecay;
+  double klWeight;
+  double entropyWeight;
+  double learningRate;
+  double targetMix;
+  double valueLimit;
+  double actionLimit;
+  bool learnedPrior;
+  bool forwardPriorKL;
+  bool useAdam;
+};
+
+class PolicyOptimizationPlan {
+  PolicyOptimizationPlan();
+  gtsam::Vector action;
+  gtsam::Matrix mean;
+  gtsam::Matrix stddev;
+  size_t modelRollouts;
+};
+
+class PolicyOptimizationMPC {
+  PolicyOptimizationMPC(size_t stateDim, size_t controlDim,
+                        const gtsam::PolicyOptimizationMPCParams& params);
+  gtsam::PolicyOptimizationPlan plan(const gtsam::Vector& state);
+  gtsam::PolicyOptimizationPlan plan(const gtsam::Vector& state,
+                                    const gtsam::NonlinearFactorGraph& taskCost);
+  gtsam::PolicyOptimizationPlan planFrom(const gtsam::Vector& state,
+                                        const gtsam::Matrix& nominal);
+  gtsam::PolicyOptimizationPlan searchFrom(const gtsam::Vector& state,
+      const gtsam::Matrix& nominal, const gtsam::GaussianNoiseSampler& sampler,
+      size_t policySamples, const gtsam::EliteMPPI& update, size_t iterations);
+  gtsam::PolicyOptimizationMPC* fork(size_t seed) const;
+  gtsam::Vector predict(const gtsam::Vector& state, const gtsam::Vector& action) const;
+  void observe(const gtsam::Vector& state, const gtsam::PolicyOptimizationPlan& plan,
+               double reward, const gtsam::Vector& nextState, bool terminal);
+  void train(size_t updates);
+  void reset();
+  size_t replaySize() const;
+  gtsam::Vector policyMean(const gtsam::Vector& state) const;
+  double bootstrapValue(const gtsam::Vector& state, const gtsam::Vector& action) const;
+  double regularizedValue(const gtsam::Vector& state, const gtsam::Vector& action) const;
+};
 
 } //\namespace gtsam
