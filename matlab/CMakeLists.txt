@@ -96,6 +96,7 @@ set(interface_files
     ${GTSAM_SOURCE_DIR}/gtsam/planning/planning.i
     # matlab/custom.i lives outside the main gtsam/ tree, see comment below.
     ${GTSAM_SOURCE_DIR}/matlab/custom.i
+    ${GTSAM_SOURCE_DIR}/matlab/wnoa.i
 )
 if(GTSAM_USE_MOSEK)
   list(APPEND interface_files
@@ -123,7 +124,6 @@ if(GTSAM_UNSTABLE_INSTALL_MATLAB_TOOLBOX)
     list(APPEND mexFlags -DGTSAM_IMPORT_STATIC)
   endif()
 
-  # Wrap
   matlab_wrap(${GTSAM_SOURCE_DIR}/gtsam_unstable/gtsam_unstable.i "gtsam_unstable"
               "${GTSAM_ADDITIONAL_LIBRARIES}" "" "${mexFlags}" "${ignore}" "${GTSAM_ENABLE_BOOST_SERIALIZATION}")
   set_target_properties(

@@ -190,7 +190,7 @@ TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint1D) {
   Values lifted;
   insertQcqpValue<1>(kKey, point, lifted);
   EXPECT_LONGS_EQUAL(1, qcqp.costs().size());
-  EXPECT_LONGS_EQUAL(2, qcqp.eConstraints().size());
+  EXPECT_LONGS_EQUAL(3, qcqp.eConstraints().size());
   EXPECT_DOUBLES_EQUAL(graph.error(values), qcqp.costs().error(lifted), 1e-12);
   EXPECT_DOUBLES_EQUAL(0.0, qcqp.eConstraints().violationNorm(lifted), 1e-12);
 }
@@ -248,7 +248,8 @@ TEST(KnownLandmarkSquaredRangeFactor, AugmentedLandmarkConstructor2D) {
 }
 
 // The whitened lifted quadratic cost must match the nonlinear information-
-// weighted least-squares cost, including its homogeneous sign ambiguity.
+// weighted least-squares cost. The cost is invariant to negating the lift, but
+// the variable constraints fix h = 1 and so reject the negated lift.
 TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint2DWeightedQcqpCost) {
   const Point point(VectorType(1.0, 2.0));
   const VectorType landmark(4.0, 6.0);
@@ -266,21 +267,20 @@ TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint2DWeightedQcqpCost) {
   insertQcqpValue<2>(kKey, point, liftedValues);
 
   EXPECT_LONGS_EQUAL(1, qcqp.costs().size());
-  EXPECT_LONGS_EQUAL(2, qcqp.eConstraints().size());
+  EXPECT_LONGS_EQUAL(3, qcqp.eConstraints().size());
   EXPECT_DOUBLES_EQUAL(162.0, graph.error(nonlinearValues), 1e-12);
   EXPECT_DOUBLES_EQUAL(graph.error(nonlinearValues),
                        qcqp.costs().error(liftedValues), 1e-10);
   EXPECT_DOUBLES_EQUAL(0.0, qcqp.eConstraints().violationNorm(liftedValues),
                        1e-12);
 
-  // X and -X represent the same original point and quadratic cost.
+  // X and -X have the same quadratic cost, but only X is feasible.
   const Matrix negativeLift = -traits<Point>::QcqpValue<1>(point);
   Values negativeValues;
   negativeValues.insert(kKey, negativeLift);
   EXPECT_DOUBLES_EQUAL(qcqp.costs().error(liftedValues),
                        qcqp.costs().error(negativeValues), 1e-10);
-  EXPECT_DOUBLES_EQUAL(0.0, qcqp.eConstraints().violationNorm(negativeValues),
-                       1e-12);
+  EXPECT(qcqp.eConstraints().violationNorm(negativeValues) > 1.0);
 
   const Values recovered = extractQcqpValues<2>(negativeValues);
   EXPECT(recovered.at<Point>(kKey).equals(point));
@@ -331,7 +331,7 @@ TEST(KnownLandmarkSquaredRangeFactor, AugmentedPoint3DResidualAndJacobian) {
 }
 
 // Multiple measurements on the same state must contribute separate costs but
-// must not duplicate the two shared point-lift constraints, with or without
+// must not duplicate the three shared point-lift constraints, with or without
 // redundant constraints enabled.
 TEST(KnownLandmarkSquaredRangeFactor, MultipleAugmentedQcqpFactors3D) {
   const Point point(VectorType(1.0, 2.0, 3.0));
@@ -349,7 +349,7 @@ TEST(KnownLandmarkSquaredRangeFactor, MultipleAugmentedQcqpFactors3D) {
   for (const bool useRedundantConstraints : {false, true}) {
     const QcqpProblem qcqp(graph, 1, useRedundantConstraints);
     EXPECT_LONGS_EQUAL(2, qcqp.costs().size());
-    EXPECT_LONGS_EQUAL(2, qcqp.eConstraints().size());
+    EXPECT_LONGS_EQUAL(3, qcqp.eConstraints().size());
     EXPECT_DOUBLES_EQUAL(graph.error(nonlinearValues),
                          qcqp.costs().error(qcqpValues), 1e-10);
     EXPECT_DOUBLES_EQUAL(0.0, qcqp.eConstraints().violationNorm(qcqpValues),
@@ -375,7 +375,7 @@ TEST(KnownLandmarkSquaredRangeFactor, CollectsVariableConstraintsByKey) {
   }
   EXPECT_LONGS_EQUAL(3, costs.size());
   EXPECT_LONGS_EQUAL(0, constraints.size());
-  EXPECT_LONGS_EQUAL(4, variableConstraints.constraints().size());
+  EXPECT_LONGS_EQUAL(6, variableConstraints.constraints().size());
 
   Values nonlinearValues, liftedValues;
   for (const Key key : {kKey, kKey + 1}) {

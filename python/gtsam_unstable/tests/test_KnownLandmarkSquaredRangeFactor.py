@@ -115,6 +115,33 @@ class TestKnownLandmarkSquaredRangeFactor(unittest.TestCase):
                 with self.assertRaisesRegex(RuntimeError, "AugmentedPoint"):
                     gtsam.QcqpProblem(ordinary_graph)
 
+    def test_qcqp_rejects_negative_homogeneous_coordinate(self):
+        """The negated lift of an exact solution has zero cost but is infeasible."""
+        model = gtsam.noiseModel.Unit.Create(1)
+        for dimension in (2, 3):
+            with self.subTest(dimension=dimension):
+                coordinates = np.arange(1.0, dimension + 1)
+                point = getattr(gtsam_unstable, f"AugmentedPoint{dimension}")(coordinates)
+                factor_type = getattr(
+                    gtsam_unstable, f"KnownLandmarkSquaredRangeFactorAugmentedPoint{dimension}"
+                )
+                graph = gtsam.NonlinearFactorGraph()
+                for landmark in np.eye(dimension + 1, dimension) * 4.0:
+                    graph.add(factor_type(
+                        0, landmark, np.linalg.norm(coordinates - landmark), model
+                    ))
+                problem = gtsam.QcqpProblem(graph)  # No h = 1 constraint is added.
+                lift = getattr(gtsam_unstable, f"qcqpValue{dimension}")(point)
+                for sign, feasible in ((1.0, True), (-1.0, False)):
+                    lifted = gtsam.Values()
+                    lifted.insert(0, sign * lift)
+                    cost, equalities, _ = problem.evaluate(lifted)
+                    self.assertAlmostEqual(cost, 0.0, places=10)
+                    if feasible:
+                        self.assertAlmostEqual(equalities, 0.0, places=10)
+                    else:
+                        self.assertGreater(equalities, 1.0)
+
 
 if __name__ == "__main__":
     unittest.main()

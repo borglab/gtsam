@@ -36,6 +36,7 @@ class gtsam::GaussianFactorGraph;
 class gtsam::NonlinearFactorGraph;
 class gtsam::Ordering;
 class gtsam::Values;
+class gtsam::StateData;
 class gtsam::Key;
 class gtsam::VectorValues;
 class gtsam::KeyList;
@@ -467,6 +468,55 @@ virtual class ConcurrentBatchSmoother : gtsam::ConcurrentSmoother {
           std::nullopt);
   gtsam::Values calculateEstimate() const;
 };
+
+// WNOA motion and interpolation factors for AugmentedPoint positions. The
+// interpolator for these positions is instantiated in gtsam_unstable.
+#include <gtsam/nonlinear/WnoaFactor.h>
+template <POSE>
+virtual class WnoaMotionFactor : gtsam::NoiseModelFactor {
+  WnoaMotionFactor(const gtsam::StateData& state_k,
+                   const gtsam::StateData& state_kp1,
+                   const gtsam::Vector& q_psd_diag);
+};
+
+typedef gtsam::WnoaMotionFactor<gtsam::AugmentedPoint<2>>
+    WnoaMotionFactorAugmentedPoint2;
+typedef gtsam::WnoaMotionFactor<gtsam::AugmentedPoint<3>>
+    WnoaMotionFactorAugmentedPoint3;
+
+#include <gtsam/nonlinear/WnoaInterpFactor.h>
+template <POSE>
+virtual class WnoaInterpFactor : gtsam::NoiseModelFactor {
+  WnoaInterpFactor(gtsam::NoiseModelFactor* inner_factor,
+                   const gtsam::StateDataSet estimated_states,
+                   const gtsam::StateDataSet interp_states,
+                   const gtsam::Vector q_psd_diag,
+                   const bool fixed_noise_model = false,
+                   const bool precomp_interp_mats = true);
+};
+
+typedef gtsam::WnoaInterpFactor<gtsam::AugmentedPoint<2>>
+    WnoaInterpFactorAugmentedPoint2;
+typedef gtsam::WnoaInterpFactor<gtsam::AugmentedPoint<3>>
+    WnoaInterpFactorAugmentedPoint3;
+
+// Graph interpolation helpers for AugmentedPoint positions, mirroring the Point
+// and Pose instantiations in gtsam/nonlinear/nonlinear_continuous_time.i. The
+// AugmentedPoint2/3 aliases are declared in AugmentedPoint.h.
+#include <gtsam/nonlinear/WnoaFactorGraph.h>
+template <POSE = {gtsam::AugmentedPoint2, gtsam::AugmentedPoint3}>
+gtsam::NonlinearFactorGraph interpolateFactorGraph(
+    const gtsam::NonlinearFactorGraph& graph,
+    const gtsam::StateDataSet& estimated_states,
+    const gtsam::StateDataSet& interp_states, gtsam::Vector q_psd_diag,
+    bool fixed_noise = false);
+
+template <POSE = {gtsam::AugmentedPoint2, gtsam::AugmentedPoint3}>
+gtsam::Values updateInterpValues(
+    const gtsam::NonlinearFactorGraph& interp_graph,
+    const gtsam::Values& values, const gtsam::StateDataSet& estim_states,
+    const gtsam::StateDataSet& interp_states,
+    const gtsam::Vector q_psd_diag);
 
 //*************************************************************************
 // slam

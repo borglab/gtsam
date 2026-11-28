@@ -138,12 +138,18 @@ class AugmentedPoint {
   VectorType point_;  ///< Euclidean point coordinates.
 };
 
+/// Aliases for the wrapped dimensions. The wrappers name template arguments of
+/// free functions with plain type names, e.g. interpolateFactorGraph.
+using AugmentedPoint2 = AugmentedPoint<2>;
+using AugmentedPoint3 = AugmentedPoint<3>;
+
 /**
  * GTSAM vector-space traits and D=1 QCQP lift for AugmentedPoint<N>.
  *
  * The lifted variable X = [h, x.transpose(), u].transpose() satisfies
- * x.dot(x) - h*u = 0 and h*h = 1. Its canonical form has h = 1; the quadratic
- * normalization permits h = -1 as well, which is handled during extraction.
+ * x.dot(x) - h*u = 0, h*h = 1, and h = 1. Fixing h = 1 makes x the Euclidean
+ * coordinates in every lifted variable, so costs that read x directly agree
+ * with the recovered point x/h.
  *
  * @tparam N Euclidean point dimension.
  */
@@ -177,11 +183,14 @@ struct traits<AugmentedPoint<N>>
   }
 
   /**
-   * Return the two quadratic equalities as (A, a, b) triples.
+   * Return the three equalities as (A, a, b) triples.
    *
    * Each tuple represents X.transpose()*A*X + 2*a.dot(X) = b. The first
-   * equality enforces x.dot(x) = h*u; the second enforces h*h = 1.
-   * Both use an empty linear term a.
+   * equality enforces x.dot(x) = h*u and the second h*h = 1; both use an empty
+   * linear term a. The third, with A = 0, enforces h = 1, which excludes the
+   * h = -1 solutions that h*h = 1 alone admits. h*h = 1 is kept because an SDP
+   * relaxation lowers it to a constraint on the second moments, which h = 1
+   * alone does not constrain.
    *
    * @tparam D Number of QCQP columns; only D=1 is supported.
    * @throws std::invalid_argument for D other than 1.
@@ -190,7 +199,7 @@ struct traits<AugmentedPoint<N>>
   static std::vector<std::tuple<Matrix, Vector, double>> QcqpConstraints() {
     if constexpr (D == 1) {
       std::vector<std::tuple<Matrix, Vector, double>> constraints;
-      constraints.reserve(2);
+      constraints.reserve(3);
 
       Matrix liftConstraint = Matrix::Zero(QcqpVectorDim, QcqpVectorDim);
       liftConstraint.block(1, 1, N, N).setIdentity();
@@ -201,6 +210,11 @@ struct traits<AugmentedPoint<N>>
       Matrix normalization = Matrix::Zero(QcqpVectorDim, QcqpVectorDim);
       normalization(0, 0) = 1.0;
       constraints.emplace_back(normalization, Vector(), 1.0);
+
+      Vector homogeneous = Vector::Zero(QcqpVectorDim);
+      homogeneous(0) = 0.5;  // 2 * a.dot(X) = h.
+      constraints.emplace_back(Matrix::Zero(QcqpVectorDim, QcqpVectorDim),
+                               homogeneous, 1.0);
       return constraints;
     } else {
       throw std::invalid_argument(
