@@ -192,6 +192,39 @@ TEST(Serialization, graduationSchemeInequality) {
   EXPECT(!tlsGncSuperlinear->equals(*tlsStandard));
 }
 
+/* ************************************************************************* */
+// A deserialized Tukey loss must weight errors with its own threshold c, not
+// with the default one.
+TEST(Serialization, tukeyLossFunctions) {
+  using noiseModel::mEstimator::AsymmetricTukey;
+  using noiseModel::mEstimator::Tukey;
+
+  const double c = 2.0, error = 0.5;
+
+  const Tukey tukey(c);
+  Tukey tukeyText, tukeyXML, tukeyBinary;
+  roundtrip(tukey, tukeyText);
+  roundtripXML(tukey, tukeyXML);
+  roundtripBinary(tukey, tukeyBinary);
+  for (const Tukey& deserialized : {tukeyText, tukeyXML, tukeyBinary}) {
+    EXPECT_DOUBLES_EQUAL(tukey.weight(error), deserialized.weight(error), 1e-9);
+    EXPECT_DOUBLES_EQUAL(tukey.loss(error), deserialized.loss(error), 1e-9);
+  }
+
+  const AsymmetricTukey asymmetricTukey(c);
+  AsymmetricTukey asymmetricText, asymmetricXML, asymmetricBinary;
+  roundtrip(asymmetricTukey, asymmetricText);
+  roundtripXML(asymmetricTukey, asymmetricXML);
+  roundtripBinary(asymmetricTukey, asymmetricBinary);
+  for (const AsymmetricTukey& deserialized :
+       {asymmetricText, asymmetricXML, asymmetricBinary}) {
+    EXPECT_DOUBLES_EQUAL(asymmetricTukey.weight(error),
+                         deserialized.weight(error), 1e-9);
+    EXPECT_DOUBLES_EQUAL(asymmetricTukey.loss(error), deserialized.loss(error),
+                         1e-9);
+  }
+}
+
 /* Create GUIDs for factors */
 /* ************************************************************************* */
 BOOST_CLASS_EXPORT_GUID(gtsam::JacobianFactor, "gtsam::JacobianFactor")
